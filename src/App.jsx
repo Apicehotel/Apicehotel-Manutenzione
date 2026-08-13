@@ -247,26 +247,51 @@ function AdminPanel({ users, onUsersChange, onClose }) {
   </section>
 }
 
+function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+  const rooms = useMemo(() => catalog.roomGroups.flatMap((group) => group.rooms), [catalog])
+  const query = value.trim().toLowerCase()
+  const suggestions = query ? (mode === 'camera'
+    ? rooms.filter((room) => room.toLowerCase().startsWith(query))
+    : catalog.zones.filter((zone) => [zone.name, ...zone.aliases].some((item) => item.toLowerCase().includes(query))).map((zone) => zone.name)
+  ).slice(0, 8) : []
+  useEffect(() => {
+    const close = (event) => { if (wrapRef.current && !wrapRef.current.contains(event.target)) setOpen(false) }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [])
+  const changeMode = (nextMode) => { onModeChange(nextMode); onChange(''); setOpen(false) }
+  return <div className="location-autocomplete" ref={wrapRef}>
+    <div className="location-modes">{[['camera','Camera'],['zona','Zona']].map(([key,label])=><button type="button" key={key} className={mode === key ? 'active' : ''} onClick={()=>changeMode(key)}>{label}</button>)}</div>
+    <input aria-label={mode === 'camera' ? 'Numero camera' : 'Cerca zona'} inputMode={mode === 'camera' ? 'numeric' : 'text'} pattern={mode === 'camera' ? '[0-9]*' : undefined} autoComplete="off" value={value} placeholder={mode === 'camera' ? 'Numero camera, es. 214' : 'Cerca zona, es. Hall'} onFocus={()=>setOpen(Boolean(query))} onChange={(event)=>{const next=mode === 'camera' ? event.target.value.replace(/[^0-9]/g,'') : event.target.value;onChange(next);setOpen(Boolean(next.trim()))}} />
+    {open && suggestions.length > 0 && <div className="location-suggestions">{suggestions.map((item)=><button type="button" key={item} onClick={()=>{onChange(item);setOpen(false)}}>{item}</button>)}</div>}
+  </div>
+}
+
 function NewIssueForm({ hotel, user, onCancel, onSave }) {
   const catalog = HOTEL_LOCATIONS[hotel.id]
+  const [locationMode, setLocationMode] = useState('camera')
   const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: ISSUE_CATEGORIES[0], department: user.department || DEPARTMENTS[0], photoName: '' })
+  const validLocation = locationMode === 'camera'
+    ? catalog.roomGroups.some((group) => group.rooms.includes(draft.location.trim()))
+    : catalog.zones.some((zone) => zone.name === draft.location.trim())
   const submit = (event) => {
     event.preventDefault()
-    if (!draft.location || !draft.title.trim()) return
-    const [kind, ...parts] = draft.location.split('|')
-    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (kind === 'camera' ? 'Camera' : 'Zona') + ' · ' + parts.join('|'), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, department: draft.department, category: draft.category, origin: 'App', photoName: draft.photoName })
+    if (!validLocation || !draft.title.trim()) return
+    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (locationMode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, department: draft.department, category: draft.category, origin: 'App', photoName: draft.photoName })
   }
   return <form className="new-issue-form" onSubmit={submit}>
     <div className="form-heading"><div><h2>Nuova segnalazione</h2><p>{hotel.name} · stato iniziale Da fare</p></div><button type="button" className="form-close" onClick={onCancel} aria-label="Chiudi">×</button></div>
     <div className="issue-form-grid">
-      <label className="location-field">Camera o zona<select aria-label="Camera o zona" required value={draft.location} onChange={(e)=>setDraft({...draft,location:e.target.value})}><option value="">Seleziona…</option>{catalog.roomGroups.map((group)=><optgroup label={group.name} key={group.name}>{group.rooms.map((room)=><option value={'camera|' + room} key={room}>{room}</option>)}</optgroup>)}<optgroup label="Zone comuni">{catalog.zones.map((zone)=><option value={'zona|' + zone.name} key={zone.name}>{zone.name}</option>)}</optgroup></select></label>
-      <label>Urgenza<select value={draft.urgency} onChange={(e)=>setDraft({...draft,urgency:e.target.value})}><option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option></select></label>
-      <label>Categoria<select value={draft.category} onChange={(e)=>setDraft({...draft,category:e.target.value})}>{ISSUE_CATEGORIES.map((item)=><option key={item}>{item}</option>)}</select></label>
-      <label>Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>
+      <label className="location-field">Camera o zona<LocationAutocomplete catalog={catalog} mode={locationMode} onModeChange={setLocationMode} value={draft.location} onChange={(location)=>setDraft({...draft,location})} />{draft.location && !validLocation && <small className="field-error">{locationMode === 'camera' ? 'Camera non presente nella struttura.' : 'Scegli una zona riconosciuta dai suggerimenti.'}</small>}</label>
+      <fieldset className="choice-field urgency-field"><legend>Urgenza</legend><div className="urgency-choices">{[['bassa','Bassa'],['media','Media'],['alta','Alta']].map(([key,label])=><button type="button" key={key} className={draft.urgency === key ? 'active ' + key : ''} onClick={()=>setDraft({...draft,urgency:key})}>{label}</button>)}</div></fieldset>
+      <fieldset className="choice-field category-field"><legend>Categoria</legend><div className="category-choices">{ISSUE_CATEGORIES.map((item)=><button type="button" key={item} className={draft.category === item ? 'active' : ''} onClick={()=>setDraft({...draft,category:item})}>{item}</button>)}</div></fieldset>
+      <label className="department-field">Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>
       <label className="description-field">Descrizione del problema<textarea required rows="4" value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})} placeholder="Descrivi il problema in modo chiaro" /></label>
       <label className="photo-field">Foto opzionale<input type="file" accept="image/*" capture="environment" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><small>{draft.photoName || 'La foto sarà caricata su Supabase nella fase backend.'}</small></label>
     </div>
-    <div className="form-actions"><button type="button" className="secondary" onClick={onCancel}>Annulla</button><button className="primary" disabled={!draft.location || !draft.title.trim()}>Salva segnalazione</button></div>
+    <div className="form-actions"><button type="button" className="secondary" onClick={onCancel}>Annulla</button><button className="primary" disabled={!validLocation || !draft.title.trim()}>Salva segnalazione</button></div>
   </form>
 }
 
