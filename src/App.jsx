@@ -229,7 +229,7 @@ function AdminPanel({ users, onUsersChange, onClose }) {
       <button className="primary">Salva utente</button>
     </form>}
     {message && <p className="admin-message" role="status">{message}</p>}
-    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning Sale è disponibile in tutte le strutture per Admin e Direttore Centro Congressi.</p></section>
+    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Il ruolo Direttore Centro Congressi è assegnabile in tutte le strutture. Planning Sale è riservato ad Admin e Direttore Centro Congressi presso Hotel Giò.</p></section>
     <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
       <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
       <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
@@ -252,7 +252,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [category, setCategory] = useState('')
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
-  const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
+  const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
   const issues = useMemo(() => seededIssues
     .filter((issue) => issue.hotelId === hotel.id && issue.status === status)
     .filter((issue) => !query || `${issue.room} ${issue.title}`.toLowerCase().includes(query.toLowerCase()))
