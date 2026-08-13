@@ -47,6 +47,7 @@ const Icon = ({ name }) => {
     user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
     tool: <path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 9.6 6 7.3 3.7a4 4 0 0 0 5 5l-8.9 8.9a2.1 2.1 0 0 0 3 3l8.9-8.9a4 4 0 0 0-.6-5.4Z"/>,
     camera: <><path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3Z"/><circle cx="12" cy="13" r="3"/></>,
+    image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
@@ -291,7 +292,7 @@ function NewIssueForm({ hotel, user, onCancel, onSave }) {
       <fieldset className="choice-field urgency-field"><legend>Urgenza</legend><div className="urgency-choices">{[['alta','Alta'],['media','Media'],['bassa','Bassa']].map(([key,label])=><button type="button" key={key} className={draft.urgency === key ? 'active ' + key : ''} onClick={()=>setDraft({...draft,urgency:key})}>{label}</button>)}</div></fieldset>
       <fieldset className="choice-field category-field"><legend>Categoria</legend><div className="category-choices">{ISSUE_CATEGORIES.map((item)=><button type="button" key={item} className={draft.category === item ? 'active' : ''} onClick={()=>setDraft({...draft,category:item})}>{item}</button>)}</div></fieldset>
       <label className="description-field">Descrizione del problema<textarea required rows="4" value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})} placeholder="Descrivi il problema in modo chiaro" /></label>
-      <label className="photo-field">Foto<input className="photo-input" type="file" accept="image/*" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><span className="photo-drop"><Icon name="camera" /><strong>{draft.photoName || 'Scatta o carica'}</strong></span></label>
+      <fieldset className="choice-field photo-field"><legend>Foto</legend><div className="photo-actions"><label className="photo-action camera-action"><input className="photo-input camera-input" type="file" accept="image/*" capture="environment" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><Icon name="camera" /><strong>Scatta foto</strong></label><label className="photo-action gallery-action"><input className="photo-input gallery-input" type="file" accept="image/*" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><Icon name="image" /><strong>Scegli dalla galleria</strong></label></div>{draft.photoName && <small className="photo-selected">Selezionata: {draft.photoName}</small>}</fieldset>
     </div>
     <div className="form-actions"><button type="button" className="secondary cancel-issue" onClick={onCancel}>Annulla</button><button className="primary submit-issue" disabled={!validLocation || !draft.title.trim()}>＋ Invia segnalazione</button></div>
   </form>

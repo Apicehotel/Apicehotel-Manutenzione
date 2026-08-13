@@ -196,3 +196,10 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .description-field textarea { min-height:112px; font-size:16px; }.photo-drop { min-height:128px; }
   .form-actions { display:block; margin-top:22px; }.form-actions .submit-issue { width:100%; min-height:56px; font-size:16px; }.cancel-issue { display:none; }
 }
+
+/* Scelta foto esplicita e compatibile mobile */
+.photo-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:7px; }
+.photo-action { min-height:112px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:12px; border:2px dashed #dedad0; border-radius:12px; background:#faf9f6; color:#5c645e; text-align:center; cursor:pointer; }
+.photo-action:active { border-color:#0e5c49; background:#edf6f2; color:#0e5c49; }.photo-action .icon { width:28px; height:28px; }.photo-action strong { font-size:14px; }
+.photo-selected { display:block; margin-top:8px; color:#0e5c49; font-size:12px; font-weight:700; }
+@media (max-width:380px) { .photo-actions { grid-template-columns:1fr; }.photo-action { min-height:86px; } }
