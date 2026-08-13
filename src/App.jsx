@@ -7,9 +7,9 @@ import { HOTEL_LOCATIONS } from './locations.js'
 const seededIssues = [
   { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
   { id: 2, hotelId: 'hotelgio', urgency: 'media', room: '205 · Camera', title: 'Aria condizionata non raffredda', status: 'tecnico', date: 'Oggi, 10:30', department: 'Reception', category: 'Climatizzazione', origin: 'App' },
-  { id: 3, hotelId: 'hotelgio', urgency: 'bassa', room: '301 · Balcone', title: 'Lampada esterna non funziona', status: 'attesa', date: 'Ieri, 16:45', department: 'Governante', category: 'Elettrica', origin: 'App' },
+  { id: 3, hotelId: 'hotelgio', urgency: 'bassa', room: '301 · Balcone', title: 'Lampada esterna non funziona', status: 'attesa_pezzo', pieceName: 'Faretto LED esterno IP65', date: 'Ieri, 16:45', department: 'Governante', category: 'Elettrica', origin: 'App' },
   { id: 4, hotelId: 'chocohotel', urgency: 'alta', room: 'Sala Colazione', title: 'Frigo buffet non raffredda', status: 'todo', date: 'Oggi, 08:20', department: 'Isola dei Golosi', category: 'Attrezzature', origin: 'App' },
-  { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'done', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
+  { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'completata', completionNote: 'Sbloccata, batteria sostituita.', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
 ]
 
 const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
@@ -272,17 +272,33 @@ function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange }) 
   </div>
 }
 
+function readPhotoAsDataUrl(file) {
+  return new Promise((resolve) => {
+    if (!file) return resolve(null)
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => resolve(null)
+    reader.readAsDataURL(file)
+  })
+}
+
 function NewIssueForm({ hotel, user, onCancel, onSave }) {
   const catalog = HOTEL_LOCATIONS[hotel.id]
   const [locationMode, setLocationMode] = useState('camera')
-  const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', roomStatus: null })
+  const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null })
+  const [saving, setSaving] = useState(false)
   const validLocation = locationMode === 'camera'
     ? catalog.roomGroups.some((group) => group.rooms.includes(draft.location.trim()))
     : catalog.zones.some((zone) => zone.name === draft.location.trim())
-  const submit = (event) => {
+  const pickPhoto = async (file) => {
+    const photoData = await readPhotoAsDataUrl(file)
+    setDraft((current) => ({ ...current, photoName: file?.name || '', photoData }))
+  }
+  const submit = async (event) => {
     event.preventDefault()
     if (!validLocation || !draft.title.trim()) return
-    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (locationMode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, department: user.department || user.role, category: draft.category, origin: 'App', photoName: draft.photoName, roomStatus: locationMode === 'camera' ? draft.roomStatus : null })
+    setSaving(true)
+    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (locationMode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, createdByName: user.name, department: user.department || user.role, category: draft.category, origin: 'App', photoName: draft.photoName, photoData: draft.photoData, roomStatus: locationMode === 'camera' ? draft.roomStatus : null })
   }
   return <form className="new-issue-form" onSubmit={submit}>
     <div className="form-heading"><button type="button" className="form-back" onClick={onCancel} aria-label="Torna indietro">‹</button><div><h2>Nuova segnalazione</h2><p>{hotel.name} · stato iniziale Da fare</p></div></div>
@@ -292,10 +308,90 @@ function NewIssueForm({ hotel, user, onCancel, onSave }) {
       <fieldset className="choice-field urgency-field"><legend>Urgenza</legend><div className="urgency-choices">{[['alta','Alta'],['media','Media'],['bassa','Bassa']].map(([key,label])=><button type="button" key={key} className={draft.urgency === key ? 'active ' + key : ''} onClick={()=>setDraft({...draft,urgency:key})}>{label}</button>)}</div></fieldset>
       <fieldset className="choice-field category-field"><legend>Categoria</legend><div className="category-choices">{ISSUE_CATEGORIES.map((item)=><button type="button" key={item} className={draft.category === item ? 'active' : ''} onClick={()=>setDraft({...draft,category:item})}>{item}</button>)}</div></fieldset>
       <label className="description-field">Descrizione del problema<textarea required rows="4" value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})} placeholder="Descrivi il problema in modo chiaro" /></label>
-      <fieldset className="choice-field photo-field"><legend>Foto</legend><div className="photo-actions"><label className="photo-action camera-action"><input className="photo-input camera-input" type="file" accept="image/*" capture="environment" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><Icon name="camera" /><strong>Scatta foto</strong></label><label className="photo-action gallery-action"><input className="photo-input gallery-input" type="file" accept="image/*" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><Icon name="image" /><strong>Scegli dalla galleria</strong></label></div>{draft.photoName && <small className="photo-selected">Selezionata: {draft.photoName}</small>}</fieldset>
+      <fieldset className="choice-field photo-field"><legend>Foto</legend><div className="photo-actions"><label className="photo-action camera-action"><input className="photo-input camera-input" type="file" accept="image/*" capture="environment" onChange={(e)=>pickPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Scatta foto</strong></label><label className="photo-action gallery-action"><input className="photo-input gallery-input" type="file" accept="image/*" onChange={(e)=>pickPhoto(e.target.files?.[0])} /><Icon name="image" /><strong>Scegli dalla galleria</strong></label></div>{draft.photoData && <img className="photo-preview" src={draft.photoData} alt="Anteprima foto selezionata" />}{draft.photoName && <small className="photo-selected">Selezionata: {draft.photoName}</small>}</fieldset>
     </div>
-    <div className="form-actions"><button type="button" className="secondary cancel-issue" onClick={onCancel}>Annulla</button><button className="primary submit-issue" disabled={!validLocation || !draft.title.trim()}>＋ Invia segnalazione</button></div>
+    <div className="form-actions"><button type="button" className="secondary cancel-issue" onClick={onCancel}>Annulla</button><button className="primary submit-issue" disabled={!validLocation || !draft.title.trim() || saving}>＋ Invia segnalazione</button></div>
   </form>
+}
+
+function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDelete }) {
+  const [noteDraft, setNoteDraft] = useState('')
+  const [pieceDraft, setPieceDraft] = useState('')
+  const [askingComplete, setAskingComplete] = useState(false)
+  const [askingPiece, setAskingPiece] = useState(false)
+
+  const takeCharge = () => onUpdate(issue.id, { status: 'tecnico', assignedTo: currentUser.id, assignedToName: currentUser.name, assignedAt: Date.now() })
+  const confirmComplete = () => { onUpdate(issue.id, { status: 'completata', completionNote: noteDraft.trim() || null, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
+  const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'attesa_pezzo', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
+  const pieceArrived = () => onUpdate(issue.id, { status: 'tecnico', pieceArrivedAt: Date.now() })
+  const remove = () => { if (window.confirm('Eliminare questa segnalazione? L’azione non è reversibile.')) { onDelete(issue.id); onClose() } }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(event) => event.stopPropagation()}>
+        <div className="sheet-head">
+          <button className="back-link" onClick={onClose}>‹ Chiudi</button>
+          <span className={`urgency badge-${issue.urgency}`}>{issue.urgency}</span>
+        </div>
+        <h2>{issue.room}</h2>
+        <p className="detail-description">{issue.title}</p>
+        <dl className="detail-meta">
+          <div><dt>Reparto</dt><dd>{issue.department}</dd></div>
+          <div><dt>Categoria</dt><dd>{issue.category}</dd></div>
+          <div><dt>Segnalata</dt><dd>{issue.date}{issue.createdByName ? ` · ${issue.createdByName}` : ''}</dd></div>
+          {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([key]) => key === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
+        </dl>
+
+        {issue.photoData && <img className="detail-photo" src={issue.photoData} alt={`Foto segnalazione: ${issue.title}`} />}
+
+        {issue.status === 'tecnico' && issue.assignedToName && (
+          <div className="status-note in-progress">In carico a <strong>{issue.assignedToName}</strong></div>
+        )}
+        {issue.status === 'attesa_pezzo' && (
+          <div className="status-note waiting-piece">In attesa di: <strong>{issue.pieceName}</strong></div>
+        )}
+        {issue.status === 'completata' && (
+          <div className="status-note done">
+            Completata da <strong>{issue.completedBy}</strong>
+            {issue.completionNote && <p>{issue.completionNote}</p>}
+          </div>
+        )}
+
+        <div className="detail-actions">
+          {issue.status === 'todo' && permissions.includes('take_charge') && (
+            <button className="primary" onClick={takeCharge}>Prendi in carico</button>
+          )}
+
+          {issue.status === 'tecnico' && permissions.includes('complete') && !askingComplete && !askingPiece && (
+            <>
+              <button className="primary" onClick={() => setAskingComplete(true)}>Segna completata</button>
+              <button className="secondary" onClick={() => setAskingPiece(true)}>Attesa di un pezzo</button>
+            </>
+          )}
+          {askingComplete && (
+            <div className="inline-form">
+              <label>Nota di completamento (facoltativa)<textarea rows="3" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Cosa è stato fatto" /></label>
+              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingComplete(false)}>Annulla</button><button className="primary" onClick={confirmComplete}>Conferma completamento</button></div>
+            </div>
+          )}
+          {askingPiece && (
+            <div className="inline-form">
+              <label>Nome del pezzo in attesa<input value={pieceDraft} onChange={(e) => setPieceDraft(e.target.value)} placeholder="Es. Faretto LED esterno IP65" /></label>
+              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingPiece(false)}>Annulla</button><button className="primary" disabled={!pieceDraft.trim()} onClick={confirmPiece}>Conferma attesa pezzo</button></div>
+            </div>
+          )}
+
+          {issue.status === 'attesa_pezzo' && permissions.includes('complete') && (
+            <button className="primary" onClick={pieceArrived}>Pezzo arrivato, riprendi lavorazione</button>
+          )}
+
+          {permissions.includes('assign') && (
+            <button className="delete-user" onClick={remove}>Elimina segnalazione</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function Operations({ hotel, user, onLogout, onChangeHotel }) {
@@ -308,12 +404,15 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [department, setDepartment] = useState('')
   const [category, setCategory] = useState('')
   const [creatingIssue, setCreatingIssue] = useState(false)
+  const [openIssueId, setOpenIssueId] = useState(null)
   const [allIssues, setAllIssues] = useState(loadIssues)
+  const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
   const saveIssue = (issue) => {
-    const next = [...allIssues, issue]
-    localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next))
-    setAllIssues(next); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
+    persist([...allIssues, issue]); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
   }
+  const updateIssue = (id, changes) => persist(allIssues.map((item) => item.id === id ? { ...item, ...changes } : item))
+  const deleteIssue = (id) => persist(allIssues.filter((item) => item.id !== id))
+  const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
   const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
@@ -341,10 +440,11 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         <nav className="tabs">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
-          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label}</button>)}</div>
+          {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
+          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa_pezzo','Attesa pezzo'],['completata','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label}</button>)}</div>
           <div className="toolbar"><label className="search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Urgenza</option><option value="camera">Camera/Zona</option><option value="data">Data</option></select><button className="secondary" onClick={() => setAdvanced(!advanced)}>Filtri</button></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
-          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoName ? ' · Foto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
+          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'attesa_pezzo' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' && issue.assignedToName ? ` · In carico a ${issue.assignedToName}` : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
     </div>

@@ -203,3 +203,35 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .photo-action:active { border-color:#0e5c49; background:#edf6f2; color:#0e5c49; }.photo-action .icon { width:28px; height:28px; }.photo-action strong { font-size:14px; }
 .photo-selected { display:block; margin-top:8px; color:#0e5c49; font-size:12px; font-weight:700; }
 @media (max-width:380px) { .photo-actions { grid-template-columns:1fr; }.photo-action { min-height:86px; } }
+
+.photo-preview { display:block; width:100%; max-height:220px; object-fit:cover; border-radius:12px; margin-top:10px; }
+.issue { cursor:pointer; }
+.issue:focus-visible { outline:2px solid #0e5c49; outline-offset:2px; }
+
+/* Pannello di dettaglio segnalazione */
+.sheet-overlay { position:fixed; inset:0; z-index:50; background:#1b241c8c; display:flex; align-items:flex-end; justify-content:center; }
+.sheet { width:100%; max-width:600px; max-height:92vh; overflow-y:auto; background:#fff; border-radius:20px 20px 0 0; padding:18px 20px 28px; }
+.sheet-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.sheet-head .back-link { padding:6px 4px; }
+.detail-description { color:#3a423c; font-size:15px; margin-bottom:14px; }
+.detail-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-bottom:14px; }
+.detail-meta > div { display:flex; flex-direction:column; gap:2px; }
+.detail-meta dt { font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:#8a9089; font-weight:800; }
+.detail-meta dd { margin:0; font-size:14px; color:#1b2420; }
+.detail-photo { display:block; width:100%; max-height:280px; object-fit:cover; border-radius:14px; margin-bottom:14px; }
+.status-note { padding:12px 14px; border-radius:12px; background:#f4f2ed; font-size:13px; margin-bottom:14px; }
+.status-note strong { color:#1b2420; }
+.status-note p { margin:6px 0 0; color:#4e5751; }
+.status-note.in-progress { background:#e6f0fb; }
+.status-note.waiting-piece { background:#fdf1de; }
+.status-note.done { background:#e6f2eb; }
+.detail-actions { display:flex; flex-direction:column; gap:10px; }
+.detail-actions .secondary, .detail-actions .primary, .detail-actions .delete-user { width:100%; }
+.inline-form { display:flex; flex-direction:column; gap:4px; padding:12px; border:1px solid #dedad0; border-radius:12px; background:#faf9f6; }
+.inline-form textarea { width:100%; resize:vertical; border:1px solid #d7d3c9; border-radius:10px; padding:10px 12px; font:inherit; margin-top:6px; }
+.inline-form-actions { display:flex; gap:8px; margin-top:10px; }
+.inline-form-actions button { flex:1; }
+.delete-user { border:1px solid #f0c9c3; border-radius:11px; background:#fdf1ef; color:#b23a2e; font-weight:800; padding:13px; cursor:pointer; }
+.badge-alta { background:#c83d2c; color:#fff; padding:4px 6px; border-radius:5px; text-transform:uppercase; font-size:9px; font-weight:900; }
+.badge-media { background:#dd8415; color:#fff; padding:4px 6px; border-radius:5px; text-transform:uppercase; font-size:9px; font-weight:900; }
+.badge-bassa { background:#d2ad20; color:#fff; padding:4px 6px; border-radius:5px; text-transform:uppercase; font-size:9px; font-weight:900; }
