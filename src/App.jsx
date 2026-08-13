@@ -12,6 +12,8 @@ const seededIssues = [
 ]
 
 const USERS_STORAGE_KEY = 'apicehotel.users.v1'
+const ALL_HOTELS_MIGRATION_KEY = 'apicehotel.all-hotels-migration.v1'
+const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
 const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
 const DEFAULT_ADMIN_PIN = '000000'
 const PERMISSION_LABELS = {
@@ -20,8 +22,13 @@ const PERMISSION_LABELS = {
 function loadUsers() {
   try {
     const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY))
-    const users = Array.isArray(value) && value.length ? value : USERS
-    return users.map((user) => user.role === 'responsabile' ? { ...user, role: 'Responsabile' } : user)
+    let users = (Array.isArray(value) && value.length ? value : USERS).map((user) => user.role === 'responsabile' ? { ...user, role: 'Responsabile' } : user)
+    if (localStorage.getItem(ALL_HOTELS_MIGRATION_KEY) !== 'done') {
+      users = users.map((user) => ({ ...user, hotels: [...ALL_HOTEL_IDS] }))
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+      localStorage.setItem(ALL_HOTELS_MIGRATION_KEY, 'done')
+    }
+    return users
   } catch { return USERS }
 }
 
@@ -186,7 +193,7 @@ function AdminGate({ onBack, onSuccess }) {
 function AdminPanel({ users, onUsersChange, onClose }) {
   const currentUser = users.find((item) => item.role === 'admin') || users[0]
   const [pinEditorOpen, setPinEditorOpen] = useState(false), [newAdminPin, setNewAdminPin] = useState('')
-  const initial = { name: '', role: 'segnalatore', department: 'Reception', pin: '', hotels: [currentUser.hotels[0]] }
+  const initial = { name: '', role: 'segnalatore', department: 'Reception', pin: '', hotels: [...ALL_HOTEL_IDS] }
   const [creating, setCreating] = useState(false), [message, setMessage] = useState(''), [draft, setDraft] = useState(initial)
   const commit = (next, text) => { onUsersChange(next); setMessage(text) }
   const update = (id, changes) => commit(users.map((item) => item.id === id ? { ...item, ...changes } : item), 'Modifiche salvate su questo dispositivo')
@@ -222,7 +229,7 @@ function AdminPanel({ users, onUsersChange, onClose }) {
       <button className="primary">Salva utente</button>
     </form>}
     {message && <p className="admin-message" role="status">{message}</p>}
-    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning Sale è riservato ad Admin e Direttore Centro Congressi, presso Hotel Giò.</p></section>
+    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning Sale è disponibile in tutte le strutture per Admin e Direttore Centro Congressi.</p></section>
     <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
       <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
       <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
@@ -245,7 +252,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [category, setCategory] = useState('')
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
-  const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
+  const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
   const issues = useMemo(() => seededIssues
     .filter((issue) => issue.hotelId === hotel.id && issue.status === status)
     .filter((issue) => !query || `${issue.room} ${issue.title}`.toLowerCase().includes(query.toLowerCase()))
