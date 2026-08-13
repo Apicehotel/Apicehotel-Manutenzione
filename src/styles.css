@@ -124,3 +124,18 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .user-form { grid-template-columns: 1fr; }
   .user-form fieldset { grid-column: auto; display: grid; }
 }
+
+/* Accesso Admin globale con PIN dedicato */
+.home-admin { display:flex; align-items:center; gap:7px; border:1px solid #d9e0e9; border-radius:10px; padding:9px 13px; background:#fff; color:var(--apice-blue); font-size:13px; font-weight:800; cursor:pointer; }
+.home-admin:hover { background:#f3f6fa; }
+.admin-lock { width:68px; height:68px; display:grid; place-items:center; margin:0 auto 17px; border-radius:18px; background:#0b2d5c; color:#fff; }
+.admin-lock .icon { width:30px; height:30px; }
+.admin-gate > p { color:#65748a; }
+.admin-actions { display:flex; gap:10px; }
+.change-pin { min-height:46px; }
+.admin-pin-form { display:grid; grid-template-columns:minmax(220px,1fr) auto; align-items:end; gap:14px; max-width:620px; padding:18px; border:1px solid #dedad0; border-radius:14px; background:#fff; }
+.admin-pin-form label input { margin-bottom:0; text-align:center; letter-spacing:.35em; }
+.admin-pin-form .primary { width:auto; min-width:180px; }
+.global-admin { padding-top:34px; }
+@media (max-width:700px) { .home-header { position:relative; } .home-admin { position:absolute; top:18px; right:16px; padding:8px 10px; font-size:12px; } .home-admin .icon { width:17px; } }
+@media (max-width:680px) { .admin-actions { display:grid; } .admin-pin-form { grid-template-columns:1fr; } .admin-pin-form .primary { width:100%; } }

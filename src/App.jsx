@@ -12,6 +12,8 @@ const seededIssues = [
 ]
 
 const USERS_STORAGE_KEY = 'apicehotel.users.v1'
+const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
+const DEFAULT_ADMIN_PIN = '000000'
 function loadUsers() {
   try { const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY)); return Array.isArray(value) && value.length ? value : USERS } catch { return USERS }
 }
@@ -31,7 +33,7 @@ function HotelMark({ hotel, large = false }) {
   return <span className={`hotel-mark ${hotel.tone} ${large ? 'large' : ''}`}>{hotel.mark}</span>
 }
 
-function Home({ onSelect }) {
+function Home({ onSelect, onAdmin }) {
   const sliderRef = useRef(null)
   const cardRefs = useRef([])
   const [activeIndex, setActiveIndex] = useState(1)
@@ -80,7 +82,7 @@ function Home({ onSelect }) {
     <div className="page home-page">
       <header className="home-header">
         <div className="home-brand"><Icon name="tool" /><strong>APICEHOTEL</strong></div>
-        <div className="home-help"><span>Hai bisogno di aiuto?</span><span className="help-icon">?</span></div>
+        <button className="home-admin" onClick={onAdmin}><Icon name="user" /> Admin</button>
       </header>
       <main className="home-content">
         <section className="home-intro">
@@ -158,7 +160,25 @@ function Login({ hotel, users, onBack, onLogin }) {
   )
 }
 
-function AdminPanel({ users, currentUser, onUsersChange, onClose }) {
+function AdminGate({ onBack, onSuccess }) {
+  const [pin, setPin] = useState(''), [error, setError] = useState('')
+  const submit = (event) => {
+    event.preventDefault()
+    if (pin !== (localStorage.getItem(ADMIN_PIN_STORAGE_KEY) || DEFAULT_ADMIN_PIN)) return setError('PIN Admin non valido')
+    onSuccess()
+  }
+  return <div className="page login-page admin-gate-page">
+    <button className="back-link" onClick={onBack}>‹ Torna alla scelta struttura</button>
+    <main className="login-panel admin-gate">
+      <span className="admin-lock"><Icon name="user" /></span><h1>Accesso Admin</h1><p>Inserisci il PIN amministratore di 6 cifre.</p>
+      <form onSubmit={submit}><label>PIN Admin<input aria-label="PIN Admin" inputMode="numeric" autoComplete="current-password" maxLength="6" pattern="[0-9]{6}" value={pin} onChange={(e)=>{setPin(e.target.value.replace(/\D/g,'').slice(0,6));setError('')}} placeholder="••••••" /></label>{error&&<p className="error" role="alert">{error}</p>}<button className="primary" disabled={pin.length!==6}>Accedi al pannello</button></form>
+    </main>
+  </div>
+}
+
+function AdminPanel({ users, onUsersChange, onClose }) {
+  const currentUser = users.find((item) => item.role === 'admin') || users[0]
+  const [pinEditorOpen, setPinEditorOpen] = useState(false), [newAdminPin, setNewAdminPin] = useState('')
   const initial = { name: '', role: 'segnalatore', department: 'Reception', pin: '', hotels: [currentUser.hotels[0]] }
   const [creating, setCreating] = useState(false), [message, setMessage] = useState(''), [draft, setDraft] = useState(initial)
   const commit = (next, text) => { onUsersChange(next); setMessage(text) }
@@ -175,11 +195,17 @@ function AdminPanel({ users, currentUser, onUsersChange, onClose }) {
     commit([...users, next], `${next.name} aggiunto`); setDraft(initial); setCreating(false)
   }
   const remove = (target) => {
-    if (target.id === currentUser.id) return setMessage('Non puoi eliminare l’utente con cui hai effettuato l’accesso')
+    if (target.id === currentUser.id) return setMessage('Deve rimanere almeno un amministratore principale')
     if (window.confirm(`Eliminare ${target.name}?`)) commit(users.filter((item) => item.id !== target.id), `${target.name} eliminato`)
   }
+  const saveAdminPin = (event) => {
+    event.preventDefault()
+    if (!/^\d{6}$/.test(newAdminPin)) return setMessage('Il PIN Admin deve contenere esattamente 6 cifre')
+    localStorage.setItem(ADMIN_PIN_STORAGE_KEY, newAdminPin); setNewAdminPin(''); setPinEditorOpen(false); setMessage('PIN Admin aggiornato')
+  }
   return <section className="admin-panel">
-    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Torna alle segnalazioni</button><h1>Pannello admin</h1><p>Gestisci utenti, ruoli e accessi alle strutture.</p></div><button className="primary add-user" onClick={() => setCreating(!creating)}>{creating ? 'Annulla' : '+ Nuovo utente'}</button></div>
+    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Torna alla Home</button><h1>Pannello admin</h1><p>Gestisci utenti, ruoli e accessi alle strutture.</p></div><div className="admin-actions"><button className="secondary change-pin" onClick={() => setPinEditorOpen(!pinEditorOpen)}>Cambia PIN Admin</button><button className="primary add-user" onClick={() => setCreating(!creating)}>{creating ? 'Annulla' : '+ Nuovo utente'}</button></div></div>
+    {pinEditorOpen && <form className="admin-pin-form" onSubmit={saveAdminPin}><label>Nuovo PIN Admin di 6 cifre<input aria-label="Nuovo PIN Admin" inputMode="numeric" maxLength="6" value={newAdminPin} onChange={(e)=>setNewAdminPin(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="••••••" /></label><button className="primary" disabled={newAdminPin.length!==6}>Salva nuovo PIN</button></form>}
     {creating && <form className="user-form" onSubmit={create}>
       <label>Nome<input value={draft.name} onChange={(e) => setDraft({...draft,name:e.target.value})} placeholder="Nome utente" /></label>
       <label>Ruolo<select value={draft.role} onChange={(e) => setDraft({...draft,role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></label>
@@ -200,8 +226,7 @@ function AdminPanel({ users, currentUser, onUsersChange, onClose }) {
   </section>
 }
 
-function Operations({ hotel, user, users, onUsersChange, onLogout, onChangeHotel }) {
-  const [adminOpen, setAdminOpen] = useState(false)
+function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
@@ -229,11 +254,9 @@ function Operations({ hotel, user, users, onUsersChange, onLogout, onChangeHotel
       <header className="ops-header">
         <button className="hotel-switch" onClick={onChangeHotel}><HotelMark hotel={hotel} /><span><strong>{hotel.name}</strong><small>{user.name} · {user.role}</small></span></button>
         <button className={`presence ${presence ? 'on' : ''}`} onClick={() => setPresence(!presence)}><span /> Sono in struttura</button>
-        {user.role === 'admin' && <button className={`admin-button ${adminOpen ? 'active' : ''}`} onClick={() => setAdminOpen(!adminOpen)}><Icon name="user" /> Admin</button>}
         <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
       </header>
       <main className="ops-main">
-        {adminOpen ? <AdminPanel users={users} currentUser={user} onUsersChange={onUsersChange} onClose={() => setAdminOpen(false)} /> : <>
         <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati demo · Supabase da configurare'}</p></div><span className="role-chip">{permissions.length} permessi</span></div>
         <nav className="tabs">{['Segnalazioni', 'Avvisi Urgenti', 'Interventi'].map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
         {tab === 'Segnalazioni' ? <>
@@ -242,7 +265,6 @@ function Operations({ hotel, user, users, onUsersChange, onLogout, onChangeHotel
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
-        </>}
       </main>
     </div>
   )
@@ -250,6 +272,7 @@ function Operations({ hotel, user, users, onUsersChange, onLogout, onChangeHotel
 
 export default function App() {
   const [users, setUsers] = useState(loadUsers)
+  const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
   const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
@@ -264,7 +287,9 @@ export default function App() {
   const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
   const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onUsersChange={updateUsers} onLogout={logout} onChangeHotel={changeHotel} />
+  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} />
+  if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
+  if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
-  return <Home onSelect={setSelectedHotel} />
+  return <Home onSelect={setSelectedHotel} onAdmin={() => setAdminStage('pin')} />
 }
