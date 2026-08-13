@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { HOTELS, ROLE_PERMISSIONS, USERS } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
@@ -17,6 +17,7 @@ const Icon = ({ name }) => {
     arrow: <path d="m9 18 6-6-6-6"/>,
     logout: <><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-6"/></>,
     user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
+    tool: <path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 9.6 6 7.3 3.7a4 4 0 0 0 5 5l-8.9 8.9a2.1 2.1 0 0 0 3 3l8.9-8.9a4 4 0 0 0-.6-5.4Z"/>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
@@ -26,23 +27,90 @@ function HotelMark({ hotel, large = false }) {
 }
 
 function Home({ onSelect }) {
+  const sliderRef = useRef(null)
+  const cardRefs = useRef([])
+  const [activeIndex, setActiveIndex] = useState(1)
+  const orderedHotels = ['chocohotel', 'hotelgio', 'brigantino']
+    .map((id) => HOTELS.find((hotel) => hotel.id === id))
+
+  const centerCard = (index, behavior = 'smooth') => {
+    cardRefs.current[index]?.scrollIntoView({ behavior, inline: 'center', block: 'nearest' })
+    setActiveIndex(index)
+  }
+
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 700px)').matches) {
+      const timer = window.setTimeout(() => centerCard(1, 'auto'), 50)
+      return () => window.clearTimeout(timer)
+    }
+  }, [])
+
+  useEffect(() => {
+    const slider = sliderRef.current
+    if (!slider) return undefined
+    let timer
+    const onScroll = () => {
+      if (!window.matchMedia('(max-width: 700px)').matches) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const sliderRect = slider.getBoundingClientRect()
+        const center = sliderRect.left + sliderRect.width / 2
+        const closest = cardRefs.current.reduce((best, card, index) => {
+          if (!card) return best
+          const rect = card.getBoundingClientRect()
+          const distance = Math.abs(center - (rect.left + rect.width / 2))
+          return distance < best.distance ? { index, distance } : best
+        }, { index: 1, distance: Number.POSITIVE_INFINITY })
+        setActiveIndex(closest.index)
+      }, 80)
+    }
+    slider.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      slider.removeEventListener('scroll', onScroll)
+      window.clearTimeout(timer)
+    }
+  }, [])
+
   return (
     <div className="page home-page">
-      <header className="brand-bar"><span className="brand-symbol">A</span><strong>APICEHOTEL</strong></header>
+      <header className="home-header">
+        <div className="home-brand"><Icon name="tool" /><strong>APICEHOTEL</strong></div>
+        <div className="home-help"><span>Hai bisogno di aiuto?</span><span className="help-icon">?</span></div>
+      </header>
       <main className="home-content">
-        <h1>Seleziona struttura</h1>
-        <p className="lead">Scegli la struttura su cui desideri operare.</p>
-        <div className="hotel-list">
-          {HOTELS.map((hotel) => (
-            <button className="hotel-card" key={hotel.id} onClick={() => onSelect(hotel)}>
-              <HotelMark hotel={hotel} />
-              <span className="hotel-name">{hotel.name}</span>
-              <Icon name="arrow" />
+        <section className="home-intro">
+          <h1>Seleziona una struttura</h1>
+          <p>Scegli la struttura per accedere all’area riservata</p>
+        </section>
+        <section className="hotel-slider" ref={sliderRef} aria-label="Seleziona una struttura">
+          {orderedHotels.map((hotel, index) => (
+            <button
+              className={`showcase-card ${hotel.id} ${activeIndex === index ? 'active' : ''}`}
+              key={hotel.id}
+              ref={(node) => { cardRefs.current[index] = node }}
+              onClick={() => onSelect(hotel)}
+              type="button"
+            >
+              <span className="showcase-card-inner">
+                <span className="hotel-logo">
+                  <img src={`/logos/${hotel.id === 'hotelgio' ? 'hotel-gio' : hotel.id === 'chocohotel' ? 'chocohotel' : 'hotel-brigantino'}.jpg`} alt={hotel.name} />
+                </span>
+                <span className="hotel-copy">
+                  <small>Benvenuto in</small>
+                  <strong>{hotel.id === 'hotelgio' ? <>Wine e<br />Jazz Area</> : hotel.id === 'chocohotel' ? <>ChocoHotel<br />Perugia</> : 'Hotel Brigantino'}</strong>
+                  {hotel.id === 'brigantino' && <span>Porto Recanati</span>}
+                </span>
+              </span>
             </button>
           ))}
+        </section>
+        <div className="slider-dots" aria-label="Navigazione strutture">
+          {orderedHotels.map((hotel, index) => (
+            <button key={hotel.id} className={`dot ${activeIndex === index ? 'active' : ''}`} onClick={() => centerCard(index)} aria-label={`Mostra ${hotel.name}`} aria-current={activeIndex === index ? 'true' : undefined} />
+          ))}
         </div>
+        <p className="mobile-help">Scorri per scegliere la struttura<br />e accedi con le tue credenziali</p>
       </main>
-      <footer>Apicehotel Manutenzione · base multi-struttura</footer>
     </div>
   )
 }

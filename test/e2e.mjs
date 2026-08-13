@@ -13,10 +13,10 @@ try {
   const mobile = await context.newPage()
   await mobile.setViewportSize({ width: 390, height: 844 })
   await mobile.goto(baseUrl, { waitUntil: 'networkidle' })
-  await mobile.getByRole('heading', { name: 'Seleziona struttura' }).waitFor()
-  assert.equal(await mobile.getByRole('button', { name: /Hotel Giò/ }).isVisible(), true)
+  await mobile.getByRole('heading', { name: 'Seleziona una struttura' }).waitFor()
+  assert.equal(await mobile.getByRole('button', { name: 'Hotel Giò Wine e Jazz Area', exact: true }).isVisible(), true)
   await mobile.screenshot({ path: fileURLToPath(new URL('home-mobile.png', artifacts)), fullPage: true })
-  await mobile.getByRole('button', { name: /Hotel Giò/ }).click()
+  await mobile.getByRole('button', { name: 'Hotel Giò Wine e Jazz Area', exact: true }).click()
   await mobile.getByLabel('PIN di 4 cifre').fill('0000')
   await mobile.getByRole('button', { name: 'Accedi' }).click()
   await mobile.getByRole('heading', { name: 'Segnalazioni' }).waitFor()
@@ -33,7 +33,7 @@ try {
   await desktop.screenshot({ path: fileURLToPath(new URL('operations-desktop.png', artifacts)), fullPage: true })
 
   await mobile.getByTitle('Logout').click()
-  await mobile.getByRole('heading', { name: 'Seleziona struttura' }).waitFor()
+  await mobile.getByRole('heading', { name: 'Seleziona una struttura' }).waitFor()
   console.log('E2E OK: selezione hotel, login PIN, sessione persistente, area operativa e logout')
 } finally {
   await browser.close()
