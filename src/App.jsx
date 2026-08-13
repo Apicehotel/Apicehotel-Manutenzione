@@ -15,7 +15,11 @@ const USERS_STORAGE_KEY = 'apicehotel.users.v1'
 const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
 const DEFAULT_ADMIN_PIN = '000000'
 function loadUsers() {
-  try { const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY)); return Array.isArray(value) && value.length ? value : USERS } catch { return USERS }
+  try {
+    const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY))
+    const users = Array.isArray(value) && value.length ? value : USERS
+    return users.map((user) => user.role === 'responsabile' ? { ...user, role: 'Responsabile' } : user)
+  } catch { return USERS }
 }
 
 const Icon = ({ name }) => {
