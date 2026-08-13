@@ -91,16 +91,10 @@ function Home({ onSelect }) {
               onClick={() => onSelect(hotel)}
               type="button"
             >
-              <span className="showcase-card-inner">
-                <span className="hotel-logo">
-                  <img src={`/logos/${hotel.id === 'hotelgio' ? 'hotel-gio' : hotel.id === 'chocohotel' ? 'chocohotel' : 'hotel-brigantino'}.jpg`} alt={hotel.name} />
-                </span>
-                <span className="hotel-copy">
-                  <small>Benvenuto in</small>
-                  <strong>{hotel.id === 'hotelgio' ? <>Wine e<br />Jazz Area</> : hotel.id === 'chocohotel' ? <>ChocoHotel<br />Perugia</> : 'Hotel Brigantino'}</strong>
-                  {hotel.id === 'brigantino' && <span>Porto Recanati</span>}
-                </span>
+              <span className="original-hotel-card" aria-hidden="true">
+                <img src="/logos/hotel-cards-original.png" alt="" />
               </span>
+              <span className="sr-only">{hotel.name}</span>
             </button>
           ))}
         </section>

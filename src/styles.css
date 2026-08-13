@@ -54,22 +54,15 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .home-intro h1 { margin: 0 0 6px; font-size: clamp(30px,3vw,42px); line-height: 1.1; letter-spacing: -1px; }
 .home-intro p { margin: 0; font-size: 17px; color: var(--home-muted); }
 .hotel-slider { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; width: 100%; }
-.showcase-card { appearance: none; padding: 0; overflow: hidden; min-width: 0; height: 280px; border-radius: 10px; background: #fff; cursor: pointer; box-shadow: 0 8px 24px rgba(11,45,92,.1); transition: transform .2s ease,box-shadow .2s ease; }
+.showcase-card { appearance: none; position: relative; aspect-ratio: 466 / 653; padding: 0; overflow: hidden; min-width: 0; height: auto; border: 0; border-radius: 11px; background: #fff; cursor: pointer; box-shadow: 0 8px 24px rgba(11,45,92,.1); transition: transform .2s ease,box-shadow .2s ease; }
 .showcase-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(11,45,92,.15); }
 .showcase-card:active { transform: scale(.99); }
-.showcase-card.hotelgio { border: 2px solid #222; }
-.showcase-card.chocohotel { border: 2px solid #8b1c17; }
-.showcase-card.brigantino { border: 2px solid #00669a; }
-.showcase-card-inner { height: 100%; display: grid; grid-template-columns: 52% 48%; }
-.hotel-logo { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; }
-.hotel-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.hotelgio .hotel-logo { background: #000; }
-.hotel-copy { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
-.hotel-copy small { font-size: 18px; margin-bottom: 5px; }
-.hotel-copy strong { font-size: clamp(24px,2vw,32px); line-height: 1.15; }
-.chocohotel .hotel-copy { color: #7b1714; }
-.brigantino .hotel-copy { color: #006092; }
-.hotel-copy > span { margin-top: 5px; font-size: 15px; }
+.original-hotel-card { position: absolute; inset: 0; display: block; overflow: hidden; background: #fff; }
+.original-hotel-card img { position: absolute; top: -25.1%; display: block; max-width: none; height: auto; }
+.hotelgio .original-hotel-card img { left: -6.77%; width: 324.74%; }
+.chocohotel .original-hotel-card img { left: -116.13%; width: 330.32%; }
+.brigantino .original-hotel-card img { left: -222.32%; width: 329.61%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .slider-dots,.mobile-help { display: none; }
 @media (max-width: 700px) {
   .home-header { height: auto; border: 0; justify-content: center; padding: 28px 20px 4px; }
@@ -82,13 +75,8 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .home-intro p { display: none; }
   .hotel-slider { display: flex; gap: 22px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 4px calc((100vw - 250px)/2) 20px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
   .hotel-slider::-webkit-scrollbar { display: none; }
-  .showcase-card { flex: 0 0 250px; width: 250px; height: 300px; scroll-snap-align: center; scroll-snap-stop: always; transform: scale(.94); opacity: .85; transition: transform .25s ease,opacity .25s ease,box-shadow .25s ease; }
+  .showcase-card { flex: 0 0 250px; width: 250px; height: auto; scroll-snap-align: center; scroll-snap-stop: always; transform: scale(.94); opacity: .85; transition: transform .25s ease,opacity .25s ease,box-shadow .25s ease; }
   .showcase-card.active { transform: scale(1); opacity: 1; box-shadow: 0 12px 28px rgba(0,0,0,.16); }
-  .showcase-card-inner { display: flex; flex-direction: column; }
-  .hotel-logo { height: 205px; flex: 0 0 205px; }
-  .hotel-copy { flex: 1; min-height: 90px; padding: 12px 10px; }
-  .hotel-copy small { display: none; }
-  .hotel-copy strong { font-size: 24px; }
   .slider-dots { display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 3px; }
   .dot { width: 10px; height: 10px; padding: 0; border: 0; border-radius: 50%; background: #d9dde2; cursor: pointer; transition: all .2s ease; }
   .dot.active { background: var(--apice-blue-light); transform: scale(1.15); }
@@ -97,8 +85,4 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 @media (min-width: 701px) and (max-width: 1000px) {
   .home-page .home-content { padding-left: 25px; padding-right: 25px; }
   .hotel-slider { gap: 14px; }
-  .showcase-card { height: 240px; }
-  .showcase-card-inner { grid-template-columns: 55% 45%; }
-  .hotel-copy { padding: 15px; }
-  .hotel-copy strong { font-size: 22px; }
 }
