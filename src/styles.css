@@ -186,7 +186,7 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 /* Form mobile fedele all'app operativa */
 .form-back { width:46px; height:46px; flex:0 0 auto; border:1px solid #e1ddd4; border-radius:11px; background:#fff; font-size:30px; line-height:1; cursor:pointer; }
 .room-status-field { grid-column:1 / -1; }.room-status-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.room-status-choices button { min-height:48px; border:1.5px solid #e4e0d6; border-radius:11px; background:#fff; color:#5c645e; font-weight:700; cursor:pointer; }.room-status-choices button.active { border-color:#0e5c49; background:#e7f4ed; color:#0e5c49; }
-.photo-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }.photo-drop { min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; margin-top:7px; border:2px dashed #dedad0; border-radius:12px; background:#faf9f6; color:#5c645e; cursor:pointer; }.photo-drop .icon { width:30px; height:30px; }.photo-drop strong { font-size:16px; }
+.photo-input { position:absolute; inset:0; z-index:3; width:auto; height:auto; margin:0 !important; padding:0; border:0; border-radius:inherit; opacity:0; cursor:pointer; }.photo-drop { min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; margin-top:7px; border:2px dashed #dedad0; border-radius:12px; background:#faf9f6; color:#5c645e; cursor:pointer; }.photo-drop .icon { width:30px; height:30px; }.photo-drop strong { font-size:16px; }
 @media (max-width:760px) {
   .new-issue-form { position:fixed; inset:0; z-index:80; margin:0; padding:calc(env(safe-area-inset-top,0px) + 18px) 16px calc(env(safe-area-inset-bottom,0px) + 22px); border:0; border-radius:0; overflow-y:auto; background:#f7f5f0; box-shadow:none; }
   .form-heading { align-items:center; justify-content:flex-start; margin-bottom:20px; }.form-heading h2 { font-size:22px; }.form-heading p { display:none; }
@@ -199,7 +199,7 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 
 /* Scelta foto esplicita e compatibile mobile */
 .photo-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:7px; }
-.photo-action { min-height:112px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:12px; border:2px dashed #dedad0; border-radius:12px; background:#faf9f6; color:#5c645e; text-align:center; cursor:pointer; }
+.photo-action { position:relative; overflow:hidden; min-height:112px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:12px; border:2px dashed #dedad0; border-radius:12px; background:#faf9f6; color:#5c645e; text-align:center; cursor:pointer; }
 .photo-action:active { border-color:#0e5c49; background:#edf6f2; color:#0e5c49; }.photo-action .icon { width:28px; height:28px; }.photo-action strong { font-size:14px; }
 .photo-selected { display:block; margin-top:8px; color:#0e5c49; font-size:12px; font-weight:700; }
 @media (max-width:380px) { .photo-actions { grid-template-columns:1fr; }.photo-action { min-height:86px; } }
