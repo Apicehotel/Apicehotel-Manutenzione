@@ -139,3 +139,14 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .global-admin { padding-top:34px; }
 @media (max-width:700px) { .home-header { position:relative; } .home-admin { position:absolute; top:18px; right:16px; padding:8px 10px; font-size:12px; } .home-admin .icon { width:17px; } }
 @media (max-width:680px) { .admin-actions { display:grid; } .admin-pin-form { grid-template-columns:1fr; } .admin-pin-form .primary { width:100%; } }
+
+/* Matrice permessi e predisposizione Planning Sale */
+.permission-matrix { padding:18px; border:1px solid #dedad0; border-radius:14px; background:#fff; }
+.permission-matrix h2 { margin-bottom:13px; font-size:18px; }
+.permission-matrix > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 18px; }
+.permission-matrix article { display:grid; gap:3px; padding:10px 0; border-bottom:1px solid #eeeae2; }
+.permission-matrix article strong { font-size:13px; }
+.permission-matrix article span,.permission-matrix p { color:#68736c; font-size:11px; line-height:1.45; }
+.permission-matrix p { margin:14px 0 0; color:#0e5c49; font-weight:700; }
+.planning-placeholder span { color:#0e5c49; font-size:12px; font-weight:800; }
+@media (max-width:680px) { .permission-matrix > div { grid-template-columns:1fr; } }
