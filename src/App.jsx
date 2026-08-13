@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
+import { HOTEL_LOCATIONS } from './locations.js'
 
 const seededIssues = [
   { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
@@ -11,6 +12,11 @@ const seededIssues = [
   { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'done', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
 ]
 
+const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
+const ISSUE_CATEGORIES = ['Idraulica', 'Elettrica', 'Climatizzazione', 'Attrezzature', 'Camera', 'Falegnameria', 'Muratura', 'Altro']
+const loadIssues = () => {
+  try { const value = JSON.parse(localStorage.getItem(ISSUES_STORAGE_KEY)); return Array.isArray(value) ? value : seededIssues } catch { return seededIssues }
+}
 const USERS_STORAGE_KEY = 'apicehotel.users.v1'
 const ALL_HOTELS_MIGRATION_KEY = 'apicehotel.all-hotels-migration.v1'
 const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
@@ -241,6 +247,29 @@ function AdminPanel({ users, onUsersChange, onClose }) {
   </section>
 }
 
+function NewIssueForm({ hotel, user, onCancel, onSave }) {
+  const catalog = HOTEL_LOCATIONS[hotel.id]
+  const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: ISSUE_CATEGORIES[0], department: user.department || DEPARTMENTS[0], photoName: '' })
+  const submit = (event) => {
+    event.preventDefault()
+    if (!draft.location || !draft.title.trim()) return
+    const [kind, ...parts] = draft.location.split('|')
+    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (kind === 'camera' ? 'Camera' : 'Zona') + ' · ' + parts.join('|'), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, department: draft.department, category: draft.category, origin: 'App', photoName: draft.photoName })
+  }
+  return <form className="new-issue-form" onSubmit={submit}>
+    <div className="form-heading"><div><h2>Nuova segnalazione</h2><p>{hotel.name} · stato iniziale Da fare</p></div><button type="button" className="form-close" onClick={onCancel} aria-label="Chiudi">×</button></div>
+    <div className="issue-form-grid">
+      <label className="location-field">Camera o zona<select aria-label="Camera o zona" required value={draft.location} onChange={(e)=>setDraft({...draft,location:e.target.value})}><option value="">Seleziona…</option>{catalog.roomGroups.map((group)=><optgroup label={group.name} key={group.name}>{group.rooms.map((room)=><option value={'camera|' + room} key={room}>{room}</option>)}</optgroup>)}<optgroup label="Zone comuni">{catalog.zones.map((zone)=><option value={'zona|' + zone.name} key={zone.name}>{zone.name}</option>)}</optgroup></select></label>
+      <label>Urgenza<select value={draft.urgency} onChange={(e)=>setDraft({...draft,urgency:e.target.value})}><option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option></select></label>
+      <label>Categoria<select value={draft.category} onChange={(e)=>setDraft({...draft,category:e.target.value})}>{ISSUE_CATEGORIES.map((item)=><option key={item}>{item}</option>)}</select></label>
+      <label>Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>
+      <label className="description-field">Descrizione del problema<textarea required rows="4" value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})} placeholder="Descrivi il problema in modo chiaro" /></label>
+      <label className="photo-field">Foto opzionale<input type="file" accept="image/*" capture="environment" onChange={(e)=>setDraft({...draft,photoName:e.target.files?.[0]?.name || ''})} /><small>{draft.photoName || 'La foto sarà caricata su Supabase nella fase backend.'}</small></label>
+    </div>
+    <div className="form-actions"><button type="button" className="secondary" onClick={onCancel}>Annulla</button><button className="primary" disabled={!draft.location || !draft.title.trim()}>Salva segnalazione</button></div>
+  </form>
+}
+
 function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
@@ -250,10 +279,17 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [advanced, setAdvanced] = useState(false)
   const [department, setDepartment] = useState('')
   const [category, setCategory] = useState('')
+  const [creatingIssue, setCreatingIssue] = useState(false)
+  const [allIssues, setAllIssues] = useState(loadIssues)
+  const saveIssue = (issue) => {
+    const next = [...allIssues, issue]
+    localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next))
+    setAllIssues(next); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
+  }
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
   const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
-  const issues = useMemo(() => seededIssues
+  const issues = useMemo(() => allIssues
     .filter((issue) => issue.hotelId === hotel.id && issue.status === status)
     .filter((issue) => !query || `${issue.room} ${issue.title}`.toLowerCase().includes(query.toLowerCase()))
     .filter((issue) => !department || issue.department === department)
@@ -263,7 +299,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
       if (sort === 'data') return b.id - a.id
       const weight = { alta: 3, media: 2, bassa: 1 }
       return weight[b.urgency] - weight[a.urgency] || a.id - b.id
-    }), [hotel.id, status, query, sort, department, category])
+    }), [allIssues, hotel.id, status, query, sort, department, category])
 
   return (
     <div className="operations">
@@ -273,13 +309,14 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
       </header>
       <main className="ops-main">
-        <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati demo · Supabase da configurare'}</p></div><span className="role-chip">{permissions.length} permessi</span></div>
+        <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati locali · sincronizzazione Supabase da configurare'}</p></div><div className="title-actions">{tab === 'Segnalazioni' && permissions.includes('create') && <button className="primary new-issue-button" onClick={()=>setCreatingIssue(true)}>+ Nuova segnalazione</button>}<span className="role-chip">{permissions.length} permessi</span></div></div>
         <nav className="tabs">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
         {tab === 'Segnalazioni' ? <>
+          {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label}</button>)}</div>
           <div className="toolbar"><label className="search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Urgenza</option><option value="camera">Camera/Zona</option><option value="data">Data</option></select><button className="secondary" onClick={() => setAdvanced(!advanced)}>Filtri</button></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
-          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
+          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoName ? ' · Foto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
     </div>

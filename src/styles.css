@@ -150,3 +150,20 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .permission-matrix p { margin:14px 0 0; color:#0e5c49; font-weight:700; }
 .planning-placeholder span { color:#0e5c49; font-size:12px; font-weight:800; }
 @media (max-width:680px) { .permission-matrix > div { grid-template-columns:1fr; } }
+
+/* Creazione segnalazione */
+.title-actions { display:flex; align-items:center; gap:10px; }
+.new-issue-button { width:auto; padding:11px 16px; }
+.new-issue-form { margin-bottom:18px; padding:18px; border:1px solid #d9d5cb; border-radius:14px; background:#fff; box-shadow:0 8px 28px rgba(27,36,32,.07); }
+.form-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.form-heading h2 { margin-bottom:3px; font-size:20px; }.form-heading p { margin:0; color:#6f7772; font-size:12px; }
+.form-close { border:0; background:none; color:#657069; font-size:26px; line-height:1; cursor:pointer; }
+.issue-form-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:13px; }
+.issue-form-grid label input,.issue-form-grid label select,.issue-form-grid label textarea { margin:7px 0 0; }
+.issue-form-grid textarea { width:100%; resize:vertical; border:1px solid #d7d3c9; border-radius:10px; padding:12px 13px; color:#1b2420; font:inherit; outline:none; }
+.issue-form-grid textarea:focus { border-color:#0e5c49; box-shadow:0 0 0 3px #0e5c4917; }
+.description-field { grid-column:1 / 4; }.photo-field { grid-column:4; }
+.photo-field input { padding:9px; font-size:12px; }.photo-field small { display:block; margin-top:5px; color:#7a827d; font-weight:400; }
+.form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }.form-actions button { width:auto; min-width:130px; padding:11px 16px; }
+@media (max-width:760px) { .title-row { flex-wrap:wrap; }.title-actions { width:100%; justify-content:space-between; }.issue-form-grid { grid-template-columns:1fr 1fr; }.location-field,.description-field,.photo-field { grid-column:1 / -1; } }
+@media (max-width:480px) { .issue-form-grid { grid-template-columns:1fr; }.issue-form-grid label { grid-column:1; }.form-actions { display:grid; grid-template-columns:1fr 1fr; }.form-actions button { min-width:0; width:100%; } }
