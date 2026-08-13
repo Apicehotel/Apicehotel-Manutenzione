@@ -180,5 +180,5 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .urgency-field { grid-column:2 / 5; }.urgency-choices { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
 .urgency-choices button.active.bassa { border-color:#2e7d5b; background:#e7f4ed; color:#2e7d5b; }.urgency-choices button.active.media { border-color:#dd8415; background:#fff3df; color:#a85c00; }.urgency-choices button.active.alta { border-color:#c83d2c; background:#fde9e6; color:#a83225; }
 .category-field { grid-column:1 / -1; }.category-choices { display:flex; flex-wrap:wrap; gap:7px; }.category-choices button { min-height:40px; padding:8px 12px; }.category-choices button.active { border-color:#0e5c49; background:#e7f4ed; color:#0e5c49; }
-.department-field { grid-column:1 / 3; }.description-field { grid-column:1 / 4; }
-@media (max-width:760px) { .urgency-field,.category-field,.department-field { grid-column:1 / -1; } .category-choices button { flex:1 1 calc(50% - 7px); } }
+.description-field { grid-column:1 / 4; }
+@media (max-width:760px) { .urgency-field,.category-field { grid-column:1 / -1; } .category-choices button { flex:1 1 calc(50% - 7px); } }
