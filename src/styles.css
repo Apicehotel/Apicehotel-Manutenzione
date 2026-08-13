@@ -86,3 +86,41 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .home-page .home-content { padding-left: 25px; padding-right: 25px; }
   .hotel-slider { gap: 14px; }
 }
+/* Login struttura e pannello admin */
+.hotel-artwork { position: relative; display: block; overflow: hidden; background: #fff; }
+.login-hotel-art { width: 78px; aspect-ratio: 466 / 653; margin: 0 auto 14px; border-radius: 8px; box-shadow: 0 7px 22px rgba(11,45,92,.15); }
+.admin-button { display: flex; align-items: center; gap: 6px; border: 1px solid #ffffff44; border-radius: 10px; padding: 9px 12px; background: #ffffff16; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.admin-button.active { background: #fff; color: #0e5c49; }
+.admin-panel { display: grid; gap: 18px; }
+.admin-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.admin-heading .back-link { padding: 0 0 12px; }
+.admin-heading h1 { margin-bottom: 3px; }
+.admin-heading p,.admin-footnote { margin: 0; color: #68736c; font-size: 13px; }
+.add-user { width: auto; min-width: 150px; padding-inline: 20px; }
+.user-form { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; padding: 18px; border: 1px solid #dedad0; border-radius: 14px; background: #fff; }
+.user-form label input,.user-form label select { margin-bottom: 0; }
+.user-form fieldset { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 14px; border: 1px solid #dedad0; border-radius: 10px; }
+.user-form legend { padding: 0 6px; color: #59645d; font-size: 12px; font-weight: 800; }
+.hotel-check { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.hotel-check input { width: 17px; margin: 0; accent-color: #0e5c49; }
+.user-form .primary { align-self: end; }
+.admin-message { margin: 0; padding: 11px 14px; border-radius: 10px; background: #e2f2eb; color: #0e5c49; font-size: 13px; font-weight: 700; }
+.admin-panel .table-wrap { border: 1px solid #e0ddd5; }
+.admin-panel table { width: 100%; min-width: 850px; border-collapse: collapse; }
+.admin-panel th,.admin-panel td { padding: 11px; border-bottom: 1px solid #eeeae2; text-align: left; font-size: 12px; }
+.admin-panel th { color: #657069; }
+.admin-panel td:first-child strong,.admin-panel td:first-child small { display: block; }
+.admin-panel td:first-child small { margin-top: 3px; color: #0e5c49; }
+.admin-panel td:nth-last-child(n+2):not(:first-child):not(:nth-child(2)):not(:nth-child(3)),.admin-panel th:nth-last-child(n+2):not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align: center; }
+.admin-panel td > input[type=checkbox] { width: 18px; accent-color: #0e5c49; }
+.admin-panel td select { min-width: 125px; padding: 8px; font-size: 12px; }
+.delete-user { border: 1px solid #e2bbb5; border-radius: 8px; padding: 7px 9px; background: #fff; color: #a52f24; cursor: pointer; font-size: 11px; font-weight: 800; }
+.delete-user:disabled { opacity: .35; cursor: default; }
+@media (max-width: 680px) {
+  .admin-button { margin-left: auto; }
+  .presence { order: 4; }
+  .admin-heading { align-items: stretch; flex-direction: column; }
+  .add-user { width: 100%; }
+  .user-form { grid-template-columns: 1fr; }
+  .user-form fieldset { grid-column: auto; display: grid; }
+}

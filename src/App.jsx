@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { HOTELS, ROLE_PERMISSIONS, USERS } from './config.js'
+import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
 
@@ -10,6 +10,11 @@ const seededIssues = [
   { id: 4, hotelId: 'chocohotel', urgency: 'alta', room: 'Sala Colazione', title: 'Frigo buffet non raffredda', status: 'todo', date: 'Oggi, 08:20', department: 'Isola dei Golosi', category: 'Attrezzature', origin: 'App' },
   { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'done', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
 ]
+
+const USERS_STORAGE_KEY = 'apicehotel.users.v1'
+function loadUsers() {
+  try { const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY)); return Array.isArray(value) && value.length ? value : USERS } catch { return USERS }
+}
 
 const Icon = ({ name }) => {
   const paths = {
@@ -109,8 +114,12 @@ function Home({ onSelect }) {
   )
 }
 
-function Login({ hotel, onBack, onLogin }) {
-  const allowed = USERS.filter((user) => user.hotels.includes(hotel.id))
+function HotelArtwork({ hotel, className = '' }) {
+  return <span className={`hotel-artwork ${hotel.id} ${className}`}><span className="original-hotel-card" aria-hidden="true"><img src="/logos/hotel-cards-original.png" alt="" /></span><span className="sr-only">Logo {hotel.name}</span></span>
+}
+
+function Login({ hotel, users, onBack, onLogin }) {
+  const allowed = users.filter((user) => user.hotels.includes(hotel.id))
   const [userId, setUserId] = useState(allowed[0]?.id || '')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
@@ -129,7 +138,7 @@ function Login({ hotel, onBack, onLogin }) {
     <div className="page login-page">
       <button className="back-link" onClick={onBack}>‹ Cambia struttura</button>
       <main className="login-panel">
-        <HotelMark hotel={hotel} large />
+        <HotelArtwork hotel={hotel} className="login-hotel-art" />
         <h1>{hotel.name}</h1>
         <form onSubmit={submit}>
           <label>Seleziona utente
@@ -149,19 +158,50 @@ function Login({ hotel, onBack, onLogin }) {
   )
 }
 
-function AdminAccessTable() {
-  return (
-    <section className="admin-preview" aria-label="Matrice accessi multi-struttura">
-      <h2>Accessi utenti</h2>
-      <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th>{HOTELS.map((hotel) => <th key={hotel.id}>{hotel.short}</th>)}</tr></thead>
-        <tbody>{USERS.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.role}</td>{HOTELS.map((hotel) => <td key={hotel.id}><input type="checkbox" checked={user.hotels.includes(hotel.id)} readOnly aria-label={`${user.name}: ${hotel.name}`} /></td>)}</tr>)}</tbody>
-      </table></div>
-      <p>Anteprima del modello permessi; la gestione sarà collegata a Supabase Auth.</p>
-    </section>
-  )
+function AdminPanel({ users, currentUser, onUsersChange, onClose }) {
+  const initial = { name: '', role: 'segnalatore', department: 'Reception', pin: '', hotels: [currentUser.hotels[0]] }
+  const [creating, setCreating] = useState(false), [message, setMessage] = useState(''), [draft, setDraft] = useState(initial)
+  const commit = (next, text) => { onUsersChange(next); setMessage(text) }
+  const update = (id, changes) => commit(users.map((item) => item.id === id ? { ...item, ...changes } : item), 'Modifiche salvate su questo dispositivo')
+  const toggleHotel = (target, hotelId) => {
+    if (target.hotels.includes(hotelId) && target.hotels.length === 1) return setMessage('Ogni utente deve mantenere almeno una struttura')
+    update(target.id, { hotels: target.hotels.includes(hotelId) ? target.hotels.filter((id) => id !== hotelId) : [...target.hotels, hotelId] })
+  }
+  const create = (event) => {
+    event.preventDefault()
+    if (!draft.name.trim() || !/^\d{4}$/.test(draft.pin) || !draft.hotels.length) return setMessage('Inserisci nome, PIN di 4 cifre e almeno una struttura')
+    const id = `${draft.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now()}`
+    const next = { id, name: draft.name.trim(), role: draft.role, pin: draft.pin, hotels: draft.hotels, ...(draft.role === 'segnalatore' ? { department: draft.department } : {}) }
+    commit([...users, next], `${next.name} aggiunto`); setDraft(initial); setCreating(false)
+  }
+  const remove = (target) => {
+    if (target.id === currentUser.id) return setMessage('Non puoi eliminare l’utente con cui hai effettuato l’accesso')
+    if (window.confirm(`Eliminare ${target.name}?`)) commit(users.filter((item) => item.id !== target.id), `${target.name} eliminato`)
+  }
+  return <section className="admin-panel">
+    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Torna alle segnalazioni</button><h1>Pannello admin</h1><p>Gestisci utenti, ruoli e accessi alle strutture.</p></div><button className="primary add-user" onClick={() => setCreating(!creating)}>{creating ? 'Annulla' : '+ Nuovo utente'}</button></div>
+    {creating && <form className="user-form" onSubmit={create}>
+      <label>Nome<input value={draft.name} onChange={(e) => setDraft({...draft,name:e.target.value})} placeholder="Nome utente" /></label>
+      <label>Ruolo<select value={draft.role} onChange={(e) => setDraft({...draft,role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></label>
+      {draft.role === 'segnalatore' && <label>Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>}
+      <label>PIN di 4 cifre<input inputMode="numeric" maxLength="4" value={draft.pin} onChange={(e)=>setDraft({...draft,pin:e.target.value.replace(/\D/g,'').slice(0,4)})} placeholder="0000" /></label>
+      <fieldset><legend>Strutture abilitate</legend>{HOTELS.map((hotel)=><label className="hotel-check" key={hotel.id}><input type="checkbox" checked={draft.hotels.includes(hotel.id)} onChange={()=>setDraft({...draft,hotels:draft.hotels.includes(hotel.id)?draft.hotels.filter((id)=>id!==hotel.id):[...draft.hotels,hotel.id]})}/>{hotel.name}</label>)}</fieldset>
+      <button className="primary">Salva utente</button>
+    </form>}
+    {message && <p className="admin-message" role="status">{message}</p>}
+    <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
+      <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
+      <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
+      <td>{target.role==='segnalatore'?<select aria-label={`Reparto di ${target.name}`} value={target.department||DEPARTMENTS[0]} onChange={(e)=>update(target.id,{department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select>:<span>—</span>}</td>
+      {HOTELS.map((hotel)=><td key={hotel.id}><input type="checkbox" checked={target.hotels.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} aria-label={`${target.name}: ${hotel.name}`}/></td>)}
+      <td><button className="delete-user" onClick={()=>remove(target)} disabled={target.id===currentUser.id}>Elimina</button></td>
+    </tr>)}</tbody></table></div>
+    <p className="admin-footnote">Le modifiche sono operative e persistenti su questo dispositivo. Il collegamento definitivo dei profili a Supabase sarà il prossimo passaggio.</p>
+  </section>
 }
 
-function Operations({ hotel, user, onLogout, onChangeHotel }) {
+function Operations({ hotel, user, users, onUsersChange, onLogout, onChangeHotel }) {
+  const [adminOpen, setAdminOpen] = useState(false)
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
@@ -189,9 +229,11 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
       <header className="ops-header">
         <button className="hotel-switch" onClick={onChangeHotel}><HotelMark hotel={hotel} /><span><strong>{hotel.name}</strong><small>{user.name} · {user.role}</small></span></button>
         <button className={`presence ${presence ? 'on' : ''}`} onClick={() => setPresence(!presence)}><span /> Sono in struttura</button>
+        {user.role === 'admin' && <button className={`admin-button ${adminOpen ? 'active' : ''}`} onClick={() => setAdminOpen(!adminOpen)}><Icon name="user" /> Admin</button>}
         <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
       </header>
       <main className="ops-main">
+        {adminOpen ? <AdminPanel users={users} currentUser={user} onUsersChange={onUsersChange} onClose={() => setAdminOpen(false)} /> : <>
         <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati demo · Supabase da configurare'}</p></div><span className="role-chip">{permissions.length} permessi</span></div>
         <nav className="tabs">{['Segnalazioni', 'Avvisi Urgenti', 'Interventi'].map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
         {tab === 'Segnalazioni' ? <>
@@ -200,17 +242,19 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
-        {user.role === 'admin' && <AdminAccessTable />}
+        </>}
       </main>
     </div>
   )
 }
 
 export default function App() {
+  const [users, setUsers] = useState(loadUsers)
   const [session, setSession] = useState(loadSession)
   const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
-  const user = USERS.find((item) => item.id === session?.userId)
+  const user = users.find((item) => item.id === session?.userId)
+  const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
 
   const login = (nextUser) => {
     const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
@@ -220,7 +264,7 @@ export default function App() {
   const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
   const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} />
-  if (selectedHotel) return <Login hotel={selectedHotel} onBack={() => setSelectedHotel(null)} onLogin={login} />
+  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onUsersChange={updateUsers} onLogout={logout} onChangeHotel={changeHotel} />
+  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
   return <Home onSelect={setSelectedHotel} />
 }
