@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const sensorsClient = createClient(
-  'https://jmhzmwyolxzacjunfwcq.supabase.co',
-  'sb_publishable_XTYCLV5jSdk3ztG7PNuL_Q_1zu3tDwJ',
-)
+import { hotelGioClient as sensorsClient } from './hotelgio-data.js'
 const syncUrl = 'https://jmhzmwyolxzacjunfwcq.supabase.co/functions/v1/sync-sensori-temperatura'
 
 export function TemperatureSensors() {

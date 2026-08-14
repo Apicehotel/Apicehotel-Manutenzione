@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
 import { TemperatureSensors } from './temperature.jsx'
+import { Housekeeping } from './housekeeping.jsx'
 
 const seededIssues = [
   { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
@@ -68,6 +69,7 @@ const Icon = ({ name }) => {
     close: <path d="m6 6 12 12M18 6 6 18"/>,
     hotel: <><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M9 21v-5h6v5"/></>,
     temperature: <><path d="M14 14.8V5a4 4 0 0 0-8 0v9.8a6 6 0 1 0 8 0Z"/><path d="M10 9v8"/></>,
+    housekeeping: <><path d="M4 5h16v16H4z"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 18h8"/></>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
@@ -653,6 +655,7 @@ const canCreatePlanned = (user) => ['admin', 'Responsabile', 'Direzione', 'Diret
 const canViewPlanned = (user) => canCreatePlanned(user) || ['manutentore','Tecnico esterno'].includes(user.role)
 const canViewPlanningMenu = (user) => ['manutentore','Direttore Centro Congressi'].includes(user.role)
 const canViewTemperature = (user) => ['Direzione','Direttore Centro Congressi','manutentore'].includes(user.role) || user.department === 'Reception'
+const canViewHousekeeping = (user) => user.role === 'Direzione' || user.role === 'Portiere Notturno' || ['Reception','Governante'].includes(user.department)
 const toLocalDateTimeInput = (timestamp) => {
   const date = new Date(timestamp)
   const offset = date.getTimezoneOffset() * 60000
@@ -785,7 +788,8 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
   const goToWorkPlanning = () => { setTab('Planning Lavori'); setMenuOpen(false) }
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
   const goToTemperature = () => { setTab('Temperature'); setMenuOpen(false) }
-  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature'
+  const goToHousekeeping = () => { setTab('Housekeeping'); setMenuOpen(false) }
+  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature' || tab === 'Housekeeping'
   const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
@@ -836,6 +840,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
             {canViewPlanningMenu(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
             {hotel.id === 'hotelgio' && canViewPlanningMenu(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
             {hotel.id === 'hotelgio' && canViewTemperature(user) && <button onClick={goToTemperature}><Icon name="temperature" /><span>Temperature</span></button>}
+            {hotel.id === 'hotelgio' && canViewHousekeeping(user) && <button onClick={goToHousekeeping}><Icon name="housekeeping" /><span>Housekeeping</span></button>}
           </nav>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
         </aside>
@@ -855,9 +860,9 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
-        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
+        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors /> : tab === 'Housekeeping' ? <Housekeeping user={user} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
-      {tab !== 'Temperature' && <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>}
+      {!['Temperature','Housekeeping'].includes(tab) && <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>}
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
         <button className="fab-new-issue" onClick={() => setCreatingIssue(true)} aria-label="Nuova segnalazione">
           <span className="fab-plus">+</span> Nuova segnalazione

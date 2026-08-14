@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
+    "dexie": "^4.4.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
