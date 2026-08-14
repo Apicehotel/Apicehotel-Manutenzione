@@ -700,23 +700,22 @@ function PlannedForm({ hotel, users, initial, onClose, onSave }) {
 }
 
 function PlannedDetail({ item, user, onClose, onUpdate, onDelete, onEdit, onCompleteToIssues }) {
-  const [showPiece, setShowPiece] = useState(false)
-  const [piece, setPiece] = useState(item.pieceName || '')
-  const [replaced, setReplaced] = useState(item.pieceReplaced || '')
   const [photo, setPhoto] = useState(null)
-  const canComplete = canViewPlanned(user) && item.status !== 'waiting'
+  const canComplete = canViewPlanned(user)
   const roomsDone = item.roomsDone || {}
+  const formatDay = (timestamp) => new Date(timestamp).toLocaleDateString('it-IT', { weekday:'short', day:'2-digit', month:'short' })
+  const formatTime = (timestamp) => new Date(timestamp).toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
   const toggleRoom = (room) => { const next={...roomsDone}; if(next[room]) delete next[room]; else next[room]={by:user.name,at:Date.now()}; onUpdate({roomsDone:next},false) }
   return <div className="urgent-transform-backdrop" onClick={onClose}><section className="planned-detail" onClick={(event) => event.stopPropagation()}>
     <header><button className="back-link" onClick={onClose}>‹ Chiudi</button><div>{canCreatePlanned(user) && <button className="planned-edit" onClick={onEdit}>Modifica</button>}{canCreatePlanned(user) && <button className="delete-issue-compact" onClick={onDelete}>Elimina</button>}</div></header>
     <h2>{item.locationMode === 'camera' ? `Camera ${item.location}` : item.location} · Intervento</h2>
     <article><small>DETTAGLI INTERVENTO</small><span className="planned-category">{item.category}</span><p>{item.notes}</p>{item.rooms?.length > 0 && <div className="room-checklist"><strong>{Object.keys(roomsDone).length} di {item.rooms.length} camere</strong><div>{item.rooms.map((room) => <button key={room} className={roomsDone[room] ? 'done' : ''} onClick={() => toggleRoom(room)}>{room}</button>)}</div><small>Tocca di nuovo una camera per togliere la spunta.</small></div>}<em>Creato da {item.createdBy} · {new Date(item.createdAt).toLocaleString('it-IT')}</em></article>
-    <article className="planned-date"><small>PERIODO PREVISTO</small><strong>Da {new Date(item.scheduledAt).toLocaleString('it-IT', { weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' })}</strong><strong>A {new Date(item.scheduledUntil || item.scheduledAt).toLocaleString('it-IT', { weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' })}</strong></article>
-    <article><small>ASSEGNATO A</small><div className="planned-assignees">{item.assignees.map((person) => <span key={person.id}>👤 {person.name}</span>)}</div></article>
-    {item.status === 'waiting' && <article className="planned-waiting"><small>ATTESA PEZZO</small><strong>{item.pieceName}</strong>{canCreatePlanned(user) && <button className="primary" onClick={() => onUpdate({ status:'pending', pieceName:null })}>Pezzo arrivato, torna in Da fare</button>}</article>}
-    {item.pieceReplaced && <article className="planned-replaced">Pezzo sostituito: <strong>{item.pieceReplaced}</strong></article>}
-    {!showPiece && item.status !== 'waiting' && <><label className="planned-photo">Foto finale (opzionale)<input type="file" accept="image/*" capture="environment" onChange={async (event) => setPhoto(await readPhotoAsDataUrl(event.target.files?.[0]))} />{photo && <img src={photo} alt="Anteprima foto finale" />}</label><div className="planned-actions"><button className="secondary" onClick={() => setShowPiece(true)}>📦 Serve pezzo</button><button className="secondary" onClick={() => { const value=window.prompt('Pezzo sostituito',replaced); if(value?.trim()) { setReplaced(value); onUpdate({ pieceReplaced:value.trim(), pieceReplacedBy:user.name, pieceReplacedAt:Date.now() },false) } }}>📦 Pezzo sostituito</button>{canComplete && <button className="planned-complete" onClick={() => onCompleteToIssues(photo)}>✓ Intervento completato</button>}</div></>}
-    {showPiece && <div className="inline-form"><label>Nome del pezzo<input value={piece} onChange={(event) => setPiece(event.target.value)} /></label><div className="inline-form-actions"><button className="secondary" onClick={() => setShowPiece(false)}>Annulla</button><button className="primary" disabled={!piece.trim()} onClick={() => onUpdate({ status:'waiting', pieceName:piece.trim(), waitingBy:user.name, waitingSince:Date.now() })}>Conferma attesa pezzo</button></div></div>}
+    <div className="planned-meta-grid">
+      <article className="planned-date"><small>PERIODO PREVISTO</small><div className="planned-date-range"><span><i>DA</i><strong>{formatDay(item.scheduledAt)}</strong><b>{formatTime(item.scheduledAt)}</b></span><span><i>A</i><strong>{formatDay(item.scheduledUntil || item.scheduledAt)}</strong><b>{formatTime(item.scheduledUntil || item.scheduledAt)}</b></span></div></article>
+      <article className="planned-assignment"><small>ASSEGNATO A</small><div className="planned-assignees">{item.assignees.map((person) => <span key={person.id}>👤 {person.name}</span>)}</div></article>
+    </div>
+    <label className={`planned-photo ${photo ? 'has-photo' : ''}`}><input type="file" accept="image/*" capture="environment" onChange={async (event) => setPhoto(await readPhotoAsDataUrl(event.target.files?.[0]))} /><span className="planned-photo-icon"><Icon name="camera" /></span><span><strong>{photo ? 'Cambia foto finale' : 'Aggiungi foto finale'}</strong><small>Opzionale · scatta o scegli una foto</small></span>{photo && <img src={photo} alt="Anteprima foto finale" />}</label>
+    {canComplete && <div className="planned-actions"><button className="planned-complete" onClick={() => onCompleteToIssues(photo)}>✓ Intervento completato</button></div>}
   </section></div>
 }
 
