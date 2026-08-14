@@ -37,7 +37,7 @@ test('Planning Sale gestisce turni, combinazioni e conflitti', async () => {
 
 test('i due planning sono pagine dedicate accessibili dal menu hamburger', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /const tabs = \['Segnalazioni', \.\.\.\(canViewUrgent\(user\) \? \['Avvisi Urgenti'\] : \[\]\), \.\.\.\(canViewPlanned\(user\) \? \['Interventi'\] : \[\]\)\]/)
+  assert.match(app, /const tabs = \['Segnalazioni', \.\.\.\(canViewUrgent\(user\) \? \['Avvisi Urgenti'\] : \[\]\), \.\.\.\(canViewPlanned\(user\) \? \['Interventi'\] : \[\]\), \.\.\.\(hotel\.id === 'hotelgio' && canViewHousekeeping\(user\) \? \['Housekeeping'\] : \[\]\)\]/)
   assert.match(app, /const canViewPlanningMenu = \(user\) => \['manutentore','Direttore Centro Congressi'\]\.includes\(user\.role\)/)
   assert.match(app, /<span>Planning lavori<\/span>/)
   assert.match(app, /<span>Planning Sale<\/span>/)

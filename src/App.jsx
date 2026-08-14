@@ -655,7 +655,7 @@ const canCreatePlanned = (user) => ['admin', 'Responsabile', 'Direzione', 'Diret
 const canViewPlanned = (user) => canCreatePlanned(user) || ['manutentore','Tecnico esterno'].includes(user.role)
 const canViewPlanningMenu = (user) => ['manutentore','Direttore Centro Congressi'].includes(user.role)
 const canViewTemperature = (user) => ['Direzione','Direttore Centro Congressi','manutentore'].includes(user.role) || user.department === 'Reception'
-const canViewHousekeeping = (user) => user.role === 'Direzione' || user.role === 'Portiere Notturno' || ['Reception','Governante'].includes(user.department)
+const canViewHousekeeping = (user) => ['Direzione','Direttore Centro Congressi','Portiere Notturno'].includes(user.role) || ['Reception','Governante'].includes(user.department)
 const toLocalDateTimeInput = (timestamp) => {
   const date = new Date(timestamp)
   const offset = date.getTimezoneOffset() * 60000
@@ -765,8 +765,8 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
   const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
-  const tabs = ['Segnalazioni', ...(canViewUrgent(user) ? ['Avvisi Urgenti'] : []), ...(canViewPlanned(user) ? ['Interventi'] : [])]
-  const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', 'Planning Lavori': 'calendar', 'Planning Sale': 'calendar' }
+  const tabs = ['Segnalazioni', ...(canViewUrgent(user) ? ['Avvisi Urgenti'] : []), ...(canViewPlanned(user) ? ['Interventi'] : []), ...(hotel.id === 'hotelgio' && canViewHousekeeping(user) ? ['Housekeeping'] : [])]
+  const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', Housekeeping: 'housekeeping', 'Planning Lavori': 'calendar', 'Planning Sale': 'calendar' }
   const hotelIssues = useMemo(() => allIssues.filter((issue) => issue.hotelId === hotel.id), [allIssues, hotel.id])
   const hotelPlanned = useMemo(() => plannedItems.filter((item) => item.hotelId === hotel.id), [plannedItems, hotel.id])
   const openPlanned = hotelPlanned.find((item) => item.id === openPlannedId) || null
@@ -788,8 +788,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
   const goToWorkPlanning = () => { setTab('Planning Lavori'); setMenuOpen(false) }
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
   const goToTemperature = () => { setTab('Temperature'); setMenuOpen(false) }
-  const goToHousekeeping = () => { setTab('Housekeeping'); setMenuOpen(false) }
-  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature' || tab === 'Housekeeping'
+  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature'
   const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
@@ -840,7 +839,6 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
             {canViewPlanningMenu(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
             {hotel.id === 'hotelgio' && canViewPlanningMenu(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
             {hotel.id === 'hotelgio' && canViewTemperature(user) && <button onClick={goToTemperature}><Icon name="temperature" /><span>Temperature</span></button>}
-            {hotel.id === 'hotelgio' && canViewHousekeeping(user) && <button onClick={goToHousekeeping}><Icon name="housekeeping" /><span>Housekeeping</span></button>}
           </nav>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
         </aside>
@@ -850,7 +848,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
       {(plannedFormOpen || editingPlanned) && <PlannedForm hotel={hotel} users={users} initial={editingPlanned ? { ...editingPlanned, scheduledAt:toLocalDateTimeInput(editingPlanned.scheduledAt), scheduledUntil:toLocalDateTimeInput(editingPlanned.scheduledUntil || editingPlanned.scheduledAt) } : null} onClose={() => { setPlannedFormOpen(false); setEditingPlannedId(null) }} onSave={savePlanned} />}
       {openPlanned && <PlannedDetail item={openPlanned} user={user} onClose={() => setOpenPlannedId(null)} onUpdate={(changes,close) => updatePlanned(openPlanned.id,changes,close)} onDelete={() => deletePlanned(openPlanned.id)} onEdit={() => { setEditingPlannedId(openPlanned.id); setOpenPlannedId(null) }} onCompleteToIssues={(photo) => completePlanned(openPlanned,photo)} />}
       <main className={`ops-main ${isDedicatedPage ? 'planning-page-main' : ''}`}>
-        {isDedicatedPage ? <button className="planning-back" onClick={() => setTab('Segnalazioni')}>‹ Area operativa</button> : <div className="title-row ops-title"><h1>{tab}</h1></div>}
+        {isDedicatedPage ? <button className="planning-back" onClick={() => setTab('Segnalazioni')}>‹ Area operativa</button> : tab !== 'Housekeeping' && <div className="title-row ops-title"><h1>{tab}</h1></div>}
         {!isDedicatedPage && <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span>{item === 'Avvisi Urgenti' && openUrgentCount > 0 && <b className="tab-badge">{openUrgentCount}</b>}{item === 'Interventi' && pendingPlannedCount > 0 && <b className="tab-badge planned-badge">{pendingPlannedCount}</b>}</button>)}</nav>}
         {tab !== 'Avvisi Urgenti' && canManageUrgent(user) && <UrgentBanner items={activeUrgents} onOpen={() => setTab('Avvisi Urgenti')} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} />}
         {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
