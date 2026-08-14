@@ -51,7 +51,7 @@ const parseSlope = async (file) => {
 export function Housekeeping({ user }) {
   const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [structure,setStructure]=useState('Wine'), [floor,setFloor]=useState(1), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [message,setMessage]=useState('')
   const fileRef=useRef(null)
-  const canUpload = user.department === 'Reception'
+  const canUpload = user.department === 'Reception' || user.role === 'Portiere Notturno'
   const canEdit = user.department === 'Reception' || user.department === 'Governante'
   const refresh = useCallback(async () => {
     if (navigator.onLine) {
