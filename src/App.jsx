@@ -6,10 +6,10 @@ import { HOTEL_LOCATIONS } from './locations.js'
 
 const seededIssues = [
   { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
-  { id: 2, hotelId: 'hotelgio', urgency: 'media', room: '205 · Camera', title: 'Aria condizionata non raffredda', status: 'tecnico', date: 'Oggi, 10:30', department: 'Reception', category: 'Climatizzazione', origin: 'App' },
-  { id: 3, hotelId: 'hotelgio', urgency: 'bassa', room: '301 · Balcone', title: 'Lampada esterna non funziona', status: 'attesa_pezzo', pieceName: 'Faretto LED esterno IP65', date: 'Ieri, 16:45', department: 'Governante', category: 'Elettrica', origin: 'App' },
+  { id: 2, hotelId: 'hotelgio', urgency: 'media', room: '205 · Camera', title: 'Aria condizionata non raffredda', status: 'tecnico', technicianRequestedBy: 'Reception', date: 'Oggi, 10:30', department: 'Reception', category: 'Climatizzazione', origin: 'App' },
+  { id: 3, hotelId: 'hotelgio', urgency: 'bassa', room: '301 · Balcone', title: 'Lampada esterna non funziona', status: 'waiting', pieceName: 'Faretto LED esterno IP65', date: 'Ieri, 16:45', department: 'Governante', category: 'Elettrica', origin: 'App' },
   { id: 4, hotelId: 'chocohotel', urgency: 'alta', room: 'Sala Colazione', title: 'Frigo buffet non raffredda', status: 'todo', date: 'Oggi, 08:20', department: 'Isola dei Golosi', category: 'Attrezzature', origin: 'App' },
-  { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'completata', completionNote: 'Sbloccata, batteria sostituita.', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
+  { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'done', completionNote: 'Sbloccata, batteria sostituita.', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
 ]
 
 const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
@@ -360,20 +360,32 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   const [askingPiece, setAskingPiece] = useState(false)
   const [askingReplaced, setAskingReplaced] = useState(false)
 
-  const takeCharge = () => onUpdate(issue.id, { status: 'tecnico', assignedTo: currentUser.id, assignedToName: currentUser.name, assignedAt: Date.now() })
-  const confirmComplete = () => { onUpdate(issue.id, { status: 'completata', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
+  // Stati reali (allineati all'app di Hotel Giò): todo, tecnico (tecnico
+  // esterno richiesto), waiting (attesa pezzo), done. Non esiste un "preso
+  // in carico" interno: da "todo" le azioni (completa/serve pezzo/pezzo
+  // sostituito/chiedi un tecnico) sono TUTTE disponibili in parallelo, non
+  // in sequenza - chiunque abbia il permesso può agire direttamente.
+  const canAct = issue.status === 'todo' && permissions.includes('complete')
+
+  const confirmComplete = () => { onUpdate(issue.id, { status: 'done', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
   const pickCompletionPhoto = async (file) => {
     const data = await readPhotoAsDataUrl(file)
     setCompletionPhoto(data); setCompletionPhotoName(file?.name || '')
   }
-  const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'attesa_pezzo', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
+  const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
   // Il pezzo arrivato torna in "Da fare" (non resta assegnato a chi era in
   // attesa): chiunque sia disponibile in quel momento se ne può occupare,
   // esattamente come nell'app reale di Hotel Giò.
   const pieceArrived = () => { onUpdate(issue.id, { status: 'todo', pieceArrivedAt: Date.now() }); onClose() }
   const savePieceDecision = (decision) => onUpdate(issue.id, { pieceDecision: decision, pieceDecisionBy: currentUser.name, pieceDecisionAt: Date.now() })
   const confirmReplaced = () => { if (!replacedDraft.trim()) return; onUpdate(issue.id, { pieceReplaced: replacedDraft.trim(), pieceReplacedBy: currentUser.name, pieceReplacedAt: Date.now() }); setAskingReplaced(false); setReplacedDraft('') }
-  const requestTechnician = () => onUpdate(issue.id, { technicianRequested: true, technicianRequestedAt: Date.now(), technicianRequestedBy: currentUser.name })
+  // "Chiedi un tecnico" è l'UNICO modo per arrivare allo stato "tecnico" -
+  // sposta davvero lo stato (non solo un flag), coerente con l'app reale.
+  const requestTechnician = () => { onUpdate(issue.id, { status: 'tecnico', technicianRequestedAt: Date.now(), technicianRequestedBy: currentUser.name }); onClose() }
+  // Dallo stato "tecnico" l'unica azione è chiudere la segnalazione (nella
+  // versione reale lo fa chi ha contattato il tecnico, qui semplificato dato
+  // che il bot WhatsApp non è collegato).
+  const techDone = () => { onUpdate(issue.id, { status: 'done', completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
   const remove = () => { if (window.confirm('Eliminare questa segnalazione? L’azione non è reversibile.')) { onDelete(issue.id); onClose() } }
 
   return (
@@ -394,10 +406,10 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
 
         {issue.photoData && <img className="detail-photo" src={issue.photoData} alt={`Foto segnalazione: ${issue.title}`} />}
 
-        {issue.status === 'tecnico' && issue.assignedToName && (
-          <div className="status-note in-progress">In carico a <strong>{issue.assignedToName}</strong></div>
+        {issue.status === 'tecnico' && (
+          <div className="status-note tech-requested">Tecnico esterno richiesto da <strong>{issue.technicianRequestedBy}</strong></div>
         )}
-        {issue.status === 'attesa_pezzo' && (
+        {issue.status === 'waiting' && (
           <div className="status-note waiting-piece">
             In attesa di: <strong>{issue.pieceName}</strong>
             {!issue.pieceDecision ? (
@@ -416,10 +428,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
             <p>Da {issue.pieceReplacedBy}</p>
           </div>
         )}
-        {issue.technicianRequested && issue.status !== 'completata' && (
-          <div className="status-note tech-requested">Tecnico esterno richiesto da <strong>{issue.technicianRequestedBy}</strong></div>
-        )}
-        {issue.status === 'completata' && (
+        {issue.status === 'done' && (
           <div className="status-note done">
             Completata da <strong>{issue.completedBy}</strong>
             {issue.completionNote && <p>{issue.completionNote}</p>}
@@ -428,19 +437,18 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
         )}
 
         <div className="detail-actions">
-          {issue.status === 'todo' && permissions.includes('take_charge') && (
-            <button className="primary" onClick={takeCharge}>Prendi in carico</button>
-          )}
-
-          {issue.status === 'tecnico' && permissions.includes('complete') && !askingComplete && !askingPiece && !askingReplaced && (
+          {canAct && !askingComplete && !askingPiece && !askingReplaced && (
             <>
               <p className="detail-actions-heading">Azioni</p>
               <button className="primary" onClick={() => setAskingComplete(true)}>Riparazione completata</button>
               {!issue.pieceReplaced && <button className="secondary" onClick={() => setAskingReplaced(true)}>Pezzo sostituito</button>}
               <p className="detail-actions-heading">Non riesco a risolvere</p>
               <button className="secondary" onClick={() => setAskingPiece(true)}>Serve pezzo</button>
-              <button className="secondary" onClick={requestTechnician} disabled={issue.technicianRequested}>{issue.technicianRequested ? 'Tecnico già richiesto' : 'Chiedi un tecnico'}</button>
+              <button className="secondary" onClick={requestTechnician}>Chiedi un tecnico</button>
             </>
+          )}
+          {issue.status === 'tecnico' && permissions.includes('complete') && (
+            <button className="primary" onClick={techDone}>Segna completata (tecnico)</button>
           )}
           {askingReplaced && (
             <div className="inline-form">
@@ -469,7 +477,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
             </div>
           )}
 
-          {issue.status === 'attesa_pezzo' && permissions.includes('complete') && (
+          {issue.status === 'waiting' && permissions.includes('complete') && (
             <button className="primary" onClick={pieceArrived}>Pezzo arrivato, torna in Da fare</button>
           )}
 
@@ -531,10 +539,10 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
-          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa_pezzo','Attesa pezzo'],['completata','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
+          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['waiting','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
           <div className="toolbar"><label className="search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Urgenza</option><option value="camera">Camera/Zona</option><option value="data">Data</option></select><button className="secondary" onClick={() => setAdvanced(!advanced)}>Filtri</button></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
-          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'attesa_pezzo' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' && issue.assignedToName ? ` · In carico a ${issue.assignedToName}` : ''}{issue.technicianRequested && issue.status !== 'completata' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
+          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
