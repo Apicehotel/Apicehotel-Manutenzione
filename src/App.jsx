@@ -3,6 +3,7 @@ import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
+import { PlanningSale, PlanningWork } from './planning.jsx'
 
 const seededIssues = [
   { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
@@ -13,6 +14,7 @@ const seededIssues = [
 ]
 
 const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
+const PLANNED_STORAGE_KEY = 'apicehotel.planned.v1'
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_cliente','Fermata con cliente'],['libera','Libera'],['in_arrivo','In arrivo']]
 const loadIssues = () => {
@@ -66,6 +68,9 @@ const Icon = ({ name }) => {
     hotel: <><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M9 21v-5h6v5"/></>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
+}
+const loadPlanned = () => {
+  try { const value = JSON.parse(localStorage.getItem(PLANNED_STORAGE_KEY)); return Array.isArray(value) ? value : [] } catch { return [] }
 }
 
 const FEEDBACK_STORAGE_KEY = 'apicehotel.feedback.v1'
@@ -421,7 +426,7 @@ function AdminPanel({ users, onUsersChange, onClose }) {
       <button className="primary">Salva utente</button>
     </form>}
     {message && <p className="admin-message" role="status">{message}</p>}
-    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Il ruolo Direttore Centro Congressi è assegnabile in tutte le strutture. Planning Sale è riservato ad Admin e Direttore Centro Congressi presso Hotel Giò.</p></section>
+    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Il ruolo Direttore Centro Congressi è assegnabile in tutte le strutture. Presso Hotel Giò il Planning Sale è visibile ai ruoli operativi; Admin, Responsabile e Direttore Centro Congressi possono creare ed eliminare prenotazioni.</p></section>
     <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
       <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
       <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
@@ -641,7 +646,86 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   )
 }
 
-function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
+const canCreatePlanned = (user) => ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
+const canViewPlanned = (user) => canCreatePlanned(user) || ['manutentore','Tecnico esterno'].includes(user.role)
+const toLocalDateTimeInput = (timestamp) => {
+  const date = new Date(timestamp)
+  const offset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - offset).toISOString().slice(0,16)
+}
+
+function PlannedCard({ item, user, onOpen }) {
+  const assigned = item.assignees?.some((person) => person.id === user.id)
+  const doneRooms = Object.keys(item.roomsDone || {}).length
+  const progress = item.rooms?.length ? Math.round(doneRooms / item.rooms.length * 100) : 0
+  return <article className={`planned-card ${assigned ? 'assigned' : ''}`} onClick={onOpen} role="button" tabIndex={0}>
+    <div className="planned-accent" /><div className="planned-body"><div className="planned-location"><small>{item.locationMode === 'camera' ? 'CAM.' : 'ZONA'}</small><strong>{item.location}</strong></div><div className="planned-content"><div className="planned-badges"><span>{item.category}</span><span className={item.status}>{item.status === 'waiting' ? 'Attesa pezzo' : 'Pianificato'}</span>{assigned && <span className="you">Tu</span>}</div><p>{item.notes || 'Nessuna nota'}</p>{item.rooms?.length > 0 && <div className="room-progress"><i><b style={{width:`${progress}%`}} /></i><span>{doneRooms} di {item.rooms.length} camere · {progress}%</span></div>}<small>◷ Da {new Date(item.scheduledAt).toLocaleString('it-IT', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })} · A {new Date(item.scheduledUntil || item.scheduledAt).toLocaleString('it-IT', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</small><div className="planned-assignees">{item.assignees?.map((person) => <span key={person.id}>👤 {person.name}</span>)}</div></div></div>
+  </article>
+}
+
+function PlannedForm({ hotel, users, initial, onClose, onSave }) {
+  const catalog = HOTEL_LOCATIONS[hotel.id]
+  const [mode, setMode] = useState(initial?.locationMode || 'camera')
+  const [draft, setDraft] = useState(initial || { location:'', category:'Varie', notes:'', scheduledAt:'', scheduledUntil:'', assignees:[] })
+  const [groupIds, setGroupIds] = useState(initial?.roomGroupIds || [])
+  const candidates = users.filter((person) => person.hotels.includes(hotel.id) && ['manutentore','Tecnico esterno'].includes(person.role))
+  const isChecklist = ['Pulizia filtri','Idromassaggio','Extra Piani'].includes(draft.category)
+  const isMultiFloor = draft.category === 'Extra Piani'
+  const availableGroupEntries = catalog.roomGroups.map((group,index) => ({ group,index })).filter(({group}) => draft.category !== 'Idromassaggio' || (hotel.id === 'hotelgio' && group.name.startsWith('Jazz')))
+  const selectedGroups = catalog.roomGroups.filter((_, index) => groupIds.includes(index))
+  const checklistRooms = selectedGroups.flatMap((group) => draft.category === 'Idromassaggio' ? group.rooms.filter((room) => Number(room) % 2 === 0) : group.rooms)
+  const validLocation = isChecklist ? selectedGroups.length > 0 : mode === 'camera' ? catalog.roomGroups.some((group) => group.rooms.includes(draft.location.trim())) : catalog.zones.some((zone) => zone.name === draft.location.trim())
+  const validPeriod = draft.scheduledAt && draft.scheduledUntil && new Date(draft.scheduledUntil) >= new Date(draft.scheduledAt)
+  const valid = validLocation && (isChecklist || draft.notes.trim()) && validPeriod && draft.assignees.length
+  const pickGroup = (index) => setGroupIds((current) => isMultiFloor ? current.includes(index) ? current.filter((item) => item !== index) : [...current,index] : [index])
+  const toggleAssignee = (person) => setDraft((current) => ({ ...current, assignees: current.assignees.some((item) => item.id === person.id) ? current.assignees.filter((item) => item.id !== person.id) : [...current.assignees, { id:person.id, name:person.name, role:person.role }] }))
+  return <div className="urgent-transform-backdrop" onClick={onClose}><form className="planned-form" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); if (valid) onSave({ ...draft, location:isChecklist ? selectedGroups.map((group) => group.name).join(', ') : draft.location, locationMode:isChecklist ? 'zona' : mode, roomGroupIds:groupIds, rooms:isChecklist ? checklistRooms : null, roomsDone:draft.roomsDone || {} }) }}>
+    <header><div><h2>{initial ? 'Modifica intervento pianificato' : 'Nuovo intervento pianificato'}</h2><p>Compila tutti i campi obbligatori.</p></div><button type="button" className="panel-close" onClick={onClose}><Icon name="close" /></button></header>
+    {!isChecklist && <label>Camera o zona *<LocationAutocomplete catalog={catalog} mode={mode} onModeChange={setMode} value={draft.location} onChange={(location) => setDraft({ ...draft, location })} />{draft.location && !validLocation && <small className="field-error">Camera o zona non valida.</small>}</label>}
+    <fieldset className="choice-field"><legend>Categoria *</legend><div className="category-choices">{ISSUE_CATEGORIES.map((item) => <button type="button" key={item} className={draft.category === item ? 'active' : ''} onClick={() => { if(draft.category !== item) setGroupIds([]); setDraft({ ...draft, category:item }) }}>{item}</button>)}</div></fieldset>
+    {isChecklist && <fieldset className="choice-field"><legend>{isMultiFloor ? 'Piani *' : 'Piano *'}</legend><div className="floor-choices">{availableGroupEntries.map(({group,index}) => <button type="button" key={group.name} className={groupIds.includes(index) ? 'active' : ''} onClick={() => pickGroup(index)}>{group.name}</button>)}</div>{checklistRooms.length > 0 && <small>{checklistRooms.length} camere da spuntare</small>}</fieldset>}
+    <label>Descrizione *<textarea rows="4" value={draft.notes} onChange={(event) => setDraft({ ...draft, notes:event.target.value })} placeholder="Descrivi l’intervento..." /></label>
+    <fieldset className="choice-field"><legend>Periodo previsto *</legend><div className="planned-period"><label>Da<input type="datetime-local" value={draft.scheduledAt} onChange={(event) => setDraft({ ...draft, scheduledAt:event.target.value })} /></label><label>A<input type="datetime-local" value={draft.scheduledUntil} min={draft.scheduledAt} onChange={(event) => setDraft({ ...draft, scheduledUntil:event.target.value })} /></label></div>{draft.scheduledAt && draft.scheduledUntil && !validPeriod && <small className="field-error">La data “A” deve essere successiva alla data “Da”.</small>}</fieldset>
+    <fieldset className="choice-field"><legend>Assegna a *</legend><div className="assignee-choices">{candidates.map((person) => <button type="button" key={person.id} className={draft.assignees.some((item) => item.id === person.id) ? 'active' : ''} onClick={() => toggleAssignee(person)}>👤 <span>{person.name}<small>{person.role}</small></span></button>)}</div></fieldset>
+    <div className="form-actions"><button type="button" className="secondary" onClick={onClose}>Annulla</button><button className="planned-submit" disabled={!valid}>{initial ? 'Salva modifiche' : 'Pianifica intervento'}</button></div>
+  </form></div>
+}
+
+function PlannedDetail({ item, user, onClose, onUpdate, onDelete, onEdit, onCompleteToIssues }) {
+  const [showPiece, setShowPiece] = useState(false)
+  const [piece, setPiece] = useState(item.pieceName || '')
+  const [replaced, setReplaced] = useState(item.pieceReplaced || '')
+  const [photo, setPhoto] = useState(null)
+  const canComplete = canViewPlanned(user) && item.status !== 'waiting'
+  const roomsDone = item.roomsDone || {}
+  const toggleRoom = (room) => { const next={...roomsDone}; if(next[room]) delete next[room]; else next[room]={by:user.name,at:Date.now()}; onUpdate({roomsDone:next},false) }
+  return <div className="urgent-transform-backdrop" onClick={onClose}><section className="planned-detail" onClick={(event) => event.stopPropagation()}>
+    <header><button className="back-link" onClick={onClose}>‹ Chiudi</button><div>{canCreatePlanned(user) && <button className="planned-edit" onClick={onEdit}>Modifica</button>}{canCreatePlanned(user) && <button className="delete-issue-compact" onClick={onDelete}>Elimina</button>}</div></header>
+    <h2>{item.locationMode === 'camera' ? `Camera ${item.location}` : item.location} · Intervento</h2>
+    <article><small>DETTAGLI INTERVENTO</small><span className="planned-category">{item.category}</span><p>{item.notes}</p>{item.rooms?.length > 0 && <div className="room-checklist"><strong>{Object.keys(roomsDone).length} di {item.rooms.length} camere</strong><div>{item.rooms.map((room) => <button key={room} className={roomsDone[room] ? 'done' : ''} onClick={() => toggleRoom(room)}>{room}</button>)}</div><small>Tocca di nuovo una camera per togliere la spunta.</small></div>}<em>Creato da {item.createdBy} · {new Date(item.createdAt).toLocaleString('it-IT')}</em></article>
+    <article className="planned-date"><small>PERIODO PREVISTO</small><strong>Da {new Date(item.scheduledAt).toLocaleString('it-IT', { weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' })}</strong><strong>A {new Date(item.scheduledUntil || item.scheduledAt).toLocaleString('it-IT', { weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' })}</strong></article>
+    <article><small>ASSEGNATO A</small><div className="planned-assignees">{item.assignees.map((person) => <span key={person.id}>👤 {person.name}</span>)}</div></article>
+    {item.status === 'waiting' && <article className="planned-waiting"><small>ATTESA PEZZO</small><strong>{item.pieceName}</strong>{canCreatePlanned(user) && <button className="primary" onClick={() => onUpdate({ status:'pending', pieceName:null })}>Pezzo arrivato, torna in Da fare</button>}</article>}
+    {item.pieceReplaced && <article className="planned-replaced">Pezzo sostituito: <strong>{item.pieceReplaced}</strong></article>}
+    {!showPiece && item.status !== 'waiting' && <><label className="planned-photo">Foto finale (opzionale)<input type="file" accept="image/*" capture="environment" onChange={async (event) => setPhoto(await readPhotoAsDataUrl(event.target.files?.[0]))} />{photo && <img src={photo} alt="Anteprima foto finale" />}</label><div className="planned-actions"><button className="secondary" onClick={() => setShowPiece(true)}>📦 Serve pezzo</button><button className="secondary" onClick={() => { const value=window.prompt('Pezzo sostituito',replaced); if(value?.trim()) { setReplaced(value); onUpdate({ pieceReplaced:value.trim(), pieceReplacedBy:user.name, pieceReplacedAt:Date.now() },false) } }}>📦 Pezzo sostituito</button>{canComplete && <button className="planned-complete" onClick={() => onCompleteToIssues(photo)}>✓ Intervento completato</button>}</div></>}
+    {showPiece && <div className="inline-form"><label>Nome del pezzo<input value={piece} onChange={(event) => setPiece(event.target.value)} /></label><div className="inline-form-actions"><button className="secondary" onClick={() => setShowPiece(false)}>Annulla</button><button className="primary" disabled={!piece.trim()} onClick={() => onUpdate({ status:'waiting', pieceName:piece.trim(), waitingBy:user.name, waitingSince:Date.now() })}>Conferma attesa pezzo</button></div></div>}
+  </section></div>
+}
+
+function InterventionsSection({ items, user, onOpen, onShowCompleted }) {
+  const [search, setSearch] = useState('')
+  const pending = items.filter((item) => item.status !== 'done')
+  const done = items.filter((item) => item.status === 'done')
+  const filtered = pending.filter((item) => !search || `${item.location} ${item.notes} ${item.assignees?.map((person) => person.name).join(' ')}`.toLowerCase().includes(search.toLowerCase()))
+  return <section className="interventions-section">
+    {canCreatePlanned(user) && pending.length > 0 && <div className="planned-stats"><article><strong>{pending.length}</strong><span>Da fare</span></article><button onClick={onShowCompleted}><strong>{done.length}</strong><span>Completati →</span></button></div>}
+    <label className="search planned-search"><span className="sr-only">Cerca interventi</span><Icon name="search"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cerca camera, nome, assegnatario..." /></label>
+    {filtered.length > 0 && <h2 className="planned-list-title">Da completare · {filtered.length}</h2>}
+    <div className="planned-list">{filtered.map((item) => <PlannedCard key={item.id} item={item} user={user} onOpen={() => onOpen(item.id)} />)}{!filtered.length && <div className="planned-empty"><Icon name="calendar"/><strong>Nessun intervento da completare</strong>{done.length > 0 && <span>✓ {done.length} completati — vedi in Segnalazioni › Completate</span>}{canCreatePlanned(user) && <small>Usa il pulsante + per crearne uno</small>}</div>}</div>
+  </section>
+}
+
+function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) {
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
@@ -658,8 +742,13 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
   const [urgentItems, setUrgentItems] = useState(loadUrgents)
   const [urgentComposeRequest, setUrgentComposeRequest] = useState(0)
   const [urgentTransformTarget, setUrgentTransformTarget] = useState(null)
+  const [plannedItems, setPlannedItems] = useState(loadPlanned)
+  const [plannedFormOpen, setPlannedFormOpen] = useState(false)
+  const [openPlannedId, setOpenPlannedId] = useState(null)
+  const [editingPlannedId, setEditingPlannedId] = useState(null)
   const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
   const updateUrgents = (next) => { persistUrgents(next); setUrgentItems(next) }
+  const updatePlannedItems = (next) => { localStorage.setItem(PLANNED_STORAGE_KEY, JSON.stringify(next)); setPlannedItems(next) }
   const saveIssue = (issue) => {
     persist([...allIssues, issue]); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
   }
@@ -668,9 +757,13 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
   const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
-  const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
-  const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', 'Planning Sale': 'calendar' }
+  const tabs = ['Segnalazioni', 'Avvisi Urgenti', ...(canViewPlanned(user) ? ['Interventi'] : [])]
+  const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', 'Planning Lavori': 'calendar', 'Planning Sale': 'calendar' }
   const hotelIssues = useMemo(() => allIssues.filter((issue) => issue.hotelId === hotel.id), [allIssues, hotel.id])
+  const hotelPlanned = useMemo(() => plannedItems.filter((item) => item.hotelId === hotel.id), [plannedItems, hotel.id])
+  const openPlanned = hotelPlanned.find((item) => item.id === openPlannedId) || null
+  const editingPlanned = hotelPlanned.find((item) => item.id === editingPlannedId) || null
+  const pendingPlannedCount = hotelPlanned.filter((item) => item.status !== 'done').length
   const statusCounts = useMemo(() => hotelIssues.reduce((acc, issue) => ({ ...acc, [issue.status]: (acc[issue.status] || 0) + 1 }), {}), [hotelIssues])
   const issues = useMemo(() => allIssues
     .filter((issue) => issue.hotelId === hotel.id && issue.status === status)
@@ -684,7 +777,9 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
       return weight[b.urgency] - weight[a.urgency] || a.id - b.id
     }), [allIssues, hotel.id, status, query, sort, department, category])
   const openPanel = (panel) => { setMenuOpen(false); setMenuPanel(panel) }
+  const goToWorkPlanning = () => { setTab('Planning Lavori'); setMenuOpen(false) }
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
+  const isDedicatedPlanning = tab === 'Planning Lavori' || tab === 'Planning Sale'
   const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
@@ -699,9 +794,23 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
   const openUrgentCount = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata').length
   const activeUrgents = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata')
   useEffect(() => { if (canManageUrgent(user) && openUrgentCount) playUrgentSignal() }, [openUrgentCount, user])
+  const savePlanned = (draft) => {
+    const dates = { scheduledAt:new Date(draft.scheduledAt).getTime(), scheduledUntil:new Date(draft.scheduledUntil).getTime() }
+    const item = editingPlanned ? { ...editingPlanned, ...draft, ...dates, updatedAt:Date.now() } : { ...draft, ...dates, id:Date.now(), hotelId:hotel.id, status:'pending', createdAt:Date.now(), createdBy:user.name }
+    updatePlannedItems(editingPlanned ? plannedItems.map((current) => current.id === item.id ? item : current) : [item, ...plannedItems])
+    setPlannedFormOpen(false); setEditingPlannedId(null)
+  }
+  const updatePlanned = (id, changes, close = true) => { updatePlannedItems(plannedItems.map((item) => item.id === id ? { ...item, ...changes } : item)); if (close) setOpenPlannedId(null) }
+  const deletePlanned = (id) => { if (!window.confirm('Eliminare questo intervento?')) return; updatePlannedItems(plannedItems.filter((item) => item.id !== id)); setOpenPlannedId(null) }
+  const completePlanned = (item, completionPhotoData = null) => {
+    const completedAt = Date.now()
+    updatePlannedItems(plannedItems.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
+    persist([...allIssues, { id:completedAt, hotelId:hotel.id, urgency:'media', room:`${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`, title:item.notes, status:'done', date:`Oggi, ${new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`, department:user.role, category:item.category, origin:'Intervento pianificato', createdAt:item.createdAt, completedAt, completedBy:user.name, pieceReplaced:item.pieceReplaced, completionPhotoData }])
+    setOpenPlannedId(null)
+  }
 
   return (
-    <div className="operations">
+    <div className={`operations theme-${hotel.tone}`}>
       <header className="ops-header">
         <div className="hotel-identity"><HotelMark hotel={hotel} /><span><strong>{hotel.name}</strong><small>{user.name} · {user.role}</small></span></div>
         <button className={`presence ${presence ? 'on' : ''}`} onClick={() => setPresence(!presence)}><span /> Sono in struttura</button>
@@ -718,25 +827,28 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
             <button onClick={() => openPanel('manual')}><Icon name="book" /><span>Manuale</span></button>
             <button onClick={() => openPanel('feedback')}><Icon name="message" /><span>Feedback</span></button>
             <button onClick={() => { exportIssuesCsv(allIssues, hotel); setMenuOpen(false) }} disabled={!hotelIssues.length}><Icon name="download" /><span>Esporta CSV</span></button>
-            {hotel.id === 'hotelgio' && permissions.includes('planning_sale') && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
+            {canViewPlanned(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
+            {hotel.id === 'hotelgio' && canViewPlanned(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
           </nav>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
         </aside>
       </div>}
       {menuPanel && <MenuPanel type={menuPanel} user={user} onClose={() => setMenuPanel(null)} onSavePin={onSavePin} />}
       {urgentTransformTarget && <UrgentTransformModal urgent={urgentTransformTarget} hotel={hotel} onClose={() => setUrgentTransformTarget(null)} onSave={(data) => transformUrgent(urgentTransformTarget, data)} />}
-      <main className="ops-main">
-        <div className="title-row ops-title"><h1>{tab}</h1></div>
-        <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span>{item === 'Avvisi Urgenti' && openUrgentCount > 0 && <b className="tab-badge">{openUrgentCount}</b>}</button>)}</nav>
+      {(plannedFormOpen || editingPlanned) && <PlannedForm hotel={hotel} users={users} initial={editingPlanned ? { ...editingPlanned, scheduledAt:toLocalDateTimeInput(editingPlanned.scheduledAt), scheduledUntil:toLocalDateTimeInput(editingPlanned.scheduledUntil || editingPlanned.scheduledAt) } : null} onClose={() => { setPlannedFormOpen(false); setEditingPlannedId(null) }} onSave={savePlanned} />}
+      {openPlanned && <PlannedDetail item={openPlanned} user={user} onClose={() => setOpenPlannedId(null)} onUpdate={(changes,close) => updatePlanned(openPlanned.id,changes,close)} onDelete={() => deletePlanned(openPlanned.id)} onEdit={() => { setEditingPlannedId(openPlanned.id); setOpenPlannedId(null) }} onCompleteToIssues={(photo) => completePlanned(openPlanned,photo)} />}
+      <main className={`ops-main ${isDedicatedPlanning ? 'planning-page-main' : ''}`}>
+        {isDedicatedPlanning ? <button className="planning-back" onClick={() => setTab('Segnalazioni')}>‹ Area operativa</button> : <div className="title-row ops-title"><h1>{tab}</h1></div>}
+        {!isDedicatedPlanning && <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span>{item === 'Avvisi Urgenti' && openUrgentCount > 0 && <b className="tab-badge">{openUrgentCount}</b>}{item === 'Interventi' && pendingPlannedCount > 0 && <b className="tab-badge planned-badge">{pendingPlannedCount}</b>}</button>)}</nav>}
         {tab !== 'Avvisi Urgenti' && canManageUrgent(user) && <UrgentBanner items={activeUrgents} onOpen={() => setTab('Avvisi Urgenti')} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} />}
+        {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
-          {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
           <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['waiting','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
-        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
+        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
@@ -745,6 +857,8 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
         </button>
       )}
       {canSendUrgent(user) && <button className="urgent-fab" onClick={() => { setTab('Avvisi Urgenti'); setUrgentComposeRequest((value) => value + 1) }} aria-label="Invia avviso urgente" title="Avviso urgente">🚨</button>}
+      {tab === 'Interventi' && canCreatePlanned(user) && <button className="fab-new-issue planned-fab" onClick={() => setPlannedFormOpen(true)}>＋ Nuovo intervento</button>}
+      {tab === 'Planning Lavori' && canViewPlanned(user) && <button className="fab-new-issue planned-fab" onClick={() => setPlannedFormOpen(true)}>＋ Nuovo lavoro</button>}
     </div>
   )
 }
@@ -767,7 +881,7 @@ export default function App() {
   const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
   const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} />
+  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
