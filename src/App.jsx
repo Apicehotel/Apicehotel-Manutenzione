@@ -16,6 +16,7 @@ const seededIssues = [
 ]
 
 const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
+const UI_SIZE_STORAGE_KEY = 'apicehotel.ui-size.v1'
 const PLANNED_STORAGE_KEY = 'apicehotel.planned.v1'
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_cliente','Fermata con cliente'],['libera','Libera'],['in_arrivo','In arrivo']]
@@ -732,7 +733,7 @@ function InterventionsSection({ items, user, onOpen, onShowCompleted }) {
   </section>
 }
 
-function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) {
+function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, uiSize, onUiSizeChange }) {
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
@@ -839,6 +840,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
             {hotel.id === 'hotelgio' && canViewPlanningMenu(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
             {hotel.id === 'hotelgio' && canViewTemperature(user) && <button onClick={goToTemperature}><Icon name="temperature" /><span>Temperature</span></button>}
           </nav>
+          <fieldset className="ui-scale-setting"><legend>Dimensione interfaccia</legend><div>{[['small','Piccola'],['normal','Normale'],['large','Grande']].map(([value,label])=><button type="button" className={uiSize===value?'active':''} aria-pressed={uiSize===value} onClick={()=>onUiSizeChange(value)} key={value}>{label}</button>)}</div><small>Ingrandisce testi, pulsanti e schede.</small></fieldset>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
         </aside>
       </div>}
@@ -873,6 +875,10 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
 }
 
 export default function App() {
+  const [uiSize, setUiSize] = useState(() => {
+    const saved = localStorage.getItem(UI_SIZE_STORAGE_KEY)
+    return ['small','normal','large'].includes(saved) ? saved : 'normal'
+  })
   const [users, setUsers] = useState(loadUsers)
   const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
@@ -890,7 +896,8 @@ export default function App() {
   const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
   const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} />
+  useEffect(() => { document.documentElement.dataset.uiSize = uiSize; localStorage.setItem(UI_SIZE_STORAGE_KEY, uiSize) }, [uiSize])
+  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
