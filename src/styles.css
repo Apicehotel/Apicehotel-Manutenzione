@@ -227,6 +227,10 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .status-note p { margin:6px 0 0; color:#4e5751; }
 .status-note.in-progress { background:#e6f0fb; }
 .status-note.waiting-piece { background:#fdf1de; }
+.piece-decision-choices { display: flex; gap: 8px; margin-top: 8px; }
+.piece-decision-choices button { flex: 1; border: 1px solid #e1c78a; border-radius: 9px; background: #fff; padding: 9px 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.piece-decision-note { margin: 8px 0 0; font-size: 12px; color: #92400e; }
+.status-note.piece-replaced { background: #f5f3ff; }
 .status-note.done { background:#e6f2eb; }
 .status-note.tech-requested { background:#fdeee0; }
 .detail-actions-heading { margin: 14px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #8a9089; font-weight: 800; }

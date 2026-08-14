@@ -355,8 +355,10 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   const [completionPhoto, setCompletionPhoto] = useState(null)
   const [completionPhotoName, setCompletionPhotoName] = useState('')
   const [pieceDraft, setPieceDraft] = useState('')
+  const [replacedDraft, setReplacedDraft] = useState('')
   const [askingComplete, setAskingComplete] = useState(false)
   const [askingPiece, setAskingPiece] = useState(false)
+  const [askingReplaced, setAskingReplaced] = useState(false)
 
   const takeCharge = () => onUpdate(issue.id, { status: 'tecnico', assignedTo: currentUser.id, assignedToName: currentUser.name, assignedAt: Date.now() })
   const confirmComplete = () => { onUpdate(issue.id, { status: 'completata', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
@@ -365,7 +367,12 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
     setCompletionPhoto(data); setCompletionPhotoName(file?.name || '')
   }
   const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'attesa_pezzo', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
-  const pieceArrived = () => onUpdate(issue.id, { status: 'tecnico', pieceArrivedAt: Date.now() })
+  // Il pezzo arrivato torna in "Da fare" (non resta assegnato a chi era in
+  // attesa): chiunque sia disponibile in quel momento se ne può occupare,
+  // esattamente come nell'app reale di Hotel Giò.
+  const pieceArrived = () => { onUpdate(issue.id, { status: 'todo', pieceArrivedAt: Date.now() }); onClose() }
+  const savePieceDecision = (decision) => onUpdate(issue.id, { pieceDecision: decision, pieceDecisionBy: currentUser.name, pieceDecisionAt: Date.now() })
+  const confirmReplaced = () => { if (!replacedDraft.trim()) return; onUpdate(issue.id, { pieceReplaced: replacedDraft.trim(), pieceReplacedBy: currentUser.name, pieceReplacedAt: Date.now() }); setAskingReplaced(false); setReplacedDraft('') }
   const requestTechnician = () => onUpdate(issue.id, { technicianRequested: true, technicianRequestedAt: Date.now(), technicianRequestedBy: currentUser.name })
   const remove = () => { if (window.confirm('Eliminare questa segnalazione? L’azione non è reversibile.')) { onDelete(issue.id); onClose() } }
 
@@ -391,7 +398,23 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
           <div className="status-note in-progress">In carico a <strong>{issue.assignedToName}</strong></div>
         )}
         {issue.status === 'attesa_pezzo' && (
-          <div className="status-note waiting-piece">In attesa di: <strong>{issue.pieceName}</strong></div>
+          <div className="status-note waiting-piece">
+            In attesa di: <strong>{issue.pieceName}</strong>
+            {!issue.pieceDecision ? (
+              <div className="piece-decision-choices">
+                <button type="button" onClick={() => savePieceDecision('ritiro')}>🚗 Lo vado a ritirare</button>
+                <button type="button" onClick={() => savePieceDecision('ordine')}>📦 Verrà ordinato</button>
+              </div>
+            ) : (
+              <p className="piece-decision-note">{issue.pieceDecision === 'ritiro' ? '🚗 Da ritirare di persona' : '📦 In ordine'} · {issue.pieceDecisionBy}</p>
+            )}
+          </div>
+        )}
+        {issue.pieceReplaced && (
+          <div className="status-note piece-replaced">
+            Pezzo sostituito: <strong>{issue.pieceReplaced}</strong>
+            <p>Da {issue.pieceReplacedBy}</p>
+          </div>
         )}
         {issue.technicianRequested && issue.status !== 'completata' && (
           <div className="status-note tech-requested">Tecnico esterno richiesto da <strong>{issue.technicianRequestedBy}</strong></div>
@@ -409,14 +432,21 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
             <button className="primary" onClick={takeCharge}>Prendi in carico</button>
           )}
 
-          {issue.status === 'tecnico' && permissions.includes('complete') && !askingComplete && !askingPiece && (
+          {issue.status === 'tecnico' && permissions.includes('complete') && !askingComplete && !askingPiece && !askingReplaced && (
             <>
               <p className="detail-actions-heading">Azioni</p>
               <button className="primary" onClick={() => setAskingComplete(true)}>Riparazione completata</button>
+              {!issue.pieceReplaced && <button className="secondary" onClick={() => setAskingReplaced(true)}>Pezzo sostituito</button>}
               <p className="detail-actions-heading">Non riesco a risolvere</p>
               <button className="secondary" onClick={() => setAskingPiece(true)}>Serve pezzo</button>
               <button className="secondary" onClick={requestTechnician} disabled={issue.technicianRequested}>{issue.technicianRequested ? 'Tecnico già richiesto' : 'Chiedi un tecnico'}</button>
             </>
+          )}
+          {askingReplaced && (
+            <div className="inline-form">
+              <label>Cosa hai sostituito<input value={replacedDraft} onChange={(e) => setReplacedDraft(e.target.value)} placeholder="Es. Lampadina LED bagno" /></label>
+              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingReplaced(false)}>Annulla</button><button className="primary" disabled={!replacedDraft.trim()} onClick={confirmReplaced}>Registra sostituzione</button></div>
+            </div>
           )}
           {askingComplete && (
             <div className="inline-form">
@@ -440,7 +470,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
           )}
 
           {issue.status === 'attesa_pezzo' && permissions.includes('complete') && (
-            <button className="primary" onClick={pieceArrived}>Pezzo arrivato, riprendi lavorazione</button>
+            <button className="primary" onClick={pieceArrived}>Pezzo arrivato, torna in Da fare</button>
           )}
 
           {permissions.includes('assign') && (
