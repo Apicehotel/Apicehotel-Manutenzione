@@ -241,6 +241,28 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .planning-placeholder span { color:#0e5c49; font-size:12px; font-weight:800; }
 @media (max-width:680px) { .permission-matrix > div { grid-template-columns:1fr; } }
 
+/* Sensori temperatura Hotel Giò */
+.temperature-page { width:min(100%,680px); margin:0 auto; padding-bottom:30px; }
+.temperature-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin:10px 0 18px; }
+.temperature-heading h1 { margin:0 0 4px; font-size:28px; }
+.temperature-heading p { margin:0; color:#68736c; font-size:13px; }
+.temperature-refresh { min-width:112px; }
+.temperature-list { display:grid; gap:10px; }
+.temperature-card { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:15px 17px; border:1px solid #e4e0d6; border-radius:14px; background:#fff; }
+.temperature-card.in-alert { border-color:#c81e1e55; background:#fdeaea; }
+.temperature-card strong,.temperature-card small { display:block; }
+.temperature-card strong { font-size:14px; }
+.temperature-card small { margin-top:4px; color:#8a9490; font-size:11.5px; line-height:1.4; }
+.temperature-card.in-alert small { color:#a42b23; font-weight:700; }
+.temperature-card > b { flex:0 0 auto; font-size:22px; }
+.temperature-card > b.normal { color:#0f6b5c; }
+.temperature-card > b.alert { color:#c81e1e; }
+.temperature-card > b.cold { color:#2563eb; }
+.temperature-card > b.muted { color:#8a9490; }
+.temperature-empty,.temperature-error { padding:32px 18px; border:1px solid #e4e0d6; border-radius:14px; background:#fff; color:#5c645e; text-align:center; }
+.temperature-error { margin:0 0 12px; border-color:#c81e1e55; background:#fdeaea; color:#a42b23; }
+@media (max-width:560px) { .temperature-heading { align-items:stretch; flex-direction:column; gap:12px; }.temperature-heading h1 { font-size:25px; }.temperature-refresh { width:100%; }.temperature-card { padding:14px; }.temperature-card > b { font-size:20px; } }
+
 /* Creazione segnalazione */
 .fab-new-issue { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 15px 24px; background: #0e5c49; color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 28px -6px rgba(14,92,73,.55); white-space: nowrap; }
 .fab-new-issue:active { transform: translateX(-50%) scale(.97); }

@@ -43,5 +43,5 @@ test('i due planning sono pagine dedicate accessibili dal menu hamburger', async
   assert.match(app, /<span>Planning Sale<\/span>/)
   assert.match(app, /hotel\.id === 'hotelgio' && canViewPlanningMenu\(user\)/)
   assert.match(app, /className="planning-back"/)
-  assert.match(app, /!isDedicatedPlanning && <nav className="tabs"/)
+  assert.match(app, /!isDedicatedPage && <nav className="tabs"/)
 })
