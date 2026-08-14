@@ -56,10 +56,17 @@ function HotelMark({ hotel, large = false }) {
   return <span className={`hotel-mark ${hotel.tone} ${large ? 'large' : ''}`}>{hotel.mark}</span>
 }
 
-function Home({ onSelect, onAdmin }) {
+function Home({ users, onLogin, onAdmin }) {
   const sliderRef = useRef(null)
   const cardRefs = useRef([])
+  const suggestRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(1)
+  const [query, setQuery] = useState('')
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [matchedUser, setMatchedUser] = useState(null)
+  const [pendingHotel, setPendingHotel] = useState(null) // per utenti con più strutture: quella scelta, in attesa di conferma PIN
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
   const orderedHotels = ['chocohotel', 'hotelgio', 'brigantino']
     .map((id) => HOTELS.find((hotel) => hotel.id === id))
 
@@ -101,6 +108,49 @@ function Home({ onSelect, onAdmin }) {
     }
   }, [])
 
+  useEffect(() => {
+    const onClickOutside = (event) => {
+      if (suggestRef.current && !suggestRef.current.contains(event.target)) setSuggestOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  const trimmedQuery = query.trim().toLowerCase()
+  const suggestions = trimmedQuery && !matchedUser
+    ? users.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 6)
+    : []
+
+  const pickUser = (user) => {
+    setMatchedUser(user)
+    setQuery(user.name)
+    setSuggestOpen(false)
+    setError('')
+    if (user.hotels.length === 1) {
+      const only = HOTELS.find((hotel) => hotel.id === user.hotels[0])
+      setPendingHotel(only)
+      centerCard(orderedHotels.findIndex((hotel) => hotel.id === only.id))
+    } else {
+      setPendingHotel(null) // più strutture: l'utente sceglie sotto
+    }
+  }
+
+  const resetSearch = () => {
+    setMatchedUser(null); setPendingHotel(null); setQuery(''); setPin(''); setError('')
+  }
+
+  const submitPin = (event) => {
+    event.preventDefault()
+    if (!matchedUser || !pendingHotel) return
+    if (pin.length !== 4 || matchedUser.pin !== pin) {
+      setError('PIN non valido')
+      return
+    }
+    onLogin(matchedUser, pendingHotel.id)
+  }
+
+  const userHotels = matchedUser ? HOTELS.filter((hotel) => matchedUser.hotels.includes(hotel.id)) : []
+
   return (
     <div className="page home-page">
       <header className="home-header">
@@ -109,23 +159,18 @@ function Home({ onSelect, onAdmin }) {
       </header>
       <main className="home-content">
         <section className="home-intro">
-          <h1>Seleziona una struttura</h1>
-          <p>Scegli la struttura per accedere all’area riservata</p>
+          <h1>{matchedUser ? `Ciao, ${matchedUser.name.split(' ')[0]}` : 'Accedi'}</h1>
+          <p>{matchedUser ? 'Conferma la struttura e inserisci il PIN' : 'Scrivi il tuo nome per accedere alla tua area'}</p>
         </section>
-        <section className="hotel-slider" ref={sliderRef} aria-label="Seleziona una struttura">
+        <section className="hotel-slider" ref={sliderRef} aria-label="Strutture Apicehotel">
           {orderedHotels.map((hotel, index) => (
-            <button
-              className={`showcase-card ${hotel.id} ${activeIndex === index ? 'active' : ''}`}
+            <span
+              className={`showcase-card ${hotel.id} ${activeIndex === index ? 'active' : ''} ${pendingHotel && pendingHotel.id !== hotel.id ? 'dimmed' : ''}`}
               key={hotel.id}
               ref={(node) => { cardRefs.current[index] = node }}
-              onClick={() => onSelect(hotel)}
-              type="button"
             >
-              <span className="original-hotel-card" aria-hidden="true">
-                <img src="/logos/hotel-cards-original.png" alt="" />
-              </span>
-              <span className="sr-only">{hotel.name}</span>
-            </button>
+              <img className="hotel-card-img" src={hotel.card} alt={hotel.name} />
+            </span>
           ))}
         </section>
         <div className="slider-dots" aria-label="Navigazione strutture">
@@ -133,51 +178,54 @@ function Home({ onSelect, onAdmin }) {
             <button key={hotel.id} className={`dot ${activeIndex === index ? 'active' : ''}`} onClick={() => centerCard(index)} aria-label={`Mostra ${hotel.name}`} aria-current={activeIndex === index ? 'true' : undefined} />
           ))}
         </div>
-        <p className="mobile-help">Scorri per scegliere la struttura<br />e accedi con le tue credenziali</p>
-      </main>
-    </div>
-  )
-}
 
-function HotelArtwork({ hotel, className = '' }) {
-  return <span className={`hotel-artwork ${hotel.id} ${className}`}><span className="original-hotel-card" aria-hidden="true"><img src="/logos/hotel-cards-original.png" alt="" /></span><span className="sr-only">Logo {hotel.name}</span></span>
-}
+        <div className="unified-login">
+          {!matchedUser ? (
+            <div className="location-autocomplete" ref={suggestRef}>
+              <input
+                value={query}
+                onChange={(event) => { setQuery(event.target.value); setSuggestOpen(true) }}
+                onFocus={() => setSuggestOpen(true)}
+                placeholder="Il tuo nome"
+                autoComplete="off"
+                aria-label="Il tuo nome"
+              />
+              {suggestOpen && suggestions.length > 0 && (
+                <div className="location-suggestions">
+                  {suggestions.map((user) => (
+                    <button key={user.id} type="button" onClick={() => pickUser(user)}>
+                      {user.name} <small style={{ opacity: .6 }}>· {user.role}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {suggestOpen && trimmedQuery && suggestions.length === 0 && (
+                <div className="location-suggestions"><span style={{ display: 'block', padding: '10px 13px', color: '#8a8a85' }}>Nessun utente trovato</span></div>
+              )}
+            </div>
+          ) : !pendingHotel ? (
+            <div className="hotel-pick-inline">
+              <p>{matchedUser.name} lavora su più strutture: scegli dove accedere</p>
+              <div className="hotel-pick-choices">
+                {userHotels.map((hotel) => (
+                  <button key={hotel.id} type="button" className="secondary" onClick={() => { setPendingHotel(hotel); centerCard(orderedHotels.findIndex((h) => h.id === hotel.id)) }}>{hotel.name}</button>
+                ))}
+              </div>
+              <button className="back-link" onClick={resetSearch}>‹ Non sono io</button>
+            </div>
+          ) : (
+            <form className="pin-inline" onSubmit={submitPin}>
+              <label>PIN di 4 cifre — {pendingHotel.name}
+                <input inputMode="numeric" autoComplete="current-password" autoFocus maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} placeholder="••••" />
+              </label>
+              {error && <p className="error" role="alert">{error}</p>}
+              <button className="primary" disabled={pin.length !== 4}>Accedi</button>
+              <button type="button" className="back-link" onClick={resetSearch}>‹ Non sono io</button>
+            </form>
+          )}
+        </div>
 
-function Login({ hotel, users, onBack, onLogin }) {
-  const allowed = users.filter((user) => user.hotels.includes(hotel.id))
-  const [userId, setUserId] = useState(allowed[0]?.id || '')
-  const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
-
-  const submit = (event) => {
-    event.preventDefault()
-    const user = allowed.find((item) => item.id === userId)
-    if (!user || pin.length !== 4 || user.pin !== pin) {
-      setError('Utente o PIN non validi')
-      return
-    }
-    onLogin(user)
-  }
-
-  return (
-    <div className="page login-page">
-      <button className="back-link" onClick={onBack}>‹ Cambia struttura</button>
-      <main className="login-panel">
-        <HotelArtwork hotel={hotel} className="login-hotel-art" />
-        <h1>{hotel.name}</h1>
-        <form onSubmit={submit}>
-          <label>Seleziona utente
-            <select value={userId} onChange={(event) => setUserId(event.target.value)}>
-              {allowed.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.role}</option>)}
-            </select>
-          </label>
-          <label>PIN di 4 cifre
-            <input inputMode="numeric" autoComplete="current-password" maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="••••" />
-          </label>
-          {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={pin.length !== 4}>Accedi</button>
-        </form>
-        <aside className="session-note"><strong>Sessione persistente</strong><span>Il PIN non verrà richiesto di nuovo fino a logout, cambio utente o revoca.</span></aside>
+        <p className="mobile-help">Scorri per conoscere le nostre strutture</p>
       </main>
     </div>
   )
@@ -436,7 +484,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
       </header>
       <main className="ops-main">
-        <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati locali · sincronizzazione Supabase da configurare'}</p></div><div className="title-actions">{tab === 'Segnalazioni' && permissions.includes('create') && <button className="primary new-issue-button" onClick={()=>setCreatingIssue(true)}>+ Nuova segnalazione</button>}<span className="role-chip">{permissions.length} permessi</span></div></div>
+        <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati locali · sincronizzazione Supabase da configurare'}</p></div><span className="role-chip">{permissions.length} permessi</span></div>
         <nav className="tabs">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
@@ -447,6 +495,11 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'attesa_pezzo' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' && issue.assignedToName ? ` · In carico a ${issue.assignedToName}` : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
+      {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
+        <button className="fab-new-issue" onClick={() => setCreatingIssue(true)} aria-label="Nuova segnalazione">
+          <span className="fab-plus">+</span> Nuova segnalazione
+        </button>
+      )}
     </div>
   )
 }
@@ -455,22 +508,20 @@ export default function App() {
   const [users, setUsers] = useState(loadUsers)
   const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
-  const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
   const user = users.find((item) => item.id === session?.userId)
   const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
 
-  const login = (nextUser) => {
-    const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
+  const login = (nextUser, hotelId) => {
+    const next = { hotelId, userId: nextUser.id, createdAt: Date.now() }
     saveSession(next)
     setSession(next)
   }
-  const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
-  const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
+  const logout = () => { clearSession(); setSession(null) }
+  const changeHotel = () => { clearSession(); setSession(null) }
 
   if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
-  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
-  return <Home onSelect={setSelectedHotel} onAdmin={() => setAdminStage('pin')} />
+  return <Home users={users} onLogin={login} onAdmin={() => setAdminStage('pin')} />
 }
