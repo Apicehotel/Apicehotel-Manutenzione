@@ -56,8 +56,63 @@ const Icon = ({ name }) => {
     package: <><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4.5 7.7 7.5 4.2 7.5-4.2M12 12v9"/></>,
     message: <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/>,
     check: <path d="m5 12 4 4L19 6"/>,
+    menu: <path d="M4 6h16M4 12h16M4 18h16"/>,
+    refresh: <><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 11M5.5 15A7 7 0 0 0 18 17.5l2-4.5"/></>,
+    lock: <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>,
+    bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></>,
+    book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5Z"/><path d="M4 6.5v13"/></>,
+    download: <><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></>,
+    close: <path d="m6 6 12 12M18 6 6 18"/>,
+    hotel: <><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M9 21v-5h6v5"/></>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
+}
+
+const FEEDBACK_STORAGE_KEY = 'apicehotel.feedback.v1'
+const csvCell = (value = '') => `"${String(value).replaceAll('"', '""')}"`
+function exportIssuesCsv(issues, hotel) {
+  const headers = ['Struttura', 'Camera o zona', 'Problema', 'Gravità', 'Stato', 'Reparto', 'Categoria', 'Data']
+  const rows = issues.filter((issue) => issue.hotelId === hotel.id).map((issue) => [hotel.name, issue.room, issue.title, issue.urgency, issue.status, issue.department, issue.category, issue.date])
+  const content = [headers, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')
+  const url = URL.createObjectURL(new Blob([`\ufeff${content}`], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `segnalazioni-${hotel.id}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function MenuPanel({ type, user, onClose, onSavePin }) {
+  const [pin, setPin] = useState('')
+  const [feedback, setFeedback] = useState('')
+  const [message, setMessage] = useState('')
+  const savePin = (event) => {
+    event.preventDefault()
+    if (!/^\d{4}$/.test(pin)) return
+    onSavePin(pin); setMessage('PIN aggiornato'); setPin('')
+  }
+  const saveFeedback = (event) => {
+    event.preventDefault()
+    const entries = JSON.parse(localStorage.getItem(FEEDBACK_STORAGE_KEY) || '[]')
+    localStorage.setItem(FEEDBACK_STORAGE_KEY, JSON.stringify([...entries, { text: feedback.trim(), userId: user.id, createdAt: Date.now() }]))
+    setFeedback(''); setMessage('Feedback salvato su questo dispositivo')
+  }
+  const enableNotifications = async () => {
+    if (!('Notification' in window)) return setMessage('Notifiche non supportate su questo dispositivo')
+    const permission = await Notification.requestPermission()
+    setMessage(permission === 'granted' ? 'Notifiche abilitate' : 'Permesso notifiche non concesso')
+  }
+  const titles = { pin: 'Cambia PIN', notifications: 'Notifiche', manual: 'Manuale', feedback: 'Feedback' }
+  return <div className="menu-panel-backdrop" role="presentation" onClick={onClose}>
+    <section className="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menu-panel-title" onClick={(event) => event.stopPropagation()}>
+      <header><h2 id="menu-panel-title">{titles[type]}</h2><button className="panel-close" onClick={onClose} aria-label="Chiudi"><Icon name="close" /></button></header>
+      {type === 'pin' && <form onSubmit={savePin}><label>Nuovo PIN di 4 cifre<input aria-label="Nuovo PIN" inputMode="numeric" maxLength="4" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label><button className="primary" disabled={pin.length !== 4}>Salva PIN</button></form>}
+      {type === 'notifications' && <div className="panel-content"><p>Ricevi gli aggiornamenti importanti della manutenzione sul dispositivo.</p><button className="primary" onClick={enableNotifications}>Abilita notifiche</button></div>}
+      {type === 'manual' && <div className="manual-list"><article><strong>1. Segnalazioni</strong><span>Apri una richiesta, controlla camera, problema e gravità.</span></article><article><strong>2. Aggiorna lo stato</strong><span>Richiedi un tecnico o un pezzo quando il lavoro non può essere concluso.</span></article><article><strong>3. Completa</strong><span>Aggiungi foto e note prima di segnare la riparazione completata.</span></article></div>}
+      {type === 'feedback' && <form onSubmit={saveFeedback}><label>Scrivi un suggerimento<textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} rows="5" /></label><button className="primary" disabled={!feedback.trim()}>Salva feedback</button></form>}
+      {message && <p className="menu-panel-message" role="status">{message}</p>}
+    </section>
+  </div>
 }
 
 function HotelMark({ hotel, large = false }) {
@@ -502,7 +557,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   )
 }
 
-function Operations({ hotel, user, onLogout, onChangeHotel }) {
+function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
   const [tab, setTab] = useState('Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
@@ -513,6 +568,8 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
   const [category, setCategory] = useState('')
   const [creatingIssue, setCreatingIssue] = useState(false)
   const [openIssueId, setOpenIssueId] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuPanel, setMenuPanel] = useState(null)
   const [allIssues, setAllIssues] = useState(loadIssues)
   const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
   const saveIssue = (issue) => {
@@ -538,14 +595,33 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
       const weight = { alta: 3, media: 2, bassa: 1 }
       return weight[b.urgency] - weight[a.urgency] || a.id - b.id
     }), [allIssues, hotel.id, status, query, sort, department, category])
+  const openPanel = (panel) => { setMenuOpen(false); setMenuPanel(panel) }
+  const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
 
   return (
     <div className="operations">
       <header className="ops-header">
-        <button className="hotel-switch" onClick={onChangeHotel}><HotelMark hotel={hotel} /><span><strong>{hotel.name}</strong><small>{user.name} · {user.role}</small></span></button>
+        <div className="hotel-identity"><HotelMark hotel={hotel} /><span><strong>{hotel.name}</strong><small>{user.name} · {user.role}</small></span></div>
         <button className={`presence ${presence ? 'on' : ''}`} onClick={() => setPresence(!presence)}><span /> Sono in struttura</button>
-        <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
+        <button className="icon-button menu-trigger" onClick={() => setMenuOpen(true)} aria-label="Apri menu" aria-expanded={menuOpen}><Icon name="menu" /></button>
       </header>
+      {menuOpen && <div className="drawer-backdrop" onClick={() => setMenuOpen(false)}>
+        <aside className="app-drawer" aria-label="Menu principale" onClick={(event) => event.stopPropagation()}>
+          <header><div><strong>{hotel.name}</strong><span>{user.name} · {user.role}</span></div><button className="panel-close" onClick={() => setMenuOpen(false)} aria-label="Chiudi menu"><Icon name="close" /></button></header>
+          <nav>
+            <button onClick={() => window.location.reload()}><Icon name="refresh" /><span>Aggiorna</span></button>
+            <button onClick={onChangeHotel}><Icon name="hotel" /><span>Cambia struttura</span></button>
+            <button onClick={() => openPanel('pin')}><Icon name="lock" /><span>Cambia PIN</span></button>
+            <button onClick={() => openPanel('notifications')}><Icon name="bell" /><span>Notifiche</span></button>
+            <button onClick={() => openPanel('manual')}><Icon name="book" /><span>Manuale</span></button>
+            <button onClick={() => openPanel('feedback')}><Icon name="message" /><span>Feedback</span></button>
+            <button onClick={() => { exportIssuesCsv(allIssues, hotel); setMenuOpen(false) }} disabled={!hotelIssues.length}><Icon name="download" /><span>Esporta CSV</span></button>
+            {hotel.id === 'hotelgio' && permissions.includes('planning_sale') && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
+          </nav>
+          <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
+        </aside>
+      </div>}
+      {menuPanel && <MenuPanel type={menuPanel} user={user} onClose={() => setMenuPanel(null)} onSavePin={onSavePin} />}
       <main className="ops-main">
         <div className="title-row ops-title"><h1>{tab}</h1></div>
         <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span></button>)}</nav>
@@ -576,6 +652,7 @@ export default function App() {
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
   const user = users.find((item) => item.id === session?.userId)
   const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
+  const updateCurrentUserPin = (nextPin) => updateUsers(users.map((item) => item.id === user?.id ? { ...item, pin: nextPin } : item))
 
   const login = (nextUser) => {
     const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
@@ -585,7 +662,7 @@ export default function App() {
   const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
   const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} />
+  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />

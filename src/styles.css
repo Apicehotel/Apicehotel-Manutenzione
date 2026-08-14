@@ -30,9 +30,9 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .session-note strong { color: #0e5c49; }.session-note span { color: #657069; }
 .operations { min-height: 100vh; background: #f4f2ed; }
 .ops-header { min-height: 76px; padding: 10px max(16px, calc((100vw - 1120px) / 2)); display: flex; align-items: center; gap: 12px; background: #0e5c49; color: #fff; }
-.hotel-switch { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; background: none; color: #fff; text-align: left; cursor: pointer; }
-.hotel-switch .hotel-mark { width: 44px; height: 44px; font-size: 16px; }
-.hotel-switch strong, .hotel-switch small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.hotel-switch small { opacity: .8; margin-top: 2px; }
+.hotel-identity { display: flex; align-items: center; gap: 10px; min-width: 0; color: #fff; text-align: left; }
+.hotel-identity .hotel-mark { width: 44px; height: 44px; font-size: 16px; }
+.hotel-identity strong, .hotel-identity small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.hotel-identity small { opacity: .8; margin-top: 2px; }
 .presence { margin-left: auto; display: flex; align-items: center; gap: 7px; border: 1px solid #ffffff44; border-radius: 20px; padding: 9px 12px; background: #ffffff16; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }.presence span { width: 8px; height: 8px; border-radius: 50%; background: #c9c9c9; }.presence.on { background: #fff; color: #0e5c49; }.presence.on span { background: #22a06b; }
 .icon-button { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 10px; background: #ffffff16; color: #fff; cursor: pointer; }
 .ops-main { width: min(1120px, 100%); margin: 0 auto; padding: 26px 18px 100px; }
@@ -46,7 +46,25 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .issue-list { display: grid; gap: 9px; }.issue { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 15px; border-left: 4px solid #b9842f; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px #1b24200b; }.issue.alta { border-left-color: #c83d2c; }.issue.media { border-left-color: #dd8415; }.issue.bassa { border-left-color: #d2ad20; }.urgency { align-self: start; padding: 4px 6px; border-radius: 5px; color: #fff; background: #b9842f; text-transform: uppercase; font-size: 9px; font-weight: 900; }.alta .urgency { background: #c83d2c; }.media .urgency { background: #dd8415; }.bassa .urgency { background: #d2ad20; }.issue h3 { margin-bottom: 3px; font-size: 15px; }.issue p { margin-bottom: 7px; color: #4e5751; font-size: 14px; }.issue small { color: #7a827d; font-size: 11px; }
 .empty, .placeholder { min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #768079; background: #fff; border-radius: 12px; }.empty strong { color: #1b2420; }
 .admin-preview { margin-top: 28px; padding-top: 20px; border-top: 1px solid #d7d3c9; }.admin-preview h2 { font-size: 19px; }.admin-preview p { color: #717a74; font-size: 12px; }.table-wrap { overflow-x: auto; background: #fff; border-radius: 12px; }.admin-preview table { width: 100%; border-collapse: collapse; min-width: 600px; }.admin-preview th, .admin-preview td { padding: 11px; border-bottom: 1px solid #eeeae2; text-align: left; font-size: 12px; }.admin-preview th { color: #657069; }.admin-preview td:not(:first-child):not(:nth-child(2)), .admin-preview th:not(:first-child):not(:nth-child(2)) { text-align: center; }.admin-preview input { width: 16px; accent-color: #0e5c49; }
-@media (max-width: 680px) { .ops-header { flex-wrap: wrap; }.hotel-switch { max-width: 52%; }.presence { order: 3; width: 100%; justify-content: center; }.toolbar { grid-template-columns: 1fr 110px; }.toolbar .secondary { grid-column: 1 / -1; padding: 10px; }.advanced-filters { grid-template-columns: 1fr 1fr; }.status-tabs { overflow-x: auto; grid-template-columns: repeat(4, minmax(90px, 1fr)); }.issue { grid-template-columns: auto 1fr; }.issue > .icon { display: none; } }
+@media (max-width: 680px) { .ops-header { flex-wrap: wrap; }.hotel-identity { max-width: 68%; }.presence { order: 3; width: 100%; justify-content: center; }.toolbar { grid-template-columns: 1fr 110px; }.toolbar .secondary { grid-column: 1 / -1; padding: 10px; }.advanced-filters { grid-template-columns: 1fr 1fr; }.status-tabs { overflow-x: auto; grid-template-columns: repeat(4, minmax(90px, 1fr)); }.issue { grid-template-columns: auto 1fr; }.issue > .icon { display: none; } }
+
+/* Menu operativo, coerente con HotelGio e ottimizzato per touch */
+.drawer-backdrop,.menu-panel-backdrop { position:fixed; inset:0; z-index:100; background:rgba(16,24,20,.48); }
+.app-drawer { position:absolute; top:0; right:0; width:min(390px,92vw); height:100%; display:flex; flex-direction:column; padding:max(20px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom)); background:#f8f7f3; box-shadow:-14px 0 40px rgba(14,30,24,.22); }
+.app-drawer > header,.menu-panel > header { display:flex; align-items:center; justify-content:space-between; gap:14px; padding-bottom:16px; border-bottom:1px solid #dedad0; }
+.app-drawer header strong,.app-drawer header span { display:block; }.app-drawer header span { margin-top:3px; color:#68736c; font-size:12px; }
+.panel-close { width:42px; height:42px; display:grid; place-items:center; border:1px solid #dedad0; border-radius:11px; background:#fff; cursor:pointer; }
+.app-drawer nav { display:grid; gap:7px; padding:16px 0; overflow-y:auto; }
+.app-drawer nav button,.drawer-logout { width:100%; min-height:51px; display:flex; align-items:center; gap:13px; padding:12px 14px; border:1px solid #e3dfd6; border-radius:12px; background:#fff; text-align:left; font-weight:750; cursor:pointer; }
+.app-drawer nav button:hover { border-color:#9fc7ba; background:#edf6f2; }.app-drawer nav button:disabled { opacity:.45; cursor:not-allowed; }
+.drawer-logout { margin-top:auto; border-color:#edc8c2; color:#ad372d; }
+.menu-panel-backdrop { display:grid; place-items:center; padding:18px; }
+.menu-panel { width:min(520px,100%); max-height:min(680px,90dvh); overflow-y:auto; padding:20px; border-radius:18px; background:#fff; box-shadow:0 20px 55px rgba(14,30,24,.24); }
+.menu-panel h2 { margin:0; font-size:22px; }.menu-panel form,.panel-content { display:grid; gap:15px; padding-top:20px; }
+.menu-panel textarea { width:100%; margin-top:7px; resize:vertical; border:1px solid #d7d3c9; border-radius:10px; padding:12px; font:inherit; }
+.manual-list { display:grid; gap:10px; padding-top:18px; }.manual-list article { display:grid; gap:4px; padding:14px; border-radius:12px; background:#f4f2ed; }.manual-list span,.panel-content p { color:#68736c; font-size:13px; line-height:1.5; }
+.menu-panel-message { margin:15px 0 0; padding:11px 13px; border-radius:10px; background:#e7f4ed; color:#0e5c49; font-size:13px; font-weight:750; }
+@media (max-width:680px) { .menu-trigger { margin-left:auto; }.menu-panel-backdrop { align-items:end; padding:0; }.menu-panel { width:100%; max-height:88dvh; border-radius:20px 20px 0 0; padding:20px 18px max(22px,env(safe-area-inset-bottom)); } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 /* Home multi-hotel: reference bianco/blu APICEHOTEL */
 .home-page { --apice-blue: #0b2d5c; --apice-blue-light: #0d5b91; --home-muted: #53657e; background: #fff; color: var(--apice-blue); }

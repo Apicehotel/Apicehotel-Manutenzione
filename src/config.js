@@ -18,9 +18,9 @@ export const DEPARTMENTS = [
 export const ROLE_PERMISSIONS = {
   admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'planning_sale'],
   Responsabile: ['create', 'assign', 'complete'],
-  Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
+  Direzione: ['create', 'assign', 'complete', 'read_all_departments', 'planning_sale'],
   'Direttore Centro Congressi': ['create', 'assign', 'complete', 'planning_sale'],
-  manutentore: ['create', 'take_charge', 'complete'],
+  manutentore: ['create', 'take_charge', 'complete', 'planning_sale'],
   segnalatore: ['create', 'read_own_hotel'],
 }
 
