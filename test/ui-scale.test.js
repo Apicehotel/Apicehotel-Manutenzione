@@ -13,4 +13,5 @@ test('la dimensione globale dell interfaccia e selezionabile e persistente', asy
   assert.match(app, /document\.documentElement\.dataset\.uiSize = uiSize/)
   assert.match(styles, /html\[data-ui-size="small"\] body \{ width:111\.112%; zoom:\.9; \}/)
   assert.match(styles, /html\[data-ui-size="large"\] body \{ width:89\.286%; zoom:1\.12; \}/)
+  assert.match(styles, /html\[data-ui-size="large"\] \.status-tabs \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
 })
