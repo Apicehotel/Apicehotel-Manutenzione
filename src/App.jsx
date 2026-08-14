@@ -48,6 +48,14 @@ const Icon = ({ name }) => {
     tool: <path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 9.6 6 7.3 3.7a4 4 0 0 0 5 5l-8.9 8.9a2.1 2.1 0 0 0 3 3l8.9-8.9a4 4 0 0 0-.6-5.4Z"/>,
     camera: <><path d="M14.5 4 16 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3l1.5-3Z"/><circle cx="12" cy="13" r="3"/></>,
     image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></>,
+    clipboard: <><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 9h6M9 13h6"/></>,
+    alert: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></>,
+    filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
+    chevron: <path d="m6 9 6 6 6-6"/>,
+    package: <><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4.5 7.7 7.5 4.2 7.5-4.2M12 12v9"/></>,
+    message: <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/>,
+    check: <path d="m5 12 4 4L19 6"/>,
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
@@ -356,9 +364,9 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   const [completionPhotoName, setCompletionPhotoName] = useState('')
   const [pieceDraft, setPieceDraft] = useState('')
   const [replacedDraft, setReplacedDraft] = useState('')
-  const [askingComplete, setAskingComplete] = useState(false)
   const [askingPiece, setAskingPiece] = useState(false)
   const [askingReplaced, setAskingReplaced] = useState(false)
+  const [photoPickerOpen, setPhotoPickerOpen] = useState(false)
 
   // Stati reali (allineati all'app di Hotel Giò): todo, tecnico (tecnico
   // esterno richiesto), waiting (attesa pezzo), done. Non esiste un "preso
@@ -370,7 +378,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   const confirmComplete = () => { onUpdate(issue.id, { status: 'done', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
   const pickCompletionPhoto = async (file) => {
     const data = await readPhotoAsDataUrl(file)
-    setCompletionPhoto(data); setCompletionPhotoName(file?.name || '')
+    setCompletionPhoto(data); setCompletionPhotoName(file?.name || ''); setPhotoPickerOpen(false)
   }
   const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
   // Il pezzo arrivato torna in "Da fare" (non resta assegnato a chi era in
@@ -393,16 +401,24 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
       <div className="sheet" onClick={(event) => event.stopPropagation()}>
         <div className="sheet-head">
           <button className="back-link" onClick={onClose}>‹ Chiudi</button>
-          <span className={`urgency badge-${issue.urgency}`}>{issue.urgency}</span>
+          <div className="sheet-head-actions">
+            {permissions.includes('assign') && (
+              <button className="delete-issue-compact" onClick={remove}>Elimina</button>
+            )}
+            <span className={`urgency badge-${issue.urgency}`}>{issue.urgency}</span>
+          </div>
         </div>
-        <h2>{issue.room}</h2>
-        <p className="detail-description">{issue.title}</p>
-        <dl className="detail-meta">
-          <div><dt>Reparto</dt><dd>{issue.department}</dd></div>
-          <div><dt>Categoria</dt><dd>{issue.category}</dd></div>
-          <div><dt>Segnalata</dt><dd>{issue.date}{issue.createdByName ? ` · ${issue.createdByName}` : ''}</dd></div>
-          {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([key]) => key === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
-        </dl>
+        <h2 className="detail-room">{issue.room}</h2>
+        <section className="issue-summary">
+          <p className="detail-section-label">Problema segnalato</p>
+          <p className="detail-description">{issue.title}</p>
+          <p className="detail-origin">Da {issue.origin || 'App'}{issue.createdByName ? ` · ${issue.createdByName}` : ''} · {issue.date}</p>
+          <dl className="detail-meta">
+            <div><dt>Reparto</dt><dd>{issue.department}</dd></div>
+            <div><dt>Categoria</dt><dd>{issue.category}</dd></div>
+            {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([key]) => key === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
+          </dl>
+        </section>
 
         {issue.photoData && <img className="detail-photo" src={issue.photoData} alt={`Foto segnalazione: ${issue.title}`} />}
 
@@ -436,15 +452,29 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
           </div>
         )}
 
-        <div className="detail-actions">
-          {canAct && !askingComplete && !askingPiece && !askingReplaced && (
+        <div className="detail-actions action-panel">
+          {canAct && !askingPiece && !askingReplaced && (
             <>
               <p className="detail-actions-heading">Azioni</p>
-              <button className="primary" onClick={() => setAskingComplete(true)}>Riparazione completata</button>
-              {!issue.pieceReplaced && <button className="secondary" onClick={() => setAskingReplaced(true)}>Pezzo sostituito</button>}
-              <p className="detail-actions-heading">Non riesco a risolvere</p>
-              <button className="secondary" onClick={() => setAskingPiece(true)}>Serve pezzo</button>
-              <button className="secondary" onClick={requestTechnician}>Chiedi un tecnico</button>
+              <div className="detail-action-pair">
+                <button className="secondary action-needs-piece" onClick={() => setAskingPiece(true)}><Icon name="package" />Serve pezzo</button>
+                {!issue.pieceReplaced && <button className="secondary action-replaced" onClick={() => setAskingReplaced(true)}><Icon name="package" />Pezzo sostituito</button>}
+              </div>
+              <button className="secondary action-technician" onClick={requestTechnician}><Icon name="message" />Chiedi un tecnico</button>
+              <div className="completion-fields">
+                <p className="completion-fields-title">Riparazione completata</p>
+                <label>Foto (opzionale)
+                  <button type="button" className="photo-picker-trigger" onClick={() => setPhotoPickerOpen(!photoPickerOpen)} aria-expanded={photoPickerOpen}><Icon name="camera" /><span>{completionPhotoName ? 'Cambia foto' : 'Aggiungi foto'}</span><Icon name="chevron" /></button>
+                  {photoPickerOpen && <div className="photo-picker-options">
+                    <label><input className="photo-input" type="file" accept="image/*" capture="environment" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Scatta foto</strong></label>
+                    <label><input className="photo-input" type="file" accept="image/*" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="image" /><strong>Scegli dalla galleria</strong></label>
+                  </div>}
+                  {completionPhoto && <img className="photo-preview" src={completionPhoto} alt="Anteprima foto completamento" />}
+                  {completionPhotoName && <small className="photo-selected">Selezionata: {completionPhotoName}</small>}
+                </label>
+                <label>Note sul lavoro fatto (facoltative)<textarea rows="3" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Cosa è stato fatto" /></label>
+              </div>
+              <button className="primary complete-action" onClick={confirmComplete}><Icon name="check" />Riparazione completata</button>
             </>
           )}
           {issue.status === 'tecnico' && permissions.includes('complete') && (
@@ -456,20 +486,6 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
               <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingReplaced(false)}>Annulla</button><button className="primary" disabled={!replacedDraft.trim()} onClick={confirmReplaced}>Registra sostituzione</button></div>
             </div>
           )}
-          {askingComplete && (
-            <div className="inline-form">
-              <label>Foto (opzionale)
-                <div className="photo-actions">
-                  <label className="photo-action camera-action"><input className="photo-input camera-input" type="file" accept="image/*" capture="environment" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Scatta foto</strong></label>
-                  <label className="photo-action gallery-action"><input className="photo-input gallery-input" type="file" accept="image/*" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="image" /><strong>Galleria</strong></label>
-                </div>
-                {completionPhoto && <img className="photo-preview" src={completionPhoto} alt="Anteprima foto completamento" />}
-                {completionPhotoName && <small className="photo-selected">Selezionata: {completionPhotoName}</small>}
-              </label>
-              <label>Note sul lavoro fatto (facoltative)<textarea rows="3" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Cosa è stato fatto" /></label>
-              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingComplete(false)}>Annulla</button><button className="primary" onClick={confirmComplete}>Segna completata</button></div>
-            </div>
-          )}
           {askingPiece && (
             <div className="inline-form">
               <label>Nome del pezzo in attesa<input value={pieceDraft} onChange={(e) => setPieceDraft(e.target.value)} placeholder="Es. Faretto LED esterno IP65" /></label>
@@ -479,10 +495,6 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
 
           {issue.status === 'waiting' && permissions.includes('complete') && (
             <button className="primary" onClick={pieceArrived}>Pezzo arrivato, torna in Da fare</button>
-          )}
-
-          {permissions.includes('assign') && (
-            <button className="delete-user" onClick={remove}>Elimina segnalazione</button>
           )}
         </div>
       </div>
@@ -512,6 +524,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
   const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
+  const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', 'Planning Sale': 'calendar' }
   const hotelIssues = useMemo(() => allIssues.filter((issue) => issue.hotelId === hotel.id), [allIssues, hotel.id])
   const statusCounts = useMemo(() => hotelIssues.reduce((acc, issue) => ({ ...acc, [issue.status]: (acc[issue.status] || 0) + 1 }), {}), [hotelIssues])
   const issues = useMemo(() => allIssues
@@ -534,17 +547,18 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         <button className="icon-button" onClick={onLogout} title="Logout"><Icon name="logout" /></button>
       </header>
       <main className="ops-main">
-        <div className="title-row"><div><h1>{tab}</h1><p>{isSupabaseConfigured ? 'Connesso a Supabase' : 'Dati locali · sincronizzazione Supabase da configurare'}</p></div><span className="role-chip">{permissions.length} permessi</span></div>
-        <nav className="tabs">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
+        <div className="title-row ops-title"><h1>{tab}</h1></div>
+        <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span></button>)}</nav>
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
           <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['waiting','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
-          <div className="toolbar"><label className="search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Urgenza</option><option value="camera">Camera/Zona</option><option value="data">Data</option></select><button className="secondary" onClick={() => setAdvanced(!advanced)}>Filtri</button></div>
+          <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
+      <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
         <button className="fab-new-issue" onClick={() => setCreatingIssue(true)} aria-label="Nuova segnalazione">
           <span className="fab-plus">+</span> Nuova segnalazione
