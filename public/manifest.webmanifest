@@ -1,0 +1,20 @@
+{
+  "name": "Apicehotel Manutenzione",
+  "short_name": "Manutenzione",
+  "description": "Gestione delle segnalazioni di manutenzione delle strutture Apicehotel.",
+  "lang": "it",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f4f6f7",
+  "theme_color": "#0e5c49",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
