@@ -426,7 +426,7 @@ function AdminPanel({ users, onUsersChange, onClose }) {
       <button className="primary">Salva utente</button>
     </form>}
     {message && <p className="admin-message" role="status">{message}</p>}
-    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Il ruolo Direttore Centro Congressi è assegnabile in tutte le strutture. Presso Hotel Giò il Planning Sale è visibile ai ruoli operativi; Admin, Responsabile e Direttore Centro Congressi possono creare ed eliminare prenotazioni.</p></section>
+    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning lavori e Planning Sale sono visibili nel menu solo a Manutentore e Direttore Centro Congressi. Planning Sale è disponibile solo presso Hotel Giò.</p></section>
     <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
       <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
       <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
@@ -648,6 +648,7 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
 
 const canCreatePlanned = (user) => ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
 const canViewPlanned = (user) => canCreatePlanned(user) || ['manutentore','Tecnico esterno'].includes(user.role)
+const canViewPlanningMenu = (user) => ['manutentore','Direttore Centro Congressi'].includes(user.role)
 const toLocalDateTimeInput = (timestamp) => {
   const date = new Date(timestamp)
   const offset = date.getTimezoneOffset() * 60000
@@ -827,8 +828,8 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
             <button onClick={() => openPanel('manual')}><Icon name="book" /><span>Manuale</span></button>
             <button onClick={() => openPanel('feedback')}><Icon name="message" /><span>Feedback</span></button>
             <button onClick={() => { exportIssuesCsv(allIssues, hotel); setMenuOpen(false) }} disabled={!hotelIssues.length}><Icon name="download" /><span>Esporta CSV</span></button>
-            {canViewPlanned(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
-            {hotel.id === 'hotelgio' && canViewPlanned(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
+            {canViewPlanningMenu(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
+            {hotel.id === 'hotelgio' && canViewPlanningMenu(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
           </nav>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>
         </aside>
@@ -858,7 +859,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
       )}
       {canSendUrgent(user) && <button className="urgent-fab" onClick={() => { setTab('Avvisi Urgenti'); setUrgentComposeRequest((value) => value + 1) }} aria-label="Invia avviso urgente" title="Avviso urgente">🚨</button>}
       {tab === 'Interventi' && canCreatePlanned(user) && <button className="fab-new-issue planned-fab" onClick={() => setPlannedFormOpen(true)}>＋ Nuovo intervento</button>}
-      {tab === 'Planning Lavori' && canViewPlanned(user) && <button className="fab-new-issue planned-fab" onClick={() => setPlannedFormOpen(true)}>＋ Nuovo lavoro</button>}
+      {tab === 'Planning Lavori' && canViewPlanningMenu(user) && <button className="fab-new-issue planned-fab" onClick={() => setPlannedFormOpen(true)}>＋ Nuovo lavoro</button>}
     </div>
   )
 }
