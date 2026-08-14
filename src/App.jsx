@@ -85,8 +85,9 @@ const loadUrgents = () => {
   } catch { return [] }
 }
 const persistUrgents = (items) => localStorage.setItem(URGENT_STORAGE_KEY, JSON.stringify(items))
-const canSendUrgent = (user) => ['admin', 'Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
+const canSendUrgent = (user) => ['Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
 const canManageUrgent = (user) => user.role === 'manutentore'
+const canViewUrgent = (user) => canSendUrgent(user) || canManageUrgent(user)
 function playUrgentSignal() {
   navigator.vibrate?.([250, 120, 250])
   try {
@@ -758,7 +759,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin }) 
   const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
-  const tabs = ['Segnalazioni', 'Avvisi Urgenti', ...(canViewPlanned(user) ? ['Interventi'] : [])]
+  const tabs = ['Segnalazioni', ...(canViewUrgent(user) ? ['Avvisi Urgenti'] : []), ...(canViewPlanned(user) ? ['Interventi'] : [])]
   const tabIcons = { Segnalazioni: 'clipboard', 'Avvisi Urgenti': 'alert', Interventi: 'tool', 'Planning Lavori': 'calendar', 'Planning Sale': 'calendar' }
   const hotelIssues = useMemo(() => allIssues.filter((issue) => issue.hotelId === hotel.id), [allIssues, hotel.id])
   const hotelPlanned = useMemo(() => plannedItems.filter((item) => item.hotelId === hotel.id), [plannedItems, hotel.id])
