@@ -70,10 +70,33 @@ const Icon = ({ name }) => {
 
 const FEEDBACK_STORAGE_KEY = 'apicehotel.feedback.v1'
 const URGENT_STORAGE_KEY = 'apicehotel.urgent.v1'
+const URGENT_RETENTION_MS = 72 * 60 * 60 * 1000
 const loadUrgents = () => {
-  try { const value = JSON.parse(localStorage.getItem(URGENT_STORAGE_KEY)); return Array.isArray(value) ? value : [] } catch { return [] }
+  try {
+    const value = JSON.parse(localStorage.getItem(URGENT_STORAGE_KEY))
+    const items = Array.isArray(value) ? value.filter((item) => Date.now() - item.createdAt < URGENT_RETENTION_MS) : []
+    localStorage.setItem(URGENT_STORAGE_KEY, JSON.stringify(items))
+    return items
+  } catch { return [] }
 }
 const persistUrgents = (items) => localStorage.setItem(URGENT_STORAGE_KEY, JSON.stringify(items))
+const canSendUrgent = (user) => ['admin', 'Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
+const canManageUrgent = (user) => user.role === 'manutentore'
+function playUrgentSignal() {
+  navigator.vibrate?.([250, 120, 250])
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext
+    if (!AudioContext) return
+    const context = new AudioContext()
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(760, context.currentTime)
+    oscillator.frequency.linearRampToValueAtTime(980, context.currentTime + .45)
+    gain.gain.setValueAtTime(.08, context.currentTime); gain.gain.linearRampToValueAtTime(0, context.currentTime + .8)
+    oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + .8)
+    oscillator.onended = () => context.close()
+  } catch { /* Il browser può bloccare l'audio fuori da un gesto utente. */ }
+}
 const csvCell = (value = '') => `"${String(value).replaceAll('"', '""')}"`
 function exportIssuesCsv(issues, hotel) {
   const headers = ['Struttura', 'Camera o zona', 'Problema', 'Gravità', 'Stato', 'Reparto', 'Categoria', 'Data']
@@ -120,16 +143,15 @@ function MenuPanel({ type, user, onClose, onSavePin }) {
   </div>
 }
 
-function UrgentSection({ hotel, user, items, onItemsChange, onTransform }) {
+function UrgentSection({ hotel, user, items, openRequest, onItemsChange, onTake, onComplete, onTransform }) {
   const [filter, setFilter] = useState('tutte')
   const [creating, setCreating] = useState(false)
   const [note, setNote] = useState('')
-  const canSend = ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
-  const canTake = user.role === 'manutentore' || user.role === 'admin'
+  const canTake = canManageUrgent(user)
+  useEffect(() => { if (openRequest) setCreating(true) }, [openRequest])
   const hotelItems = items.filter((item) => item.hotelId === hotel.id)
   const counts = hotelItems.reduce((acc, item) => ({ ...acc, [item.status]: (acc[item.status] || 0) + 1 }), {})
   const filtered = hotelItems.filter((item) => filter === 'tutte' || (filter === 'attesa' && item.status === 'aperta') || (filter === 'lavorazione' && item.status === 'presa_in_carico') || (filter === 'fatte' && item.status === 'completata'))
-  const update = (id, changes) => onItemsChange(items.map((item) => item.id === id ? { ...item, ...changes } : item))
   const send = (event) => {
     event.preventDefault()
     const text = note.trim()
@@ -137,16 +159,11 @@ function UrgentSection({ hotel, user, items, onItemsChange, onTransform }) {
     onItemsChange([{ id: Date.now(), hotelId: hotel.id, note: text, status: 'aperta', createdBy: user.name, createdAt: Date.now() }, ...items])
     setNote(''); setCreating(false); setFilter('attesa')
   }
-  const take = (id) => { update(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() }); setFilter('lavorazione') }
-  const complete = (id) => { update(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() }); setFilter('fatte') }
-  const transform = (item) => {
-    onTransform(item)
-    update(item.id, { status: 'completata', completedBy: user.name, completedAt: Date.now(), transformed: true })
-    setFilter('fatte')
-  }
+  const take = (id) => { onTake(id); setFilter('lavorazione') }
+  const complete = (id) => { onComplete(id); setFilter('fatte') }
   const filters = [['tutte', 'Tutte', hotelItems.length], ['attesa', 'In attesa', counts.aperta || 0], ['lavorazione', 'In lavorazione', counts.presa_in_carico || 0], ['fatte', 'Fatte', counts.completata || 0]]
   return <section className="urgent-section">
-    <div className="urgent-heading"><div><h2>Avvisi Urgenti</h2><p>Richieste immediate alla squadra manutenzione.</p></div>{canSend && <button className="urgent-new" onClick={() => setCreating(true)}>+ Nuovo avviso</button>}</div>
+    <div className="urgent-heading"><div><h2>Avvisi Urgenti</h2><p>Richieste immediate alla squadra manutenzione.</p></div></div>
     {creating && <form className="urgent-form" onSubmit={send}><label>Che cosa serve con urgenza?<textarea autoFocus rows="3" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Esempio: serve subito assistenza in camera 206" /></label><div><button type="button" className="secondary" onClick={() => { setCreating(false); setNote('') }}>Annulla</button><button className="urgent-send" disabled={!note.trim()}>Invia avviso urgente</button></div></form>}
     <div className="urgent-filters">{filters.map(([key, label, count]) => <button key={key} className={filter === key ? 'active' : key === 'attesa' && count ? 'attention' : ''} onClick={() => setFilter(key)}>{label} <span>{count}</span></button>)}</div>
     <div className="urgent-list">{filtered.length ? filtered.map((item) => {
@@ -155,10 +172,31 @@ function UrgentSection({ hotel, user, items, onItemsChange, onTransform }) {
         <strong className="urgent-state">{done ? 'Gestita' : working ? 'In corso' : 'Richiesta urgente'}</strong>
         <small>Da {item.createdBy} · {new Date(item.createdAt).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small>
         <p>{item.note}</p>
-        {done ? <div className="urgent-result">{item.transformed ? 'Trasformata in segnalazione' : `Fatto da ${item.completedBy || item.takenBy}`}</div> : working ? <><div className="urgent-result">{item.takenBy} sta andando</div>{canTake && <button className="urgent-primary" onClick={() => complete(item.id)}>Fatto</button>}<button className="urgent-secondary" onClick={() => transform(item)}>Non risolvibile — trasforma in segnalazione</button></> : canTake ? <><button className="urgent-primary" onClick={() => take(item.id)}>Vado</button><button className="urgent-secondary" onClick={() => transform(item)}>Non risolvibile — trasforma in segnalazione</button></> : <div className="urgent-result">In attesa che un manutentore la prenda in carico</div>}
+        {done ? <div className="urgent-result">{item.transformed ? 'Trasformata in segnalazione' : `Fatto da ${item.completedBy || item.takenBy}`}</div> : working ? <><div className="urgent-result">{item.takenBy} sta andando</div>{canTake && <button className="urgent-primary" onClick={() => complete(item.id)}>Fatto</button>}{canTake && <button className="urgent-secondary" onClick={() => onTransform(item)}>Non risolvibile — trasforma in segnalazione</button>}</> : canTake ? <><button className="urgent-primary" onClick={() => take(item.id)}>Vado</button><button className="urgent-secondary" onClick={() => onTransform(item)}>Non risolvibile — trasforma in segnalazione</button></> : <div className="urgent-result">In attesa che un manutentore la prenda in carico</div>}
       </article>
     }) : <div className="urgent-empty"><strong>Nessuna richiesta urgente</strong><span>Gli avvisi della struttura compariranno qui.</span></div>}</div>
   </section>
+}
+
+function UrgentBanner({ items, onOpen, onTake, onComplete, onTransform }) {
+  if (!items.length) return null
+  return <section className="urgent-banner" aria-live="assertive"><button className="urgent-banner-title" onClick={onOpen}>🚨 {items.length === 1 ? 'Avviso urgente' : `${items.length} avvisi urgenti`}</button>{items.slice(0, 2).map((item) => <article key={item.id}><div><strong>{item.note}</strong><small>{item.status === 'presa_in_carico' ? `${item.takenBy} sta andando` : `Da ${item.createdBy}`}</small></div><div>{item.status === 'aperta' ? <button onClick={() => onTake(item.id)}>Vado</button> : <button onClick={() => onComplete(item.id)}>Fatto</button>}<button onClick={() => onTransform(item)}>Trasforma</button></div></article>)}</section>
+}
+
+function UrgentTransformModal({ urgent, hotel, onClose, onSave }) {
+  const catalog = HOTEL_LOCATIONS[hotel.id]
+  const [mode, setMode] = useState('camera')
+  const [draft, setDraft] = useState({ location: '', category: '', urgency: '', note: urgent.note })
+  const validLocation = mode === 'camera' ? catalog.roomGroups.some((group) => group.rooms.includes(draft.location.trim())) : catalog.zones.some((zone) => zone.name === draft.location.trim())
+  const valid = validLocation && draft.category && draft.urgency && draft.note.trim()
+  return <div className="urgent-transform-backdrop" onClick={onClose}><form className="urgent-transform" role="dialog" aria-modal="true" aria-labelledby="urgent-transform-title" onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); if (valid) onSave({ ...draft, mode }) }}>
+    <header><div><h2 id="urgent-transform-title">Trasforma in segnalazione</h2><p>Completa i dati mancanti prima di inviare.</p></div><button type="button" className="panel-close" onClick={onClose} aria-label="Chiudi"><Icon name="close" /></button></header>
+    <label>Camera o zona<LocationAutocomplete catalog={catalog} mode={mode} onModeChange={setMode} value={draft.location} onChange={(location) => setDraft({ ...draft, location })} />{draft.location && !validLocation && <small className="field-error">Scegli una posizione riconosciuta.</small>}</label>
+    <fieldset className="choice-field"><legend>Categoria obbligatoria</legend><div className="category-choices">{ISSUE_CATEGORIES.map((item) => <button type="button" key={item} className={draft.category === item ? 'active' : ''} onClick={() => setDraft({ ...draft, category: item })}>{item}</button>)}</div></fieldset>
+    <fieldset className="choice-field"><legend>Gravità obbligatoria</legend><div className="urgency-choices">{[['alta','Alta'],['media','Media'],['bassa','Bassa']].map(([key,label]) => <button type="button" key={key} className={draft.urgency === key ? `active ${key}` : ''} onClick={() => setDraft({ ...draft, urgency: key })}>{label}</button>)}</div></fieldset>
+    <label>Note<textarea required rows="4" value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} /></label>
+    <div className="form-actions"><button type="button" className="secondary" onClick={onClose}>Annulla</button><button className="primary" disabled={!valid}>Crea segnalazione</button></div>
+  </form></div>
 }
 
 function HotelMark({ hotel, large = false }) {
@@ -618,6 +656,8 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
   const [menuPanel, setMenuPanel] = useState(null)
   const [allIssues, setAllIssues] = useState(loadIssues)
   const [urgentItems, setUrgentItems] = useState(loadUrgents)
+  const [urgentComposeRequest, setUrgentComposeRequest] = useState(0)
+  const [urgentTransformTarget, setUrgentTransformTarget] = useState(null)
   const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
   const updateUrgents = (next) => { persistUrgents(next); setUrgentItems(next) }
   const saveIssue = (issue) => {
@@ -645,13 +685,20 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
     }), [allIssues, hotel.id, status, query, sort, department, category])
   const openPanel = (panel) => { setMenuOpen(false); setMenuPanel(panel) }
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
-  const transformUrgent = (urgent) => {
+  const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
+  const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
+  const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
+  const transformUrgent = (urgent, data) => {
     persist([...allIssues, {
-      id: Date.now(), hotelId: hotel.id, urgency: 'alta', room: 'Zona da definire', title: urgent.note,
-      status: 'todo', date: 'Oggi', department: 'Reception', category: 'Varie', origin: 'Avviso urgente',
+      id: Date.now(), hotelId: hotel.id, urgency: data.urgency, room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`, title: data.note.trim(),
+      status: 'todo', date: `Oggi, ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`, department: user.department || user.role, category: data.category, origin: 'Avviso urgente', createdAt: Date.now(), createdBy: user.id, createdByName: user.name,
     }])
+    updateUrgent(urgent.id, { status: 'completata', completedBy: user.name, completedAt: Date.now(), transformed: true })
+    setUrgentTransformTarget(null)
   }
   const openUrgentCount = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata').length
+  const activeUrgents = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata')
+  useEffect(() => { if (canManageUrgent(user) && openUrgentCount) playUrgentSignal() }, [openUrgentCount, user])
 
   return (
     <div className="operations">
@@ -677,9 +724,11 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
         </aside>
       </div>}
       {menuPanel && <MenuPanel type={menuPanel} user={user} onClose={() => setMenuPanel(null)} onSavePin={onSavePin} />}
+      {urgentTransformTarget && <UrgentTransformModal urgent={urgentTransformTarget} hotel={hotel} onClose={() => setUrgentTransformTarget(null)} onSave={(data) => transformUrgent(urgentTransformTarget, data)} />}
       <main className="ops-main">
         <div className="title-row ops-title"><h1>{tab}</h1></div>
         <nav className="tabs" aria-label="Sezioni principali">{tabs.map((item) => <button className={tab === item ? 'active' : ''} key={item} onClick={() => setTab(item)}><Icon name={tabIcons[item]} /><span>{item}</span>{item === 'Avvisi Urgenti' && openUrgentCount > 0 && <b className="tab-badge">{openUrgentCount}</b>}</button>)}</nav>
+        {tab !== 'Avvisi Urgenti' && canManageUrgent(user) && <UrgentBanner items={activeUrgents} onOpen={() => setTab('Avvisi Urgenti')} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} />}
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
@@ -687,7 +736,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
-        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} onItemsChange={updateUrgents} onTransform={transformUrgent} /> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
+        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
@@ -695,6 +744,7 @@ function Operations({ hotel, user, onLogout, onChangeHotel, onSavePin }) {
           <span className="fab-plus">+</span> Nuova segnalazione
         </button>
       )}
+      {canSendUrgent(user) && <button className="urgent-fab" onClick={() => { setTab('Avvisi Urgenti'); setUrgentComposeRequest((value) => value + 1) }} aria-label="Invia avviso urgente" title="Avviso urgente">🚨</button>}
     </div>
   )
 }
