@@ -185,9 +185,34 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .admin-button { margin-left: auto; }
   .presence { order: 4; }
   .admin-heading { align-items: stretch; flex-direction: column; }
+  .admin-heading h1 { font-size: 28px; }
+  .admin-actions { grid-template-columns: 1fr 1fr; }
+  .admin-actions button { width: 100%; min-width: 0; padding-inline: 10px; }
   .add-user { width: 100%; }
   .user-form { grid-template-columns: 1fr; }
   .user-form fieldset { grid-column: auto; display: grid; }
+  .global-admin { width: 100%; padding: 22px 14px 32px; overflow-x: hidden; }
+  .permission-matrix { padding: 15px; }
+  .permission-matrix article { padding: 8px 0; }
+  .admin-panel .table-wrap { overflow: visible; border: 0; background: transparent; }
+  .admin-panel table,.admin-panel tbody { display: block; min-width: 0; }
+  .admin-panel thead { display: none; }
+  .admin-panel tbody { display: grid; gap: 12px; }
+  .admin-panel tr { display: grid; grid-template-columns: 1fr 1fr 1fr; overflow: hidden; border: 1px solid #dedad0; border-radius: 14px; background: #fff; box-shadow: 0 6px 18px rgba(35,43,38,.04); }
+  .admin-panel td { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 13px; border-bottom: 1px solid #eeeae2; }
+  .admin-panel td::before { content: attr(data-label); flex: 0 0 auto; color: #68736c; font-size: 11px; font-weight: 800; }
+  .admin-panel .admin-user-name { grid-column: 1 / -1; justify-content: flex-start; padding: 14px 13px; background: #f7f8f5; }
+  .admin-panel .admin-user-name strong { font-size: 16px; }
+  .admin-panel .admin-user-name small { margin-left: auto; }
+  .admin-panel td:nth-child(2),.admin-panel td:nth-child(3) { grid-column: 1 / -1; }
+  .admin-panel td:nth-child(2) select,.admin-panel td:nth-child(3) select { width: min(68%,220px); min-width: 0; margin: 0; }
+  .admin-panel td:nth-child(n+4):nth-child(-n+6) { justify-content: center; flex-direction: column; gap: 5px; border-right: 1px solid #eeeae2; }
+  .admin-panel td:nth-child(6) { border-right: 0; }
+  .admin-panel td > input[type=checkbox] { width: 20px; height: 20px; margin: 0; }
+  .admin-panel .admin-user-actions { grid-column: 1 / -1; padding: 10px 13px; border: 0; }
+  .admin-panel .admin-user-actions::before { display: none; }
+  .admin-panel .delete-user { width: 100%; min-height: 40px; }
+  .admin-footnote { padding: 0 3px; line-height: 1.5; }
 }
 
 /* Accesso Admin globale con PIN dedicato */

@@ -429,11 +429,11 @@ function AdminPanel({ users, onUsersChange, onClose }) {
     {message && <p className="admin-message" role="status">{message}</p>}
     <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning lavori e Planning Sale sono visibili nel menu solo a Manutentore e Direttore Centro Congressi. Planning Sale è disponibile solo presso Hotel Giò.</p></section>
     <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
-      <td><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
-      <td><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
-      <td>{target.role==='segnalatore'?<select aria-label={`Reparto di ${target.name}`} value={target.department||DEPARTMENTS[0]} onChange={(e)=>update(target.id,{department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select>:<span>—</span>}</td>
-      {HOTELS.map((hotel)=><td key={hotel.id}><input type="checkbox" checked={target.hotels.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} aria-label={`${target.name}: ${hotel.name}`}/></td>)}
-      <td><button className="delete-user" onClick={()=>remove(target)} disabled={target.id===currentUser.id}>Elimina</button></td>
+      <td className="admin-user-name"><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
+      <td data-label="Ruolo"><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
+      <td data-label="Reparto">{target.role==='segnalatore'?<select aria-label={`Reparto di ${target.name}`} value={target.department||DEPARTMENTS[0]} onChange={(e)=>update(target.id,{department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select>:<span>—</span>}</td>
+      {HOTELS.map((hotel)=><td data-label={hotel.short} key={hotel.id}><input type="checkbox" checked={target.hotels.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} aria-label={`${target.name}: ${hotel.name}`}/></td>)}
+      <td className="admin-user-actions"><button className="delete-user" onClick={()=>remove(target)} disabled={target.id===currentUser.id}>Elimina</button></td>
     </tr>)}</tbody></table></div>
     <p className="admin-footnote">Le modifiche sono operative e persistenti su questo dispositivo. Il collegamento definitivo dei profili a Supabase sarà il prossimo passaggio.</p>
   </section>
