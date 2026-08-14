@@ -35,6 +35,8 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }.title-row h1 { margin-bottom: 2px; }.title-row p { color: #6f7772; font-size: 12px; }.role-chip { padding: 7px 10px; border-radius: 20px; background: #ead8b3; color: #6d4a0d; font-size: 11px; font-weight: 800; }
 .tabs { display: flex; border-bottom: 1px solid #d7d3c9; margin-bottom: 18px; overflow-x: auto; }.tabs button { flex: 1; min-width: max-content; padding: 13px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font-weight: 700; cursor: pointer; }.tabs button.active { color: #0e5c49; border-color: #0e5c49; }
 .status-tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: #e8e4da; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }.status-tabs button { border: 0; padding: 10px 8px; background: transparent; font-size: 12px; font-weight: 750; cursor: pointer; }.status-tabs button.active { background: #0e5c49; color: #fff; border-radius: 11px; }
+.status-count { display: inline-block; margin-left: 3px; padding: 1px 6px; border-radius: 10px; background: #d7d3c9; color: #4e5751; font-size: 10px; font-weight: 800; }
+.status-tabs button.active .status-count { background: #ffffff33; color: #fff; }
 .toolbar { display: grid; grid-template-columns: 1fr 150px auto; gap: 10px; margin-bottom: 12px; }.search { position: relative; }.search .icon { position: absolute; left: 12px; top: 11px; color: #78807a; }.search input { padding-left: 40px; }.toolbar select { margin: 0; }.secondary { border: 1px solid #d7d3c9; border-radius: 10px; background: #fff; padding: 0 15px; font-weight: 700; cursor: pointer; }
 .advanced-filters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px; margin-bottom: 12px; background: #fff; border: 1px solid #dedad0; border-radius: 12px; }
 .issue-list { display: grid; gap: 9px; }.issue { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 15px; border-left: 4px solid #b9842f; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px #1b24200b; }.issue.alta { border-left-color: #c83d2c; }.issue.media { border-left-color: #dd8415; }.issue.bassa { border-left-color: #d2ad20; }.urgency { align-self: start; padding: 4px 6px; border-radius: 5px; color: #fff; background: #b9842f; text-transform: uppercase; font-size: 9px; font-weight: 900; }.alta .urgency { background: #c83d2c; }.media .urgency { background: #dd8415; }.bassa .urgency { background: #d2ad20; }.issue h3 { margin-bottom: 3px; font-size: 15px; }.issue p { margin-bottom: 7px; color: #4e5751; font-size: 14px; }.issue small { color: #7a827d; font-size: 11px; }
@@ -82,20 +84,12 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
   .home-page .home-content { padding-left: 25px; padding-right: 25px; }
   .hotel-slider { gap: 14px; }
 }
-/* Login unificato: nome con autocompletamento, niente scelta struttura manuale */
-.unified-login { width: min(420px, 100%); margin: 28px auto 0; }
-.unified-login .location-autocomplete { margin-top: 0; }
-.unified-login input { min-height: 54px; font-size: 16px; text-align: center; }
-.unified-login .location-suggestions button { text-align: center; }
-.hotel-pick-inline { text-align: center; }
-.hotel-pick-inline p { font-size: 14px; color: #53657e; margin-bottom: 14px; }
-.hotel-pick-choices { display: grid; gap: 10px; margin-bottom: 14px; }
-.pin-inline { text-align: center; }
-.pin-inline label { text-align: left; }
-.pin-inline input { text-align: center; font-size: 24px; letter-spacing: .45em; }
-.unified-login .back-link { display: block; margin: 10px auto 0; }
-/* Login struttura e pannello admin */
+/* Login struttura (dopo la scelta della struttura): nome con
+   autocompletamento invece della vecchia tendina, poi PIN */
 .hotel-artwork { position: relative; display: block; overflow: hidden; background: #fff; }
+.login-hotel-art { width: 78px; aspect-ratio: 466 / 653; margin: 0 auto 14px; border-radius: 8px; overflow: hidden; box-shadow: 0 7px 22px rgba(11,45,92,.15); }
+.login-panel .location-autocomplete { margin-top: 7px; margin-bottom: 18px; }
+.login-panel .location-autocomplete input { margin: 0; }
 .admin-button { display: flex; align-items: center; gap: 6px; border: 1px solid #ffffff44; border-radius: 10px; padding: 9px 12px; background: #ffffff16; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
 .admin-button.active { background: #fff; color: #0e5c49; }
 .admin-panel { display: grid; gap: 18px; }
@@ -234,6 +228,9 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .status-note.in-progress { background:#e6f0fb; }
 .status-note.waiting-piece { background:#fdf1de; }
 .status-note.done { background:#e6f2eb; }
+.status-note.tech-requested { background:#fdeee0; }
+.detail-actions-heading { margin: 14px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #8a9089; font-weight: 800; }
+.detail-actions-heading:first-child { margin-top: 0; }
 .detail-actions { display:flex; flex-direction:column; gap:10px; }
 .detail-actions .secondary, .detail-actions .primary, .detail-actions .delete-user { width:100%; }
 .inline-form { display:flex; flex-direction:column; gap:4px; padding:12px; border:1px solid #dedad0; border-radius:12px; background:#faf9f6; }

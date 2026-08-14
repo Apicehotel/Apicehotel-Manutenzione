@@ -56,17 +56,10 @@ function HotelMark({ hotel, large = false }) {
   return <span className={`hotel-mark ${hotel.tone} ${large ? 'large' : ''}`}>{hotel.mark}</span>
 }
 
-function Home({ users, onLogin, onAdmin }) {
+function Home({ onSelect, onAdmin }) {
   const sliderRef = useRef(null)
   const cardRefs = useRef([])
-  const suggestRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(1)
-  const [query, setQuery] = useState('')
-  const [suggestOpen, setSuggestOpen] = useState(false)
-  const [matchedUser, setMatchedUser] = useState(null)
-  const [pendingHotel, setPendingHotel] = useState(null) // per utenti con più strutture: quella scelta, in attesa di conferma PIN
-  const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
   const orderedHotels = ['chocohotel', 'hotelgio', 'brigantino']
     .map((id) => HOTELS.find((hotel) => hotel.id === id))
 
@@ -108,6 +101,54 @@ function Home({ users, onLogin, onAdmin }) {
     }
   }, [])
 
+  return (
+    <div className="page home-page">
+      <header className="home-header">
+        <div className="home-brand"><Icon name="tool" /><strong>APICEHOTEL</strong></div>
+        <button className="home-admin" onClick={onAdmin}><Icon name="user" /> Admin</button>
+      </header>
+      <main className="home-content">
+        <section className="home-intro">
+          <h1>Seleziona una struttura</h1>
+          <p>Scegli la struttura per accedere all’area riservata</p>
+        </section>
+        <section className="hotel-slider" ref={sliderRef} aria-label="Seleziona una struttura">
+          {orderedHotels.map((hotel, index) => (
+            <button
+              className={`showcase-card ${hotel.id} ${activeIndex === index ? 'active' : ''}`}
+              key={hotel.id}
+              ref={(node) => { cardRefs.current[index] = node }}
+              onClick={() => onSelect(hotel)}
+              type="button"
+            >
+              <img className="hotel-card-img" src={hotel.card} alt={hotel.name} />
+            </button>
+          ))}
+        </section>
+        <div className="slider-dots" aria-label="Navigazione strutture">
+          {orderedHotels.map((hotel, index) => (
+            <button key={hotel.id} className={`dot ${activeIndex === index ? 'active' : ''}`} onClick={() => centerCard(index)} aria-label={`Mostra ${hotel.name}`} aria-current={activeIndex === index ? 'true' : undefined} />
+          ))}
+        </div>
+        <p className="mobile-help">Scorri per scegliere la struttura<br />e accedi con le tue credenziali</p>
+      </main>
+    </div>
+  )
+}
+
+function HotelArtwork({ hotel, className = '' }) {
+  return <span className={`hotel-artwork ${hotel.id} ${className}`}><img className="hotel-card-img" src={hotel.card} alt={`Logo ${hotel.name}`} /></span>
+}
+
+function Login({ hotel, users, onBack, onLogin }) {
+  const allowed = users.filter((user) => user.hotels.includes(hotel.id))
+  const suggestRef = useRef(null)
+  const [query, setQuery] = useState('')
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [matchedUser, setMatchedUser] = useState(null)
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+
   useEffect(() => {
     const onClickOutside = (event) => {
       if (suggestRef.current && !suggestRef.current.contains(event.target)) setSuggestOpen(false)
@@ -118,84 +159,46 @@ function Home({ users, onLogin, onAdmin }) {
 
   const trimmedQuery = query.trim().toLowerCase()
   const suggestions = trimmedQuery && !matchedUser
-    ? users.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 6)
+    ? allowed.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 6)
     : []
 
   const pickUser = (user) => {
-    setMatchedUser(user)
-    setQuery(user.name)
-    setSuggestOpen(false)
-    setError('')
-    if (user.hotels.length === 1) {
-      const only = HOTELS.find((hotel) => hotel.id === user.hotels[0])
-      setPendingHotel(only)
-      centerCard(orderedHotels.findIndex((hotel) => hotel.id === only.id))
-    } else {
-      setPendingHotel(null) // più strutture: l'utente sceglie sotto
-    }
+    setMatchedUser(user); setQuery(user.name); setSuggestOpen(false); setError('')
+  }
+  const onQueryChange = (value) => {
+    setQuery(value); setSuggestOpen(true)
+    if (matchedUser && value !== matchedUser.name) setMatchedUser(null)
   }
 
-  const resetSearch = () => {
-    setMatchedUser(null); setPendingHotel(null); setQuery(''); setPin(''); setError('')
-  }
-
-  const submitPin = (event) => {
+  const submit = (event) => {
     event.preventDefault()
-    if (!matchedUser || !pendingHotel) return
-    if (pin.length !== 4 || matchedUser.pin !== pin) {
-      setError('PIN non valido')
+    if (!matchedUser || pin.length !== 4 || matchedUser.pin !== pin) {
+      setError('Utente o PIN non validi')
       return
     }
-    onLogin(matchedUser, pendingHotel.id)
+    onLogin(matchedUser)
   }
 
-  const userHotels = matchedUser ? HOTELS.filter((hotel) => matchedUser.hotels.includes(hotel.id)) : []
-
   return (
-    <div className="page home-page">
-      <header className="home-header">
-        <div className="home-brand"><Icon name="tool" /><strong>APICEHOTEL</strong></div>
-        <button className="home-admin" onClick={onAdmin}><Icon name="user" /> Admin</button>
-      </header>
-      <main className="home-content">
-        <section className="home-intro">
-          <h1>{matchedUser ? `Ciao, ${matchedUser.name.split(' ')[0]}` : 'Accedi'}</h1>
-          <p>{matchedUser ? 'Conferma la struttura e inserisci il PIN' : 'Scrivi il tuo nome per accedere alla tua area'}</p>
-        </section>
-        <section className="hotel-slider" ref={sliderRef} aria-label="Strutture Apicehotel">
-          {orderedHotels.map((hotel, index) => (
-            <span
-              className={`showcase-card ${hotel.id} ${activeIndex === index ? 'active' : ''} ${pendingHotel && pendingHotel.id !== hotel.id ? 'dimmed' : ''}`}
-              key={hotel.id}
-              ref={(node) => { cardRefs.current[index] = node }}
-            >
-              <img className="hotel-card-img" src={hotel.card} alt={hotel.name} />
-            </span>
-          ))}
-        </section>
-        <div className="slider-dots" aria-label="Navigazione strutture">
-          {orderedHotels.map((hotel, index) => (
-            <button key={hotel.id} className={`dot ${activeIndex === index ? 'active' : ''}`} onClick={() => centerCard(index)} aria-label={`Mostra ${hotel.name}`} aria-current={activeIndex === index ? 'true' : undefined} />
-          ))}
-        </div>
-
-        <div className="unified-login">
-          {!matchedUser ? (
+    <div className="page login-page">
+      <button className="back-link" onClick={onBack}>‹ Cambia struttura</button>
+      <main className="login-panel">
+        <HotelArtwork hotel={hotel} className="login-hotel-art" />
+        <h1>{hotel.name}</h1>
+        <form onSubmit={submit}>
+          <label>Il tuo nome
             <div className="location-autocomplete" ref={suggestRef}>
               <input
                 value={query}
-                onChange={(event) => { setQuery(event.target.value); setSuggestOpen(true) }}
+                onChange={(event) => onQueryChange(event.target.value)}
                 onFocus={() => setSuggestOpen(true)}
-                placeholder="Il tuo nome"
+                placeholder="Scrivi il tuo nome"
                 autoComplete="off"
-                aria-label="Il tuo nome"
               />
               {suggestOpen && suggestions.length > 0 && (
                 <div className="location-suggestions">
                   {suggestions.map((user) => (
-                    <button key={user.id} type="button" onClick={() => pickUser(user)}>
-                      {user.name} <small style={{ opacity: .6 }}>· {user.role}</small>
-                    </button>
+                    <button key={user.id} type="button" onClick={() => pickUser(user)}>{user.name} <small style={{ opacity: .6 }}>· {user.role}</small></button>
                   ))}
                 </div>
               )}
@@ -203,29 +206,14 @@ function Home({ users, onLogin, onAdmin }) {
                 <div className="location-suggestions"><span style={{ display: 'block', padding: '10px 13px', color: '#8a8a85' }}>Nessun utente trovato</span></div>
               )}
             </div>
-          ) : !pendingHotel ? (
-            <div className="hotel-pick-inline">
-              <p>{matchedUser.name} lavora su più strutture: scegli dove accedere</p>
-              <div className="hotel-pick-choices">
-                {userHotels.map((hotel) => (
-                  <button key={hotel.id} type="button" className="secondary" onClick={() => { setPendingHotel(hotel); centerCard(orderedHotels.findIndex((h) => h.id === hotel.id)) }}>{hotel.name}</button>
-                ))}
-              </div>
-              <button className="back-link" onClick={resetSearch}>‹ Non sono io</button>
-            </div>
-          ) : (
-            <form className="pin-inline" onSubmit={submitPin}>
-              <label>PIN di 4 cifre — {pendingHotel.name}
-                <input inputMode="numeric" autoComplete="current-password" autoFocus maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} placeholder="••••" />
-              </label>
-              {error && <p className="error" role="alert">{error}</p>}
-              <button className="primary" disabled={pin.length !== 4}>Accedi</button>
-              <button type="button" className="back-link" onClick={resetSearch}>‹ Non sono io</button>
-            </form>
-          )}
-        </div>
-
-        <p className="mobile-help">Scorri per conoscere le nostre strutture</p>
+          </label>
+          <label>PIN di 4 cifre
+            <input inputMode="numeric" autoComplete="current-password" maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} placeholder="••••" disabled={!matchedUser} />
+          </label>
+          {error && <p className="error" role="alert">{error}</p>}
+          <button className="primary" disabled={!matchedUser || pin.length !== 4}>Accedi</button>
+        </form>
+        <aside className="session-note"><strong>Sessione persistente</strong><span>Il PIN non verrà richiesto di nuovo fino a logout, cambio utente o revoca.</span></aside>
       </main>
     </div>
   )
@@ -364,14 +352,21 @@ function NewIssueForm({ hotel, user, onCancel, onSave }) {
 
 function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDelete }) {
   const [noteDraft, setNoteDraft] = useState('')
+  const [completionPhoto, setCompletionPhoto] = useState(null)
+  const [completionPhotoName, setCompletionPhotoName] = useState('')
   const [pieceDraft, setPieceDraft] = useState('')
   const [askingComplete, setAskingComplete] = useState(false)
   const [askingPiece, setAskingPiece] = useState(false)
 
   const takeCharge = () => onUpdate(issue.id, { status: 'tecnico', assignedTo: currentUser.id, assignedToName: currentUser.name, assignedAt: Date.now() })
-  const confirmComplete = () => { onUpdate(issue.id, { status: 'completata', completionNote: noteDraft.trim() || null, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
+  const confirmComplete = () => { onUpdate(issue.id, { status: 'completata', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
+  const pickCompletionPhoto = async (file) => {
+    const data = await readPhotoAsDataUrl(file)
+    setCompletionPhoto(data); setCompletionPhotoName(file?.name || '')
+  }
   const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'attesa_pezzo', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
   const pieceArrived = () => onUpdate(issue.id, { status: 'tecnico', pieceArrivedAt: Date.now() })
+  const requestTechnician = () => onUpdate(issue.id, { technicianRequested: true, technicianRequestedAt: Date.now(), technicianRequestedBy: currentUser.name })
   const remove = () => { if (window.confirm('Eliminare questa segnalazione? L’azione non è reversibile.')) { onDelete(issue.id); onClose() } }
 
   return (
@@ -398,10 +393,14 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
         {issue.status === 'attesa_pezzo' && (
           <div className="status-note waiting-piece">In attesa di: <strong>{issue.pieceName}</strong></div>
         )}
+        {issue.technicianRequested && issue.status !== 'completata' && (
+          <div className="status-note tech-requested">Tecnico esterno richiesto da <strong>{issue.technicianRequestedBy}</strong></div>
+        )}
         {issue.status === 'completata' && (
           <div className="status-note done">
             Completata da <strong>{issue.completedBy}</strong>
             {issue.completionNote && <p>{issue.completionNote}</p>}
+            {issue.completionPhotoData && <img className="detail-photo" src={issue.completionPhotoData} alt="Foto riparazione completata" />}
           </div>
         )}
 
@@ -412,14 +411,25 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
 
           {issue.status === 'tecnico' && permissions.includes('complete') && !askingComplete && !askingPiece && (
             <>
-              <button className="primary" onClick={() => setAskingComplete(true)}>Segna completata</button>
-              <button className="secondary" onClick={() => setAskingPiece(true)}>Attesa di un pezzo</button>
+              <p className="detail-actions-heading">Azioni</p>
+              <button className="primary" onClick={() => setAskingComplete(true)}>Riparazione completata</button>
+              <p className="detail-actions-heading">Non riesco a risolvere</p>
+              <button className="secondary" onClick={() => setAskingPiece(true)}>Serve pezzo</button>
+              <button className="secondary" onClick={requestTechnician} disabled={issue.technicianRequested}>{issue.technicianRequested ? 'Tecnico già richiesto' : 'Chiedi un tecnico'}</button>
             </>
           )}
           {askingComplete && (
             <div className="inline-form">
-              <label>Nota di completamento (facoltativa)<textarea rows="3" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Cosa è stato fatto" /></label>
-              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingComplete(false)}>Annulla</button><button className="primary" onClick={confirmComplete}>Conferma completamento</button></div>
+              <label>Foto (opzionale)
+                <div className="photo-actions">
+                  <label className="photo-action camera-action"><input className="photo-input camera-input" type="file" accept="image/*" capture="environment" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Scatta foto</strong></label>
+                  <label className="photo-action gallery-action"><input className="photo-input gallery-input" type="file" accept="image/*" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} /><Icon name="image" /><strong>Galleria</strong></label>
+                </div>
+                {completionPhoto && <img className="photo-preview" src={completionPhoto} alt="Anteprima foto completamento" />}
+                {completionPhotoName && <small className="photo-selected">Selezionata: {completionPhotoName}</small>}
+              </label>
+              <label>Note sul lavoro fatto (facoltative)<textarea rows="3" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Cosa è stato fatto" /></label>
+              <div className="inline-form-actions"><button className="secondary" onClick={() => setAskingComplete(false)}>Annulla</button><button className="primary" onClick={confirmComplete}>Segna completata</button></div>
             </div>
           )}
           {askingPiece && (
@@ -464,6 +474,8 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
   const tabs = ['Segnalazioni', 'Avvisi Urgenti', 'Interventi', ...(hotel.id === 'hotelgio' && permissions.includes('planning_sale') ? ['Planning Sale'] : [])]
+  const hotelIssues = useMemo(() => allIssues.filter((issue) => issue.hotelId === hotel.id), [allIssues, hotel.id])
+  const statusCounts = useMemo(() => hotelIssues.reduce((acc, issue) => ({ ...acc, [issue.status]: (acc[issue.status] || 0) + 1 }), {}), [hotelIssues])
   const issues = useMemo(() => allIssues
     .filter((issue) => issue.hotelId === hotel.id && issue.status === status)
     .filter((issue) => !query || `${issue.room} ${issue.title}`.toLowerCase().includes(query.toLowerCase()))
@@ -489,10 +501,10 @@ function Operations({ hotel, user, onLogout, onChangeHotel }) {
         {tab === 'Segnalazioni' ? <>
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
-          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa_pezzo','Attesa pezzo'],['completata','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label}</button>)}</div>
+          <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['attesa_pezzo','Attesa pezzo'],['completata','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
           <div className="toolbar"><label className="search"><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Urgenza</option><option value="camera">Camera/Zona</option><option value="data">Data</option></select><button className="secondary" onClick={() => setAdvanced(!advanced)}>Filtri</button></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
-          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'attesa_pezzo' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' && issue.assignedToName ? ` · In carico a ${issue.assignedToName}` : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
+          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'attesa_pezzo' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' && issue.assignedToName ? ` · In carico a ${issue.assignedToName}` : ''}{issue.technicianRequested && issue.status !== 'completata' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
         </> : tab === 'Planning Sale' ? <div className="placeholder planning-placeholder"><h2>Planning Sale</h2><p>Calendario sale congressi predisposto. Sarà sviluppato nel prossimo blocco funzionale.</p><span>Accesso autorizzato: {user.role}</span></div> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
@@ -508,20 +520,22 @@ export default function App() {
   const [users, setUsers] = useState(loadUsers)
   const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
+  const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
   const user = users.find((item) => item.id === session?.userId)
   const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
 
-  const login = (nextUser, hotelId) => {
-    const next = { hotelId, userId: nextUser.id, createdAt: Date.now() }
+  const login = (nextUser) => {
+    const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
     saveSession(next)
     setSession(next)
   }
-  const logout = () => { clearSession(); setSession(null) }
-  const changeHotel = () => { clearSession(); setSession(null) }
+  const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
+  const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
   if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} onLogout={logout} onChangeHotel={changeHotel} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
-  return <Home users={users} onLogin={login} onAdmin={() => setAdminStage('pin')} />
+  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
+  return <Home onSelect={setSelectedHotel} onAdmin={() => setAdminStage('pin')} />
 }
