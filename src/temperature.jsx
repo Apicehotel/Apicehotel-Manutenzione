@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { hotelGioClient as sensorsClient } from './hotelgio-data.js'
-const syncUrl = 'https://jmhzmwyolxzacjunfwcq.supabase.co/functions/v1/sync-sensori-temperatura'
+import { supabaseUrl } from './supabase.js'
+// La sync dei sensori chiama la edge function del DB unico (Apice MultiHotel),
+// non più quella di Hotel Giò. I sensori sono filtrati per hotel_id.
+const syncUrl = `${supabaseUrl}/functions/v1/sync-sensori-temperatura`
 
-export function TemperatureSensors() {
+export function TemperatureSensors({ hotel }) {
   const [sensors, setSensors] = useState([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -10,32 +13,32 @@ export function TemperatureSensors() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data, error: requestError } = await sensorsClient.from('sensori_temperatura').select('*').order('ordine')
+    const { data, error: requestError } = await sensorsClient.from('sensori_temperatura').select('*').eq('hotel_id', hotel.id).order('ordine')
     setSensors(data || [])
     setError(requestError ? 'Impossibile caricare le temperature.' : '')
     setLoading(false)
-  }, [])
+  }, [hotel.id])
 
   useEffect(() => {
     load()
-    const channel = sensorsClient.channel('apice-sensori-temp-changes').on(
+    const channel = sensorsClient.channel('apice-sensori-temp-'+hotel.id).on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'sensori_temperatura' },
+      { event: '*', schema: 'public', table: 'sensori_temperatura', filter: `hotel_id=eq.${hotel.id}` },
       load,
     ).subscribe()
     return () => { sensorsClient.removeChannel(channel) }
-  }, [load])
+  }, [load, hotel.id])
 
   const refresh = async () => {
     setSyncing(true)
-    try { await fetch(syncUrl, { method: 'POST' }) } catch { setError('Sincronizzazione non disponibile.') }
+    try { await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotel_id: hotel.id }) }) } catch { setError('Sincronizzazione non disponibile.') }
     await load()
     setSyncing(false)
   }
 
   return <section className="temperature-page" aria-labelledby="temperature-title">
     <header className="temperature-heading">
-      <div><h1 id="temperature-title">Sensori temperatura</h1><p>Hotel Giò · aggiornamento automatico ogni 15 minuti</p></div>
+      <div><h1 id="temperature-title">Sensori temperatura</h1><p>{hotel.name} · aggiornamento automatico ogni 15 minuti</p></div>
       <button className="secondary temperature-refresh" onClick={refresh} disabled={syncing}>{syncing ? 'Aggiorno…' : '↻ Aggiorna'}</button>
     </header>
     {error && <p className="temperature-error" role="alert">{error}</p>}
