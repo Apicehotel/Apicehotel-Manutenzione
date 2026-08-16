@@ -84,7 +84,9 @@ create table if not exists segnalazioni (
   tecnico_telefono      text,
   tecnico_richiesto_da  text,
   tecnico_richiesto_il  timestamptz,
-  tecnico_completato    boolean default false
+  tecnico_completato    boolean default false,
+  origine               text default 'App',
+  reparto               text
 );
 create index if not exists idx_segnalazioni_hotel on segnalazioni(hotel_id);
 create index if not exists idx_segnalazioni_stato on segnalazioni(hotel_id, stato);
@@ -96,6 +98,7 @@ create table if not exists interventi (
   camera                text not null,
   categoria             text default 'varie',
   note                  text,
+  location_mode         text default 'zona',
   programmato_il        timestamptz,
   programmato_dal       timestamptz,
   programmato_al        timestamptz,
