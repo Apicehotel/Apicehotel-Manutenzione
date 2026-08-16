@@ -5,6 +5,7 @@ import { fetchUsers, insertUser, updateUserRow, deleteUserRow, updateUserPin } f
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from './issues-data.js'
 import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from './urgents-data.js'
 import { fetchPlanned, insertPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from './planned-data.js'
+import { SensorsPanel } from './sensors-panel.jsx'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
@@ -411,7 +412,8 @@ function AdminPanel({ users, onUsersChange, onClose }) {
       {HOTELS.map((hotel)=><td data-label={hotel.short} key={hotel.id}><input type="checkbox" checked={target.hotels.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} aria-label={`${target.name}: ${hotel.name}`}/></td>)}
       <td className="admin-user-actions"><button className="delete-user" onClick={()=>remove(target)} disabled={target.id===currentUser.id}>Elimina</button></td>
     </tr>)}</tbody></table></div>
-    <p className="admin-footnote">Le modifiche sono operative e persistenti su questo dispositivo. Il collegamento definitivo dei profili a Supabase sarà il prossimo passaggio.</p>
+    <SensorsPanel />
+    <p className="admin-footnote">Le modifiche sono operative sul database condiviso di tutte le strutture.</p>
   </section>
 }
 
@@ -875,7 +877,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
             <button onClick={() => { exportIssuesCsv(allIssues, hotel); setMenuOpen(false) }} disabled={!hotelIssues.length}><Icon name="download" /><span>Esporta CSV</span></button>
             {canViewPlanningMenu(user) && <button onClick={goToWorkPlanning}><Icon name="calendar" /><span>Planning lavori</span></button>}
             {hotel.id === 'hotelgio' && canViewPlanningMenu(user) && <button onClick={goToPlanning}><Icon name="calendar" /><span>Planning Sale</span></button>}
-            {hotel.id === 'hotelgio' && canViewTemperature(user) && <button onClick={goToTemperature}><Icon name="temperature" /><span>Temperature</span></button>}
+            {canViewTemperature(user) && <button onClick={goToTemperature}><Icon name="temperature" /><span>Temperature</span></button>}
           </nav>
           <fieldset className="ui-scale-setting"><legend>Dimensione interfaccia</legend><div>{[['small','Piccola'],['normal','Normale'],['large','Grande']].map(([value,label])=><button type="button" className={uiSize===value?'active':''} aria-pressed={uiSize===value} onClick={()=>onUiSizeChange(value)} key={value}>{label}</button>)}</div><small>Ingrandisce testi, pulsanti e schede.</small></fieldset>
           <button className="drawer-logout" onClick={onLogout}><Icon name="logout" /><span>Logout</span></button>

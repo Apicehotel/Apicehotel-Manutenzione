@@ -13,7 +13,9 @@ export function TemperatureSensors({ hotel }) {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data, error: requestError } = await sensorsClient.from('sensori_temperatura').select('*').eq('hotel_id', hotel.id).order('ordine')
+    // Mostra i sensori dove il flag di visibilità di questo hotel è attivo.
+    const flagColumn = `mostra_${hotel.id}`
+    const { data, error: requestError } = await sensorsClient.from('sensori_temperatura').select('*').eq(flagColumn, true).order('ordine')
     setSensors(data || [])
     setError(requestError ? 'Impossibile caricare le temperature.' : '')
     setLoading(false)
@@ -23,7 +25,7 @@ export function TemperatureSensors({ hotel }) {
     load()
     const channel = sensorsClient.channel('apice-sensori-temp-'+hotel.id).on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'sensori_temperatura', filter: `hotel_id=eq.${hotel.id}` },
+      { event: '*', schema: 'public', table: 'sensori_temperatura' },
       load,
     ).subscribe()
     return () => { sensorsClient.removeChannel(channel) }
@@ -31,7 +33,7 @@ export function TemperatureSensors({ hotel }) {
 
   const refresh = async () => {
     setSyncing(true)
-    try { await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotel_id: hotel.id }) }) } catch { setError('Sincronizzazione non disponibile.') }
+    try { await fetch(syncUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }) } catch { setError('Sincronizzazione non disponibile.') }
     await load()
     setSyncing(false)
   }
