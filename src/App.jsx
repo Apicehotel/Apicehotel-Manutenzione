@@ -1,22 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { fetchUsers, insertUser, updateUserRow, deleteUserRow, updateUserPin } from './users-data.js'
+import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from './issues-data.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
 import { TemperatureSensors } from './temperature.jsx'
 import { Housekeeping } from './housekeeping.jsx'
 
-const seededIssues = [
-  { id: 1, hotelId: 'hotelgio', urgency: 'alta', room: '101 · Bagno', title: "Perdita d’acqua dal lavabo", status: 'todo', date: 'Oggi, 09:15', department: 'Governante', category: 'Idraulica', origin: 'App' },
-  { id: 2, hotelId: 'hotelgio', urgency: 'media', room: '205 · Camera', title: 'Aria condizionata non raffredda', status: 'tecnico', technicianRequestedBy: 'Reception', date: 'Oggi, 10:30', department: 'Reception', category: 'Climatizzazione', origin: 'App' },
-  { id: 3, hotelId: 'hotelgio', urgency: 'bassa', room: '301 · Balcone', title: 'Lampada esterna non funziona', status: 'waiting', pieceName: 'Faretto LED esterno IP65', date: 'Ieri, 16:45', department: 'Governante', category: 'Elettrica', origin: 'App' },
-  { id: 4, hotelId: 'chocohotel', urgency: 'alta', room: 'Sala Colazione', title: 'Frigo buffet non raffredda', status: 'todo', date: 'Oggi, 08:20', department: 'Isola dei Golosi', category: 'Attrezzature', origin: 'App' },
-  { id: 5, hotelId: 'brigantino', urgency: 'media', room: '204 · Camera', title: 'Cassaforte bloccata', status: 'done', completionNote: 'Sbloccata, batteria sostituita.', date: 'Ieri, 18:10', department: 'Reception', category: 'Camera', origin: 'App' },
-]
-
-const ISSUES_STORAGE_KEY = 'apicehotel.issues.v1'
 const UI_SIZE_STORAGE_KEY = 'apicehotel.ui-size.v1'
 const loadUiSize = () => {
   try { const saved = localStorage.getItem(UI_SIZE_STORAGE_KEY); return ['small','normal','large'].includes(saved) ? saved : 'normal' } catch { return 'normal' }
@@ -25,9 +17,6 @@ const saveUiSize = (value) => { try { localStorage.setItem(UI_SIZE_STORAGE_KEY, 
 const PLANNED_STORAGE_KEY = 'apicehotel.planned.v1'
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_cliente','Fermata con cliente'],['libera','Libera'],['in_arrivo','In arrivo']]
-const loadIssues = () => {
-  try { const value = JSON.parse(localStorage.getItem(ISSUES_STORAGE_KEY)); return Array.isArray(value) ? value : seededIssues } catch { return seededIssues }
-}
 const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
 const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
 const DEFAULT_ADMIN_PIN = '000000'
@@ -741,7 +730,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const [openIssueId, setOpenIssueId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPanel, setMenuPanel] = useState(null)
-  const [allIssues, setAllIssues] = useState(loadIssues)
+  const [allIssues, setAllIssues] = useState([])
   const [urgentItems, setUrgentItems] = useState(loadUrgents)
   const [urgentComposeRequest, setUrgentComposeRequest] = useState(0)
   const [urgentTransformTarget, setUrgentTransformTarget] = useState(null)
@@ -749,14 +738,37 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const [plannedFormOpen, setPlannedFormOpen] = useState(false)
   const [openPlannedId, setOpenPlannedId] = useState(null)
   const [editingPlannedId, setEditingPlannedId] = useState(null)
-  const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
+
+  // Segnalazioni dal DB (tabella segnalazioni, filtrate per hotel corrente).
+  // Realtime: ogni cambiamento (anche da altri dispositivi) ricarica la lista.
+  const reloadIssues = useCallback(async () => {
+    const { issues } = await fetchIssues(hotel.id)
+    setAllIssues(issues)
+  }, [hotel.id])
+  useEffect(() => {
+    reloadIssues()
+    const unsub = subscribeIssues(hotel.id, reloadIssues)
+    return unsub
+  }, [hotel.id, reloadIssues])
+
   const updateUrgents = (next) => { persistUrgents(next); setUrgentItems(next) }
   const updatePlannedItems = (next) => { localStorage.setItem(PLANNED_STORAGE_KEY, JSON.stringify(next)); setPlannedItems(next) }
-  const saveIssue = (issue) => {
-    persist([...allIssues, issue]); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
+  // Crea: inserisce sul DB, poi ricarica (il realtime aggiorna anche gli altri).
+  const saveIssue = async (issue) => {
+    const created = await insertIssue({ ...issue, hotelId: hotel.id })
+    if (created) setAllIssues((list) => [created, ...list.filter((i) => i.id !== created.id)])
+    else setAllIssues((list) => [issue, ...list]) // fallback locale se il DB non risponde
+    setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
   }
-  const updateIssue = (id, changes) => persist(allIssues.map((item) => item.id === id ? { ...item, ...changes } : item))
-  const deleteIssue = (id) => persist(allIssues.filter((item) => item.id !== id))
+  // Aggiorna: update ottimistico locale + scrittura DB.
+  const updateIssue = async (id, changes) => {
+    setAllIssues((list) => list.map((item) => item.id === id ? { ...item, ...changes } : item))
+    await updateIssueRow(id, changes)
+  }
+  const deleteIssue = async (id) => {
+    setAllIssues((list) => list.filter((item) => item.id !== id))
+    await deleteIssueRow(id)
+  }
   const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
@@ -788,10 +800,10 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
   const transformUrgent = (urgent, data) => {
-    persist([...allIssues, {
-      id: Date.now(), hotelId: hotel.id, urgency: data.urgency, room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`, title: data.note.trim(),
-      status: 'todo', date: `Oggi, ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`, department: user.department || user.role, category: data.category, origin: 'Avviso urgente', createdAt: Date.now(), createdBy: user.id, createdByName: user.name,
-    }])
+    saveIssue({
+      hotelId: hotel.id, urgency: data.urgency, room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`, title: data.note.trim(),
+      status: 'todo', department: user.department || user.role, category: data.category, origin: 'Avviso urgente', createdByName: user.name,
+    })
     updateUrgent(urgent.id, { status: 'completata', completedBy: user.name, completedAt: Date.now(), transformed: true })
     setUrgentTransformTarget(null)
   }
@@ -809,7 +821,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const completePlanned = (item, completionPhotoData = null) => {
     const completedAt = Date.now()
     updatePlannedItems(plannedItems.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
-    persist([...allIssues, { id:completedAt, hotelId:hotel.id, urgency:'media', room:`${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`, title:item.notes, status:'done', date:`Oggi, ${new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`, department:user.role, category:item.category, origin:'Intervento pianificato', createdAt:item.createdAt, completedAt, completedBy:user.name, pieceReplaced:item.pieceReplaced, completionPhotoData }])
+    saveIssue({ hotelId:hotel.id, urgency:'media', room:`${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`, title:item.notes, status:'done', department:user.role, category:item.category, origin:'Intervento pianificato', completedAt, completedBy:user.name, pieceReplaced:item.pieceReplaced, completionPhotoData })
     setOpenPlannedId(null)
   }
 
