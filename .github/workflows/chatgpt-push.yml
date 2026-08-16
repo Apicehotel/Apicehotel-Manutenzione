@@ -1,0 +1,83 @@
+name: ChatGPT Push Bridge
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply-change:
+    if: startsWith(github.event.issue.title, '[CHATGPT-PUSH]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: feature/base-multihotel
+
+      - name: Read command
+        id: command
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          echo "$ISSUE_BODY" > /tmp/request.json
+
+      - name: Apply file change
+        run: |
+          python3 <<'PY'
+          import json
+          import base64
+          from pathlib import Path
+
+          data = json.load(open("/tmp/request.json"))
+
+          path = data["path"]
+          content = base64.b64decode(data["content"]).decode("utf-8")
+
+          allowed = (
+              path.startswith("src/") or
+              path.startswith("api/") or
+              path.startswith("public/") or
+              path.startswith("supabase/")
+          )
+
+          if not allowed:
+              raise SystemExit("Path non consentito")
+
+          if ".." in path or path.startswith("/"):
+              raise SystemExit("Path non valido")
+
+          file = Path(path)
+          file.parent.mkdir(parents=True, exist_ok=True)
+          file.write_text(content, encoding="utf-8")
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "ApiceHotel Automation"
+          git config user.email "appmanutenzioneapice@gmail.com"
+
+          git add .
+
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica"
+            exit 0
+          fi
+
+          git commit -m "Automated update from ChatGPT"
+          git push origin feature/base-multihotel
+
+      - name: Close request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            })
