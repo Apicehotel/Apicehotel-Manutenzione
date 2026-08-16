@@ -3,6 +3,8 @@ import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { fetchUsers, insertUser, updateUserRow, deleteUserRow, updateUserPin } from './users-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from './issues-data.js'
+import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from './urgents-data.js'
+import { fetchPlanned, insertPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from './planned-data.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
@@ -14,7 +16,6 @@ const loadUiSize = () => {
   try { const saved = localStorage.getItem(UI_SIZE_STORAGE_KEY); return ['small','normal','large'].includes(saved) ? saved : 'normal' } catch { return 'normal' }
 }
 const saveUiSize = (value) => { try { localStorage.setItem(UI_SIZE_STORAGE_KEY, value) } catch { /* La sessione resta utilizzabile anche senza storage. */ } }
-const PLANNED_STORAGE_KEY = 'apicehotel.planned.v1'
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_cliente','Fermata con cliente'],['libera','Libera'],['in_arrivo','In arrivo']]
 const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
@@ -54,22 +55,8 @@ const Icon = ({ name }) => {
   }
   return <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
-const loadPlanned = () => {
-  try { const value = JSON.parse(localStorage.getItem(PLANNED_STORAGE_KEY)); return Array.isArray(value) ? value : [] } catch { return [] }
-}
 
 const FEEDBACK_STORAGE_KEY = 'apicehotel.feedback.v1'
-const URGENT_STORAGE_KEY = 'apicehotel.urgent.v1'
-const URGENT_RETENTION_MS = 72 * 60 * 60 * 1000
-const loadUrgents = () => {
-  try {
-    const value = JSON.parse(localStorage.getItem(URGENT_STORAGE_KEY))
-    const items = Array.isArray(value) ? value.filter((item) => Date.now() - item.createdAt < URGENT_RETENTION_MS) : []
-    localStorage.setItem(URGENT_STORAGE_KEY, JSON.stringify(items))
-    return items
-  } catch { return [] }
-}
-const persistUrgents = (items) => localStorage.setItem(URGENT_STORAGE_KEY, JSON.stringify(items))
 const canSendUrgent = (user) => ['Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
 const canManageUrgent = (user) => user.role === 'manutentore'
 const canViewUrgent = (user) => canSendUrgent(user) || canManageUrgent(user)
@@ -134,7 +121,7 @@ function MenuPanel({ type, user, onClose, onSavePin }) {
   </div>
 }
 
-function UrgentSection({ hotel, user, items, openRequest, onItemsChange, onTake, onComplete, onTransform }) {
+function UrgentSection({ hotel, user, items, openRequest, onCreate, onTake, onComplete, onTransform }) {
   const [filter, setFilter] = useState('tutte')
   const [creating, setCreating] = useState(false)
   const [note, setNote] = useState('')
@@ -147,7 +134,7 @@ function UrgentSection({ hotel, user, items, openRequest, onItemsChange, onTake,
     event.preventDefault()
     const text = note.trim()
     if (!text) return
-    onItemsChange([{ id: Date.now(), hotelId: hotel.id, note: text, status: 'aperta', createdBy: user.name, createdAt: Date.now() }, ...items])
+    onCreate(text)
     setNote(''); setCreating(false); setFilter('attesa')
   }
   const take = (id) => { onTake(id); setFilter('lavorazione') }
@@ -731,10 +718,10 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPanel, setMenuPanel] = useState(null)
   const [allIssues, setAllIssues] = useState([])
-  const [urgentItems, setUrgentItems] = useState(loadUrgents)
+  const [urgentItems, setUrgentItems] = useState([])
   const [urgentComposeRequest, setUrgentComposeRequest] = useState(0)
   const [urgentTransformTarget, setUrgentTransformTarget] = useState(null)
-  const [plannedItems, setPlannedItems] = useState(loadPlanned)
+  const [plannedItems, setPlannedItems] = useState([])
   const [plannedFormOpen, setPlannedFormOpen] = useState(false)
   const [openPlannedId, setOpenPlannedId] = useState(null)
   const [editingPlannedId, setEditingPlannedId] = useState(null)
@@ -751,8 +738,27 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
     return unsub
   }, [hotel.id, reloadIssues])
 
-  const updateUrgents = (next) => { persistUrgents(next); setUrgentItems(next) }
-  const updatePlannedItems = (next) => { localStorage.setItem(PLANNED_STORAGE_KEY, JSON.stringify(next)); setPlannedItems(next) }
+  // Avvisi urgenti e interventi dal DB, anch'essi in realtime.
+  const reloadUrgents = useCallback(async () => {
+    const { items } = await fetchUrgents(hotel.id)
+    setUrgentItems(items)
+  }, [hotel.id])
+  useEffect(() => {
+    reloadUrgents()
+    const unsub = subscribeUrgents(hotel.id, reloadUrgents)
+    return unsub
+  }, [hotel.id, reloadUrgents])
+
+  const reloadPlanned = useCallback(async () => {
+    const { items } = await fetchPlanned(hotel.id)
+    setPlannedItems(items)
+  }, [hotel.id])
+  useEffect(() => {
+    reloadPlanned()
+    const unsub = subscribePlanned(hotel.id, reloadPlanned)
+    return unsub
+  }, [hotel.id, reloadPlanned])
+
   // Crea: inserisce sul DB, poi ricarica (il realtime aggiorna anche gli altri).
   const saveIssue = async (issue) => {
     const created = await insertIssue({ ...issue, hotelId: hotel.id })
@@ -796,9 +802,16 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
   const goToTemperature = () => { setTab('Temperature'); setMenuOpen(false) }
   const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature'
-  const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
-  const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
-  const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
+  const createUrgent = async (text) => {
+    const created = await insertUrgent({ hotelId: hotel.id, note: text, status: 'aperta', createdBy: user.name })
+    if (created) setUrgentItems((list) => [created, ...list.filter((i) => i.id !== created.id)])
+  }
+  const updateUrgent = async (id, changes) => {
+    setUrgentItems((list) => list.map((item) => item.id === id ? { ...item, ...changes } : item))
+    await updateUrgentRow(id, changes)
+  }
+  const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name })
+  const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name })
   const transformUrgent = (urgent, data) => {
     saveIssue({
       hotelId: hotel.id, urgency: data.urgency, room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`, title: data.note.trim(),
@@ -810,17 +823,34 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const openUrgentCount = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata').length
   const activeUrgents = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata')
   useEffect(() => { if (canManageUrgent(user) && openUrgentCount) playUrgentSignal() }, [openUrgentCount, user])
-  const savePlanned = (draft) => {
+  const savePlanned = async (draft) => {
     const dates = { scheduledAt:new Date(draft.scheduledAt).getTime(), scheduledUntil:new Date(draft.scheduledUntil).getTime() }
-    const item = editingPlanned ? { ...editingPlanned, ...draft, ...dates, updatedAt:Date.now() } : { ...draft, ...dates, id:Date.now(), hotelId:hotel.id, status:'pending', createdAt:Date.now(), createdBy:user.name }
-    updatePlannedItems(editingPlanned ? plannedItems.map((current) => current.id === item.id ? item : current) : [item, ...plannedItems])
+    if (editingPlanned) {
+      const item = { ...editingPlanned, ...draft, ...dates }
+      setPlannedItems((list) => list.map((current) => current.id === item.id ? item : current))
+      await updatePlannedRow(item.id, item)
+    } else {
+      const item = { ...draft, ...dates, hotelId:hotel.id, status:'pending', createdBy:user.name }
+      const created = await insertPlanned(item)
+      if (created) setPlannedItems((list) => [created, ...list])
+    }
     setPlannedFormOpen(false); setEditingPlannedId(null)
   }
-  const updatePlanned = (id, changes, close = true) => { updatePlannedItems(plannedItems.map((item) => item.id === id ? { ...item, ...changes } : item)); if (close) setOpenPlannedId(null) }
-  const deletePlanned = (id) => { if (!window.confirm('Eliminare questo intervento?')) return; updatePlannedItems(plannedItems.filter((item) => item.id !== id)); setOpenPlannedId(null) }
-  const completePlanned = (item, completionPhotoData = null) => {
+  const updatePlanned = async (id, changes, close = true) => {
+    setPlannedItems((list) => list.map((item) => item.id === id ? { ...item, ...changes } : item))
+    await updatePlannedRow(id, changes)
+    if (close) setOpenPlannedId(null)
+  }
+  const deletePlanned = async (id) => {
+    if (!window.confirm('Eliminare questo intervento?')) return
+    setPlannedItems((list) => list.filter((item) => item.id !== id))
+    await deletePlannedRow(id)
+    setOpenPlannedId(null)
+  }
+  const completePlanned = async (item, completionPhotoData = null) => {
     const completedAt = Date.now()
-    updatePlannedItems(plannedItems.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
+    setPlannedItems((list) => list.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
+    await updatePlannedRow(item.id, { status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData })
     saveIssue({ hotelId:hotel.id, urgency:'media', room:`${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`, title:item.notes, status:'done', department:user.role, category:item.category, origin:'Intervento pianificato', completedAt, completedBy:user.name, pieceReplaced:item.pieceReplaced, completionPhotoData })
     setOpenPlannedId(null)
   }
@@ -866,7 +896,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
           <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
-        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors hotel={hotel} /> : tab === 'Housekeeping' ? <Housekeeping user={user} hotel={hotel} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
+        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onCreate={createUrgent} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors hotel={hotel} /> : tab === 'Housekeeping' ? <Housekeeping user={user} hotel={hotel} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       {!['Temperature','Housekeeping'].includes(tab) && <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>}
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (

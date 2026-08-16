@@ -5,14 +5,13 @@ import test from 'node:test'
 test('Avvisi Urgenti implementa invio, presa in carico, completamento e trasformazione', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
 
-  assert.match(app, /URGENT_STORAGE_KEY/)
+  assert.match(app, /subscribeUrgents/)
   assert.match(app, /\['tutte', 'Tutte'/)
   assert.match(app, />Vado</)
   assert.match(app, />Fatto</)
   assert.match(app, /Non risolvibile — trasforma in segnalazione/)
   assert.match(app, /origin: 'Avviso urgente'/)
   assert.match(app, /item\.hotelId === hotel\.id/)
-  assert.match(app, /URGENT_RETENTION_MS = 72/)
   assert.match(app, /function UrgentBanner/)
   assert.match(app, /className="urgent-fab"/)
   assert.match(app, /const canSendUrgent = \(user\) => \['Direzione', 'Direttore Centro Congressi'\]\.includes\(user\.role\) \|\| user\.department === 'Reception'/)

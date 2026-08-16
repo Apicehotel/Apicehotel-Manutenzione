@@ -6,7 +6,7 @@ test('Interventi replica il flusso pianificato di Hotel Gio', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
 
   assert.match(app, /function InterventionsSection/)
-  assert.match(app, /PLANNED_STORAGE_KEY/)
+  assert.match(app, /subscribePlanned/)
   assert.match(app, /function PlannedCard/)
   assert.match(app, /function PlannedForm/)
   assert.match(app, /function PlannedDetail/)
