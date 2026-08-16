@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js'
+import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
+import { fetchUsers, insertUser, updateUserRow, deleteUserRow, updateUserPin } from './users-data.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
@@ -27,25 +28,11 @@ const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_clien
 const loadIssues = () => {
   try { const value = JSON.parse(localStorage.getItem(ISSUES_STORAGE_KEY)); return Array.isArray(value) ? value : seededIssues } catch { return seededIssues }
 }
-const USERS_STORAGE_KEY = 'apicehotel.users.v1'
-const ALL_HOTELS_MIGRATION_KEY = 'apicehotel.all-hotels-migration.v1'
 const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
 const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
 const DEFAULT_ADMIN_PIN = '000000'
 const PERMISSION_LABELS = {
   manage_users: 'Gestione utenti', manage_all_hotels: 'Tutte le strutture', create: 'Crea segnalazioni', assign: 'Assegna lavori', complete: 'Completa lavori', read_all_departments: 'Tutti i reparti', planning_sale: 'Planning Sale', take_charge: 'Presa in carico', read_own_hotel: 'Lettura struttura'
-}
-function loadUsers() {
-  try {
-    const value = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY))
-    let users = (Array.isArray(value) && value.length ? value : USERS).map((user) => user.role === 'responsabile' ? { ...user, role: 'Responsabile' } : user)
-    if (localStorage.getItem(ALL_HOTELS_MIGRATION_KEY) !== 'done') {
-      users = users.map((user) => ({ ...user, hotels: [...ALL_HOTEL_IDS] }))
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
-      localStorage.setItem(ALL_HOTELS_MIGRATION_KEY, 'done')
-    }
-    return users
-  } catch { return USERS }
 }
 
 const Icon = ({ name }) => {
@@ -302,7 +289,7 @@ function HotelArtwork({ hotel, className = '' }) {
   return <span className={`hotel-artwork ${hotel.id} ${className}`}><img className="hotel-card-img" src={hotel.card} alt={`Logo ${hotel.name}`} /></span>
 }
 
-function Login({ hotel, users, onBack, onLogin }) {
+function Login({ hotel, users, usersLoading, onBack, onLogin }) {
   const allowed = users.filter((user) => user.hotels.includes(hotel.id))
   const suggestRef = useRef(null)
   const [query, setQuery] = useState('')
@@ -354,8 +341,9 @@ function Login({ hotel, users, onBack, onLogin }) {
                 value={query}
                 onChange={(event) => onQueryChange(event.target.value)}
                 onFocus={() => setSuggestOpen(true)}
-                placeholder="Scrivi il tuo nome"
+                placeholder={usersLoading ? 'Carico gli utenti…' : 'Scrivi il tuo nome'}
                 autoComplete="off"
+                disabled={usersLoading}
               />
               {suggestOpen && suggestions.length > 0 && (
                 <div className="location-suggestions">
@@ -364,7 +352,10 @@ function Login({ hotel, users, onBack, onLogin }) {
                   ))}
                 </div>
               )}
-              {suggestOpen && trimmedQuery && suggestions.length === 0 && (
+              {suggestOpen && !usersLoading && allowed.length === 0 && (
+                <div className="location-suggestions"><span style={{ display: 'block', padding: '10px 13px', color: '#8a8a85' }}>Nessun utente configurato per questa struttura. Aggiungili dal pannello Admin.</span></div>
+              )}
+              {suggestOpen && !usersLoading && allowed.length > 0 && trimmedQuery && suggestions.length === 0 && (
                 <div className="location-suggestions"><span style={{ display: 'block', padding: '10px 13px', color: '#8a8a85' }}>Nessun utente trovato</span></div>
               )}
             </div>
@@ -880,14 +871,42 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
 
 export default function App() {
   const [uiSize, setUiSize] = useState(loadUiSize)
-  const [users, setUsers] = useState(loadUsers)
+  const [users, setUsers] = useState([])
+  const [usersLoading, setUsersLoading] = useState(true)
   const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
   const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
   const hotel = HOTELS.find((item) => item.id === session?.hotelId)
   const user = users.find((item) => item.id === session?.userId)
-  const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
-  const updateCurrentUserPin = (nextPin) => updateUsers(users.map((item) => item.id === user?.id ? { ...item, pin: nextPin } : item))
+
+  // Utenti dal database (Apice MultiHotel). La lista parte vuota e si popola
+  // dal DB; le modifiche vanno direttamente su Supabase. Se il DB non è
+  // raggiungibile, la lista resta vuota e l'app non crasha.
+  useEffect(() => {
+    let active = true
+    fetchUsers().then(({ users: rows }) => { if (active) { setUsers(rows); setUsersLoading(false) } })
+    return () => { active = false }
+  }, [])
+
+  const reloadUsers = async () => { const { users: rows } = await fetchUsers(); setUsers(rows) }
+
+  // Gestione utenti dal pannello admin: scrive sul DB e poi ricarica.
+  const updateUsers = async (next) => {
+    // next è la nuova lista completa; calcoliamo le differenze rispetto a users
+    const byId = (list) => Object.fromEntries(list.filter((u) => u.id).map((u) => [u.id, u]))
+    const before = byId(users), after = byId(next)
+    // eliminati
+    for (const id of Object.keys(before)) if (!after[id]) await deleteUserRow(id)
+    // aggiunti (senza id o id locale) e modificati
+    for (const u of next) {
+      if (!u.id || String(u.id).startsWith('local-')) { await insertUser(u) }
+      else if (JSON.stringify(before[u.id]) !== JSON.stringify(u)) { await updateUserRow(u) }
+    }
+    await reloadUsers()
+  }
+  const updateCurrentUserPin = async (nextPin) => {
+    if (user?.id) { await updateUserPin(user.id, nextPin); await reloadUsers() }
+  }
 
   const login = (nextUser) => {
     const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
@@ -901,6 +920,6 @@ export default function App() {
   if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} />
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
-  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
+  if (selectedHotel) return <Login hotel={selectedHotel} users={users} usersLoading={usersLoading} onBack={() => setSelectedHotel(null)} onLogin={login} />
   return <Home onSelect={setSelectedHotel} onAdmin={() => setAdminStage('pin')} />
 }

@@ -31,6 +31,7 @@ create table if not exists utenti (
   pin                text not null,
   hotels             text[] not null default '{}',   -- hotel a cui l'utente ha accesso
   puo_admin          boolean not null default false,  -- flag per-persona: può entrare nel pannello admin unico
+  department         text,                            -- reparto (per ruolo 'segnalatore': Reception, Governante, ...)
   zone_consentite    text[],
   telefono           text,
   deve_cambiare_pin  boolean default false,
