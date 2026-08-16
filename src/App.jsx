@@ -6,6 +6,7 @@ import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssu
 import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from './urgents-data.js'
 import { fetchPlanned, insertPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from './planned-data.js'
 import { SensorsPanel } from './sensors-panel.jsx'
+import { getAdminPin, setAdminPin } from './admin-config-data.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
@@ -20,8 +21,6 @@ const saveUiSize = (value) => { try { localStorage.setItem(UI_SIZE_STORAGE_KEY, 
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 const ROOM_STATUS_OPTIONS = [['fermata_libera','Fermata libera'],['fermata_cliente','Fermata con cliente'],['libera','Libera'],['in_arrivo','In arrivo']]
 const ALL_HOTEL_IDS = HOTELS.map((hotel) => hotel.id)
-const ADMIN_PIN_STORAGE_KEY = 'apicehotel.admin-pin.v1'
-const DEFAULT_ADMIN_PIN = '000000'
 const PERMISSION_LABELS = {
   manage_users: 'Gestione utenti', manage_all_hotels: 'Tutte le strutture', create: 'Crea segnalazioni', assign: 'Assegna lavori', complete: 'Completa lavori', read_all_departments: 'Tutti i reparti', planning_sale: 'Planning Sale', take_charge: 'Presa in carico', read_own_hotel: 'Lettura struttura'
 }
@@ -350,17 +349,20 @@ function Login({ hotel, users, usersLoading, onBack, onLogin }) {
 }
 
 function AdminGate({ onBack, onSuccess }) {
-  const [pin, setPin] = useState(''), [error, setError] = useState('')
-  const submit = (event) => {
+  const [pin, setPin] = useState(''), [error, setError] = useState(''), [checking, setChecking] = useState(false)
+  const submit = async (event) => {
     event.preventDefault()
-    if (pin !== (localStorage.getItem(ADMIN_PIN_STORAGE_KEY) || DEFAULT_ADMIN_PIN)) return setError('PIN Admin non valido')
+    setChecking(true)
+    const realPin = await getAdminPin()
+    setChecking(false)
+    if (pin !== realPin) return setError('PIN Admin non valido')
     onSuccess()
   }
   return <div className="page login-page admin-gate-page">
     <button className="back-link" onClick={onBack}>‹ Torna alla scelta struttura</button>
     <main className="login-panel admin-gate">
       <span className="admin-lock"><Icon name="user" /></span><h1>Accesso Admin</h1><p>Inserisci il PIN amministratore di 6 cifre.</p>
-      <form onSubmit={submit}><label>PIN Admin<input aria-label="PIN Admin" inputMode="numeric" autoComplete="current-password" maxLength="6" pattern="[0-9]{6}" value={pin} onChange={(e)=>{setPin(e.target.value.replace(/\D/g,'').slice(0,6));setError('')}} placeholder="••••••" /></label>{error&&<p className="error" role="alert">{error}</p>}<button className="primary" disabled={pin.length!==6}>Accedi al pannello</button></form>
+      <form onSubmit={submit}><label>PIN Admin<input aria-label="PIN Admin" inputMode="numeric" autoComplete="current-password" maxLength="6" pattern="[0-9]{6}" value={pin} onChange={(e)=>{setPin(e.target.value.replace(/\D/g,'').slice(0,6));setError('')}} placeholder="••••••" /></label>{error&&<p className="error" role="alert">{error}</p>}<button className="primary" disabled={pin.length!==6||checking}>{checking?'Verifico…':'Accedi al pannello'}</button></form>
     </main>
   </div>
 }
@@ -387,10 +389,10 @@ function AdminPanel({ users, onUsersChange, onClose }) {
     if (target.id === currentUser.id) return setMessage('Deve rimanere almeno un amministratore principale')
     if (window.confirm(`Eliminare ${target.name}?`)) commit(users.filter((item) => item.id !== target.id), `${target.name} eliminato`)
   }
-  const saveAdminPin = (event) => {
+  const saveAdminPin = async (event) => {
     event.preventDefault()
     if (!/^\d{6}$/.test(newAdminPin)) return setMessage('Il PIN Admin deve contenere esattamente 6 cifre')
-    localStorage.setItem(ADMIN_PIN_STORAGE_KEY, newAdminPin); setNewAdminPin(''); setPinEditorOpen(false); setMessage('PIN Admin aggiornato')
+    await setAdminPin(newAdminPin); setNewAdminPin(''); setPinEditorOpen(false); setMessage('PIN Admin aggiornato su tutte le strutture')
   }
   return <section className="admin-panel">
     <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Torna alla Home</button><h1>Pannello admin</h1><p>Gestisci utenti, ruoli e accessi alle strutture.</p></div><div className="admin-actions"><button className="secondary change-pin" onClick={() => setPinEditorOpen(!pinEditorOpen)}>Cambia PIN Admin</button><button className="primary add-user" onClick={() => setCreating(!creating)}>{creating ? 'Annulla' : '+ Nuovo utente'}</button></div></div>
