@@ -3,6 +3,7 @@ import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
 import { loginWithPin, logoutPinSession, restorePinSession } from './pin-auth.js'
+import { fetchIssues, createIssue, updateIssue as updateIssueRemote, deleteIssue as deleteIssueRemote } from './issues-api.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
 import { TemperatureSensors } from './temperature.jsx'
@@ -511,7 +512,11 @@ function NewIssueForm({ hotel, user, onCancel, onSave }) {
     event.preventDefault()
     if (!validLocation || !draft.title.trim()) return
     setSaving(true)
-    onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (locationMode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, createdByName: user.name, department: user.department || user.role, category: draft.category, origin: 'App', photoName: draft.photoName, photoData: draft.photoData, roomStatus: locationMode === 'camera' ? draft.roomStatus : null })
+    try {
+      await onSave({ id: Date.now(), hotelId: hotel.id, urgency: draft.urgency, room: (locationMode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(), title: draft.title.trim(), status: 'todo', date: 'Oggi, ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }), createdAt: Date.now(), createdBy: user.id, createdByName: user.name, department: user.department || user.role, category: draft.category, origin: 'App', photoName: draft.photoName, photoData: draft.photoData, roomStatus: locationMode === 'camera' ? draft.roomStatus : null })
+    } finally {
+      setSaving(false)
+    }
   }
   return <form className="new-issue-form" onSubmit={submit}>
     <div className="form-heading"><button type="button" className="form-back" onClick={onCancel} aria-label="Torna indietro">‹</button><div><h2>Nuova segnalazione</h2><p>{hotel.name} · stato iniziale Da fare</p></div></div>
@@ -752,7 +757,9 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const [openIssueId, setOpenIssueId] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPanel, setMenuPanel] = useState(null)
-  const [allIssues, setAllIssues] = useState(loadIssues)
+  const [allIssues, setAllIssues] = useState([])
+  const [issuesLoading, setIssuesLoading] = useState(true)
+  const [issuesError, setIssuesError] = useState('')
   const [urgentItems, setUrgentItems] = useState(loadUrgents)
   const [urgentComposeRequest, setUrgentComposeRequest] = useState(0)
   const [urgentTransformTarget, setUrgentTransformTarget] = useState(null)
@@ -760,14 +767,65 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const [plannedFormOpen, setPlannedFormOpen] = useState(false)
   const [openPlannedId, setOpenPlannedId] = useState(null)
   const [editingPlannedId, setEditingPlannedId] = useState(null)
-  const persist = (next) => { localStorage.setItem(ISSUES_STORAGE_KEY, JSON.stringify(next)); setAllIssues(next) }
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadRemoteIssues = async () => {
+      setIssuesLoading(true)
+      setIssuesError('')
+      try {
+        const remoteIssues = await fetchIssues(hotel.id)
+        if (!cancelled) setAllIssues(remoteIssues)
+      } catch (error) {
+        console.error('load issues error', error)
+        if (!cancelled) setIssuesError(error?.message || 'Impossibile caricare le segnalazioni')
+      } finally {
+        if (!cancelled) setIssuesLoading(false)
+      }
+    }
+
+    loadRemoteIssues()
+    return () => { cancelled = true }
+  }, [hotel.id])
+
   const updateUrgents = (next) => { persistUrgents(next); setUrgentItems(next) }
   const updatePlannedItems = (next) => { localStorage.setItem(PLANNED_STORAGE_KEY, JSON.stringify(next)); setPlannedItems(next) }
-  const saveIssue = (issue) => {
-    persist([...allIssues, issue]); setStatus('todo'); setTab('Segnalazioni'); setCreatingIssue(false)
+
+  const saveIssue = async (issue) => {
+    try {
+      const created = await createIssue(issue)
+      setAllIssues((current) => [created, ...current])
+      setStatus('todo')
+      setTab('Segnalazioni')
+      setCreatingIssue(false)
+    } catch (error) {
+      console.error('save issue error', error)
+      window.alert(error?.message || 'Impossibile salvare la segnalazione')
+      throw error
+    }
   }
-  const updateIssue = (id, changes) => persist(allIssues.map((item) => item.id === id ? { ...item, ...changes } : item))
-  const deleteIssue = (id) => persist(allIssues.filter((item) => item.id !== id))
+
+  const updateIssue = async (id, changes) => {
+    try {
+      const updated = await updateIssueRemote(id, changes)
+      if (!updated) return
+      setAllIssues((current) => current.map((item) => item.id === id ? updated : item))
+    } catch (error) {
+      console.error('update issue error', error)
+      window.alert(error?.message || 'Impossibile aggiornare la segnalazione')
+    }
+  }
+
+  const deleteIssue = async (id) => {
+    try {
+      await deleteIssueRemote(id)
+      setAllIssues((current) => current.filter((item) => item.id !== id))
+    } catch (error) {
+      console.error('delete issue error', error)
+      window.alert(error?.message || 'Impossibile eliminare la segnalazione')
+    }
+  }
   const openIssue = allIssues.find((item) => item.id === openIssueId) || null
 
   const permissions = ROLE_PERMISSIONS[user.role] || []
@@ -786,9 +844,9 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
     .filter((issue) => !category || issue.category === category)
     .sort((a, b) => {
       if (sort === 'camera') return a.room.localeCompare(b.room, 'it', { numeric: true })
-      if (sort === 'data') return b.id - a.id
+      if (sort === 'data') return (b.createdAt || 0) - (a.createdAt || 0)
       const weight = { alta: 3, media: 2, bassa: 1 }
-      return weight[b.urgency] - weight[a.urgency] || a.id - b.id
+      return weight[b.urgency] - weight[a.urgency] || (b.createdAt || 0) - (a.createdAt || 0)
     }), [allIssues, hotel.id, status, query, sort, department, category])
   const openPanel = (panel) => { setMenuOpen(false); setMenuPanel(panel) }
   const goToWorkPlanning = () => { setTab('Planning Lavori'); setMenuOpen(false) }
@@ -798,13 +856,28 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
-  const transformUrgent = (urgent, data) => {
-    persist([...allIssues, {
-      id: Date.now(), hotelId: hotel.id, urgency: data.urgency, room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`, title: data.note.trim(),
-      status: 'todo', date: `Oggi, ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`, department: user.department || user.role, category: data.category, origin: 'Avviso urgente', createdAt: Date.now(), createdBy: user.id, createdByName: user.name,
-    }])
-    updateUrgent(urgent.id, { status: 'completata', completedBy: user.name, completedAt: Date.now(), transformed: true })
-    setUrgentTransformTarget(null)
+  const transformUrgent = async (urgent, data) => {
+    try {
+      const created = await createIssue({
+        hotelId: hotel.id,
+        urgency: data.urgency,
+        room: `${data.mode === 'camera' ? 'Camera' : 'Zona'} · ${data.location.trim()}`,
+        title: data.note.trim(),
+        status: 'todo',
+        department: user.department || user.role,
+        category: data.category,
+        origin: 'Avviso urgente',
+        createdAt: Date.now(),
+        createdBy: user.id,
+        createdByName: user.name,
+      })
+      setAllIssues((current) => [created, ...current])
+      updateUrgent(urgent.id, { status: 'completata', completedBy: user.name, completedAt: Date.now(), transformed: true })
+      setUrgentTransformTarget(null)
+    } catch (error) {
+      console.error('transform urgent error', error)
+      window.alert(error?.message || 'Impossibile trasformare l’avviso')
+    }
   }
   const openUrgentCount = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata').length
   const activeUrgents = urgentItems.filter((item) => item.hotelId === hotel.id && item.status !== 'completata')
@@ -817,11 +890,32 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   }
   const updatePlanned = (id, changes, close = true) => { updatePlannedItems(plannedItems.map((item) => item.id === id ? { ...item, ...changes } : item)); if (close) setOpenPlannedId(null) }
   const deletePlanned = (id) => { if (!window.confirm('Eliminare questo intervento?')) return; updatePlannedItems(plannedItems.filter((item) => item.id !== id)); setOpenPlannedId(null) }
-  const completePlanned = (item, completionPhotoData = null) => {
+  const completePlanned = async (item, completionPhotoData = null) => {
     const completedAt = Date.now()
-    updatePlannedItems(plannedItems.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
-    persist([...allIssues, { id:completedAt, hotelId:hotel.id, urgency:'media', room:`${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`, title:item.notes, status:'done', date:`Oggi, ${new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`, department:user.role, category:item.category, origin:'Intervento pianificato', createdAt:item.createdAt, completedAt, completedBy:user.name, pieceReplaced:item.pieceReplaced, completionPhotoData }])
-    setOpenPlannedId(null)
+    try {
+      const created = await createIssue({
+        hotelId: hotel.id,
+        urgency: 'media',
+        room: `${item.locationMode === 'camera' ? 'Camera' : 'Zona'} · ${item.location}`,
+        title: item.notes,
+        status: 'done',
+        department: user.role,
+        category: item.category,
+        origin: 'Intervento pianificato',
+        createdAt: item.createdAt,
+        createdBy: user.id,
+        createdByName: user.name,
+        completedAt,
+        completedBy: user.name,
+        pieceReplaced: item.pieceReplaced || null,
+      })
+      setAllIssues((current) => [created, ...current])
+      updatePlannedItems(plannedItems.map((current) => current.id === item.id ? { ...current, status:'done', completedBy:user.name, completedAt, photoAfter:completionPhotoData } : current))
+      setOpenPlannedId(null)
+    } catch (error) {
+      console.error('complete planned error', error)
+      window.alert(error?.message || 'Impossibile completare l’intervento')
+    }
   }
 
   return (
@@ -860,6 +954,8 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
         {tab !== 'Avvisi Urgenti' && canManageUrgent(user) && <UrgentBanner items={activeUrgents} onOpen={() => setTab('Avvisi Urgenti')} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} />}
         {openIssue && <IssueDetail issue={openIssue} permissions={permissions} currentUser={user} onClose={() => setOpenIssueId(null)} onUpdate={updateIssue} onDelete={deleteIssue} />}
         {tab === 'Segnalazioni' ? <>
+          {issuesLoading && <div className="empty"><strong>Caricamento segnalazioni…</strong><span>Sincronizzazione con Supabase in corso.</span></div>}
+          {issuesError && <div className="empty"><strong>Errore sincronizzazione</strong><span>{issuesError}</span></div>}
           {creatingIssue && <NewIssueForm hotel={hotel} user={user} onCancel={()=>setCreatingIssue(false)} onSave={saveIssue} />}
           <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['waiting','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
