@@ -13,28 +13,63 @@ function normalizePin(value) {
     .slice(0, 4)
 }
 
+function normalizeRole(value) {
+  const role = String(value || '').trim()
+
+  const exactRoles = [
+    'admin',
+    'Responsabile',
+    'Direzione',
+    'Direttore Centro Congressi',
+    'Portiere Notturno',
+    'manutentore',
+    'Tecnico esterno',
+    'segnalatore',
+  ]
+
+  const exact = exactRoles.find(
+    (item) => item.toLowerCase() === role.toLowerCase()
+  )
+
+  return exact || role || 'segnalatore'
+}
+
 function mapUser(rawUser) {
   if (!rawUser) return null
+
+  const hotels = Array.isArray(rawUser.hotels)
+    ? rawUser.hotels
+    : rawUser.hotel_id
+      ? [rawUser.hotel_id]
+      : []
 
   return {
     id: rawUser.id,
     legacyId: rawUser.legacy_id || null,
     name: rawUser.name || '',
-    role: rawUser.role || 'segnalatore',
+    role: normalizeRole(rawUser.role),
     department: rawUser.department || '',
     email: rawUser.email || '',
     phone: rawUser.phone || '',
     phoneCountryCode: rawUser.phone_country_code || '+39',
-    canAdmin: Boolean(rawUser.can_admin),
+    canAdmin: Boolean(
+      rawUser.can_admin ||
+      rawUser.can_access_admin ||
+      rawUser.role === 'admin'
+    ),
     mustChangePin: Boolean(rawUser.must_change_pin),
-    hotels: rawUser.hotel_id ? [rawUser.hotel_id] : [],
-    active: true,
+    hotels,
+    active: rawUser.active !== false,
   }
 }
 
-async function getDirectory(hotelId) {
+export async function getPinDirectory(hotelId) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('Supabase non configurato')
+  }
+
+  if (!hotelId) {
+    throw new Error('Struttura non valida')
   }
 
   const endpoint =
@@ -59,11 +94,11 @@ async function getDirectory(hotelId) {
     )
   }
 
-  if (!data?.ok || !Array.isArray(data?.users)) {
+  if (!data?.ok || !Array.isArray(data.users)) {
     throw new Error('Elenco utenti non valido')
   }
 
-  return data.users
+  return data.users.map(mapUser)
 }
 
 export async function loginWithPin({
@@ -90,14 +125,11 @@ export async function loginWithPin({
     throw new Error('Struttura non valida')
   }
 
-  const directoryUsers =
-    await getDirectory(hotelId)
+  const directoryUsers = await getPinDirectory(hotelId)
 
   const matched = directoryUsers.find(
     (user) =>
-      String(user.name || '')
-        .trim()
-        .toLowerCase() ===
+      normalizeName(user.name).toLowerCase() ===
       cleanName.toLowerCase()
   )
 
@@ -105,26 +137,21 @@ export async function loginWithPin({
     throw new Error('Utente o PIN non validi')
   }
 
-  const { data, error } =
-    await supabase.functions.invoke(
-      'pin-auth',
-      {
-        body: {
-          hotel_id: hotelId,
-          user_id: matched.id,
-          pin: cleanPin,
-        },
-      }
-    )
+  const { data, error } = await supabase.functions.invoke(
+    'pin-auth',
+    {
+      body: {
+        hotel_id: hotelId,
+        user_id: matched.legacyId || matched.id,
+        pin: cleanPin,
+      },
+    }
+  )
 
   if (error) {
-    console.error(
-      'pin-auth login error',
-      error
-    )
+    console.error('pin-auth login error', error)
 
-    const status =
-      error?.context?.status
+    const status = error?.context?.status
 
     if (status === 429) {
       throw new Error(
@@ -139,6 +166,7 @@ export async function loginWithPin({
     }
 
     throw new Error(
+      data?.error ||
       'Accesso non riuscito'
     )
   }
@@ -163,14 +191,8 @@ export async function loginWithPin({
       })
 
     if (sessionError) {
-      console.error(
-        'setSession error',
-        sessionError
-      )
-
-      throw new Error(
-        'Sessione non valida'
-      )
+      console.error('setSession error', sessionError)
+      throw new Error('Sessione non valida')
     }
   }
 
@@ -180,14 +202,10 @@ export async function loginWithPin({
 export async function logoutPinSession() {
   if (!supabase) return
 
-  const { error } =
-    await supabase.auth.signOut()
+  const { error } = await supabase.auth.signOut()
 
   if (error) {
-    console.error(
-      'logout error',
-      error
-    )
+    console.error('logout error', error)
   }
 }
 
@@ -199,10 +217,7 @@ export async function restorePinSession() {
     error: sessionError,
   } = await supabase.auth.getSession()
 
-  if (
-    sessionError ||
-    !session?.user
-  ) {
+  if (sessionError || !session?.user) {
     return null
   }
 
@@ -213,17 +228,16 @@ export async function restorePinSession() {
     error: profileError,
   } = await supabase
     .from('profiles')
-    .select(
-      `
+    .select(`
       auth_user_id,
+      legacy_user_id,
       display_name,
       department,
       phone,
       phone_country_code,
       email,
       active
-      `
-    )
+    `)
     .eq('auth_user_id', userId)
     .maybeSingle()
 
@@ -241,14 +255,12 @@ export async function restorePinSession() {
     error: membershipsError,
   } = await supabase
     .from('hotel_memberships')
-    .select(
-      `
+    .select(`
       hotel_id,
       role,
       active,
       can_access_admin
-      `
-    )
+    `)
     .eq('auth_user_id', userId)
     .eq('active', true)
 
@@ -275,12 +287,12 @@ export async function restorePinSession() {
 
   return {
     id: userId,
-    legacyId: null,
-    name:
-      profile.display_name || '',
-    role:
+    legacyId: profile.legacy_user_id || null,
+    name: profile.display_name || '',
+    role: normalizeRole(
       primaryMembership.role ||
-      'segnalatore',
+      'segnalatore'
+    ),
     department:
       profile.department || '',
     email:
