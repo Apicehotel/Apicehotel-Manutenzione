@@ -197,3 +197,5 @@ export async function restorePinSession() {
 
   return mapProfile(profile, memberships || [])
 }
+
+io
