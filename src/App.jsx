@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
+import { loginWithPin, logoutPinSession, restorePinSession } from './pin-auth.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
 import { TemperatureSensors } from './temperature.jsx'
@@ -299,13 +300,13 @@ function HotelArtwork({ hotel, className = '' }) {
 }
 
 function Login({ hotel, users, onBack, onLogin }) {
-  const allowed = users.filter((user) => user.hotels.includes(hotel.id))
+  const allowed = users.filter((user) => user.hotels?.includes(hotel.id))
   const suggestRef = useRef(null)
   const [query, setQuery] = useState('')
   const [suggestOpen, setSuggestOpen] = useState(false)
-  const [matchedUser, setMatchedUser] = useState(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const onClickOutside = (event) => {
@@ -316,25 +317,37 @@ function Login({ hotel, users, onBack, onLogin }) {
   }, [])
 
   const trimmedQuery = query.trim().toLowerCase()
-  const suggestions = trimmedQuery && !matchedUser
+  const suggestions = trimmedQuery
     ? allowed.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 6)
     : []
 
   const pickUser = (user) => {
-    setMatchedUser(user); setQuery(user.name); setSuggestOpen(false); setError('')
-  }
-  const onQueryChange = (value) => {
-    setQuery(value); setSuggestOpen(true)
-    if (matchedUser && value !== matchedUser.name) setMatchedUser(null)
+    setQuery(user.name); setSuggestOpen(false); setError('')
   }
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
-    if (!matchedUser || pin.length !== 4 || matchedUser.pin !== pin) {
-      setError('Utente o PIN non validi')
+    if (!query.trim() || pin.length !== 4 || loading) {
+      setError('Inserisci nome e PIN di 4 cifre')
       return
     }
-    onLogin(matchedUser)
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const authenticatedUser = await loginWithPin({
+        name: query,
+        pin,
+        hotelId: hotel.id,
+      })
+
+      await onLogin(authenticatedUser)
+    } catch (authError) {
+      setError(authError?.message || 'Accesso non riuscito')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -348,10 +361,10 @@ function Login({ hotel, users, onBack, onLogin }) {
             <div className="location-autocomplete" ref={suggestRef}>
               <input
                 value={query}
-                onChange={(event) => onQueryChange(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setSuggestOpen(true); setError('') }}
                 onFocus={() => setSuggestOpen(true)}
                 placeholder="Scrivi il tuo nome"
-                autoComplete="off"
+                autoComplete="username"
               />
               {suggestOpen && suggestions.length > 0 && (
                 <div className="location-suggestions">
@@ -360,16 +373,22 @@ function Login({ hotel, users, onBack, onLogin }) {
                   ))}
                 </div>
               )}
-              {suggestOpen && trimmedQuery && suggestions.length === 0 && (
-                <div className="location-suggestions"><span style={{ display: 'block', padding: '10px 13px', color: '#8a8a85' }}>Nessun utente trovato</span></div>
-              )}
             </div>
           </label>
           <label>PIN di 4 cifre
-            <input inputMode="numeric" autoComplete="current-password" maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} placeholder="••••" disabled={!matchedUser} />
+            <input
+              inputMode="numeric"
+              autoComplete="current-password"
+              maxLength="4"
+              pattern="[0-9]{4}"
+              value={pin}
+              onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }}
+              placeholder="••••"
+              disabled={!query.trim() || loading}
+            />
           </label>
           {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={!matchedUser || pin.length !== 4}>Accedi</button>
+          <button className="primary" disabled={!query.trim() || pin.length !== 4 || loading}>{loading ? 'Accesso…' : 'Accedi'}</button>
         </form>
         <aside className="session-note"><strong>Sessione persistente</strong><span>Il PIN non verrà richiesto di nuovo fino a logout, cambio utente o revoca.</span></aside>
       </main>
@@ -518,11 +537,6 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
   const [askingReplaced, setAskingReplaced] = useState(false)
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false)
 
-  // Stati reali (allineati all'app di Hotel Giò): todo, tecnico (tecnico
-  // esterno richiesto), waiting (attesa pezzo), done. Non esiste un "preso
-  // in carico" interno: da "todo" le azioni (completa/serve pezzo/pezzo
-  // sostituito/chiedi un tecnico) sono TUTTE disponibili in parallelo, non
-  // in sequenza - chiunque abbia il permesso può agire direttamente.
   const canAct = issue.status === 'todo' && permissions.includes('complete')
 
   const confirmComplete = () => { onUpdate(issue.id, { status: 'done', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
@@ -531,18 +545,10 @@ function IssueDetail({ issue, permissions, currentUser, onClose, onUpdate, onDel
     setCompletionPhoto(data); setCompletionPhotoName(file?.name || ''); setPhotoPickerOpen(false)
   }
   const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
-  // Il pezzo arrivato torna in "Da fare" (non resta assegnato a chi era in
-  // attesa): chiunque sia disponibile in quel momento se ne può occupare,
-  // esattamente come nell'app reale di Hotel Giò.
   const pieceArrived = () => { onUpdate(issue.id, { status: 'todo', pieceArrivedAt: Date.now() }); onClose() }
   const savePieceDecision = (decision) => onUpdate(issue.id, { pieceDecision: decision, pieceDecisionBy: currentUser.name, pieceDecisionAt: Date.now() })
   const confirmReplaced = () => { if (!replacedDraft.trim()) return; onUpdate(issue.id, { pieceReplaced: replacedDraft.trim(), pieceReplacedBy: currentUser.name, pieceReplacedAt: Date.now() }); setAskingReplaced(false); setReplacedDraft('') }
-  // "Chiedi un tecnico" è l'UNICO modo per arrivare allo stato "tecnico" -
-  // sposta davvero lo stato (non solo un flag), coerente con l'app reale.
   const requestTechnician = () => { onUpdate(issue.id, { status: 'tecnico', technicianRequestedAt: Date.now(), technicianRequestedBy: currentUser.name }); onClose() }
-  // Dallo stato "tecnico" l'unica azione è chiudere la segnalazione (nella
-  // versione reale lo fa chi ha contattato il tecnico, qui semplificato dato
-  // che il bot WhatsApp non è collegato).
   const techDone = () => { onUpdate(issue.id, { status: 'done', completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
   const remove = () => { if (window.confirm('Eliminare questa segnalazione? L’azione non è reversibile.')) { onDelete(issue.id); onClose() } }
 
@@ -882,22 +888,116 @@ export default function App() {
   const [users, setUsers] = useState(loadUsers)
   const [adminStage, setAdminStage] = useState(null)
   const [session, setSession] = useState(loadSession)
+  const [authUser, setAuthUser] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
   const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === session?.hotelId) || null)
-  const hotel = HOTELS.find((item) => item.id === session?.hotelId)
-  const user = users.find((item) => item.id === session?.userId)
-  const updateUsers = (next) => { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next)); setUsers(next) }
-  const updateCurrentUserPin = (nextPin) => updateUsers(users.map((item) => item.id === user?.id ? { ...item, pin: nextPin } : item))
 
-  const login = (nextUser) => {
+  const hotel = HOTELS.find((item) => item.id === session?.hotelId)
+  const user = authUser || users.find((item) => item.id === session?.userId)
+
+  const updateUsers = (next) => {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next))
+    setUsers(next)
+  }
+
+  const mergeAuthenticatedUser = (nextUser) => {
+    setAuthUser(nextUser)
+    setUsers((current) => {
+      const exists = current.some((item) => item.id === nextUser.id)
+      const next = exists
+        ? current.map((item) => item.id === nextUser.id ? { ...item, ...nextUser } : item)
+        : [...current, nextUser]
+
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const updateCurrentUserPin = (nextPin) => {
+    // Temporaneo: l'autenticazione vera è già su Supabase.
+    // Il cambio PIN remoto verrà collegato alla relativa Edge Function.
+    updateUsers(users.map((item) => item.id === user?.id ? { ...item, pin: nextPin } : item))
+  }
+
+  const login = async (nextUser) => {
+    mergeAuthenticatedUser(nextUser)
     const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
     saveSession(next)
     setSession(next)
   }
-  const logout = () => { clearSession(); setSession(null); setSelectedHotel(null) }
-  const changeHotel = () => { clearSession(); setSession(null); setSelectedHotel(null) }
 
-  useEffect(() => { document.documentElement.dataset.uiSize = uiSize; localStorage.setItem(UI_SIZE_STORAGE_KEY, uiSize) }, [uiSize])
-  if (session && hotel && user && user.hotels.includes(hotel.id)) return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} />
+  const logout = async () => {
+    await logoutPinSession()
+    clearSession()
+    setSession(null)
+    setAuthUser(null)
+    setSelectedHotel(null)
+  }
+
+  const changeHotel = async () => {
+    await logoutPinSession()
+    clearSession()
+    setSession(null)
+    setAuthUser(null)
+    setSelectedHotel(null)
+  }
+
+  useEffect(() => {
+    let active = true
+
+    const restore = async () => {
+      try {
+        const restoredUser = await restorePinSession()
+        if (!active) return
+
+        if (!restoredUser) {
+          if (session) {
+            clearSession()
+            setSession(null)
+          }
+          setAuthUser(null)
+          return
+        }
+
+        mergeAuthenticatedUser(restoredUser)
+
+        if (session?.hotelId && restoredUser.hotels.includes(session.hotelId)) {
+          setSelectedHotel(HOTELS.find((item) => item.id === session.hotelId) || null)
+        } else if (session) {
+          clearSession()
+          setSession(null)
+          setSelectedHotel(null)
+        }
+      } catch (error) {
+        console.error('restore auth error', error)
+        clearSession()
+        if (active) {
+          setSession(null)
+          setAuthUser(null)
+          setSelectedHotel(null)
+        }
+      } finally {
+        if (active) setAuthReady(true)
+      }
+    }
+
+    restore()
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.uiSize = uiSize
+    localStorage.setItem(UI_SIZE_STORAGE_KEY, uiSize)
+  }, [uiSize])
+
+  if (!authReady) {
+    return <div className="page login-page"><main className="login-panel"><strong>Caricamento sessione…</strong></main></div>
+  }
+
+  if (session && hotel && user && user.hotels?.includes(hotel.id)) {
+    return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} />
+  }
+
   if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
   if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
