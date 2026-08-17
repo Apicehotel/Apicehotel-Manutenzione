@@ -74,6 +74,24 @@ function isSafeBranch(branch) {
   return /^[a-zA-Z0-9._/-]+$/.test(branch)
 }
 
+async function getWriteToken() {
+  const pushToken = process.env.GITHUB_PUSH_TOKEN?.trim()
+
+  if (pushToken) {
+    return {
+      token: pushToken,
+      source: 'personal_access_token',
+    }
+  }
+
+  const installationAccess = await getInstallationAccess()
+
+  return {
+    token: installationAccess.token,
+    source: 'github_app',
+  }
+}
+
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'no-store')
 
@@ -101,7 +119,7 @@ export default async function handler(request, response) {
       path,
       content,
       message,
-      branch = 'main',
+      branch = 'feature/base-multihotel',
     } = request.body || {}
 
     if (!isSafePath(path)) {
@@ -129,7 +147,7 @@ export default async function handler(request, response) {
       })
     }
 
-    const access = await getInstallationAccess()
+    const access = await getWriteToken()
 
     let current = null
 
@@ -168,18 +186,24 @@ export default async function handler(request, response) {
       action: current?.sha ? 'updated' : 'created',
       path,
       branch,
+      authSource: access.source,
       commitSha: result?.commit?.sha || null,
       contentSha: result?.content?.sha || null,
     })
   } catch (error) {
     console.error(
       'GitHub bridge write-file failed',
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
+      error?.data || ''
     )
 
     return response.status(502).json({
       ok: false,
       error: 'github_write_failed',
+      detail:
+        process.env.NODE_ENV === 'development'
+          ? error?.data || error?.message || null
+          : undefined,
     })
   }
 }
