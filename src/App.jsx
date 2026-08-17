@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES, USERS } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { isSupabaseConfigured } from './supabase.js'
-import { loginWithPin, logoutPinSession, restorePinSession } from './pin-auth.js'
+import { changeOwnPin, fetchLoginDirectory, loginWithPin, logoutPinSession, restorePinSession } from './pin-auth.js'
+import { createAdminUser, fetchAdminUsers, setAdminUserActive, setAdminUserPin, updateAdminUser } from './admin-api.js'
 import { fetchIssues, createIssue, updateIssue as updateIssueRemote, deleteIssue as deleteIssueRemote } from './issues-api.js'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { PlanningSale, PlanningWork } from './planning.jsx'
@@ -124,13 +125,22 @@ function exportIssuesCsv(issues, hotel) {
 }
 
 function MenuPanel({ type, user, onClose, onSavePin }) {
+  const [currentPin, setCurrentPin] = useState('')
   const [pin, setPin] = useState('')
   const [feedback, setFeedback] = useState('')
   const [message, setMessage] = useState('')
-  const savePin = (event) => {
+  const [saving, setSaving] = useState(false)
+  const savePin = async (event) => {
     event.preventDefault()
-    if (!/^\d{4}$/.test(pin)) return
-    onSavePin(pin); setMessage('PIN aggiornato'); setPin('')
+    if (!/^\d{4}$/.test(currentPin) || !/^\d{4}$/.test(pin)) return
+    setSaving(true); setMessage('')
+    try {
+      await onSavePin(currentPin, pin)
+      setMessage('PIN aggiornato correttamente')
+      setCurrentPin(''); setPin('')
+    } catch (error) {
+      setMessage(error?.message || 'Impossibile cambiare il PIN')
+    } finally { setSaving(false) }
   }
   const saveFeedback = (event) => {
     event.preventDefault()
@@ -147,7 +157,11 @@ function MenuPanel({ type, user, onClose, onSavePin }) {
   return <div className="menu-panel-backdrop" role="presentation" onClick={onClose}>
     <section className="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menu-panel-title" onClick={(event) => event.stopPropagation()}>
       <header><h2 id="menu-panel-title">{titles[type]}</h2><button className="panel-close" onClick={onClose} aria-label="Chiudi"><Icon name="close" /></button></header>
-      {type === 'pin' && <form onSubmit={savePin}><label>Nuovo PIN di 4 cifre<input aria-label="Nuovo PIN" inputMode="numeric" maxLength="4" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label><button className="primary" disabled={pin.length !== 4}>Salva PIN</button></form>}
+      {type === 'pin' && <form onSubmit={savePin}>
+        <label>PIN attuale<input inputMode="numeric" maxLength="4" value={currentPin} onChange={(event)=>setCurrentPin(event.target.value.replace(/\D/g,'').slice(0,4))} placeholder="••••" /></label>
+        <label>Nuovo PIN di 4 cifre<input inputMode="numeric" maxLength="4" value={pin} onChange={(event)=>setPin(event.target.value.replace(/\D/g,'').slice(0,4))} placeholder="••••" /></label>
+        <button className="primary" disabled={currentPin.length !== 4 || pin.length !== 4 || saving}>{saving ? 'Salvataggio…' : 'Salva PIN'}</button>
+      </form>}
       {type === 'notifications' && <div className="panel-content"><p>Ricevi gli aggiornamenti importanti della manutenzione sul dispositivo.</p><button className="primary" onClick={enableNotifications}>Abilita notifiche</button></div>}
       {type === 'manual' && <div className="manual-list"><article><strong>1. Segnalazioni</strong><span>Apri una richiesta, controlla camera, problema e gravità.</span></article><article><strong>2. Aggiorna lo stato</strong><span>Richiedi un tecnico o un pezzo quando il lavoro non può essere concluso.</span></article><article><strong>3. Completa</strong><span>Aggiungi foto e note prima di segnare la riparazione completata.</span></article></div>}
       {type === 'feedback' && <form onSubmit={saveFeedback}><label>Scrivi un suggerimento<textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} rows="5" /></label><button className="primary" disabled={!feedback.trim()}>Salva feedback</button></form>}
@@ -301,13 +315,24 @@ function HotelArtwork({ hotel, className = '' }) {
 }
 
 function Login({ hotel, users, onBack, onLogin }) {
-  const allowed = users.filter((user) => user.hotels?.includes(hotel.id))
   const suggestRef = useRef(null)
+  const [directory, setDirectory] = useState([])
+  const [directoryLoading, setDirectoryLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setDirectoryLoading(true)
+    fetchLoginDirectory(hotel.id)
+      .then((items) => { if (active) setDirectory(items) })
+      .catch((directoryError) => { if (active) setError(directoryError?.message || 'Impossibile caricare gli utenti') })
+      .finally(() => { if (active) setDirectoryLoading(false) })
+    return () => { active = false }
+  }, [hotel.id])
 
   useEffect(() => {
     const onClickOutside = (event) => {
@@ -317,84 +342,43 @@ function Login({ hotel, users, onBack, onLogin }) {
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
 
+  const allowed = directory.length ? directory : users.filter((user) => user.hotels?.includes(hotel.id))
   const trimmedQuery = query.trim().toLowerCase()
-  const suggestions = trimmedQuery
-    ? allowed.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 6)
-    : []
-
-  const pickUser = (user) => {
-    setQuery(user.name); setSuggestOpen(false); setError('')
-  }
+  const suggestions = trimmedQuery ? allowed.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 8) : allowed.slice(0, 8)
+  const pickUser = (user) => { setQuery(user.name); setSuggestOpen(false); setError('') }
 
   const submit = async (event) => {
     event.preventDefault()
-    if (!query.trim() || pin.length !== 4 || loading) {
-      setError('Inserisci nome e PIN di 4 cifre')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
+    if (!query.trim() || pin.length !== 4 || loading) return setError('Inserisci nome e PIN di 4 cifre')
+    setLoading(true); setError('')
     try {
-      const authenticatedUser = await loginWithPin({
-        name: query,
-        pin,
-        hotelId: hotel.id,
-      })
-
+      const authenticatedUser = await loginWithPin({ name: query, pin, hotelId: hotel.id })
       await onLogin(authenticatedUser)
     } catch (authError) {
       setError(authError?.message || 'Accesso non riuscito')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
-  return (
-    <div className="page login-page">
-      <button className="back-link" onClick={onBack}>‹ Cambia struttura</button>
-      <main className="login-panel">
-        <HotelArtwork hotel={hotel} className="login-hotel-art" />
-        <h1>{hotel.name}</h1>
-        <form onSubmit={submit}>
-          <label>Il tuo nome
-            <div className="location-autocomplete" ref={suggestRef}>
-              <input
-                value={query}
-                onChange={(event) => { setQuery(event.target.value); setSuggestOpen(true); setError('') }}
-                onFocus={() => setSuggestOpen(true)}
-                placeholder="Scrivi il tuo nome"
-                autoComplete="username"
-              />
-              {suggestOpen && suggestions.length > 0 && (
-                <div className="location-suggestions">
-                  {suggestions.map((user) => (
-                    <button key={user.id} type="button" onClick={() => pickUser(user)}>{user.name} <small style={{ opacity: .6 }}>· {user.role}</small></button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </label>
-          <label>PIN di 4 cifre
-            <input
-              inputMode="numeric"
-              autoComplete="current-password"
-              maxLength="4"
-              pattern="[0-9]{4}"
-              value={pin}
-              onChange={(event) => { setPin(event.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }}
-              placeholder="••••"
-              disabled={!query.trim() || loading}
-            />
-          </label>
-          {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={!query.trim() || pin.length !== 4 || loading}>{loading ? 'Accesso…' : 'Accedi'}</button>
-        </form>
-        <aside className="session-note"><strong>Sessione persistente</strong><span>Il PIN non verrà richiesto di nuovo fino a logout, cambio utente o revoca.</span></aside>
-      </main>
-    </div>
-  )
+  return <div className="page login-page">
+    <button className="back-link" onClick={onBack}>‹ Cambia struttura</button>
+    <main className="login-panel">
+      <HotelArtwork hotel={hotel} className="login-hotel-art" />
+      <h1>{hotel.name}</h1>
+      <form onSubmit={submit}>
+        <label>Il tuo nome
+          <div className="location-autocomplete" ref={suggestRef}>
+            <input value={query} onChange={(event)=>{setQuery(event.target.value);setSuggestOpen(true);setError('')}} onFocus={()=>setSuggestOpen(true)} placeholder={directoryLoading ? 'Caricamento utenti…' : 'Scrivi il tuo nome'} autoComplete="username" />
+            {suggestOpen && suggestions.length > 0 && <div className="location-suggestions">{suggestions.map((entry)=><button key={entry.legacyId || entry.id} type="button" onClick={()=>pickUser(entry)}>{entry.name} <small style={{opacity:.6}}>· {entry.role}</small></button>)}</div>}
+            {suggestOpen && !directoryLoading && trimmedQuery && suggestions.length === 0 && <div className="location-suggestions"><span style={{display:'block',padding:'10px 13px',color:'#8a8a85'}}>Nessun utente trovato</span></div>}
+          </div>
+        </label>
+        <label>PIN di 4 cifre<input inputMode="numeric" autoComplete="current-password" maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event)=>{setPin(event.target.value.replace(/\D/g,'').slice(0,4));setError('')}} placeholder="••••" disabled={!query.trim() || loading} /></label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={!query.trim() || pin.length !== 4 || loading}>{loading ? 'Accesso…' : 'Accedi'}</button>
+      </form>
+      <aside className="session-note"><strong>Sessione persistente</strong><span>Il PIN non verrà richiesto di nuovo fino a logout, cambio utente o revoca.</span></aside>
+    </main>
+  </div>
 }
 
 function AdminGate({ onBack, onSuccess }) {
@@ -413,54 +397,97 @@ function AdminGate({ onBack, onSuccess }) {
   </div>
 }
 
-function AdminPanel({ users, onUsersChange, onClose }) {
-  const currentUser = users.find((item) => item.role === 'admin') || users[0]
-  const [pinEditorOpen, setPinEditorOpen] = useState(false), [newAdminPin, setNewAdminPin] = useState('')
-  const initial = { name: '', role: 'segnalatore', department: 'Reception', pin: '', hotels: [...ALL_HOTEL_IDS] }
-  const [creating, setCreating] = useState(false), [message, setMessage] = useState(''), [draft, setDraft] = useState(initial)
-  const commit = (next, text) => { onUsersChange(next); setMessage(text) }
-  const update = (id, changes) => commit(users.map((item) => item.id === id ? { ...item, ...changes } : item), 'Modifiche salvate su questo dispositivo')
+function AdminPanel({ currentUser, onClose }) {
+  const blank = { name:'', role:'segnalatore', department:'Reception', pin:'', email:'', phone:'', phoneCountryCode:'+39', hotels:[...ALL_HOTEL_IDS], canAdmin:false }
+  const [users, setUsers] = useState([])
+  const [creating, setCreating] = useState(false)
+  const [draft, setDraft] = useState(blank)
+  const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState(null)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  const load = async () => {
+    setLoading(true); setError('')
+    try {
+      const items = await fetchAdminUsers(ALL_HOTEL_IDS)
+      setUsers(items.map((item)=>({ ...item, phoneCountryCode:item.phone_country_code || '+39', canAdmin:Boolean(item.can_admin) })))
+    } catch (loadError) { setError(loadError?.message || 'Impossibile caricare gli utenti') }
+    finally { setLoading(false) }
+  }
+  useEffect(() => { load() }, [])
+
+  const patchLocal = (id, changes) => setUsers((current)=>current.map((item)=>item.id===id?{...item,...changes}:item))
   const toggleHotel = (target, hotelId) => {
-    if (target.hotels.includes(hotelId) && target.hotels.length === 1) return setMessage('Ogni utente deve mantenere almeno una struttura')
-    update(target.id, { hotels: target.hotels.includes(hotelId) ? target.hotels.filter((id) => id !== hotelId) : [...target.hotels, hotelId] })
+    const hotels = target.hotels.includes(hotelId) ? target.hotels.filter((id)=>id!==hotelId) : [...target.hotels, hotelId]
+    if (!hotels.length) return setMessage('Ogni utente deve avere almeno una struttura')
+    patchLocal(target.id, { hotels })
   }
-  const create = (event) => {
-    event.preventDefault()
-    if (!draft.name.trim() || !/^\d{4}$/.test(draft.pin) || !draft.hotels.length) return setMessage('Inserisci nome, PIN di 4 cifre e almeno una struttura')
-    const id = `${draft.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now()}`
-    const next = { id, name: draft.name.trim(), role: draft.role, pin: draft.pin, hotels: draft.hotels, ...(draft.role === 'segnalatore' ? { department: draft.department } : {}) }
-    commit([...users, next], `${next.name} aggiunto`); setDraft(initial); setCreating(false)
+  const create = async (event) => {
+    event.preventDefault(); setMessage(''); setError('')
+    if (!draft.name.trim() || !/^\d{4}$/.test(draft.pin) || !draft.hotels.length) return setError('Nome, PIN di 4 cifre e almeno una struttura sono obbligatori')
+    setBusyId('new')
+    try {
+      await createAdminUser(draft)
+      setDraft(blank); setCreating(false); setMessage('Utente creato su Supabase'); await load()
+    } catch (createError) { setError(createError?.message || 'Impossibile creare l’utente') }
+    finally { setBusyId(null) }
   }
-  const remove = (target) => {
-    if (target.id === currentUser.id) return setMessage('Deve rimanere almeno un amministratore principale')
-    if (window.confirm(`Eliminare ${target.name}?`)) commit(users.filter((item) => item.id !== target.id), `${target.name} eliminato`)
+  const save = async (target) => {
+    if (!target.id) return setError('Questo profilo deve effettuare almeno un accesso prima di poter essere modificato')
+    setBusyId(target.id); setError(''); setMessage('')
+    try {
+      await updateAdminUser(target.id, { name:target.name, role:target.role, department:target.department || null, email:target.email || null, phone:target.phone || null, phoneCountryCode:target.phoneCountryCode || '+39', hotels:target.hotels, canAdmin:target.canAdmin || target.role==='admin' })
+      setMessage(`${target.name} aggiornato`); await load()
+    } catch (saveError) { setError(saveError?.message || 'Impossibile aggiornare l’utente') }
+    finally { setBusyId(null) }
   }
-  const saveAdminPin = (event) => {
-    event.preventDefault()
-    if (!/^\d{6}$/.test(newAdminPin)) return setMessage('Il PIN Admin deve contenere esattamente 6 cifre')
-    localStorage.setItem(ADMIN_PIN_STORAGE_KEY, newAdminPin); setNewAdminPin(''); setPinEditorOpen(false); setMessage('PIN Admin aggiornato')
+  const changePin = async (target) => {
+    if (!target.id) return setError('Utente non ancora attivato')
+    const pin = window.prompt(`Nuovo PIN di 4 cifre per ${target.name}`)
+    if (pin === null) return
+    if (!/^\d{4}$/.test(pin)) return setError('Il PIN deve contenere esattamente 4 cifre')
+    setBusyId(target.id)
+    try { await setAdminUserPin(target.id, pin); setMessage(`PIN di ${target.name} aggiornato`) }
+    catch (pinError) { setError(pinError?.message || 'Impossibile cambiare il PIN') }
+    finally { setBusyId(null) }
   }
+  const toggleActive = async (target) => {
+    if (!target.id) return setError('Utente non ancora attivato')
+    if (target.id === currentUser.id && target.active) return setError('Non puoi disattivare l’utente con cui sei connesso')
+    setBusyId(target.id)
+    try { await setAdminUserActive(target.id, !target.active); setMessage(`${target.name}: ${target.active ? 'disattivato' : 'riattivato'}`); await load() }
+    catch (activeError) { setError(activeError?.message || 'Impossibile cambiare lo stato utente') }
+    finally { setBusyId(null) }
+  }
+
   return <section className="admin-panel">
-    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Torna alla Home</button><h1>Pannello admin</h1><p>Gestisci utenti, ruoli e accessi alle strutture.</p></div><div className="admin-actions"><button className="secondary change-pin" onClick={() => setPinEditorOpen(!pinEditorOpen)}>Cambia PIN Admin</button><button className="primary add-user" onClick={() => setCreating(!creating)}>{creating ? 'Annulla' : '+ Nuovo utente'}</button></div></div>
-    {pinEditorOpen && <form className="admin-pin-form" onSubmit={saveAdminPin}><label>Nuovo PIN Admin di 6 cifre<input aria-label="Nuovo PIN Admin" inputMode="numeric" maxLength="6" value={newAdminPin} onChange={(e)=>setNewAdminPin(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="••••••" /></label><button className="primary" disabled={newAdminPin.length!==6}>Salva nuovo PIN</button></form>}
+    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Area operativa</button><h1>Gestione utenti</h1><p>Utenti, ruoli, contatti, PIN e strutture sono sincronizzati con Supabase.</p></div><div className="admin-actions"><button className="primary add-user" onClick={()=>setCreating(!creating)}>{creating?'Annulla':'+ Nuovo utente'}</button></div></div>
     {creating && <form className="user-form" onSubmit={create}>
-      <label>Nome<input value={draft.name} onChange={(e) => setDraft({...draft,name:e.target.value})} placeholder="Nome utente" /></label>
-      <label>Ruolo<select value={draft.role} onChange={(e) => setDraft({...draft,role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></label>
-      {draft.role === 'segnalatore' && <label>Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>}
-      <label>PIN di 4 cifre<input inputMode="numeric" maxLength="4" value={draft.pin} onChange={(e)=>setDraft({...draft,pin:e.target.value.replace(/\D/g,'').slice(0,4)})} placeholder="0000" /></label>
+      <label>Nome<input value={draft.name} onChange={(e)=>setDraft({...draft,name:e.target.value})} /></label>
+      <label>Email<input type="email" value={draft.email} onChange={(e)=>setDraft({...draft,email:e.target.value})} /></label>
+      <label>Prefisso<input value={draft.phoneCountryCode} onChange={(e)=>setDraft({...draft,phoneCountryCode:e.target.value})} placeholder="+39" /></label>
+      <label>Telefono<input inputMode="tel" value={draft.phone} onChange={(e)=>setDraft({...draft,phone:e.target.value})} /></label>
+      <label>Ruolo<select value={draft.role} onChange={(e)=>setDraft({...draft,role:e.target.value,canAdmin:e.target.value==='admin'?true:draft.canAdmin})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></label>
+      <label>Reparto<select value={draft.department} onChange={(e)=>setDraft({...draft,department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>
+      <label>PIN di 4 cifre<input inputMode="numeric" maxLength="4" value={draft.pin} onChange={(e)=>setDraft({...draft,pin:e.target.value.replace(/\D/g,'').slice(0,4)})} /></label>
       <fieldset><legend>Strutture abilitate</legend>{HOTELS.map((hotel)=><label className="hotel-check" key={hotel.id}><input type="checkbox" checked={draft.hotels.includes(hotel.id)} onChange={()=>setDraft({...draft,hotels:draft.hotels.includes(hotel.id)?draft.hotels.filter((id)=>id!==hotel.id):[...draft.hotels,hotel.id]})}/>{hotel.name}</label>)}</fieldset>
-      <button className="primary">Salva utente</button>
+      <label className="hotel-check"><input type="checkbox" checked={draft.canAdmin || draft.role==='admin'} disabled={draft.role==='admin'} onChange={(e)=>setDraft({...draft,canAdmin:e.target.checked})}/>Accesso amministratore</label>
+      <button className="primary" disabled={busyId==='new'}>{busyId==='new'?'Creazione…':'Crea utente'}</button>
     </form>}
-    {message && <p className="admin-message" role="status">{message}</p>}
-    <section className="permission-matrix" aria-label="Permessi per ruolo"><h2>Ruoli e permessi</h2><div>{ROLES.map((role) => <article key={role}><strong>{role}</strong><span>{(ROLE_PERMISSIONS[role] || []).map((permission) => PERMISSION_LABELS[permission] || permission).join(' · ')}</span></article>)}</div><p>Planning lavori e Planning Sale sono visibili nel menu solo a Manutentore e Direttore Centro Congressi. Planning Sale è disponibile solo presso Hotel Giò.</p></section>
-    <div className="table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th>{HOTELS.map((hotel)=><th key={hotel.id}>{hotel.short}</th>)}<th /></tr></thead><tbody>{users.map((target)=><tr key={target.id}>
-      <td className="admin-user-name"><strong>{target.name}</strong>{target.id===currentUser.id&&<small>Accesso attuale</small>}</td>
-      <td data-label="Ruolo"><select aria-label={`Ruolo di ${target.name}`} value={target.role} onChange={(e)=>update(target.id,{role:e.target.value})}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></td>
-      <td data-label="Reparto">{target.role==='segnalatore'?<select aria-label={`Reparto di ${target.name}`} value={target.department||DEPARTMENTS[0]} onChange={(e)=>update(target.id,{department:e.target.value})}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select>:<span>—</span>}</td>
-      {HOTELS.map((hotel)=><td data-label={hotel.short} key={hotel.id}><input type="checkbox" checked={target.hotels.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} aria-label={`${target.name}: ${hotel.name}`}/></td>)}
-      <td className="admin-user-actions"><button className="delete-user" onClick={()=>remove(target)} disabled={target.id===currentUser.id}>Elimina</button></td>
-    </tr>)}</tbody></table></div>
-    <p className="admin-footnote">Le modifiche sono operative e persistenti su questo dispositivo. Il collegamento definitivo dei profili a Supabase sarà il prossimo passaggio.</p>
+    {error && <p className="error" role="alert">{error}</p>}{message && <p className="admin-message" role="status">{message}</p>}
+    {loading ? <div className="empty"><strong>Caricamento utenti…</strong></div> : <div className="admin-users-list">{users.map((target)=><article className="user-form" key={target.id || target.legacy_id}>
+      <label>Nome<input value={target.name||''} onChange={(e)=>patchLocal(target.id,{name:e.target.value})} disabled={!target.id}/></label>
+      <label>Email<input type="email" value={target.email||''} onChange={(e)=>patchLocal(target.id,{email:e.target.value})} disabled={!target.id}/></label>
+      <label>Prefisso<input value={target.phoneCountryCode||'+39'} onChange={(e)=>patchLocal(target.id,{phoneCountryCode:e.target.value})} disabled={!target.id}/></label>
+      <label>Telefono<input inputMode="tel" value={target.phone||''} onChange={(e)=>patchLocal(target.id,{phone:e.target.value})} disabled={!target.id}/></label>
+      <label>Ruolo<select value={target.role} onChange={(e)=>patchLocal(target.id,{role:e.target.value,canAdmin:e.target.value==='admin'?true:target.canAdmin})} disabled={!target.id}>{ROLES.map((role)=><option key={role}>{role}</option>)}</select></label>
+      <label>Reparto<select value={target.department||DEPARTMENTS[0]} onChange={(e)=>patchLocal(target.id,{department:e.target.value})} disabled={!target.id}>{DEPARTMENTS.map((item)=><option key={item}>{item}</option>)}</select></label>
+      <fieldset><legend>Strutture</legend>{HOTELS.map((hotel)=><label className="hotel-check" key={hotel.id}><input type="checkbox" checked={target.hotels?.includes(hotel.id)} onChange={()=>toggleHotel(target,hotel.id)} disabled={!target.id}/>{hotel.name}</label>)}</fieldset>
+      <label className="hotel-check"><input type="checkbox" checked={Boolean(target.canAdmin)||target.role==='admin'} disabled={!target.id||target.role==='admin'} onChange={(e)=>patchLocal(target.id,{canAdmin:e.target.checked})}/>Accesso amministratore</label>
+      {!target.id && <small>Profilo storico: effettua un accesso con questo utente per attivarlo nel nuovo sistema.</small>}
+      <div className="admin-actions"><button className="primary" onClick={()=>save(target)} disabled={!target.id||busyId===target.id}>Salva</button><button className="secondary" onClick={()=>changePin(target)} disabled={!target.id||busyId===target.id}>Cambia PIN</button><button className="secondary" onClick={()=>toggleActive(target)} disabled={!target.id||busyId===target.id}>{target.active===false?'Riattiva':'Disattiva'}</button></div>
+    </article>)}</div>}
   </section>
 }
 
@@ -744,8 +771,8 @@ function InterventionsSection({ items, user, onOpen, onShowCompleted }) {
   </section>
 }
 
-function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, uiSize, onUiSizeChange }) {
-  const [tab, setTab] = useState('Segnalazioni')
+function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, uiSize, onUiSizeChange, initialTab = 'Segnalazioni' }) {
+  const [tab, setTab] = useState(initialTab === 'Admin' && (user.canAdmin || user.role === 'admin') ? 'Admin' : 'Segnalazioni')
   const [status, setStatus] = useState('todo')
   const [presence, setPresence] = useState(true)
   const [query, setQuery] = useState('')
@@ -852,7 +879,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
   const goToWorkPlanning = () => { setTab('Planning Lavori'); setMenuOpen(false) }
   const goToPlanning = () => { setTab('Planning Sale'); setMenuOpen(false) }
   const goToTemperature = () => { setTab('Temperature'); setMenuOpen(false) }
-  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature'
+  const isDedicatedPage = tab === 'Planning Lavori' || tab === 'Planning Sale' || tab === 'Temperature' || tab === 'Admin'
   const updateUrgent = (id, changes) => updateUrgents(urgentItems.map((item) => item.id === id ? { ...item, ...changes } : item))
   const takeUrgent = (id) => updateUrgent(id, { status: 'presa_in_carico', takenBy: user.name, takenAt: Date.now() })
   const completeUrgent = (id) => updateUrgent(id, { status: 'completata', completedBy: user.name, completedAt: Date.now() })
@@ -931,6 +958,7 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
           <nav>
             <button onClick={() => window.location.reload()}><Icon name="refresh" /><span>Aggiorna</span></button>
             <button onClick={onChangeHotel}><Icon name="hotel" /><span>Cambia struttura</span></button>
+            {(user.canAdmin || user.role === 'admin') && <button onClick={() => { setTab('Admin'); setMenuOpen(false) }}><Icon name="user" /><span>Gestione utenti</span></button>}
             <button onClick={() => openPanel('pin')}><Icon name="lock" /><span>Cambia PIN</span></button>
             <button onClick={() => openPanel('notifications')}><Icon name="bell" /><span>Notifiche</span></button>
             <button onClick={() => openPanel('manual')}><Icon name="book" /><span>Manuale</span></button>
@@ -960,8 +988,8 @@ function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, ui
           <div className="status-tabs">{[['todo','Da fare'],['tecnico','Tecnico'],['waiting','Attesa pezzo'],['done','Completate']].map(([key,label]) => <button className={status === key ? 'active' : ''} key={key} onClick={() => setStatus(key)}>{label} <span className="status-count">{statusCounts[key] || 0}</span></button>)}</div>
           <div className="toolbar"><label className="search"><span className="sr-only">Cerca segnalazioni</span><Icon name="search"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca camera, zona o problema" /></label><div className="toolbar-actions"><select aria-label="Ordinamento" value={sort} onChange={(event) => setSort(event.target.value)}><option value="urgenza">Ordina: urgenza</option><option value="camera">Ordina: camera/zona</option><option value="data">Ordina: data</option></select><button className={`secondary filter-toggle ${advanced ? 'active' : ''}`} onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}><Icon name="filter" /><span>Filtri</span><Icon name="chevron" /></button></div></div>
           {advanced && <div className="advanced-filters"><select value={department} onChange={(event) => setDepartment(event.target.value)}><option value="">Tutti i reparti</option><option>Governante</option><option>Reception</option><option>Isola dei Golosi</option></select><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">Tutte le categorie</option><option>Idraulica</option><option>Elettrica</option><option>Climatizzazione</option></select><select disabled><option>Origine: tutte</option></select><input type="date" aria-label="Data" /></div>}
-          <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>
-        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors /> : tab === 'Housekeeping' ? <Housekeeping user={user} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
+          {!issuesLoading && <section className="issue-list" aria-live="polite">{issues.length ? issues.map((issue) => <article className={`issue ${issue.urgency}`} key={issue.id} onClick={() => setOpenIssueId(issue.id)} role="button" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setOpenIssueId(issue.id)}><span className="urgency">{issue.urgency}</span><div><h3>{issue.room}</h3><p>{issue.title}</p><small>{issue.department} · {issue.category} · {issue.date}{issue.photoData ? ' · Foto' : ''}{issue.status === 'waiting' ? ` · In attesa: ${issue.pieceName}` : ''}{issue.status === 'tecnico' ? ' · Tecnico richiesto' : ''}</small></div><Icon name="arrow" /></article>) : <div className="empty"><strong>Nessuna segnalazione</strong><span>Non ci sono elementi con questi filtri.</span></div>}</section>}
+        </> : tab === 'Avvisi Urgenti' ? <UrgentSection hotel={hotel} user={user} items={urgentItems} openRequest={urgentComposeRequest} onItemsChange={updateUrgents} onTake={takeUrgent} onComplete={completeUrgent} onTransform={setUrgentTransformTarget} /> : tab === 'Interventi' ? <InterventionsSection items={hotelPlanned} user={user} onOpen={setOpenPlannedId} onShowCompleted={() => { setTab('Segnalazioni'); setStatus('done') }} /> : tab === 'Planning Lavori' ? <PlanningWork items={hotelPlanned} onOpen={setOpenPlannedId} /> : tab === 'Planning Sale' ? <PlanningSale user={user} /> : tab === 'Temperature' ? <TemperatureSensors /> : tab === 'Housekeeping' ? <Housekeeping user={user} /> : tab === 'Admin' ? <AdminPanel currentUser={user} onClose={() => setTab('Segnalazioni')} /> : <div className="placeholder"><h2>{tab}</h2><p>Sezione predisposta per la prossima fase.</p></div>}
       </main>
       {!['Temperature','Housekeeping'].includes(tab) && <p className="local-data-note">{isSupabaseConfigured ? 'Dati sincronizzati con Supabase' : 'Dati salvati solo localmente su questo dispositivo'}</p>}
       {tab === 'Segnalazioni' && permissions.includes('create') && !creatingIssue && !openIssue && (
@@ -982,7 +1010,7 @@ export default function App() {
     return ['small','normal','large'].includes(saved) ? saved : 'normal'
   })
   const [users, setUsers] = useState(loadUsers)
-  const [adminStage, setAdminStage] = useState(null)
+  const [adminLoginRequested, setAdminLoginRequested] = useState(false)
   const [session, setSession] = useState(loadSession)
   const [authUser, setAuthUser] = useState(null)
   const [authReady, setAuthReady] = useState(false)
@@ -1009,17 +1037,20 @@ export default function App() {
     })
   }
 
-  const updateCurrentUserPin = (nextPin) => {
-    // Temporaneo: l'autenticazione vera è già su Supabase.
-    // Il cambio PIN remoto verrà collegato alla relativa Edge Function.
-    updateUsers(users.map((item) => item.id === user?.id ? { ...item, pin: nextPin } : item))
+  const updateCurrentUserPin = async (currentPin, nextPin) => {
+    await changeOwnPin(currentPin, nextPin)
   }
 
   const login = async (nextUser) => {
+    if (adminLoginRequested && !(nextUser.canAdmin || nextUser.role === 'admin')) {
+      await logoutPinSession()
+      throw new Error('Questo utente non ha permessi amministratore')
+    }
     mergeAuthenticatedUser(nextUser)
-    const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now() }
+    const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now(), startTab: adminLoginRequested ? 'Admin' : null }
     saveSession(next)
     setSession(next)
+    setAdminLoginRequested(false)
   }
 
   const logout = async () => {
@@ -1028,6 +1059,7 @@ export default function App() {
     setSession(null)
     setAuthUser(null)
     setSelectedHotel(null)
+    setAdminLoginRequested(false)
   }
 
   const changeHotel = async () => {
@@ -1036,6 +1068,7 @@ export default function App() {
     setSession(null)
     setAuthUser(null)
     setSelectedHotel(null)
+    setAdminLoginRequested(false)
   }
 
   useEffect(() => {
@@ -1091,11 +1124,9 @@ export default function App() {
   }
 
   if (session && hotel && user && user.hotels?.includes(hotel.id)) {
-    return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} />
+    return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} initialTab={session?.startTab || 'Segnalazioni'} />
   }
 
-  if (adminStage === 'panel') return <div className="operations"><main className="ops-main global-admin"><AdminPanel users={users} onUsersChange={updateUsers} onClose={() => setAdminStage(null)} /></main></div>
-  if (adminStage === 'pin') return <AdminGate onBack={() => setAdminStage(null)} onSuccess={() => setAdminStage('panel')} />
-  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => setSelectedHotel(null)} onLogin={login} />
-  return <Home onSelect={setSelectedHotel} onAdmin={() => setAdminStage('pin')} />
+  if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => { setSelectedHotel(null); setAdminLoginRequested(false) }} onLogin={login} />
+  return <Home onSelect={(hotel) => { setAdminLoginRequested(false); setSelectedHotel(hotel) }} onAdmin={() => { setAdminLoginRequested(true); setSelectedHotel(HOTELS.find((item) => item.id === 'hotelgio')) }} />
 }
