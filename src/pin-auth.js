@@ -1,5 +1,8 @@
 import { supabase } from './supabase.js'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
 function normalizeName(value) {
   return String(value || '').trim()
 }
@@ -29,6 +32,40 @@ function mapUser(rawUser) {
   }
 }
 
+async function getDirectory(hotelId) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase non configurato')
+  }
+
+  const endpoint =
+    `${SUPABASE_URL}/functions/v1/pin-auth` +
+    `?hotel_id=${encodeURIComponent(hotelId)}`
+
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Accept: 'application/json',
+    },
+  })
+
+  const data = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    console.error('pin-auth directory error', data)
+    throw new Error(
+      data?.error || 'Impossibile caricare gli utenti'
+    )
+  }
+
+  if (!data?.ok || !Array.isArray(data?.users)) {
+    throw new Error('Elenco utenti non valido')
+  }
+
+  return data.users
+}
+
 export async function loginWithPin({
   name,
   pin,
@@ -53,33 +90,15 @@ export async function loginWithPin({
     throw new Error('Struttura non valida')
   }
 
-  const { data: directoryData, error: directoryError } =
-    await supabase.functions.invoke('pin-auth', {
-      method: 'GET',
-      query: {
-        hotel_id: hotelId,
-      },
-    })
-
-  if (directoryError) {
-    console.error(
-      'pin-auth directory error',
-      directoryError
-    )
-    throw new Error('Impossibile caricare gli utenti')
-  }
-
-  const directoryUsers = Array.isArray(
-    directoryData?.users
-  )
-    ? directoryData.users
-    : []
+  const directoryUsers =
+    await getDirectory(hotelId)
 
   const matched = directoryUsers.find(
     (user) =>
       String(user.name || '')
         .trim()
-        .toLowerCase() === cleanName.toLowerCase()
+        .toLowerCase() ===
+      cleanName.toLowerCase()
   )
 
   if (!matched) {
@@ -87,13 +106,16 @@ export async function loginWithPin({
   }
 
   const { data, error } =
-    await supabase.functions.invoke('pin-auth', {
-      body: {
-        hotel_id: hotelId,
-        user_id: matched.id,
-        pin: cleanPin,
-      },
-    })
+    await supabase.functions.invoke(
+      'pin-auth',
+      {
+        body: {
+          hotel_id: hotelId,
+          user_id: matched.id,
+          pin: cleanPin,
+        },
+      }
+    )
 
   if (error) {
     console.error(
@@ -101,27 +123,31 @@ export async function loginWithPin({
       error
     )
 
-    if (error?.context?.status === 429) {
+    const status =
+      error?.context?.status
+
+    if (status === 429) {
       throw new Error(
         'Troppi tentativi. Riprova più tardi.'
       )
     }
 
-    if (error?.context?.status === 403) {
+    if (status === 403) {
       throw new Error(
         'Utente disattivato o non abilitato'
       )
     }
 
-    throw new Error('Accesso non riuscito')
+    throw new Error(
+      'Accesso non riuscito'
+    )
   }
 
   if (!data?.ok || !data?.user) {
-    const message =
+    throw new Error(
       data?.error ||
       'Utente o PIN non validi'
-
-    throw new Error(message)
+    )
   }
 
   if (
@@ -141,7 +167,10 @@ export async function loginWithPin({
         'setSession error',
         sessionError
       )
-      throw new Error('Sessione non valida')
+
+      throw new Error(
+        'Sessione non valida'
+      )
     }
   }
 
@@ -247,25 +276,31 @@ export async function restorePinSession() {
   return {
     id: userId,
     legacyId: null,
-    name: profile.display_name || '',
+    name:
+      profile.display_name || '',
     role:
       primaryMembership.role ||
       'segnalatore',
     department:
       profile.department || '',
-    email: profile.email || '',
-    phone: profile.phone || '',
+    email:
+      profile.email || '',
+    phone:
+      profile.phone || '',
     phoneCountryCode:
-      profile.phone_country_code || '+39',
-    canAdmin: activeMemberships.some(
-      (item) =>
-        item.can_access_admin === true ||
-        item.role === 'admin'
-    ),
+      profile.phone_country_code ||
+      '+39',
+    canAdmin:
+      activeMemberships.some(
+        (item) =>
+          item.can_access_admin === true ||
+          item.role === 'admin'
+      ),
     mustChangePin: false,
-    hotels: activeMemberships.map(
-      (item) => item.hotel_id
-    ),
+    hotels:
+      activeMemberships.map(
+        (item) => item.hotel_id
+      ),
     active: true,
   }
 }
