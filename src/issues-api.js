@@ -6,6 +6,20 @@ function requireSupabase() {
   }
 }
 
+function normalizeSource(value) {
+  const source = String(value || 'App')
+    .trim()
+    .toLowerCase()
+
+  if (source.includes('whatsapp')) return 'whatsapp'
+  if (
+    source.includes('system') ||
+    source.includes('sistema')
+  ) return 'system'
+
+  return 'app'
+}
+
 function dbToIssue(row) {
   return {
     id: row.id,
@@ -15,12 +29,15 @@ function dbToIssue(row) {
     title: row.description || '',
     status: row.status || 'todo',
     date: row.created_at
-      ? new Date(row.created_at).toLocaleString('it-IT', {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
+      ? new Date(row.created_at).toLocaleString(
+          'it-IT',
+          {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        )
       : '',
     createdAt: row.created_at
       ? new Date(row.created_at).getTime()
@@ -29,23 +46,31 @@ function dbToIssue(row) {
     createdByName: row.created_by_name || '',
     department: row.department || '',
     category: row.category || '',
-    origin: row.source || 'App',
+    origin: row.source || 'app',
     roomStatus: row.room_status || null,
     pieceName: row.waiting_part_name || null,
-    completionNote: row.completion_note || null,
+    completionNote:
+      row.completion_note || null,
     completedAt: row.completed_at
       ? new Date(row.completed_at).getTime()
       : null,
-    completedBy: row.completed_by_name || null,
-    pieceDecision: row.piece_decision || null,
-    pieceDecisionBy: row.piece_decision_by || null,
-    pieceReplaced: row.piece_replaced || null,
-    pieceReplacedBy: row.piece_replaced_by || null,
+    completedBy:
+      row.completed_by_name || null,
+    pieceDecision:
+      row.piece_decision || null,
+    pieceDecisionBy:
+      row.piece_decision_by || null,
+    pieceReplaced:
+      row.piece_replaced || null,
+    pieceReplacedBy:
+      row.piece_replaced_by || null,
     technicianRequestedBy:
       row.technician_requested_by || null,
     technicianRequestedAt:
       row.technician_requested_at
-        ? new Date(row.technician_requested_at).getTime()
+        ? new Date(
+            row.technician_requested_at
+          ).getTime()
         : null,
     externalTechnicianName:
       row.external_technician_name || null,
@@ -63,24 +88,32 @@ function issueToDb(issue) {
     priority: issue.urgency || 'media',
     status: issue.status || 'todo',
     description: issue.title || null,
-    source: issue.origin || 'App',
+    source: normalizeSource(issue.origin),
     department: issue.department || null,
     room_status: issue.roomStatus || null,
     waiting_part_name: issue.pieceName || null,
-    completion_note: issue.completionNote || null,
-    created_by_name: issue.createdByName || null,
-    completed_by_name: issue.completedBy || null,
-    piece_decision: issue.pieceDecision || null,
-    piece_decision_by: issue.pieceDecisionBy || null,
-    piece_replaced: issue.pieceReplaced || null,
-    piece_replaced_by: issue.pieceReplacedBy || null,
+    completion_note:
+      issue.completionNote || null,
+    created_by_name:
+      issue.createdByName || null,
+    completed_by_name:
+      issue.completedBy || null,
+    piece_decision:
+      issue.pieceDecision || null,
+    piece_decision_by:
+      issue.pieceDecisionBy || null,
+    piece_replaced:
+      issue.pieceReplaced || null,
+    piece_replaced_by:
+      issue.pieceReplacedBy || null,
     technician_requested_by:
       issue.technicianRequestedBy || null,
     external_technician_name:
       issue.externalTechnicianName || null,
     external_technician_phone:
       issue.externalTechnicianPhone || null,
-    assigned_to: issue.assignedTo || null,
+    assigned_to:
+      issue.assignedTo || null,
   }
 
   if (issue.createdBy) {
@@ -88,12 +121,17 @@ function issueToDb(issue) {
   }
 
   if (issue.completedAt) {
-    row.completed_at = new Date(issue.completedAt).toISOString()
+    row.completed_at =
+      new Date(
+        issue.completedAt
+      ).toISOString()
   }
 
   if (issue.technicianRequestedAt) {
     row.technician_requested_at =
-      new Date(issue.technicianRequestedAt).toISOString()
+      new Date(
+        issue.technicianRequestedAt
+      ).toISOString()
   }
 
   return row
@@ -110,13 +148,21 @@ export async function fetchIssues(hotelId) {
     })
 
   if (hotelId) {
-    query = query.eq('hotel_id', hotelId)
+    query = query.eq(
+      'hotel_id',
+      hotelId
+    )
   }
 
-  const { data, error } = await query
+  const { data, error } =
+    await query
 
   if (error) {
-    console.error('fetchIssues error', error)
+    console.error(
+      'fetchIssues error',
+      error
+    )
+
     throw new Error(
       'Impossibile caricare le segnalazioni'
     )
@@ -130,14 +176,19 @@ export async function createIssue(issue) {
 
   const row = issueToDb(issue)
 
-  const { data, error } = await supabase
-    .from('maintenance_issues')
-    .insert(row)
-    .select('*')
-    .single()
+  const { data, error } =
+    await supabase
+      .from('maintenance_issues')
+      .insert(row)
+      .select('*')
+      .single()
 
   if (error) {
-    console.error('createIssue error', error)
+    console.error(
+      'createIssue error',
+      error
+    )
+
     throw new Error(
       'Impossibile creare la segnalazione'
     )
@@ -146,15 +197,11 @@ export async function createIssue(issue) {
   return dbToIssue(data)
 }
 
-export async function updateIssue(id, changes) {
+export async function updateIssue(
+  id,
+  changes
+) {
   requireSupabase()
-
-  const partial = issueToDb({
-    ...changes,
-    hotelId: changes.hotelId,
-    room: changes.room,
-    title: changes.title,
-  })
 
   const allowed = {}
 
@@ -165,15 +212,20 @@ export async function updateIssue(id, changes) {
     status: 'status',
     department: 'department',
     category: 'category',
-    origin: 'source',
     roomStatus: 'room_status',
     pieceName: 'waiting_part_name',
-    completionNote: 'completion_note',
-    completedBy: 'completed_by_name',
-    pieceDecision: 'piece_decision',
-    pieceDecisionBy: 'piece_decision_by',
-    pieceReplaced: 'piece_replaced',
-    pieceReplacedBy: 'piece_replaced_by',
+    completionNote:
+      'completion_note',
+    completedBy:
+      'completed_by_name',
+    pieceDecision:
+      'piece_decision',
+    pieceDecisionBy:
+      'piece_decision_by',
+    pieceReplaced:
+      'piece_replaced',
+    pieceReplacedBy:
+      'piece_replaced_by',
     technicianRequestedBy:
       'technician_requested_by',
     externalTechnicianName:
@@ -196,6 +248,16 @@ export async function updateIssue(id, changes) {
       }
     }
   )
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      changes,
+      'origin'
+    )
+  ) {
+    allowed.source =
+      normalizeSource(changes.origin)
+  }
 
   if (
     Object.prototype.hasOwnProperty.call(
@@ -232,7 +294,8 @@ export async function updateIssue(id, changes) {
     )
   ) {
     allowed.created_by_name =
-      changes.createdByName || null
+      changes.createdByName ||
+      null
   }
 
   if (
@@ -249,15 +312,20 @@ export async function updateIssue(id, changes) {
     return null
   }
 
-  const { data, error } = await supabase
-    .from('maintenance_issues')
-    .update(allowed)
-    .eq('id', id)
-    .select('*')
-    .single()
+  const { data, error } =
+    await supabase
+      .from('maintenance_issues')
+      .update(allowed)
+      .eq('id', id)
+      .select('*')
+      .single()
 
   if (error) {
-    console.error('updateIssue error', error)
+    console.error(
+      'updateIssue error',
+      error
+    )
+
     throw new Error(
       'Impossibile aggiornare la segnalazione'
     )
@@ -269,13 +337,18 @@ export async function updateIssue(id, changes) {
 export async function deleteIssue(id) {
   requireSupabase()
 
-  const { error } = await supabase
-    .from('maintenance_issues')
-    .delete()
-    .eq('id', id)
+  const { error } =
+    await supabase
+      .from('maintenance_issues')
+      .delete()
+      .eq('id', id)
 
   if (error) {
-    console.error('deleteIssue error', error)
+    console.error(
+      'deleteIssue error',
+      error
+    )
+
     throw new Error(
       'Impossibile eliminare la segnalazione'
     )
