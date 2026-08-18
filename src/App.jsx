@@ -381,6 +381,73 @@ function Login({ hotel, users, onBack, onLogin }) {
   </div>
 }
 
+function AdminLogin({ users, onBack, onLogin }) {
+  const technicalHotel = HOTELS.find((item) => item.id === 'hotelgio')
+  const suggestRef = useRef(null)
+  const [directory, setDirectory] = useState([])
+  const [directoryLoading, setDirectoryLoading] = useState(true)
+  const [query, setQuery] = useState('')
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setDirectoryLoading(true)
+    fetchLoginDirectory(technicalHotel.id)
+      .then((items) => { if (active) setDirectory(items.filter((item) => item.canAdmin || item.role === 'admin')) })
+      .catch((directoryError) => { if (active) setError(directoryError?.message || 'Impossibile caricare gli amministratori') })
+      .finally(() => { if (active) setDirectoryLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const onClickOutside = (event) => { if (suggestRef.current && !suggestRef.current.contains(event.target)) setSuggestOpen(false) }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  const localAdmins = users.filter((user) => (user.canAdmin || user.role === 'admin') && user.hotels?.includes(technicalHotel.id))
+  const allowed = directory.length ? directory : localAdmins
+  const trimmedQuery = query.trim().toLowerCase()
+  const suggestions = trimmedQuery ? allowed.filter((user) => user.name.toLowerCase().includes(trimmedQuery)).slice(0, 8) : allowed.slice(0, 8)
+  const pickUser = (entry) => { setQuery(entry.name); setSuggestOpen(false); setError('') }
+
+  const submit = async (event) => {
+    event.preventDefault()
+    if (!query.trim() || pin.length !== 4 || loading) return setError('Inserisci nome e PIN di 4 cifre')
+    setLoading(true); setError('')
+    try {
+      const authenticatedUser = await loginWithPin({ name: query, pin, hotelId: technicalHotel.id })
+      if (!(authenticatedUser.canAdmin || authenticatedUser.role === 'admin')) throw new Error('Questo utente non ha permessi amministratore')
+      await onLogin(authenticatedUser)
+    } catch (authError) {
+      setError(authError?.message || 'Accesso amministratore non riuscito')
+    } finally { setLoading(false) }
+  }
+
+  return <div className="page login-page admin-gate-page">
+    <button className="back-link" onClick={onBack}>‹ Torna alla Home</button>
+    <main className="login-panel admin-gate">
+      <span className="admin-lock"><Icon name="user" /></span>
+      <h1>Accesso Admin</h1>
+      <p>Gestione globale delle strutture ApiceHotel.</p>
+      <form onSubmit={submit}>
+        <label>Amministratore
+          <div className="location-autocomplete" ref={suggestRef}>
+            <input value={query} onChange={(event)=>{setQuery(event.target.value);setSuggestOpen(true);setError('')}} onFocus={()=>setSuggestOpen(true)} placeholder={directoryLoading ? 'Caricamento…' : 'Scrivi il nome'} autoComplete="username" />
+            {suggestOpen && suggestions.length > 0 && <div className="location-suggestions">{suggestions.map((entry)=><button key={entry.legacyId || entry.id} type="button" onClick={()=>pickUser(entry)}>{entry.name}</button>)}</div>}
+          </div>
+        </label>
+        <label>PIN di 4 cifre<input inputMode="numeric" autoComplete="current-password" maxLength="4" pattern="[0-9]{4}" value={pin} onChange={(event)=>{setPin(event.target.value.replace(/\D/g,'').slice(0,4));setError('')}} placeholder="••••" /></label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={!query.trim() || pin.length !== 4 || loading}>{loading ? 'Accesso…' : 'Entra nel pannello Admin'}</button>
+      </form>
+    </main>
+  </div>
+}
+
 function AdminGate({ onBack, onSuccess }) {
   const [pin, setPin] = useState(''), [error, setError] = useState('')
   const submit = (event) => {
@@ -397,7 +464,7 @@ function AdminGate({ onBack, onSuccess }) {
   </div>
 }
 
-function AdminPanel({ currentUser, onClose }) {
+function AdminPanel({ currentUser, onClose, standalone = false }) {
   const blank = { name:'', role:'segnalatore', department:'Reception', pin:'', email:'', phone:'', phoneCountryCode:'+39', hotels:[...ALL_HOTEL_IDS], canAdmin:false }
   const [users, setUsers] = useState([])
   const [creating, setCreating] = useState(false)
@@ -462,7 +529,7 @@ function AdminPanel({ currentUser, onClose }) {
   }
 
   return <section className="admin-panel">
-    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>‹ Area operativa</button><h1>Gestione utenti</h1><p>Utenti, ruoli, contatti, PIN e strutture sono sincronizzati con Supabase.</p></div><div className="admin-actions"><button className="primary add-user" onClick={()=>setCreating(!creating)}>{creating?'Annulla':'+ Nuovo utente'}</button></div></div>
+    <div className="admin-heading"><div><button className="back-link" onClick={onClose}>{standalone ? '‹ Esci dal pannello' : '‹ Area operativa'}</button><h1>Gestione utenti</h1><p>Utenti, ruoli, contatti, PIN e strutture sono sincronizzati con Supabase.</p></div><div className="admin-actions"><button className="primary add-user" onClick={()=>setCreating(!creating)}>{creating?'Annulla':'+ Nuovo utente'}</button></div></div>
     {creating && <form className="user-form" onSubmit={create}>
       <label>Nome<input value={draft.name} onChange={(e)=>setDraft({...draft,name:e.target.value})} /></label>
       <label>Email<input type="email" value={draft.email} onChange={(e)=>setDraft({...draft,email:e.target.value})} /></label>
@@ -1047,10 +1114,13 @@ export default function App() {
       throw new Error('Questo utente non ha permessi amministratore')
     }
     mergeAuthenticatedUser(nextUser)
-    const next = { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now(), startTab: adminLoginRequested ? 'Admin' : null }
+    const next = adminLoginRequested
+      ? { hotelId: null, userId: nextUser.id, createdAt: Date.now(), startTab: 'Admin', adminMode: true }
+      : { hotelId: selectedHotel.id, userId: nextUser.id, createdAt: Date.now(), startTab: null, adminMode: false }
     saveSession(next)
     setSession(next)
     setAdminLoginRequested(false)
+    if (next.adminMode) setSelectedHotel(null)
   }
 
   const logout = async () => {
@@ -1090,7 +1160,9 @@ export default function App() {
 
         mergeAuthenticatedUser(restoredUser)
 
-        if (session?.hotelId && restoredUser.hotels.includes(session.hotelId)) {
+        if (session?.adminMode && (restoredUser.canAdmin || restoredUser.role === 'admin')) {
+          setSelectedHotel(null)
+        } else if (session?.hotelId && restoredUser.hotels.includes(session.hotelId)) {
           setSelectedHotel(HOTELS.find((item) => item.id === session.hotelId) || null)
         } else if (session) {
           clearSession()
@@ -1123,10 +1195,15 @@ export default function App() {
     return <div className="page login-page"><main className="login-panel"><strong>Caricamento sessione…</strong></main></div>
   }
 
+  if (session?.adminMode && user && (user.canAdmin || user.role === 'admin')) {
+    return <div className="operations"><main className="ops-main global-admin"><AdminPanel currentUser={user} onClose={logout} standalone /></main></div>
+  }
+
   if (session && hotel && user && user.hotels?.includes(hotel.id)) {
     return <Operations hotel={hotel} user={user} users={users} onLogout={logout} onChangeHotel={changeHotel} onSavePin={updateCurrentUserPin} uiSize={uiSize} onUiSizeChange={setUiSize} initialTab={session?.startTab || 'Segnalazioni'} />
   }
 
+  if (adminLoginRequested) return <AdminLogin users={users} onBack={() => setAdminLoginRequested(false)} onLogin={login} />
   if (selectedHotel) return <Login hotel={selectedHotel} users={users} onBack={() => { setSelectedHotel(null); setAdminLoginRequested(false) }} onLogin={login} />
-  return <Home onSelect={(hotel) => { setAdminLoginRequested(false); setSelectedHotel(hotel) }} onAdmin={() => { setAdminLoginRequested(true); setSelectedHotel(HOTELS.find((item) => item.id === 'hotelgio')) }} />
+  return <Home onSelect={(hotel) => { setAdminLoginRequested(false); setSelectedHotel(hotel) }} onAdmin={() => { setSelectedHotel(null); setAdminLoginRequested(true) }} />
 }
