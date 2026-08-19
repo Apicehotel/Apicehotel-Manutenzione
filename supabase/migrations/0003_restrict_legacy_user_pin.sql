@@ -1,20 +1,35 @@
 -- Apply only after the pin-auth/user-pin/admin-users frontend flow has been verified.
 -- Removes direct client access to the legacy public.utenti.pin column while
--- preserving access to the non-secret directory/profile columns.
+-- preserving SELECT on every other existing column.
 
 begin;
 
-revoke select on table public.utenti from anon, authenticated;
-revoke insert, update on table public.utenti from anon, authenticated;
+revoke select, insert, update on table public.utenti from anon, authenticated;
 
--- Explicit column grants make `pin` unreachable through PostgREST clients.
-grant select (id, hotel_id, nome, ruolo, reparto, telefono, attivo, system_role, created_at, updated_at)
-  on table public.utenti to authenticated;
+-- Re-grant SELECT column-by-column, deliberately excluding the legacy PIN.
+-- Dynamic discovery keeps this migration compatible with the deployed legacy
+-- table even if its non-secret columns differ from older local migrations.
+do $$
+declare
+  column_list text;
+begin
+  select string_agg(format('%I', column_name), ', ' order by ordinal_position)
+    into column_list
+    from information_schema.columns
+   where table_schema = 'public'
+     and table_name = 'utenti'
+     and column_name <> 'pin';
 
-grant select (id, hotel_id, nome, ruolo, reparto, attivo)
-  on table public.utenti to anon;
+  if column_list is null then
+    raise exception 'public.utenti not found or has no grantable columns';
+  end if;
 
--- All user mutations, including PIN changes, must go through Edge Functions
--- using their server-side service-role credentials.
+  execute format('grant select (%s) on table public.utenti to authenticated', column_list);
+  execute format('grant select (%s) on table public.utenti to anon', column_list);
+end
+$$;
+
+-- Mutations and PIN operations remain available only through server-side Edge
+-- Functions using service-role credentials.
 
 commit;
