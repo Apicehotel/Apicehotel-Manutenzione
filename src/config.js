@@ -1,42 +1,44 @@
 export const HOTELS = [
-  { id: 'hotelgio', short: 'Giò', name: 'Hotel Giò', mark: 'HG', tone: 'green', card: '/logos/card-hotelgio.png' },
-  { id: 'chocohotel', short: 'Choco', name: 'ChocoHotel', mark: 'CH', tone: 'choco', card: '/logos/card-chocohotel.png' },
-  { id: 'brigantino', short: 'Brigantino', name: 'Hotel Il Brigantino', mark: 'IB', tone: 'blue', card: '/logos/card-brigantino.png' },
+  { id: 'hotel-a', nome: 'Hotel A', citta: 'Roma', attivo: true },
+  { id: 'hotel-b', nome: 'Hotel B', citta: 'Milano', attivo: true },
+  { id: 'hotel-c', nome: 'Hotel C', citta: 'Firenze', attivo: true },
 ]
 
-export const ROLES = ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'segnalatore']
+// Gli utenti e le credenziali non vivono nel bundle frontend: vengono caricati
+// dalle Edge Function Supabase per la struttura selezionata.
+export const UTENTI = []
 
-export const DEPARTMENTS = [
-  'Governante',
-  'Reception',
-  'Isola dei Golosi',
-  'Ristorante Wine',
-  'Ristorante Jazz',
-  'Colazione Jazz',
+export const REPARTI = ['Ricevimento', 'Piani', 'Manutenzione', 'Direzione', 'Amministrazione', 'Ristorante', 'Bar', 'Spa']
+
+export const CATEGORIE = [
+  { id: 'elettrico', nome: 'Elettrico', icona: '⚡' },
+  { id: 'idraulico', nome: 'Idraulico', icona: '💧' },
+  { id: 'clima', nome: 'Climatizzazione', icona: '❄️' },
+  { id: 'ascensore', nome: 'Ascensori', icona: '🛗' },
+  { id: 'serramenti', nome: 'Serramenti', icona: '🚪' },
+  { id: 'tv', nome: 'TV / WiFi', icona: '📺' },
+  { id: 'altro', nome: 'Altro', icona: '🔧' },
 ]
 
-export const ROLE_PERMISSIONS = {
-  admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'planning_sale'],
-  Responsabile: ['create', 'assign', 'complete'],
-  Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
-  'Direttore Centro Congressi': ['create', 'assign', 'complete', 'planning_sale'],
-  'Portiere Notturno': ['create', 'read_own_hotel'],
-  manutentore: ['create', 'take_charge', 'complete'],
-  'Tecnico esterno': ['take_charge', 'complete', 'read_own_hotel'],
-  segnalatore: ['create', 'read_own_hotel'],
+export const STATI = {
+  aperta: { label: 'Aperta', colore: '#ef4444' },
+  assegnata: { label: 'Assegnata', colore: '#f59e0b' },
+  in_corso: { label: 'In corso', colore: '#3b82f6' },
+  attesa_ricambio: { label: 'Attesa ricambio', colore: '#8b5cf6' },
+  risolta: { label: 'Risolta', colore: '#22c55e' },
+  chiusa: { label: 'Chiusa', colore: '#6b7280' },
 }
 
-// Dati demo locali: saranno sostituiti da profili e membership Supabase.
-export const USERS = [
-  { id: 'alberto', name: 'Alberto', role: 'admin', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'paolo', name: 'Paolo', role: 'Responsabile', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'domenico', name: 'Domenico', role: 'manutentore', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'reception-gio', name: 'Reception', role: 'segnalatore', department: 'Reception', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'governante-choco', name: 'Governante Choco', role: 'segnalatore', department: 'Governante', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-]
+export const PRIORITA = {
+  bassa: { label: 'Bassa', colore: '#22c55e', ordine: 1 },
+  media: { label: 'Media', colore: '#f59e0b', ordine: 2 },
+  alta: { label: 'Alta', colore: '#ef4444', ordine: 3 },
+  urgente: { label: 'Urgente', colore: '#dc2626', ordine: 4 },
+}
 
-export const TWILIO = Object.freeze({
-  enabled: false,
-  inboundWebhook: null,
-  automaticMessages: false,
-})
+export const TIPI_ELEMENTO = [
+  { id: 'camera', nome: 'Camera' },
+  { id: 'impianto', nome: 'Impianto' },
+  { id: 'attrezzatura', nome: 'Attrezzatura' },
+  { id: 'area_comune', nome: 'Area comune' },
+]
