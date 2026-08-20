@@ -1,0 +1,16 @@
+insert into public.utenti (nome, ruolo, pin, zone_consentite) values
+  ('Simona', 'direzione', '0000', null),
+  ('Randagio', 'sviluppatore', '0000', null),
+  ('Reception', 'reception', '0000', null),
+  ('Mauro', 'manutentore', '0000', null),
+  ('Domenico', 'manutentore', '0000', null),
+  ('Aly', 'manutentore', '0000', null),
+  ('Patricio', 'manutentore', '0000', null),
+  ('Fabio', 'portiere_notturno', '0000', null),
+  ('Leonardo', 'portiere_notturno', '0000', null),
+  ('Michele C.', 'portiere_notturno', '0000', null),
+  ('Marco', 'portiere_notturno', '0000', null),
+  ('Amin', 'portiere_notturno', '0000', null),
+  ('Veronica', 'governante', '0000', array['Piani']),
+  ('Olisea', 'governante', '0000', array['Hotel']),
+  ('Eriona', 'governante', '0000', array['Isola dei Golosi']);

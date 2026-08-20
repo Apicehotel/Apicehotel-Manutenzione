@@ -1,0 +1,15 @@
+drop policy if exists app_config_all on public.app_config;
+drop policy if exists camere_giorno_all on public.camere_giorno;
+drop policy if exists camere_lavoro_all on public.camere_lavoro;
+drop policy if exists hotels_all on public.hotels;
+drop policy if exists import_camere_all on public.import_camere;
+drop policy if exists interventi_all on public.interventi;
+drop policy if exists planning_lavori_all on public.planning_lavori;
+drop policy if exists planning_lavori_giorni_all on public.planning_lavori_giorni;
+drop policy if exists prenotazioni_sale_all on public.prenotazioni_sale;
+drop policy if exists push_subscriptions_all on public.push_subscriptions;
+drop policy if exists richieste_urgenti_all on public.richieste_urgenti;
+drop policy if exists segnalazioni_all on public.segnalazioni;
+drop policy if exists sensori_temperatura_all on public.sensori_temperatura;
+drop policy if exists tecnici_all on public.tecnici;
+drop policy if exists utenti_all on public.utenti;

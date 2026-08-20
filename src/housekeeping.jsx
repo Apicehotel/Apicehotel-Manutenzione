@@ -4,7 +4,10 @@ import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 
 const cache = new Dexie('apiceHousekeeping')
-cache.version(1).stores({ giorno: 'camera', lavoro: 'camera', outbox: 'camera' })
+// v1: chiave solo 'camera'. v2 (multi-hotel): la cache tiene solo l'hotel
+// corrente; svuotiamo giorno/lavoro al cambio hotel così due strutture con
+// numeri camera uguali non si sovrascrivono. outbox resta per camera.
+cache.version(2).stores({ giorno: 'camera', lavoro: 'camera', outbox: 'camera' })
 const STRUCTURES = ['Wine', 'Jazz'], FLOORS = [1, 2, 3, 4]
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
 const slopeLabels = { b2b:'Partenza + arrivo', partenza:'Partenza', arrivo:'Arrivo', fermata:'Fermata', libera:'Libera' }
@@ -48,37 +51,39 @@ const parseSlope = async (file) => {
   })
 }
 
-export function Housekeeping({ user }) {
+export function Housekeeping({ user, hotel }) {
   const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [structure,setStructure]=useState('Wine'), [floor,setFloor]=useState(1), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [message,setMessage]=useState('')
   const fileRef=useRef(null)
   const canUpload = user.department === 'Reception' || user.role === 'Portiere Notturno'
   const canEdit = user.department === 'Reception' || user.department === 'Governante'
   const refresh = useCallback(async () => {
     if (navigator.onLine) {
-      const [{data:g},{data:w}] = await Promise.all([hotelGioClient.from('camere_giorno').select('*'),hotelGioClient.from('camere_lavoro').select('*')])
-      if (g?.length) await cache.giorno.bulkPut(g)
-      if (w?.length) await cache.lavoro.bulkPut(w)
+      const [{data:g},{data:w}] = await Promise.all([hotelGioClient.from('camere_giorno').select('*').eq('hotel_id',hotel.id),hotelGioClient.from('camere_lavoro').select('*').eq('hotel_id',hotel.id)])
+      // La cache locale contiene solo l'hotel corrente: svuota e ricarica,
+      // così camere con lo stesso numero di un altro hotel non restano.
+      if (g) { await cache.giorno.clear(); if (g.length) await cache.giorno.bulkPut(g) }
+      if (w) { await cache.lavoro.clear(); if (w.length) await cache.lavoro.bulkPut(w) }
     }
     const [g,w,p]=await Promise.all([cache.giorno.toArray(),cache.lavoro.toArray(),cache.outbox.count()]); setDay(g);setWork(w);setPending(p);setLoading(false)
-  },[])
+  },[hotel.id])
   const drain = useCallback(async () => {
     if (!navigator.onLine) return
     for (const item of await cache.outbox.toArray()) {
-      const { error } = item.kind==='work' ? await hotelGioClient.from('camere_lavoro').upsert(item.payload) : await hotelGioClient.from('camere_giorno').update(item.payload).eq('camera',item.camera)
+      const { error } = item.kind==='work' ? await hotelGioClient.from('camere_lavoro').upsert(item.payload) : await hotelGioClient.from('camere_giorno').update(item.payload).eq('hotel_id',hotel.id).eq('camera',item.camera)
       if (!error) await cache.outbox.delete(item.camera)
     }
     refresh()
-  },[refresh])
-  useEffect(()=>{ refresh();drain(); const channel=hotelGioClient.channel('apice-housekeeping').on('postgres_changes',{event:'*',schema:'public',table:'camere_giorno'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'camere_lavoro'},refresh).subscribe(); window.addEventListener('online',drain); return()=>{hotelGioClient.removeChannel(channel);window.removeEventListener('online',drain)} },[refresh,drain])
+  },[refresh,hotel.id])
+  useEffect(()=>{ refresh();drain(); const channel=hotelGioClient.channel('apice-housekeeping-'+hotel.id).on('postgres_changes',{event:'*',schema:'public',table:'camere_giorno',filter:`hotel_id=eq.${hotel.id}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'camere_lavoro',filter:`hotel_id=eq.${hotel.id}`},refresh).subscribe(); window.addEventListener('online',drain); return()=>{hotelGioClient.removeChannel(channel);window.removeEventListener('online',drain)} },[refresh,drain,hotel.id])
   const workByRoom=useMemo(()=>Object.fromEntries(work.map((item)=>[item.camera,item])),[work])
   const rooms=useMemo(()=>{
     const values=day.filter((item)=>item.struttura===structure&&Number(item.piano)===floor).map((item)=>({...item,lavoro:workByRoom[item.camera]?.stato||(item.stato_slope==='libera'?'fatto':'dafare')}))
     const weight={b2b:0,partenza:1,arrivo:2,fermata:3,libera:5}
     return values.sort((a,b)=>order==='numero'?a.camera.localeCompare(b.camera,'it',{numeric:true}):(weight[a.stato_slope]-weight[b.stato_slope]||a.camera.localeCompare(b.camera,'it',{numeric:true})))
   },[day,workByRoom,structure,floor,order])
-  const setWorkState=async(camera,state)=>{const payload={camera,stato:state,da_chi:user.name,aggiornato_il:new Date().toISOString()};await cache.lavoro.put(payload);await cache.outbox.put({camera,kind:'work',payload});setMessage(`Camera ${camera}: ${workLabels[state]}`);await refresh();drain()}
+  const setWorkState=async(camera,state)=>{const payload={hotel_id:hotel.id,camera,stato:state,da_chi:user.name,aggiornato_il:new Date().toISOString()};await cache.lavoro.put(payload);await cache.outbox.put({camera,kind:'work',payload});setMessage(`Camera ${camera}: ${workLabels[state]}`);await refresh();drain()}
   const saveDetails=async(camera,fields)=>{const payload={...fields,manuale:true,manuale_da:user.name,manuale_il:new Date().toISOString(),aggiornato_il:new Date().toISOString()};await cache.giorno.update(camera,payload);await cache.outbox.put({camera,kind:'day',payload});setOpen(null);await refresh();drain()}
-  const upload=async(event)=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;setUploading(true);try{const rooms=await parseSlope(file);const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_caricato_da:user.name,p_camere:rooms});setMessage(error?`Errore caricamento: ${error.message}`:`Caricate ${rooms.length} camere dal file Slope`);await refresh()}catch{setMessage('File non leggibile: usa l’export Housekeeping di Slope')}setUploading(false)}
+  const upload=async(event)=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;setUploading(true);try{const rooms=await parseSlope(file);const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user.name,p_camere:rooms});setMessage(error?`Errore caricamento: ${error.message}`:`Caricate ${rooms.length} camere dal file Slope`);await refresh()}catch{setMessage('File non leggibile: usa l’export Housekeeping di Slope')}setUploading(false)}
   return <section className="housekeeping-page">
     <header><div><h1>Housekeeping</h1><p><span className={pending?'pending':'synced'}/>{pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file Slope'}</button></>}</header>
     {message&&<p className="housekeeping-message" role="status">{message}</p>}

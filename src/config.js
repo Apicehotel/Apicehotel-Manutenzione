@@ -6,14 +6,7 @@ export const HOTELS = [
 
 export const ROLES = ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'segnalatore']
 
-export const DEPARTMENTS = [
-  'Governante',
-  'Reception',
-  'Isola dei Golosi',
-  'Ristorante Wine',
-  'Ristorante Jazz',
-  'Colazione Jazz',
-]
+export const DEPARTMENTS = ['Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine', 'Ristorante Jazz', 'Colazione Jazz']
 
 export const ROLE_PERMISSIONS = {
   admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'planning_sale'],
@@ -26,17 +19,7 @@ export const ROLE_PERMISSIONS = {
   segnalatore: ['create', 'read_own_hotel'],
 }
 
-// Dati demo locali: saranno sostituiti da profili e membership Supabase.
-export const USERS = [
-  { id: 'alberto', name: 'Alberto', role: 'admin', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'paolo', name: 'Paolo', role: 'Responsabile', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'domenico', name: 'Domenico', role: 'manutentore', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'reception-gio', name: 'Reception', role: 'segnalatore', department: 'Reception', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-  { id: 'governante-choco', name: 'Governante Choco', role: 'segnalatore', department: 'Governante', pin: '0000', hotels: ['hotelgio', 'chocohotel', 'brigantino'] },
-]
+// Nessun utente o PIN demo viene incluso nel bundle frontend.
+export const USERS = []
 
-export const TWILIO = Object.freeze({
-  enabled: false,
-  inboundWebhook: null,
-  automaticMessages: false,
-})
+export const TWILIO = Object.freeze({ enabled: false, inboundWebhook: null, automaticMessages: false })

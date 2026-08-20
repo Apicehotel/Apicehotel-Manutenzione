@@ -9,7 +9,7 @@ test('i sensori temperatura replicano dati live e permessi Hotel Gio', async () 
   ])
 
   assert.match(app, /const canViewTemperature = \(user\) => \['Direzione','Direttore Centro Congressi','manutentore'\]\.includes\(user\.role\) \|\| user\.department === 'Reception'/)
-  assert.match(app, /hotel\.id === 'hotelgio' && canViewTemperature\(user\)/)
+  assert.match(app, /canViewTemperature\(user\) && <button onClick=\{goToTemperature\}/)
   assert.match(app, /<span>Temperature<\/span>/)
   assert.match(temperature, /from\('sensori_temperatura'\)/)
   assert.match(temperature, /postgres_changes/)
