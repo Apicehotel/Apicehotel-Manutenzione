@@ -311,8 +311,13 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 
 /* Matrice permessi e predisposizione Planning Sale */
 .permission-matrix { padding:18px; border:1px solid #dedad0; border-radius:14px; background:#fff; }
-.permission-matrix h2 { margin-bottom:13px; font-size:18px; }
-.permission-matrix > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 18px; }
+.permission-matrix-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--control-h); padding: 0; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.permission-matrix-toggle h2 { margin: 0; }
+.permission-matrix-toggle .icon { width: 17px; flex: 0 0 auto; transition: transform .2s ease; }
+.permission-matrix-toggle.active .icon { transform: rotate(180deg); }
+.permission-matrix-toggle.active h2 { color: var(--ops-green); }
+.permission-matrix h2 { font-size:18px; }
+.permission-matrix > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 18px; margin-top: 13px; }
 .permission-matrix article { display:grid; gap:3px; padding:10px 0; border-bottom:1px solid #eeeae2; }
 .permission-matrix article strong { font-size:var(--font-sm); }
 .permission-matrix article span,.permission-matrix p { color:#68736c; font-size:var(--font-xs); line-height:1.45; }
