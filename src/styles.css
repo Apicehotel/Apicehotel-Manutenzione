@@ -43,7 +43,9 @@ h2 { font-size: var(--font-h2); }
 html[data-ui-size="large"] .app-nav button span,
 html[data-ui-size="large"] .hotel-identity strong,
 html[data-ui-size="large"] .hotel-identity small,
-html[data-ui-size="large"] .urgent-filters button {
+html[data-ui-size="large"] .urgent-filters button,
+html[data-ui-size="large"] .work-event span,
+html[data-ui-size="large"] .sale-event span {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -595,6 +597,7 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .search .icon { top: 14px; left: 16px; color: #6f7b85; }
 .search input { min-height: 50px; padding-left: 48px; border-color: #cfd6da; border-radius: 9px; font-size: 15px; }
 .toolbar-actions { display: grid; grid-template-columns: 190px minmax(180px, 1fr); gap: 12px; }
+html[data-ui-size="large"] .toolbar-actions { grid-template-columns: minmax(220px, .45fr) minmax(180px, 1fr); }
 .toolbar-actions select,
 .filter-toggle { min-height: 48px; border-color: #cfd6da; border-radius: 9px; background: #fff; }
 .filter-toggle { display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 0 16px; color: var(--ops-navy); }
