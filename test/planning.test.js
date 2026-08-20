@@ -48,7 +48,7 @@ test('Planning lavori e Planning Sale restano pagine dedicate, ora raggiungibili
   assert.match(app, /function AppNav\(/)
   assert.match(app, /<AppNav tab=\{tab\}/)
   assert.match(app, /showPlanning=\{canViewPlanningMenu\(user\)\}/)
-  assert.match(app, /key: 'Planning Lavori', label: 'Planning'/)
+  assert.match(app, /key: 'Planning', label: 'Planning'/)
 
   // Housekeeping e Avvisi Urgenti sono stati spostati nel pannello Altro (drawer esistente), non persi.
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
