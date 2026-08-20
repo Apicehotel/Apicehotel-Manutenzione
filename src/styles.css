@@ -206,7 +206,7 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
   .home-header { height: auto; border: 0; justify-content: center; padding: max(28px, env(safe-area-inset-top)) 20px 4px; }
   .home-brand { font-size: 23px; }
   .home-brand .icon,.home-help { display: none; }
-  .home-page .home-content { padding: 0 0 36px; }
+  .home-page .home-content { padding: 0 0 max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: center; overflow-y: auto; overflow-x: hidden; }
   .home-intro { margin: 0 20px 26px; }
   .home-intro h1 { font-size: 24px; }
   .home-intro p { font-size: var(--font-sm); }
