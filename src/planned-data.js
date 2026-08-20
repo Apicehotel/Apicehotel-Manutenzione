@@ -29,6 +29,8 @@ function fromRow(row) {
     completedAt: row.completato_il ? new Date(row.completato_il).getTime() : null,
     pieceReplaced: row.pezzo_sostituito || null,
     photoAfter: row.foto_dopo || null,
+    toFinishBy: row.da_finire_da || null,
+    toFinishAt: row.da_finire_il ? new Date(row.da_finire_il).getTime() : null,
   }
 }
 
@@ -50,6 +52,8 @@ function toRow(item) {
   set('completato_da', item.completedBy)
   set('pezzo_sostituito', item.pieceReplaced)
   set('foto_dopo', item.photoAfter)
+  set('da_finire_da', item.toFinishBy)
+  if (item.toFinishAt !== undefined) row.da_finire_il = item.toFinishAt ? new Date(item.toFinishAt).toISOString() : null
   if (item.status === 'done' && item.completedAt) row.completato_il = new Date(item.completedAt).toISOString()
   return row
 }
