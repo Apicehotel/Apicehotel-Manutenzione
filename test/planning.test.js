@@ -11,8 +11,24 @@ test('Planning lavori usa i periodi degli interventi', async () => {
   assert.match(source, /Quindicina/)
   assert.match(app, /tab === 'Planning Lavori'/)
   assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\)/)
-  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab" onClick={\(\) => setPlannedFormOpen\(true\)}>＋ Nuovo lavoro<\/button>/)
+  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) \? \{ label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\) \}/)
   assert.match(app, /operations theme-\$\{hotel\.tone\}/)
+})
+
+test('Planning Sale: Nuova prenotazione integrata nel + centrale, niente più sale-fab duplicato', async () => {
+  const [app, planning] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8'),
+  ])
+  assert.match(app, /\[saleComposeRequest, setSaleComposeRequest\] = useState\(0\)/)
+  assert.match(app, /<PlanningSale user=\{user\} openRequest=\{saleComposeRequest\} \/>/)
+  // Il + centrale rispetta lo stesso set di ruoli di canEdit dentro PlanningSale
+  // (più stretto di canViewPlanningMenu: un manutentore vede Planning Sale in sola
+  // lettura e non deve trovarsi il + per creare una prenotazione che non può fare).
+  assert.match(app, /tab === 'Planning Sale' && hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\)/)
+  assert.match(planning, /export function PlanningSale\(\{ user, openRequest \}\) \{/)
+  assert.match(planning, /useEffect\(\(\)=>\{if\(openRequest\)setCreating\(true\)\},\[openRequest\]\)/)
+  assert.doesNotMatch(planning, /className="sale-fab"/)
 })
 
 test('Planning Sale gestisce turni, combinazioni e conflitti', async () => {

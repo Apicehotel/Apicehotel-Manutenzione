@@ -77,17 +77,18 @@ test('un solo punto di accesso al pannello Altro: niente più hamburger duplicat
   assert.match(app, /onAltro=\{\(\) => setMenuOpen\(true\)\}/)
 })
 
-test('il + centrale è fisso su Nuova segnalazione; Interventi e Planning Lavori mantengono il loro FAB dedicato', async () => {
+test('il + centrale è contestuale su Planning Lavori/Sale (Nuovo lavoro/Nuova prenotazione), fisso su Nuova segnalazione altrove; Interventi mantiene il suo FAB dedicato', async () => {
   const [app, styles] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
   assert.match(app, /primaryAction=\{primaryAction\}/)
-  assert.match(app, /const primaryAction = permissions\.includes\('create'\) && !creatingIssue && !openIssue \? \{ label: 'Nuova segnalazione'/)
+  assert.match(app, /const primaryAction = tab === 'Planning Lavori' && canViewPlanningMenu\(user\) \? \{ label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\) \} : tab === 'Planning Sale' && hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\) \? \{ label: 'Nuova prenotazione', onClick: \(\) => setSaleComposeRequest/)
   assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
-  // Interventi e Planning Lavori: FAB dedicato ripristinato (il + centrale non li copre più).
+  // Interventi mantiene il proprio FAB dedicato (non ha una controparte nel + centrale).
   assert.match(app, /tab === 'Interventi' && canCreatePlanned\(user\) && <button className="fab-new-issue planned-fab"/)
-  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab"/)
+  // Planning Lavori/Sale NON hanno più un FAB scoped duplicato: l'azione è ora nel + centrale.
+  assert.doesNotMatch(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab"/)
   // L'avviso urgente ora è un FAB scoped alla pagina Avvisi Urgenti (stesso pattern di
   // Interventi/Planning Lavori), non più un secondo pulsante rosso sempre visibile in
   // parallelo al + verde centrale.
