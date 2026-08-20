@@ -1,0 +1,15 @@
+alter table public.richieste_urgenti add column if not exists created_by_user_id uuid references public.profiles(auth_user_id), add column if not exists taken_by_user_id uuid references public.profiles(auth_user_id), add column if not exists completed_by_user_id uuid references public.profiles(auth_user_id);
+alter table public.interventi add column if not exists created_by_user_id uuid references public.profiles(auth_user_id), add column if not exists completed_by_user_id uuid references public.profiles(auth_user_id);
+alter table public.planning_lavori add column if not exists created_by_user_id uuid references public.profiles(auth_user_id);
+alter table public.prenotazioni_sale add column if not exists created_by_user_id uuid references public.profiles(auth_user_id);
+alter table public.import_camere add column if not exists uploaded_by_user_id uuid references public.profiles(auth_user_id);
+alter table public.camere_lavoro add column if not exists updated_by_user_id uuid references public.profiles(auth_user_id);
+create index if not exists richieste_urgenti_created_by_user_idx on public.richieste_urgenti(created_by_user_id);
+create index if not exists richieste_urgenti_taken_by_user_idx on public.richieste_urgenti(taken_by_user_id);
+create index if not exists richieste_urgenti_completed_by_user_idx on public.richieste_urgenti(completed_by_user_id);
+create index if not exists interventi_created_by_user_idx on public.interventi(created_by_user_id);
+create index if not exists interventi_completed_by_user_idx on public.interventi(completed_by_user_id);
+create index if not exists planning_lavori_created_by_user_idx on public.planning_lavori(created_by_user_id);
+create index if not exists prenotazioni_sale_created_by_user_idx on public.prenotazioni_sale(created_by_user_id);
+create index if not exists import_camere_uploaded_by_user_idx on public.import_camere(uploaded_by_user_id);
+create index if not exists camere_lavoro_updated_by_user_idx on public.camere_lavoro(updated_by_user_id);

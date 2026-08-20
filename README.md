@@ -34,6 +34,8 @@ Il bridge non accetta URL, owner, repository o operazioni dal client: non può e
 
 ## Supabase
 
-La migrazione `supabase/migrations/0001_initial_schema.sql` è destinata esclusivamente a un nuovo progetto Supabase. Non applicarla al database operativo Hotel Giò. Le policy verificano membership attiva e `hotel_id`; le colonne usate da RLS e ordinamenti sono indicizzate.
+`supabase/migrations/` contiene le 53 migrazioni realmente applicate al progetto Supabase "Apice MultiHotel" (allineate il 2026-08-20; prima conteneva solo 3 file scritti a mano, non corrispondenti allo stato reale del database). Due file contengono valori REDATTI al posto delle credenziali reali (chiavi VAPID, credenziali eWeLink, hash del PIN admin): questo repo è pubblico, quei valori esistono solo nella tabella `public.edge_function_secrets` del database live, mai in git.
+
+Le policy RLS verificano membership attiva e `hotel_id`; le colonne usate da RLS e ordinamenti sono indicizzate.
 
 Concept UI: `docs/design/multihotel-ui-concept.png`.
