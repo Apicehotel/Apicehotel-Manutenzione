@@ -12,7 +12,7 @@ test('Home selezione struttura: logo, nome e tagline spostati nel contenuto cent
   assert.match(styles, /\.home-header \{[^}]*justify-content: flex-end;/)
   // Logo + nome + tagline: dentro il contenuto centrale, non più nella barra sottile in alto.
   assert.match(app, /<main className="home-content"><section className="home-brand-hero"><img className="home-mascot" src="\/logos\/apicehotel-mascot\.png" alt="" \/><strong className="home-brand-title">APICEHOTEL<\/strong><span className="home-brand-tagline">RandApp Manutenzione<\/span><\/section>/)
-  assert.match(styles, /\.home-mascot \{ width: 96px; height: 96px; object-fit: contain; \}/)
+  assert.match(styles, /\.home-mascot \{ width: 170px; height: 170px; object-fit: contain; \}/)
   assert.match(styles, /\.home-brand-title \{ font-size: clamp\(28px,4vw,38px\); font-weight: 800;/)
 })
 
