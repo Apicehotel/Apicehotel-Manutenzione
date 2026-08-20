@@ -14,7 +14,19 @@ test('il pannello admin diventa una lista di schede su smartphone', async () => 
   assert.match(styles, /\.admin-panel table,\.admin-panel tbody \{ display: block; min-width: 0; \}/)
   assert.match(styles, /\.admin-panel thead \{ display: none; \}/)
   assert.match(styles, /\.admin-panel tr \{ display: grid; grid-template-columns: 1fr 1fr 1fr;/)
-  assert.match(styles, /\.global-admin \{ width: 100%; padding: max\(22px, env\(safe-area-inset-top\)\) 14px 32px; overflow-x: hidden; \}/)
+  assert.match(styles, /\.ops-main\.global-admin \{ width: 100%; padding: max\(22px, env\(safe-area-inset-top\)\) 14px 32px; overflow-x: hidden; \}/)
+})
+
+test('safe-area del pannello admin: .ops-main.global-admin vince sempre su .ops-main generico, indipendentemente dall\'ordine nel foglio di stile', async () => {
+  const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
+  // Bug reale: '.global-admin' da solo aveva la stessa specificità di '.ops-main'
+  // (0,1,0) — la regola generica '.ops-main { padding: 0 14px 142px }' dichiarata
+  // dopo vinceva in cascata e azzerava il padding-top della safe-area, facendo
+  // sovrapporre 'Torna alla Home' alla status bar. Selettore composto
+  // '.ops-main.global-admin' (specificità 0,2,0) risolve indipendentemente
+  // dall'ordine delle regole nel file.
+  assert.match(styles, /\.ops-main\.global-admin \{ padding-top: max\(34px, env\(safe-area-inset-top\)\) ?; ?\}/)
+  assert.doesNotMatch(styles, /(?<!\.ops-main)\.global-admin \{/)
 })
 
 test('Ruoli e permessi è un pannello a scomparsa, chiuso di default', async () => {
