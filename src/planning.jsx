@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 const VIEWS = [['giorno','Giorno',1],['settimana','Settimana',7],['quindicina','Quindicina',15]]
 const WD = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
 const startDay = (value = new Date()) => { const date=new Date(value); date.setHours(0,0,0,0); return date }
+const mondayOf = (value = new Date()) => { const date=startDay(value); const day=date.getDay(); const diff=day===0?-6:1-day; return addDays(date,diff) }
 const addDays = (date, amount) => { const next=new Date(date); next.setDate(next.getDate()+amount); return next }
 const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
 const dayLabel = (date) => `${WD[date.getDay()]} ${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}`
 
-function CalendarControls({ view, onView, anchor, onAnchor }) {
+function CalendarControls({ view, onView, anchor, onAnchor, todayAnchor = startDay }) {
   const days = VIEWS.find(([key]) => key === view)[2]
-  return <><div className="calendar-views">{VIEWS.map(([key,label]) => <button key={key} className={view===key?'active':''} onClick={()=>onView(key)}>{label}</button>)}</div><div className="calendar-nav"><button onClick={()=>onAnchor(addDays(anchor,-days))}>‹</button><button onClick={()=>onAnchor(startDay())}>Oggi</button><button onClick={()=>onAnchor(addDays(anchor,days))}>›</button></div></>
+  return <><div className="calendar-views">{VIEWS.map(([key,label]) => <button key={key} className={view===key?'active':''} onClick={()=>onView(key)}>{label}</button>)}</div><div className="calendar-nav"><button onClick={()=>onAnchor(addDays(anchor,-days))}>‹</button><button onClick={()=>onAnchor(todayAnchor())}>Oggi</button><button onClick={()=>onAnchor(addDays(anchor,days))}>›</button></div></>
 }
 
 export function PlanningWork({ items, onOpen }) {
@@ -53,8 +54,8 @@ export function PlanningSale({ user, openRequest }) {
   const canEdit=['admin','Responsabile','Direttore Centro Congressi'].includes(user.role)
   const canMarkStatus=canEdit||user.role==='manutentore'
   const [bookings,setBookings]=useState(loadBookings)
-  const [view,setView]=useState('settimana')
-  const [anchor,setAnchor]=useState(()=>startDay())
+  const [view,setView]=useState('quindicina')
+  const [anchor,setAnchor]=useState(()=>mondayOf())
   const [creating,setCreating]=useState(false)
   const [openBookingId,setOpenBookingId]=useState(null)
   const [editingBookingId,setEditingBookingId]=useState(null)
@@ -69,5 +70,5 @@ export function PlanningSale({ user, openRequest }) {
   const markDone=booking=>persist(bookings.map(item=>item.id===booking.id?{...item,status:'done',doneBy:user.name,doneAt:Date.now()}:item))
   const openBooking=bookings.find(item=>item.id===openBookingId)||null
   const editingBooking=bookings.find(item=>item.id===editingBookingId)||null
-  return <section className="calendar-page sale-calendar"><header><div><h2>Planning Sale</h2><p>Prenotazioni sale sempre definite con periodo Da/A.</p></div>{!canEdit&&<span>Sola visualizzazione</span>}</header><CalendarControls view={view} onView={setView} anchor={anchor} onAnchor={setAnchor}/><div className="shift-legend">{Object.entries(SHIFT_LABELS).map(([key,label])=><span key={key} className={key}><i/>{label}</span>)}</div><div className="calendar-days">{days.map(day=>{const date=isoDay(day);const entries=bookings.filter(item=>(item.dateFrom||item.date)<=date&&(item.dateTo||item.date)>=date).sort((a,b)=>SALE_DEF.findIndex(([room])=>room===a.room)-SALE_DEF.findIndex(([room])=>room===b.room));return <article key={date}><header><strong>{dayLabel(day)}</strong>{date===isoDay(new Date())&&<span>OGGI</span>}</header>{entries.length?<div>{entries.map(item=><button type="button" className={`sale-event ${item.shift} ${item.status||'pending'}`} key={item.id} onClick={()=>setOpenBookingId(item.id)}><div><strong>{item.room}</strong><span>{item.client}{item.notes?` · ${item.notes}`:''}</span>{item.status==='da_finire'&&<small className="sale-status-note">Da finire · {item.toFinishBy}</small>}{item.status==='done'&&<small className="sale-status-note">✓ Fatto · {item.doneBy}</small>}</div><small>{SHIFT_LABELS[item.shift]} · {item.dateFrom||item.date} → {item.dateTo||item.date}</small><span className="sale-event-arrow" aria-hidden="true">›</span></button>)}</div>:<p>Nessuna prenotazione</p>}</article>})}</div>{(creating||editingBooking)&&<SaleBookingForm isBusy={isBusy} initial={editingBooking} onClose={()=>{setCreating(false);setEditingBookingId(null)}} onSave={save}/>}{openBooking&&<SaleBookingDetail booking={openBooking} canMarkStatus={canMarkStatus} canEdit={canEdit} onClose={()=>setOpenBookingId(null)} onToFinish={markToFinish} onDone={markDone} onDelete={remove} onEdit={()=>{setEditingBookingId(openBooking.id);setOpenBookingId(null)}}/>}</section>
+  return <section className="calendar-page sale-calendar"><header><div><h2>Planning Sale</h2><p>Prenotazioni sale sempre definite con periodo Da/A.</p></div>{!canEdit&&<span>Sola visualizzazione</span>}</header><CalendarControls view={view} onView={setView} anchor={anchor} onAnchor={setAnchor} todayAnchor={mondayOf}/><div className="shift-legend">{Object.entries(SHIFT_LABELS).map(([key,label])=><span key={key} className={key}><i/>{label}</span>)}</div><div className="calendar-days">{days.map(day=>{const date=isoDay(day);const entries=bookings.filter(item=>(item.dateFrom||item.date)<=date&&(item.dateTo||item.date)>=date).sort((a,b)=>SALE_DEF.findIndex(([room])=>room===a.room)-SALE_DEF.findIndex(([room])=>room===b.room));return <article key={date}><header><strong>{dayLabel(day)}</strong>{date===isoDay(new Date())&&<span>OGGI</span>}</header>{entries.length?<div>{entries.map(item=><button type="button" className={`sale-event ${item.shift} ${item.status||'pending'}`} key={item.id} onClick={()=>setOpenBookingId(item.id)}><div><strong>{item.room}</strong><span>{item.client}{item.notes?` · ${item.notes}`:''}</span>{item.status==='da_finire'&&<small className="sale-status-note">Da finire · {item.toFinishBy}</small>}{item.status==='done'&&<small className="sale-status-note">✓ Fatto · {item.doneBy}</small>}</div><small>{SHIFT_LABELS[item.shift]} · {item.dateFrom||item.date} → {item.dateTo||item.date}</small><span className="sale-event-arrow" aria-hidden="true">›</span></button>)}</div>:<p>Nessuna prenotazione</p>}</article>})}</div>{(creating||editingBooking)&&<SaleBookingForm isBusy={isBusy} initial={editingBooking} onClose={()=>{setCreating(false);setEditingBookingId(null)}} onSave={save}/>}{openBooking&&<SaleBookingDetail booking={openBooking} canMarkStatus={canMarkStatus} canEdit={canEdit} onClose={()=>setOpenBookingId(null)} onToFinish={markToFinish} onDone={markDone} onDelete={remove} onEdit={()=>{setEditingBookingId(openBooking.id);setOpenBookingId(null)}}/>}</section>
 }
