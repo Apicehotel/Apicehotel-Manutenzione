@@ -44,6 +44,16 @@ export async function changeOwnPin({ currentPin, newPin }) {
   return data
 }
 
+export async function setOwnPresence(present) {
+  if (!supabase) throw new Error('Supabase non configurato')
+  const { data, error } = await supabase.functions.invoke('user-pin', {
+    body: { action: 'set_presence', present: Boolean(present) },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }
   const { data: sessionData } = await supabase.auth.getSession()
