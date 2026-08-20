@@ -56,10 +56,19 @@ test('Home dashboard: card mobile-first, azione rapida, funziona come nuova land
   assert.match(styles, /@media \(min-width: 701px\) \{\n  \.dash-cards \{ grid-template-columns: repeat\(2/)
 })
 
+test('Housekeeping compare nella bottom nav primaria quando canViewHousekeeping è vero, pareggiando la nav quando Planning non c\'è', async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showHousekeeping, urgentBadge, primaryAction \}\) \{/)
+  assert.match(app, /\{ key: 'Housekeeping', label: 'Housekeeping', icon: 'housekeeping' \}/)
+  assert.match(app, /showHousekeeping=\{canViewHousekeeping\(user\)\}/)
+  // Resta comunque raggiungibile anche dal pannello Altro (stesso pattern già usato per Planning lavori).
+  assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
+})
+
 test('Interventi resta raggiungibile dal pannello Altro, nessuna funzione persa togliendolo dalla nav primaria', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   assert.match(app, /canViewPlanned\(user\) && <button onClick=\{\(\) => \{ setTab\('Interventi'\)/)
-  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Interventi'\]\.includes\(tab\)\}/)
+  assert.match(app, /isAltroActive=\{\['Avvisi Urgenti','Interventi'\]\.includes\(tab\)\}/)
 })
 
 test('un solo punto di accesso al pannello Altro: niente più hamburger duplicato in header', async () => {
