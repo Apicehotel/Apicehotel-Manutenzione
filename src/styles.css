@@ -244,6 +244,10 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .hotel-check { display: flex; align-items: center; gap: 7px; font-weight: 600; }
 .hotel-check input { width: 17px; margin: 0; accent-color: #0e5c49; }
 .user-form .primary { align-self: end; }
+.user-edit-form { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+.user-edit-form input { min-height: var(--control-h); padding: 6px 10px; border: 1px solid #dedad0; border-radius: 8px; font-size: var(--font-sm); }
+.user-edit-actions { display: flex; gap: 8px; }
+.user-edit-actions button { min-height: var(--control-h); padding: 4px 12px; font-size: var(--font-sm); }
 .admin-message { margin: 0; padding: 11px 14px; border-radius: 10px; background: #e2f2eb; color: #0e5c49; font-size: var(--font-sm); font-weight: 700; }
 .admin-panel .table-wrap { border: 1px solid #e0ddd5; }
 .admin-panel table { width: 100%; min-width: 850px; border-collapse: collapse; }
