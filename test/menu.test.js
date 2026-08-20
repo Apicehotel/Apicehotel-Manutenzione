@@ -12,7 +12,7 @@ test('menu operativo include azioni reali e permessi Planning Sale HotelGio', as
     assert.match(app, new RegExp(`>${label}<`))
   }
   assert.match(app, /exportIssuesCsv/)
-  assert.match(app, /Notification\.requestPermission/)
+  assert.match(app, /subscribeToPush\(hotel\.id\)/)
   assert.match(config, /admin: \[[^\]]*'planning_sale'/)
   assert.match(config, /'Direttore Centro Congressi': \[[^\]]*'planning_sale'/)
   assert.doesNotMatch(config, /manutentore: \[[^\]]*'planning_sale'/)

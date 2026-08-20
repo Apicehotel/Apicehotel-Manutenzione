@@ -74,3 +74,14 @@ export function subscribeUrgents(hotelId, onChange) {
     .subscribe()
   return () => { supabase.removeChannel(channel) }
 }
+
+// Notifica push ai manutentori quando viene creato un nuovo avviso urgente.
+// Volutamente silenziosa in caso di errore: la creazione dell'avviso è già
+// andata a buon fine, la notifica è un extra e non deve bloccare il flusso
+// né mostrare un errore all'utente se il device non ha notifiche configurate.
+export async function notifyUrgent(hotelId, note) {
+  if (!supabase) return
+  try {
+    await supabase.functions.invoke('send-push', { body: { hotel_id: hotelId, title: 'Avviso urgente', body: note } })
+  } catch { /* non bloccante */ }
+}
