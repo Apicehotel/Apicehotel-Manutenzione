@@ -14,5 +14,5 @@ test('il pannello admin diventa una lista di schede su smartphone', async () => 
   assert.match(styles, /\.admin-panel table,\.admin-panel tbody \{ display: block; min-width: 0; \}/)
   assert.match(styles, /\.admin-panel thead \{ display: none; \}/)
   assert.match(styles, /\.admin-panel tr \{ display: grid; grid-template-columns: 1fr 1fr 1fr;/)
-  assert.match(styles, /\.global-admin \{ width: 100%; padding: 22px 14px 32px; overflow-x: hidden; \}/)
+  assert.match(styles, /\.global-admin \{ width: 100%; padding: max\(22px, env\(safe-area-inset-top\)\) 14px 32px; overflow-x: hidden; \}/)
 })
