@@ -260,6 +260,8 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .admin-panel td select { min-width: 125px; padding: 8px; font-size: var(--font-sm); }
 .delete-user { border: 1px solid #e2bbb5; border-radius: 8px; padding: 7px 9px; background: #fff; color: #a52f24; cursor: pointer; font-size: var(--font-xs); font-weight: 800; }
 .delete-user:disabled { opacity: .35; cursor: default; }
+.activate-user { border: 1px solid #8bb5a8; border-radius: 8px; padding: 7px 9px; background: #f0f8f5; color: var(--ops-green); cursor: pointer; font-size: var(--font-xs); font-weight: 800; }
+.user-inactive-label { display: inline-block; color: #a52f24; font-weight: 700; }
 @media (max-width: 680px) {
   .admin-button { margin-left: auto; }
   .presence { order: 4; }
@@ -290,7 +292,7 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
   .admin-panel td > input[type=checkbox] { width: 20px; height: 20px; margin: 0; }
   .admin-panel .admin-user-actions { grid-column: 1 / -1; padding: 10px 13px; border: 0; }
   .admin-panel .admin-user-actions::before { display: none; }
-  .admin-panel .delete-user { width: 100%; min-height: 40px; }
+  .admin-panel .delete-user, .admin-panel .activate-user { width: 100%; min-height: 40px; }
   .admin-footnote { padding: 0 3px; line-height: 1.5; }
 }
 

@@ -29,6 +29,14 @@ test('safe-area del pannello admin: .ops-main.global-admin vince sempre su .ops-
   assert.doesNotMatch(styles, /(?<!\.ops-main)\.global-admin \{/)
 })
 
+test('admin panel: nuovo pulsante Attiva per riportare online un utente disattivato, mancava del tutto', async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /const activate = async \(target\) => \{ try \{ await setUserActive\(target\.id, true\); await onReload\(\); setMessage\(`\$\{target\.name\} riattivato`\) \} catch \(error\) \{ setMessage\(error\?\.message \|\| 'Errore durante la riattivazione'\) \} \}/)
+  assert.match(app, /\{target\.active\?<button className="delete-user" onClick=\{\(\)=>deactivate\(target\)\} disabled=\{target\.protected\}>Disattiva<\/button>:<button className="activate-user" onClick=\{\(\)=>activate\(target\)\}>Attiva<\/button>\}/)
+  // Etichetta visibile per capire subito chi è disattivato, senza dover controllare ogni riga.
+  assert.match(app, /\{!target\.active&&<small className="user-inactive-label">Disattivato<\/small>\}/)
+})
+
 test('Ruoli e permessi è un pannello a scomparsa, chiuso di default', async () => {
   const [app, styles] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
