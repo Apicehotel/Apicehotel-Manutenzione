@@ -31,6 +31,11 @@ test('Planning Sale: Nuova prenotazione integrata nel + centrale, niente più sa
   assert.doesNotMatch(planning, /className="sale-fab"/)
 })
 
+test("Planning lavori: la Zona è testo libero (come su HotelGio), non più vincolata a un elenco predefinito — Camera resta vincolata ai numeri reali", async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /mode === 'camera' \? catalog\.roomGroups\.some\(\(group\) => group\.rooms\.includes\(draft\.location\.trim\(\)\)\) : draft\.location\.trim\(\)\.length > 0/)
+})
+
 test('Planning Sale gestisce turni, combinazioni e conflitti', async () => {
   const source = await readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8')
   assert.match(source, /function PlanningSale/)
