@@ -18,6 +18,15 @@ test("'Sono in struttura' è persistente su Supabase e limitato ai manutentori, 
   assert.match(auth, /body: \{ action: 'set_presence', present: Boolean\(present\) \}/)
 })
 
+test("login invia legacy_id (non id, ora l'auth id) al server: pin-auth cerca l'utente per id legacy nella tabella utenti", async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  // Bug reale: dopo aver fatto in modo che la directory restituisse auth_user_id
+  // come 'id' (per riconoscere l'utente loggato dopo un reload), il login inviava
+  // per errore lo stesso campo 'id' (ora l'auth id) al server, che invece cerca
+  // ancora per id legacy — nessun utente trovato, login rifiutato con PIN corretto.
+  assert.match(app, /loginWithPin\(\{ hotelId: hotel\.id, userId: matchedUser\.legacy_id \|\| matchedUser\.id, pin \}\)/)
+})
+
 test("presenza si spegne da sola dopo 7h20m (PRESENCE_MAX_MS), stessa costante lato client e server", async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   assert.match(app, /const PRESENCE_MAX_MS = \(7 \* 60 \+ 20\) \* 60 \* 1000/)

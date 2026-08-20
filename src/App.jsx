@@ -198,7 +198,7 @@ function Login({ hotel, users, usersLoading, onBack, onLogin }) {
     if (!matchedUser || pin.length !== 4) return setError('Utente o PIN non validi')
     setSubmitting(true); setError('')
     try {
-      const authSession = await loginWithPin({ hotelId: hotel.id, userId: matchedUser.id, pin })
+      const authSession = await loginWithPin({ hotelId: hotel.id, userId: matchedUser.legacy_id || matchedUser.id, pin })
       await onLogin(matchedUser, authSession)
     } catch { setError('Utente o PIN non validi') } finally { setSubmitting(false) }
   }
