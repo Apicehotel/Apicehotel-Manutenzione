@@ -24,6 +24,18 @@ test('Planning lavori: da_finire persiste su Supabase (nuove colonne da_finire_d
   assert.match(plannedData, /if \(item\.toFinishAt !== undefined\) row\.da_finire_il = item\.toFinishAt \? new Date\(item\.toFinishAt\)\.toISOString\(\) : null/)
 })
 
+test('Planning Sale: Modifica una prenotazione esistente (prima esisteva solo Elimina, non si poteva correggere sala/date/cliente)', async () => {
+  const planning = await readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8')
+  assert.match(planning, /function SaleBookingForm\(\{ isBusy, onClose, onSave, initial \}\) \{/)
+  assert.match(planning, /<h2>\{initial\?'Modifica prenotazione':'Nuova prenotazione'\}<\/h2>/)
+  assert.match(planning, /\{initial\?'✓ Salva modifiche':'✓ Prenota'\}/)
+  // isBusy esclude la prenotazione stessa dal controllo conflitti quando si modifica,
+  // altrimenti risulterebbe sempre 'occupata' contro se stessa.
+  assert.match(planning, /const isBusy=\(room,dateFrom,dateTo,shift,excludeId\)=>bookings\.filter\(item=>item\.id!==excludeId\)/)
+  assert.match(planning, /const \[editingBookingId,setEditingBookingId\]=useState\(null\)/)
+  assert.match(planning, /onEdit=\{\(\)=>\{setEditingBookingId\(openBooking\.id\);setOpenBookingId\(null\)\}\}/)
+})
+
 test("Planning Sale: prenotazioni cliccabili con dettaglio dedicato, Da finire/Fatto visibili anche ai manutentori (non solo a chi può creare/eliminare)", async () => {
   const [planning, styles] = await Promise.all([
     readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8'),
@@ -38,9 +50,10 @@ test("Planning Sale: prenotazioni cliccabili con dettaglio dedicato, Da finire/F
   assert.match(planning, /persist\(\[\{\.\.\.draft,id:Date\.now\(\),status:'pending',createdBy:user\.name,createdAt:Date\.now\(\)\},\.\.\.bookings\]\)/)
   // Ogni prenotazione è ora un pulsante cliccabile che apre il dettaglio, non più solo testo statico.
   assert.match(planning, /<button type="button" className=\{`sale-event \$\{item\.shift\} \$\{item\.status\|\|'pending'\}`\} key=\{item\.id\} onClick=\{\(\)=>setOpenBookingId\(item\.id\)\}>/)
-  assert.match(planning, /function SaleBookingDetail\(\{ booking, canMarkStatus, canEdit, onClose, onToFinish, onDone, onDelete \}\) \{/)
+  assert.match(planning, /function SaleBookingDetail\(\{ booking, canMarkStatus, canEdit, onClose, onToFinish, onDone, onDelete, onEdit \}\) \{/)
   assert.match(planning, /\{canMarkStatus && booking\.status !== 'done' && <div className="planned-actions">/)
-  // Eliminare resta riservato a canEdit, dentro il dettaglio (non più un × stipato inline).
+  // Modifica ed Elimina restano riservate a canEdit (include Direttore Centro Congressi), dentro il dettaglio.
+  assert.match(planning, /\{canEdit && <button className="planned-edit" onClick=\{onEdit\}>Modifica<\/button>\}/)
   assert.match(planning, /\{canEdit && <button className="delete-issue-compact" onClick=\{\(\) => \{ onDelete\(booking\); onClose\(\) \}\}>Elimina<\/button>\}/)
   assert.match(styles, /\.sale-event\.da_finire \{ border-color:#fbd7a5; background:#fef6ea; color:#b45309; \}/)
   assert.match(styles, /\.sale-event\.done \{ border-color:#bfe3d1; background:#effaf4; color:#0e5c49; \}/)
