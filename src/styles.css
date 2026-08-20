@@ -139,6 +139,13 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .menu-panel textarea { width:100%; margin-top:7px; resize:vertical; border:1px solid #d7d3c9; border-radius:10px; padding:12px; font:inherit; }
 .manual-list { display:grid; gap:10px; padding-top:18px; }.manual-list article { display:grid; gap:4px; padding:14px; border-radius:12px; background:#f4f2ed; }.manual-list span,.panel-content p { color:#68736c; font-size:var(--font-sm); line-height:1.5; }
 .panel-content .notice { padding:11px 14px; border-radius:10px; background:#fdf1ef; color:#b23a2e; font-size:var(--font-sm); }
+.notif-sound-picker { margin-top:6px; padding-top:16px; border-top:1px solid #ecece5; }
+.notif-sound-picker > strong { display:block; font-size:var(--font-base); }
+.notif-sound-picker > small { display:block; margin-top:2px; color:#68736c; font-size:var(--font-sm); }
+.notif-sound-choices { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.notif-sound-choices button { min-height:var(--control-h); padding:9px 16px; border:1.5px solid #e4e0d6; border-radius:999px; background:#fbfbf9; color:#5c645e; font-weight:650; cursor:pointer; }
+.notif-sound-choices button.active { border-color:#0e5c49; background:#e6f0ec; color:#0e5c49; }
+.notif-sound-note { margin-top:14px; padding:10px 12px; border-radius:10px; background:#f7f7f4; color:#8a9490; font-size:var(--font-xs); line-height:1.45; }
 .menu-panel-message { margin:15px 0 0; padding:11px 13px; border-radius:10px; background:#e7f4ed; color:#0e5c49; font-size:var(--font-sm); font-weight:750; }
 @media (max-width:680px) { .menu-trigger { margin-left:auto; }.menu-panel-backdrop { align-items:end; padding:0; }.menu-panel { width:100%; max-height:88dvh; border-radius:20px 20px 0 0; padding:20px 18px max(22px,env(safe-area-inset-bottom)); } }
 

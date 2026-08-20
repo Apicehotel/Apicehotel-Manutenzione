@@ -32,7 +32,7 @@ test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito,
 
 test('service worker: gestori push e notificationclick presenti, versione cache aggiornata', async () => {
   const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v3'/)
+  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v4'/)
   assert.match(sw, /self\.addEventListener\('push', \(event\) => \{/)
   assert.match(sw, /self\.registration\.showNotification\(payload\.title, \{/)
   assert.match(sw, /self\.addEventListener\('notificationclick', \(event\) => \{/)

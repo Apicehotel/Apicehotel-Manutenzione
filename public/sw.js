@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v3'
+const CACHE_NAME = 'apicehotel-manutenzione-v4'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -71,14 +71,19 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() || payload.body }
   }
+  const urgent = Boolean(payload.urgent)
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: payload.tag || 'apicehotel-notifica',
+      renotify: Boolean(payload.tag),
       data: { url: payload.url || '/' },
-      vibrate: [120, 60, 120],
+      // Gli avvisi urgenti restano visibili finché non vengono toccati e vibrano
+      // più a lungo; le notifiche normali restano leggere (stesso criterio di HotelGio).
+      requireInteraction: urgent,
+      vibrate: urgent ? [400, 80, 400, 80, 400, 80, 400] : [120, 60, 120],
     }),
   )
 })
