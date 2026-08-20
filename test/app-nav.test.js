@@ -54,3 +54,27 @@ test('Home dashboard: card mobile-first, azione rapida, funziona come nuova land
   assert.match(styles, /\.dash-cards \{ display: grid; grid-template-columns: 1fr;/)
   assert.match(styles, /@media \(min-width: 701px\) \{\n  \.dash-cards \{ grid-template-columns: repeat\(2/)
 })
+
+test('un solo punto di accesso al pannello Altro: niente più hamburger duplicato in header', async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(app, /menu-trigger/)
+  assert.doesNotMatch(app, /aria-label="Apri menu"/)
+  assert.match(app, /onAltro=\{\(\) => setMenuOpen\(true\)\}/)
+})
+
+test('azione + centrale nella nav sostituisce i FAB duplicati per tab', async () => {
+  const [app, styles] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
+  ])
+  assert.doesNotMatch(app, /className="fab-new-issue"/)
+  assert.doesNotMatch(app, /planned-fab/)
+  assert.match(app, /primaryAction=\{primaryAction\}/)
+  assert.match(app, /label: 'Nuova segnalazione', onClick: \(\) => setCreatingIssue\(true\)/)
+  assert.match(app, /label: 'Nuovo intervento', onClick: \(\) => setPlannedFormOpen\(true\)/)
+  assert.match(app, /label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\)/)
+  assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
+  // L'avviso urgente resta un FAB indipendente, non coperto dal + centrale.
+  assert.match(app, /className="urgent-fab"/)
+  assert.match(styles, /\.app-nav-fab \{ flex: 0 0 auto;/)
+})
