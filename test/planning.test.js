@@ -11,7 +11,7 @@ test('Planning lavori usa i periodi degli interventi', async () => {
   assert.match(source, /Quindicina/)
   assert.match(app, /tab === 'Planning Lavori'/)
   assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\)/)
-  assert.match(app, /label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\)/)
+  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab" onClick={\(\) => setPlannedFormOpen\(true\)}>＋ Nuovo lavoro<\/button>/)
   assert.match(app, /operations theme-\$\{hotel\.tone\}/)
 })
 

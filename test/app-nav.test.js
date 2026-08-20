@@ -8,12 +8,13 @@ test('AppNav: bottom nav mobile e sidebar desktop condividono lo stesso markup, 
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
 
-  // Le 5 voci fisse richieste: Home, Segnalazioni, Interventi, Planning, Altro.
+  // Voci fisse richieste: Home, Segnalazioni, (+ centrale), Planning, Altro.
   assert.match(app, /key: 'Home', label: 'Home'/)
   assert.match(app, /key: 'Segnalazioni', label: 'Segnalazioni'/)
-  assert.match(app, /key: 'Interventi', label: 'Interventi'/)
   assert.match(app, /key: 'Planning Lavori', label: 'Planning'/)
   assert.match(app, /<span>Altro<\/span>/)
+  // Interventi non è più una voce di navigazione primaria: resta raggiungibile dalla card Home e dal pannello Altro.
+  assert.doesNotMatch(app, /key: 'Interventi'/)
 
   // Icona + testo su ogni voce.
   assert.match(app, /<Icon name=\{item\.icon\} \/><span>\{item\.label\}<\/span>/)
@@ -55,6 +56,12 @@ test('Home dashboard: card mobile-first, azione rapida, funziona come nuova land
   assert.match(styles, /@media \(min-width: 701px\) \{\n  \.dash-cards \{ grid-template-columns: repeat\(2/)
 })
 
+test('Interventi resta raggiungibile dal pannello Altro, nessuna funzione persa togliendolo dalla nav primaria', async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /canViewPlanned\(user\) && <button onClick=\{\(\) => \{ setTab\('Interventi'\)/)
+  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Interventi'\]\.includes\(tab\)\}/)
+})
+
 test('un solo punto di accesso al pannello Altro: niente più hamburger duplicato in header', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   assert.doesNotMatch(app, /menu-trigger/)
@@ -62,19 +69,18 @@ test('un solo punto di accesso al pannello Altro: niente più hamburger duplicat
   assert.match(app, /onAltro=\{\(\) => setMenuOpen\(true\)\}/)
 })
 
-test('azione + centrale nella nav sostituisce i FAB duplicati per tab', async () => {
+test('il + centrale è fisso su Nuova segnalazione; Interventi e Planning Lavori mantengono il loro FAB dedicato', async () => {
   const [app, styles] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
-  assert.doesNotMatch(app, /className="fab-new-issue"/)
-  assert.doesNotMatch(app, /planned-fab/)
   assert.match(app, /primaryAction=\{primaryAction\}/)
-  assert.match(app, /label: 'Nuova segnalazione', onClick: \(\) => setCreatingIssue\(true\)/)
-  assert.match(app, /label: 'Nuovo intervento', onClick: \(\) => setPlannedFormOpen\(true\)/)
-  assert.match(app, /label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\)/)
+  assert.match(app, /const primaryAction = permissions\.includes\('create'\) && !creatingIssue && !openIssue \? \{ label: 'Nuova segnalazione'/)
   assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
-  // L'avviso urgente resta un FAB indipendente, non coperto dal + centrale.
+  // Interventi e Planning Lavori: FAB dedicato ripristinato (il + centrale non li copre più).
+  assert.match(app, /tab === 'Interventi' && canCreatePlanned\(user\) && <button className="fab-new-issue planned-fab"/)
+  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab"/)
+  // L'avviso urgente resta un FAB indipendente.
   assert.match(app, /className="urgent-fab"/)
   assert.match(styles, /\.app-nav button\.app-nav-fab \{ flex: 0 0 auto;/)
 })
