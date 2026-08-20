@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test('bottom nav sempre a 5 voci: Housekeeping non compare in nav primaria quando Planning è già presente', async () => {
+test('bottom nav sempre a 5 voci: Housekeeping non entra mai in nav primaria, solo Planning nello slot opzionale', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  // Direttore Centro Congressi ha sia canViewPlanningMenu che canViewHousekeeping:
-  // senza questa condizione la nav avrebbe 6 voci (Home, Segnalazioni, +, Planning,
-  // Housekeeping, Altro) invece delle 5 richieste dal mockup.
-  assert.match(app, /showHousekeeping=\{canViewHousekeeping\(user\) && !canViewPlanningMenu\(user\)\}/)
-  // Resta comunque raggiungibile dal pannello Altro in quel caso (nessuna funzione persa).
+  // Direttiva esplicita: 'Housekeeping NON deve stare nella bottom navigation', nessuna
+  // eccezione. Lo slot opzionale (oltre Home/Segnalazioni/+/Altro) è riservato solo a Planning.
+  assert.doesNotMatch(app, /showHousekeeping/)
+  assert.doesNotMatch(app, /key: 'Housekeeping'/)
+  // Resta comunque raggiungibile dal pannello Altro (nessuna funzione persa).
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
 })
 
@@ -27,6 +27,20 @@ test('nessun pulsante rosso duplicato: Avvisi Urgenti ha un FAB scoped alla prop
   assert.match(styles, /\.urgent-fab-scoped \{ background:#c81e1e !important;/)
   // Nessun residuo della vecchia posizione fissa standalone.
   assert.doesNotMatch(styles, /^\.urgent-fab \{/m)
+})
+
+test('Home mobile: sezione Attività recenti, riusa hotelIssues già presente (nessuna nuova fetch)', async () => {
+  const [app, styles] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
+  ])
+  assert.match(app, /const recentIssues = useMemo\(\(\) => \[\.\.\.hotelIssues\]\.sort\(\(a, b\) => b\.id - a\.id\)\.slice\(0, 3\), \[hotelIssues\]\)/)
+  assert.match(app, /recentIssues=\{recentIssues\}/)
+  assert.match(app, /onOpenRecent=\{\(id\) => \{ setTab\('Segnalazioni'\); setOpenIssueId\(id\) \}\}/)
+  assert.match(app, /<div className="dash-recent"><h2>Attività recenti<\/h2>/)
+  assert.match(app, /<strong>Nessuna attività recente<\/strong><span>Le ultime attività appariranno qui<\/span>/)
+  assert.match(app, /recentIssues\.slice\(0, 3\)\.map\(\(issue\) =>/)
+  assert.match(styles, /\.dash-recent \{ margin-top: 22px; \}/)
 })
 
 test('fascia "Dati sincronizzati con Supabase" non più permanente: nulla se online e configurato, avviso solo se offline o non configurato', async () => {

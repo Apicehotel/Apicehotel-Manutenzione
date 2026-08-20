@@ -803,6 +803,15 @@ html[data-ui-size="large"] .toolbar-actions { grid-template-columns: minmax(220p
 .dash-card.urgent .dash-card-count { background: #c81e1e; color: #fff; }
 .dash-quick { display: flex; gap: 10px; flex-wrap: wrap; }
 .dash-quick button { flex: 1; min-width: 160px; min-height: var(--control-h); border: 0; border-radius: 12px; padding: 12px 16px; background: #0e5c49; color: #fff; font-weight: 800; cursor: pointer; }
+.dash-recent { margin-top: 22px; }
+.dash-recent h2 { margin: 0 0 12px; font-size: 18px; }
+.dash-recent-list { display: grid; gap: 8px; }
+.dash-recent-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--control-h); padding: 13px 15px; border: 1px solid #dedad0; border-radius: 14px; background: #fff; text-align: left; cursor: pointer; }
+.dash-recent-item strong { display: block; }
+.dash-recent-item span span { display: block; margin-top: 2px; color: #68736c; font-size: var(--font-sm); }
+.dash-recent-item .icon { width: 16px; flex: 0 0 auto; color: #8c9690; }
+.dash-recent-empty { display: flex; flex-direction: column; gap: 3px; padding: 16px; border: 1px solid #dedad0; border-radius: 14px; background: #fff; }
+.dash-recent-empty span { color: #68736c; font-size: var(--font-sm); }
 .dash-card-desktop-only { display: none; }
 @media (min-width: 701px) {
   .dash-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
