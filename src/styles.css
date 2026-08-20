@@ -2,13 +2,13 @@
   overflow-x:hidden; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1b2420; background: #f4f2ed; font-synthesis: none;
   /* Sistema di dimensionamento globale via custom properties (nessuno zoom CSS).
      Le tre modalità ridefiniscono queste variabili in html[data-ui-size]. */
-  --font-base: 16px;
-  --font-h1: clamp(28px, 6vw, 38px);
-  --font-h2: 22px;
-  --control-h: 44px;
+  --font-base: 17px;
+  --font-h1: clamp(29px, 6vw, 39px);
+  --font-h2: 23px;
+  --control-h: 48px;
   --control-radius: 11px;
-  --gap: 10px;
-  --nav-h: 62px;
+  --gap: 11px;
+  --nav-h: 64px;
 }
 html[data-ui-size="small"] {
   --font-base: 14px;
@@ -19,23 +19,21 @@ html[data-ui-size="small"] {
   --nav-h: 56px;
 }
 html[data-ui-size="large"] {
-  --font-base: 20px;
-  --font-h1: clamp(30px, 6.4vw, 42px);
-  --font-h2: 24px;
-  --control-h: 54px;
-  --gap: 15px;
-  --nav-h: 72px;
+  --font-base: 23px;
+  --font-h1: clamp(34px, 7vw, 46px);
+  --font-h2: 27px;
+  --control-h: 60px;
+  --gap: 17px;
+  --nav-h: 78px;
 }
 * { box-sizing: border-box; touch-action: pan-x pan-y; }
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x:hidden; font-size: var(--font-base); }
-/* Scala testo e controlli globalmente in base alla modalità attiva, senza toccare ogni singola regola esistente. */
+/* Scala testo e controlli globalmente in ogni modalità (Piccolo/Normale/Grande), senza toccare ogni singola regola esistente. */
 button, input, select, textarea { font-size: var(--font-base); }
-html[data-ui-size="large"] button:not(.icon-button):not(.panel-close):not(.form-close):not(.hk-sheet > header button):not(.sale-event > button):not(.dot) { min-height: var(--control-h); }
-html[data-ui-size="large"] input:not([type="checkbox"]):not([type="radio"]), html[data-ui-size="large"] select { min-height: var(--control-h); }
-html[data-ui-size="small"] button:not(.icon-button):not(.panel-close):not(.form-close):not(.hk-sheet > header button):not(.sale-event > button):not(.dot) { min-height: var(--control-h); }
-html[data-ui-size="small"] input:not([type="checkbox"]):not([type="radio"]), html[data-ui-size="small"] select { min-height: var(--control-h); }
-html[data-ui-size="large"] h2 { font-size: var(--font-h2); }
-html[data-ui-size="large"] .issue-list, html[data-ui-size="large"] .planned-list, html[data-ui-size="large"] .urgent-list, html[data-ui-size="large"] .app-drawer nav { gap: var(--gap); }
+button:not(.icon-button):not(.panel-close):not(.form-close):not(.hk-sheet > header button):not(.sale-event > button):not(.dot) { min-height: var(--control-h); }
+input:not([type="checkbox"]):not([type="radio"]), select { min-height: var(--control-h); }
+h2 { font-size: var(--font-h2); }
+.issue-list, .planned-list, .urgent-list, .app-drawer nav { gap: var(--gap); }
 html[data-ui-size="large"] .hk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width:680px) { html[data-ui-size="large"] .hk-grid { grid-template-columns: 1fr; } }
 @media (display-mode: standalone) {
@@ -85,11 +83,11 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 .app-nav button.active .icon { color: #0e5c49; }
 .app-nav button:active { background: #f4f2ed; }
 .app-nav-badge { position: absolute; top: 2px; right: 14%; min-width: 16px; padding: 1px 4px; border-radius: 999px; background: #c81e1e; color: #fff; font-size: 9px; line-height: 14px; font-weight: 800; }
-.app-nav-fab { flex: 0 0 auto; width: 54px; height: 54px; margin: -22px 2px 0; padding: 0; display: grid; place-items: center; border: 4px solid #fff; border-radius: 50%; background: #0e5c49; color: #fff; box-shadow: 0 6px 16px rgba(14,92,73,.35); cursor: pointer; }
+.app-nav button.app-nav-fab { flex: 0 0 auto; width: 54px; height: 54px; margin: -22px 2px 0; padding: 0; display: grid; place-items: center; border: 4px solid #fff; border-radius: 50%; background: #0e5c49; color: #fff; box-shadow: 0 6px 16px rgba(14,92,73,.35); cursor: pointer; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
 .app-nav-fab-plus { font-size: 26px; line-height: 1; font-weight: 800; }
 .app-nav-fab:active { transform: scale(.95); }
 @media (min-width: 701px) {
-  .app-nav-fab { width: 46px; height: 46px; margin: 6px auto 10px; border-width: 0; }
+  .app-nav button.app-nav-fab { width: 46px; height: 46px; margin: 6px auto 10px; border-width: 0; }
 }
 .title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }.title-row h1 { margin-bottom: 2px; }.title-row p { color: #6f7772; font-size: 12px; }.role-chip { padding: 7px 10px; border-radius: 20px; background: #ead8b3; color: #6d4a0d; font-size: 11px; font-weight: 800; }
 .tabs { display: flex; border-bottom: 1px solid #d7d3c9; margin-bottom: 18px; overflow-x: auto; }.tabs button { flex: 1; min-width: max-content; padding: 13px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font-weight: 700; cursor: pointer; }.tabs button.active { color: #0e5c49; border-color: #0e5c49; }

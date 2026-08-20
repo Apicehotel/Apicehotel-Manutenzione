@@ -76,5 +76,5 @@ test('azione + centrale nella nav sostituisce i FAB duplicati per tab', async ()
   assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
   // L'avviso urgente resta un FAB indipendente, non coperto dal + centrale.
   assert.match(app, /className="urgent-fab"/)
-  assert.match(styles, /\.app-nav-fab \{ flex: 0 0 auto;/)
+  assert.match(styles, /\.app-nav button\.app-nav-fab \{ flex: 0 0 auto;/)
 })

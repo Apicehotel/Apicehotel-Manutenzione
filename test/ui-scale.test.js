@@ -16,12 +16,12 @@ test('la dimensione globale dell interfaccia e selezionabile e persistente', asy
 
   // Il dimensionamento usa CSS custom properties, non lo zoom CSS (richiesto esplicitamente).
   assert.doesNotMatch(styles, /zoom:/)
-  assert.match(styles, /--font-base: 16px;/)
+  assert.match(styles, /--font-base: 17px;/)
   assert.match(styles, /html\[data-ui-size="small"\] \{/)
   assert.match(styles, /--font-base: 14px;/)
   assert.match(styles, /html\[data-ui-size="large"\] \{/)
-  assert.match(styles, /--font-base: 20px;/)
-  assert.match(styles, /--control-h: 54px;/)
+  assert.match(styles, /--font-base: 23px;/)
+  assert.match(styles, /--control-h: 60px;/)
   assert.match(styles, /body \{ margin: 0; min-width: 320px; min-height: 100vh; overflow-x:hidden; font-size: var\(--font-base\); \}/)
   assert.match(styles, /\.issue,\.urgent-card,\.planned-card,\.hk-room \{ content-visibility:auto;/)
 })
