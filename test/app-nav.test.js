@@ -60,7 +60,7 @@ test('Housekeeping compare nella bottom nav primaria quando canViewHousekeeping 
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showHousekeeping, urgentBadge, primaryAction \}\) \{/)
   assert.match(app, /\{ key: 'Housekeeping', label: 'Housekeeping', icon: 'housekeeping' \}/)
-  assert.match(app, /showHousekeeping=\{canViewHousekeeping\(user\)\}/)
+  assert.match(app, /showHousekeeping=\{canViewHousekeeping\(user\) && !canViewPlanningMenu\(user\)\}/)
   // Resta comunque raggiungibile anche dal pannello Altro (stesso pattern già usato per Planning lavori).
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
 })
@@ -89,7 +89,10 @@ test('il + centrale è fisso su Nuova segnalazione; Interventi e Planning Lavori
   // Interventi e Planning Lavori: FAB dedicato ripristinato (il + centrale non li copre più).
   assert.match(app, /tab === 'Interventi' && canCreatePlanned\(user\) && <button className="fab-new-issue planned-fab"/)
   assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab"/)
-  // L'avviso urgente resta un FAB indipendente.
-  assert.match(app, /className="urgent-fab"/)
+  // L'avviso urgente ora è un FAB scoped alla pagina Avvisi Urgenti (stesso pattern di
+  // Interventi/Planning Lavori), non più un secondo pulsante rosso sempre visibile in
+  // parallelo al + verde centrale.
+  assert.match(app, /tab === 'Avvisi Urgenti' && canSendUrgent\(user\) && <button className="fab-new-issue planned-fab urgent-fab-scoped"/)
+  assert.doesNotMatch(app, /\{canSendUrgent\(user\) && <button className="urgent-fab"/)
   assert.match(styles, /\.app-nav button\.app-nav-fab \{ flex: 0 0 auto;/)
 })
