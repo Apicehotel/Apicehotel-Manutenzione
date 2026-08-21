@@ -1,4 +1,4 @@
-/* UI post-login fedele ai mockup approvati. Solo presentazione. */
+/* UI mobile/login allineata ai mockup approvati. */
 
 /* LOGIN STRUTTURA */
 .login-page:not(.admin-gate-page){--brand:#0e6b54;--brand-soft:#eef7f3;background:#fff;color:#0f2742}
@@ -7,8 +7,11 @@
 .login-page:not(.admin-gate-page):has(.login-hotel-art.brigantino){--brand:#123c72;--brand-soft:#f1f5fa}
 .login-page:not(.admin-gate-page)>.back-link{color:var(--brand);font-weight:800}
 .login-page:not(.admin-gate-page) .login-panel{width:min(430px,100%);margin:1vh auto 0;padding:0;text-align:center}
-.login-page:not(.admin-gate-page) .login-hotel-art{width:min(270px,72vw);aspect-ratio:1/1;margin:0 auto 10px;border:0;border-radius:0;box-shadow:none;background:#fff}
-.login-page:not(.admin-gate-page) .login-hotel-art .hotel-card-img{width:100%;height:100%;object-fit:contain}
+.login-page:not(.admin-gate-page) .login-hotel-art{width:min(270px,72vw);aspect-ratio:1/1;margin:0 auto 10px;border:0;border-radius:0;box-shadow:none;background:#fff center/contain no-repeat}
+.login-page:not(.admin-gate-page) .login-hotel-art.chocohotel{background-image:url('/logos/randapp-chocohotel.webp')}
+.login-page:not(.admin-gate-page) .login-hotel-art.hotelgio{background-image:url('/logos/randapp-hotelgio.webp')}
+.login-page:not(.admin-gate-page) .login-hotel-art.brigantino{background-image:url('/logos/randapp-brigantino.webp')}
+.login-page:not(.admin-gate-page) .login-hotel-art .hotel-card-img{width:100%;height:100%;object-fit:contain;opacity:0}
 .login-page:not(.admin-gate-page) .login-panel h1{margin:0 0 4px;color:var(--brand);font-size:27px;letter-spacing:-.5px}
 .login-page:not(.admin-gate-page) .login-panel h1::before{content:'Accesso a '}
 .login-page:not(.admin-gate-page) .login-panel form{margin-top:16px;padding:18px;border:1px solid #e8e8e8;border-radius:20px;background:#fff;box-shadow:0 10px 28px rgba(15,39,66,.08);text-align:left}
@@ -30,9 +33,9 @@
 .operations .ops-header{min-height:72px;padding:10px max(18px,calc((100vw - 1180px)/2));border-bottom:1px solid #eceff1;background:#fff;color:#10243b;box-shadow:none}
 .operations .hotel-identity{gap:10px;color:#10243b}
 .operations .hotel-identity .hotel-mark{width:50px;height:50px;flex:0 0 50px;overflow:hidden;border:1px solid #dfe4e7;border-radius:13px;background:#fff center/contain no-repeat;color:transparent;font-size:0;box-shadow:0 3px 10px rgba(15,39,66,.06)}
-.operations.theme-choco .hotel-identity .hotel-mark{background-image:url('/logos/card-chocohotel.png')}
-.operations.theme-green .hotel-identity .hotel-mark{background-image:url('/logos/card-hotelgio.png')}
-.operations.theme-blue .hotel-identity .hotel-mark{background-image:url('/logos/card-brigantino.png')}
+.operations.theme-choco .hotel-identity .hotel-mark{background-image:url('/logos/randapp-chocohotel.webp')}
+.operations.theme-green .hotel-identity .hotel-mark{background-image:url('/logos/randapp-hotelgio.webp')}
+.operations.theme-blue .hotel-identity .hotel-mark{background-image:url('/logos/randapp-brigantino.webp')}
 .operations .hotel-identity strong{display:none}
 .operations .hotel-identity small{display:block;margin:0;color:#536174;font-size:13px;font-weight:650;line-height:1.35;white-space:normal}
 .operations .hotel-identity small::first-line{color:#10243b;font-size:16px;font-weight:850}
