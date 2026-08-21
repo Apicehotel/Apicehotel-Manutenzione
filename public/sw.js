@@ -1,11 +1,11 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v5'
+const CACHE_NAME = 'apicehotel-manutenzione-v6'
 const APP_SHELL = [
   '/',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
-  '/icons/apple-touch-icon.png',
+  '/manifest.webmanifest?v=6',
+  '/icons/icon-192.png?v=6',
+  '/icons/icon-512.png?v=6',
+  '/icons/icon-maskable-512.png?v=6',
+  '/icons/apple-touch-icon.png?v=6',
   '/logos/card-hotelgio.png',
   '/logos/card-chocohotel.png',
   '/logos/card-brigantino.png',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
     const assetPaths = [...shellHtml.matchAll(/(?:src|href)="([^"#]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
       .filter((url) => url.origin === self.location.origin && !url.pathname.startsWith('/api/'))
-      .map((url) => url.pathname)
+      .map((url) => `${url.pathname}${url.search}`)
     await cache.addAll([...new Set(assetPaths)])
     await cache.put('/', shellResponse)
   })())
@@ -67,7 +67,7 @@ self.addEventListener('fetch', (event) => {
 })
 
 self.addEventListener('push', (event) => {
-  let payload = { title: 'Apicehotel Manutenzione', body: 'Hai una nuova notifica.' }
+  let payload = { title: 'RandApp - Manutenzioni', body: 'Hai una nuova notifica.' }
   if (event.data) {
     try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() || payload.body }
   }
@@ -75,8 +75,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/icons/icon-192.png?v=6',
+      badge: '/icons/icon-192.png?v=6',
       tag: payload.tag || 'apicehotel-notifica',
       renotify: Boolean(payload.tag),
       data: { url: payload.url || '/' },
