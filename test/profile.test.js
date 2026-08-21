@@ -6,7 +6,7 @@ test('profilo personale: nuova voce "Il mio profilo" nel drawer, form dedicato i
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
   assert.match(app, /<button onClick=\{\(\) => openPanel\('profile'\)\}><Icon name="user" \/><span>Il mio profilo<\/span><\/button>/)
   assert.match(app, /profile: 'Il mio profilo'/)
-  assert.match(app, /\{type === 'profile' && <form onSubmit=\{saveProfile\}>/)
+  assert.match(app, /\{type === 'profile' && <><form onSubmit=\{saveProfile\}>/)
 })
 
 test('profilo personale: il salvataggio passa da updateUserRow sull\'utente corrente, poi ricarica la directory', async () => {

@@ -10,14 +10,17 @@ test('src/push.js: iscrizione/disiscrizione push verso la chiave VAPID pubblica 
   assert.match(push, /supabase\.functions\.invoke\('push-subscribe', \{/)
 })
 
-test('MenuPanel: il pannello Notifiche mostra lo stato reale dell\'iscrizione, non solo il permesso browser', async () => {
+test('MenuPanel: le notifiche (attivazione + suono) sono ora integrate dentro Il mio profilo, mostrano lo stato reale dell\'iscrizione', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /function MenuPanel\(\{ type, user, hotel, onClose, onSavePin, onSaveProfile \}\) \{/)
+  assert.match(app, /function MenuPanel\(\{ type, user, hotel, onClose, onSavePin, onSaveProfile, uiSize, onUiSizeChange \}\) \{/)
+  assert.match(app, /if \(type !== 'profile'\) return/)
   assert.match(app, /getPushSubscriptionState\(\)\.then\(\(state\) => \{ if \(active\) setPushState\(state\) \}\)/)
   assert.match(app, /const toggleNotifications = async \(\) => \{/)
   assert.match(app, /await subscribeToPush\(hotel\.id\)/)
   assert.match(app, /await unsubscribeFromPush\(hotel\.id\)/)
-  assert.match(app, /hotel=\{hotel\} onClose=\{\(\) => setMenuPanel\(null\)\}/)
+  assert.match(app, /uiSize=\{uiSize\} onUiSizeChange=\{onUiSizeChange\}/)
+  // La voce 'Notifiche' non esiste più come pulsante separato nel drawer.
+  assert.doesNotMatch(app, /openPanel\('notifications'\)/)
 })
 
 test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito, verso send-push', async () => {
