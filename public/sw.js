@@ -1,11 +1,11 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v6'
+const CACHE_NAME = 'apicehotel-manutenzione-v7'
 const APP_SHELL = [
   '/',
-  '/manifest.webmanifest?v=6',
-  '/icons/icon-192.png?v=6',
-  '/icons/icon-512.png?v=6',
-  '/icons/icon-maskable-512.png?v=6',
-  '/icons/apple-touch-icon.png?v=6',
+  '/manifest.webmanifest?v=7',
+  '/icons/icon-192.png?v=7',
+  '/icons/icon-512.png?v=7',
+  '/icons/icon-maskable-512.png?v=7',
+  '/icons/apple-touch-icon.png?v=7',
   '/logos/card-hotelgio.png',
   '/logos/card-chocohotel.png',
   '/logos/card-brigantino.png',
@@ -75,13 +75,11 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: '/icons/icon-192.png?v=6',
-      badge: '/icons/icon-192.png?v=6',
+      icon: '/icons/icon-192.png?v=7',
+      badge: '/icons/icon-192.png?v=7',
       tag: payload.tag || 'apicehotel-notifica',
       renotify: Boolean(payload.tag),
       data: { url: payload.url || '/' },
-      // Gli avvisi urgenti restano visibili finché non vengono toccati e vibrano
-      // più a lungo; le notifiche normali restano leggere (stesso criterio di HotelGio).
       requireInteraction: urgent,
       vibrate: urgent ? [400, 80, 400, 80, 400, 80, 400] : [120, 60, 120],
     }),
