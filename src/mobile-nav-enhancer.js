@@ -34,11 +34,16 @@ function syncMobileNav() {
 
   nav.querySelector('.app-nav-fab')?.remove()
 
+  const homeDashboard = Boolean(document.querySelector('.dash-greeting h1'))
   const homeInterventi = [...document.querySelectorAll('.dash-card')].some((button) => button.textContent?.includes('Interventi di oggi'))
-  if (homeInterventi) sessionStorage.setItem(INTERVENTI_FLAG, '1')
+  if (homeDashboard) sessionStorage.setItem(INTERVENTI_FLAG, homeInterventi ? '1' : '0')
   const canShowInterventi = homeInterventi || sessionStorage.getItem(INTERVENTI_FLAG) === '1'
 
   let interventi = [...nav.querySelectorAll(':scope > button')].find((button) => buttonLabel(button) === 'Interventi')
+  if (!canShowInterventi && interventi) {
+    interventi.remove()
+    interventi = null
+  }
   if (canShowInterventi && !interventi) {
     interventi = document.createElement('button')
     interventi.type = 'button'
