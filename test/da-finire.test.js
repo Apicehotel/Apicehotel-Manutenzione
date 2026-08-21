@@ -26,7 +26,7 @@ test('Planning lavori: da_finire persiste su Supabase (nuove colonne da_finire_d
 
 test('Planning Sale: Modifica una prenotazione esistente (prima esisteva solo Elimina, non si poteva correggere sala/date/cliente)', async () => {
   const planning = await readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8')
-  assert.match(planning, /function SaleBookingForm\(\{ isBusy, onClose, onSave, initial \}\) \{/)
+  assert.match(planning, /function SaleBookingForm\(\{ isBusy, onClose, onSave, initial, error \}\) \{/)
   assert.match(planning, /<h2>\{initial\?'Modifica prenotazione':'Nuova prenotazione'\}<\/h2>/)
   assert.match(planning, /\{initial\?'✓ Salva modifiche':'✓ Prenota'\}/)
   // isBusy esclude la prenotazione stessa dal controllo conflitti quando si modifica,
@@ -44,10 +44,10 @@ test("Planning Sale: prenotazioni cliccabili con dettaglio dedicato, Da finire/F
   // canMarkStatus è più ampio di canEdit: i manutentori possono segnare lo stato
   // (fanno il lavoro fisico in sala) anche se non possono creare/eliminare prenotazioni.
   assert.match(planning, /const canMarkStatus=canEdit\|\|user\.role==='manutentore'/)
-  assert.match(planning, /const markToFinish=booking=>persist\(bookings\.map\(item=>item\.id===booking\.id\?\{\.\.\.item,status:'da_finire',toFinishBy:user\.name,toFinishAt:Date\.now\(\)\}:item\)\)/)
-  assert.match(planning, /const markDone=booking=>persist\(bookings\.map\(item=>item\.id===booking\.id\?\{\.\.\.item,status:'done',doneBy:user\.name,doneAt:Date\.now\(\)\}:item\)\)/)
-  // Nuove prenotazioni partono da 'pending', coerente con Planning lavori.
-  assert.match(planning, /persist\(\[\{\.\.\.draft,id:Date\.now\(\),status:'pending',createdBy:user\.name,createdAt:Date\.now\(\)\},\.\.\.bookings\]\)/)
+  assert.match(planning, /const markToFinish=async booking=>updateBookingRow\(booking\.id,\{status:'da_finire',toFinishBy:user\.name,toFinishAt:Date\.now\(\)\}\)/)
+  assert.match(planning, /const markDone=async booking=>updateBookingRow\(booking\.id,\{status:'done',doneBy:user\.name,doneAt:Date\.now\(\)\}\)/)
+  // Nuove prenotazioni partono da 'pending', coerente con Planning lavori, salvate su Supabase.
+  assert.match(planning, /await insertBooking\(\{\.\.\.draft,hotelId:hotel\.id,status:'pending',createdBy:user\.name\}\)/)
   // Ogni prenotazione è ora un pulsante cliccabile che apre il dettaglio, non più solo testo statico.
   assert.match(planning, /<button type="button" className=\{`sale-event \$\{item\.shift\} \$\{item\.status\|\|'pending'\}`\} key=\{item\.id\} onClick=\{\(\)=>setOpenBookingId\(item\.id\)\}>/)
   assert.match(planning, /function SaleBookingDetail\(\{ booking, canMarkStatus, canEdit, onClose, onToFinish, onDone, onDelete, onEdit \}\) \{/)
