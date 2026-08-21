@@ -62,7 +62,7 @@ test('Housekeeping NON compare mai nella bottom nav primaria, solo nel pannello 
   assert.doesNotMatch(app, /key: 'Housekeeping'/)
   assert.doesNotMatch(app, /showHousekeeping/)
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
-  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Interventi','Feedback ricevuti'\]\.includes\(tab\)\}/)
+  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Interventi','Feedback ricevuti','Il mio profilo','Cambia PIN','Manuale','Feedback'\]\.includes\(tab\)\}/)
 })
 
 test('Interventi resta raggiungibile dal pannello Altro, nessuna funzione persa togliendolo dalla nav primaria', async () => {

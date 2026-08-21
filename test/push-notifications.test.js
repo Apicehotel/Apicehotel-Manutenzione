@@ -12,15 +12,17 @@ test('src/push.js: iscrizione/disiscrizione push verso la chiave VAPID pubblica 
 
 test('MenuPanel: le notifiche (attivazione + suono) sono ora integrate dentro Il mio profilo, mostrano lo stato reale dell\'iscrizione', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /function MenuPanel\(\{ type, user, hotel, onClose, onSavePin, onSaveProfile, uiSize, onUiSizeChange \}\) \{/)
-  assert.match(app, /if \(type !== 'profile'\) return/)
+  assert.match(app, /function MenuPanel\(\{ type, user, hotel, onSavePin, onSaveProfile, uiSize, onUiSizeChange \}\) \{/)
+  assert.match(app, /if \(type !== 'Il mio profilo'\) return/)
   assert.match(app, /getPushSubscriptionState\(\)\.then\(\(state\) => \{ if \(active\) setPushState\(state\) \}\)/)
   assert.match(app, /const toggleNotifications = async \(\) => \{/)
   assert.match(app, /await subscribeToPush\(hotel\.id\)/)
   assert.match(app, /await unsubscribeFromPush\(hotel\.id\)/)
-  assert.match(app, /uiSize=\{uiSize\} onUiSizeChange=\{onUiSizeChange\}/)
+  assert.match(app, /onSavePin=\{onSavePin\} onSaveProfile=\{onSaveProfile\} uiSize=\{uiSize\} onUiSizeChange=\{onUiSizeChange\}/)
   // La voce 'Notifiche' non esiste più come pulsante separato nel drawer.
   assert.doesNotMatch(app, /openPanel\('notifications'\)/)
+  // Non è più un popup: nessun backdrop/overlay per queste pagine.
+  assert.doesNotMatch(app, /menu-panel-backdrop/)
 })
 
 test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito, verso send-push', async () => {
