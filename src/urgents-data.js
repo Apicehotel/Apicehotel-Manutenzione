@@ -42,29 +42,23 @@ function toRow(item) {
 
 export async function fetchUrgents(hotelId) {
   if (!supabase) return { items: [], ok: false }
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
-    if (error) return { items: [], ok: false }
-    return { items: (data || []).map(fromRow), ok: true }
-  } catch { return { items: [], ok: false } }
+  const { data, error } = await supabase.from('richieste_urgenti').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
+  if (error) { console.error('fetchUrgents', error); return { items: [], ok: false, error: error.message } }
+  return { items: (data || []).map(fromRow), ok: true }
 }
 
 export async function insertUrgent(item) {
-  if (!supabase) return null
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').insert(toRow(item)).select().single()
-    if (error || !data) return null
-    return fromRow(data)
-  } catch { return null }
+  if (!supabase) throw new Error('Supabase non configurato')
+  const { data, error } = await supabase.from('richieste_urgenti').insert(toRow(item)).select().single()
+  if (error) { console.error('insertUrgent', error); throw new Error(error.message) }
+  return fromRow(data)
 }
 
 export async function updateUrgentRow(id, changes) {
   if (!supabase || !id) return null
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id', id).select().single()
-    if (error || !data) return null
-    return fromRow(data)
-  } catch { return null }
+  const { data, error } = await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id', id).select().single()
+  if (error) { console.error('updateUrgentRow', error); throw new Error(error.message) }
+  return fromRow(data)
 }
 
 export function subscribeUrgents(hotelId, onChange) {

@@ -25,7 +25,7 @@ test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito,
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/urgents-data.js', import.meta.url), 'utf8'),
   ])
-  assert.match(app, /if \(created\) \{ setUrgentItems\(\(list\) => \[created, \.\.\.list\.filter\(\(i\) => i\.id !== created\.id\)\]\); notifyUrgent\(hotel\.id, text\) \}/)
+  assert.match(app, /const created = await insertUrgent\(\{ hotelId: hotel\.id, note: text, status: 'aperta', createdBy: user\.name \}\); setUrgentItems\(\(list\) => \[created, \.\.\.list\.filter\(\(i\) => i\.id !== created\.id\)\]\); notifyUrgent\(hotel\.id, text\)/)
   assert.match(urgents, /export async function notifyUrgent\(hotelId, note\) \{/)
   assert.match(urgents, /supabase\.functions\.invoke\('send-push', \{ body: \{ hotel_id: hotelId, title: 'Avviso urgente', body: note \} \}\)/)
 })
