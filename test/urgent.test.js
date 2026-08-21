@@ -13,7 +13,7 @@ test('Avvisi Urgenti implementa invio, presa in carico, completamento e trasform
   assert.match(app, /origin: 'Avviso urgente'/)
   assert.match(app, /item\.hotelId === hotel\.id/)
   assert.match(app, /function UrgentBanner/)
-  assert.match(app, /className="urgent-fab"/)
+  assert.match(app, /className="fab-new-issue planned-fab urgent-fab-scoped"/)
   assert.match(app, /const canSendUrgent = \(user\) => \['Direzione', 'Direttore Centro Congressi'\]\.includes\(user\.role\) \|\| user\.department === 'Reception'/)
   assert.match(app, /const canManageUrgent = \(user\) => user\.role === 'manutentore'/)
   assert.match(app, /const canViewUrgent = \(user\) => canSendUrgent\(user\) \|\| canManageUrgent\(user\)/)

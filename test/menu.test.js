@@ -8,11 +8,11 @@ test('menu operativo include azioni reali e permessi Planning Sale HotelGio', as
     readFile(new URL('../src/config.js', import.meta.url), 'utf8'),
   ])
 
-  for (const label of ['Aggiorna', 'Cambia struttura', 'Cambia PIN', 'Notifiche', 'Manuale', 'Feedback', 'Esporta CSV', 'Logout']) {
+  for (const label of ['Pulisci cache', 'Cambia struttura', 'Il mio profilo', 'Cambia PIN', 'Manuale', 'Feedback', 'Esporta CSV', 'Logout']) {
     assert.match(app, new RegExp(`>${label}<`))
   }
   assert.match(app, /exportIssuesCsv/)
-  assert.match(app, /Notification\.requestPermission/)
+  assert.match(app, /subscribeToPush\(hotel\.id\)/)
   assert.match(config, /admin: \[[^\]]*'planning_sale'/)
   assert.match(config, /'Direttore Centro Congressi': \[[^\]]*'planning_sale'/)
   assert.doesNotMatch(config, /manutentore: \[[^\]]*'planning_sale'/)

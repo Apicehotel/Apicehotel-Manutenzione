@@ -42,29 +42,23 @@ function toRow(item) {
 
 export async function fetchUrgents(hotelId) {
   if (!supabase) return { items: [], ok: false }
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
-    if (error) return { items: [], ok: false }
-    return { items: (data || []).map(fromRow), ok: true }
-  } catch { return { items: [], ok: false } }
+  const { data, error } = await supabase.from('richieste_urgenti').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
+  if (error) { console.error('fetchUrgents', error); return { items: [], ok: false, error: error.message } }
+  return { items: (data || []).map(fromRow), ok: true }
 }
 
 export async function insertUrgent(item) {
-  if (!supabase) return null
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').insert(toRow(item)).select().single()
-    if (error || !data) return null
-    return fromRow(data)
-  } catch { return null }
+  if (!supabase) throw new Error('Supabase non configurato')
+  const { data, error } = await supabase.from('richieste_urgenti').insert(toRow(item)).select().single()
+  if (error) { console.error('insertUrgent', error); throw new Error(error.message) }
+  return fromRow(data)
 }
 
 export async function updateUrgentRow(id, changes) {
   if (!supabase || !id) return null
-  try {
-    const { data, error } = await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id', id).select().single()
-    if (error || !data) return null
-    return fromRow(data)
-  } catch { return null }
+  const { data, error } = await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id', id).select().single()
+  if (error) { console.error('updateUrgentRow', error); throw new Error(error.message) }
+  return fromRow(data)
 }
 
 export function subscribeUrgents(hotelId, onChange) {
@@ -73,4 +67,21 @@ export function subscribeUrgents(hotelId, onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'richieste_urgenti', filter: `hotel_id=eq.${hotelId}` }, onChange)
     .subscribe()
   return () => { supabase.removeChannel(channel) }
+}
+
+// Notifica push ai manutentori quando viene creato un nuovo avviso urgente.
+// Non blocca il flusso né mostra un errore all'utente se la notifica non parte
+// (la creazione dell'avviso è già andata a buon fine, la notifica è un extra),
+// ma logga sempre l'errore reale — prima veniva nascosto anche in console,
+// rendendo impossibile capire perché una notifica non fosse mai partita.
+export async function notifyUrgent(hotelId, note) {
+  if (!supabase) return
+  try {
+    const { data, error } = await supabase.functions.invoke('send-push', { body: { hotel_id: hotelId, title: 'Avviso urgente', body: note } })
+    if (error) console.error('notifyUrgent', error)
+    else if (data && data.ok === false) console.error('notifyUrgent', data.error)
+    else if (data) console.info('notifyUrgent', data)
+  } catch (error) {
+    console.error('notifyUrgent', error)
+  }
 }

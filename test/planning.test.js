@@ -11,8 +11,29 @@ test('Planning lavori usa i periodi degli interventi', async () => {
   assert.match(source, /Quindicina/)
   assert.match(app, /tab === 'Planning Lavori'/)
   assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\)/)
-  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab" onClick={\(\) => setPlannedFormOpen\(true\)}>＋ Nuovo lavoro<\/button>/)
+  assert.match(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) \? \{ label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\) \}/)
   assert.match(app, /operations theme-\$\{hotel\.tone\}/)
+})
+
+test('Planning Sale: Nuova prenotazione integrata nel + centrale, niente più sale-fab duplicato', async () => {
+  const [app, planning] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/planning.jsx', import.meta.url), 'utf8'),
+  ])
+  assert.match(app, /\[saleComposeRequest, setSaleComposeRequest\] = useState\(0\)/)
+  assert.match(app, /<PlanningSale hotel=\{hotel\} user=\{user\} openRequest=\{saleComposeRequest\} \/>/)
+  // Il + centrale rispetta lo stesso set di ruoli di canEdit dentro PlanningSale
+  // (più stretto di canViewPlanningMenu: un manutentore vede Planning Sale in sola
+  // lettura e non deve trovarsi il + per creare una prenotazione che non può fare).
+  assert.match(app, /tab === 'Planning Sale' && hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\)/)
+  assert.match(planning, /export function PlanningSale\(\{ hotel, user, openRequest \}\) \{/)
+  assert.match(planning, /useEffect\(\(\)=>\{if\(openRequest\)setCreating\(true\)\},\[openRequest\]\)/)
+  assert.doesNotMatch(planning, /className="sale-fab"/)
+})
+
+test("Planning lavori: la Zona è testo libero (come su HotelGio), non più vincolata a un elenco predefinito — Camera resta vincolata ai numeri reali", async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /mode === 'camera' \? catalog\.roomGroups\.some\(\(group\) => group\.rooms\.includes\(draft\.location\.trim\(\)\)\) : draft\.location\.trim\(\)\.length > 0/)
 })
 
 test('Planning Sale gestisce turni, combinazioni e conflitti', async () => {
@@ -48,7 +69,7 @@ test('Planning lavori e Planning Sale restano pagine dedicate, ora raggiungibili
   assert.match(app, /function AppNav\(/)
   assert.match(app, /<AppNav tab=\{tab\}/)
   assert.match(app, /showPlanning=\{canViewPlanningMenu\(user\)\}/)
-  assert.match(app, /key: 'Planning Lavori', label: 'Planning'/)
+  assert.match(app, /key: 'Planning', label: 'Planning'/)
 
   // Housekeeping e Avvisi Urgenti sono stati spostati nel pannello Altro (drawer esistente), non persi.
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)

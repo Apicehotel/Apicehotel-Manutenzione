@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v2'
+const CACHE_NAME = 'apicehotel-manutenzione-v5'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -64,4 +64,37 @@ self.addEventListener('fetch', (event) => {
       return response
     })),
   )
+})
+
+self.addEventListener('push', (event) => {
+  let payload = { title: 'Apicehotel Manutenzione', body: 'Hai una nuova notifica.' }
+  if (event.data) {
+    try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() || payload.body }
+  }
+  const urgent = Boolean(payload.urgent)
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: payload.tag || 'apicehotel-notifica',
+      renotify: Boolean(payload.tag),
+      data: { url: payload.url || '/' },
+      // Gli avvisi urgenti restano visibili finché non vengono toccati e vibrano
+      // più a lungo; le notifiche normali restano leggere (stesso criterio di HotelGio).
+      requireInteraction: urgent,
+      vibrate: urgent ? [400, 80, 400, 80, 400, 80, 400] : [120, 60, 120],
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = event.notification.data?.url || '/'
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const existing = clientsList.find((item) => item.url.includes(self.location.origin))
+    if (existing) { existing.focus(); return }
+    await self.clients.openWindow(targetUrl)
+  })())
 })
