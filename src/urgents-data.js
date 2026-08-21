@@ -70,12 +70,18 @@ export function subscribeUrgents(hotelId, onChange) {
 }
 
 // Notifica push ai manutentori quando viene creato un nuovo avviso urgente.
-// Volutamente silenziosa in caso di errore: la creazione dell'avviso è già
-// andata a buon fine, la notifica è un extra e non deve bloccare il flusso
-// né mostrare un errore all'utente se il device non ha notifiche configurate.
+// Non blocca il flusso né mostra un errore all'utente se la notifica non parte
+// (la creazione dell'avviso è già andata a buon fine, la notifica è un extra),
+// ma logga sempre l'errore reale — prima veniva nascosto anche in console,
+// rendendo impossibile capire perché una notifica non fosse mai partita.
 export async function notifyUrgent(hotelId, note) {
   if (!supabase) return
   try {
-    await supabase.functions.invoke('send-push', { body: { hotel_id: hotelId, title: 'Avviso urgente', body: note } })
-  } catch { /* non bloccante */ }
+    const { data, error } = await supabase.functions.invoke('send-push', { body: { hotel_id: hotelId, title: 'Avviso urgente', body: note } })
+    if (error) console.error('notifyUrgent', error)
+    else if (data && data.ok === false) console.error('notifyUrgent', data.error)
+    else if (data) console.info('notifyUrgent', data)
+  } catch (error) {
+    console.error('notifyUrgent', error)
+  }
 }
