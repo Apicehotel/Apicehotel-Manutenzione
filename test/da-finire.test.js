@@ -11,7 +11,7 @@ test("Planning lavori: azione 'Segna da finire' accanto a 'Intervento completato
   assert.match(app, /<button className="secondary to-finish-action" onClick=\{markToFinish\}>◐ Segna da finire<\/button>/)
   assert.match(app, /item\.status === 'da_finire' && <div className="status-note to-finish">Segnato da finire da <strong>\{item\.toFinishBy\}<\/strong>/)
   // Badge nella card e nel calendario giorno-per-giorno.
-  assert.match(app, /item\.status === 'waiting' \? 'Attesa pezzo' : item\.status === 'da_finire' \? 'Da finire' : 'Pianificato'/)
+  assert.match(app, /item\.status === 'waiting' \? 'Attesa pezzo' : item\.status === 'da_finire' \? 'Da finire' : item\.status === 'done' \? 'Completato' : 'Pianificato'/)
   assert.match(styles, /\.work-event\.da_finire \{ border-color:#fbd7a5; background:#fef6ea; \}/)
   assert.match(styles, /\.planned-badges span\.da_finire \{ background:#fef3e2; color:#b45309; \}/)
 })
