@@ -15,6 +15,14 @@ test('lo switch mostra solo strutture abilitate', () => {
   assert.match(source, /user\.hotels\.includes\(hotel\.id\)/u)
 })
 
+test('Cambia struttura usa i tre loghi RandApp delle strutture, non le sigle HG CH IB', () => {
+  assert.match(source, /\/logos\/randapp-hotelgio\.webp/u)
+  assert.match(source, /\/logos\/randapp-chocohotel\.webp/u)
+  assert.match(source, /\/logos\/randapp-brigantino\.webp/u)
+  assert.match(source, /<img src=\{switchLogo\(hotel\.id\)\}/u)
+  assert.doesNotMatch(source.match(/function HotelSwitcher\([\s\S]*?(?=export default function App)/u)?.[0] || '', /<HotelMark hotel=\{hotel\}\/>/u)
+})
+
 test('lo switch aggiorna hotelId senza cambiare userId', () => {
   assert.match(source, /const next = \{ \.\.\.session, hotelId: nextHotel\.id \}/u)
   assert.match(source, /saveSession\(next\)/u)
