@@ -1,0 +1,1 @@
+CI verification marker for structure brand colors.
