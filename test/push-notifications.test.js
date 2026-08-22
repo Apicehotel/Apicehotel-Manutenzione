@@ -19,9 +19,7 @@ test('MenuPanel: le notifiche (attivazione + suono) sono ora integrate dentro Il
   assert.match(app, /await subscribeToPush\(hotel\.id\)/)
   assert.match(app, /await unsubscribeFromPush\(hotel\.id\)/)
   assert.match(app, /onSavePin=\{onSavePin\} onSaveProfile=\{onSaveProfile\} uiSize=\{uiSize\} onUiSizeChange=\{onUiSizeChange\}/)
-  // La voce 'Notifiche' non esiste più come pulsante separato nel drawer.
   assert.doesNotMatch(app, /openPanel\('notifications'\)/)
-  // Non è più un popup: nessun backdrop/overlay per queste pagine.
   assert.doesNotMatch(app, /menu-panel-backdrop/)
 })
 
@@ -37,7 +35,7 @@ test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito,
 
 test('service worker: gestori push e notificationclick presenti, versione cache aggiornata', async () => {
   const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v4'/)
+  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v8'/)
   assert.match(sw, /self\.addEventListener\('push', \(event\) => \{/)
   assert.match(sw, /self\.registration\.showNotification\(payload\.title, \{/)
   assert.match(sw, /self\.addEventListener\('notificationclick', \(event\) => \{/)

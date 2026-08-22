@@ -5,7 +5,7 @@ import test from 'node:test'
 test('configurazione PWA completa e installabile', async () => {
   const manifest = JSON.parse(await readFile(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'))
 
-  assert.equal(manifest.name, 'Apicehotel Manutenzione')
+  assert.equal(manifest.name, 'RandApp - Manutenzioni')
   assert.equal(manifest.start_url, '/')
   assert.equal(manifest.display, 'standalone')
   assert.equal(manifest.theme_color, '#0e5c49')
