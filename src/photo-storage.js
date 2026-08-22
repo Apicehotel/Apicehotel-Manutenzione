@@ -1,0 +1,93 @@
+import { supabase } from './supabase.js'
+import { deleteOfflineBlob, getOfflineBlob, putOfflineBlob } from './offline-store.js'
+
+const BUCKET = 'maintenance-photos'
+const TOKEN_PREFIX = 'offline-blob:'
+const SIGNED_TTL = 60 * 60 * 24 * 30
+
+const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+const isDataUrl = (value) => typeof value === 'string' && value.startsWith('data:image/')
+const isOfflineToken = (value) => typeof value === 'string' && value.startsWith(TOKEN_PREFIX)
+const tokenId = (value) => String(value).slice(TOKEN_PREFIX.length)
+
+function dataUrlToBlob(dataUrl) {
+  const [head, body] = String(dataUrl).split(',', 2)
+  const mime = head.match(/^data:([^;]+)/)?.[1] || 'image/jpeg'
+  const binary = atob(body || '')
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
+function extensionFor(blob) {
+  const mime = blob?.type || ''
+  if (mime.includes('png')) return 'png'
+  if (mime.includes('webp')) return 'webp'
+  if (mime.includes('heic') || mime.includes('heif')) return 'heic'
+  return 'jpg'
+}
+
+export async function stagePhotoOffline(value, meta = {}) {
+  if (!isDataUrl(value)) return value
+  const blob = dataUrlToBlob(value)
+  const id = await putOfflineBlob(blob, meta)
+  return `${TOKEN_PREFIX}${id}`
+}
+
+async function materializePhoto(value) {
+  if (isDataUrl(value)) return { blob: dataUrlToBlob(value), cleanupId: null }
+  if (isOfflineToken(value)) {
+    const id = tokenId(value)
+    const row = await getOfflineBlob(id)
+    if (!row?.blob) throw new Error('Foto offline non più disponibile sul dispositivo')
+    return { blob: row.blob, cleanupId: id }
+  }
+  return null
+}
+
+export async function uploadPhotoValue(value, { hotelId, entity = 'issues', kind = 'photo' } = {}) {
+  if (!value || (!isDataUrl(value) && !isOfflineToken(value))) return value || null
+  if (!supabase) throw new Error('Supabase non configurato')
+  if (!hotelId) throw new Error('hotelId mancante per upload foto')
+  const materialized = await materializePhoto(value)
+  const ext = extensionFor(materialized.blob)
+  const path = `${hotelId}/${entity}/${uuid()}/${kind}.${ext}`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, materialized.blob, {
+    cacheControl: '3600',
+    contentType: materialized.blob.type || 'image/jpeg',
+    upsert: false,
+  })
+  if (error) throw error
+  if (materialized.cleanupId) await deleteOfflineBlob(materialized.cleanupId)
+  return path
+}
+
+export async function signedPhotoUrl(value) {
+  if (!value || isDataUrl(value)) return value || null
+  if (isOfflineToken(value)) {
+    const row = await getOfflineBlob(tokenId(value))
+    return row?.blob ? URL.createObjectURL(row.blob) : null
+  }
+  if (!supabase) return null
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(value, SIGNED_TTL)
+  if (error) {
+    console.error('signedPhotoUrl', error)
+    return null
+  }
+  return data?.signedUrl || null
+}
+
+export async function hydrateIssuePhotos(item) {
+  if (!item) return item
+  const [photoData, completionPhotoData] = await Promise.all([
+    signedPhotoUrl(item.photoPath || item.photoData),
+    signedPhotoUrl(item.completionPhotoPath || item.completionPhotoData),
+  ])
+  return { ...item, photoData, completionPhotoData }
+}
+
+export async function hydratePlannedPhotos(item) {
+  if (!item) return item
+  const photoAfter = await signedPhotoUrl(item.photoAfterPath || item.photoAfter)
+  return { ...item, photoAfter }
+}
