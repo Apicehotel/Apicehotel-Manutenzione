@@ -9,7 +9,7 @@ test('il pannello admin diventa una lista di schede su smartphone', async () => 
   ])
 
   assert.match(app, /data-label="Ruolo"/)
-  assert.match(app, /data-label="Reparto"/)
+  assert.doesNotMatch(app, /data-label="Reparto"/)
   assert.match(app, /data-label=\{hotel\.short\}/)
   assert.match(styles, /\.admin-panel table,\.admin-panel tbody \{ display: block; min-width: 0; \}/)
   assert.match(styles, /\.admin-panel thead \{ display: none; \}/)

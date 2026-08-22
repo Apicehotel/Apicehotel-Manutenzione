@@ -4,7 +4,7 @@ import test from 'node:test'
 
 test('Housekeeping replica Slope, tabellone e sincronizzazione offline', async()=>{
   const [app,source,pkg,config]=await Promise.all([readFile(new URL('../src/App.jsx',import.meta.url),'utf8'),readFile(new URL('../src/housekeeping.jsx',import.meta.url),'utf8'),readFile(new URL('../package.json',import.meta.url),'utf8'),readFile(new URL('../src/config.js',import.meta.url),'utf8')])
-  assert.match(app,/const canViewHousekeeping = \(user\) => \['Direzione','Direttore Centro Congressi','Portiere Notturno'\]\.includes\(user\.role\) \|\| \['Reception','Governante'\]\.includes\(user\.department\)/)
+  assert.match(app,/const canViewHousekeeping = \(user\) => \['admin','Direzione','Direttore Centro Congressi','Portiere Notturno','Governante','Reception'\]\.includes\(user\.role\)/)
   assert.match(app,/canViewHousekeeping\(user\) \? \['Housekeeping'\] : \[\]/)
   assert.match(source,/\.eq\('hotel_id',hotel\.id\)/)
   assert.doesNotMatch(app,/<span>Housekeeping<\/span>/)

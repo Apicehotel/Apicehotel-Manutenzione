@@ -57,7 +57,7 @@ test('Planning Sale gestisce turni, combinazioni e conflitti', async () => {
 
 test('Planning lavori e Planning Sale restano pagine dedicate, ora raggiungibili da AppNav e dal pannello Altro', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /const canViewPlanningMenu = \(user\) => \['manutentore','Direttore Centro Congressi'\]\.includes\(user\.role\)/)
+  assert.match(app, /const canViewPlanningMenu = \(user\) => \['admin','manutentore','Direttore Centro Congressi','Reception'\]\.includes\(user\.role\)/)
   assert.match(app, /<span>Planning lavori<\/span>/)
   assert.match(app, /<span>Planning Sale<\/span>/)
   assert.match(app, /hotel\.id === 'hotelgio' && canViewPlanningMenu\(user\)/)

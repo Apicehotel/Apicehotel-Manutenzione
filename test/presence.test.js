@@ -12,7 +12,7 @@ test("'Sono in struttura' è persistente su Supabase e limitato ai manutentori, 
   // Deriva da user.in_struttura (già corretto lato server per la scadenza).
   assert.match(app, /const presence = user\.role === 'manutentore' && Boolean\(user\.in_struttura\) && !isPresenceExpired/)
   // Pulsante visibile solo ai manutentori.
-  assert.match(app, /\{user\.role === 'manutentore' && <button className=\{`presence \$\{presence \? 'on' : ''\}`\} onClick=\{\(\) => onTogglePresence\(!presence\)\}>/)
+  assert.match(app, /\{\['manutentore','Portiere Notturno','admin'\]\.includes\(user\.role\) && <button className=\{`presence \$\{presence \? 'on' : ''\}`\} onClick=\{\(\) => onTogglePresence\(!presence\)\}>/)
   // Nuova funzione client per la scrittura, passa dalla edge function user-pin (stesso pattern del cambio PIN self-service).
   assert.match(auth, /export async function setOwnPresence\(present\) \{/)
   assert.match(auth, /body: \{ action: 'set_presence', present: Boolean\(present\) \}/)

@@ -8,7 +8,7 @@ test('i sensori temperatura replicano dati live e permessi Hotel Gio', async () 
     readFile(new URL('../src/temperature.jsx', import.meta.url), 'utf8'),
   ])
 
-  assert.match(app, /const canViewTemperature = \(user\) => \['Direzione','Direttore Centro Congressi','manutentore'\]\.includes\(user\.role\) \|\| user\.department === 'Reception'/)
+  assert.match(app, /const canViewTemperature = \(user\) => \['admin','Direzione','Direttore Centro Congressi','manutentore','Reception','Colazione Jazz'\]\.includes\(user\.role\)/)
   assert.match(app, /canViewTemperature\(user\) && <button onClick=\{goToTemperature\}/)
   assert.match(app, /<span>Temperature<\/span>/)
   assert.match(temperature, /from\('sensori_temperatura'\)/)
