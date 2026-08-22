@@ -1,82 +1,16 @@
 import { supabase } from './supabase.js'
+import { cacheRemoteCollection, enqueueMutation, findCachedHotelId, getCachedCollection, isTransientNetworkError, makeOfflineId, registerOfflineHandler } from './offline-store.js'
 
-// ── Ponte prenotazione sala app <-> riga DB (tabella prenotazioni_sale) ──────
-// DB: id, hotel_id, sala, data, data_al, turno, cliente, note, stato,
-//     creato_da, creato_il, da_finire_da, da_finire_il, completata_da,
-//     completata_il
-// App: id, hotelId, room, dateFrom, dateTo, shift, client, notes, status,
-//      createdBy, createdAt, toFinishBy, toFinishAt, doneBy, doneAt
-
-function fromRow(row) {
-  return {
-    id: row.id,
-    hotelId: row.hotel_id,
-    room: row.sala,
-    dateFrom: row.data,
-    dateTo: row.data_al || row.data,
-    shift: row.turno,
-    client: row.cliente,
-    notes: row.note || '',
-    status: row.stato || 'pending',
-    createdBy: row.creato_da,
-    createdAt: row.creato_il ? new Date(row.creato_il).getTime() : Date.now(),
-    toFinishBy: row.da_finire_da || null,
-    toFinishAt: row.da_finire_il ? new Date(row.da_finire_il).getTime() : null,
-    doneBy: row.completata_da || null,
-    doneAt: row.completata_il ? new Date(row.completata_il).getTime() : null,
-  }
-}
-
-function toRow(item) {
-  const row = {}
-  const set = (col, val) => { if (val !== undefined) row[col] = val }
-  set('hotel_id', item.hotelId)
-  set('sala', item.room)
-  set('data', item.dateFrom)
-  set('data_al', item.dateTo)
-  set('turno', item.shift)
-  set('cliente', item.client)
-  set('note', item.notes)
-  set('stato', item.status)
-  set('creato_da', item.createdBy)
-  set('da_finire_da', item.toFinishBy)
-  if (item.toFinishAt !== undefined) row.da_finire_il = item.toFinishAt ? new Date(item.toFinishAt).toISOString() : null
-  set('completata_da', item.doneBy)
-  if (item.doneAt !== undefined) row.completata_il = item.doneAt ? new Date(item.doneAt).toISOString() : null
-  return row
-}
-
-export async function fetchBookings(hotelId) {
-  if (!supabase) return { items: [], ok: false }
-  const { data, error } = await supabase.from('prenotazioni_sale').select('*').eq('hotel_id', hotelId).order('data', { ascending: true })
-  if (error) { console.error('fetchBookings', error); return { items: [], ok: false, error: error.message } }
-  return { items: (data || []).map(fromRow), ok: true }
-}
-
-export async function insertBooking(item) {
-  if (!supabase) throw new Error('Supabase non configurato')
-  const { data, error } = await supabase.from('prenotazioni_sale').insert(toRow(item)).select().single()
-  if (error) { console.error('insertBooking', error); throw new Error(error.message) }
-  return fromRow(data)
-}
-
-export async function updateBookingRow(id, changes) {
-  if (!supabase || !id) return null
-  const { data, error } = await supabase.from('prenotazioni_sale').update(toRow(changes)).eq('id', id).select().single()
-  if (error) { console.error('updateBookingRow', error); throw new Error(error.message) }
-  return fromRow(data)
-}
-
-export async function deleteBookingRow(id) {
-  if (!supabase || !id) return
-  const { error } = await supabase.from('prenotazioni_sale').delete().eq('id', id)
-  if (error) { console.error('deleteBookingRow', error); throw new Error(error.message) }
-}
-
-export function subscribeBookings(hotelId, onChange) {
-  if (!supabase) return () => {}
-  const channel = supabase.channel('apice-sale-' + hotelId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'prenotazioni_sale', filter: `hotel_id=eq.${hotelId}` }, onChange)
-    .subscribe()
-  return () => { supabase.removeChannel(channel) }
-}
+const ENTITY='sale-bookings'
+const onlineNow=()=>typeof navigator==='undefined'||navigator.onLine
+function fromRow(row){return{id:row.id,hotelId:row.hotel_id,room:row.sala,dateFrom:row.data,dateTo:row.data_al||row.data,shift:row.turno,client:row.cliente,notes:row.note||'',status:row.stato||'pending',createdBy:row.creato_da,createdAt:row.creato_il?new Date(row.creato_il).getTime():Date.now(),toFinishBy:row.da_finire_da||null,toFinishAt:row.da_finire_il?new Date(row.da_finire_il).getTime():null,doneBy:row.completata_da||null,doneAt:row.completata_il?new Date(row.completata_il).getTime():null}}
+function toRow(item){const row={},set=(c,v)=>{if(v!==undefined)row[c]=v};set('hotel_id',item.hotelId);set('sala',item.room);set('data',item.dateFrom);set('data_al',item.dateTo);set('turno',item.shift);set('cliente',item.client);set('note',item.notes);set('stato',item.status);set('creato_da',item.createdBy);set('da_finire_da',item.toFinishBy);if(item.toFinishAt!==undefined)row.da_finire_il=item.toFinishAt?new Date(item.toFinishAt).toISOString():null;set('completata_da',item.doneBy);if(item.doneAt!==undefined)row.completata_il=item.doneAt?new Date(item.doneAt).toISOString():null;return row}
+async function dbInsert(item){const{data,error}=await supabase.from('prenotazioni_sale').insert(toRow(item)).select().single();if(error)throw error;return fromRow(data)}
+async function dbUpdate(id,changes){const{data,error}=await supabase.from('prenotazioni_sale').update(toRow(changes)).eq('id',id).select().single();if(error)throw error;return fromRow(data)}
+async function dbDelete(id){const{error}=await supabase.from('prenotazioni_sale').delete().eq('id',id);if(error)throw error;return true}
+registerOfflineHandler(ENTITY,async(op,targetId)=>op.action==='create'?dbInsert(op.payload):op.action==='update'?dbUpdate(targetId,op.payload):dbDelete(targetId))
+export async function fetchBookings(hotelId){if(!supabase||!onlineNow())return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:true};try{const{data,error}=await supabase.from('prenotazioni_sale').select('*').eq('hotel_id',hotelId).order('data',{ascending:true});if(error)throw error;return{items:await cacheRemoteCollection(ENTITY,hotelId,(data||[]).map(fromRow)),ok:true}}catch(error){return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:isTransientNetworkError(error),error:error?.message}}}
+export async function insertBooking(item){if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-booking');return enqueueMutation({entity:ENTITY,hotelId:item.hotelId,action:'create',payload:{...item,createdAt:item.createdAt||Date.now()},tempId})}try{const created=await dbInsert(item);await cacheRemoteCollection(ENTITY,item.hotelId,[created,...(await getCachedCollection(ENTITY,item.hotelId)).filter(x=>x.id!==created.id)]);return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-booking');return enqueueMutation({entity:ENTITY,hotelId:item.hotelId,action:'create',payload:{...item,createdAt:item.createdAt||Date.now()},tempId})}throw error}}
+export async function updateBookingRow(id,changes){const hotelId=changes.hotelId||await findCachedHotelId(ENTITY,id);if(!supabase||!onlineNow()||String(id).startsWith('offline-'))return enqueueMutation({entity:ENTITY,hotelId,action:'update',payload:changes,targetId:id});try{const updated=await dbUpdate(id,changes);const cached=await getCachedCollection(ENTITY,hotelId);await cacheRemoteCollection(ENTITY,hotelId,cached.map(item=>item.id===id?updated:item));return updated}catch(error){if(isTransientNetworkError(error))return enqueueMutation({entity:ENTITY,hotelId,action:'update',payload:changes,targetId:id});throw error}}
+export async function deleteBookingRow(id,hotelId=null){const resolved=hotelId||await findCachedHotelId(ENTITY,id);if(!supabase||!onlineNow()||String(id).startsWith('offline-'))return enqueueMutation({entity:ENTITY,hotelId:resolved,action:'delete',targetId:id});try{const ok=await dbDelete(id);const cached=await getCachedCollection(ENTITY,resolved);await cacheRemoteCollection(ENTITY,resolved,cached.filter(item=>item.id!==id));return ok}catch(error){if(isTransientNetworkError(error))return enqueueMutation({entity:ENTITY,hotelId:resolved,action:'delete',targetId:id});throw error}}
+export function subscribeBookings(hotelId,onChange){if(!supabase)return()=>{};const channel=supabase.channel('apice-sale-'+hotelId).on('postgres_changes',{event:'*',schema:'public',table:'prenotazioni_sale',filter:`hotel_id=eq.${hotelId}`},onChange).subscribe();return()=>{supabase.removeChannel(channel)}}
