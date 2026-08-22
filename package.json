@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "node scripts/patch-hotel-switch.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patch-hotel-switch.mjs",
+    "prebuild": "node scripts/patch-hotel-switch.mjs && npm test",
     "build": "vite build",
     "preview": "vite preview",
     "pretest": "node scripts/patch-hotel-switch.mjs",
