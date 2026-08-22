@@ -3,11 +3,15 @@ import fs from 'node:fs'
 const path = 'src/App.jsx'
 let source = fs.readFileSync(path, 'utf8')
 
-const insertBeforeApp = `function HotelSwitcher({ user, currentHotel, onSelect, onCancel }) {\n  const allowedHotels = HOTELS.filter((hotel) => !Array.isArray(user.hotels) || user.hotels.includes(hotel.id))\n  return <div className="page login-page"><button className="back-link" onClick={onCancel}>‹ Torna a {currentHotel?.name || 'struttura'}</button><main className="login-panel"><h1>Cambia struttura</h1><p>Scegli una delle strutture abilitate per {user.name}. Non serve reinserire il PIN.</p><div style={{display:'grid',gap:10,marginTop:16}}>{allowedHotels.map((hotel)=><button type="button" className="secondary" key={hotel.id} disabled={hotel.id===currentHotel?.id} onClick={()=>onSelect(hotel)} style={{display:'flex',alignItems:'center',gap:12,justifyContent:'flex-start',padding:14,textAlign:'left'}}><HotelMark hotel={hotel}/><span><strong style={{display:'block'}}>{hotel.name}</strong><small>{hotel.id===currentHotel?.id?'Struttura attuale':'Tocca per aprire'}</small></span></button>)}</div></main></div>\n}\n\n`
+const hotelSwitcher = `function HotelSwitcher({ user, currentHotel, onSelect, onCancel }) {\n  const allowedHotels = HOTELS.filter((hotel) => !Array.isArray(user.hotels) || user.hotels.includes(hotel.id))\n  const switchLogo = (hotelId) => hotelId === 'hotelgio' ? '/logos/randapp-hotelgio.webp' : hotelId === 'chocohotel' ? '/logos/randapp-chocohotel.webp' : '/logos/randapp-brigantino.webp'\n  return <div className="page login-page"><button className="back-link" onClick={onCancel}>‹ Torna a {currentHotel?.name || 'struttura'}</button><main className="login-panel"><h1>Cambia struttura</h1><p>Scegli una delle strutture abilitate per {user.name}. Non serve reinserire il PIN.</p><div style={{display:'grid',gap:10,marginTop:16}}>{allowedHotels.map((hotel)=><button type="button" className="secondary" key={hotel.id} disabled={hotel.id===currentHotel?.id} onClick={()=>onSelect(hotel)} style={{display:'flex',alignItems:'center',gap:14,justifyContent:'flex-start',padding:14,textAlign:'left'}}><img src={switchLogo(hotel.id)} alt={\`Logo \${hotel.name}\`} width="82" height="82" style={{width:82,height:82,objectFit:'contain',borderRadius:18,flex:'0 0 auto'}}/><span><strong style={{display:'block'}}>{hotel.name}</strong><small>{hotel.id===currentHotel?.id?'Struttura attuale':'Tocca per aprire'}</small></span></button>)}</div></main></div>\n}\n\n`
 
 const appMarker = 'export default function App() {'
 if (!source.includes(appMarker)) throw new Error('App marker non trovato')
-if (!source.includes('function HotelSwitcher(')) source = source.replace(appMarker, insertBeforeApp + appMarker)
+if (source.includes('function HotelSwitcher(')) {
+  source = source.replace(/function HotelSwitcher\([\s\S]*?(?=export default function App\(\) \{)/u, hotelSwitcher)
+} else {
+  source = source.replace(appMarker, hotelSwitcher + appMarker)
+}
 
 const stateOld = "  const [sessionChecked, setSessionChecked] = useState(false)\n  const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === loadSession()?.hotelId) || null)"
 const stateNew = "  const [sessionChecked, setSessionChecked] = useState(false)\n  const [switchingHotel, setSwitchingHotel] = useState(false)\n  const [selectedHotel, setSelectedHotel] = useState(() => HOTELS.find((hotel) => hotel.id === loadSession()?.hotelId) || null)"
