@@ -62,7 +62,7 @@ export function SensorsPanel() {
         <div className="sensors-table" role="table">
           <div className="sensors-row sensors-row-head" role="row">
             <span role="columnheader">Sensore</span>
-            {HOTELS.map((h) => <span key={h.id} role="columnheader" className="sensors-hotel-col">{h.name}</span>)}
+            {HOTELS.map((h) => <span key={h.id} role="columnheader" className="sensors-hotel-col">{h.short}</span>)}
           </div>
           {sensors.map((sensor) => (
             <div className="sensors-row" role="row" key={sensor.device_id}>
