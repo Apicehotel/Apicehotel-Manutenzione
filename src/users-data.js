@@ -82,3 +82,9 @@ export async function setUserActive(authUserId, active) {
 export async function deleteUserRow(authUserId) {
   return setUserActive(authUserId, false)
 }
+
+// Eliminazione fisica e irreversibile dell'account (identità, PIN, membership,
+// riga legacy). Distinta da deleteUserRow qui sopra, che invece disattiva soltanto.
+export async function permanentlyDeleteUser(authUserId) {
+  return invokeAdmin({ action: 'hard_delete', auth_user_id: authUserId })
+}
