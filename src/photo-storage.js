@@ -45,20 +45,24 @@ async function materializePhoto(value) {
   return null
 }
 
+export async function cleanupStagedPhoto(value) {
+  if (isOfflineToken(value)) await deleteOfflineBlob(tokenId(value))
+}
+
 export async function uploadPhotoValue(value, { hotelId, entity = 'issues', kind = 'photo' } = {}) {
   if (!value || (!isDataUrl(value) && !isOfflineToken(value))) return value || null
   if (!supabase) throw new Error('Supabase non configurato')
   if (!hotelId) throw new Error('hotelId mancante per upload foto')
   const materialized = await materializePhoto(value)
   const ext = extensionFor(materialized.blob)
-  const path = `${hotelId}/${entity}/${uuid()}/${kind}.${ext}`
+  const objectId = materialized.cleanupId || uuid()
+  const path = `${hotelId}/${entity}/${objectId}/${kind}.${ext}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, materialized.blob, {
     cacheControl: '3600',
     contentType: materialized.blob.type || 'image/jpeg',
-    upsert: false,
+    upsert: Boolean(materialized.cleanupId),
   })
   if (error) throw error
-  if (materialized.cleanupId) await deleteOfflineBlob(materialized.cleanupId)
   return path
 }
 
