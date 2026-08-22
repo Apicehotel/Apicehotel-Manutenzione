@@ -10,6 +10,7 @@ import './brand-theme.css'
 import './admin-mobile-footer.css'
 import './issue-detail-layout.css'
 import './offline-status.css'
+import './home-fab-fix.css'
 import './offline-status.js'
 import { registerPwa } from './pwa.js'
 
