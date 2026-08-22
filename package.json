@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/patch-hotel-switch.mjs",
+    "predev": "node scripts/patch-hotel-switch.mjs && node scripts/patch-issue-filters.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/patch-hotel-switch.mjs && node --test test/hotel-switch-session.test.js",
+    "prebuild": "node scripts/patch-hotel-switch.mjs && node scripts/patch-issue-filters.mjs && node --test test/hotel-switch-session.test.js",
     "build": "vite build",
     "preview": "vite preview",
-    "pretest": "node scripts/patch-hotel-switch.mjs",
+    "pretest": "node scripts/patch-hotel-switch.mjs && node scripts/patch-issue-filters.mjs",
     "test": "node --test test/*.test.js",
     "test:e2e": "node test/e2e.mjs"
   },
