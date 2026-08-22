@@ -1,0 +1,70 @@
+/* Colori struttura centralizzati. I colori funzionali (urgenza, stato online, priorità) restano semantici. */
+.operations{
+  --brand:#0e6b54;
+  --brand-soft:color-mix(in srgb,var(--brand) 10%,white);
+  --brand-soft-strong:color-mix(in srgb,var(--brand) 16%,white);
+  --brand-shadow:color-mix(in srgb,var(--brand) 32%,transparent);
+}
+.operations.theme-green{--brand:#285f28}
+.operations.theme-choco{--brand:#7a1520}
+.operations.theme-blue{--brand:#123c72}
+
+.operations .app-nav button.active,
+.operations .app-nav button.active .icon{color:var(--brand)}
+.operations .app-nav button.app-nav-fab{
+  background:var(--brand);
+  box-shadow:0 7px 18px var(--brand-shadow);
+}
+.operations .primary{background:var(--brand)}
+.operations .back-link{color:var(--brand)}
+.operations .secondary.active,
+.operations button[aria-pressed='true']{border-color:var(--brand);color:var(--brand)}
+
+.operations .tabs button.active{
+  color:var(--brand);
+  border-color:var(--brand);
+}
+.operations .status-tabs button.active{background:var(--brand);color:#fff}
+.operations input:focus,
+.operations select:focus,
+.operations textarea:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px var(--brand-soft-strong);
+}
+.operations button:focus-visible,
+.operations input:focus-visible,
+.operations select:focus-visible,
+.operations textarea:focus-visible{outline-color:var(--brand)}
+
+.operations .dash-card-icon{
+  background:var(--brand-soft);
+  color:var(--brand);
+}
+.operations .dash-card:nth-child(1) .dash-card-icon,
+.operations .dash-card:nth-child(2) .dash-card-icon,
+.operations .dash-card:nth-child(3) .dash-card-icon,
+.operations .dash-card:nth-child(4) .dash-card-icon{
+  background:var(--brand-soft);
+  color:var(--brand);
+}
+.operations .dash-quick button{
+  background:var(--brand-soft);
+  color:var(--brand);
+}
+.operations .dash-card-count{
+  background:var(--brand-soft);
+  color:var(--brand);
+}
+
+/* Mantieni i colori quando comunicano uno stato e non l'identità dell'hotel. */
+.operations .dash-card.urgent .dash-card-count{background:#f4eafe;color:#7b2acb}
+.operations .issue.alta{border-left-color:#c83d2c}
+.operations .issue.media{border-left-color:#dd8415}
+.operations .issue.bassa{border-left-color:#d2ad20}
+.operations .alta .urgency{background:#c83d2c}
+.operations .media .urgency{background:#dd8415}
+.operations .bassa .urgency{background:#d2ad20}
+.operations .presence,
+.operations .presence.on{background:#effaf3;color:#17a553}
+.operations .presence span,
+.operations .presence.on span{background:#17a553}
