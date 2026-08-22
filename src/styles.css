@@ -285,7 +285,7 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .admin-panel th { color: #657069; }
 .admin-panel td:first-child strong,.admin-panel td:first-child small { display: block; }
 .admin-panel td:first-child small { margin-top: 3px; color: #0e5c49; }
-.admin-panel td:nth-last-child(n+2):not(:first-child):not(:nth-child(2)):not(:nth-child(3)),.admin-panel th:nth-last-child(n+2):not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align: center; }
+.admin-panel td:nth-last-child(n+2):not(:first-child):not(:nth-child(2)),.admin-panel th:nth-last-child(n+2):not(:first-child):not(:nth-child(2)) { text-align: center; }
 .admin-panel td > input[type=checkbox] { width: 18px; accent-color: #0e5c49; }
 .admin-panel td select { min-width: 125px; padding: 8px; font-size: var(--font-sm); }
 .delete-user { border: 1px solid #e2bbb5; border-radius: 8px; padding: 7px 9px; background: #fff; color: #a52f24; cursor: pointer; font-size: var(--font-xs); font-weight: 800; }
@@ -315,10 +315,10 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
   .admin-panel .admin-user-name { grid-column: 1 / -1; justify-content: flex-start; padding: 14px 13px; background: #f7f8f5; }
   .admin-panel .admin-user-name strong { font-size: 16px; }
   .admin-panel .admin-user-name small { margin-left: auto; }
-  .admin-panel td:nth-child(2),.admin-panel td:nth-child(3) { grid-column: 1 / -1; }
-  .admin-panel td:nth-child(2) select,.admin-panel td:nth-child(3) select { width: min(68%,220px); min-width: 0; margin: 0; }
-  .admin-panel td:nth-child(n+4):nth-child(-n+6) { justify-content: center; flex-direction: column; gap: 5px; border-right: 1px solid #eeeae2; }
-  .admin-panel td:nth-child(6) { border-right: 0; }
+  .admin-panel td:nth-child(2) { grid-column: 1 / -1; }
+  .admin-panel td:nth-child(2) select { width: min(68%,220px); min-width: 0; margin: 0; }
+  .admin-panel td:nth-child(n+3):nth-child(-n+5) { justify-content: center; flex-direction: column; gap: 5px; border-right: 1px solid #eeeae2; }
+  .admin-panel td:nth-child(5) { border-right: 0; }
   .admin-panel td > input[type=checkbox] { width: 20px; height: 20px; margin: 0; }
   .admin-panel .admin-user-actions { grid-column: 1 / -1; padding: 10px 13px; border: 0; }
   .admin-panel .admin-user-actions::before { display: none; }
