@@ -57,7 +57,7 @@ test('Home dashboard: card mobile-first, azione rapida, funziona come nuova land
 
 test('Housekeeping NON compare mai nella bottom nav primaria, solo nel pannello Altro (nessuna eccezione)', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge, primaryAction \}\) \{/)
+  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge \}\) \{/)
   assert.doesNotMatch(app, /key: 'Housekeeping'/)
   assert.doesNotMatch(app, /showHousekeeping/)
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
@@ -82,23 +82,25 @@ test('un solo punto di accesso al pannello Altro: niente più hamburger duplicat
   assert.match(app, /onAltro=\{\(\) => setMenuOpen\(true\)\}/)
 })
 
-test('il + centrale è contestuale su Planning Lavori/Sale (Nuovo lavoro/Nuova prenotazione), fisso su Nuova segnalazione altrove; Interventi mantiene il suo FAB dedicato', async () => {
+test('menu "Nuovo" a mezza luna in Home: sostituisce il vecchio + contestuale nella barra di navigazione, con le 4 scelte filtrate per permesso', async () => {
   const [app, styles] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
-  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge, primaryAction \}\) \{/)
-  assert.match(app, /primaryAction=\{primaryAction\}/)
-  assert.match(app, /const primaryAction = tab === 'Planning Lavori' && canViewPlanningMenu\(user\) \? \{ label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\) \} : tab === 'Planning Sale' && hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\) \? \{ label: 'Nuova prenotazione', onClick: \(\) => setSaleComposeRequest/)
-  assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
-  // Interventi mantiene il proprio FAB dedicato (non ha una controparte nel + centrale).
+  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge \}\) \{/)
+  assert.doesNotMatch(app, /primaryAction/)
+  assert.doesNotMatch(app, /app-nav-fab/)
+  assert.match(app, /function HomeFab\(\{ items \}\)/)
+  assert.match(app, /const homeFabItems = \[/)
+  assert.match(app, /permissions\.includes\('create'\) && \{ key: 'segnalazione', label: 'Nuova segnalazione'/)
+  assert.match(app, /canCreatePlanned\(user\) && \{ key: 'intervento', label: 'Nuovo intervento'/)
+  assert.match(app, /canViewPlanningMenu\(user\) && \{ key: 'lavoro', label: 'Nuovo lavoro'/)
+  assert.match(app, /hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\)\) && \{ key: 'sala', label: 'Nuova prenotazione'/)
+  assert.match(app, /\{tab === 'Home' && <HomeFab items=\{homeFabItems\} \/>\}/)
+  // Interventi e Avvisi Urgenti mantengono il proprio FAB dedicato, invariato.
   assert.match(app, /tab === 'Interventi' && canCreatePlanned\(user\) && <button className="fab-new-issue planned-fab"/)
-  // Planning Lavori/Sale NON hanno più un FAB scoped duplicato: l'azione è ora nel + centrale.
-  assert.doesNotMatch(app, /tab === 'Planning Lavori' && canViewPlanningMenu\(user\) && <button className="fab-new-issue planned-fab"/)
-  // L'avviso urgente ora è un FAB scoped alla pagina Avvisi Urgenti (stesso pattern di
-  // Interventi/Planning Lavori), non più un secondo pulsante rosso sempre visibile in
-  // parallelo al + verde centrale.
   assert.match(app, /tab === 'Avvisi Urgenti' && canSendUrgent\(user\) && <button className="fab-new-issue planned-fab urgent-fab-scoped"/)
-  assert.doesNotMatch(app, /\{canSendUrgent\(user\) && <button className="urgent-fab"/)
-  assert.match(styles, /\.app-nav button\.app-nav-fab \{ flex: 0 0 auto;/)
+  assert.match(styles, /\.home-fab-main \{/)
+  assert.match(styles, /\.home-fab-item \{/)
 })
+
