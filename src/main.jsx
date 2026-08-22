@@ -5,6 +5,7 @@ import TechnicianPortal from './technician-portal.jsx'
 import './styles.css'
 import './mockup-ui.css'
 import './header-scale.css'
+import './brand-theme.css'
 import './mobile-nav-enhancer.js'
 import { registerPwa } from './pwa.js'
 
