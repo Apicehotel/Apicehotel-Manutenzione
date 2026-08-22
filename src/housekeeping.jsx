@@ -4,9 +4,6 @@ import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 
 const cache = new Dexie('apiceHousekeeping')
-// v1: chiave solo 'camera'. v2 (multi-hotel): la cache tiene solo l'hotel
-// corrente; svuotiamo giorno/lavoro al cambio hotel così due strutture con
-// numeri camera uguali non si sovrascrivono. outbox resta per camera.
 cache.version(2).stores({ giorno: 'camera', lavoro: 'camera', outbox: 'camera' })
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
 const slopeLabels = { b2b:'Partenza + arrivo', partenza:'Partenza', arrivo:'Arrivo', fermata:'Fermata', libera:'Libera' }
@@ -24,29 +21,13 @@ const classify = (text) => {
   if (value.includes('soggiorno') || value.includes('fermata')) return 'fermata'
   return 'libera'
 }
-
-const groupMetaForHotel = (hotelId) => {
-  const groups = HOTEL_LOCATIONS[hotelId]?.roomGroups || []
-  return groups.map((group, index) => ({
-    key: group.name,
-    label: group.name,
-    order: index,
-    rooms: group.rooms,
-  }))
-}
-
-const roomMetaForHotel = (hotelId) => Object.fromEntries(
-  groupMetaForHotel(hotelId).flatMap((group) =>
-    group.rooms.map((room) => [room, { group: group.key }])
-  )
-)
-
+const groupsForHotel = (hotelId) => HOTEL_LOCATIONS[hotelId]?.roomGroups || []
+const roomMetaForHotel = (hotelId) => Object.fromEntries(groupsForHotel(hotelId).flatMap((group) => group.rooms.map((room) => [room, { group: group.name }])))
 const parseSlope = async (file, hotelId) => {
-  const roomMeta = roomMetaForHotel(hotelId)
-  const groups = groupMetaForHotel(hotelId)
-  const workbook = await import('xlsx').then((XLSX) => XLSX.read(file, { type:'array', cellDates:true }))
   const XLSX = await import('xlsx')
+  const workbook = XLSX.read(await file.arrayBuffer(), { type:'array', cellDates:true })
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header:1, raw:true, defval:'' })
+  const roomMeta = roomMetaForHotel(hotelId)
   const found = new Map()
   rows.forEach((row) => {
     const camera = String(row[2] || '').trim()
@@ -56,8 +37,7 @@ const parseSlope = async (file, hotelId) => {
     current.states.push(classify(row[3])); current.arrivo ||= dateOnly(row[4]); current.partenza ||= dateOnly(row[5]); current.letti ||= String(row[7]||row[6]||''); current.note ||= String(row[8]||'')
     found.set(camera,current)
   })
-  return groups.flatMap((group) => group.rooms).map((camera) => {
-    const base = roomMeta[camera]
+  return Object.entries(roomMeta).map(([camera,base]) => {
     const item = found.get(camera) || { camera, gruppo:base.group, tipologia:'', letti:'', note:'', arrivo:'', partenza:'', states:[] }
     const stato_slope = item.states.includes('partenza') && item.states.includes('arrivo') ? 'b2b' : item.states.find((state)=>state!=='libera') || 'libera'
     const { states, ...rest } = item
@@ -66,14 +46,12 @@ const parseSlope = async (file, hotelId) => {
 }
 
 export function Housekeeping({ user, hotel }) {
-  const groups = useMemo(() => groupMetaForHotel(hotel.id), [hotel.id])
-  const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [group,setGroup]=useState(''), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [message,setMessage]=useState('')
+  const groups = useMemo(()=>groupsForHotel(hotel.id),[hotel.id])
+  const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [group,setGroup]=useState(groups[0]?.name||''), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [message,setMessage]=useState('')
   const fileRef=useRef(null)
   const canUpload = user.department === 'Reception' || user.role === 'Portiere Notturno'
   const canEdit = user.department === 'Reception' || user.department === 'Governante'
-
-  useEffect(() => { setGroup(groups[0]?.key || '') }, [groups])
-
+  useEffect(()=>{setGroup(groups[0]?.name||'')},[hotel.id])
   const refresh = useCallback(async () => {
     if (navigator.onLine) {
       const [{data:g},{data:w}] = await Promise.all([hotelGioClient.from('camere_giorno').select('*').eq('hotel_id',hotel.id),hotelGioClient.from('camere_lavoro').select('*').eq('hotel_id',hotel.id)])
@@ -92,21 +70,20 @@ export function Housekeeping({ user, hotel }) {
   },[refresh,hotel.id])
   useEffect(()=>{ refresh();drain(); const channel=hotelGioClient.channel('apice-housekeeping-'+hotel.id).on('postgres_changes',{event:'*',schema:'public',table:'camere_giorno',filter:`hotel_id=eq.${hotel.id}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'camere_lavoro',filter:`hotel_id=eq.${hotel.id}`},refresh).subscribe(); window.addEventListener('online',drain); return()=>{hotelGioClient.removeChannel(channel);window.removeEventListener('online',drain)} },[refresh,drain,hotel.id])
   const workByRoom=useMemo(()=>Object.fromEntries(work.map((item)=>[item.camera,item])),[work])
-  const currentRooms = useMemo(() => new Set(groups.find((item)=>item.key===group)?.rooms || []), [groups,group])
+  const roomSet=useMemo(()=>new Set(groups.find((item)=>item.name===group)?.rooms||[]),[groups,group])
   const rooms=useMemo(()=>{
-    const values=day.filter((item)=>currentRooms.has(String(item.camera))).map((item)=>({...item,lavoro:workByRoom[item.camera]?.stato||(item.stato_slope==='libera'?'fatto':'dafare')}))
+    const values=day.filter((item)=>roomSet.has(String(item.camera))).map((item)=>({...item,lavoro:workByRoom[item.camera]?.stato||(item.stato_slope==='libera'?'fatto':'dafare')}))
     const weight={b2b:0,partenza:1,arrivo:2,fermata:3,libera:5}
     return values.sort((a,b)=>order==='numero'?a.camera.localeCompare(b.camera,'it',{numeric:true}):(weight[a.stato_slope]-weight[b.stato_slope]||a.camera.localeCompare(b.camera,'it',{numeric:true})))
-  },[day,workByRoom,currentRooms,order])
+  },[day,workByRoom,roomSet,order])
   const setWorkState=async(camera,state)=>{const payload={hotel_id:hotel.id,camera,stato:state,da_chi:user.name,aggiornato_il:new Date().toISOString()};await cache.lavoro.put(payload);await cache.outbox.put({camera,kind:'work',payload});setMessage(`Camera ${camera}: ${workLabels[state]}`);await refresh();drain()}
   const saveDetails=async(camera,fields)=>{const payload={...fields,manuale:true,manuale_da:user.name,manuale_il:new Date().toISOString(),aggiornato_il:new Date().toISOString()};await cache.giorno.update(camera,payload);await cache.outbox.put({camera,kind:'day',payload});setOpen(null);await refresh();drain()}
-  const upload=async(event)=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;setUploading(true);try{const rooms=await parseSlope(await file.arrayBuffer(),hotel.id);const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user.name,p_camere:rooms});setMessage(error?`Errore caricamento: ${error.message}`:`Caricate ${rooms.length} camere dal file Slope`);await refresh()}catch{setMessage('File non leggibile: usa l’export Housekeeping di Slope')}setUploading(false)}
-
+  const upload=async(event)=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;setUploading(true);try{const rooms=await parseSlope(file,hotel.id);const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user.name,p_camere:rooms});setMessage(error?`Errore caricamento: ${error.message}`:`Caricate ${rooms.length} camere dal file Slope`);await refresh()}catch{setMessage('File non leggibile: usa l’export Housekeeping di Slope')}setUploading(false)}
   return <section className="housekeeping-page">
-    <header><div><h1>Housekeeping</h1><p>{hotel.name} · <span className={pending?'pending':'synced'}/>{pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file Slope'}</button></>}</header>
+    <header><div><h1>Housekeeping</h1><p><span className={pending?'pending':'synced'}/>{pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file Slope'}</button></>}</header>
     {message&&<p className="housekeeping-message" role="status">{message}</p>}
-    <div className="hk-structures" aria-label="Gruppo camere">{groups.map((item)=><button className={group===item.key?'active':''} aria-pressed={group===item.key} onClick={()=>setGroup(item.key)} key={item.key}>{item.label}</button>)}</div>
-    <div className="hk-toolbar"><strong>{group || 'Nessun gruppo camere'}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
+    <div className="hk-structures" aria-label="Gruppo camere">{groups.map((item)=><button className={group===item.name?'active':''} aria-pressed={group===item.name} onClick={()=>setGroup(item.name)} key={item.name}>{item.name}</button>)}</div>
+    <div className="hk-toolbar"><strong>{group||hotel.name}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
     {loading?<div className="temperature-empty">Carico Housekeeping…</div>:!groups.length?<div className="temperature-empty">Nessuna camera configurata per {hotel.name}.</div>:!rooms.length?<div className="temperature-empty">Carica il file Slope di oggi per iniziare.</div>:<div className="hk-grid">{rooms.map((room)=><button type="button" className={`hk-room ${room.stato_slope} ${room.lavoro}`} key={room.camera} onClick={()=>setOpen(room)} aria-label={`Camera ${room.camera}, ${slopeLabels[room.stato_slope]}, ${workLabels[room.lavoro]}${room.note?', con nota':''}`}><div><strong>{room.camera}</strong><span>{room.tipologia||'Camera'}</span></div><b>{slopeLabels[room.stato_slope]}</b><small>{workLabels[room.lavoro]}</small>{room.note&&<em>Nota</em>}</button>)}</div>}
     {open&&<RoomSheet room={open} canEdit={canEdit} onClose={()=>setOpen(null)} onState={(state)=>{setWorkState(open.camera,state);setOpen(null)}} onSave={(fields)=>saveDetails(open.camera,fields)}/>}  
   </section>
