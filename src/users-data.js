@@ -68,6 +68,11 @@ export async function updateUserPin(authUserId, pin) {
   return data?.user || data?.data || data
 }
 
+export async function getTechnicianLink(authUserId, regenerate) {
+  const data = await invokeAdmin({ action: 'tech_link', auth_user_id: authUserId, regenerate: Boolean(regenerate) })
+  return data?.token
+}
+
 export async function setUserActive(authUserId, active) {
   const data = await invokeAdmin({ action: 'set_active', auth_user_id: authUserId, active: Boolean(active) })
   return data?.user || data?.data || data

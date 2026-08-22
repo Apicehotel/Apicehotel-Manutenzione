@@ -51,6 +51,10 @@ export function fromRow(row) {
     pieceReplaced: row.pezzo_sostituito || null,
     pieceReplacedBy: row.pezzo_sostituito_da || null,
     technicianRequestedBy: row.tecnico_richiesto_da || null,
+    technicianId: row.tecnico_id || null,
+    technicianName: row.tecnico_nome || null,
+    technicianPhone: row.tecnico_telefono || null,
+    technicianExpectedArrival: row.tecnico_arrivo_previsto ? new Date(row.tecnico_arrivo_previsto).getTime() : null,
     origin: row.origine || 'App',
     department: row.reparto || null,
   }
@@ -79,6 +83,10 @@ function toRow(issue) {
   set('pezzo_sostituito', issue.pieceReplaced)
   set('pezzo_sostituito_da', issue.pieceReplacedBy)
   set('tecnico_richiesto_da', issue.technicianRequestedBy)
+  set('tecnico_id', issue.technicianId)
+  set('tecnico_nome', issue.technicianName)
+  set('tecnico_telefono', issue.technicianPhone)
+  if (issue.technicianExpectedArrival !== undefined) row.tecnico_arrivo_previsto = issue.technicianExpectedArrival ? new Date(issue.technicianExpectedArrival).toISOString() : null
   set('origine', issue.origin)
   set('reparto', issue.department)
   // completato_il / tecnico_richiesto_il: derivati dallo stato
