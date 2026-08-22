@@ -5,6 +5,12 @@ export function emitOperationFeedback(type,message,detail=''){
   window.dispatchEvent(new CustomEvent(EVENT,{detail:{type,message,detail,at:Date.now()}}))
 }
 
+export const operationSaved=(message='Salvato')=>emitOperationFeedback('success',message)
+export const operationFailed=(error,message='Operazione non riuscita')=>{
+  const detail=error?.message||String(error||'Errore imprevisto')
+  emitOperationFeedback('error',message,detail)
+}
+
 function ensureHost(){
   let host=document.querySelector('.operation-feedback-host')
   if(host)return host
