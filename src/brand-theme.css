@@ -17,8 +17,11 @@
 }
 .operations .primary{background:var(--brand)}
 .operations .back-link{color:var(--brand)}
-.operations .secondary.active,
-.operations button[aria-pressed='true']{border-color:var(--brand);color:var(--brand)}
+.operations .secondary.active{border-color:var(--brand);color:var(--brand)}
+/* button[aria-pressed='true'] rimosso: nessun bottone in app lo combina con
+   .secondary, e colpiva per errore i toggle a sfondo verde pieno (Dimensione
+   interfaccia, Housekeeping) sovrascrivendo il loro testo bianco con il
+   verde del brand — risultato testo quasi invisibile su sfondo verde. */
 
 .operations .tabs button.active{
   color:var(--brand);
