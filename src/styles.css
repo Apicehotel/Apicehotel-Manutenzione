@@ -445,6 +445,11 @@ html[data-ui-size="large"] .app-drawer { width:min(330px,78vw); }
 .delete-issue-compact { min-height:32px; border:1px solid #efbdb6; border-radius:8px; padding:6px 10px; background:#fff; color:#b63a2e; font-size:var(--font-xs); font-weight:800; cursor:pointer; }
 .delete-issue-compact:hover { background:#fdf1ef; }
 .detail-room { margin-bottom:14px; }
+.technician-list { list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.technician-row { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1px solid #e4e0d6; border-radius:11px; padding:11px 13px; }
+.technician-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.technician-info small { color:#5c645e; font-size:var(--font-xs); }
+.technician-whatsapp { flex-shrink:0; width:34px; height:34px; border-radius:8px; background:#e6f2eb; color:#2e7d5b; display:grid; place-items:center; text-decoration:none; }
 .issue-summary { margin-bottom:14px; padding:16px; border:1px solid #dedbd3; border-radius:14px; background:#fff; }
 .detail-section-label { margin:0 0 8px; color:#626a65; font-size:var(--font-sm); font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
 .detail-description { color:#2f3732; font-size:16px; margin-bottom:8px; }
