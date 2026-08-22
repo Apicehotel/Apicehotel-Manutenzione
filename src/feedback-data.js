@@ -1,22 +1,11 @@
 import { supabase } from './supabase.js'
+import { cacheRemoteCollection, enqueueMutation, getCachedCollection, isTransientNetworkError, makeOfflineId, registerOfflineHandler } from './offline-store.js'
 
-export async function insertFeedback(hotelId, userName, text) {
-  if (!supabase) throw new Error('Supabase non configurato')
-  const { error } = await supabase.from('feedback').insert({ hotel_id: hotelId, utente: userName, testo: text })
-  if (error) { console.error('insertFeedback', error); throw new Error(error.message) }
-}
-
-export async function fetchFeedback(hotelId) {
-  if (!supabase) return { items: [], ok: false }
-  const { data, error } = await supabase.from('feedback').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
-  if (error) { console.error('fetchFeedback', error); return { items: [], ok: false, error: error.message } }
-  return { items: (data || []).map((row) => ({ id: row.id, userName: row.utente, text: row.testo, createdAt: new Date(row.creato_il).getTime() })), ok: true }
-}
-
-export function subscribeFeedback(hotelId, onChange) {
-  if (!supabase) return () => {}
-  const channel = supabase.channel('apice-feedback-' + hotelId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'feedback', filter: `hotel_id=eq.${hotelId}` }, onChange)
-    .subscribe()
-  return () => { supabase.removeChannel(channel) }
-}
+const ENTITY='feedback'
+const onlineNow=()=>typeof navigator==='undefined'||navigator.onLine
+const fromRow=(row)=>({id:row.id,hotelId:row.hotel_id,userName:row.utente,text:row.testo,createdAt:row.creato_il?new Date(row.creato_il).getTime():Date.now()})
+async function dbInsert(item){const{data,error}=await supabase.from('feedback').insert({hotel_id:item.hotelId,utente:item.userName,testo:item.text}).select().single();if(error)throw error;return fromRow(data)}
+registerOfflineHandler(ENTITY,async(op)=>dbInsert(op.payload))
+export async function insertFeedback(hotelId,userName,text){const item={hotelId,userName,text,createdAt:Date.now()};if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-feedback');return enqueueMutation({entity:ENTITY,hotelId,action:'create',payload:item,tempId})}try{const created=await dbInsert(item);await cacheRemoteCollection(ENTITY,hotelId,[created,...(await getCachedCollection(ENTITY,hotelId)).filter(x=>x.id!==created.id)]);return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-feedback');return enqueueMutation({entity:ENTITY,hotelId,action:'create',payload:item,tempId})}throw error}}
+export async function fetchFeedback(hotelId){if(!supabase||!onlineNow())return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:true};try{const{data,error}=await supabase.from('feedback').select('*').eq('hotel_id',hotelId).order('creato_il',{ascending:false});if(error)throw error;return{items:await cacheRemoteCollection(ENTITY,hotelId,(data||[]).map(fromRow)),ok:true}}catch(error){return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:isTransientNetworkError(error),error:error?.message}}}
+export function subscribeFeedback(hotelId,onChange){if(!supabase)return()=>{};const channel=supabase.channel('apice-feedback-'+hotelId).on('postgres_changes',{event:'*',schema:'public',table:'feedback',filter:`hotel_id=eq.${hotelId}`},onChange).subscribe();return()=>{supabase.removeChannel(channel)}}
