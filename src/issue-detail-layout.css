@@ -40,10 +40,7 @@
   }
 
   .sheet .detail-actions-heading { display: none; }
-
-  .sheet .detail-action-pair {
-    display: contents;
-  }
+  .sheet .detail-action-pair { display: contents; }
 
   .sheet .action-needs-piece,
   .sheet .action-replaced,
@@ -64,10 +61,7 @@
     text-align: center;
   }
 
-  .sheet .action-panel:has(.action-needs-piece) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
+  .sheet .action-panel:has(.action-needs-piece) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sheet .action-needs-piece { grid-column: 1; background: #7637ed; }
   .sheet .action-replaced { grid-column: 2; background: #0d7a5d; }
   .sheet .action-technician { grid-column: 3; background: #ef8500; }
@@ -75,13 +69,8 @@
   .sheet .action-replaced .icon,
   .sheet .action-technician .icon { width: 21px; height: 21px; }
 
-  .sheet .action-technician {
-    font-size: 0;
-  }
-  .sheet .action-technician::after {
-    content: 'Serve tecnico';
-    font-size: var(--font-base);
-  }
+  .sheet .action-technician { font-size: 0; }
+  .sheet .action-technician::after { content: 'Serve tecnico'; font-size: var(--font-base); }
 
   .sheet .completion-fields {
     grid-column: 1 / -1;
@@ -103,17 +92,11 @@
     text-transform: uppercase;
   }
 
-  .sheet .completion-fields > label {
-    min-width: 0;
-    margin: 0;
-  }
+  .sheet .completion-fields > label { min-width: 0; margin: 0; }
+  .sheet .completion-fields textarea { min-height: 164px; height: 100%; resize: vertical; }
 
-  .sheet .completion-fields textarea {
-    min-height: 164px;
-    height: 100%;
-    resize: vertical;
-  }
-
+  /* Fallback del selettore foto originale: resta disponibile se lo script
+     di miglioramento progressivo non dovesse attivarsi. */
   .sheet .photo-picker-trigger {
     min-height: 164px;
     height: auto;
@@ -130,10 +113,7 @@
   }
 
   .sheet .photo-picker-trigger > .icon:first-child { grid-row: 1 / 3; width: 25px; height: 25px; }
-  .sheet .photo-picker-trigger > span {
-    font-size: 0;
-    font-weight: 800;
-  }
+  .sheet .photo-picker-trigger > span { font-size: 0; font-weight: 800; }
   .sheet .photo-picker-trigger > span::before {
     content: 'Fotocamera';
     display: block;
@@ -153,17 +133,51 @@
   }
   .sheet .photo-picker-trigger > .icon:last-child { display: none; }
 
-  .sheet .photo-picker-options {
+  /* Modalità diretta: lo script apre le opzioni React vere e nasconde il
+     pulsante-finto. Ogni riquadro qui sotto contiene il relativo input file,
+     quindi Fotocamera e Galleria sono due azioni realmente indipendenti. */
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-trigger { display: none; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options {
     position: static;
-    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 164px;
+    margin-top: 7px;
+    padding: 10px;
+    border: 1px dashed #cfd4cf;
+    border-radius: 14px;
+    background: #fff;
     box-shadow: none;
   }
-
-  .sheet .complete-action {
-    grid-column: 1 / -1;
-    min-height: 60px;
-    border-radius: 14px;
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label {
+    min-height: 64px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    border: 0;
+    border-radius: 11px;
+    background: #eef8f2;
+    color: #0e6b54;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    text-align: center;
   }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong { font-size: 0; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong::after { content: 'Fotocamera'; font-size: 15px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong { font-size: 0; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong::after { content: 'Galleria'; font-size: 15px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .icon { width: 24px; height: 24px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .photo-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  .sheet .photo-preview { max-height: 120px; object-fit: cover; border-radius: 10px; }
+  .sheet .photo-selected { display: block; margin-top: 5px; overflow-wrap: anywhere; }
+
+  .sheet .complete-action { grid-column: 1 / -1; min-height: 60px; border-radius: 14px; }
 }
 
 @media (max-width: 520px) {
@@ -192,7 +206,8 @@
   .sheet .action-technician { font-size: 11px; gap: 4px; }
   .sheet .action-technician::after { font-size: 11px; }
   .sheet .completion-fields { grid-template-columns: 1fr 1.25fr; }
-  .sheet .photo-picker-trigger { padding: 9px; }
-  .sheet .photo-picker-trigger > span::before,
-  .sheet .photo-picker-trigger > span::after { font-size: 13px; padding: 10px 5px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options { padding: 7px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label { min-height: 58px; padding: 8px 5px; font-size: 13px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong::after,
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong::after { font-size: 13px; }
 }
