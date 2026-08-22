@@ -37,7 +37,7 @@ export async function findCachedHotelId(entity, itemId) {
 
 async function replayPending(entity, hotelId, baseItems) {
   let items = [...baseItems]
-  const pending = await db.outbox.where({ entity, hotelId }).sortBy('id')
+  const pending = await db.outbox.where('entity').equals(entity).and((op) => op.hotelId === hotelId).sortBy('id')
   for (const op of pending) {
     if (op.action === 'create') {
       if (!items.some((item) => item.id === op.tempId)) items.unshift({ ...op.payload, id: op.tempId, _offline: true })
