@@ -1,8 +1,15 @@
-/* Mobile: sposta il comando di ritorno del Pannello admin in basso,
-   sopra la safe-area di iOS/Android, senza modificare le altre back-link. */
-@media (max-width: 700px) {
+/* Mobile: layout sicuro su smartphone iOS/Android.
+   - lascia spazio alla status bar / notch / Dynamic Island in alto
+   - mantiene "Torna alla Home" fisso in basso sopra la safe-area
+   - non modifica le altre back-link dell'app */
+@media (max-width: 900px) {
   .admin-panel {
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .admin-panel .admin-heading {
+    padding-top: 0;
   }
 
   .admin-panel .admin-heading .back-link {
@@ -12,11 +19,11 @@
     bottom: 0;
     z-index: 1200;
     width: 100%;
-    min-height: calc(58px + env(safe-area-inset-bottom));
+    min-height: calc(58px + env(safe-area-inset-bottom, 0px));
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: 16px 20px calc(14px + env(safe-area-inset-bottom));
+    padding: 16px 20px calc(14px + env(safe-area-inset-bottom, 0px));
     border: 0;
     border-top: 1px solid #ded8ce;
     border-radius: 0;
@@ -33,5 +40,14 @@
 
   .admin-panel .admin-heading > div:first-child > h1 {
     margin-top: 0;
+  }
+}
+
+/* Telefoni in orizzontale o device touch larghi: mantiene le stesse protezioni
+   anche quando la larghezza supera 900px. */
+@media (hover: none) and (pointer: coarse) {
+  .admin-panel {
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
 }
