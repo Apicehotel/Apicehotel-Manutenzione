@@ -10,7 +10,10 @@ function isMobileDetail() {
 }
 
 function ensurePhotoChoicesOpen(root = document) {
-  if (!isMobileDetail()) return
+  const mobile = isMobileDetail()
+  document.documentElement.classList.toggle('issue-photo-direct', mobile)
+  if (!mobile) return
+
   const sheets = root.querySelectorAll?.('.sheet-overlay > .sheet') || []
   sheets.forEach((sheet) => {
     const trigger = sheet.querySelector('.completion-fields .photo-picker-trigger')
