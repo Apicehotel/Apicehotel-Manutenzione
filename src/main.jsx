@@ -11,7 +11,9 @@ import './admin-mobile-footer.css'
 import './issue-detail-layout.css'
 import './offline-status.css'
 import './home-fab-fix.css'
+import './operation-feedback.css'
 import './offline-status.js'
+import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
