@@ -8,13 +8,12 @@ test('AppNav: bottom nav mobile e sidebar desktop condividono lo stesso markup, 
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
 
-  // Voci fisse richieste: Home, Segnalazioni, (+ centrale), Planning, Altro.
+  // Voci fisse richieste: Home, Segnalazioni, Interventi (se abilitato), Planning, Altro.
   assert.match(app, /key: 'Home', label: 'Home'/)
   assert.match(app, /key: 'Segnalazioni', label: 'Segnalazioni'/)
+  assert.match(app, /key: 'Interventi', label: 'Interventi'/)
   assert.match(app, /key: 'Planning', label: 'Planning'/)
   assert.match(app, /<span>Altro<\/span>/)
-  // Interventi non è più una voce di navigazione primaria: resta raggiungibile dalla card Home e dal pannello Altro.
-  assert.doesNotMatch(app, /key: 'Interventi'/)
 
   // Icona + testo su ogni voce.
   assert.match(app, /<Icon name=\{item\.icon\} \/><span>\{item\.label\}<\/span>/)
@@ -58,16 +57,22 @@ test('Home dashboard: card mobile-first, azione rapida, funziona come nuova land
 
 test('Housekeeping NON compare mai nella bottom nav primaria, solo nel pannello Altro (nessuna eccezione)', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, urgentBadge, primaryAction \}\) \{/)
+  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge, primaryAction \}\) \{/)
   assert.doesNotMatch(app, /key: 'Housekeeping'/)
   assert.doesNotMatch(app, /showHousekeeping/)
   assert.match(app, /canViewHousekeeping\(user\) && <button onClick=\{\(\) => \{ setTab\('Housekeeping'\)/)
-  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Interventi','Feedback ricevuti','Il mio profilo','Cambia PIN','Manuale','Feedback'\]\.includes\(tab\)\}/)
+  assert.match(app, /isAltroActive=\{\['Housekeeping','Avvisi Urgenti','Feedback ricevuti','Il mio profilo','Cambia PIN','Manuale','Feedback'\]\.includes\(tab\)\}/)
 })
 
-test('Interventi resta raggiungibile dal pannello Altro, nessuna funzione persa togliendolo dalla nav primaria', async () => {
-  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /canViewPlanned\(user\) && <button onClick=\{\(\) => \{ setTab\('Interventi'\)/)
+test('Interventi è una vera voce della bottom nav (React), non più iniettata via script esterno che manipolava il DOM in parallelo a React', async () => {
+  const [app, main] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/main.jsx', import.meta.url), 'utf8'),
+  ])
+  assert.match(app, /\.\.\.\(showInterventi \? \[\{ key: 'Interventi', label: 'Interventi', icon: 'tool', badge: interventiBadge \}\] : \[\]\)/)
+  assert.match(app, /showInterventi=\{canViewPlanned\(user\)\}/)
+  assert.doesNotMatch(main, /mobile-nav-enhancer/)
+  await assert.rejects(readFile(new URL('../src/mobile-nav-enhancer.js', import.meta.url)))
 })
 
 test('un solo punto di accesso al pannello Altro: niente più hamburger duplicato in header', async () => {
@@ -82,6 +87,7 @@ test('il + centrale è contestuale su Planning Lavori/Sale (Nuovo lavoro/Nuova p
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   ])
+  assert.match(app, /function AppNav\(\{ tab, onSelect, onAltro, isAltroActive, showPlanning, showInterventi, interventiBadge, urgentBadge, primaryAction \}\) \{/)
   assert.match(app, /primaryAction=\{primaryAction\}/)
   assert.match(app, /const primaryAction = tab === 'Planning Lavori' && canViewPlanningMenu\(user\) \? \{ label: 'Nuovo lavoro', onClick: \(\) => setPlannedFormOpen\(true\) \} : tab === 'Planning Sale' && hotel\.id === 'hotelgio' && \['admin', 'Responsabile', 'Direttore Centro Congressi'\]\.includes\(user\.role\) \? \{ label: 'Nuova prenotazione', onClick: \(\) => setSaleComposeRequest/)
   assert.match(app, /\{primaryAction && <button type="button" className="app-nav-fab"/)
