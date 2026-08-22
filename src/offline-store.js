@@ -9,15 +9,17 @@ db.version(1).stores({
 
 const handlers = new Map()
 let draining = false
-
+const onlineNow = () => typeof navigator === 'undefined' || navigator.onLine
 const cacheKey = (entity, hotelId) => `${entity}:${hotelId}`
+
 const dispatchStatus = async () => {
+  if (typeof window === 'undefined') return
   const pending = await db.outbox.count().catch(() => 0)
-  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail: { pending, online: navigator.onLine } }))
+  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail: { pending, online: onlineNow() } }))
 }
 
 export const makeOfflineId = (prefix = 'offline') => `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
-export const isTransientNetworkError = (error) => !navigator.onLine || /failed to fetch|network|load failed|timeout|connection/i.test(String(error?.message || error || ''))
+export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection/i.test(String(error?.message || error || ''))
 
 export async function getCachedCollection(entity, hotelId) {
   const row = await db.cache.get(cacheKey(entity, hotelId))
@@ -26,6 +28,11 @@ export async function getCachedCollection(entity, hotelId) {
 
 export async function setCachedCollection(entity, hotelId, items) {
   await db.cache.put({ key: cacheKey(entity, hotelId), entity, hotelId, items, updatedAt: Date.now() })
+}
+
+export async function findCachedHotelId(entity, itemId) {
+  const rows = await db.cache.where('entity').equals(entity).toArray()
+  return rows.find((row) => Array.isArray(row.items) && row.items.some((item) => item.id === itemId))?.hotelId || null
 }
 
 async function replayPending(entity, hotelId, baseItems) {
@@ -50,8 +57,8 @@ export async function cacheRemoteCollection(entity, hotelId, remoteItems) {
 }
 
 export async function enqueueMutation({ entity, hotelId, action, payload = null, targetId = null, tempId = null }) {
-  const op = { entity, hotelId, action, payload, targetId, tempId, createdAt: Date.now() }
-  await db.outbox.add(op)
+  if (!hotelId) throw new Error(`hotelId mancante per coda offline ${entity}:${action}`)
+  await db.outbox.add({ entity, hotelId, action, payload, targetId, tempId, createdAt: Date.now() })
   const current = await getCachedCollection(entity, hotelId)
   let next = current
   if (action === 'create') next = [{ ...payload, id: tempId, _offline: true }, ...current.filter((item) => item.id !== tempId)]
@@ -64,11 +71,11 @@ export async function enqueueMutation({ entity, hotelId, action, payload = null,
 
 export function registerOfflineHandler(entity, handler) {
   handlers.set(entity, handler)
-  if (navigator.onLine) queueMicrotask(() => drainOfflineQueue())
+  if (onlineNow() && typeof queueMicrotask === 'function') queueMicrotask(() => drainOfflineQueue())
 }
 
 export async function drainOfflineQueue() {
-  if (draining || !navigator.onLine) return
+  if (draining || !onlineNow()) return
   draining = true
   try {
     const operations = await db.outbox.orderBy('id').toArray()
@@ -90,8 +97,7 @@ export async function drainOfflineQueue() {
         }
         await db.outbox.delete(op.id)
       } catch (error) {
-        if (isTransientNetworkError(error)) break
-        console.error('offline sync blocked', op.entity, op.action, error)
+        if (!isTransientNetworkError(error)) console.error('offline sync blocked', op.entity, op.action, error)
         break
       }
     }
@@ -102,7 +108,7 @@ export async function drainOfflineQueue() {
 }
 
 export async function getOfflineStatus() {
-  return { pending: await db.outbox.count(), online: navigator.onLine }
+  return { pending: await db.outbox.count(), online: onlineNow() }
 }
 
 if (typeof window !== 'undefined') {
