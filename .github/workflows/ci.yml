@@ -1,25 +1,71 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-test:
+  build-test-e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build
         run: npm run build
-      - name: Test
+
+      - name: Unit tests
         run: npm test
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start preview server
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/apice-vite.log 2>&1 &
+          echo $! > /tmp/apice-vite.pid
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/apice-vite.log
+          exit 1
+
+      - name: E2E responsive smoke
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+        run: npm run test:e2e
+
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.sha }}
+          path: test/artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Preview server log on failure
+        if: failure()
+        run: cat /tmp/apice-vite.log || true
