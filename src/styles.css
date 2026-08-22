@@ -104,7 +104,7 @@ input:focus, select:focus { border-color: #0e5c49; box-shadow: 0 0 0 3px #0e5c49
 /* Menu flottante "a mezza luna", solo in Home: un pulsante rotondo che apre
    un ventaglio di scelte sopra di sé invece del vecchio "+" contestuale nella
    barra di navigazione. */
-.home-fab-wrap { position: fixed; left: 50%; bottom: calc(var(--nav-h) + max(14px, env(safe-area-inset-bottom))); transform: translateX(-50%); z-index: 65; width: 0; height: 0; }
+.home-fab-wrap { position: fixed; left: 50%; bottom: calc(var(--nav-h) + max(14px, env(safe-area-inset-bottom))); transform: translateX(-50%); z-index: 65; width: 58px; height: 58px; }
 .home-fab-backdrop { position: fixed; inset: 0; z-index: -1; background: rgba(16,24,20,.28); }
 .home-fab-main { position: relative; width: 58px; height: 58px; border: 0; border-radius: 50%; background: #0e5c49; color: #fff; box-shadow: 0 8px 20px rgba(14,92,73,.4); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .home-fab-main:active { transform: scale(.95); }
