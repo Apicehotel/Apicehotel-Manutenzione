@@ -22,6 +22,9 @@ const classify = (text) => {
   return 'libera'
 }
 const groupsForHotel = (hotelId) => HOTEL_LOCATIONS[hotelId]?.roomGroups || []
+const gioSections = ['Jazz','Wine']
+const gioSectionFromGroup = (groupName) => gioSections.find((section)=>String(groupName||'').startsWith(section)) || 'Jazz'
+const gioFloorFromGroup = (groupName) => Number(String(groupName||'').match(/P(\d+)/)?.[1] || 1)
 const roomMetaForHotel = (hotelId) => Object.fromEntries(groupsForHotel(hotelId).flatMap((group) => group.rooms.map((room) => [room, { group: group.name }])))
 const textValue = (value) => value == null ? '' : String(value).trim()
 const reportHotelId = (label) => {
@@ -137,8 +140,11 @@ export function Housekeeping({ user, hotel }) {
     <header><div><h1>Housekeeping</h1><p><span className={pending?'pending':'synced'}/>{pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file XLS'}</button></>}</header>
     {message&&<p className="housekeeping-message" role="status">{message}</p>}
     {revenueReport ? <RevenueReport report={revenueReport} onClose={()=>setRevenueReport(null)} /> : <>
-      <div className="hk-structures" aria-label="Gruppo camere">{groups.map((item)=><button className={group===item.name?'active':''} aria-pressed={group===item.name} onClick={()=>setGroup(item.name)} key={item.name}>{item.name}</button>)}</div>
-      <div className="hk-toolbar"><strong>{group||hotel.name}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
+      {hotel.id === 'hotelgio' ? <div className="hk-gio-selector">
+        <div className="hk-structures" aria-label="Sezione Hotel Giò">{gioSections.map((section)=>{const active=gioSectionFromGroup(group)===section;return <button className={active?'active':''} aria-pressed={active} onClick={()=>{const next=groups.find((item)=>item.name.startsWith(section));if(next)setGroup(next.name)}} key={section}>{section==='Jazz'?'🎷 Jazz':'🍷 Wine'}</button>})}</div>
+        <div className="hk-floors" aria-label="Piano Hotel Giò">{groups.filter((item)=>item.name.startsWith(gioSectionFromGroup(group))).map((item)=>{const floor=gioFloorFromGroup(item.name);return <button className={group===item.name?'active':''} aria-pressed={group===item.name} onClick={()=>setGroup(item.name)} key={item.name}><strong>Piano {floor}</strong></button>})}</div>
+      </div> : <div className="hk-structures" aria-label="Gruppo camere">{groups.map((item)=><button className={group===item.name?'active':''} aria-pressed={group===item.name} onClick={()=>setGroup(item.name)} key={item.name}>{item.name}</button>)}</div>}
+      <div className="hk-toolbar"><strong>{hotel.id==='hotelgio'?`${gioSectionFromGroup(group)} · Piano ${gioFloorFromGroup(group)}`:(group||hotel.name)}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
       {loading?<div className="temperature-empty">Carico Housekeeping…</div>:!groups.length?<div className="temperature-empty">Nessuna camera configurata per {hotel.name}.</div>:!rooms.length?<div className="temperature-empty">Carica il file Housekeeping di oggi per iniziare.</div>:<div className="hk-grid">{rooms.map((room)=><button type="button" className={`hk-room ${room.stato_slope} ${room.lavoro}`} key={room.camera} onClick={()=>setOpen(room)} aria-label={`Camera ${room.camera}, ${slopeLabels[room.stato_slope]}, ${workLabels[room.lavoro]}${room.note?', con nota':''}`}><div><strong>{room.camera}</strong><span>{room.tipologia||'Camera'}</span></div><b>{slopeLabels[room.stato_slope]}</b><small>{workLabels[room.lavoro]}</small>{room.note&&<em>Nota</em>}</button>)}</div>}
     </>}
     {open&&<RoomSheet room={open} canEdit={canEdit} onClose={()=>setOpen(null)} onState={(state)=>{setWorkState(open.camera,state);setOpen(null)}} onSave={(fields)=>saveDetails(open.camera,fields)}/>}  
