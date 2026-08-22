@@ -33,14 +33,32 @@
   .sheet .completion-fields > label { min-width: 0; margin: 0; align-self: start; }
   .sheet .completion-fields textarea { width: 100%; min-height: 112px; height: 112px; margin: 7px 0 0; resize: vertical; }
 
-  /* Un solo controllo foto. Al tap il componente React originale apre le scelte
-     disponibili sul dispositivo (fotocamera / libreria-galleria). */
+  /* Un solo tasto foto visibile. Il tap apre direttamente il menu nativo del
+     dispositivo; il pannello React con le due opzioni resta nel DOM solo come
+     supporto tecnico, ma non viene mai mostrato all'utente. */
   .sheet .photo-picker-trigger { width: 100%; min-height: 112px; height: 112px; margin-top: 7px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; border: 1px dashed #cfd4cf; border-radius: 14px; background: #eef8f2; color: #0e6b54; font-weight: 800; }
   .sheet .photo-picker-trigger > .icon:first-child { width: 27px; height: 27px; flex: 0 0 auto; }
   .sheet .photo-picker-trigger > span { font-size: 0; }
   .sheet .photo-picker-trigger > span::after { content: 'Fotocamera'; font-size: 15px; font-weight: 800; }
   .sheet .photo-picker-trigger > .icon:last-child { display: none; }
-  .sheet .photo-picker-options { z-index: 20; }
+
+  html.issue-photo-native-menu .sheet .completion-fields .photo-picker-options {
+    position: absolute !important;
+    left: -9999px !important;
+    top: auto !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+  }
+
   .sheet .photo-preview { display: block; width: 100%; max-height: 120px; margin-top: 8px; object-fit: cover; border-radius: 10px; }
   .sheet .photo-selected { display: block; margin-top: 5px; overflow-wrap: anywhere; }
   .sheet .complete-action { grid-column: 1/-1; width: 100%; min-height: 60px; margin: 0; border-radius: 14px; }
