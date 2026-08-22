@@ -1,0 +1,22 @@
+#apice-offline-status {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h, 72px) + env(safe-area-inset-bottom, 0px) + 10px);
+  z-index: 1200;
+  transform: translateX(-50%);
+  max-width: min(calc(100vw - 28px), 520px);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 6px 22px rgba(0,0,0,.18);
+  pointer-events: none;
+}
+#apice-offline-status[hidden] { display: none !important; }
+#apice-offline-status.offline { background: #6b3f00; color: #fff; }
+#apice-offline-status.syncing { background: #0e6b54; color: #fff; }
+@media (max-width: 420px) {
+  #apice-offline-status { width: calc(100vw - 24px); font-size: 12px; }
+}
