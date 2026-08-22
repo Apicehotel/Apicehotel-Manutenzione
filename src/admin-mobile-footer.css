@@ -1,0 +1,37 @@
+/* Mobile: sposta il comando di ritorno del Pannello admin in basso,
+   sopra la safe-area di iOS/Android, senza modificare le altre back-link. */
+@media (max-width: 700px) {
+  .admin-panel {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .admin-panel .admin-heading .back-link {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1200;
+    width: 100%;
+    min-height: calc(58px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 16px 20px calc(14px + env(safe-area-inset-bottom));
+    border: 0;
+    border-top: 1px solid #ded8ce;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.98);
+    color: #0e6b54;
+    box-shadow: 0 -5px 18px rgba(15, 39, 66, 0.06);
+    font-weight: 800;
+    font-size: 17px;
+    line-height: 1.2;
+    text-align: left;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .admin-panel .admin-heading > div:first-child > h1 {
+    margin-top: 0;
+  }
+}
