@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import TechnicianPortal from './technician-portal.jsx'
+import AppErrorBoundary from './error-boundary.jsx'
 import './styles.css'
 import './mockup-ui.css'
 import './header-scale.css'
@@ -15,7 +16,9 @@ const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} /> : <App />}
+    <AppErrorBoundary>
+      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} /> : <App />}
+    </AppErrorBoundary>
   </React.StrictMode>,
 )
 
