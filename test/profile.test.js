@@ -9,11 +9,19 @@ test('profilo personale: nuova voce "Il mio profilo" nel drawer, ora pagina pien
   assert.match(app, /\{type === 'Il mio profilo' && <><form onSubmit=\{saveProfile\}>/)
 })
 
-test('profilo personale: il salvataggio passa da updateUserRow sull\'utente corrente, poi ricarica la directory', async () => {
+test('profilo personale: il salvataggio passa da updateOwnProfile (self-service, no admin) sull\'utente corrente, poi ricarica la directory', async () => {
   const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
-  assert.match(app, /const updateCurrentUserProfile = async \(changes\) => \{ await updateUserRow\(user\.auth_user_id \|\| user\.id, changes\); await loadDirectory\(selectedHotel\.id\) \}/)
+  assert.match(app, /const updateCurrentUserProfile = async \(changes\) => \{ await updateOwnProfile\(\{ email: changes\.email, phone: changes\.phone, phoneCountryCode: changes\.phone_country_code \}\); await loadDirectory\(selectedHotel\.id\) \}/)
   assert.match(app, /onSaveProfile=\{updateCurrentUserProfile\}/)
   assert.match(app, /onSaveProfile=\{onSaveProfile\}/)
+})
+
+test('profilo personale: il nome non è modificabile dall\'utente, solo da un admin', async () => {
+  const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
+  assert.match(app, /<label>Nome<input aria-label="Nome" value=\{user\?\.name \|\| ''\} disabled readOnly/)
+  const authData = await readFile(new URL('../src/auth-data.js', import.meta.url), 'utf8')
+  assert.match(authData, /export async function updateOwnProfile\(/)
+  assert.doesNotMatch(authData.match(/export async function updateOwnProfile[\s\S]*?\n\}/)[0], /\bname\b/)
 })
 
 test('admin panel: pulsante Modifica per nome/email/telefono di ogni utente', async () => {

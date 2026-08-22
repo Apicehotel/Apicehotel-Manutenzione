@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEPARTMENTS, HOTELS, ROLE_PERMISSIONS, ROLES } from './config.js'
 import { clearSession, loadSession, saveSession } from './session.js'
 import { fetchDirectory, fetchUsers, insertUser, updateUserRow, setUserActive, updateUserPin } from './users-data.js'
-import { loginWithPin, loginAdmin, changeOwnPin, setOwnPresence, validateSupabaseSession, signOutSupabase } from './auth-data.js'
+import { loginWithPin, loginAdmin, changeOwnPin, setOwnPresence, updateOwnProfile, validateSupabaseSession, signOutSupabase } from './auth-data.js'
 import { subscribeToPush, unsubscribeFromPush, getPushSubscriptionState } from './push.js'
 import { SOUNDS, getNotifSound, setNotifSound, playNotifSound } from './notification-sound.js'
 import { insertFeedback, fetchFeedback, subscribeFeedback } from './feedback-data.js'
@@ -96,7 +96,7 @@ function MenuPanel({ type, user, hotel, onSavePin, onSaveProfile, uiSize, onUiSi
   const [feedback, setFeedback] = useState('')
   const [message, setMessage] = useState('')
   const [savingPin, setSavingPin] = useState(false)
-  const [profileDraft, setProfileDraft] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' })
+  const [profileDraft, setProfileDraft] = useState({ email: user?.email || '', phone: user?.phone || '' })
   const [savingProfile, setSavingProfile] = useState(false)
   const [pushState, setPushState] = useState('checking')
   const [sound, setSound] = useState(() => getNotifSound().id)
@@ -120,10 +120,9 @@ function MenuPanel({ type, user, hotel, onSavePin, onSaveProfile, uiSize, onUiSi
   }
   const saveProfile = async (event) => {
     event.preventDefault()
-    if (!profileDraft.name.trim()) return setMessage('Il nome non può essere vuoto')
     setSavingProfile(true); setMessage('')
     try {
-      await onSaveProfile({ name: profileDraft.name.trim(), email: profileDraft.email.trim() || null, phone: profileDraft.phone.trim() || null })
+      await onSaveProfile({ email: profileDraft.email.trim() || null, phone: profileDraft.phone.trim() || null })
       setMessage('Profilo aggiornato')
     } catch (error) {
       setMessage(error?.message || 'Impossibile aggiornare il profilo')
@@ -157,7 +156,7 @@ function MenuPanel({ type, user, hotel, onSavePin, onSaveProfile, uiSize, onUiSi
     }
   }
   return <section className="settings-page">
-      {type === 'Il mio profilo' && <><form onSubmit={saveProfile}><label>Nome<input aria-label="Nome" value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} /></label><label>Email<input aria-label="Email" type="email" value={profileDraft.email} onChange={(event) => setProfileDraft({ ...profileDraft, email: event.target.value })} /></label><label>Numero di cellulare<input aria-label="Numero di cellulare" value={profileDraft.phone} onChange={(event) => setProfileDraft({ ...profileDraft, phone: event.target.value })} /></label><button className="primary" disabled={!profileDraft.name.trim() || savingProfile}>{savingProfile ? 'Salvo…' : 'Salva profilo'}</button></form><div className="panel-content profile-notif-section"><strong>Notifiche</strong><p>Ricevi un avviso sul dispositivo quando arriva un avviso urgente.</p>{pushState === 'unsupported' ? <p className="notice">Le notifiche non sono supportate su questo dispositivo/browser.</p> : pushState === 'denied' ? <p className="notice">Permesso negato dal browser: abilita le notifiche per questo sito nelle impostazioni del dispositivo.</p> : <button className="primary" disabled={pushState === 'checking'} onClick={toggleNotifications}>{pushState === 'subscribed' ? 'Disattiva notifiche' : 'Attiva notifiche'}</button>}<div className="notif-sound-picker"><strong>Suono notifica</strong><small>Tocca per ascoltare l'anteprima</small><div className="notif-sound-choices">{SOUNDS.map((option) => <button type="button" key={option.id} className={sound === option.id ? 'active' : ''} onClick={() => chooseSound(option)}>{option.label}</button>)}</div><p className="notif-sound-note">Il suono scelto si sente quando arriva una segnalazione o un avviso urgente con l'app aperta. Ad app chiusa la notifica arriva con il suono di sistema del telefono.</p></div></div><fieldset className="ui-scale-setting profile-ui-scale"><legend>Dimensione interfaccia</legend><div>{[['small','Piccola'],['normal','Normale'],['large','Grande']].map(([value,label])=><button type="button" className={uiSize===value?'active':''} aria-pressed={uiSize===value} onClick={()=>onUiSizeChange(value)} key={value}>{label}</button>)}</div><small>Ingrandisce testi, pulsanti e schede.</small></fieldset></>}
+      {type === 'Il mio profilo' && <><form onSubmit={saveProfile}><label>Nome<input aria-label="Nome" value={user?.name || ''} disabled readOnly title="Il nome non è modificabile: contatta un admin per cambiarlo" /></label><label>Email<input aria-label="Email" type="email" value={profileDraft.email} onChange={(event) => setProfileDraft({ ...profileDraft, email: event.target.value })} /></label><label>Numero di cellulare<input aria-label="Numero di cellulare" value={profileDraft.phone} onChange={(event) => setProfileDraft({ ...profileDraft, phone: event.target.value })} /></label><button className="primary" disabled={savingProfile}>{savingProfile ? 'Salvo…' : 'Salva profilo'}</button></form><div className="panel-content profile-notif-section"><strong>Notifiche</strong><p>Ricevi un avviso sul dispositivo quando arriva un avviso urgente.</p>{pushState === 'unsupported' ? <p className="notice">Le notifiche non sono supportate su questo dispositivo/browser.</p> : pushState === 'denied' ? <p className="notice">Permesso negato dal browser: abilita le notifiche per questo sito nelle impostazioni del dispositivo.</p> : <button className="primary" disabled={pushState === 'checking'} onClick={toggleNotifications}>{pushState === 'subscribed' ? 'Disattiva notifiche' : 'Attiva notifiche'}</button>}<div className="notif-sound-picker"><strong>Suono notifica</strong><small>Tocca per ascoltare l'anteprima</small><div className="notif-sound-choices">{SOUNDS.map((option) => <button type="button" key={option.id} className={sound === option.id ? 'active' : ''} onClick={() => chooseSound(option)}>{option.label}</button>)}</div><p className="notif-sound-note">Il suono scelto si sente quando arriva una segnalazione o un avviso urgente con l'app aperta. Ad app chiusa la notifica arriva con il suono di sistema del telefono.</p></div></div><fieldset className="ui-scale-setting profile-ui-scale"><legend>Dimensione interfaccia</legend><div>{[['small','Piccola'],['normal','Normale'],['large','Grande']].map(([value,label])=><button type="button" className={uiSize===value?'active':''} aria-pressed={uiSize===value} onClick={()=>onUiSizeChange(value)} key={value}>{label}</button>)}</div><small>Ingrandisce testi, pulsanti e schede.</small></fieldset></>}
       {type === 'Cambia PIN' && <form onSubmit={savePin}><label>PIN attuale<input aria-label="PIN attuale" inputMode="numeric" autoComplete="current-password" maxLength="4" value={currentPin} onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label><label>Nuovo PIN di 4 cifre<input aria-label="Nuovo PIN" inputMode="numeric" autoComplete="new-password" maxLength="4" value={newPin} onChange={(event) => setNewPin(event.target.value.replace(/\D/g, '').slice(0, 4))} /></label><button className="primary" disabled={currentPin.length !== 4 || newPin.length !== 4 || savingPin}>{savingPin ? 'Salvo…' : 'Salva PIN'}</button></form>}
       {type === 'Manuale' && <div className="manual-list"><article><strong>1. Segnalazioni</strong><span>Apri una richiesta, controlla camera, problema e gravità.</span></article><article><strong>2. Aggiorna lo stato</strong><span>Richiedi un tecnico o un pezzo quando il lavoro non può essere concluso.</span></article><article><strong>3. Completa</strong><span>Aggiungi foto e note prima di segnare la riparazione completata.</span></article></div>}
       {type === 'Feedback' && <form onSubmit={saveFeedback}><label>Scrivi un suggerimento<textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} rows="5" /></label><button className="primary" disabled={!feedback.trim() || savingFeedback}>{savingFeedback ? 'Invio…' : 'Invia feedback'}</button></form>}
@@ -472,7 +471,7 @@ export default function App() {
     saveSession(next); setSession(next)
   }
   const updateCurrentUserPin = async (currentPin, newPin) => { await changeOwnPin({ currentPin, newPin }) }
-  const updateCurrentUserProfile = async (changes) => { await updateUserRow(user.auth_user_id || user.id, changes); await loadDirectory(selectedHotel.id) }
+  const updateCurrentUserProfile = async (changes) => { await updateOwnProfile({ email: changes.email, phone: changes.phone, phoneCountryCode: changes.phone_country_code }); await loadDirectory(selectedHotel.id) }
   const updateCurrentUserPresence = useCallback(async (present) => { try { await setOwnPresence(present) } catch { /* riprovato al prossimo tentativo, lo stato locale non cambia se la scrittura fallisce */ return } await loadDirectory(selectedHotel.id) }, [selectedHotel, loadDirectory])
   const logout = async () => { await signOutSupabase(); clearSession(); setSession(null); setSelectedHotel(null); setUsers([]) }
   const changeHotel = async () => { await signOutSupabase(); clearSession(); setSession(null); setSelectedHotel(null); setUsers([]) }

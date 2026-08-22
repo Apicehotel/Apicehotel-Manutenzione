@@ -44,6 +44,20 @@ export async function changeOwnPin({ currentPin, newPin }) {
   return data
 }
 
+export async function updateOwnProfile({ email, phone, phoneCountryCode }) {
+  if (!supabase) throw new Error('Supabase non configurato')
+  const body = {}
+  if (email !== undefined) body.email = email
+  if (phone !== undefined) body.phone = phone
+  if (phoneCountryCode !== undefined) body.phone_country_code = phoneCountryCode
+  const { data, error } = await supabase.functions.invoke('user-pin', {
+    body: { action: 'update_profile', ...body },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 export async function setOwnPresence(present) {
   if (!supabase) throw new Error('Supabase non configurato')
   const { data, error } = await supabase.functions.invoke('user-pin', {
