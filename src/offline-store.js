@@ -6,6 +6,12 @@ db.version(1).stores({
   outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
   idmap: '&tempId,realId',
 })
+db.version(2).stores({
+  cache: '&key,entity,hotelId,updatedAt',
+  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
+  idmap: '&tempId,realId',
+  blobs: '&id,createdAt',
+})
 
 const handlers = new Map()
 let draining = false
@@ -24,6 +30,21 @@ const dispatchDataChange = (entity, hotelId) => {
 
 export const makeOfflineId = (prefix = 'offline') => `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
 export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection/i.test(String(error?.message || error || ''))
+
+export async function putOfflineBlob(blob, meta = {}) {
+  if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
+  if (!(blob instanceof Blob)) throw new Error('Foto offline non valida')
+  const id = makeOfflineId('offline-blob')
+  await db.blobs.put({ id, blob, meta, createdAt: Date.now() })
+  return id
+}
+export async function getOfflineBlob(id) {
+  if (!storageAvailable() || !id) return null
+  return db.blobs.get(id)
+}
+export async function deleteOfflineBlob(id) {
+  if (storageAvailable() && id) await db.blobs.delete(id)
+}
 
 export async function getCachedCollection(entity, hotelId) {
   if (!storageAvailable()) return []
@@ -44,9 +65,10 @@ async function replayPending(entity, hotelId, baseItems) {
   let items = [...baseItems]
   const pending = await db.outbox.where('entity').equals(entity).and((op) => op.hotelId === hotelId).sortBy('id')
   for (const op of pending) {
+    const visualPayload = op.cachePayload || op.payload
     if (op.action === 'create') {
-      if (!items.some((item) => item.id === op.tempId)) items.unshift({ ...op.payload, id: op.tempId, _offline: true })
-    } else if (op.action === 'update') items = items.map((item) => item.id === op.targetId ? { ...item, ...op.payload, _offline: true } : item)
+      if (!items.some((item) => item.id === op.tempId)) items.unshift({ ...visualPayload, id: op.tempId, _offline: true })
+    } else if (op.action === 'update') items = items.map((item) => item.id === op.targetId ? { ...item, ...visualPayload, _offline: true } : item)
     else if (op.action === 'delete') items = items.filter((item) => item.id !== op.targetId)
   }
   return items
@@ -56,14 +78,15 @@ export async function cacheRemoteCollection(entity, hotelId, remoteItems) {
   await setCachedCollection(entity, hotelId, merged)
   return merged
 }
-export async function enqueueMutation({ entity, hotelId, action, payload = null, targetId = null, tempId = null }) {
+export async function enqueueMutation({ entity, hotelId, action, payload = null, cachePayload = null, targetId = null, tempId = null }) {
   if (!hotelId) throw new Error(`hotelId mancante per coda offline ${entity}:${action}`)
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
-  await db.outbox.add({ entity, hotelId, action, payload, targetId, tempId, createdAt: Date.now() })
+  await db.outbox.add({ entity, hotelId, action, payload, cachePayload, targetId, tempId, createdAt: Date.now() })
   const current = await getCachedCollection(entity, hotelId)
+  const visualPayload = cachePayload || payload
   let next = current
-  if (action === 'create') next = [{ ...payload, id: tempId, _offline: true }, ...current.filter((item) => item.id !== tempId)]
-  if (action === 'update') next = current.map((item) => item.id === targetId ? { ...item, ...payload, _offline: true } : item)
+  if (action === 'create') next = [{ ...visualPayload, id: tempId, _offline: true }, ...current.filter((item) => item.id !== tempId)]
+  if (action === 'update') next = current.map((item) => item.id === targetId ? { ...item, ...visualPayload, _offline: true } : item)
   if (action === 'delete') next = current.filter((item) => item.id !== targetId)
   await setCachedCollection(entity, hotelId, next)
   dispatchDataChange(entity, hotelId)
