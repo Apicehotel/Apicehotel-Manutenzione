@@ -1,11 +1,12 @@
 const CACHE_NAME = 'apicehotel-manutenzione-v8'
 const APP_SHELL = [
   '/',
-  '/manifest.webmanifest?v=7',
-  '/icons/icon-192.png?v=7',
-  '/icons/icon-512.png?v=7',
-  '/icons/icon-maskable-512.png?v=7',
-  '/icons/apple-touch-icon.png?v=7',
+  '/manifest.webmanifest?v=8',
+  '/icons/icon-192.png?v=8',
+  '/icons/icon-512.png?v=8',
+  '/icons/icon-maskable-512.png?v=8',
+  '/icons/apple-touch-icon.png?v=8',
+  '/icons/icon-urgent-192.png?v=8',
   '/logos/card-hotelgio.png',
   '/logos/card-chocohotel.png',
   '/logos/card-brigantino.png',
@@ -72,18 +73,29 @@ self.addEventListener('push', (event) => {
     try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() || payload.body }
   }
   const urgent = Boolean(payload.urgent)
-  event.waitUntil(
-    self.registration.showNotification(payload.title, {
+  // Icona rossa cerchiata solo per gli avvisi urgenti: deve distinguersi a
+  // colpo d'occhio nella tendina notifiche da una notifica normale.
+  const icon = urgent ? '/icons/icon-urgent-192.png?v=8' : '/icons/icon-192.png?v=8'
+  event.waitUntil((async () => {
+    await self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: '/icons/icon-192.png?v=7',
-      badge: '/icons/icon-192.png?v=7',
+      icon,
+      badge: icon,
       tag: payload.tag || 'apicehotel-notifica',
       renotify: Boolean(payload.tag),
       data: { url: payload.url || '/' },
       requireInteraction: urgent,
       vibrate: urgent ? [400, 80, 400, 80, 400, 80, 400] : [120, 60, 120],
-    }),
-  )
+    })
+    if (urgent) {
+      // Il suono di sistema della notifica non basta: se una scheda dell'app
+      // e' gia' aperta (anche in background), fai partire la sirena vera via
+      // Web Audio. Il client fa da guardia contro il doppio suono con la
+      // sottoscrizione realtime (vedi dedupe in App.jsx).
+      const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      clientsList.forEach((client) => client.postMessage({ type: 'urgenza-push', title: payload.title, body: payload.body }))
+    }
+  })())
 })
 
 self.addEventListener('notificationclick', (event) => {
