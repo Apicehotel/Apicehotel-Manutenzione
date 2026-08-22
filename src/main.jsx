@@ -9,6 +9,7 @@ import './header-scale.css'
 import './brand-theme.css'
 import './admin-mobile-footer.css'
 import './issue-detail-layout.css'
+import './issue-detail-enhancements.js'
 import { registerPwa } from './pwa.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
