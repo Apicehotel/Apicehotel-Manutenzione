@@ -62,19 +62,64 @@ const Icon = ({ name }) => {
 const canSendUrgent = (user) => ['Direzione', 'Direttore Centro Congressi'].includes(user.role) || user.department === 'Reception'
 const canManageUrgent = (user) => user.role === 'manutentore'
 const canViewUrgent = (user) => canSendUrgent(user) || canManageUrgent(user)
-function playUrgentSignal() {
-  navigator.vibrate?.([250, 120, 250])
+// Sirena continua e assordante per gli avvisi urgenti: onda dentata che
+// sale/scende senza pause, doppio oscillatore leggermente stonato per
+// renderla piu' dura. Porting della sirena di App Apice Manutenzioni
+// (HotelGio) al posto del semplice beep precedente.
+//
+// Un unico AudioContext condiviso, sbloccato al primo tocco dell'utente
+// dopo il login (vedi useUnlockUrgentAudio) e ripreso (resume) prima di
+// ogni riproduzione: i browser mobile avviano l'AudioContext "sospeso"
+// finche' non viene sbloccato da un gesto utente, e la sirena parte da un
+// evento realtime (non da un tocco), quindi senza questo accorgimento
+// resterebbe muta.
+let sharedUrgentCtx = null
+function getSharedUrgentCtx() {
+  if (!sharedUrgentCtx) sharedUrgentCtx = new (window.AudioContext || window.webkitAudioContext)()
+  return sharedUrgentCtx
+}
+export function unlockUrgentAudio() {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext
-    if (!AudioContext) return
-    const context = new AudioContext()
-    const oscillator = context.createOscillator()
-    const gain = context.createGain()
-    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(760, context.currentTime)
-    oscillator.frequency.linearRampToValueAtTime(980, context.currentTime + .45)
-    gain.gain.setValueAtTime(.08, context.currentTime); gain.gain.linearRampToValueAtTime(0, context.currentTime + .8)
-    oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + .8)
-    oscillator.onended = () => context.close()
+    const ctx = getSharedUrgentCtx()
+    if (ctx.state === 'suspended') ctx.resume()
+    const buffer = ctx.createBuffer(1, 1, 22050)
+    const source = ctx.createBufferSource()
+    source.buffer = buffer; source.connect(ctx.destination); source.start(0)
+  } catch { /* niente da fare se il browser non supporta Web Audio */ }
+}
+function useUnlockUrgentAudio(user) {
+  useEffect(() => {
+    if (!user) return
+    const onFirstTouch = () => { unlockUrgentAudio(); window.removeEventListener('pointerdown', onFirstTouch) }
+    window.addEventListener('pointerdown', onFirstTouch, { once: true })
+    return () => window.removeEventListener('pointerdown', onFirstTouch)
+  }, [user])
+}
+async function playUrgentSignal() {
+  try {
+    const ctx = getSharedUrgentCtx()
+    if (ctx.state === 'suspended') await ctx.resume()
+    const now = ctx.currentTime
+    const duration = 5
+    const masterGain = ctx.createGain()
+    masterGain.gain.setValueAtTime(0.4, now)
+    masterGain.connect(ctx.destination)
+    const makeSweep = (startFreq, gainVal) => {
+      const osc = ctx.createOscillator()
+      osc.type = 'sawtooth'
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(gainVal, now)
+      osc.connect(gain); gain.connect(masterGain)
+      let t = now
+      osc.frequency.setValueAtTime(startFreq, t)
+      while (t < now + duration) {
+        t += 0.18; osc.frequency.linearRampToValueAtTime(startFreq + 600, t)
+        t += 0.18; osc.frequency.linearRampToValueAtTime(startFreq, t)
+      }
+      osc.start(now); osc.stop(t)
+    }
+    makeSweep(650, 1); makeSweep(660, 0.6)
+    navigator.vibrate?.([400, 80, 400, 80, 400, 80, 400, 80, 400])
   } catch { /* Il browser può bloccare l'audio fuori da un gesto utente. */ }
 }
 const csvCell = (value = '') => `"${String(value).replaceAll('"', '""')}"`
@@ -378,6 +423,7 @@ function HomeDashboard({ userName, hotel, statusCounts, showUrgent, urgentCount,
 }
 
 function Operations({ hotel, user, users, onLogout, onChangeHotel, onSavePin, onSaveProfile, onTogglePresence, uiSize, onUiSizeChange }) {
+  useUnlockUrgentAudio(user)
   const [tab, setTab] = useState('Home'), [status, setStatus] = useState('todo'), [query, setQuery] = useState(''), [sort, setSort] = useState('urgenza'), [advanced, setAdvanced] = useState(false), [department, setDepartment] = useState(''), [category, setCategory] = useState(''), [creatingIssue, setCreatingIssue] = useState(false), [openIssueId, setOpenIssueId] = useState(null), [menuOpen, setMenuOpen] = useState(false), [allIssues, setAllIssues] = useState([]), [urgentItems, setUrgentItems] = useState([]), [urgentComposeRequest, setUrgentComposeRequest] = useState(0), [urgentTransformTarget, setUrgentTransformTarget] = useState(null), [plannedItems, setPlannedItems] = useState([]), [plannedFormOpen, setPlannedFormOpen] = useState(false), [openPlannedId, setOpenPlannedId] = useState(null), [editingPlannedId, setEditingPlannedId] = useState(null), [saleComposeRequest, setSaleComposeRequest] = useState(0)
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine)
   useEffect(() => {
