@@ -1,0 +1,145 @@
+/* Home FAB: ventaglio stabile e pulito su smartphone.
+   Sovrascrive solo il menu + senza toccare il resto della Home. */
+
+.home-fab-wrap {
+  width: 60px;
+  height: 60px;
+  bottom: calc(var(--nav-h) + max(16px, env(safe-area-inset-bottom)));
+  z-index: 85;
+}
+
+.home-fab-main {
+  width: 60px;
+  height: 60px;
+  min-height: 60px !important;
+  padding: 0 !important;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand, #0e5c49);
+  box-shadow: 0 10px 28px rgba(16, 45, 35, .28);
+  isolation: isolate;
+}
+
+.home-fab-plus {
+  font-size: 29px;
+  line-height: 1;
+  transform-origin: center;
+}
+
+.home-fab-backdrop {
+  z-index: -1;
+  background: rgba(15, 28, 24, .16);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+
+.home-fab-arc {
+  pointer-events: none;
+}
+
+.home-fab-arc[aria-hidden="false"] {
+  pointer-events: auto;
+}
+
+.home-fab-item {
+  width: 88px;
+  min-height: 70px !important;
+  margin-left: -44px;
+  margin-top: -35px;
+  padding: 9px 6px 8px;
+  gap: 5px;
+  border: 1px solid rgba(20, 45, 37, .08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 10px 26px rgba(16, 32, 27, .16);
+  line-height: 1.08;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform, opacity;
+}
+
+.home-fab-item .icon {
+  width: 22px;
+  height: 22px;
+  color: var(--brand, #0e5c49);
+}
+
+.home-fab-item span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+/* 4 azioni: ventaglio simmetrico, nessuna sovrapposizione. */
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(1) {
+  transform: translate(-126px, -64px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(2) {
+  transform: translate(-48px, -124px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(3) {
+  transform: translate(48px, -124px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(4) {
+  transform: translate(126px, -64px) scale(1) !important;
+}
+
+/* 3 azioni. */
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(3)):not(:has(.home-fab-item:nth-child(4))) .home-fab-item:nth-child(1) {
+  transform: translate(-104px, -72px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(3)):not(:has(.home-fab-item:nth-child(4))) .home-fab-item:nth-child(2) {
+  transform: translate(0, -130px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(3)):not(:has(.home-fab-item:nth-child(4))) .home-fab-item:nth-child(3) {
+  transform: translate(104px, -72px) scale(1) !important;
+}
+
+/* 2 azioni. */
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(2)):not(:has(.home-fab-item:nth-child(3))) .home-fab-item:nth-child(1) {
+  transform: translate(-62px, -112px) scale(1) !important;
+}
+.home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(2)):not(:has(.home-fab-item:nth-child(3))) .home-fab-item:nth-child(2) {
+  transform: translate(62px, -112px) scale(1) !important;
+}
+
+/* Una sola azione. */
+.home-fab-arc[aria-hidden="false"]:not(:has(.home-fab-item:nth-child(2))) .home-fab-item:nth-child(1) {
+  transform: translate(0, -118px) scale(1) !important;
+}
+
+@media (max-width: 390px) {
+  .home-fab-item {
+    width: 80px;
+    min-height: 66px !important;
+    margin-left: -40px;
+    margin-top: -33px;
+    padding-inline: 5px;
+  }
+  .home-fab-item span { font-size: 10px; }
+
+  .home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(1) {
+    transform: translate(-112px, -58px) scale(1) !important;
+  }
+  .home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(2) {
+    transform: translate(-44px, -116px) scale(1) !important;
+  }
+  .home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(3) {
+    transform: translate(44px, -116px) scale(1) !important;
+  }
+  .home-fab-arc[aria-hidden="false"]:has(.home-fab-item:nth-child(4)) .home-fab-item:nth-child(4) {
+    transform: translate(112px, -58px) scale(1) !important;
+  }
+}
+
+html[data-ui-size="large"] .home-fab-item {
+  width: 98px;
+  min-height: 82px !important;
+  margin-left: -49px;
+  margin-top: -41px;
+}
+html[data-ui-size="large"] .home-fab-item span {
+  font-size: 13px;
+}
