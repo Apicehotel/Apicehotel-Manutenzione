@@ -1,13 +1,30 @@
-/* Dettaglio segnalazione: layout compatto e coerente con il mockup approvato. */
+/* Dettaglio segnalazione mobile: layout coerente, compatto e realmente utilizzabile. */
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .sheet-overlay {
+    align-items: flex-end;
+  }
+
   .sheet-overlay > .sheet {
     width: min(100%, 760px);
+    max-width: 760px;
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - var(--nav-h));
-    padding: 18px 18px calc(22px + var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 18px calc(24px + var(--nav-h) + env(safe-area-inset-bottom, 0px));
     border-radius: 28px 28px 0 0;
+    background: #fff;
+  }
+
+  .sheet .sheet-head {
+    margin-bottom: 8px;
+  }
+
+  .sheet .detail-room {
+    margin: 8px 0 16px;
   }
 
   .sheet .issue-summary {
+    margin: 0;
     padding: 16px;
     border: 1px solid #dedad0;
     border-radius: 18px;
@@ -18,8 +35,8 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    margin-top: 14px;
-    padding-top: 14px;
+    margin: 14px 0 0;
+    padding: 14px 0 0;
     border-top: 1px solid #e9e5dc;
   }
 
@@ -31,12 +48,32 @@
 
   .sheet .detail-meta > div:first-child { padding-left: 0; }
   .sheet .detail-meta > div:last-child { padding-right: 0; border-right: 0; }
-  .sheet .detail-meta dt { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
-  .sheet .detail-meta dd { margin: 4px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+  .sheet .detail-meta dt {
+    font-size: 11px;
+    line-height: 1.2;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #7b827d;
+  }
+  .sheet .detail-meta dd {
+    margin: 5px 0 0;
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
 
-  .sheet .action-panel {
+  /* Il contenitore azioni non deve diventare una quarta card. */
+  .sheet .detail-actions.action-panel {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    margin: 14px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .sheet .detail-actions-heading { display: none; }
@@ -59,26 +96,42 @@
     font-weight: 800;
     line-height: 1.08;
     text-align: center;
+    box-shadow: none;
   }
 
-  .sheet .action-panel:has(.action-needs-piece) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sheet .action-needs-piece { grid-column: 1; background: #7637ed; }
   .sheet .action-replaced { grid-column: 2; background: #0d7a5d; }
-  .sheet .action-technician { grid-column: 3; background: #ef8500; }
+  .sheet .action-technician {
+    grid-column: 3;
+    background: #ef8500;
+    font-size: 0 !important;
+  }
+
   .sheet .action-needs-piece .icon,
   .sheet .action-replaced .icon,
-  .sheet .action-technician .icon { width: 21px; height: 21px; }
+  .sheet .action-technician .icon {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 auto;
+  }
 
-  .sheet .action-technician { font-size: 0; }
-  .sheet .action-technician::after { content: 'Serve tecnico'; font-size: var(--font-base); }
+  /* Il JSX originale dice “Chiedi un tecnico”: visivamente usiamo il testo
+     approvato, senza duplicarlo sui telefoni più stretti. */
+  .sheet .action-technician::after {
+    content: 'Serve tecnico';
+    font-size: var(--font-base);
+    line-height: 1.08;
+  }
 
   .sheet .completion-fields {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(150px, .82fr) minmax(0, 1.18fr);
+    align-items: start;
     gap: 12px 16px;
+    width: 100%;
+    margin: 4px 0 0;
     padding: 16px;
-    margin-top: 4px;
     border: 1px solid #dedad0;
     border-radius: 18px;
     background: #fff;
@@ -88,18 +141,31 @@
     grid-column: 1 / -1;
     margin: 0;
     font-size: 18px;
+    line-height: 1.2;
     font-weight: 850;
     text-transform: uppercase;
   }
 
-  .sheet .completion-fields > label { min-width: 0; margin: 0; }
-  .sheet .completion-fields textarea { min-height: 164px; height: 100%; resize: vertical; }
+  .sheet .completion-fields > label {
+    min-width: 0;
+    margin: 0;
+    align-self: start;
+  }
 
-  /* Fallback del selettore foto originale: resta disponibile se lo script
-     di miglioramento progressivo non dovesse attivarsi. */
-  .sheet .photo-picker-trigger {
+  .sheet .completion-fields textarea {
+    width: 100%;
     min-height: 164px;
-    height: auto;
+    height: 164px;
+    margin: 7px 0 0;
+    resize: vertical;
+  }
+
+  /* Fallback del selettore foto originale. */
+  .sheet .photo-picker-trigger {
+    width: 100%;
+    min-height: 164px;
+    height: 164px;
+    margin-top: 7px;
     display: grid;
     grid-template-columns: auto 1fr;
     grid-template-rows: 1fr 1fr;
@@ -133,23 +199,23 @@
   }
   .sheet .photo-picker-trigger > .icon:last-child { display: none; }
 
-  /* Modalità diretta: lo script apre le opzioni React vere e nasconde il
-     pulsante-finto. Ogni riquadro qui sotto contiene il relativo input file,
-     quindi Fotocamera e Galleria sono due azioni realmente indipendenti. */
+  /* Modalità diretta: due controlli reali, Fotocamera e Galleria. */
   html.issue-photo-direct .sheet .completion-fields .photo-picker-trigger { display: none; }
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options {
     position: static;
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
+    width: 100%;
     min-height: 164px;
-    margin-top: 7px;
+    margin: 7px 0 0;
     padding: 10px;
     border: 1px dashed #cfd4cf;
     border-radius: 14px;
     background: #fff;
     box-shadow: none;
   }
+
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label {
     min-height: 64px;
     margin: 0;
@@ -167,30 +233,59 @@
     cursor: pointer;
     text-align: center;
   }
+
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong { font-size: 0; }
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong::after { content: 'Fotocamera'; font-size: 15px; }
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong { font-size: 0; }
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong::after { content: 'Galleria'; font-size: 15px; }
-  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .icon { width: 24px; height: 24px; }
-  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .photo-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .icon { width: 24px; height: 24px; flex: 0 0 auto; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options .photo-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
 
-  .sheet .photo-preview { max-height: 120px; object-fit: cover; border-radius: 10px; }
+  .sheet .photo-preview {
+    display: block;
+    width: 100%;
+    max-height: 120px;
+    margin-top: 8px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
   .sheet .photo-selected { display: block; margin-top: 5px; overflow-wrap: anywhere; }
 
-  .sheet .complete-action { grid-column: 1 / -1; min-height: 60px; border-radius: 14px; }
+  .sheet .complete-action {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 60px;
+    margin: 0;
+    border-radius: 14px;
+  }
 }
 
 @media (max-width: 520px) {
   .sheet .action-needs-piece,
-  .sheet .action-replaced,
-  .sheet .action-technician {
+  .sheet .action-replaced {
     min-height: 58px;
     padding-inline: 5px;
     font-size: 13px;
   }
+
+  .sheet .action-technician {
+    min-height: 58px;
+    padding-inline: 5px;
+    gap: 4px;
+    font-size: 0 !important;
+  }
   .sheet .action-technician::after { font-size: 13px; }
+
+  .sheet .detail-meta > div { padding-inline: 8px; }
   .sheet .detail-meta dt { font-size: 10px; }
   .sheet .detail-meta dd { font-size: 13px; }
+
   .sheet .completion-fields {
     grid-template-columns: minmax(118px, .78fr) minmax(0, 1.22fr);
     padding: 13px;
@@ -199,15 +294,41 @@
 }
 
 @media (max-width: 390px) {
+  .sheet-overlay > .sheet { padding-inline: 12px; }
+  .sheet .issue-summary { padding: 13px; }
   .sheet .detail-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .sheet .detail-meta > div { padding-inline: 6px; }
+  .sheet .detail-meta > div { padding-inline: 5px; }
+
+  .sheet .detail-actions.action-panel { gap: 7px; }
   .sheet .action-needs-piece,
-  .sheet .action-replaced,
-  .sheet .action-technician { font-size: 11px; gap: 4px; }
+  .sheet .action-replaced {
+    min-height: 56px;
+    padding-inline: 4px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .sheet .action-technician {
+    min-height: 56px;
+    padding-inline: 4px;
+    font-size: 0 !important;
+    gap: 3px;
+  }
   .sheet .action-technician::after { font-size: 11px; }
-  .sheet .completion-fields { grid-template-columns: 1fr 1.25fr; }
+  .sheet .action-needs-piece .icon,
+  .sheet .action-replaced .icon,
+  .sheet .action-technician .icon { width: 18px; height: 18px; }
+
+  .sheet .completion-fields {
+    grid-template-columns: minmax(106px, .74fr) minmax(0, 1.26fr);
+    padding: 11px;
+  }
+
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options { padding: 7px; }
-  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label { min-height: 58px; padding: 8px 5px; font-size: 13px; }
+  html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label {
+    min-height: 58px;
+    padding: 8px 5px;
+    font-size: 13px;
+  }
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:first-of-type strong::after,
   html.issue-photo-direct .sheet .completion-fields .photo-picker-options > label:last-of-type strong::after { font-size: 13px; }
 }
