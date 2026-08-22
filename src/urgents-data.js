@@ -1,87 +1,17 @@
 import { supabase } from './supabase.js'
+import { cacheRemoteCollection, enqueueMutation, findCachedHotelId, getCachedCollection, isTransientNetworkError, makeOfflineId, registerOfflineHandler } from './offline-store.js'
 
-// ── Ponte avviso urgente app <-> riga DB (tabella richieste_urgenti) ─────────
-// DB: id, hotel_id, nota, stato (aperta|presa|completata), creato_da, creato_il,
-//     presa_in_carico_da, presa_in_carico_il, completata_da, completata_il,
-//     trasformata_in_segnalazione_id
-// App: id, hotelId, note, status (aperta|presa_in_carico|completata), createdBy,
-//      createdAt, takenBy, completedBy, transformed
-//
-// Mappatura stati: DB 'presa' <-> app 'presa_in_carico'.
-
-const statusToApp = { aperta: 'aperta', presa: 'presa_in_carico', completata: 'completata' }
-const statusToDb = { aperta: 'aperta', presa_in_carico: 'presa', completata: 'completata' }
-
-function fromRow(row) {
-  return {
-    id: row.id,
-    hotelId: row.hotel_id,
-    note: row.nota,
-    status: statusToApp[row.stato] || 'aperta',
-    createdBy: row.creato_da,
-    createdAt: row.creato_il ? new Date(row.creato_il).getTime() : Date.now(),
-    takenBy: row.presa_in_carico_da || null,
-    completedBy: row.completata_da || null,
-    transformed: !!row.trasformata_in_segnalazione_id,
-  }
-}
-
-function toRow(item) {
-  const row = {}
-  const set = (col, val) => { if (val !== undefined) row[col] = val }
-  set('hotel_id', item.hotelId)
-  set('nota', item.note)
-  if (item.status !== undefined) row.stato = statusToDb[item.status] || 'aperta'
-  set('creato_da', item.createdBy)
-  set('presa_in_carico_da', item.takenBy)
-  set('completata_da', item.completedBy)
-  if (item.status === 'presa_in_carico') row.presa_in_carico_il = new Date().toISOString()
-  if (item.status === 'completata') row.completata_il = new Date().toISOString()
-  return row
-}
-
-export async function fetchUrgents(hotelId) {
-  if (!supabase) return { items: [], ok: false }
-  const { data, error } = await supabase.from('richieste_urgenti').select('*').eq('hotel_id', hotelId).order('creato_il', { ascending: false })
-  if (error) { console.error('fetchUrgents', error); return { items: [], ok: false, error: error.message } }
-  return { items: (data || []).map(fromRow), ok: true }
-}
-
-export async function insertUrgent(item) {
-  if (!supabase) throw new Error('Supabase non configurato')
-  const { data, error } = await supabase.from('richieste_urgenti').insert(toRow(item)).select().single()
-  if (error) { console.error('insertUrgent', error); throw new Error(error.message) }
-  return fromRow(data)
-}
-
-export async function updateUrgentRow(id, changes) {
-  if (!supabase || !id) return null
-  const { data, error } = await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id', id).select().single()
-  if (error) { console.error('updateUrgentRow', error); throw new Error(error.message) }
-  return fromRow(data)
-}
-
-export function subscribeUrgents(hotelId, onChange) {
-  if (!supabase) return () => {}
-  const channel = supabase.channel('apice-urgenti-' + hotelId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'richieste_urgenti', filter: `hotel_id=eq.${hotelId}` }, onChange)
-    .subscribe()
-  return () => { supabase.removeChannel(channel) }
-}
-
-// Notifica push ai manutentori quando viene creato un nuovo avviso urgente.
-// Non blocca il flusso né mostra un errore all'utente se la notifica non parte
-// (la creazione dell'avviso è già andata a buon fine, la notifica è un extra),
-// ma logga sempre l'errore reale — prima veniva nascosto anche in console,
-// rendendo impossibile capire perché una notifica non fosse mai partita.
-export async function notifyUrgent(hotelId, note) {
-  if (!supabase) return
-  try {
-    const { data, error } = await supabase.functions.invoke('send-push', { body: { hotel_id: hotelId, title: 'Avviso urgente', body: note } })
-    if (error) console.error('notifyUrgent', error)
-    else if (data && data.ok === false) console.error('notifyUrgent', data.error)
-    else if (data) console.info('notifyUrgent', data)
-  } catch (error) {
-    console.error('notifyUrgent', error)
-  }
-}
+const ENTITY='urgents'
+const onlineNow=()=>typeof navigator==='undefined'||navigator.onLine
+const statusToApp={aperta:'aperta',presa:'presa_in_carico',completata:'completata'}
+const statusToDb={aperta:'aperta',presa_in_carico:'presa',completata:'completata'}
+function fromRow(row){return{id:row.id,hotelId:row.hotel_id,note:row.nota,status:statusToApp[row.stato]||'aperta',createdBy:row.creato_da,createdAt:row.creato_il?new Date(row.creato_il).getTime():Date.now(),takenBy:row.presa_in_carico_da||null,completedBy:row.completata_da||null,transformed:!!row.trasformata_in_segnalazione_id}}
+function toRow(item){const row={},set=(c,v)=>{if(v!==undefined)row[c]=v};set('hotel_id',item.hotelId);set('nota',item.note);if(item.status!==undefined)row.stato=statusToDb[item.status]||'aperta';set('creato_da',item.createdBy);set('presa_in_carico_da',item.takenBy);set('completata_da',item.completedBy);if(item.status==='presa_in_carico')row.presa_in_carico_il=new Date().toISOString();if(item.status==='completata')row.completata_il=new Date().toISOString();return row}
+async function dbInsert(item){const{data,error}=await supabase.from('richieste_urgenti').insert(toRow(item)).select().single();if(error)throw error;return fromRow(data)}
+async function dbUpdate(id,changes){const{data,error}=await supabase.from('richieste_urgenti').update(toRow(changes)).eq('id',id).select().single();if(error)throw error;return fromRow(data)}
+registerOfflineHandler(ENTITY,async(op,targetId)=>op.action==='create'?dbInsert(op.payload):dbUpdate(targetId,op.payload))
+export async function fetchUrgents(hotelId){if(!supabase||!onlineNow())return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:true};try{const{data,error}=await supabase.from('richieste_urgenti').select('*').eq('hotel_id',hotelId).order('creato_il',{ascending:false});if(error)throw error;return{items:await cacheRemoteCollection(ENTITY,hotelId,(data||[]).map(fromRow)),ok:true}}catch(error){return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:isTransientNetworkError(error),error:error?.message}}}
+export async function insertUrgent(item){if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-urgent');return enqueueMutation({entity:ENTITY,hotelId:item.hotelId,action:'create',payload:{...item,createdAt:item.createdAt||Date.now()},tempId})}try{const created=await dbInsert(item);await cacheRemoteCollection(ENTITY,item.hotelId,[created,...(await getCachedCollection(ENTITY,item.hotelId)).filter(x=>x.id!==created.id)]);return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-urgent');return enqueueMutation({entity:ENTITY,hotelId:item.hotelId,action:'create',payload:{...item,createdAt:item.createdAt||Date.now()},tempId})}throw error}}
+export async function updateUrgentRow(id,changes){const hotelId=changes.hotelId||await findCachedHotelId(ENTITY,id);if(!supabase||!onlineNow()||String(id).startsWith('offline-'))return enqueueMutation({entity:ENTITY,hotelId,action:'update',payload:changes,targetId:id});try{const updated=await dbUpdate(id,changes);const cached=await getCachedCollection(ENTITY,hotelId);await cacheRemoteCollection(ENTITY,hotelId,cached.map(item=>item.id===id?updated:item));return updated}catch(error){if(isTransientNetworkError(error))return enqueueMutation({entity:ENTITY,hotelId,action:'update',payload:changes,targetId:id});throw error}}
+export function subscribeUrgents(hotelId,onChange){if(!supabase)return()=>{};const channel=supabase.channel('apice-urgenti-'+hotelId).on('postgres_changes',{event:'*',schema:'public',table:'richieste_urgenti',filter:`hotel_id=eq.${hotelId}`},onChange).subscribe();return()=>{supabase.removeChannel(channel)}}
+export async function notifyUrgent(hotelId,note){if(!supabase||!onlineNow())return;try{const{data,error}=await supabase.functions.invoke('send-push',{body:{hotel_id:hotelId,title:'Avviso urgente',body:note}});if(error)console.error('notifyUrgent',error);else if(data&&data.ok===false)console.error('notifyUrgent',data.error)}catch(error){console.error('notifyUrgent',error)}}
