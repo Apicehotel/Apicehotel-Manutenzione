@@ -1,4 +1,7 @@
 const EVENT='apice-operation-feedback'
+const TOAST_DEDUPE_MS=3500
+const MAX_VISIBLE_TOASTS=3
+const recentToasts=new Map()
 
 export function emitOperationFeedback(type,message,detail=''){
   if(typeof window==='undefined')return
@@ -22,15 +25,33 @@ function ensureHost(){
   return host
 }
 
+function toastKey({type='info',message='',detail=''}){
+  return `${type}|${String(message).trim()}|${String(detail).trim()}`
+}
+
+function cleanupRecent(now=Date.now()){
+  for(const[key,expires]of recentToasts.entries())if(expires<=now)recentToasts.delete(key)
+}
+
 function showToast({type='info',message='',detail=''}){
   if(!message||typeof document==='undefined')return
+  const now=Date.now();cleanupRecent(now)
+  const key=toastKey({type,message,detail})
+  if(recentToasts.has(key))return
+  recentToasts.set(key,now+TOAST_DEDUPE_MS)
+
   const host=ensureHost()
+  const visible=[...host.querySelectorAll('.operation-toast:not(.leaving)')]
+  while(visible.length>=MAX_VISIBLE_TOASTS){const oldest=visible.shift();oldest?.remove()}
+
+  const normalizedDetail=String(detail||'').trim()===String(message||'').trim()?'':detail
   const toast=document.createElement('div')
   toast.className=`operation-toast ${type}`
-  toast.innerHTML=`<span class="operation-toast-icon" aria-hidden="true">${type==='success'?'✓':type==='queued'?'↻':type==='error'?'!':'i'}</span><span class="operation-toast-copy"><strong></strong>${detail?'<small></small>':''}</span><button type="button" aria-label="Chiudi">×</button>`
+  toast.innerHTML=`<span class="operation-toast-icon" aria-hidden="true">${type==='success'?'✓':type==='queued'?'↻':type==='error'?'!':'i'}</span><span class="operation-toast-copy"><strong></strong>${normalizedDetail?'<small></small>':''}</span><button type="button" aria-label="Chiudi">×</button>`
   toast.querySelector('strong').textContent=message
-  const small=toast.querySelector('small');if(small)small.textContent=detail
-  const close=()=>{toast.classList.add('leaving');setTimeout(()=>toast.remove(),180)}
+  const small=toast.querySelector('small');if(small)small.textContent=normalizedDetail
+  let closed=false
+  const close=()=>{if(closed)return;closed=true;toast.classList.add('leaving');setTimeout(()=>toast.remove(),180)}
   toast.querySelector('button').addEventListener('click',close)
   host.appendChild(toast)
   requestAnimationFrame(()=>toast.classList.add('visible'))
