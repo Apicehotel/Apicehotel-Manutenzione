@@ -3,10 +3,32 @@ import Dexie from 'dexie'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 
-const cache = new Dexie('apiceHousekeeping')
-cache.version(2).stores({ giorno: 'camera', lavoro: 'camera', outbox: 'camera' })
+const legacyCache = new Dexie('apiceHousekeeping')
+legacyCache.version(2).stores({ giorno: 'camera', lavoro: 'camera', outbox: 'camera' })
+const housekeepingCaches = new Map()
+const cacheForHotel = (hotelId) => {
+  if (housekeepingCaches.has(hotelId)) return housekeepingCaches.get(hotelId)
+  const db = new Dexie(`apiceHousekeeping-${hotelId}`)
+  db.version(1).stores({ giorno:'camera', lavoro:'camera', outbox:'&key,camera,kind', failures:'&key,camera,kind' })
+  housekeepingCaches.set(hotelId,db)
+  return db
+}
+const migrationKey=(hotelId)=>`apice.housekeeping.migrated.${hotelId}.v1`
+async function migrateLegacyCache(target,hotelId){
+  try{
+    if(localStorage.getItem(migrationKey(hotelId))==='1')return
+    const [day,work,outbox]=await Promise.all([legacyCache.giorno.toArray(),legacyCache.lavoro.toArray(),legacyCache.outbox.toArray()])
+    const hotelDay=day.filter((row)=>row.hotel_id===hotelId),hotelWork=work.filter((row)=>row.hotel_id===hotelId)
+    const knownRooms=new Set([...hotelDay,...hotelWork].map((row)=>String(row.camera)))
+    const hotelOutbox=outbox.filter((item)=>item.payload?.hotel_id===hotelId||knownRooms.has(String(item.camera))).map((item)=>({...item,key:`${item.kind||'day'}:${item.camera}`}))
+    await target.transaction('rw',target.giorno,target.lavoro,target.outbox,async()=>{if(hotelDay.length)await target.giorno.bulkPut(hotelDay);if(hotelWork.length)await target.lavoro.bulkPut(hotelWork);if(hotelOutbox.length)await target.outbox.bulkPut(hotelOutbox)})
+    localStorage.setItem(migrationKey(hotelId),'1')
+  }catch(error){console.warn('housekeeping legacy migration',error)}
+}
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
 const slopeLabels = { b2b:'Partenza + arrivo', partenza:'Partenza', arrivo:'Arrivo', fermata:'Fermata', libera:'Libera' }
+const same=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null)
+const permanentSyncError=(error)=>/row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint/i.test(String(error?.message||error||''))
 
 const dateOnly = (value) => {
   if (!value) return ''
@@ -103,29 +125,43 @@ const parseWorkbook = async (file, hotelId) => {
 }
 
 export function Housekeeping({ user, hotel }) {
+  const cache=useMemo(()=>cacheForHotel(hotel.id),[hotel.id])
   const groups = useMemo(()=>groupsForHotel(hotel.id),[hotel.id])
-  const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [group,setGroup]=useState(groups[0]?.name||''), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [message,setMessage]=useState(''), [revenueReport,setRevenueReport]=useState(null)
+  const [day,setDay]=useState([]), [work,setWork]=useState([]), [loading,setLoading]=useState(true), [group,setGroup]=useState(groups[0]?.name||''), [order,setOrder]=useState('urgenti'), [open,setOpen]=useState(null), [uploading,setUploading]=useState(false), [pending,setPending]=useState(0), [blocked,setBlocked]=useState(0), [message,setMessage]=useState(''), [revenueReport,setRevenueReport]=useState(null)
   const fileRef=useRef(null)
   const canUpload = user.department === 'Reception' || user.role === 'Portiere Notturno'
   const canEdit = user.department === 'Reception' || user.department === 'Governante'
   useEffect(()=>{setGroup(groups[0]?.name||'');setRevenueReport(null)},[hotel.id])
   const refresh = useCallback(async () => {
+    await migrateLegacyCache(cache,hotel.id)
     if (navigator.onLine) {
       const [{data:g},{data:w}] = await Promise.all([hotelGioClient.from('camere_giorno').select('*').eq('hotel_id',hotel.id),hotelGioClient.from('camere_lavoro').select('*').eq('hotel_id',hotel.id)])
       if (g) { await cache.giorno.clear(); if (g.length) await cache.giorno.bulkPut(g) }
       if (w) { await cache.lavoro.clear(); if (w.length) await cache.lavoro.bulkPut(w) }
     }
-    const [g,w,p]=await Promise.all([cache.giorno.toArray(),cache.lavoro.toArray(),cache.outbox.count()]); setDay(g);setWork(w);setPending(p);setLoading(false)
-  },[hotel.id])
+    const [g,w,p,b]=await Promise.all([cache.giorno.toArray(),cache.lavoro.toArray(),cache.outbox.count(),cache.failures.count()]); setDay(g);setWork(w);setPending(p);setBlocked(b);setLoading(false)
+  },[cache,hotel.id])
   const drain = useCallback(async () => {
     if (!navigator.onLine) return
+    await migrateLegacyCache(cache,hotel.id)
     for (const item of await cache.outbox.toArray()) {
-      const { error } = item.kind==='work' ? await hotelGioClient.from('camere_lavoro').upsert(item.payload) : await hotelGioClient.from('camere_giorno').update(item.payload).eq('hotel_id',hotel.id).eq('camera',item.camera)
-      if (!error) await cache.outbox.delete(item.camera)
+      try{
+        if(item.baseValues){
+          const table=item.kind==='work'?'camere_lavoro':'camere_giorno'
+          const {data:remote,error:readError}=await hotelGioClient.from(table).select('*').eq('hotel_id',hotel.id).eq('camera',item.camera).maybeSingle()
+          if(readError)throw readError
+          if(remote){const conflicts=Object.keys(item.baseValues).filter((field)=>!same(remote[field],item.baseValues[field]));if(conflicts.length){const error=new Error(`Conflitto camera ${item.camera}: ${conflicts.join(', ')}`);error.code='OFFLINE_CONFLICT';throw error}}
+        }
+        const { error } = item.kind==='work' ? await hotelGioClient.from('camere_lavoro').upsert(item.payload) : await hotelGioClient.from('camere_giorno').update(item.payload).eq('hotel_id',hotel.id).eq('camera',item.camera)
+        if(error)throw error
+        await cache.outbox.delete(item.key)
+      }catch(error){
+        if(error?.code==='OFFLINE_CONFLICT'||permanentSyncError(error)){await cache.failures.put({...item,error:String(error?.message||error),failedAt:Date.now()});await cache.outbox.delete(item.key);setMessage(`Camera ${item.camera}: modifica non sovrascritta perché richiede attenzione`)}else{await cache.outbox.update(item.key,{attempts:Number(item.attempts||0)+1,lastError:String(error?.message||error)});break}
+      }
     }
     refresh()
-  },[refresh,hotel.id])
-  useEffect(()=>{ refresh();drain(); const channel=hotelGioClient.channel('apice-housekeeping-'+hotel.id).on('postgres_changes',{event:'*',schema:'public',table:'camere_giorno',filter:`hotel_id=eq.${hotel.id}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'camere_lavoro',filter:`hotel_id=eq.${hotel.id}`},refresh).subscribe(); window.addEventListener('online',drain); return()=>{hotelGioClient.removeChannel(channel);window.removeEventListener('online',drain)} },[refresh,drain,hotel.id])
+  },[cache,refresh,hotel.id])
+  useEffect(()=>{ refresh();drain(); const channel=hotelGioClient.channel('apice-housekeeping-'+hotel.id).on('postgres_changes',{event:'*',schema:'public',table:'camere_giorno',filter:`hotel_id=eq.${hotel.id}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'camere_lavoro',filter:`hotel_id=eq.${hotel.id}`},refresh).subscribe(); const retry=()=>{if(navigator.onLine)drain()}; const visibility=()=>{if(document.visibilityState==='visible')retry()}; window.addEventListener('online',retry);window.addEventListener('focus',retry);document.addEventListener('visibilitychange',visibility);const timer=setInterval(retry,15000);return()=>{hotelGioClient.removeChannel(channel);window.removeEventListener('online',retry);window.removeEventListener('focus',retry);document.removeEventListener('visibilitychange',visibility);clearInterval(timer)} },[refresh,drain,hotel.id])
   const workByRoom=useMemo(()=>Object.fromEntries(work.map((item)=>[item.camera,item])),[work])
   const roomSet=useMemo(()=>new Set(groups.find((item)=>item.name===group)?.rooms||[]),[groups,group])
   const rooms=useMemo(()=>{
@@ -133,11 +169,13 @@ export function Housekeeping({ user, hotel }) {
     const weight={b2b:0,partenza:1,arrivo:2,fermata:3,libera:5}
     return values.sort((a,b)=>order==='numero'?a.camera.localeCompare(b.camera,'it',{numeric:true}):(weight[a.stato_slope]-weight[b.stato_slope]||a.camera.localeCompare(b.camera,'it',{numeric:true})))
   },[day,workByRoom,roomSet,order])
-  const setWorkState=async(camera,state)=>{const payload={hotel_id:hotel.id,camera,stato:state,da_chi:user.name,aggiornato_il:new Date().toISOString()};await cache.lavoro.put(payload);await cache.outbox.put({camera,kind:'work',payload});setMessage(`Camera ${camera}: ${workLabels[state]}`);await refresh();drain()}
-  const saveDetails=async(camera,fields)=>{const payload={...fields,manuale:true,manuale_da:user.name,manuale_il:new Date().toISOString(),aggiornato_il:new Date().toISOString()};await cache.giorno.update(camera,payload);await cache.outbox.put({camera,kind:'day',payload});setOpen(null);await refresh();drain()}
+  const setWorkState=async(camera,state)=>{const current=workByRoom[camera];const payload={hotel_id:hotel.id,camera,stato:state,da_chi:user.name,aggiornato_il:new Date().toISOString()};await cache.lavoro.put(payload);await cache.outbox.put({key:`work:${camera}`,camera,kind:'work',payload,baseValues:current?{stato:current.stato}:null,attempts:0});setMessage(`Camera ${camera}: ${workLabels[state]}`);await refresh();drain()}
+  const saveDetails=async(camera,fields)=>{const current=day.find((item)=>String(item.camera)===String(camera));const payload={...fields,manuale:true,manuale_da:user.name,manuale_il:new Date().toISOString(),aggiornato_il:new Date().toISOString()};await cache.giorno.update(camera,payload);await cache.outbox.put({key:`day:${camera}`,camera,kind:'day',payload,baseValues:current?Object.fromEntries(Object.keys(fields).map((key)=>[key,current[key]])):null,attempts:0});setOpen(null);await refresh();drain()}
+  const retryBlocked=async()=>{const failures=await cache.failures.toArray();if(failures.length){await cache.outbox.bulkPut(failures.map(({error:_,failedAt:__,...item})=>({...item,attempts:0,lastError:null})));await cache.failures.clear();await refresh();drain()}}
   const upload=async(event)=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;setUploading(true);try{const parsed=await parseWorkbook(file,hotel.id);if(parsed.kind==='revenue'){if(parsed.hotelId&&parsed.hotelId!==hotel.id){setRevenueReport(null);setMessage(`Questo report appartiene a ${parsed.structureName}. Seleziona la struttura corretta prima di caricarlo.`)}else{setRevenueReport(parsed);setMessage(`Report ${parsed.structureName}: ${parsed.rows.length} giorni caricati. Nessun dato Housekeeping modificato.`)}}else{setRevenueReport(null);const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user.name,p_camere:parsed.rooms});setMessage(error?`Errore caricamento: ${error.message}`:`Caricate ${parsed.rooms.length} camere dal file Housekeeping`);await refresh()}}catch(error){setMessage(`File non leggibile: ${error?.message||'formato non riconosciuto'}`)}setUploading(false)}
   return <section className="housekeeping-page">
-    <header><div><h1>Housekeeping</h1><p><span className={pending?'pending':'synced'}/>{pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file XLS'}</button></>}</header>
+    <header><div><h1>Housekeeping</h1><p><span className={blocked?'pending':pending?'pending':'synced'}/>{blocked?`${blocked} modifiche richiedono attenzione`:pending?`${pending} modifiche in attesa di rete`:'Sincronizzato'}</p></div>{canUpload&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button className="primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Caricamento…':'Carica file XLS'}</button></>}</header>
+    {blocked>0&&<button className="secondary" type="button" onClick={retryBlocked}>Riprova modifiche bloccate</button>}
     {message&&<p className="housekeeping-message" role="status">{message}</p>}
     {revenueReport ? <RevenueReport report={revenueReport} onClose={()=>setRevenueReport(null)} /> : <>
       {hotel.id === 'hotelgio' ? <div className="hk-gio-selector">
