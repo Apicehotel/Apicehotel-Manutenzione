@@ -35,4 +35,18 @@ export const ROLE_PERMISSIONS = {
 // Nessun utente o PIN demo viene incluso nel bundle frontend.
 export const USERS = []
 
+// Destinatari WhatsApp separati per struttura. Il numero del Giò riceve
+// le segnalazioni provenienti da Hotel Giò. Le altre strutture verranno
+// abilitate appena saranno disponibili i rispettivi numeri.
+export const WHATSAPP = Object.freeze({
+  enabled: true,
+  destinations: Object.freeze({
+    hotelgio: Object.freeze({ phone: '0759978247', receivesIssues: true }),
+    chocohotel: null,
+    brigantino: null,
+  }),
+})
+
+// Twilio resta disabilitato finché webhook e credenziali server-side non
+// sono configurati: nessun segreto Twilio deve finire nel bundle frontend.
 export const TWILIO = Object.freeze({ enabled: false, inboundWebhook: null, automaticMessages: false })
