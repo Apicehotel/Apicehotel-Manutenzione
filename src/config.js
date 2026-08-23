@@ -6,15 +6,16 @@ export const HOTELS = [
 
 // Matrice ruoli approvata: i quattro ruoli base seguono il modello Hotel Giò,
 // i ruoli specializzati Multi Hotel restano separati. "Responsabile" è rimosso.
-// "Supremo" è una Direzione di sola lettura sull'operatività manutentiva.
+// "Supremo" supervisiona tutta l'operatività manutentiva: può inserire nuove
+// segnalazioni ma non può assegnare, prendere in carico o completare lavori.
 export const ROLES = ['admin', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine/Jazz', 'Colazione Jazz']
 
 export const ROLE_PERMISSIONS = {
   admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'planning_sale'],
 
-  // Supremo vede l'intera operatività ma non può creare, assegnare,
-  // prendere in carico o completare manutenzioni.
-  Supremo: ['read_all_departments', 'read_own_hotel'],
+  // Supremo vede tutti i reparti e può inserire manutenzioni, ma resta
+  // completamente passivo sugli stati operativi: niente assign/take_charge/complete.
+  Supremo: ['create', 'read_all_departments', 'read_own_hotel'],
 
   // Ruoli base allineati al comportamento Hotel Giò approvato.
   Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
