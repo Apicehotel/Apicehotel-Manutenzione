@@ -30,6 +30,9 @@ function applyPresenceButton(state) {
   const active = Boolean(state.present)
   button.classList.toggle('on', active)
   button.setAttribute('aria-pressed', active ? 'true' : 'false')
+  button.setAttribute('aria-label', active
+    ? 'Sono in struttura. Premi per segnarti fuori struttura'
+    : 'Fuori struttura. Premi per segnarti in struttura')
   button.dataset.presence = active ? 'in' : 'out'
   button.title = active ? 'Premi per segnarti fuori struttura' : 'Premi per segnarti in struttura'
 }
