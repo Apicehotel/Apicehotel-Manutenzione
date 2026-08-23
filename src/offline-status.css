@@ -17,6 +17,7 @@
 #apice-offline-status[hidden] { display: none !important; }
 #apice-offline-status.offline { background: #6b3f00; color: #fff; }
 #apice-offline-status.syncing { background: #0e6b54; color: #fff; }
+#apice-offline-status.sync-blocked { background: #8b1e1e; color: #fff; border-radius: 16px; }
 @media (max-width: 420px) {
   #apice-offline-status { width: calc(100vw - 24px); font-size: 12px; }
 }
