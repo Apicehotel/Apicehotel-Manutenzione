@@ -1,0 +1,42 @@
+/* Urgenze: CTA primaria sempre leggibile su card rossa/arancio/verde.
+   Override isolato per evitare dipendenze da currentColor e regressioni tra temi. */
+.urgent-card .urgent-primary {
+  width: 100%;
+  min-height: var(--control-h);
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 14px;
+  background: #0e6b55;
+  color: #fff;
+  font-weight: 850;
+  line-height: 1.15;
+  box-shadow: 0 2px 0 rgba(0,0,0,.08), 0 5px 14px rgba(14,107,85,.24);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.urgent-card .urgent-primary:hover { background: #0b604c; }
+.urgent-card .urgent-primary:active { transform: translateY(1px); box-shadow: 0 2px 7px rgba(14,107,85,.2); }
+.urgent-card .urgent-primary:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px #0e6b55; }
+.urgent-card .urgent-primary:disabled { opacity: .58; cursor: not-allowed; transform: none; }
+
+/* La trasformazione resta volutamente secondaria ma leggibile in ogni stato. */
+.urgent-card .urgent-secondary {
+  width: 100%;
+  min-height: var(--control-h);
+  border: 1.5px solid currentColor;
+  border-radius: 11px;
+  padding: 10px 14px;
+  background: transparent;
+  color: currentColor;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.urgent-card.open .urgent-secondary { border-color: rgba(255,255,255,.9); color: #fff; }
+.urgent-card.working .urgent-secondary { border-color: #8a4a0f; color: #8a4a0f; }
+.urgent-card.done .urgent-secondary { border-color: #0a4a40; color: #0a4a40; }
+
+@media (max-width: 560px) {
+  .urgent-card .urgent-primary,
+  .urgent-card .urgent-secondary { min-height: max(48px, var(--control-h)); }
+}
