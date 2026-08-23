@@ -1,7 +1,13 @@
 // Groups the existing React drawer buttons into semantic sections without
 // replacing their event handlers. Moving DOM nodes preserves React listeners.
-// The drawer intentionally exposes only top-level destinations: settings such
-// as PIN management stay inside "Il mio profilo" instead of being duplicated.
+// Top-level duplicates (for example PIN management) stay inside the profile.
+const UI_SIZE_STORAGE_KEY = 'apicehotel.ui-size.v1'
+const UI_SIZES = [
+  ['small', 'P', 'Piccolo'],
+  ['normal', 'N', 'Normale'],
+  ['large', 'G', 'Grande'],
+]
+
 const GROUPS = [
   {
     key: 'operations',
@@ -25,8 +31,6 @@ const GROUPS = [
   },
 ]
 
-// Destinations already reachable from another top-level screen should not be
-// duplicated in the drawer. Their underlying React functionality is untouched.
 const HIDDEN_TOP_LEVEL_ITEMS = new Set(['Cambia PIN'])
 
 function cleanText(button) {
@@ -43,6 +47,56 @@ function decorateButton(button) {
   button.appendChild(chevron)
 }
 
+function currentUiSize() {
+  const fromDom = document.documentElement.dataset.uiSize
+  if (UI_SIZES.some(([value]) => value === fromDom)) return fromDom
+  try {
+    const saved = localStorage.getItem(UI_SIZE_STORAGE_KEY)
+    if (UI_SIZES.some(([value]) => value === saved)) return saved
+  } catch { /* storage opzionale */ }
+  return 'normal'
+}
+
+function setUiSize(value, control) {
+  if (!UI_SIZES.some(([size]) => size === value)) return
+  document.documentElement.dataset.uiSize = value
+  try { localStorage.setItem(UI_SIZE_STORAGE_KEY, value) } catch { /* storage opzionale */ }
+  control.querySelectorAll('button[data-ui-size-value]').forEach((button) => {
+    const active = button.dataset.uiSizeValue === value
+    button.classList.toggle('active', active)
+    button.setAttribute('aria-pressed', String(active))
+  })
+  window.dispatchEvent(new CustomEvent('apice-ui-size-changed', { detail: { value } }))
+}
+
+function createUiSizeControl() {
+  const row = document.createElement('div')
+  row.className = 'drawer-v2-size-row'
+  row.setAttribute('aria-label', 'Dimensione interfaccia')
+
+  const label = document.createElement('span')
+  label.className = 'drawer-v2-size-label'
+  label.textContent = 'Dimensione'
+
+  const control = document.createElement('div')
+  control.className = 'drawer-v2-size-control'
+
+  UI_SIZES.forEach(([value, shortLabel, fullLabel]) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset.uiSizeValue = value
+    button.textContent = shortLabel
+    button.title = fullLabel
+    button.setAttribute('aria-label', fullLabel)
+    button.addEventListener('click', () => setUiSize(value, control))
+    control.appendChild(button)
+  })
+
+  row.append(label, control)
+  setUiSize(currentUiSize(), control)
+  return row
+}
+
 function enhanceDrawer(drawer) {
   if (!drawer || drawer.dataset.drawerV2Ready) return
   const nav = drawer.querySelector(':scope > nav')
@@ -55,8 +109,9 @@ function enhanceDrawer(drawer) {
   buttons.forEach((button) => {
     const label = cleanText(button)
     if (HIDDEN_TOP_LEVEL_ITEMS.has(label)) {
-      button.hidden = true
-      button.setAttribute('aria-hidden', 'true')
+      // The function still exists in React and remains available from profile;
+      // it is simply removed from the top-level drawer to avoid duplication.
+      button.remove()
       return
     }
     byLabel.set(label, button)
@@ -82,13 +137,12 @@ function enhanceDrawer(drawer) {
     card.className = 'drawer-v2-card'
 
     entries.forEach(([label, button]) => {
-      // Delete using the original label BEFORE decorating. Previously the
-      // appended chevron changed textContent and caused every item to fall
-      // through into the catch-all "Altro" section.
       byLabel.delete(label)
       decorateButton(button)
       card.appendChild(button)
     })
+
+    if (group.key === 'advanced') card.appendChild(createUiSizeControl())
 
     section.append(heading, card)
     nav.appendChild(section)
