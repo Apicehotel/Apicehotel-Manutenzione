@@ -29,11 +29,36 @@ const cacheKey = (entity, hotelId) => `${entity}:${hotelId}`
 const now = () => Date.now()
 const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
 const BACKOFF_STEPS = [5000, 15000, 30000, 60000, 120000, 300000]
+const OFFLINE_BLOB_PREFIX = 'offline-blob:'
 
 const errorText = (error) => String(error?.message || error || '')
 export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection|temporarily|gateway|502|503|504/i.test(errorText(error))
 const isPermanentError = (error) => error?.code === 'OFFLINE_CONFLICT' || /row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint|unsupported/i.test(errorText(error))
 const nextDelay = (attempts = 0) => BACKOFF_STEPS[Math.min(attempts, BACKOFF_STEPS.length - 1)]
+
+function collectOfflineBlobIds(value, out = new Set(), seen = new Set()) {
+  if (typeof value === 'string' && value.startsWith(OFFLINE_BLOB_PREFIX)) { out.add(value.slice(OFFLINE_BLOB_PREFIX.length)); return out }
+  if (!value || typeof value !== 'object' || seen.has(value)) return out
+  seen.add(value)
+  if (Array.isArray(value)) value.forEach((item) => collectOfflineBlobIds(item, out, seen))
+  else Object.values(value).forEach((item) => collectOfflineBlobIds(item, out, seen))
+  return out
+}
+async function cleanupPayloadBlobs(oldPayload, keepPayload = null) {
+  if (!storageAvailable() || !oldPayload) return
+  const oldIds = collectOfflineBlobIds(oldPayload)
+  const keepIds = collectOfflineBlobIds(keepPayload)
+  const removable = [...oldIds].filter((id) => !keepIds.has(id))
+  if (removable.length) await db.blobs.bulkDelete(removable)
+}
+function mergeQueuedPayload(previous = {}, next = {}) {
+  const merged = { ...previous, ...next }
+  const previousBase = previous?._syncBaseValues || null
+  const nextBase = next?._syncBaseValues || null
+  if (previousBase || nextBase) merged._syncBaseValues = { ...(nextBase || {}), ...(previousBase || {}) }
+  if (previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt) merged._syncBaseUpdatedAt = previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt
+  return merged
+}
 
 const dispatchStatus = async () => {
   if (typeof window === 'undefined' || !storageAvailable()) return
@@ -106,32 +131,33 @@ async function compactMutation(op) {
     if (String(op.targetId || '').startsWith('offline-')) {
       const createOp = all.find((row) => row.action === 'create' && row.tempId === op.targetId)
       if (createOp) {
-        await db.outbox.update(createOp.id, {
-          payload: { ...(createOp.payload || {}), ...(op.payload || {}) },
-          cachePayload: { ...(createOp.cachePayload || createOp.payload || {}), ...(op.cachePayload || op.payload || {}) },
-        })
+        const mergedPayload = mergeQueuedPayload(createOp.payload || {}, op.payload || {})
+        const mergedCache = { ...(createOp.cachePayload || createOp.payload || {}), ...(op.cachePayload || op.payload || {}) }
+        await cleanupPayloadBlobs(createOp.payload, mergedPayload)
+        await db.outbox.update(createOp.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
         return { compacted: true }
       }
     }
-    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) return { compacted: true }
+    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) { await cleanupPayloadBlobs(op.payload); return { compacted: true } }
     const priorUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
     const latest = priorUpdates.at(-1)
     if (latest) {
-      await db.outbox.update(latest.id, {
-        payload: { ...(latest.payload || {}), ...(op.payload || {}) },
-        cachePayload: { ...(latest.cachePayload || latest.payload || {}), ...(op.cachePayload || op.payload || {}) },
-        attempts: 0, nextAttemptAt: 0, lastError: null,
-      })
+      const mergedPayload = mergeQueuedPayload(latest.payload || {}, op.payload || {})
+      const mergedCache = { ...(latest.cachePayload || latest.payload || {}), ...(op.cachePayload || op.payload || {}) }
+      await cleanupPayloadBlobs(latest.payload, mergedPayload)
+      await db.outbox.update(latest.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
       return { compacted: true }
     }
   }
   if (op.action === 'delete') {
     if (String(op.targetId || '').startsWith('offline-')) {
       const related = all.filter((row) => row.tempId === op.targetId || row.targetId === op.targetId)
+      for (const row of related) await cleanupPayloadBlobs(row.payload)
       if (related.length) await db.outbox.bulkDelete(related.map((row) => row.id))
       return { compacted: true, cancelledCreate: true }
     }
     const relatedUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
+    for (const row of relatedUpdates) await cleanupPayloadBlobs(row.payload)
     if (relatedUpdates.length) await db.outbox.bulkDelete(relatedUpdates.map((row) => row.id))
     if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) return { compacted: true }
   }
@@ -221,19 +247,26 @@ export async function getOfflineStatus() {
 export async function getOfflineFailures() {
   return storageAvailable() ? db.failures.orderBy('id').reverse().toArray() : []
 }
-export async function retryOfflineFailure(id) {
+export async function retryOfflineFailure(id, { force = false } = {}) {
   if (!storageAvailable()) return false
   const failed = await db.failures.get(id)
   if (!failed) return false
   const { id: _id, sourceOutboxId: _source, failedAt: _failedAt, error: _error, errorCode: _code, conflictFields: _fields, ...op } = failed
-  await db.outbox.add({ ...op, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now() })
+  const payload = { ...(op.payload || {}) }
+  if (force) { delete payload._syncBaseUpdatedAt; delete payload._syncBaseValues }
+  await db.outbox.add({ ...op, payload, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now() })
   await db.failures.delete(id)
+  dispatchDataChange(failed.entity, failed.hotelId)
   await dispatchStatus(); scheduleDrain(0)
   return true
 }
 export async function discardOfflineFailure(id) {
   if (!storageAvailable()) return false
+  const failed = await db.failures.get(id)
+  if (!failed) return false
+  await cleanupPayloadBlobs(failed.payload)
   await db.failures.delete(id)
+  dispatchDataChange(failed.entity, failed.hotelId)
   await dispatchStatus()
   return true
 }
