@@ -29,6 +29,7 @@ import './admin-dashboard-v2.css'
 import './admin-section-nav.css'
 import './admin-mobile-v2.css'
 import './drawer-menu-v2.css'
+import './planned-assignees-groups.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
@@ -38,6 +39,7 @@ import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 import { initAdminSectionNavigation } from './admin-section-nav.js'
 import { initDrawerMenuV2 } from './drawer-menu-v2.js'
+import { initPlannedAssigneeGroups } from './planned-assignees-groups.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
 // leggera, separata dal flusso PIN/Home dell'app principale.
@@ -58,6 +60,7 @@ if (!technicianMatch) {
   initUrgentOwnershipGuard()
   initAdminSectionNavigation()
   initDrawerMenuV2()
+  initPlannedAssigneeGroups()
 
   // Una subscription Web Push appartiene al browser/dispositivo, ma RandApp
   // può essere usata su più hotel. Quando il login cambia struttura,
