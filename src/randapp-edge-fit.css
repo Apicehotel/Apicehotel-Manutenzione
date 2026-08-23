@@ -1,64 +1,74 @@
-/* RandApp edge-fit — use the available desktop viewport instead of leaving a large dead gutter.
-   Structural only: no business logic, hotel logos or mobile navigation changes. */
+/* RandApp edge-fit — use the available viewport instead of leaving a large dead gutter.
+   Applies from laptop/tablet-desktop widths (701px+) because the app sidebar already
+   activates there. This fixes 1366px laptops with browser/Windows scaling where the
+   CSS viewport can fall below 960px even though the UI is clearly in desktop mode. */
 
-@media (min-width: 960px) {
-  .ops-main {
+@media (min-width: 701px) {
+  :root { --edge-sidebar: var(--desktop-sidebar, 232px); }
+
+  .operations .ops-main {
     box-sizing: border-box;
-    width: calc(100vw - var(--desktop-sidebar));
+    width: calc(100vw - var(--edge-sidebar)) !important;
     max-width: none !important;
-    margin-left: var(--desktop-sidebar) !important;
+    margin-left: var(--edge-sidebar) !important;
     margin-right: 0 !important;
-    padding-left: clamp(18px, 2vw, 34px) !important;
-    padding-right: clamp(18px, 2vw, 34px) !important;
+    padding-left: clamp(14px, 1.8vw, 30px) !important;
+    padding-right: clamp(14px, 1.8vw, 30px) !important;
   }
 
-  .dash-home,
-  .operations .ops-main > section,
-  .operations .ops-main > .page,
-  .operations .ops-main > .settings-page,
-  .operations .ops-main > .issues-page,
-  .operations .ops-main > .planning-page,
-  .operations .ops-main > .urgent-page {
-    width: 100%;
+  .operations .ops-main > *,
+  .operations .dash-home,
+  .operations .urgent-section,
+  .operations .interventions-section,
+  .operations .settings-page,
+  .operations .housekeeping-page,
+  .operations .planning-page-main,
+  .operations .calendar-page,
+  .operations .temperature-page,
+  .operations .issue-list,
+  .operations .planned-list,
+  .operations .urgent-list {
+    width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    box-sizing: border-box;
   }
 
-  .dash-greeting,
-  .dash-cards,
-  .quick-actions,
-  .recent-section,
-  .recent-activity,
-  .activity-recent,
-  .toolbar,
-  .advanced-filters,
-  .issue-list,
-  .planned-list,
-  .urgent-list {
-    width: 100%;
+  .operations .dash-greeting,
+  .operations .dash-cards,
+  .operations .dash-quick,
+  .operations .dash-recent,
+  .operations .dash-recent-list,
+  .operations .toolbar,
+  .operations .advanced-filters {
+    width: 100% !important;
     max-width: none !important;
     box-sizing: border-box;
   }
 
-  /* Cards expand with the viewport instead of preserving a narrow mobile-like column. */
-  .dash-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Use the horizontal room of laptops instead of stacking like a stretched phone. */
+  .operations .dash-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  html[data-ui-size="small"] .dash-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  html[data-ui-size="small"] .operations .dash-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  html[data-ui-size="large"] .dash-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  html[data-ui-size="large"] .operations .dash-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-/* Keep mobile deliberately padded from the physical edge for touch/safe-area comfort. */
-@media (max-width: 959px) {
-  .ops-main {
-    width: 100%;
+@media (min-width: 960px) {
+  :root { --edge-sidebar: var(--desktop-sidebar, 248px); }
+}
+
+/* True mobile only: retain touch gutters and safe-area behavior. */
+@media (max-width: 700px) {
+  .operations .ops-main {
+    width: 100% !important;
     max-width: none !important;
     margin-inline: 0 !important;
     box-sizing: border-box;
