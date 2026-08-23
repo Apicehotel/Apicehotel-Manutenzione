@@ -1,0 +1,132 @@
+/* Desktop/tablet hotel selector: keep all three structures visible without scrolling. */
+@media (min-width: 701px) {
+  .home-page {
+    min-height: 100vh;
+    background: #fff;
+  }
+
+  .home-header {
+    height: 56px;
+    padding: 0 clamp(24px, 4vw, 48px);
+  }
+
+  .home-page .home-content {
+    min-height: calc(100vh - 56px);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(18px, 2.5vh, 28px) clamp(24px, 4vw, 48px) clamp(20px, 3vh, 34px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .home-brand-hero {
+    margin: 0 0 14px;
+    gap: 3px;
+  }
+
+  .home-mascot {
+    width: clamp(72px, 9vh, 100px);
+    height: clamp(72px, 9vh, 100px);
+  }
+
+  .home-brand-title {
+    font-size: clamp(22px, 2.2vw, 30px);
+    letter-spacing: -.4px;
+  }
+
+  .home-brand-tagline {
+    font-size: 12px;
+  }
+
+  .home-intro {
+    margin: 0 0 clamp(14px, 2vh, 22px);
+  }
+
+  .home-intro h1 {
+    margin-bottom: 4px;
+    font-size: clamp(24px, 2.6vw, 34px);
+    letter-spacing: -.7px;
+  }
+
+  .home-intro p {
+    font-size: 14px;
+  }
+
+  .hotel-slider {
+    width: min(100%, 980px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: clamp(16px, 2vw, 26px);
+  }
+
+  .showcase-card {
+    width: 100%;
+    max-width: 300px;
+    height: min(45vh, 410px);
+    aspect-ratio: auto;
+    justify-self: center;
+    border: 1px solid #e2e7ec;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(11,45,92,.08);
+    overflow: hidden;
+    transform: none;
+    opacity: 1;
+  }
+
+  .showcase-card .hotel-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: #fff;
+  }
+
+  .showcase-card:hover {
+    transform: translateY(-3px);
+    border-color: #cbd6e2;
+    box-shadow: 0 14px 34px rgba(11,45,92,.12);
+  }
+
+  .showcase-card:focus-visible {
+    outline: 3px solid #0d5b91;
+    outline-offset: 3px;
+  }
+
+  .slider-dots,
+  .mobile-help {
+    display: none !important;
+  }
+}
+
+/* Short laptop screens (1366x768 class): prioritize fitting the entire selector. */
+@media (min-width: 701px) and (max-height: 760px) {
+  .home-page .home-content {
+    justify-content: flex-start;
+    padding-top: 12px;
+    padding-bottom: 16px;
+  }
+
+  .home-brand-hero { margin-bottom: 8px; }
+  .home-mascot { width: 62px; height: 62px; }
+  .home-brand-title { font-size: 21px; }
+  .home-intro { margin-bottom: 12px; }
+  .home-intro h1 { font-size: 25px; }
+  .home-intro p { font-size: 12px; }
+
+  .showcase-card {
+    max-width: 250px;
+    height: min(42vh, 320px);
+  }
+}
+
+/* Mid-size desktop/tablet landscape: preserve three columns and breathing room. */
+@media (min-width: 701px) and (max-width: 980px) {
+  .home-page .home-content { padding-inline: 22px; }
+  .hotel-slider { gap: 14px; }
+  .showcase-card { max-width: 240px; }
+}
