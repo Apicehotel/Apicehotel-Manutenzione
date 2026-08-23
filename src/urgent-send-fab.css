@@ -1,79 +1,70 @@
-/* Urgent alert floating action button, aligned with HotelGio. */
+/* Urgent action: compact, readable CTA instead of an isolated circular FAB. */
 .fab-new-issue.urgent-fab-scoped {
-  position: fixed !important;
-  z-index: 76 !important;
-  right: max(16px, env(safe-area-inset-right)) !important;
-  left: auto !important;
-  bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)) !important;
-  width: 56px !important;
-  height: 56px !important;
-  min-width: 56px !important;
-  min-height: 56px !important;
-  padding: 0 !important;
-  display: grid !important;
-  place-items: center !important;
-  border: 0 !important;
-  border-radius: 50% !important;
-  background: #c81e1e !important;
-  color: #fff !important;
-  box-shadow: 0 8px 22px rgba(200,30,30,.38) !important;
-  transform: none !important;
-  font-size: 0 !important;
-  line-height: 1 !important;
-  cursor: pointer;
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
+  position:fixed !important;
+  z-index:76 !important;
+  right:max(14px,env(safe-area-inset-right)) !important;
+  left:auto !important;
+  bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom)) !important;
+  width:auto !important;
+  height:auto !important;
+  min-width:0 !important;
+  min-height:50px !important;
+  padding:0 17px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  border:1px solid #a91515 !important;
+  border-radius:14px !important;
+  background:#c81e1e !important;
+  color:#fff !important;
+  box-shadow:0 8px 22px rgba(122,20,20,.24) !important;
+  transform:none !important;
+  font-size:14px !important;
+  line-height:1 !important;
+  font-weight:800 !important;
+  letter-spacing:-.01em;
+  cursor:pointer;
+  white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
 }
-.fab-new-issue.urgent-fab-scoped::before {
-  content: "🚨";
-  display: block;
-  font-size: 24px;
-  line-height: 1;
-}
+.fab-new-issue.urgent-fab-scoped::before,
+.fab-new-issue.urgent-fab-scoped::after { content:none !important; }
 .fab-new-issue.urgent-fab-scoped:hover {
-  background: #b71919 !important;
-  box-shadow: 0 10px 26px rgba(200,30,30,.46) !important;
+  background:#b71919 !important;
+  box-shadow:0 10px 24px rgba(122,20,20,.3) !important;
 }
-.fab-new-issue.urgent-fab-scoped:active {
-  transform: scale(.94) !important;
-}
+.fab-new-issue.urgent-fab-scoped:active { transform:translateY(1px) scale(.985) !important; }
 .fab-new-issue.urgent-fab-scoped:focus-visible {
-  outline: 3px solid #fff !important;
-  outline-offset: 3px !important;
-  box-shadow: 0 0 0 6px rgba(200,30,30,.34),0 8px 22px rgba(200,30,30,.38) !important;
+  outline:3px solid rgba(200,30,30,.28) !important;
+  outline-offset:3px !important;
 }
-@media (min-width:900px) {
+
+@media (max-width:560px) {
   .fab-new-issue.urgent-fab-scoped {
-    right: max(24px,calc((100vw - 1180px)/2 + 24px)) !important;
-    bottom: 28px !important;
-  }
-  .fab-new-issue.urgent-fab-scoped::after {
-    content: "Nuovo avviso urgente";
-    position: absolute;
-    right: 66px;
-    top: 50%;
-    transform: translateY(-50%) translateX(5px);
-    width: max-content;
-    padding: 8px 11px;
-    border-radius: 9px;
-    background: #1b2420;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 750;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .15s ease,transform .15s ease;
-  }
-  .fab-new-issue.urgent-fab-scoped:hover::after,
-  .fab-new-issue.urgent-fab-scoped:focus-visible::after {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
+    right:14px !important;
+    bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)) !important;
+    min-height:48px !important;
+    padding:0 14px !important;
+    border-radius:13px !important;
+    font-size:13px !important;
   }
 }
+
+@media (min-width:960px) {
+  .fab-new-issue.urgent-fab-scoped {
+    right:32px !important;
+    bottom:28px !important;
+    min-height:46px !important;
+    padding:0 16px !important;
+    border-radius:11px !important;
+    box-shadow:0 6px 18px rgba(122,20,20,.2) !important;
+    font-size:13px !important;
+  }
+}
+
 html[data-ui-size="large"] .fab-new-issue.urgent-fab-scoped {
-  width: 64px !important;
-  height: 64px !important;
-  min-width: 64px !important;
-  min-height: 64px !important;
+  min-height:56px !important;
+  padding-inline:20px !important;
+  font-size:16px !important;
 }
-html[data-ui-size="large"] .fab-new-issue.urgent-fab-scoped::before { font-size: 27px; }
