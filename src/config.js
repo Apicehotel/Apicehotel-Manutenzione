@@ -4,19 +4,40 @@ export const HOTELS = [
   { id: 'brigantino', short: 'Brigantino', name: 'Hotel Il Brigantino', mark: 'IB', tone: 'blue', card: '/logos/card-brigantino.png' },
 ]
 
-export const ROLES = ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'segnalatore']
+// Ruoli Multi Hotel. "Responsabile" è stato rimosso: le responsabilità di
+// struttura confluiscono nella Direzione, come nel modello operativo Hotel Giò.
+export const ROLES = ['admin', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'segnalatore']
 
 export const DEPARTMENTS = ['Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine', 'Ristorante Jazz', 'Colazione Jazz']
 
+// Base permessi allineata al comportamento effettivo di Hotel Giò:
+// - Direzione e Reception sono ruoli di gestione e vedono/gestiscono l'operatività.
+// - Manutentore vede il lavoro operativo, lo prende in carico e lo completa.
+// - Governante resta un reparto segnalatore (via ruolo tecnico "segnalatore").
+// - Portiere Notturno mantiene il nome ma usa la stessa base operativa Reception.
+// I ruoli specializzati scelti per Multi Hotel restano invariati.
 export const ROLE_PERMISSIONS = {
-  admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'planning_sale'],
-  Responsabile: ['create', 'assign', 'complete'],
-  Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
+  admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'take_charge', 'complete', 'read_all_departments', 'read_own_hotel', 'planning_sale'],
+  Direzione: ['create', 'assign', 'complete', 'read_all_departments', 'read_own_hotel'],
   'Direttore Centro Congressi': ['create', 'assign', 'complete', 'planning_sale'],
-  'Portiere Notturno': ['create', 'read_own_hotel'],
-  manutentore: ['create', 'take_charge', 'complete'],
+  'Portiere Notturno': ['create', 'assign', 'take_charge', 'complete', 'read_all_departments', 'read_own_hotel'],
+  manutentore: ['create', 'take_charge', 'complete', 'read_all_departments', 'read_own_hotel'],
   'Tecnico esterno': ['take_charge', 'complete', 'read_own_hotel'],
   segnalatore: ['create', 'read_own_hotel'],
+}
+
+// I reparti Governante/Reception/Isola/Ristorante/Colazione sono assegnati agli
+// utenti separatamente dal ruolo. Reception riceve la base operativa Hotel Giò;
+// gli altri reparti mantengono il profilo segnalatore scelto per Multi Hotel.
+export const DEPARTMENT_PERMISSION_OVERRIDES = {
+  Reception: ['create', 'assign', 'take_charge', 'complete', 'read_all_departments', 'read_own_hotel'],
+}
+
+export function permissionsForUser(user) {
+  if (!user) return []
+  const rolePermissions = ROLE_PERMISSIONS[user.role] || []
+  const departmentPermissions = DEPARTMENT_PERMISSION_OVERRIDES[user.department] || []
+  return [...new Set([...rolePermissions, ...departmentPermissions])]
 }
 
 // Nessun utente o PIN demo viene incluso nel bundle frontend.
