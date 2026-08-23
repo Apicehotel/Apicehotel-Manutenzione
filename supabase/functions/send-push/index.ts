@@ -10,6 +10,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const URGENT_SENDER_ROLES = new Set(["admin", "Direzione", "Direttore Centro Congressi"]);
 const RECIPIENT_ROLES = new Set(["manutentore"]);
+const HOTEL_NAMES: Record<string, string> = { hotelgio: "Hotel Giò", chocohotel: "Chocohotel", brigantino: "Hotel Il Brigantino" };
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -26,26 +27,60 @@ Deno.serve(async (req: Request) => {
     const hotel = String(body?.hotel_id || "").trim();
     const eventType = String(body?.event_type || "urgent").trim();
     if (!hotel) return json({ ok: false, error: "hotel_id_required" }, 400);
-    if (!new Set(["urgent", "issue_created"]).has(eventType)) return json({ ok: false, error: "unsupported_event_type" }, 400);
+    if (!["urgent", "issue_created"].includes(eventType)) return json({ ok: false, error: "unsupported_event_type" }, 400);
 
     const { data: callerMembership } = await admin.from("hotel_memberships").select("role,active").eq("auth_user_id", userData.user.id).eq("hotel_id", hotel).maybeSingle();
     if (!callerMembership?.active) return json({ ok: false, error: "forbidden" }, 403);
 
-    if (eventType === "urgent") {
+    const urgent = eventType === "urgent";
+    if (urgent) {
       const { data: callerProfile } = await admin.from("profiles").select("department").eq("auth_user_id", userData.user.id).maybeSingle();
       const authorized = URGENT_SENDER_ROLES.has(callerMembership.role) || callerProfile?.department === "Reception";
       if (!authorized) return json({ ok: false, error: "forbidden" }, 403);
     }
 
-    const urgent = eventType === "urgent";
-    const issueId = String(body?.issue_id || "").trim();
-    const room = String(body?.room || "").trim();
-    const category = String(body?.category || "").trim();
-    const defaultTitle = urgent ? "Avviso urgente" : room ? `Nuova segnalazione · ${room}` : "Nuova segnalazione";
-    const defaultBody = urgent ? "Aggiornamento urgente" : [category, body?.note].filter(Boolean).join(" · ") || "Nuova segnalazione di manutenzione";
+    const hotelName = HOTEL_NAMES[hotel] || hotel;
+    let issueId = String(body?.issue_id || "").trim();
+    let room = String(body?.room || "").trim();
+    let category = String(body?.category || "").trim();
+    let note = String(body?.note || body?.body || "").trim();
+
+    if (!urgent) {
+      if (!issueId) return json({ ok: false, error: "issue_id_required" }, 400);
+      const { data: issue } = await admin.from("segnalazioni")
+        .select("id,hotel_id,camera,categoria,note")
+        .eq("id", issueId)
+        .eq("hotel_id", hotel)
+        .maybeSingle();
+      if (!issue) return json({ ok: false, error: "issue_not_found" }, 404);
+      room = String(issue.camera || room).trim();
+      category = String(issue.categoria || category).trim();
+      note = String(issue.note || note).trim();
+
+      const since = new Date(Date.now() - 120000).toISOString();
+      const { data: duplicate } = await admin.from("notification_outbox")
+        .select("id")
+        .eq("channel", "push")
+        .eq("hotel_id", hotel)
+        .contains("metadata", { event_type: "issue_created", issue_id: issueId })
+        .gte("created_at", since)
+        .limit(1)
+        .maybeSingle();
+      if (duplicate) return json({ ok: true, enabled: true, status: "deduplicated", sent: 0, duplicate: true });
+    }
+
+    const defaultTitle = urgent
+      ? `URGENTE · ${hotelName}`
+      : room ? `${hotelName} · ${room}` : `${hotelName} · Nuova segnalazione`;
+    const defaultBody = urgent
+      ? (note || "Aggiornamento urgente")
+      : [category, note].filter(Boolean).join(" · ") || "Nuova segnalazione di manutenzione";
     const title = String(body?.title || defaultTitle).slice(0, 120);
-    const messageBody = String(body?.body || body?.note || defaultBody).slice(0, 500);
-    const tag = urgent ? "avviso-urgente" : `segnalazione-${issueId || Date.now()}`;
+    const messageBody = String(urgent ? (body?.body || body?.note || defaultBody) : defaultBody).slice(0, 500);
+    const tag = urgent ? `avviso-urgente-${hotel}` : `segnalazione-${issueId}`;
+    const targetUrl = urgent
+      ? `/?notification=urgent&hotel_id=${encodeURIComponent(hotel)}`
+      : `/?notification=issue_created&hotel_id=${encodeURIComponent(hotel)}&issue_id=${encodeURIComponent(issueId)}`;
 
     const { data: outboxRow } = await admin.from("notification_outbox").insert({
       channel: "push",
@@ -57,7 +92,7 @@ Deno.serve(async (req: Request) => {
     }).select("id").single();
 
     const { data: recipients } = await admin.from("hotel_memberships").select("auth_user_id").eq("hotel_id", hotel).eq("active", true).in("role", [...RECIPIENT_ROLES]);
-    const recipientIds = (recipients || []).map((row: any) => row.auth_user_id).filter((id: string) => id && (urgent || id !== userData.user.id));
+    const recipientIds = [...new Set((recipients || []).map((row: any) => row.auth_user_id).filter((id: string) => id && (urgent || id !== userData.user.id)))];
     if (!recipientIds.length) {
       if (outboxRow) await admin.from("notification_outbox").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", outboxRow.id);
       return json({ ok: true, enabled: true, status: "sent", sent: 0, note: "nessun destinatario push" });
@@ -68,6 +103,8 @@ Deno.serve(async (req: Request) => {
       if (outboxRow) await admin.from("notification_outbox").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", outboxRow.id);
       return json({ ok: true, enabled: true, status: "sent", sent: 0, note: "nessun abbonamento push registrato" });
     }
+
+    const uniqueSubs = [...new Map(subs.map((sub: any) => [sub.endpoint, sub])).values()];
 
     const { data: secrets } = await admin.from("edge_function_secrets").select("key,value").in("key", ["vapid_public", "vapid_private", "vapid_subject"]);
     const secretMap = new Map((secrets || []).map((row: any) => [row.key, row.value]));
@@ -80,21 +117,31 @@ Deno.serve(async (req: Request) => {
     }
     webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
 
-    const payload = JSON.stringify({ title, body: messageBody, tag, url: "/", urgent, eventType, issueId: issueId || null });
+    const payload = JSON.stringify({
+      title,
+      body: messageBody,
+      tag,
+      url: targetUrl,
+      urgent,
+      eventType,
+      issueId: issueId || null,
+      hotelId: hotel,
+    });
     let sent = 0;
     const expiredIds: string[] = [];
-    await Promise.all(subs.map(async (sub: any) => {
+    await Promise.all(uniqueSubs.map(async (sub: any) => {
       try {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
         sent += 1;
       } catch (error: any) {
         if (error?.statusCode === 404 || error?.statusCode === 410) expiredIds.push(sub.id);
+        else console.error("send-push delivery", error?.statusCode || "unknown", error?.message || "delivery_failed");
       }
     }));
     if (expiredIds.length) await admin.from("push_subscriptions").delete().in("id", expiredIds);
 
     if (outboxRow) await admin.from("notification_outbox").update({ status: sent > 0 ? "sent" : "failed", sent_at: new Date().toISOString(), error: sent > 0 ? null : "no_delivery" }).eq("id", outboxRow.id);
-    return json({ ok: true, enabled: true, status: "sent", sent, targeted: subs.length, event_type: eventType });
+    return json({ ok: true, enabled: true, status: sent > 0 ? "sent" : "failed", sent, targeted: uniqueSubs.length, expired_removed: expiredIds.length, event_type: eventType });
   } catch (error) {
     console.error("send-push", error instanceof Error ? error.message : "unknown");
     return json({ ok: false, error: "send_failed" }, 500);
