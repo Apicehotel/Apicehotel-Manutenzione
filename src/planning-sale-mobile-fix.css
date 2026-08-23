@@ -1,28 +1,35 @@
-/* Planning Sale — mobile date range spacing.
-   Keep Da/A side by side, but give each field a clear visual column. */
+/* Planning Sale — mobile date range layout.
+   On phones the native iOS date controls are too wide to look clean side by side,
+   so Da/A become two full-width rows. Tablet/desktop stay side by side. */
 @media (max-width: 680px) {
   .sale-form .sale-date-range {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: 16px;
-    row-gap: 10px;
-    align-items: end;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    align-items: stretch !important;
   }
 
   .sale-form .sale-date-range label {
-    min-width: 0;
-    display: block;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
 
   .sale-form .sale-date-range input {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    margin-top: 8px;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
   }
 }
 
-@media (max-width: 380px) {
+@media (min-width: 681px) {
   .sale-form .sale-date-range {
-    column-gap: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: end;
   }
 }
