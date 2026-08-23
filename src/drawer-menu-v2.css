@@ -51,10 +51,11 @@ html[data-ui-size="large"] .app-drawer{
 .app-drawer .drawer-v2-support .drawer-v2-card>button .icon{color:#395f98}
 .app-drawer .drawer-v2-advanced .drawer-v2-card>button .icon{color:#607080}
 
-.app-drawer .drawer-v2-size-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:var(--drawer-item-h);padding:7px var(--drawer-pad-x);background:#fff;border-top:1px solid #edf0f2}
-.app-drawer .drawer-v2-size-label{font-size:calc(var(--drawer-font) - 2px);font-weight:800;color:#5d6976}
-.app-drawer .drawer-v2-size-control{display:grid;grid-template-columns:repeat(3,var(--drawer-size-segment));gap:3px;padding:3px;border-radius:10px;background:#eef2f5}
-.app-drawer .drawer-v2-size-control button{width:var(--drawer-size-segment)!important;height:calc(var(--drawer-item-h) - 18px)!important;min-height:30px!important;margin:0!important;padding:0!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#5d6976!important;font-size:calc(var(--drawer-font) - 2px)!important;font-weight:850!important;box-shadow:none!important;text-align:center!important}
+/* Dimensione: etichetta ancorata a sinistra, selettore realmente centrato nella riga. */
+.app-drawer .drawer-v2-size-row{position:relative;display:flex;align-items:center;justify-content:center;min-height:var(--drawer-item-h);padding:7px var(--drawer-pad-x);background:#fff;border-top:1px solid #edf0f2}
+.app-drawer .drawer-v2-size-label{position:absolute;left:var(--drawer-pad-x);top:50%;transform:translateY(-50%);font-size:calc(var(--drawer-font) - 2px);font-weight:800;color:#5d6976;white-space:nowrap}
+.app-drawer .drawer-v2-size-control{display:grid;grid-template-columns:repeat(3,var(--drawer-size-segment));place-items:center;gap:3px;margin:0 auto;padding:3px;border-radius:10px;background:#eef2f5}
+.app-drawer .drawer-v2-size-control button{display:grid!important;place-items:center!important;width:var(--drawer-size-segment)!important;height:calc(var(--drawer-item-h) - 18px)!important;min-height:30px!important;margin:0!important;padding:0!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#5d6976!important;font-size:calc(var(--drawer-font) - 2px)!important;font-weight:850!important;line-height:1!important;box-shadow:none!important;text-align:center!important;text-indent:0!important}
 .app-drawer .drawer-v2-size-control button.active{background:#fff!important;color:#0e5c49!important;box-shadow:0 1px 4px rgba(20,35,28,.12)!important}
 .app-drawer .drawer-v2-size-control button:active{transform:scale(.97)}
 .app-drawer .drawer-logout{flex:0 0 auto;margin-top:4px!important;min-height:var(--drawer-item-h)!important;border-radius:14px!important;background:#fff!important;font-size:var(--drawer-font)!important;font-weight:850!important}
