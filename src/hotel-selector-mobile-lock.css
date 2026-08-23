@@ -1,0 +1,16 @@
+/* Mobile hotel selector: keep swipe navigation, but never leave the carousel
+   parked between two hotels. Each gesture settles on one complete card. */
+@media (max-width: 700px) {
+  .home-page .hotel-slider {
+    scroll-snap-type: x mandatory;
+    scroll-snap-stop: always;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .home-page .showcase-card {
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+}
