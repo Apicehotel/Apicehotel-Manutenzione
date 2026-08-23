@@ -1,0 +1,38 @@
+/* Real Admin navigation: Utenti and Sensori are separate views. */
+.global-admin .admin-panel::after{display:none!important}
+.global-admin .admin-section-nav{position:fixed;left:18px;top:106px;width:178px;display:grid;gap:8px;z-index:3}
+.global-admin .admin-section-nav button{width:100%;min-height:44px;display:grid;grid-template-columns:26px 1fr;align-items:center;gap:9px;padding:0 12px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:transparent;color:#c8d4e3;font-weight:800;text-align:left;cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease,transform .12s ease}
+.global-admin .admin-section-nav button:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(1px)}
+.global-admin .admin-section-nav button.active{background:#1267dc;border-color:#2f7be3;color:#fff;box-shadow:0 8px 18px rgba(18,103,220,.22)}
+.global-admin .admin-nav-icon{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.08);font-size:16px;line-height:1}
+.global-admin .admin-section-nav button.active .admin-nav-icon{background:rgba(255,255,255,.16)}
+
+/* Utenti view */
+.global-admin .admin-panel[data-admin-view="users"] .sensors-panel{display:none!important}
+
+/* Sensors view: hide every users-management surface, keep heading + sensors. */
+.global-admin .admin-panel[data-admin-view="sensors"] .admin-actions,
+.global-admin .admin-panel[data-admin-view="sensors"] .user-form,
+.global-admin .admin-panel[data-admin-view="sensors"] .admin-message,
+.global-admin .admin-panel[data-admin-view="sensors"] .permission-matrix,
+.global-admin .admin-panel[data-admin-view="sensors"] .admin-role-groups,
+.global-admin .admin-panel[data-admin-view="sensors"] .admin-footnote{display:none!important}
+.global-admin .admin-panel[data-admin-view="sensors"] .sensors-panel{display:block!important;margin-top:0!important}
+.global-admin .admin-panel[data-admin-view="sensors"] .sensors-panel::before{display:none!important}
+
+@media(max-width:1100px){
+  .global-admin .admin-section-nav{left:16px;width:162px}
+}
+
+@media(max-width:900px){
+  .global-admin .admin-section-nav{position:relative;left:auto;top:auto;width:100%;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px;z-index:3}
+  .global-admin .admin-section-nav button{min-height:44px;background:#fff;color:#38506b;border-color:#d9e2ec;justify-content:center;text-align:center;grid-template-columns:24px auto}
+  .global-admin .admin-section-nav button:hover{background:#f6f9fc;color:#183451;transform:none}
+  .global-admin .admin-section-nav button.active{background:#1267dc;color:#fff;border-color:#1267dc}
+  .global-admin .admin-nav-icon{background:#eef3f8}
+  .global-admin .admin-section-nav button.active .admin-nav-icon{background:rgba(255,255,255,.16)}
+}
+
+@media(max-width:520px){
+  .global-admin .admin-section-nav button{min-height:42px;padding:0 9px;font-size:13px}
+}
