@@ -20,6 +20,7 @@ import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
 import { repairPushSubscription } from './push.js'
 import { initNtfyProfileSetup } from './ntfy-profile.js'
+import { initPresenceStatusSync } from './presence-status.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
 // leggera, separata dal flusso PIN/Home dell'app principale.
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')).render(
 if (!technicianMatch) {
   registerPwa()
   initNtfyProfileSetup()
+  initPresenceStatusSync()
 
   // Una subscription Web Push appartiene al browser/dispositivo, ma RandApp
   // può essere usata su più hotel. Quando il login cambia struttura,
