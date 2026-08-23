@@ -5,17 +5,15 @@ import { setOwnPresence } from './auth-data.js'
 let channel = null
 let observer = null
 let refreshTimer = null
+let expiryTimer = null
 let buttonBusy = false
 
+const PRESENCE_MAX_MS = (7 * 60 + 20) * 60 * 1000
 const rolesThatCount = new Set(['manutentore', 'admin'])
 const rolesWithPresenceButton = new Set(['manutentore', 'Portiere Notturno', 'admin'])
 
-function currentSession() {
-  return loadSession()
-}
-
 function currentHotelId() {
-  return currentSession()?.hotelId || null
+  return loadSession()?.hotelId || null
 }
 
 function setUrgentPresence(names) {
@@ -26,25 +24,39 @@ function setUrgentPresence(names) {
     : 'Nessun manutentore risulta in struttura al momento'
 }
 
-function applyPresenceButton(row) {
+function applyPresenceButton(state) {
   const button = document.querySelector('.ops-header .presence')
-  if (!button || !row || !rolesWithPresenceButton.has(row.ruolo)) return
-  const active = Boolean(row.in_struttura)
+  if (!button || !state?.eligible) return
+  const active = Boolean(state.present)
   button.classList.toggle('on', active)
   button.setAttribute('aria-pressed', active ? 'true' : 'false')
+  button.dataset.presence = active ? 'in' : 'out'
   button.title = active ? 'Premi per segnarti fuori struttura' : 'Premi per segnarti in struttura'
 }
 
+function scheduleLocalExpiry(state) {
+  clearTimeout(expiryTimer)
+  if (!state?.present || !state?.expires_at) return
+  const remaining = new Date(state.expires_at).getTime() - Date.now()
+  if (remaining <= 0) {
+    scheduleRefresh(0)
+    return
+  }
+  expiryTimer = setTimeout(() => scheduleRefresh(0), Math.min(remaining + 250, 2147483000))
+}
+
 async function fetchCurrentPresence() {
-  const session = currentSession()
-  if (!session?.userId || !supabase) return null
-  const { data, error } = await supabase
-    .from('utenti')
-    .select('id,ruolo,in_struttura,in_struttura_dal')
-    .eq('id', session.userId)
-    .maybeSingle()
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('presence-status', { body: {} })
   if (error) throw error
-  return data || null
+  if (!data?.ok) throw new Error(data?.error || 'Presenza non disponibile')
+  return data
+}
+
+function notExpired(person) {
+  if (!person?.in_struttura) return false
+  const since = person.in_struttura_dal ? new Date(person.in_struttura_dal).getTime() : 0
+  return Boolean(since) && Date.now() - since < PRESENCE_MAX_MS
 }
 
 async function refreshPresence() {
@@ -54,7 +66,7 @@ async function refreshPresence() {
     const [{ data, error }, current] = await Promise.all([
       supabase
         .from('utenti')
-        .select('nome,ruolo,in_struttura,active,hotels')
+        .select('nome,ruolo,in_struttura,in_struttura_dal,active,hotels')
         .contains('hotels', [hotelId])
         .eq('active', true)
         .eq('in_struttura', true),
@@ -62,12 +74,13 @@ async function refreshPresence() {
     ])
     if (error) throw error
     const names = (data || [])
-      .filter((person) => rolesThatCount.has(person.ruolo))
+      .filter((person) => rolesThatCount.has(person.ruolo) && notExpired(person))
       .map((person) => person.nome)
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, 'it'))
     setUrgentPresence(names)
     applyPresenceButton(current)
+    scheduleLocalExpiry(current)
   } catch (error) {
     console.warn('Aggiornamento presenza non riuscito', error)
   }
@@ -89,32 +102,45 @@ function subscribe() {
 
 async function onPresenceButtonClick(event) {
   const button = event.target?.closest?.('.ops-header .presence')
-  if (!button || buttonBusy) return
+  if (!button) return
+
+  // Questo controllo è l'unico proprietario del toggle per tutti i ruoli che
+  // vedono il pulsante. Blocchiamo il vecchio handler React, che calcolava lo
+  // stato solo per il ruolo manutentore e poteva inviare il valore sbagliato.
+  event.preventDefault()
+  event.stopPropagation()
+  event.stopImmediatePropagation?.()
+
+  if (buttonBusy) return
+  buttonBusy = true
+  button.disabled = true
+  button.setAttribute('aria-busy', 'true')
 
   try {
     const current = await fetchCurrentPresence()
-    if (!current || !rolesWithPresenceButton.has(current.ruolo)) return
+    if (!current?.eligible || !rolesWithPresenceButton.has(current.role)) return
 
-    // In App.jsx lo stato `presence` è ancora calcolato solo per il ruolo
-    // manutentore. Per admin e Portiere Notturno questo faceva sì che il
-    // pulsante inviasse sempre `true` e non potesse mai spegnersi.
-    // Intercettiamo quindi solo questi due ruoli e usiamo il valore reale DB.
-    if (current.ruolo === 'manutentore') return
-
-    event.preventDefault()
-    event.stopPropagation()
-    buttonBusy = true
-    button.disabled = true
-    const next = !Boolean(current.in_struttura)
-    await setOwnPresence(next)
-    applyPresenceButton({ ...current, in_struttura: next })
-    scheduleRefresh(0)
+    const next = !Boolean(current.present)
+    const result = await setOwnPresence(next)
+    const updated = {
+      ...current,
+      present: Boolean(result?.in_struttura ?? next),
+      since: result?.in_struttura_dal ?? (next ? new Date().toISOString() : null),
+      expires_at: next
+        ? new Date(new Date(result?.in_struttura_dal || Date.now()).getTime() + PRESENCE_MAX_MS).toISOString()
+        : null,
+    }
+    applyPresenceButton(updated)
+    scheduleLocalExpiry(updated)
+    window.dispatchEvent(new CustomEvent('apice-presence-changed', { detail: updated }))
+    scheduleRefresh(100)
   } catch (error) {
     console.warn('Toggle presenza non riuscito', error)
     scheduleRefresh(0)
   } finally {
     buttonBusy = false
-    if (button) button.disabled = false
+    button.disabled = false
+    button.removeAttribute('aria-busy')
   }
 }
 
@@ -131,6 +157,7 @@ export function initPresenceStatusSync() {
   })
   window.addEventListener('online', () => scheduleRefresh(0))
   window.addEventListener('focus', () => scheduleRefresh(0))
+  window.addEventListener('apice-presence-changed', () => scheduleRefresh(100))
   subscribe()
   scheduleRefresh(0)
   return () => {
@@ -138,5 +165,6 @@ export function initPresenceStatusSync() {
     document.removeEventListener('click', onPresenceButtonClick, true)
     if (channel && supabase) supabase.removeChannel(channel)
     clearTimeout(refreshTimer)
+    clearTimeout(expiryTimer)
   }
 }
