@@ -1,0 +1,41 @@
+/* RandApp drawer v2 — grouped, thumb-friendly mobile menu.
+   Desktop keeps the current drawer geometry; grouping only changes presentation. */
+.app-drawer .drawer-v2-nav{display:block!important;padding:14px 0 10px!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch}
+.app-drawer .drawer-v2-group{margin:0 0 14px}
+.app-drawer .drawer-v2-heading{padding:0 4px 7px;color:#6d7887;font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.app-drawer .drawer-v2-card{overflow:hidden;border:1px solid #e1e5e9;border-radius:15px;background:#fff;box-shadow:0 2px 8px rgba(20,35,28,.035)}
+.app-drawer .drawer-v2-card>button{position:relative;width:100%!important;min-height:52px!important;margin:0!important;padding:11px 42px 11px 14px!important;border:0!important;border-bottom:1px solid #edf0f2!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;display:flex!important;align-items:center!important;gap:13px!important;text-align:left!important;font-weight:760!important}
+.app-drawer .drawer-v2-card>button:last-child{border-bottom:0!important}
+.app-drawer .drawer-v2-card>button:hover,.app-drawer .drawer-v2-card>button:active{background:#f6f9f8!important}
+.app-drawer .drawer-v2-card>button:disabled{opacity:.45}
+.app-drawer .drawer-v2-card>button>.icon{width:21px;height:21px;flex:0 0 21px}
+.app-drawer .drawer-v2-card>button>span:not(.drawer-v2-chevron){min-width:0;flex:1;white-space:normal}
+.app-drawer .drawer-v2-chevron{position:absolute;right:14px;top:50%;transform:translateY(-52%);color:#8b96a1;font-size:28px;font-weight:300;line-height:1}
+.app-drawer .drawer-v2-operations .drawer-v2-heading{color:#286ed0}
+.app-drawer .drawer-v2-profile .drawer-v2-heading{color:#23784f}
+.app-drawer .drawer-v2-support .drawer-v2-heading{color:#7046bb}
+.app-drawer .drawer-v2-advanced .drawer-v2-heading{color:#65717f}
+.app-drawer .drawer-v2-operations .drawer-v2-card>button:first-child .icon{color:#cf2c28}
+.app-drawer .drawer-v2-profile .drawer-v2-card>button:first-child .icon{color:#248352}
+.app-drawer .drawer-v2-support .drawer-v2-card>button .icon{color:#395f98}
+.app-drawer .drawer-v2-advanced .drawer-v2-card>button .icon{color:#607080}
+.app-drawer .drawer-logout{flex:0 0 auto;margin-top:4px!important;min-height:54px!important;border-radius:14px!important;background:#fff!important;font-weight:850!important}
+
+@media(max-width:680px){
+  .drawer-backdrop{background:rgba(18,28,24,.52)!important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  .app-drawer{width:min(414px,93vw)!important;height:100dvh!important;padding:max(14px,env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))!important;background:#f7f8f7!important}
+  .app-drawer>header{position:sticky;top:0;z-index:2;padding:4px 0 14px!important;background:#f7f8f7!important}
+  .app-drawer>header strong{font-size:18px}.app-drawer>header span{font-size:13px}
+  .app-drawer .panel-close{width:44px;height:44px;border-radius:50%;background:#fff}
+  .app-drawer .drawer-v2-nav{padding:13px 0 8px!important}
+  .app-drawer .drawer-v2-group{margin-bottom:13px}
+  .app-drawer .drawer-v2-heading{padding-left:5px;font-size:10px}
+  .app-drawer .drawer-v2-card{border-radius:14px}
+  .app-drawer .drawer-v2-card>button{min-height:54px!important;padding:11px 40px 11px 13px!important;font-size:15px!important}
+  .app-drawer .drawer-logout{min-height:54px!important;margin-top:2px!important}
+}
+
+@media(max-width:390px){
+  .app-drawer{width:94vw!important;padding-left:12px!important;padding-right:12px!important}
+  .app-drawer .drawer-v2-card>button{min-height:51px!important;font-size:14px!important}
+}
