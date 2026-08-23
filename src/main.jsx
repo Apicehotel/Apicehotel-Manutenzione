@@ -26,6 +26,7 @@ import './randapp-ambient-theme.css'
 import './randapp-edge-fit.css'
 import './admin-entry-visibility.css'
 import './admin-dashboard-v2.css'
+import './admin-section-nav.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
@@ -33,6 +34,7 @@ import { repairPushSubscription } from './push.js'
 import { initNtfyProfileSetup } from './ntfy-profile.js'
 import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
+import { initAdminSectionNavigation } from './admin-section-nav.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
 // leggera, separata dal flusso PIN/Home dell'app principale.
@@ -51,6 +53,7 @@ if (!technicianMatch) {
   initNtfyProfileSetup()
   initPresenceStatusSync()
   initUrgentOwnershipGuard()
+  initAdminSectionNavigation()
 
   // Una subscription Web Push appartiene al browser/dispositivo, ma RandApp
   // può essere usata su più hotel. Quando il login cambia struttura,
