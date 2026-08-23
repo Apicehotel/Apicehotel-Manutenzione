@@ -1,0 +1,32 @@
+/* Keep the Admin entry visible and tappable on the hotel selector on every viewport. */
+.home-page .home-admin {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  z-index: 9999 !important;
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 144px !important;
+  min-height: 50px !important;
+}
+
+.home-page .home-content {
+  padding-bottom: max(86px, calc(70px + env(safe-area-inset-bottom))) !important;
+}
+
+@media (min-width: 701px) {
+  .home-page .home-admin {
+    bottom: 18px !important;
+    min-height: 46px !important;
+  }
+  .home-page .home-content {
+    padding-bottom: 84px !important;
+  }
+}
