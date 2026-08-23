@@ -1,12 +1,12 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v8'
+const CACHE_NAME = 'apicehotel-manutenzione-v9'
 const APP_SHELL = [
   '/',
-  '/manifest.webmanifest?v=8',
-  '/icons/icon-192.png?v=8',
-  '/icons/icon-512.png?v=8',
-  '/icons/icon-maskable-512.png?v=8',
-  '/icons/apple-touch-icon.png?v=8',
-  '/icons/icon-urgent-192.png?v=8',
+  '/manifest.webmanifest?v=9',
+  '/icons/icon-192.png?v=9',
+  '/icons/icon-512.png?v=9',
+  '/icons/icon-maskable-512.png?v=9',
+  '/icons/apple-touch-icon.png?v=9',
+  '/icons/icon-urgent-192.png?v=9',
   '/logos/card-hotelgio.png',
   '/logos/card-chocohotel.png',
   '/logos/card-brigantino.png',
@@ -48,9 +48,6 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone()
-          // Chiave di cache = percorso reale (non più fisso '/'), cosi'
-          // pagine diverse (Home, /tecnico/<token>, ecc.) non si sovrascrivono
-          // a vicenda nella cache offline.
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
         })
@@ -76,9 +73,8 @@ self.addEventListener('push', (event) => {
     try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() || payload.body }
   }
   const urgent = Boolean(payload.urgent)
-  // Icona rossa cerchiata solo per gli avvisi urgenti: deve distinguersi a
-  // colpo d'occhio nella tendina notifiche da una notifica normale.
-  const icon = urgent ? '/icons/icon-urgent-192.png?v=8' : '/icons/icon-192.png?v=8'
+  const icon = urgent ? '/icons/icon-urgent-192.png?v=9' : '/icons/icon-192.png?v=9'
+  const targetUrl = payload.url || '/'
   event.waitUntil((async () => {
     await self.registration.showNotification(payload.title, {
       body: payload.body,
@@ -86,28 +82,56 @@ self.addEventListener('push', (event) => {
       badge: icon,
       tag: payload.tag || 'apicehotel-notifica',
       renotify: Boolean(payload.tag),
-      data: { url: payload.url || '/' },
+      data: {
+        url: targetUrl,
+        eventType: payload.eventType || null,
+        issueId: payload.issueId || null,
+        hotelId: payload.hotelId || null,
+      },
       requireInteraction: urgent,
       vibrate: urgent ? [400, 80, 400, 80, 400, 80, 400] : [120, 60, 120],
+      timestamp: Date.now(),
     })
+
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     if (urgent) {
-      // Il suono di sistema della notifica non basta: se una scheda dell'app
-      // e' gia' aperta (anche in background), fai partire la sirena vera via
-      // Web Audio. Il client fa da guardia contro il doppio suono con la
-      // sottoscrizione realtime (vedi dedupe in App.jsx).
-      const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-      clientsList.forEach((client) => client.postMessage({ type: 'urgenza-push', title: payload.title, body: payload.body }))
+      clientsList.forEach((client) => client.postMessage({
+        type: 'urgenza-push',
+        title: payload.title,
+        body: payload.body,
+        hotelId: payload.hotelId || null,
+      }))
+    } else {
+      // Con l'app già aperta il client riceve anche il contesto della push.
+      // Non forza la navigazione: evita di interrompere una modifica in corso.
+      clientsList.forEach((client) => client.postMessage({
+        type: 'notifica-push',
+        eventType: payload.eventType || null,
+        issueId: payload.issueId || null,
+        hotelId: payload.hotelId || null,
+        url: targetUrl,
+      }))
     }
   })())
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetUrl = event.notification.data?.url || '/'
+  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-    const existing = clientsList.find((item) => item.url.includes(self.location.origin))
-    if (existing) { existing.focus(); return }
+    const existing = clientsList.find((item) => item.url.startsWith(self.location.origin))
+    if (existing) {
+      // Su PC, Android e iOS PWA una finestra può essere già aperta su una
+      // schermata diversa. Prima la vecchia versione faceva solo focus() e
+      // ignorava completamente la destinazione della notifica.
+      try {
+        if (existing.url !== targetUrl && 'navigate' in existing) await existing.navigate(targetUrl)
+      } catch { /* alcuni browser possono negare navigate; il focus resta valido */ }
+      await existing.focus()
+      existing.postMessage({ type: 'notification-click', url: targetUrl, data: event.notification.data || {} })
+      return
+    }
     await self.clients.openWindow(targetUrl)
   })())
 })
