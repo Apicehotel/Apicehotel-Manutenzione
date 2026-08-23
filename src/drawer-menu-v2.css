@@ -19,6 +19,12 @@
 .app-drawer .drawer-v2-profile .drawer-v2-card>button:first-child .icon{color:#248352}
 .app-drawer .drawer-v2-support .drawer-v2-card>button .icon{color:#395f98}
 .app-drawer .drawer-v2-advanced .drawer-v2-card>button .icon{color:#607080}
+.app-drawer .drawer-v2-size-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:9px 12px 9px 14px;background:#fff;border-top:1px solid #edf0f2}
+.app-drawer .drawer-v2-size-label{font-size:13px;font-weight:800;color:#5d6976}
+.app-drawer .drawer-v2-size-control{display:grid;grid-template-columns:repeat(3,42px);gap:5px;padding:3px;border-radius:11px;background:#eef2f5}
+.app-drawer .drawer-v2-size-control button{width:42px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:#5d6976!important;font-size:13px!important;font-weight:850!important;box-shadow:none!important;text-align:center!important}
+.app-drawer .drawer-v2-size-control button.active{background:#fff!important;color:#0e5c49!important;box-shadow:0 1px 4px rgba(20,35,28,.12)!important}
+.app-drawer .drawer-v2-size-control button:active{transform:scale(.97)}
 .app-drawer .drawer-logout{flex:0 0 auto;margin-top:4px!important;min-height:54px!important;border-radius:14px!important;background:#fff!important;font-weight:850!important}
 
 @media(max-width:680px){
@@ -32,10 +38,14 @@
   .app-drawer .drawer-v2-heading{padding-left:5px;font-size:10px}
   .app-drawer .drawer-v2-card{border-radius:14px}
   .app-drawer .drawer-v2-card>button{min-height:54px!important;padding:11px 40px 11px 13px!important;font-size:15px!important}
+  .app-drawer .drawer-v2-size-row{min-height:58px;padding:10px 11px 10px 13px}
+  .app-drawer .drawer-v2-size-label{font-size:13px}
   .app-drawer .drawer-logout{min-height:54px!important;margin-top:2px!important}
 }
 
 @media(max-width:390px){
   .app-drawer{width:94vw!important;padding-left:12px!important;padding-right:12px!important}
   .app-drawer .drawer-v2-card>button{min-height:51px!important;font-size:14px!important}
+  .app-drawer .drawer-v2-size-control{grid-template-columns:repeat(3,39px)}
+  .app-drawer .drawer-v2-size-control button{width:39px!important}
 }
