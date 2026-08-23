@@ -5,6 +5,7 @@ const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(url, service, { auth: { persistSession:false, autoRefreshToken:false } });
 const json = (body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
 const HOTEL_NAMES:Record<string,string>={hotelgio:"Hotel Giò",chocohotel:"Chocohotel",brigantino:"Hotel Il Brigantino"};
+const APP_URL="https://apicehotel.vercel.app";
 
 async function secret(key:string){const{data}=await admin.from("edge_function_secrets").select("value").eq("key",key).maybeSingle();return data?.value||null}
 async function logEvent(job:any,type:string,details:any={}){await admin.from("richieste_urgenti_eventi").insert({urgente_id:job.urgent_id,hotel_id:job.hotel_id,tipo:type,da_chi:"Sistema",dettagli:{step:job.step,channel:job.channel,...details}})}
@@ -31,9 +32,10 @@ Deno.serve(async(req:Request)=>{
       if(job.channel==="ntfy"){
         const server=String(ntfySetting?.config?.server||"https://ntfy.sh").replace(/\/$/,""); const topic=String(ntfySetting?.config?.topics?.[job.hotel_id]||"");
         if(!ntfySetting?.enabled||!topic){await mark(job,"blocked","ntfy_not_configured");blocked++;continue}
-        const res=await fetch(server,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic,title:`${severity} · ${hotelName}`,message:body||"Avviso urgente ancora senza presa in carico",priority:5,tags:["rotating_light","warning"],click:`https://apicehotel-manutenzionr.vercel.app/?notification=urgent&hotel_id=${encodeURIComponent(job.hotel_id)}&urgent_id=${encodeURIComponent(job.urgent_id)}`})});
+        const click=`${APP_URL}/?notification=urgent&hotel_id=${encodeURIComponent(job.hotel_id)}&urgent_id=${encodeURIComponent(job.urgent_id)}`;
+        const res=await fetch(server,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic,title:`${severity} · ${hotelName}`,message:body||"Avviso urgente ancora senza presa in carico",priority:5,tags:["rotating_light","warning"],click})});
         if(!res.ok) throw new Error(`ntfy_${res.status}`);
-        await mark(job,"sent"); await logEvent(job,"reminder_ntfy",{priority:5}); sent++; continue;
+        await mark(job,"sent"); await logEvent(job,"reminder_ntfy",{priority:5,click}); sent++; continue;
       }
       if(job.channel==="whatsapp"){
         const recipients=waSetting?.config?.recipients?.[job.hotel_id];
