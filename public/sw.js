@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v9'
+const CACHE_NAME = 'apicehotel-manutenzione-v10'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest?v=9',
@@ -17,7 +17,7 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(CACHE_NAME)
     await cache.addAll(APP_SHELL)
 
-    const shellResponse = await fetch('/')
+    const shellResponse = await fetch('/', { cache: 'no-store' })
     const shellHtml = await shellResponse.clone().text()
     const assetPaths = [...shellHtml.matchAll(/(?:src|href)="([^"#]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
@@ -45,13 +45,31 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           const copy = response.clone()
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
+    )
+    return
+  }
+
+  // JS/CSS devono essere network-first: evita che una PWA iOS continui a
+  // eseguire bundle vecchi dopo un deploy. Le altre risorse restano cache-first.
+  const dynamicAsset = ['script', 'style', 'worker'].includes(request.destination)
+  if (dynamicAsset) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' })
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          }
+          return response
+        })
+        .catch(() => caches.match(request)),
     )
     return
   }
@@ -102,8 +120,6 @@ self.addEventListener('push', (event) => {
         hotelId: payload.hotelId || null,
       }))
     } else {
-      // Con l'app già aperta il client riceve anche il contesto della push.
-      // Non forza la navigazione: evita di interrompere una modifica in corso.
       clientsList.forEach((client) => client.postMessage({
         type: 'notifica-push',
         eventType: payload.eventType || null,
@@ -122,9 +138,6 @@ self.addEventListener('notificationclick', (event) => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const existing = clientsList.find((item) => item.url.startsWith(self.location.origin))
     if (existing) {
-      // Su PC, Android e iOS PWA una finestra può essere già aperta su una
-      // schermata diversa. Prima la vecchia versione faceva solo focus() e
-      // ignorava completamente la destinazione della notifica.
       try {
         if (existing.url !== targetUrl && 'navigate' in existing) await existing.navigate(targetUrl)
       } catch { /* alcuni browser possono negare navigate; il focus resta valido */ }
