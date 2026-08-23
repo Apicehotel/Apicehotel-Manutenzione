@@ -21,6 +21,7 @@ import { registerPwa } from './pwa.js'
 import { repairPushSubscription } from './push.js'
 import { initNtfyProfileSetup } from './ntfy-profile.js'
 import { initPresenceStatusSync } from './presence-status.js'
+import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
 // leggera, separata dal flusso PIN/Home dell'app principale.
@@ -38,6 +39,7 @@ if (!technicianMatch) {
   registerPwa()
   initNtfyProfileSetup()
   initPresenceStatusSync()
+  initUrgentOwnershipGuard()
 
   // Una subscription Web Push appartiene al browser/dispositivo, ma RandApp
   // può essere usata su più hotel. Quando il login cambia struttura,
