@@ -57,16 +57,24 @@ function currentUiSize() {
   return 'normal'
 }
 
-function setUiSize(value, control) {
+function syncSizeControls(value) {
+  document.querySelectorAll('.drawer-v2-size-control').forEach((control) => {
+    control.querySelectorAll('button[data-ui-size-value]').forEach((button) => {
+      const active = button.dataset.uiSizeValue === value
+      button.classList.toggle('active', active)
+      button.setAttribute('aria-pressed', String(active))
+    })
+  })
+}
+
+function setUiSize(value, { persist = true, emit = true } = {}) {
   if (!UI_SIZES.some(([size]) => size === value)) return
   document.documentElement.dataset.uiSize = value
-  try { localStorage.setItem(UI_SIZE_STORAGE_KEY, value) } catch { /* storage opzionale */ }
-  control.querySelectorAll('button[data-ui-size-value]').forEach((button) => {
-    const active = button.dataset.uiSizeValue === value
-    button.classList.toggle('active', active)
-    button.setAttribute('aria-pressed', String(active))
-  })
-  window.dispatchEvent(new CustomEvent('apice-ui-size-changed', { detail: { value } }))
+  if (persist) {
+    try { localStorage.setItem(UI_SIZE_STORAGE_KEY, value) } catch { /* storage opzionale */ }
+  }
+  syncSizeControls(value)
+  if (emit) window.dispatchEvent(new CustomEvent('apice-ui-size-changed', { detail: { value } }))
 }
 
 function createUiSizeControl() {
@@ -88,12 +96,12 @@ function createUiSizeControl() {
     button.textContent = shortLabel
     button.title = fullLabel
     button.setAttribute('aria-label', fullLabel)
-    button.addEventListener('click', () => setUiSize(value, control))
+    button.addEventListener('click', () => setUiSize(value))
     control.appendChild(button)
   })
 
   row.append(label, control)
-  setUiSize(currentUiSize(), control)
+  requestAnimationFrame(() => syncSizeControls(currentUiSize()))
   return row
 }
 
@@ -168,6 +176,7 @@ function enhanceDrawer(drawer) {
   }
 
   drawer.dataset.drawerV2Ready = '1'
+  syncSizeControls(currentUiSize())
 }
 
 function scan() {
@@ -177,6 +186,9 @@ function scan() {
 const observer = new MutationObserver(scan)
 
 export function initDrawerMenuV2() {
+  // Apply the saved size before the drawer is opened so the whole app uses the
+  // same P/N/G state from the start, not only the segmented control.
+  setUiSize(currentUiSize(), { persist: false, emit: false })
   scan()
   observer.observe(document.documentElement, { childList: true, subtree: true })
 }
