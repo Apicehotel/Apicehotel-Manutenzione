@@ -1,20 +1,22 @@
 // Groups the existing React drawer buttons into semantic sections without
 // replacing their event handlers. Moving DOM nodes preserves React listeners.
+// The drawer intentionally exposes only top-level destinations: settings such
+// as PIN management stay inside "Il mio profilo" instead of being duplicated.
 const GROUPS = [
   {
     key: 'operations',
     title: 'Operatività',
-    items: ['Feedback ricevuti','Housekeeping','Avvisi urgenti','Planning lavori','Planning Sale','Temperature','Rubrica tecnici'],
+    items: ['Avvisi urgenti','Housekeeping','Planning lavori','Planning Sale','Temperature','Rubrica tecnici'],
   },
   {
     key: 'profile',
     title: 'Struttura e profilo',
-    items: ['Cambia struttura','Il mio profilo','Cambia PIN'],
+    items: ['Cambia struttura','Il mio profilo'],
   },
   {
     key: 'support',
     title: 'Supporto e dati',
-    items: ['Manuale','Feedback','Esporta CSV'],
+    items: ['Manuale','Feedback','Feedback ricevuti','Esporta CSV'],
   },
   {
     key: 'advanced',
@@ -23,8 +25,12 @@ const GROUPS = [
   },
 ]
 
+// Destinations already reachable from another top-level screen should not be
+// duplicated in the drawer. Their underlying React functionality is untouched.
+const HIDDEN_TOP_LEVEL_ITEMS = new Set(['Cambia PIN'])
+
 function cleanText(button) {
-  return String(button?.textContent || '').replace(/\s+/g, ' ').trim()
+  return String(button?.textContent || '').replace(/›/g, '').replace(/\s+/g, ' ').trim()
 }
 
 function decorateButton(button) {
@@ -45,12 +51,24 @@ function enhanceDrawer(drawer) {
   const buttons = [...nav.children].filter((node) => node instanceof HTMLButtonElement)
   if (!buttons.length) return
 
-  const byLabel = new Map(buttons.map((button) => [cleanText(button), button]))
+  const byLabel = new Map()
+  buttons.forEach((button) => {
+    const label = cleanText(button)
+    if (HIDDEN_TOP_LEVEL_ITEMS.has(label)) {
+      button.hidden = true
+      button.setAttribute('aria-hidden', 'true')
+      return
+    }
+    byLabel.set(label, button)
+  })
+
   nav.classList.add('drawer-v2-nav')
 
   GROUPS.forEach((group) => {
-    const visibleButtons = group.items.map((label) => byLabel.get(label)).filter(Boolean)
-    if (!visibleButtons.length) return
+    const entries = group.items
+      .map((label) => [label, byLabel.get(label)])
+      .filter(([, button]) => Boolean(button))
+    if (!entries.length) return
 
     const section = document.createElement('section')
     section.className = `drawer-v2-group drawer-v2-${group.key}`
@@ -63,18 +81,21 @@ function enhanceDrawer(drawer) {
     const card = document.createElement('div')
     card.className = 'drawer-v2-card'
 
-    visibleButtons.forEach((button) => {
+    entries.forEach(([label, button]) => {
+      // Delete using the original label BEFORE decorating. Previously the
+      // appended chevron changed textContent and caused every item to fall
+      // through into the catch-all "Altro" section.
+      byLabel.delete(label)
       decorateButton(button)
       card.appendChild(button)
-      byLabel.delete(cleanText(button))
     })
 
     section.append(heading, card)
     nav.appendChild(section)
   })
 
-  // Keep any future/role-specific items visible instead of losing them.
-  const remaining = [...byLabel.values()]
+  // Keep future/role-specific items visible instead of silently losing them.
+  const remaining = [...byLabel.entries()]
   if (remaining.length) {
     const section = document.createElement('section')
     section.className = 'drawer-v2-group drawer-v2-more'
@@ -84,7 +105,10 @@ function enhanceDrawer(drawer) {
     heading.textContent = 'Altro'
     const card = document.createElement('div')
     card.className = 'drawer-v2-card'
-    remaining.forEach((button) => { decorateButton(button); card.appendChild(button) })
+    remaining.forEach(([, button]) => {
+      decorateButton(button)
+      card.appendChild(button)
+    })
     section.append(heading, card)
     nav.appendChild(section)
   }
