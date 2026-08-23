@@ -59,10 +59,30 @@ test('photo-backed entities compare storage paths and pre-check mutation ids bef
   assert.match(planned, /const existing=await existingByMutation\(mutationId\)/)
 })
 
+test('urgent dispatch is atomic, auditable and explicit when queued offline', async () => {
+  const urgents = await read('../src/urgents-data.js')
+  assert.match(urgents, /prendi_urgente/)
+  assert.match(urgents, /completa_urgente/)
+  assert.match(urgents, /fetchUrgentEvents/)
+  assert.match(urgents, /severity/)
+  assert.match(urgents, /location/)
+  assert.match(urgents, /non ancora trasmesso/)
+  assert.match(urgents, /urgent_id/)
+})
+
 test('queued urgent created offline sends its notification after reconnect', async () => {
   const urgents = await read('../src/urgents-data.js')
   assert.match(urgents, /_notifyOnSync:true/)
   assert.match(urgents, /if\(item\._notifyOnSync\)await notifyUrgent/)
+})
+
+test('urgent push validates the urgent record and deduplicates by urgent id', async () => {
+  const push = await read('../supabase/functions/send-push/index.ts')
+  assert.match(push, /urgent_id/)
+  assert.match(push, /urgent_not_found/)
+  assert.match(push, /gravita,posizione,stato/)
+  assert.match(push, /EMERGENZA/)
+  assert.match(push, /avviso-urgente-\$\{urgentId \|\| hotel\}/)
 })
 
 test('create-only feedback is idempotent too', async () => {
