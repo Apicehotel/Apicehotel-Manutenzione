@@ -17,13 +17,14 @@ test('offline store compacts repeated mutations and keeps blocked operations sep
   assert.match(src, /getOfflineFailures/)
 })
 
-test('core offline entities use mutation ids and server versions', async () => {
-  const [issues, planned, urgents] = await Promise.all([
+test('editable offline entities use mutation ids and server versions', async () => {
+  const [issues, planned, urgents, sale] = await Promise.all([
     read('../src/issues-data.js'),
     read('../src/planned-data.js'),
     read('../src/urgents-data.js'),
+    read('../src/sale-data.js'),
   ])
-  for (const src of [issues, planned, urgents]) {
+  for (const src of [issues, planned, urgents, sale]) {
     assert.match(src, /clientMutationId/)
     assert.match(src, /mutation_id/)
     assert.match(src, /updated_at/)
@@ -32,6 +33,13 @@ test('core offline entities use mutation ids and server versions', async () => {
     assert.match(src, /conflictError/)
     assert.match(src, /error\?\.code==='23505'/)
   }
+})
+
+test('create-only feedback is idempotent too', async () => {
+  const feedback = await read('../src/feedback-data.js')
+  assert.match(feedback, /clientMutationId/)
+  assert.match(feedback, /mutation_id/)
+  assert.match(feedback, /error\?\.code==='23505'/)
 })
 
 test('offline status surfaces blocked operations instead of retrying silently forever', async () => {
