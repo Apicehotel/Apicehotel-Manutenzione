@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js'
+import { supabase, supabaseUrl } from './supabase.js'
 import { loadSession } from './session.js'
 
 const ROOT_ID = 'apice-ntfy-profile-setup'
@@ -17,8 +17,31 @@ const deviceKind = () => {
 
 async function invoke(name, hotelId, extra = {}) {
   if (!supabase) throw new Error('Servizio notifiche non disponibile')
-  const { data, error } = await supabase.functions.invoke(name, { body: { hotel_id: hotelId, ...extra } })
-  if (error) throw error
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw new Error('Sessione RandApp non valida')
+  const token = sessionData?.session?.access_token
+  if (!token) throw new Error('Sessione scaduta: esci e rientra in RandApp')
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/${encodeURIComponent(name)}`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX',
+      'Content-Type': 'application/json',
+      'X-RandApp-Request': `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    },
+    body: JSON.stringify({ hotel_id: hotelId, ...extra }),
+  })
+
+  let data = null
+  try { data = await response.json() } catch { /* risposta non JSON */ }
+  if (!response.ok) {
+    const detail = data?.detail ? ` · ${data.detail}` : ''
+    const code = data?.error || `HTTP ${response.status}`
+    throw new Error(`${code}${detail}`)
+  }
   if (!data?.ok) throw new Error(data?.error || 'Operazione non riuscita')
   return data
 }
