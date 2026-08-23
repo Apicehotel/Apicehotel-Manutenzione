@@ -38,6 +38,16 @@ test('editable offline entities use mutation ids and server versions', async () 
   }
 })
 
+test('queued deletes cannot silently remove records changed by another device', async () => {
+  const files = await Promise.all([read('../src/issues-data.js'), read('../src/planned-data.js'), read('../src/sale-data.js')])
+  for (const src of files) {
+    assert.match(src, /async function deleteBase/)
+    assert.match(src, /payload:await deleteBase/)
+    assert.match(src, /select\('updated_at'\)/)
+    assert.match(src, /conflictError\(\['eliminazione'\]\)/)
+  }
+})
+
 test('photo-backed entities compare storage paths and pre-check mutation ids before retry upload', async () => {
   const [issues, planned] = await Promise.all([read('../src/issues-data.js'), read('../src/planned-data.js')])
   assert.match(issues, /key==='photoData'\?item\?\.photoPath/)
