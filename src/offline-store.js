@@ -134,8 +134,19 @@ export async function getOfflineStatus() {
   return { pending: storageAvailable() ? await db.outbox.count() : 0, online: onlineNow() }
 }
 if (typeof window !== 'undefined' && storageAvailable()) {
-  window.addEventListener('online', drainOfflineQueue)
+  const tryDrain = () => { if (onlineNow()) drainOfflineQueue() }
+  window.addEventListener('online', tryDrain)
   window.addEventListener('online', dispatchStatus)
   window.addEventListener('offline', dispatchStatus)
-  queueMicrotask(dispatchStatus)
+  window.addEventListener('focus', tryDrain)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tryDrain() })
+  // Su mobile gli eventi online/offline non sono sempre affidabili. Un retry
+  // leggero e periodico evita code ferme per ore senza consumare traffico quando
+  // non c'è nulla da sincronizzare.
+  setInterval(async () => {
+    if (!onlineNow()) return
+    const pending = await db.outbox.count().catch(() => 0)
+    if (pending > 0) drainOfflineQueue()
+  }, 15000)
+  queueMicrotask(() => { dispatchStatus(); tryDrain() })
 }
