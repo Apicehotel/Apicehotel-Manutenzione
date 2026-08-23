@@ -12,8 +12,14 @@ function ensureBadge() {
   return badge
 }
 
-function render({ pending = 0, online = navigator.onLine }) {
+function render({ pending = 0, blocked = 0, online = navigator.onLine, syncing = false }) {
   const badge = ensureBadge()
+  if (blocked > 0) {
+    badge.hidden = false
+    badge.className = 'sync-blocked'
+    badge.textContent = `${blocked} ${blocked === 1 ? 'modifica richiede' : 'modifiche richiedono'} attenzione${pending ? ` · ${pending} in attesa` : ''}`
+    return
+  }
   if (online && pending === 0) {
     badge.hidden = true
     badge.textContent = ''
@@ -23,7 +29,7 @@ function render({ pending = 0, online = navigator.onLine }) {
   badge.hidden = false
   badge.className = online ? 'syncing' : 'offline'
   badge.textContent = online
-    ? `Sincronizzazione · ${pending} ${pending === 1 ? 'modifica' : 'modifiche'} in attesa`
+    ? `${syncing ? 'Sincronizzazione' : 'In attesa di sincronizzazione'} · ${pending} ${pending === 1 ? 'modifica' : 'modifiche'}`
     : pending
       ? `Offline · ${pending} ${pending === 1 ? 'modifica da sincronizzare' : 'modifiche da sincronizzare'}`
       : 'Offline · puoi continuare a lavorare'
