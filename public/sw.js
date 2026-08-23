@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v10'
+const CACHE_NAME = 'apicehotel-manutenzione-v11'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest?v=9',
