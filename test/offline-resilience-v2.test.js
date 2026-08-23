@@ -42,6 +42,18 @@ test('create-only feedback is idempotent too', async () => {
   assert.match(feedback, /error\?\.code==='23505'/)
 })
 
+test('housekeeping keeps offline data isolated per hotel and separates day/work mutations', async () => {
+  const housekeeping = await read('../src/housekeeping.jsx')
+  assert.match(housekeeping, /apiceHousekeeping-\$\{hotelId\}/)
+  assert.match(housekeeping, /outbox:'&key,camera,kind'/)
+  assert.match(housekeeping, /key:`work:\$\{camera\}`/)
+  assert.match(housekeeping, /key:`day:\$\{camera\}`/)
+  assert.match(housekeeping, /baseValues/)
+  assert.match(housekeeping, /OFFLINE_CONFLICT/)
+  assert.match(housekeeping, /failures/)
+  assert.match(housekeeping, /setInterval\(retry,15000\)/)
+})
+
 test('offline status surfaces blocked operations instead of retrying silently forever', async () => {
   const status = await read('../src/offline-status.js')
   const css = await read('../src/offline-status.css')
