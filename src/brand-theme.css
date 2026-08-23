@@ -67,7 +67,42 @@
 .operations .alta .urgency{background:#c83d2c}
 .operations .media .urgency{background:#dd8415}
 .operations .bassa .urgency{background:#d2ad20}
-.operations .presence,
-.operations .presence.on{background:#effaf3;color:#17a553}
-.operations .presence span,
-.operations .presence.on span{background:#17a553}
+
+/* Presenza: OFF e ON devono essere impossibili da confondere.
+   Il testo JSX storico resta nel DOM per compatibilità React ma viene reso
+   invisibile (font-size:0); l'etichetta visiva è generata dallo stato reale.
+   aria-pressed/aria-label vengono sincronizzati da presence-status.js. */
+.operations .presence{
+  background:#f5f6f5;
+  color:#66716b;
+  border-color:#d4dbd7;
+  font-size:0;
+  box-shadow:none;
+  transition:background .16s ease,color .16s ease,border-color .16s ease,transform .12s ease;
+}
+.operations .presence::after{
+  content:'Fuori struttura';
+  font-size:var(--font-sm);
+  font-weight:800;
+  line-height:1.2;
+  white-space:nowrap;
+}
+.operations .presence span{
+  background:#a0aaa4;
+}
+.operations .presence.on,
+.operations .presence[aria-pressed='true']{
+  background:#effaf3;
+  color:#168846;
+  border-color:#b9e4c8;
+}
+.operations .presence.on::after,
+.operations .presence[aria-pressed='true']::after{
+  content:'Sono in struttura';
+}
+.operations .presence.on span,
+.operations .presence[aria-pressed='true'] span{
+  background:#17a553;
+}
+.operations .presence:active:not(:disabled){transform:scale(.98)}
+.operations .presence:disabled{opacity:.62;cursor:wait}
