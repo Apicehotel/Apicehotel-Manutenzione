@@ -7,6 +7,7 @@ const onlineNow=()=>typeof navigator==='undefined'||navigator.onLine
 const same=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null)
 const statusToApp={aperta:'aperta',presa:'presa_in_carico',completata:'completata'}
 const statusToDb={aperta:'aperta',presa_in_carico:'presa',completata:'completata'}
+const REALTIME_FALLBACK_MS=4000
 
 function fromRow(row){return{
   id:row.id,hotelId:row.hotel_id,note:row.nota,status:statusToApp[row.stato]||'aperta',
@@ -21,9 +22,9 @@ async function withSyncBase(id,hotelId,changes){if(String(id).startsWith('offlin
 function conflictError(fields){const error=new Error(`Conflitto di sincronizzazione: ${fields.join(', ')}`);error.code='OFFLINE_CONFLICT';error.conflictFields=fields;return error}
 async function existingByMutation(mutationId){if(!mutationId)return null;const{data,error}=await supabase.from('richieste_urgenti').select('*').eq('mutation_id',mutationId).maybeSingle();if(error)throw error;return data||null}
 
-function requestUrgentRefresh(hotelId){
+function requestUrgentRefresh(hotelId,reason='server-reconcile'){
   if(typeof window==='undefined'||!hotelId)return
-  window.dispatchEvent(new CustomEvent('apice-offline-data-changed',{detail:{entity:ENTITY,hotelId,reason:'server-reconcile'}}))
+  window.dispatchEvent(new CustomEvent('apice-offline-data-changed',{detail:{entity:ENTITY,hotelId,reason}}))
 }
 
 async function resolveHotelId(id,preferredHotelId=null){
@@ -55,7 +56,9 @@ async function atomicComplete(id,hotelId,name){
   if(error)throw error
   const row=Array.isArray(data)?data[0]:data
   if(!row)throw new Error('Completamento non confermato dal server')
-  return fromRow(row)
+  const updated=fromRow(row)
+  if(updated.status!=='completata')throw new Error('Completamento non confermato dal server')
+  return updated
 }
 async function dbUpdate(id,changes){
   if(!changes.hotelId)throw new Error('Struttura dell’avviso non disponibile')
@@ -68,7 +71,7 @@ registerOfflineHandler(ENTITY,async(op,targetId)=>op.action==='create'?dbInsert(
 
 export async function fetchUrgents(hotelId){if(!supabase||!onlineNow())return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:true};try{const{data,error}=await supabase.from('richieste_urgenti').select('*').eq('hotel_id',hotelId).order('creato_il',{ascending:false});if(error)throw error;return{items:await cacheRemoteCollection(ENTITY,hotelId,(data||[]).map(fromRow)),ok:true}}catch(error){return{items:await getCachedCollection(ENTITY,hotelId),ok:false,offline:isTransientNetworkError(error),error:error?.message}}}
 export async function fetchUrgentEvents(urgentId){if(!supabase||!onlineNow()||String(urgentId).startsWith('offline-'))return[];const{data,error}=await supabase.from('richieste_urgenti_eventi').select('*').eq('urgente_id',urgentId).order('creato_il',{ascending:true});if(error)throw error;return(data||[]).map(row=>({id:row.id,type:row.tipo,by:row.da_chi,details:row.dettagli||{},createdAt:new Date(row.creato_il).getTime()}))}
-export async function insertUrgent(item){const nextItem={severity:'urgente',...item,clientMutationId:item.clientMutationId||makeClientMutationId()};if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-urgent');operationSaved('Avviso salvato sul dispositivo — non ancora trasmesso');return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:{...nextItem,createdAt:nextItem.createdAt||Date.now(),_notifyOnSync:true},cachePayload:{...nextItem,createdAt:nextItem.createdAt||Date.now()},tempId})}try{const created=await dbInsert(nextItem);await cacheRemoteCollection(ENTITY,nextItem.hotelId,[created,...(await getCachedCollection(ENTITY,nextItem.hotelId)).filter(x=>x.id!==created.id)]);operationSaved('Avviso urgente trasmesso');return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-urgent');operationSaved('Avviso salvato sul dispositivo — non ancora trasmesso');return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:{...nextItem,createdAt:nextItem.createdAt||Date.now(),_notifyOnSync:true},cachePayload:{...nextItem,createdAt:nextItem.createdAt||Date.now()},tempId})}operationFailed(error,'Avviso urgente non salvato');throw error}}
+export async function insertUrgent(item){const nextItem={severity:'urgente',...item,clientMutationId:item.clientMutationId||makeClientMutationId()};if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-urgent');operationSaved('Avviso salvato sul dispositivo — non ancora trasmesso');return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:{...nextItem,createdAt:nextItem.createdAt||Date.now(),_notifyOnSync:true},cachePayload:{...nextItem,createdAt:nextItem.createdAt||Date.now()},tempId})}try{const created=await dbInsert(nextItem);await cacheRemoteCollection(ENTITY,nextItem.hotelId,[created,...(await getCachedCollection(ENTITY,nextItem.hotelId)).filter(x=>x.id!==created.id)]);operationSaved('Avviso urgente trasmesso');requestUrgentRefresh(nextItem.hotelId,'local-create-confirmed');return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-urgent');operationSaved('Avviso salvato sul dispositivo — non ancora trasmesso');return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:{...nextItem,createdAt:nextItem.createdAt||Date.now(),_notifyOnSync:true},cachePayload:{...nextItem,createdAt:nextItem.createdAt||Date.now()},tempId})}operationFailed(error,'Avviso urgente non salvato');throw error}}
 export async function updateUrgentRow(id,changes){
   let hotelId=null
   try{hotelId=await resolveHotelId(id,changes.hotelId||null)}catch(error){operationFailed(error,'Impossibile identificare la struttura dell’avviso');throw error}
@@ -79,6 +82,7 @@ export async function updateUrgentRow(id,changes){
     const cached=await getCachedCollection(ENTITY,hotelId)
     await cacheRemoteCollection(ENTITY,hotelId,cached.map(item=>item.id===id?updated:item))
     operationSaved(changes.status==='presa_in_carico'?`Avviso preso in carico${updated.takenBy?` da ${updated.takenBy}`:''}`:changes.status==='completata'?'Avviso completato':'Avviso aggiornato')
+    requestUrgentRefresh(hotelId,'local-server-confirmed')
     return updated
   }catch(error){
     if(isTransientNetworkError(error)){
@@ -86,9 +90,70 @@ export async function updateUrgentRow(id,changes){
       return enqueueMutation({entity:ENTITY,hotelId,action:'update',payload:based,cachePayload:changes,targetId:id})
     }
     operationFailed(error,error?.message?.includes('già preso')?error.message:'Avviso non aggiornato')
-    requestUrgentRefresh(hotelId)
+    requestUrgentRefresh(hotelId,'server-reconcile')
     throw error
   }
 }
-export async function linkUrgentToIssue(id,hotelId,issueId,completedBy){const{data,error}=await supabase.from('richieste_urgenti').update({stato:'completata',completata_da:completedBy,completata_il:new Date().toISOString(),trasformata_in_segnalazione_id:issueId,updated_at:new Date().toISOString()}).eq('id',id).eq('hotel_id',hotelId).select().single();if(error)throw error;return fromRow(data)}
-export function subscribeUrgents(hotelId,onChange){const onOffline=(event)=>{if(event.detail?.entity===ENTITY&&event.detail?.hotelId===hotelId)onChange({eventType:'OFFLINE_SYNC'})};if(typeof window!=='undefined')window.addEventListener('apice-offline-data-changed',onOffline);let channel=null;if(supabase)channel=supabase.channel('apice-urgenti-'+hotelId).on('postgres_changes',{event:'*',schema:'public',table:'richieste_urgenti',filter:`hotel_id=eq.${hotelId}`},onChange).subscribe();return()=>{if(channel)supabase.removeChannel(channel);if(typeof window!=='undefined')window.removeEventListener('apice-offline-data-changed',onOffline)}}
+export async function linkUrgentToIssue(id,hotelId,issueId,completedBy){const{data,error}=await supabase.from('richieste_urgenti').update({stato:'completata',completata_da:completedBy,completata_il:new Date().toISOString(),trasformata_in_segnalazione_id:issueId,updated_at:new Date().toISOString()}).eq('id',id).eq('hotel_id',hotelId).select().single();if(error)throw error;requestUrgentRefresh(hotelId,'linked-to-issue');return fromRow(data)}
+
+export function subscribeUrgents(hotelId,onChange){
+  if(typeof window==='undefined')return()=>{}
+  let channel=null
+  let pollTimer=null
+  let reconnectTimer=null
+  let stopped=false
+  let lastSignalAt=0
+
+  const signal=(payload={eventType:'SYNC'})=>{
+    if(stopped)return
+    lastSignalAt=Date.now()
+    onChange(payload)
+  }
+  const onOffline=(event)=>{if(event.detail?.entity===ENTITY&&event.detail?.hotelId===hotelId)signal({eventType:'OFFLINE_SYNC',reason:event.detail?.reason})}
+  const onWake=()=>{if(!stopped&&onlineNow())signal({eventType:'WAKE_SYNC'})}
+  const startPolling=()=>{
+    clearInterval(pollTimer)
+    pollTimer=setInterval(()=>{
+      if(stopped||!onlineNow())return
+      // Realtime resta il percorso principale; il polling e' solo rete di sicurezza.
+      // Se il client ha ricevuto un evento da poco evitiamo una lettura inutile.
+      if(Date.now()-lastSignalAt<REALTIME_FALLBACK_MS-500)return
+      signal({eventType:'FALLBACK_POLL'})
+    },REALTIME_FALLBACK_MS)
+  }
+  const connect=()=>{
+    if(stopped||!supabase)return
+    if(channel)supabase.removeChannel(channel)
+    channel=supabase
+      .channel(`apice-urgenti-${hotelId}-${Math.random().toString(36).slice(2,8)}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'richieste_urgenti',filter:`hotel_id=eq.${hotelId}`},(payload)=>signal(payload))
+      .subscribe((status)=>{
+        if(stopped)return
+        if(status==='SUBSCRIBED'){
+          signal({eventType:'REALTIME_READY'})
+          return
+        }
+        if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+          clearTimeout(reconnectTimer)
+          reconnectTimer=setTimeout(connect,1200)
+        }
+      })
+  }
+
+  window.addEventListener('apice-offline-data-changed',onOffline)
+  window.addEventListener('online',onWake)
+  window.addEventListener('focus',onWake)
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onWake()})
+  connect()
+  startPolling()
+
+  return()=>{
+    stopped=true
+    clearInterval(pollTimer)
+    clearTimeout(reconnectTimer)
+    window.removeEventListener('apice-offline-data-changed',onOffline)
+    window.removeEventListener('online',onWake)
+    window.removeEventListener('focus',onWake)
+    if(channel&&supabase)supabase.removeChannel(channel)
+  }
+}
