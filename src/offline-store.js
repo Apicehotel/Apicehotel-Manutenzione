@@ -12,30 +12,51 @@ db.version(2).stores({
   idmap: '&tempId,realId',
   blobs: '&id,createdAt',
 })
+db.version(3).stores({
+  cache: '&key,entity,hotelId,updatedAt',
+  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
+  idmap: '&tempId,realId',
+  blobs: '&id,createdAt',
+  failures: '++id,entity,hotelId,action,tempId,targetId,failedAt',
+})
 
 const handlers = new Map()
 let draining = false
+let retryTimer = null
 const onlineNow = () => typeof navigator === 'undefined' || navigator.onLine
 const storageAvailable = () => typeof indexedDB !== 'undefined'
 const cacheKey = (entity, hotelId) => `${entity}:${hotelId}`
+const now = () => Date.now()
+const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+const BACKOFF_STEPS = [5000, 15000, 30000, 60000, 120000, 300000]
+
+const errorText = (error) => String(error?.message || error || '')
+export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection|temporarily|gateway|502|503|504/i.test(errorText(error))
+const isPermanentError = (error) => error?.code === 'OFFLINE_CONFLICT' || /row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint|unsupported/i.test(errorText(error))
+const nextDelay = (attempts = 0) => BACKOFF_STEPS[Math.min(attempts, BACKOFF_STEPS.length - 1)]
 
 const dispatchStatus = async () => {
   if (typeof window === 'undefined' || !storageAvailable()) return
-  const pending = await db.outbox.count().catch(() => 0)
-  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail: { pending, online: onlineNow() } }))
+  const [pending, blocked] = await Promise.all([db.outbox.count().catch(() => 0), db.failures.count().catch(() => 0)])
+  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail: { pending, blocked, online: onlineNow(), syncing: draining } }))
 }
 const dispatchDataChange = (entity, hotelId) => {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('apice-offline-data-changed', { detail: { entity, hotelId } }))
 }
+const scheduleDrain = (delay = 0) => {
+  if (typeof window === 'undefined' || !storageAvailable() || !onlineNow()) return
+  if (retryTimer) clearTimeout(retryTimer)
+  retryTimer = setTimeout(() => { retryTimer = null; drainOfflineQueue() }, Math.max(0, delay))
+}
 
-export const makeOfflineId = (prefix = 'offline') => `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`
-export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection/i.test(String(error?.message || error || ''))
+export const makeOfflineId = (prefix = 'offline') => `${prefix}-${uuid()}`
+export const makeClientMutationId = () => uuid()
 
 export async function putOfflineBlob(blob, meta = {}) {
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
   if (!(blob instanceof Blob)) throw new Error('Foto offline non valida')
   const id = makeOfflineId('offline-blob')
-  await db.blobs.put({ id, blob, meta, createdAt: Date.now() })
+  await db.blobs.put({ id, blob, meta, createdAt: now() })
   return id
 }
 export async function getOfflineBlob(id) {
@@ -53,7 +74,7 @@ export async function getCachedCollection(entity, hotelId) {
 }
 export async function setCachedCollection(entity, hotelId, items) {
   if (!storageAvailable()) return
-  await db.cache.put({ key: cacheKey(entity, hotelId), entity, hotelId, items, updatedAt: Date.now() })
+  await db.cache.put({ key: cacheKey(entity, hotelId), entity, hotelId, items, updatedAt: now() })
 }
 export async function findCachedHotelId(entity, itemId) {
   if (!storageAvailable()) return null
@@ -78,37 +99,89 @@ export async function cacheRemoteCollection(entity, hotelId, remoteItems) {
   await setCachedCollection(entity, hotelId, merged)
   return merged
 }
+
+async function compactMutation(op) {
+  const all = await db.outbox.where('entity').equals(op.entity).and((row) => row.hotelId === op.hotelId).sortBy('id')
+  if (op.action === 'update') {
+    if (String(op.targetId || '').startsWith('offline-')) {
+      const createOp = all.find((row) => row.action === 'create' && row.tempId === op.targetId)
+      if (createOp) {
+        await db.outbox.update(createOp.id, {
+          payload: { ...(createOp.payload || {}), ...(op.payload || {}) },
+          cachePayload: { ...(createOp.cachePayload || createOp.payload || {}), ...(op.cachePayload || op.payload || {}) },
+        })
+        return { compacted: true }
+      }
+    }
+    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) return { compacted: true }
+    const priorUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
+    const latest = priorUpdates.at(-1)
+    if (latest) {
+      await db.outbox.update(latest.id, {
+        payload: { ...(latest.payload || {}), ...(op.payload || {}) },
+        cachePayload: { ...(latest.cachePayload || latest.payload || {}), ...(op.cachePayload || op.payload || {}) },
+        attempts: 0, nextAttemptAt: 0, lastError: null,
+      })
+      return { compacted: true }
+    }
+  }
+  if (op.action === 'delete') {
+    if (String(op.targetId || '').startsWith('offline-')) {
+      const related = all.filter((row) => row.tempId === op.targetId || row.targetId === op.targetId)
+      if (related.length) await db.outbox.bulkDelete(related.map((row) => row.id))
+      return { compacted: true, cancelledCreate: true }
+    }
+    const relatedUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
+    if (relatedUpdates.length) await db.outbox.bulkDelete(relatedUpdates.map((row) => row.id))
+    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) return { compacted: true }
+  }
+  return { compacted: false }
+}
+
 export async function enqueueMutation({ entity, hotelId, action, payload = null, cachePayload = null, targetId = null, tempId = null }) {
   if (!hotelId) throw new Error(`hotelId mancante per coda offline ${entity}:${action}`)
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
-  await db.outbox.add({ entity, hotelId, action, payload, cachePayload, targetId, tempId, createdAt: Date.now() })
+  const nextPayload = action === 'create' ? { ...(payload || {}), clientMutationId: payload?.clientMutationId || makeClientMutationId() } : payload
+  const op = { entity, hotelId, action, payload: nextPayload, cachePayload, targetId, tempId, createdAt: now(), attempts: 0, nextAttemptAt: 0, lastError: null }
+  const compacted = await compactMutation(op)
   const current = await getCachedCollection(entity, hotelId)
-  const visualPayload = cachePayload || payload
+  const visualPayload = cachePayload || nextPayload
   let next = current
   if (action === 'create') next = [{ ...visualPayload, id: tempId, _offline: true }, ...current.filter((item) => item.id !== tempId)]
   if (action === 'update') next = current.map((item) => item.id === targetId ? { ...item, ...visualPayload, _offline: true } : item)
   if (action === 'delete') next = current.filter((item) => item.id !== targetId)
   await setCachedCollection(entity, hotelId, next)
+  if (!compacted.compacted) await db.outbox.add(op)
   dispatchDataChange(entity, hotelId)
   await dispatchStatus()
+  if (onlineNow()) scheduleDrain(0)
   return action === 'create' ? next.find((item) => item.id === tempId) : true
 }
+
 export function registerOfflineHandler(entity, handler) {
   handlers.set(entity, handler)
   if (storageAvailable() && onlineNow() && typeof queueMicrotask === 'function') queueMicrotask(() => drainOfflineQueue())
 }
+async function moveToFailures(op, error) {
+  await db.failures.add({ ...op, sourceOutboxId: op.id, failedAt: now(), error: errorText(error), errorCode: error?.code || null, conflictFields: error?.conflictFields || null })
+  await db.outbox.delete(op.id)
+}
 export async function drainOfflineQueue() {
   if (!storageAvailable() || draining || !onlineNow()) return
   draining = true
+  await dispatchStatus()
+  let nextWake = null
   try {
     const operations = await db.outbox.orderBy('id').toArray()
     for (const op of operations) {
       const handler = handlers.get(op.entity)
       if (!handler) continue
+      const wait = Number(op.nextAttemptAt || 0) - now()
+      if (wait > 0) { nextWake = nextWake == null ? wait : Math.min(nextWake, wait); continue }
       let targetId = op.targetId
       if (targetId && String(targetId).startsWith('offline-')) {
         const mapped = await db.idmap.get(targetId)
-        if (!mapped?.realId) break
+        if (!mapped?.realId) continue
         targetId = mapped.realId
       }
       try {
@@ -121,32 +194,56 @@ export async function drainOfflineQueue() {
         await db.outbox.delete(op.id)
         dispatchDataChange(op.entity, op.hotelId)
       } catch (error) {
-        if (!isTransientNetworkError(error)) console.error('offline sync blocked', op.entity, op.action, error)
-        break
+        if (isPermanentError(error)) {
+          console.error('offline sync blocked permanently', op.entity, op.action, error)
+          await moveToFailures(op, error)
+          dispatchDataChange(op.entity, op.hotelId)
+          continue
+        }
+        const attempts = Number(op.attempts || 0) + 1
+        const delay = nextDelay(attempts - 1)
+        await db.outbox.update(op.id, { attempts, nextAttemptAt: now() + delay, lastError: errorText(error) })
+        if (!isTransientNetworkError(error)) console.error('offline sync retry', op.entity, op.action, error)
+        nextWake = nextWake == null ? delay : Math.min(nextWake, delay)
       }
     }
   } finally {
     draining = false
     await dispatchStatus()
+    if (onlineNow() && nextWake != null) scheduleDrain(nextWake)
   }
 }
 export async function getOfflineStatus() {
-  return { pending: storageAvailable() ? await db.outbox.count() : 0, online: onlineNow() }
+  if (!storageAvailable()) return { pending: 0, blocked: 0, online: onlineNow(), syncing: false }
+  const [pending, blocked] = await Promise.all([db.outbox.count(), db.failures.count()])
+  return { pending, blocked, online: onlineNow(), syncing: draining }
 }
+export async function getOfflineFailures() {
+  return storageAvailable() ? db.failures.orderBy('id').reverse().toArray() : []
+}
+export async function retryOfflineFailure(id) {
+  if (!storageAvailable()) return false
+  const failed = await db.failures.get(id)
+  if (!failed) return false
+  const { id: _id, sourceOutboxId: _source, failedAt: _failedAt, error: _error, errorCode: _code, conflictFields: _fields, ...op } = failed
+  await db.outbox.add({ ...op, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now() })
+  await db.failures.delete(id)
+  await dispatchStatus(); scheduleDrain(0)
+  return true
+}
+export async function discardOfflineFailure(id) {
+  if (!storageAvailable()) return false
+  await db.failures.delete(id)
+  await dispatchStatus()
+  return true
+}
+
 if (typeof window !== 'undefined' && storageAvailable()) {
-  const tryDrain = () => { if (onlineNow()) drainOfflineQueue() }
-  window.addEventListener('online', tryDrain)
+  window.addEventListener('online', () => scheduleDrain(0))
   window.addEventListener('online', dispatchStatus)
   window.addEventListener('offline', dispatchStatus)
-  window.addEventListener('focus', tryDrain)
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tryDrain() })
-  // Su mobile gli eventi online/offline non sono sempre affidabili. Un retry
-  // leggero e periodico evita code ferme per ore senza consumare traffico quando
-  // non c'è nulla da sincronizzare.
-  setInterval(async () => {
-    if (!onlineNow()) return
-    const pending = await db.outbox.count().catch(() => 0)
-    if (pending > 0) drainOfflineQueue()
-  }, 15000)
-  queueMicrotask(() => { dispatchStatus(); tryDrain() })
+  window.addEventListener('focus', () => { if (onlineNow()) scheduleDrain(0) })
+  document?.addEventListener?.('visibilitychange', () => { if (document.visibilityState === 'visible' && onlineNow()) scheduleDrain(0) })
+  setInterval(async () => { const status = await getOfflineStatus().catch(() => null); if (status?.pending && onlineNow()) scheduleDrain(0) }, 15000)
+  queueMicrotask(() => { dispatchStatus(); scheduleDrain(0) })
 }
