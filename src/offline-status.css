@@ -4,20 +4,74 @@
   bottom: calc(var(--nav-h, 72px) + env(safe-area-inset-bottom, 0px) + 10px);
   z-index: 1200;
   transform: translateX(-50%);
-  max-width: min(calc(100vw - 28px), 520px);
+  max-width: min(calc(100vw - 28px), 560px);
   padding: 9px 14px;
+  border: 0;
   border-radius: 999px;
+  font: inherit;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
   box-shadow: 0 6px 22px rgba(0,0,0,.18);
-  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
 }
 #apice-offline-status[hidden] { display: none !important; }
-#apice-offline-status.offline { background: #6b3f00; color: #fff; }
-#apice-offline-status.syncing { background: #0e6b54; color: #fff; }
-#apice-offline-status.sync-blocked { background: #8b1e1e; color: #fff; border-radius: 16px; }
+#apice-offline-status.offline { background: #6b3f00; color: #fff; pointer-events: none; }
+#apice-offline-status.syncing { background: #0e6b54; color: #fff; pointer-events: none; }
+#apice-offline-status.sync-blocked { background: #8b1e1e; color: #fff; border-radius: 16px; cursor: pointer; pointer-events: auto; }
+#apice-offline-status.sync-blocked:focus-visible { outline: 3px solid rgba(139,30,30,.28); outline-offset: 3px; }
+
+#apice-sync-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: grid;
+  place-items: end center;
+  padding: 18px max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: rgba(17,24,22,.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+#apice-sync-panel-backdrop[hidden] { display: none !important; }
+#apice-sync-panel {
+  width: min(720px, 100%);
+  max-height: min(78dvh, 720px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px;
+  border-radius: 22px;
+  background: #fff;
+  color: #16211d;
+  box-shadow: 0 24px 70px rgba(0,0,0,.28);
+}
+#apice-sync-panel > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+#apice-sync-panel h2 { margin: 2px 0 0; font-size: clamp(20px, 4vw, 27px); }
+#apice-sync-panel header small { color: #68736f; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.apice-sync-close { width: 44px; height: 44px; flex: 0 0 44px; border: 0; border-radius: 50%; background: #eef2f0; font-size: 28px; line-height: 1; cursor: pointer; }
+.apice-sync-explainer { margin: 0 0 14px; color: #56625e; line-height: 1.45; }
+.apice-sync-failures { display: grid; gap: 12px; }
+.apice-sync-failure { padding: 14px; border: 1px solid #e3e7e5; border-radius: 16px; background: #fbfcfb; }
+.apice-sync-failure > strong { display: block; font-size: 16px; }
+.apice-sync-failure > p { margin: 7px 0; line-height: 1.4; color: #4e5a56; overflow-wrap: anywhere; }
+.apice-sync-failure > small { display: block; color: #75807c; }
+.apice-sync-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; margin-top: 12px; }
+.apice-sync-actions button { min-height: 46px; padding: 9px 12px; border-radius: 12px; font: inherit; font-weight: 800; cursor: pointer; }
+.apice-sync-actions .primary { border: 0; background: var(--brand, #0e5c49); color: #fff; }
+.apice-sync-actions .secondary { border: 1px solid #ccd4d1; background: #fff; color: #26332e; }
+.apice-sync-actions button:disabled { opacity: .55; cursor: wait; }
+.apice-sync-empty { margin: 18px 0 4px; text-align: center; color: #65716d; }
+
+@media (min-width: 800px) {
+  #apice-sync-panel-backdrop { place-items: center; padding: 24px; }
+  #apice-sync-panel { max-height: min(80vh, 760px); padding: 22px; }
+}
 @media (max-width: 420px) {
   #apice-offline-status { width: calc(100vw - 24px); font-size: 12px; }
+  #apice-sync-panel-backdrop { padding: 0; place-items: end stretch; }
+  #apice-sync-panel { width: 100%; max-height: 84dvh; border-radius: 22px 22px 0 0; padding: 16px 14px calc(16px + env(safe-area-inset-bottom)); }
+  .apice-sync-actions { grid-template-columns: 1fr; }
 }
+html[data-ui-size="large"] .apice-sync-actions button { min-height: 54px; font-size: 16px; }
