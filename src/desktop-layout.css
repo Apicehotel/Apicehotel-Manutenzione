@@ -99,7 +99,9 @@
   .planned-card { box-shadow:0 1px 2px rgba(16,24,20,.035); }
   .planned-card:hover { box-shadow:0 5px 16px rgba(16,24,20,.07); transform:translateY(-1px); }
 
-  .home-fab-wrap { bottom:30px; }
+  /* Home already exposes the primary action as a full-width quick-action row.
+     Hide the mobile floating + on desktop so it does not overlap the content. */
+  .home-fab-wrap { display:none !important; }
   .fab-new-issue:not(.urgent-fab-scoped) { bottom:28px; }
 
   .app-drawer { width:360px; }
