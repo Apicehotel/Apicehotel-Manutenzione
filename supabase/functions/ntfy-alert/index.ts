@@ -29,10 +29,16 @@ Deno.serve(async(req:Request)=>{
     const test=body?.test===true;
     const title=test?`TEST RandApp · ${HOTEL_NAMES[hotelId]||hotelId}`:String(body?.title||`ALLARME · ${HOTEL_NAMES[hotelId]||hotelId}`).slice(0,120);
     const message=test?"Test ntfy riuscito. Il secondo canale di allarme è configurato su questo dispositivo.":String(body?.message||"Nuovo avviso urgente in RandApp").slice(0,500);
-    const headers:Record<string,string>={"Title":title,"Priority":test?"5":String(body?.priority||"5"),"Tags":test?"white_check_mark,bell":"rotating_light,warning"};
-    if(body?.url) headers["Click"]=String(body.url).slice(0,1000);
-    const res=await fetch(`${server}/${encodeURIComponent(topic)}`,{method:"POST",headers,body:message});
-    if(!res.ok){const text=await res.text().catch(()=>"");console.error("ntfy-alert",res.status,text.slice(0,200));return json({ok:false,error:"delivery_failed",status:res.status},502)}
+    const publishBody:Record<string,unknown>={
+      topic,
+      title,
+      message,
+      priority:test?5:Math.max(1,Math.min(5,Number(body?.priority)||5)),
+      tags:test?["white_check_mark","bell"]:["rotating_light","warning"],
+    };
+    if(body?.url) publishBody.click=String(body.url).slice(0,1000);
+    const res=await fetch(server,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(publishBody)});
+    if(!res.ok){const text=await res.text().catch(()=>"");console.error("ntfy-alert delivery",res.status,text.slice(0,500));return json({ok:false,error:"delivery_failed",status:res.status,detail:text.slice(0,160)},502)}
     const delivered=await res.json().catch(()=>({}));
     return json({ok:true,status:"sent",id:delivered?.id||null,time:delivered?.time||null,test});
   }catch(error){console.error("ntfy-alert",error instanceof Error?error.message:"unknown");return json({ok:false,error:"send_failed"},500)}
