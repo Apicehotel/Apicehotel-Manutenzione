@@ -15,6 +15,18 @@ export const normalize = (value) => String(value || '').trim().toLocaleLowerCase
 export const permsFor = (user) => ROLE_PERMISSIONS[user?.role] || []
 export const can = (user, permission) => permsFor(user).includes(permission)
 
+// Gate di permesso portati 1:1 dal frontend originale (src/App.jsx).
+export const canSendUrgent = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'Reception'].includes(u?.role)
+export const canManageUrgent = (u) => ['admin', 'manutentore', 'Direttore Centro Congressi', 'Portiere Notturno', 'Reception'].includes(u?.role)
+export const canViewUrgent = (u) => canSendUrgent(u) || canManageUrgent(u)
+export const canViewTechnicianDirectory = (u) => canSendUrgent(u) || u?.role === 'admin'
+export const canCreatePlanned = (u) => ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi'].includes(u?.role)
+export const canViewPlanned = (u) => canCreatePlanned(u) || ['manutentore', 'Tecnico esterno', 'Reception'].includes(u?.role)
+export const canViewPlanningMenu = (u) => ['admin', 'manutentore', 'Direttore Centro Congressi', 'Reception'].includes(u?.role)
+export const canViewTemperature = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'manutentore', 'Reception', 'Colazione Jazz'].includes(u?.role)
+export const canViewHousekeeping = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'Governante', 'Reception'].includes(u?.role)
+export const isAdminUser = (u) => u?.role === 'admin' || Boolean(u?.can_admin) || Boolean(u?.can_access_admin) || can(u, 'manage_users')
+
 export const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'Utente'
 
 export const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']

@@ -235,13 +235,15 @@ const FILTERS = [
   ['done', 'Completate'],
 ]
 
-export default function Issues({ user, hotel, users }) {
+export default function Issues({ user, hotel, users, createSignal }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState(null)
+
+  useEffect(() => { if (createSignal && can(user, 'create')) setCreating(true) }, [createSignal])
 
   const reload = () => fetchIssues(hotel.id).then(({ issues: list }) => setIssues(list || [])).catch(() => {}).finally(() => setLoading(false))
 

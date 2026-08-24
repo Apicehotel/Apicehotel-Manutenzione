@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { UI_SIZES, loadUiSize, setUiSize } from './ui-size.js'
 
 const ICONS = {
   home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M9.5 21v-6h5v6" /></>,
@@ -173,5 +174,25 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Conferma',
         <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>{confirmLabel}</Button>
       </div>
     </Modal>
+  )
+}
+
+export function UiSizeControl({ className = '' }) {
+  const [value, setValue] = useState(loadUiSize())
+  useEffect(() => {
+    const onChange = (event) => setValue(event.detail?.value || loadUiSize())
+    window.addEventListener('apice-ui-size-changed', onChange)
+    return () => window.removeEventListener('apice-ui-size-changed', onChange)
+  }, [])
+  const pick = (next) => { setUiSize(next); setValue(next) }
+  return (
+    <div className={`rs-segmented rs-uisize ${className}`} role="group" aria-label="Dimensione interfaccia">
+      {UI_SIZES.map(([key, label]) => (
+        <button key={key} type="button" className={value === key ? 'active' : ''} aria-pressed={value === key}
+          onClick={() => pick(key)} data-testid={`ui-size-${key}`}>
+          {label}
+        </button>
+      ))}
+    </div>
   )
 }

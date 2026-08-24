@@ -4,7 +4,7 @@ import { supabase } from '../supabase.js'
 import { supabaseUrl } from '../supabase.js'
 import { fetchUsers, insertUser, updateUserRow, updateUserPin, setUserActive, permanentlyDeleteUser, getTechnicianLink } from '../users-data.js'
 import { fetchAllSensors, updateSensorVisibility, syncSensorsFromEwelink } from '../sensors-admin-data.js'
-import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Spinner, EmptyState, Modal, ConfirmDialog } from './ui.jsx'
+import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Spinner, EmptyState, Modal, ConfirmDialog, UiSizeControl } from './ui.jsx'
 import { logoFor } from './helpers.js'
 
 const PERMISSION_LABELS = {
@@ -270,14 +270,31 @@ function NavigationTab() {
   )
 }
 
+/* ---------------- Appearance ---------------- */
+function AppearanceTab() {
+  return (
+    <section data-testid="settings-appearance">
+      <div className="rs-page-title"><div><h1>Aspetto</h1><p>Dimensione interfaccia dell'app</p></div></div>
+      <Card className="rs-card--pad">
+        <div className="rs-uisize-block">
+          <strong style={{ fontFamily: 'Sora' }}>Dimensione interfaccia</strong>
+          <small>Scegli Piccolo per vedere più contenuto, Grande per testo e pulsanti più leggibili. La scelta resta salvata su questo dispositivo.</small>
+          <UiSizeControl />
+        </div>
+      </Card>
+    </section>
+  )
+}
+
 const TABS = [
   { id: 'users', icon: 'users', label: 'Utenti', render: () => <UsersTab /> },
   { id: 'sensors', icon: 'sensor', label: 'Sensori', render: () => <SensorsTab /> },
   { id: 'navigation', icon: 'sliders', label: 'Ruoli', render: () => <NavigationTab /> },
+  { id: 'appearance', icon: 'sparkles', label: 'Aspetto', render: () => <AppearanceTab /> },
 ]
 
-export default function Settings({ onExit }) {
-  const [tab, setTab] = useState('users')
+export default function Settings({ initialTab = 'users', onExit }) {
+  const [tab, setTab] = useState(initialTab)
   const active = TABS.find((t) => t.id === tab)
   return (
     <div className="rs-root">

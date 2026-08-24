@@ -26,6 +26,27 @@ Branch: feature/randapp-dark-shell-rebuild. NON toccare main.
 - Logica preservata riusando i moduli dati esistenti invariati: issues-data, urgents-data,
   planned-data, users-data, auth-data, sensors-admin-data, session, locations, config.
 
+## Aggiornamenti (2026-06 — passaggio 1.1)
+- **Modalità dimensione interfaccia** Piccolo / Normale / Grande recuperata dal frontend originale
+  (stessa chiave `localStorage['apicehotel.ui-size.v1']` e attributo `<html data-ui-size>`). Integrata via
+  token globale `--rs-scale` nel design system (font-size root + padding/altezze/nav/controlli in calc),
+  quindi scala su TUTTE le schermate Dark Shell (font + controlli + card + spaziature + navigazione),
+  non solo il testo. Default Normale, persistente dopo refresh. Componente `UiSizeControl` in drawer,
+  sidebar desktop e tab "Aspetto" delle Impostazioni. Nessuna patch CSS aggiuntiva.
+- **Drawer/menu completo e permission-aware**: audit dei gate reali del frontend originale portati in
+  `helpers.js` (canViewUrgent, canManageUrgent, canViewPlanned/PlanningMenu, canViewTemperature,
+  canViewHousekeeping, canViewTechnicianDirectory, isAdminUser). Modello nav condiviso in `nav.js`
+  (`buildNav`, `NAV_TARGET`, `VIEW_GUARDS`) usato sia dal drawer mobile sia dalla sidebar desktop.
+  Voci: Home, Segnalazioni, Nuova segnalazione, Interventi, Avvisi urgenti, Planning lavori,
+  Planning sale (solo Hotel Giò), Housekeeping, Temperature, Rubrica tecnici, Feedback ricevuti,
+  Il mio profilo, Cambia PIN, Manuale, Invia feedback, Utenti/Ruoli e permessi/Sensori (admin),
+  Preferenze (dimensione interfaccia), Esci. Ogni voce filtrata dai permessi del ruolo. Header drawer:
+  logo struttura + nome struttura + nome utente + ruolo + "Cambia struttura" (se multi-hotel).
+  Responsive: smartphone pannello laterale, tablet più largo (62vw), desktop sidebar persistente
+  (header nascosto su desktop). `VIEW_GUARDS` blocca l'accesso diretto a sezioni non consentite.
+  Verificato con Playwright: admin vede il menu completo, Governante vede solo Home/Segnalazioni/
+  Nuova segnalazione + Housekeeping + Account + Preferenze.
+
 ## Implementato (2026-06 — passaggio 1)
 - Login RandApp Dark Shell (logo, RandApp/Manutenzione, autocomplete Utente da directory Supabase,
   PIN 4 cifre, ACCEDI, link Impostazioni con gate PIN admin 6 cifre). Nessun account/PIN demo, nessun bypass.
