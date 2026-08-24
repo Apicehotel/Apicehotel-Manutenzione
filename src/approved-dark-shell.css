@@ -1,69 +1,106 @@
-/* Approved RandApp visual layer: dark shell direction validated in previews.
-   This file is intentionally imported last so it becomes the visual authority
-   without changing business logic. Hotel logo artwork is never altered. */
+/* APPROVED RANDAPP DARK SHELL — global visual authority.
+   Visual-only layer: business logic and hotel artwork remain untouched. */
 :root{
   --approved-bg-1:#020c17;
   --approved-bg-2:#06182a;
   --approved-bg-3:#03101d;
   --approved-panel:#0b2136;
   --approved-panel-2:#071827;
-  --approved-line:rgba(82,137,169,.28);
+  --approved-line:rgba(82,137,169,.30);
   --approved-text:#f4f8fb;
-  --approved-muted:#8fa3b5;
-  --approved-accent:#16a3ae;
+  --approved-muted:#92a5b7;
+  --approved-accent:#16c6cf;
   --approved-accent-2:#1764a8;
   --approved-danger:#ff9696;
 }
+html,body,#root{min-height:100%;background:radial-gradient(circle at 18% 8%,#0a3858 0,transparent 30%),radial-gradient(circle at 88% 18%,#075f70 0,transparent 28%),linear-gradient(155deg,var(--approved-bg-1),var(--approved-bg-2) 56%,var(--approved-bg-3)) !important;color:var(--approved-text) !important}
+body{background-attachment:fixed !important}
+.page,.operations,.global-admin,.settings-page,.planning-page,.housekeeping-page{background:transparent !important;color:var(--approved-text) !important}
+h1,h2,h3,h4,strong,label,.detail-room,.section-title{color:var(--approved-text) !important}
+p,small,.muted,.subtitle,.session-note span{color:var(--approved-muted) !important}
 
-html,body,#root{background:radial-gradient(circle at 18% 8%,#0a3858 0,transparent 30%),radial-gradient(circle at 88% 18%,#075f70 0,transparent 28%),linear-gradient(155deg,var(--approved-bg-1),var(--approved-bg-2) 56%,var(--approved-bg-3)) !important;color:var(--approved-text)}
+/* Approved Dark Shell login / admin gate */
+.login-page{min-height:100dvh !important;background:transparent !important;padding:max(22px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom)) !important}
+.login-page .back-link{max-width:500px;margin:0 auto 16px !important;display:block !important}
+.login-panel{width:min(100%,500px) !important;margin:0 auto !important;padding:30px 22px 24px !important;border:1px solid var(--approved-line) !important;border-radius:28px !important;background:linear-gradient(145deg,rgba(14,35,57,.97),rgba(8,25,42,.98)) !important;box-shadow:0 22px 56px rgba(0,0,0,.34) !important;color:var(--approved-text) !important}
+.login-panel h1{font-size:clamp(30px,8vw,38px) !important;letter-spacing:-.035em !important}
+.login-panel form{display:grid !important;gap:14px !important}
+.login-panel label{display:grid !important;gap:8px !important;color:#dce7f0 !important;font-weight:750 !important}
+.login-panel input,.login-panel select{min-height:64px !important;border:1px solid rgba(121,150,174,.38) !important;border-radius:18px !important;background:rgba(7,25,42,.84) !important;color:#fff !important;padding:0 18px !important;font-size:18px !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.02) !important}
+.login-panel input::placeholder{color:#7f91a3 !important}
+.login-panel .primary{min-height:66px !important;border:0 !important;border-radius:18px !important;background:linear-gradient(110deg,#08b5b8,#0786c4 48%,#245fb1) !important;color:#fff !important;font-weight:900 !important;box-shadow:0 12px 28px rgba(0,119,180,.26) !important}
+.admin-gate .admin-lock{background:linear-gradient(135deg,rgba(14,160,173,.28),rgba(23,100,168,.35)) !important;color:#68e5f1 !important;border:1px solid rgba(79,191,213,.28) !important;box-shadow:0 14px 28px rgba(0,0,0,.2) !important}
+.session-note{border:1px solid var(--approved-line) !important;background:rgba(7,24,40,.7) !important;border-radius:18px !important}
+.location-suggestions{background:#0b2136 !important;border:1px solid var(--approved-line) !important;box-shadow:0 18px 36px rgba(0,0,0,.35) !important}
+.location-suggestions button{color:#eef7fb !important;background:transparent !important}
+.location-suggestions button:hover{background:rgba(22,163,174,.12) !important}
 
-.operations{background:transparent !important;color:var(--approved-text) !important;min-height:100dvh !important}
-.ops-header{background:rgba(4,17,30,.92) !important;border-bottom:1px solid var(--approved-line) !important;color:var(--approved-text) !important;box-shadow:0 10px 28px rgba(0,0,0,.18) !important}
+/* Main app shell */
+.operations{min-height:100dvh !important;padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important}
+.ops-header{background:rgba(4,17,30,.92) !important;border-bottom:1px solid var(--approved-line) !important;color:var(--approved-text) !important;box-shadow:0 10px 28px rgba(0,0,0,.18) !important;backdrop-filter:blur(18px) !important}
 .ops-main{background:transparent !important}
 .ops-title h1,.dash-greeting h1,.admin-heading h1{color:var(--approved-text) !important}
 .ops-title p,.dash-greeting p,.admin-heading p,.operations small{color:var(--approved-muted) !important}
-
 .hotel-identity{display:flex !important;align-items:center !important;gap:10px !important}
 .hotel-identity .hotel-mark,.hotel-mark{width:48px !important;height:48px !important;border-radius:14px !important;object-fit:contain !important;background:#fff !important;padding:2px !important;box-shadow:0 8px 20px rgba(0,0,0,.22) !important}
-
 .dash-home{gap:14px !important}
-.dash-greeting{padding:20px !important;border:1px solid rgba(71,184,207,.26) !important;border-radius:24px !important;background:linear-gradient(135deg,rgba(9,53,82,.96),rgba(6,70,91,.9)) !important;box-shadow:0 18px 44px rgba(0,0,0,.24) !important}
+.dash-greeting{padding:20px !important;border:1px solid rgba(71,184,207,.28) !important;border-radius:24px !important;background:linear-gradient(135deg,rgba(9,53,82,.97),rgba(6,70,91,.92)) !important;box-shadow:0 18px 44px rgba(0,0,0,.24) !important}
 .dash-cards{gap:12px !important}
-.dash-card,.dash-recent-item,.issue,.planned-card,.urgent-card,.hk-card,.hk-section,.toolbar,.advanced-filters,.ui-scale-setting,.settings-page form,.settings-page .panel-content,.admin-role-group,.permission-matrix,.sensors-panel{
+
+/* Unified cards/panels throughout app */
+.dash-card,.dash-recent-item,.issue,.planned-card,.urgent-card,.hk-card,.hk-section,.toolbar,.advanced-filters,.ui-scale-setting,.settings-page form,.settings-page .panel-content,.admin-role-group,.permission-matrix,.sensors-panel,.sheet,.panel,.card,.admin-card,.admin-user-card,.planning-card,.temperature-card,.sensor-card,.feedback-card,.technician-row{
   border:1px solid var(--approved-line) !important;
-  background:linear-gradient(145deg,rgba(13,35,56,.96),rgba(7,23,39,.96)) !important;
+  background:linear-gradient(145deg,rgba(13,35,56,.97),rgba(7,23,39,.97)) !important;
   color:var(--approved-text) !important;
-  box-shadow:0 14px 34px rgba(0,0,0,.18) !important;
+  box-shadow:0 14px 34px rgba(0,0,0,.19) !important;
 }
 .dash-card{border-radius:22px !important;min-height:132px !important;padding:16px !important}
 .dash-card-icon{background:linear-gradient(135deg,rgba(14,160,173,.28),rgba(23,100,168,.34)) !important;color:#70e2ec !important;border-radius:14px !important}
 .dash-card p,.dash-card small,.dash-recent-item small,.issue small,.planned-card small,.urgent-card small{color:var(--approved-muted) !important}
 
-input,select,textarea{background:rgba(7,25,42,.82) !important;color:var(--approved-text) !important;border:1px solid rgba(121,150,174,.35) !important}
+/* Forms and buttons */
+input,select,textarea{background:rgba(7,25,42,.84) !important;color:var(--approved-text) !important;border:1px solid rgba(121,150,174,.36) !important}
 input::placeholder,textarea::placeholder{color:#7f91a3 !important}
-.primary,button.primary{background:linear-gradient(110deg,#08a7ae,#087bbd 48%,#205aa7) !important;border-color:transparent !important;color:#fff !important;box-shadow:0 10px 24px rgba(0,119,180,.22) !important}
-.secondary,button.secondary,.back-link,.planning-back{background:rgba(8,25,41,.72) !important;color:#e5eef4 !important;border-color:var(--approved-line) !important}
+.primary,button.primary{background:linear-gradient(110deg,#08b5b8,#0786c4 48%,#245fb1) !important;border-color:transparent !important;color:#fff !important;box-shadow:0 10px 24px rgba(0,119,180,.23) !important}
+.secondary,button.secondary,.back-link,.planning-back{background:rgba(8,25,41,.76) !important;color:#e5eef4 !important;border-color:var(--approved-line) !important}
+button:not(.primary):not(.danger):not(.app-nav button){color:inherit}
 
-.tabs,.status-tabs,.urgent-filters{background:rgba(5,20,34,.78) !important;border-color:var(--approved-line) !important}
-.tabs button,.status-tabs button,.urgent-filters button{color:#879aaa !important}
-.tabs button.active,.status-tabs button.active,.urgent-filters button.active{background:linear-gradient(135deg,rgba(14,160,173,.24),rgba(23,100,168,.28)) !important;color:#fff !important}
+/* Filters/tabs */
+.tabs,.status-tabs,.urgent-filters,.admin-section-nav,.admin-gate-nav{background:rgba(5,20,34,.82) !important;border-color:var(--approved-line) !important}
+.tabs button,.status-tabs button,.urgent-filters button,.admin-section-nav button,.admin-gate-nav button{color:#879aaa !important}
+.tabs button.active,.status-tabs button.active,.urgent-filters button.active,.admin-section-nav button.active,.admin-gate-nav button.active{background:linear-gradient(135deg,rgba(14,160,173,.25),rgba(23,100,168,.3)) !important;color:#fff !important}
 
-.app-drawer{background:linear-gradient(180deg,#07192b 0%,#061320 54%,#04101b 100%) !important;color:#eef7fb !important;border-color:rgba(70,164,190,.22) !important;box-shadow:-24px 0 60px rgba(0,0,0,.38) !important}
+/* Drawer / sheets */
+.app-drawer{background:linear-gradient(180deg,#07192b 0%,#061320 54%,#04101b 100%) !important;color:#eef7fb !important;border-color:rgba(70,164,190,.22) !important;box-shadow:-24px 0 60px rgba(0,0,0,.4) !important}
 .app-drawer button{color:inherit}
+.sheet-overlay{background:rgba(0,7,14,.62) !important;backdrop-filter:blur(7px) !important}
+
+/* Bottom nav */
+.app-nav{border:1px solid var(--approved-line) !important;background:rgba(7,24,40,.97) !important;box-shadow:0 -10px 30px rgba(0,0,0,.24) !important;backdrop-filter:blur(18px) !important}
+.app-nav button{color:#748da1 !important;background:transparent !important}
+.app-nav button.active{color:#fff !important;background:linear-gradient(135deg,rgba(14,160,173,.25),rgba(23,100,168,.3)) !important}
+.unified-create-proxy{background:linear-gradient(135deg,var(--approved-accent),var(--approved-accent-2)) !important;border-color:#061624 !important;color:#fff !important}
+
+/* Admin */
+.global-admin{background:transparent !important;color:var(--approved-text) !important}
+.global-admin .admin-heading,.global-admin .admin-toolbar{color:var(--approved-text) !important}
+.global-admin table,.global-admin th,.global-admin td{border-color:var(--approved-line) !important;color:var(--approved-text) !important}
+.global-admin th{background:rgba(7,24,40,.9) !important}
+.global-admin tr{background:rgba(10,30,48,.7) !important}
 
 @media(max-width:959px){
-  .operations{padding-bottom:calc(86px + env(safe-area-inset-bottom)) !important}
-  .app-nav{left:10px !important;right:10px !important;bottom:max(6px,env(safe-area-inset-bottom)) !important;height:66px !important;padding:5px !important;border:1px solid var(--approved-line) !important;border-radius:22px !important;background:rgba(7,24,40,.97) !important;box-shadow:0 -10px 30px rgba(0,0,0,.22) !important}
-  .app-nav button{color:#748da1 !important;border-radius:14px !important;background:transparent !important}
-  .app-nav button.active{color:#fff !important;background:linear-gradient(135deg,rgba(14,160,173,.24),rgba(23,100,168,.28)) !important}
-  .unified-create-proxy{background:linear-gradient(135deg,var(--approved-accent),var(--approved-accent-2)) !important;border-color:#061624 !important}
-  .global-admin .admin-section-nav,.admin-gate-nav{background:rgba(7,24,40,.97) !important;border-color:var(--approved-line) !important;border-radius:22px !important}
-  .global-admin .admin-section-nav button,.admin-gate-nav button{color:#8da0b2 !important}
-  .global-admin .admin-section-nav button.active,.admin-gate-nav button.active{color:#fff !important;background:linear-gradient(135deg,rgba(14,160,173,.24),rgba(23,100,168,.28)) !important}
+  .operations{padding-bottom:calc(88px + env(safe-area-inset-bottom)) !important}
+  .app-nav{left:10px !important;right:10px !important;bottom:max(6px,env(safe-area-inset-bottom)) !important;height:66px !important;padding:5px !important;border-radius:22px !important}
+  .app-nav button{border-radius:14px !important}
+  .global-admin .admin-section-nav,.admin-gate-nav{border-radius:22px !important}
 }
-
+@media(max-width:390px){
+  .login-page{padding-left:12px !important;padding-right:12px !important}
+  .login-panel{padding:24px 18px 20px !important}
+  .login-panel input,.login-panel .primary{min-height:60px !important}
+}
 @media(min-width:960px){
   .app-nav{background:#061523 !important;border-right:1px solid var(--approved-line) !important;color:var(--approved-text) !important}
   .app-nav button{color:#8196a8 !important}
-  .app-nav button.active{color:#fff !important;background:linear-gradient(135deg,rgba(14,160,173,.24),rgba(23,100,168,.28)) !important}
+  .app-nav button.active{color:#fff !important}
 }
