@@ -1,4 +1,4 @@
-/* RandApp Admin Mobile v4
+/* RandApp Admin Mobile v5
    One fixed bottom navigation row: Utenti / Sensori / Navigazione / Home.
    Desktop remains untouched; mobile content gets safe bottom clearance. */
 @media (max-width: 760px) {
@@ -13,7 +13,6 @@
     box-sizing: border-box !important;
   }
 
-  /* Single admin bottom bar. Four destinations, never wraps to a second row. */
   .global-admin .admin-section-nav {
     position: fixed !important;
     left: 8px !important;
@@ -91,7 +90,6 @@
     background: rgba(18,103,220,.08) !important;
   }
 
-  /* Home lives only in the bottom navigation: remove duplicate controls. */
   .global-admin .admin-heading .back-link,
   .global-admin > .back-link,
   .global-admin .admin-panel > .back-link {
@@ -123,7 +121,6 @@
   .global-admin .admin-role-group { border-radius:14px!important;overflow:hidden!important;box-shadow:0 4px 14px rgba(17,39,64,.05)!important; }
   .global-admin .role-group-toggle { min-height:48px!important;padding:0 12px!important; }
 
-  /* Mobile card anatomy: identity / role / hotels / actions. */
   .global-admin .admin-role-group table,.global-admin .admin-role-group tbody { display:block!important;width:100%!important; }
   .global-admin .admin-role-group thead { display:none!important; }
   .global-admin .admin-role-group tbody tr { display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px 8px!important;width:100%!important;padding:14px!important;margin:0!important;background:#fff!important;border:0!important;border-bottom:1px solid #e7edf3!important;box-sizing:border-box!important; }
@@ -136,7 +133,59 @@
   .global-admin td[data-label="Ruolo"] select { width:100%!important;max-width:none!important;height:42px!important;border-radius:10px!important; }
   .global-admin td[data-label="Giò"],.global-admin td[data-label="Choco"],.global-admin td[data-label="Brigantino"] { display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;text-align:center!important; }
   .global-admin td[data-label="Giò"]::before,.global-admin td[data-label="Choco"]::before,.global-admin td[data-label="Brigantino"]::before { display:block!important;font-size:11px!important;line-height:1!important;color:#66758a!important; }
-  .global-admin td[data-label] input[type=checkbox] { width:100%!important;height:38px!important;border-radius:10px!important;margin:0!important; }
+
+  /* Hotel access: large touch target, but the selected state must remain unmistakable. */
+  .global-admin td[data-label="Giò"] input[type="checkbox"],
+  .global-admin td[data-label="Choco"] input[type="checkbox"],
+  .global-admin td[data-label="Brigantino"] input[type="checkbox"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 38px !important;
+    margin: 0 !important;
+    border: 1.5px solid #cfd9e4 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    cursor: pointer !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7) !important;
+    transition: background .15s ease,border-color .15s ease,box-shadow .15s ease !important;
+  }
+  .global-admin td[data-label="Giò"] input[type="checkbox"]::after,
+  .global-admin td[data-label="Choco"] input[type="checkbox"]::after,
+  .global-admin td[data-label="Brigantino"] input[type="checkbox"]::after {
+    content: '—' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #93a1b2 !important;
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+  .global-admin td[data-label="Giò"] input[type="checkbox"]:checked,
+  .global-admin td[data-label="Choco"] input[type="checkbox"]:checked,
+  .global-admin td[data-label="Brigantino"] input[type="checkbox"]:checked {
+    border-color: #16835e !important;
+    background: #e7f5ee !important;
+    box-shadow: inset 0 0 0 1px rgba(22,131,94,.08) !important;
+  }
+  .global-admin td[data-label="Giò"] input[type="checkbox"]:checked::after,
+  .global-admin td[data-label="Choco"] input[type="checkbox"]:checked::after,
+  .global-admin td[data-label="Brigantino"] input[type="checkbox"]:checked::after {
+    content: '✓' !important;
+    color: #0e7653 !important;
+    font-size: 20px !important;
+  }
+  .global-admin td[data-label="Giò"] input[type="checkbox"]:focus-visible,
+  .global-admin td[data-label="Choco"] input[type="checkbox"]:focus-visible,
+  .global-admin td[data-label="Brigantino"] input[type="checkbox"]:focus-visible {
+    outline: 3px solid rgba(18,103,220,.22) !important;
+    outline-offset: 2px !important;
+  }
+
   .global-admin .admin-user-actions { grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;width:100%!important;overflow:visible!important;padding-top:2px!important; }
   .global-admin .admin-user-actions button { width:100%!important;min-width:0!important;min-height:42px!important;margin:0!important;padding:0 8px!important;border-radius:10px!important;font-size:12px!important; }
   .global-admin .admin-user-name:has(small:first-of-type) ~ .admin-user-actions button:disabled { display:none!important; }
