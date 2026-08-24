@@ -1,6 +1,7 @@
-/* RandApp hotel selector v2
-   Mobile/tablet entry uses a vertical list of the three original hotel artworks.
-   Artwork assets remain untouched: no crop, recolor or distortion. */
+/* RandApp hotel selector v3
+   Pattern: simple responsive selection list inspired by modern shadcn admin shells.
+   IMPORTANT: original hotel artwork assets stay untouched. No crop, recolor or distortion.
+   Hotel Gio is always the middle option. */
 
 @media (max-width: 700px) {
   .home-page {
@@ -10,26 +11,38 @@
 
   .home-page .home-content {
     min-height: 100dvh !important;
-    padding: 24px 18px calc(94px + env(safe-area-inset-bottom)) !important;
-    display: block !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    margin: 0 auto !important;
+    padding: 24px 18px calc(88px + env(safe-area-inset-bottom)) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
     overflow: visible !important;
     box-sizing: border-box !important;
   }
 
   .home-page .home-brand-hero {
-    display: none !important;
+    display: grid !important;
+    margin: 0 auto 20px !important;
+    padding: 7px 11px 7px 7px !important;
+    border-radius: 14px !important;
   }
 
+  .home-page .home-mascot { width: 44px !important; height: 44px !important; }
+  .home-page .home-brand-title { font-size: 17px !important; }
+  .home-page .home-brand-tagline { font-size: 10px !important; }
+
   .home-page .home-intro {
-    width: min(100%, 520px) !important;
-    margin: 0 auto 18px !important;
+    width: 100% !important;
+    margin: 0 0 18px !important;
     padding: 0 2px !important;
     text-align: left !important;
   }
 
   .home-page .home-intro h1 {
     margin: 0 0 5px !important;
-    font-size: clamp(26px, 7.5vw, 34px) !important;
+    font-size: clamp(27px, 7.5vw, 34px) !important;
     line-height: 1.08 !important;
     letter-spacing: -.035em !important;
   }
@@ -42,64 +55,68 @@
   }
 
   .home-page .hotel-slider {
-    width: min(100%, 520px) !important;
-    margin: 0 auto !important;
+    width: 100% !important;
+    margin: 0 !important;
     padding: 0 !important;
-    display: grid !important;
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 12px !important;
     overflow: visible !important;
     scroll-snap-type: none !important;
-    overscroll-behavior-x: auto !important;
     touch-action: pan-y !important;
   }
+
+  /* Source order is Gio, Choco, Brigantino. CSS ordering keeps Gio visually centered. */
+  .home-page .showcase-card:nth-child(1) { order: 2 !important; }
+  .home-page .showcase-card:nth-child(2) { order: 1 !important; }
+  .home-page .showcase-card:nth-child(3) { order: 3 !important; }
 
   .home-page .showcase-card {
     width: 100% !important;
     max-width: none !important;
-    height: 164px !important;
-    min-height: 164px !important;
+    height: clamp(150px, 20dvh, 188px) !important;
+    min-height: 150px !important;
     margin: 0 !important;
-    padding: 10px !important;
-    display: grid !important;
-    place-items: center !important;
-    scroll-snap-align: none !important;
-    scroll-snap-stop: normal !important;
+    padding: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     border: 1px solid #dce4df !important;
     border-radius: 18px !important;
     background: #fff !important;
     box-shadow: 0 3px 14px rgba(17,34,25,.055) !important;
     transform: none !important;
     opacity: 1 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
   }
 
-  .home-page .showcase-card:active {
-    transform: scale(.985) !important;
-    background: #fafcfb !important;
+  /* Gio: same untouched artwork, only a subtle selected/focal container. */
+  .home-page .showcase-card:nth-child(1) {
+    border-color: #0f7658 !important;
+    box-shadow: 0 5px 18px rgba(15,118,88,.11) !important;
   }
 
+  .home-page .showcase-card:active { transform: scale(.985) !important; }
   .home-page .showcase-card:focus-visible {
     outline: 3px solid rgba(14,118,87,.26) !important;
     outline-offset: 2px !important;
   }
 
   .home-page .showcase-card .hotel-card-img {
-    width: 100% !important;
-    height: 100% !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
     max-width: 100% !important;
     max-height: 100% !important;
     object-fit: contain !important;
     object-position: center !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     background: transparent !important;
   }
 
   .home-page .slider-dots,
-  .home-page .mobile-help {
-    display: none !important;
-  }
+  .home-page .mobile-help { display: none !important; }
 
   .home-page .home-admin {
     bottom: calc(10px + env(safe-area-inset-bottom)) !important;
@@ -111,15 +128,42 @@
   }
 }
 
-@media (min-width: 701px) and (max-width: 900px) {
+/* Tablet and desktop: the same three-option list, not a different interaction model. */
+@media (min-width: 701px) {
   .home-page .hotel-slider {
-    width: min(100%, 620px) !important;
-    grid-template-columns: 1fr !important;
+    width: min(100%, 760px) !important;
+    margin-inline: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 14px !important;
   }
 
+  .home-page .showcase-card:nth-child(1) { order: 2 !important; }
+  .home-page .showcase-card:nth-child(2) { order: 1 !important; }
+  .home-page .showcase-card:nth-child(3) { order: 3 !important; }
+
   .home-page .showcase-card {
+    width: 100% !important;
     max-width: none !important;
-    height: 190px !important;
+    height: clamp(150px, 20vh, 210px) !important;
+    padding: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  .home-page .showcase-card:nth-child(1) {
+    border-color: #0f7658 !important;
+    box-shadow: 0 12px 32px rgba(15,118,88,.11) !important;
+  }
+
+  .home-page .showcase-card .hotel-card-img {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
   }
 }
