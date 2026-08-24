@@ -1,0 +1,98 @@
+/* RandApp UI v2 — final visual authority for the trial branch.
+   Inspired by mature admin-shell patterns: persistent chrome, clear states,
+   one responsive language. Hotel logo artwork is never altered. */
+
+:root{
+  --v2-bg:#f5f7f6;--v2-surface:#fff;--v2-surface-2:#f8faf9;
+  --v2-text:#17231d;--v2-muted:#6a756f;--v2-line:#e2e8e4;--v2-line-strong:#cfd9d3;
+  --v2-accent:var(--brand,#0e7657);--v2-accent-soft:color-mix(in srgb,var(--v2-accent) 10%,white);
+  --v2-danger:#c73434;--v2-radius:16px;--v2-radius-sm:11px;
+  --v2-shadow:0 8px 28px rgba(19,39,28,.07);--v2-shadow-sm:0 1px 2px rgba(19,39,28,.05);
+  --v2-nav-h:58px;--v2-create:42px;--v2-mobile-bottom:max(4px,env(safe-area-inset-bottom));
+}
+html,body,#root{background:var(--v2-bg)!important;color:var(--v2-text)}
+body{overflow-x:hidden}
+
+/* BRAND PROTECTION: files, proportions and artwork remain unchanged. */
+.hotel-card-img,.hotel-artwork img,.hotel-mark img,.login-hotel-art img{
+  object-fit:contain!important;filter:none!important;transform:none!important
+}
+
+/* INITIAL HOME — one prominent structure at a time on phone, swipe/scroll is intentional. */
+.home-page{min-height:100dvh!important;background:var(--v2-bg)!important}
+.home-header{background:transparent!important;box-shadow:none!important;border:0!important}
+.home-content{width:min(100%,1120px)!important;margin-inline:auto!important;padding-inline:16px!important;box-sizing:border-box!important}
+.home-brand-hero{margin-top:4px!important;margin-bottom:14px!important}
+.home-intro{margin-bottom:14px!important}
+.home-intro h1{letter-spacing:-.035em!important}
+.hotel-slider{scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;scroll-snap-type:x mandatory!important}
+.hotel-slider::-webkit-scrollbar{display:none!important}
+.showcase-card{scroll-snap-align:center!important;border:1px solid var(--v2-line)!important;border-radius:22px!important;background:var(--v2-surface)!important;box-shadow:var(--v2-shadow)!important;overflow:hidden!important}
+.showcase-card .hotel-card-img{width:100%!important;height:100%!important}
+.slider-dots .dot{transition:width .16s ease,background .16s ease!important}
+.slider-dots .dot.active{width:22px!important;border-radius:999px!important}
+
+/* Persistent app shell */
+.operations{min-height:100dvh!important;background:var(--v2-bg)!important}
+.ops-header{position:sticky!important;top:0!important;z-index:80!important;background:rgba(255,255,255,.94)!important;border-bottom:1px solid var(--v2-line)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important}
+.ops-main{background:transparent!important}
+
+/* One surface language */
+.dash-card,.issue,.planned-card,.urgent-card,.hk-card,.hk-section,.toolbar,.advanced-filters,.permission-matrix,.admin-role-group,.login-panel,.sheet,.drawer-panel,.panel-content,.ui-scale-setting{
+  border:1px solid var(--v2-line)!important;background:var(--v2-surface)!important;border-radius:var(--v2-radius)!important;box-shadow:var(--v2-shadow-sm)!important
+}
+button,input,select,textarea{border-radius:var(--v2-radius-sm)!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--v2-accent) 24%,transparent)!important;outline-offset:2px!important}
+
+/* Dashboard/Home after login */
+.dash-home{gap:18px!important}
+.dash-greeting{padding:4px 2px 0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.dash-greeting h1{letter-spacing:-.035em!important;line-height:1.06!important}
+.dash-greeting p{margin-top:5px!important;color:var(--v2-muted)!important}
+.dash-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+.dash-card{min-height:104px!important;padding:14px!important;gap:10px!important}
+.dash-card-icon{width:36px!important;height:36px!important;border-radius:10px!important;background:var(--v2-accent-soft)!important;color:var(--v2-accent)!important}
+.dash-card-count{font-size:1.55em!important;line-height:1!important}
+.dash-card-body span{color:var(--v2-muted)!important}
+.dash-recent-list{display:grid!important;gap:8px!important}
+.dash-recent-item{min-height:48px!important;border:1px solid var(--v2-line)!important;border-radius:12px!important;background:var(--v2-surface)!important;box-shadow:none!important}
+
+/* Empty states must be compact and deliberate. */
+.empty,.empty-state{min-height:0!important;padding:22px 18px!important;border:1px dashed var(--v2-line-strong)!important;border-radius:var(--v2-radius)!important;background:var(--v2-surface-2)!important;color:var(--v2-muted)!important;text-align:center!important}
+.empty strong,.empty-state strong{display:block!important;color:var(--v2-text)!important;margin-bottom:4px!important}
+
+@media(max-width:959px){
+  /* Initial hotel selector: do not squeeze three logos into one viewport. */
+  .hotel-slider{display:flex!important;gap:14px!important;margin-inline:-16px!important;padding:6px max(9vw,34px) 16px!important;overflow-x:auto!important}
+  .showcase-card{flex:0 0 min(78vw,330px)!important;width:min(78vw,330px)!important;height:min(52vw,220px)!important;padding:12px!important}
+  .home-brand-hero{transform:none!important}
+
+  /* Operational bottom navigation geometry is independent from P/N/G. */
+  .app-nav{position:fixed!important;left:8px!important;right:8px!important;top:auto!important;bottom:var(--v2-mobile-bottom)!important;width:auto!important;height:var(--v2-nav-h)!important;margin:0!important;padding:4px 5px!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:1fr!important;border:1px solid var(--v2-line-strong)!important;border-radius:17px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 7px 24px rgba(14,30,21,.12)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;overflow:visible!important;z-index:10040!important}
+  .app-nav button{height:100%!important;min-height:0!important;padding:5px 2px 3px!important;gap:2px!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important}
+  .app-nav button.active{background:var(--v2-accent-soft)!important;color:var(--v2-accent)!important}
+  .app-nav button span{font-size:9px!important;line-height:1!important}
+  .app-nav button .icon{width:20px!important;height:20px!important}
+  .unified-create-proxy{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(var(--v2-mobile-bottom) + var(--v2-nav-h) - (var(--v2-create) * .34))!important;width:var(--v2-create)!important;height:var(--v2-create)!important;transform:translateX(-50%)!important;border:3px solid #fff!important;border-radius:50%!important;background:var(--v2-accent)!important;color:#fff!important;box-shadow:0 6px 16px color-mix(in srgb,var(--v2-accent) 24%,transparent),0 2px 6px rgba(15,28,20,.13)!important;font-size:24px!important;line-height:1!important;z-index:10050!important}
+  .unified-create-proxy::before,.unified-create-proxy::after{content:none!important;display:none!important}
+  .ops-main,.operations,.drawer-panel,.drawer-content,.global-admin .admin-panel{padding-bottom:calc(var(--v2-nav-h) + var(--v2-create) + 28px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
+
+  /* Admin: only one bottom row, no legacy fixed back bar. */
+  .global-admin .admin-heading .back-link,.global-admin>.back-link,.global-admin .admin-panel>.back-link{display:none!important}
+  .global-admin .admin-section-nav,.admin-gate-nav{position:fixed!important;left:8px!important;right:8px!important;bottom:var(--v2-mobile-bottom)!important;top:auto!important;width:auto!important;height:var(--v2-nav-h)!important;margin:0!important;padding:4px 5px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:1fr!important;gap:2px!important;border:1px solid var(--v2-line-strong)!important;border-radius:17px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 7px 24px rgba(14,30,21,.12)!important;z-index:10040!important;box-sizing:border-box!important}
+  .global-admin .admin-section-nav button,.admin-gate-nav button{min-width:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:5px 2px 3px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;border:0!important;border-radius:11px!important;background:transparent!important;color:#617289!important;font-size:9px!important;box-shadow:none!important}
+  .global-admin .admin-section-nav button.active,.admin-gate-nav button[data-action="home"]{background:#eaf2ff!important;color:#1267dc!important}
+
+  /* Hotel permissions: state remains unmistakable. */
+  .global-admin td[data-label="Giò"] input[type="checkbox"],.global-admin td[data-label="Choco"] input[type="checkbox"],.global-admin td[data-label="Brigantino"] input[type="checkbox"]{-webkit-appearance:none!important;appearance:none!important;position:relative!important;width:100%!important;height:38px!important;margin:0!important;border:1.5px solid var(--v2-line-strong)!important;border-radius:10px!important;background:#fff!important}
+  .global-admin td[data-label="Giò"] input[type="checkbox"]::after,.global-admin td[data-label="Choco"] input[type="checkbox"]::after,.global-admin td[data-label="Brigantino"] input[type="checkbox"]::after{content:'—'!important;position:absolute!important;inset:0!important;display:grid!important;place-items:center!important;color:#93a1b2!important;font-size:18px!important;font-weight:900!important}
+  .global-admin td[data-label="Giò"] input[type="checkbox"]:checked,.global-admin td[data-label="Choco"] input[type="checkbox"]:checked,.global-admin td[data-label="Brigantino"] input[type="checkbox"]:checked{border-color:#16835e!important;background:#e7f5ee!important}
+  .global-admin td[data-label="Giò"] input[type="checkbox"]:checked::after,.global-admin td[data-label="Choco"] input[type="checkbox"]:checked::after,.global-admin td[data-label="Brigantino"] input[type="checkbox"]:checked::after{content:'✓'!important;color:#0e7653!important;font-size:20px!important}
+}
+
+@media(min-width:960px){
+  .hotel-slider{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important;overflow:visible!important;padding:8px 0 22px!important}
+  .showcase-card{width:100%!important;min-height:220px!important;padding:16px!important}
+  .slider-dots,.mobile-help{display:none!important}
+  .dash-cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
