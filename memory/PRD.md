@@ -47,6 +47,22 @@ Branch: feature/randapp-dark-shell-rebuild. NON toccare main.
   Verificato con Playwright: admin vede il menu completo, Governante vede solo Home/Segnalazioni/
   Nuova segnalazione + Housekeeping + Account + Preferenze.
 
+## Aggiornamenti (2026-06 — passaggio 2: Tema Light/System + consegna tecnica)
+- **Dark Shell CONGELATO** (approvato). Aggiunto tema **Sistema | Chiaro | Scuro** via token
+  (`src/randapp/theme.js`, chiave `apicehotel.theme.v1`, default Sistema). Light = stesso design system,
+  solo token diversi in un unico blocco `html[data-theme='light']` (nessun componente/pagina duplicata).
+  "Sistema" risolto in JS su `prefers-color-scheme`; chrome (header/nav/overlay) tokenizzati per adattarsi.
+  Tema e dimensione interfaccia sono indipendenti e persistenti.
+- Nuova schermata **Profile.jsx** (Il mio profilo) con sezione **Preferenze**: `ThemeControl` + `UiSizeControl`.
+  Controlli presenti anche in drawer, sidebar desktop e tab "Aspetto" delle Impostazioni.
+- **FRONTEND_ARCHITECTURE.md** creato: architettura, librerie realmente usate, design system, temi,
+  dimensioni, come creare una schermata, header/drawer/bottom nav, responsive/safe-area, come collegare
+  vecchie funzioni ai nuovi componenti, e cosa del vecchio frontend NON riutilizzare.
+- **Audit dipendenze**: tutte usate (react, react-dom, @supabase/supabase-js, dexie via offline-store,
+  xlsx per Housekeeping da migrare; vite, @vitejs/plugin-react, playwright). Nessuna rimozione, nessuna
+  nuova libreria, nessuna dipendenza proprietaria Emergent. Build ✓, test 88/99 (11 fail pre-esistenti, 0 regressioni).
+- NON migrate (come richiesto) Planning/Temperature/Housekeeping/Sensori: restano placeholder Dark Shell.
+
 ## Implementato (2026-06 — passaggio 1)
 - Login RandApp Dark Shell (logo, RandApp/Manutenzione, autocomplete Utente da directory Supabase,
   PIN 4 cifre, ACCEDI, link Impostazioni con gate PIN admin 6 cifre). Nessun account/PIN demo, nessun bypass.

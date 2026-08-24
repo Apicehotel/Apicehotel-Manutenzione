@@ -4,6 +4,7 @@ import App from './randapp/App.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
+import { initTheme } from './randapp/theme.js'
 import './randapp/shell.css'
 import './offline-status.css'
 import './operation-feedback.css'
@@ -18,6 +19,7 @@ import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 
 initUiSize()
+initTheme()
 
 // The standalone technician portal keeps its legacy stylesheet; load it only on that route
 // so the main RandApp Dark Shell stays free of accumulated CSS.

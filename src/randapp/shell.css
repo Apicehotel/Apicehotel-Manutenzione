@@ -30,6 +30,10 @@
   --rs-r-lg: 26px;
   --rs-shadow: 0 18px 46px -22px rgba(0, 0, 0, 0.85);
   --rs-glow: 0 0 0 1px var(--rs-line), 0 20px 50px -30px rgba(40, 180, 246, 0.5);
+  --rs-header-bg: linear-gradient(180deg, rgba(8, 14, 26, 0.94), rgba(8, 14, 26, 0.72) 70%, transparent);
+  --rs-nav-bg: linear-gradient(180deg, rgba(9, 15, 28, 0.6), rgba(7, 11, 20, 0.96));
+  --rs-chrome-solid: rgba(8, 14, 26, 0.7);
+  --rs-overlay-bg: rgba(3, 6, 12, 0.66);
   --rs-safe-top: env(safe-area-inset-top, 0px);
   --rs-safe-bottom: env(safe-area-inset-bottom, 0px);
   --rs-scale: 1;
@@ -98,7 +102,7 @@ a { color: var(--rs-cyan); }
   position: sticky; top: 0; z-index: 30;
   padding: calc(var(--rs-safe-top) + 8px) 14px 10px;
   display: flex; align-items: center; gap: 10px;
-  background: linear-gradient(180deg, rgba(8, 14, 26, 0.94), rgba(8, 14, 26, 0.72) 70%, transparent);
+  background: var(--rs-header-bg);
   backdrop-filter: blur(16px);
 }
 .rs-hotelchip {
@@ -132,7 +136,7 @@ a { color: var(--rs-cyan); }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
   padding: 8px max(14px, env(safe-area-inset-left)) calc(8px + var(--rs-safe-bottom));
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-  background: linear-gradient(180deg, rgba(9, 15, 28, 0.6), rgba(7, 11, 20, 0.96));
+  background: var(--rs-nav-bg);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--rs-line);
 }
@@ -286,7 +290,7 @@ a { color: var(--rs-cyan); }
 /* ---------- Overlays: sheet / drawer / modal ---------- */
 .rs-overlay {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(3, 6, 12, .66); backdrop-filter: blur(4px);
+  background: var(--rs-overlay-bg); backdrop-filter: blur(4px);
   display: flex; align-items: flex-end; justify-content: center;
   animation: rs-fade .2s ease;
 }
@@ -551,12 +555,12 @@ a { color: var(--rs-cyan); }
 .rs-soon p { margin: 0; max-width: 340px; color: var(--rs-text-2); line-height: 1.5; }
 
 /* ---------- Settings ---------- */
-.rs-settings-head { display: flex; align-items: center; gap: 12px; padding: calc(var(--rs-safe-top) + 12px) 16px 12px; border-bottom: 1px solid var(--rs-line); background: rgba(8,14,26,.7); backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 20; }
+.rs-settings-head { display: flex; align-items: center; gap: 12px; padding: calc(var(--rs-safe-top) + 12px) 16px 12px; border-bottom: 1px solid var(--rs-line); background: var(--rs-chrome-solid); backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 20; }
 .rs-settings-head__brand { display: flex; align-items: center; gap: 11px; flex: 1; }
 .rs-settings-head__brand .rs-icon { color: var(--rs-cyan); }
 .rs-settings-head__brand b { font-family: 'Sora'; font-size: 1.05rem; display: block; }
 .rs-settings-head__brand small { color: var(--rs-text-2); font-size: .76rem; }
-.rs-settings-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px 12px calc(8px + var(--rs-safe-bottom)); background: linear-gradient(180deg, rgba(9,15,28,.6), rgba(7,11,20,.96)); backdrop-filter: blur(20px); border-top: 1px solid var(--rs-line); }
+.rs-settings-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px 12px calc(8px + var(--rs-safe-bottom)); background: var(--rs-nav-bg); backdrop-filter: blur(20px); border-top: 1px solid var(--rs-line); }
 .rs-role-group { margin-bottom: 14px; }
 .rs-role-group__head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 14px; background: var(--rs-surface-2); border: 1px solid var(--rs-line); color: var(--rs-text); cursor: pointer; }
 .rs-role-group__head b { font-family: 'Sora'; }
@@ -619,3 +623,67 @@ a { color: var(--rs-cyan); }
 @media (min-width: 1280px) {
   .rs-list--grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 }
+
+/* ============================================================
+   LIGHT THEME — stessa identica UI, solo token diversi.
+   Il tema "Sistema" viene risolto in JS (theme.js) e impostato
+   come data-theme="light" oppure "dark": qui basta la variante light.
+   ============================================================ */
+html[data-theme='light'] {
+  --rs-bg: #e8edf5;
+  --rs-bg-2: #dde4ef;
+  --rs-surface: #f7f9fd;
+  --rs-surface-2: #eef2f9;
+  --rs-surface-3: #e3e9f3;
+  --rs-line: rgba(38, 86, 148, 0.18);
+  --rs-line-strong: rgba(18, 116, 178, 0.36);
+  --rs-text: #0c1a31;
+  --rs-text-2: #45566e;
+  --rs-text-3: #74849c;
+  --rs-cyan: #0bb8d4;
+  --rs-teal: #12b39c;
+  --rs-blue: #2f6ff0;
+  --rs-blue-deep: #1d5bd6;
+  --rs-grad-primary: linear-gradient(135deg, #16c6d6 0%, #2f6ff0 100%);
+  --rs-danger: #e03a61;
+  --rs-warn: #c9820f;
+  --rs-ok: #0a9c60;
+  --rs-shadow: 0 18px 44px -24px rgba(28, 60, 120, 0.34);
+  --rs-glow: 0 0 0 1px var(--rs-line), 0 20px 46px -30px rgba(40, 130, 200, 0.34);
+  --rs-header-bg: linear-gradient(180deg, rgba(232, 237, 245, 0.94), rgba(232, 237, 245, 0.7) 70%, transparent);
+  --rs-nav-bg: linear-gradient(180deg, rgba(240, 244, 250, 0.62), rgba(230, 236, 245, 0.97));
+  --rs-chrome-solid: rgba(238, 242, 249, 0.82);
+  --rs-overlay-bg: rgba(20, 34, 58, 0.4);
+}
+/* Primary button: su light il gradiente resta cyan→blu, testo bianco per contrasto */
+html[data-theme='light'] .rs-btn--primary { color: #ffffff; }
+html[data-theme='light'] .rs-navfab { color: #ffffff; }
+/* Contrasto badge/tono su fondo chiaro */
+html[data-theme='light'] .rs-badge--todo { color: #1d6fd8; background: rgba(47, 111, 240, 0.12); border-color: rgba(47, 111, 240, 0.3); }
+html[data-theme='light'] .rs-badge--waiting { color: #a9700a; background: rgba(201, 130, 15, 0.12); }
+html[data-theme='light'] .rs-badge--tecnico { color: #6b3fd0; background: rgba(107, 63, 208, 0.12); border-color: rgba(107, 63, 208, 0.28); }
+html[data-theme='light'] .rs-badge--done { color: #0a8f57; background: rgba(10, 156, 96, 0.12); }
+html[data-theme='light'] .rs-badge--high { color: #d3315a; background: rgba(224, 58, 97, 0.12); }
+html[data-theme='light'] .rs-badge--accent { color: #0b93b0; background: rgba(11, 184, 212, 0.12); }
+html[data-theme='light'] .rs-stat__icon.warn { color: #d3315a; background: rgba(224, 58, 97, 0.12); }
+html[data-theme='light'] .rs-btn--danger { color: #c62649; background: rgba(224, 58, 97, 0.1); border-color: rgba(224, 58, 97, 0.32); }
+html[data-theme='light'] .rs-hotelchip img,
+html[data-theme='light'] .rs-drawer__head img,
+html[data-theme='light'] .rs-hotelrow img,
+html[data-theme='light'] .rs-hotel-option img,
+html[data-theme='light'] .rs-sidebar__brand img { background: #ffffff; }
+
+/* ---------- Profile ---------- */
+.rs-profile-head { display: flex; align-items: center; gap: 16px; }
+.rs-profile-head img { width: 60px; height: 60px; border-radius: 18px; background: #fff; padding: 5px; object-fit: contain; }
+.rs-profile-head strong { font-family: 'Sora'; font-size: 1.2rem; display: block; margin-bottom: 6px; }
+.rs-profile-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rs-line); }
+.rs-profile-row:last-child { border-bottom: 0; }
+.rs-profile-row span { color: var(--rs-text-2); font-size: .88rem; }
+.rs-profile-row b { font-size: .92rem; text-align: right; word-break: break-word; }
+.rs-pref-block { display: flex; flex-direction: column; gap: 18px; }
+.rs-pref { display: flex; flex-direction: column; gap: 10px; }
+.rs-pref__label { display: flex; align-items: center; gap: 11px; }
+.rs-pref__label .rs-icon { color: var(--rs-cyan); width: 22px; height: 22px; }
+.rs-pref__label b { display: block; font-size: .95rem; }
+.rs-pref__label small { color: var(--rs-text-2); font-size: .78rem; }

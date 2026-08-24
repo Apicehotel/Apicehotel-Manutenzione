@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { UI_SIZES, loadUiSize, setUiSize } from './ui-size.js'
+import { THEMES, loadThemeChoice, setThemeChoice } from './theme.js'
 
 const ICONS = {
   home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M9.5 21v-6h5v6" /></>,
@@ -190,6 +191,26 @@ export function UiSizeControl({ className = '' }) {
       {UI_SIZES.map(([key, label]) => (
         <button key={key} type="button" className={value === key ? 'active' : ''} aria-pressed={value === key}
           onClick={() => pick(key)} data-testid={`ui-size-${key}`}>
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function ThemeControl({ className = '' }) {
+  const [choice, setChoice] = useState(loadThemeChoice())
+  useEffect(() => {
+    const onChange = (event) => setChoice(event.detail?.choice || loadThemeChoice())
+    window.addEventListener('apice-theme-changed', onChange)
+    return () => window.removeEventListener('apice-theme-changed', onChange)
+  }, [])
+  const pick = (next) => { setThemeChoice(next); setChoice(next) }
+  return (
+    <div className={`rs-segmented rs-uisize ${className}`} role="group" aria-label="Tema">
+      {THEMES.map(([key, label]) => (
+        <button key={key} type="button" className={choice === key ? 'active' : ''} aria-pressed={choice === key}
+          onClick={() => pick(key)} data-testid={`theme-${key}`}>
           {label}
         </button>
       ))}

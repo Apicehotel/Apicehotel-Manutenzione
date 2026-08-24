@@ -4,7 +4,7 @@ import { supabase } from '../supabase.js'
 import { supabaseUrl } from '../supabase.js'
 import { fetchUsers, insertUser, updateUserRow, updateUserPin, setUserActive, permanentlyDeleteUser, getTechnicianLink } from '../users-data.js'
 import { fetchAllSensors, updateSensorVisibility, syncSensorsFromEwelink } from '../sensors-admin-data.js'
-import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Spinner, EmptyState, Modal, ConfirmDialog, UiSizeControl } from './ui.jsx'
+import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Spinner, EmptyState, Modal, ConfirmDialog, UiSizeControl, ThemeControl } from './ui.jsx'
 import { logoFor } from './helpers.js'
 
 const PERMISSION_LABELS = {
@@ -274,7 +274,14 @@ function NavigationTab() {
 function AppearanceTab() {
   return (
     <section data-testid="settings-appearance">
-      <div className="rs-page-title"><div><h1>Aspetto</h1><p>Dimensione interfaccia dell'app</p></div></div>
+      <div className="rs-page-title"><div><h1>Aspetto</h1><p>Tema e dimensione interfaccia</p></div></div>
+      <Card className="rs-card--pad" style={{ marginBottom: 12 }}>
+        <div className="rs-uisize-block">
+          <strong style={{ fontFamily: 'Sora' }}>Tema</strong>
+          <small>Sistema segue le preferenze del dispositivo. Chiaro e Scuro forzano il tema.</small>
+          <ThemeControl />
+        </div>
+      </Card>
       <Card className="rs-card--pad">
         <div className="rs-uisize-block">
           <strong style={{ fontFamily: 'Sora' }}>Dimensione interfaccia</strong>

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
-import { Icon, IconButton, Sheet, Button, EmptyState, UiSizeControl } from './ui.jsx'
+import { Icon, IconButton, Sheet, Button, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
 import { logoFor, hotelById, firstName } from './helpers.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import Home from './Home.jsx'
 import Issues from './Issues.jsx'
 import Settings from './Settings.jsx'
+import Profile from './Profile.jsx'
 import SoonScreen from './SoonScreen.jsx'
 
 const BOTTOM_NAV = [
@@ -91,6 +92,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const renderView = () => {
     if (view === 'home') return <Home user={user} hotel={hotel} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'profile') return <Profile user={user} hotel={hotel} />
     const guard = VIEW_GUARDS[view]
     if (guard && user && !guard(user, hotel)) {
       return <EmptyState icon="lock" title="Accesso non consentito">Il tuo ruolo ({user.role}) non può usare questa sezione.</EmptyState>
@@ -126,6 +128,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           <div className="rs-sidebar__scroll">
             <NavGroups user={user} hotel={hotel} variant="sidebar" current={view} onPick={pick} />
             <div className="rs-sidebar__prefs">
+              <span className="rs-sidebar__label">Tema</span>
+              <ThemeControl />
               <span className="rs-sidebar__label">Dimensione interfaccia</span>
               <UiSizeControl />
             </div>
@@ -187,6 +191,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <div className="rs-drawer__scroll">
               <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} />
               <span className="rs-drawer__label">Preferenze</span>
+              <div className="rs-drawer__setting">
+                <small>Tema</small>
+                <ThemeControl />
+              </div>
               <div className="rs-drawer__setting">
                 <small>Dimensione interfaccia</small>
                 <UiSizeControl />
