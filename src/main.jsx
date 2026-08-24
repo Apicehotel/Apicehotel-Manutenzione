@@ -31,9 +31,11 @@ import './admin-mobile-v2.css'
 import './drawer-menu-v2.css'
 import './planned-assignees-groups.css'
 import './planning-sale-mobile-fix.css'
-// Unified UI v1 remains as compatibility layer; v2 is the final visual authority.
+// Unified UI v1 remains as compatibility layer; v2 keeps the structural rules.
 import './unified-ui-v1.css'
 import './unified-ui-v2.css'
+// Approved Dark Shell is imported last and is the global visual authority.
+import './approved-dark-shell.css'
 // Approved Dark Shell entry is the only unauthenticated entry surface.
 import './dark-shell-entry.css'
 import './offline-status.js'
