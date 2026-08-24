@@ -34,10 +34,12 @@ import './planning-sale-mobile-fix.css'
 // Unified UI v1 remains as compatibility layer; v2 keeps the structural rules.
 import './unified-ui-v1.css'
 import './unified-ui-v2.css'
-// Approved Dark Shell is imported last and is the global visual authority.
+// Approved Dark Shell is the global visual authority.
 import './approved-dark-shell.css'
 // Approved Dark Shell entry is the only unauthenticated entry surface.
 import './dark-shell-entry.css'
+// Final cleanup removes legacy light fragments and nested-card artifacts.
+import './approved-dark-shell-clean.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
