@@ -1,0 +1,95 @@
+/* Mobile navigation refinement after real iPhone Safari review.
+   Keeps 5 fixed navigation slots + independent global create button above HOME. */
+
+@media (max-width: 959px) {
+  :root {
+    --mobile-nav-bottom: max(4px, env(safe-area-inset-bottom));
+    --mobile-nav-h: 58px;
+    --mobile-create: 42px;
+  }
+
+  html[data-ui-size="small"] {
+    --mobile-nav-h: 52px;
+    --mobile-create: 38px;
+  }
+
+  html[data-ui-size="large"] {
+    --mobile-nav-h: 66px;
+    --mobile-create: 48px;
+  }
+
+  .app-nav {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: var(--mobile-nav-bottom) !important;
+    height: var(--mobile-nav-h) !important;
+    padding: 4px 5px !important;
+    border-radius: 17px !important;
+    box-shadow: 0 7px 22px rgba(14, 30, 21, .12) !important;
+    overflow: visible !important;
+  }
+
+  .app-nav button {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 5px 2px 3px !important;
+    gap: 2px !important;
+    border-radius: 11px !important;
+  }
+
+  .app-nav button .icon {
+    width: calc(var(--app-icon) * .84) !important;
+    height: calc(var(--app-icon) * .84) !important;
+  }
+
+  .app-nav button span {
+    font-size: clamp(9px, var(--app-caption), 12px) !important;
+  }
+
+  .unified-create-proxy {
+    bottom: calc(var(--mobile-nav-bottom) + var(--mobile-nav-h) - (var(--mobile-create) * .42)) !important;
+    width: var(--mobile-create) !important;
+    height: var(--mobile-create) !important;
+    border-width: 3px !important;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--app-accent) 24%, transparent), 0 2px 6px rgba(15,28,20,.13) !important;
+    font-size: calc(var(--mobile-create) * .58) !important;
+  }
+
+  /* Tiny visual cradle only; avoids the oversized white half-moon seen on iPhone. */
+  .unified-create-proxy::before {
+    width: calc(var(--mobile-create) + 10px) !important;
+    height: 12px !important;
+    bottom: -4px !important;
+    border-radius: 999px 999px 0 0 !important;
+    box-shadow: 0 -1px 0 color-mix(in srgb, var(--app-line) 75%, transparent) !important;
+  }
+
+  .ops-main {
+    padding-bottom: calc(var(--mobile-nav-h) + var(--mobile-create) + 34px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .operations {
+    padding-bottom: calc(var(--mobile-nav-h) + 18px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box;
+  }
+
+  .home-fab-arc {
+    bottom: var(--mobile-nav-bottom) !important;
+    padding-bottom: calc(var(--mobile-nav-h) + 14px) !important;
+  }
+
+  .local-data-note {
+    bottom: calc(var(--mobile-nav-bottom) + var(--mobile-nav-h) + 8px) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-nav {
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  .app-nav button span {
+    font-size: 9px !important;
+  }
+}
