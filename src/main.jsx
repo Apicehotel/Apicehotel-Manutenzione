@@ -32,6 +32,8 @@ import './admin-mobile-v2.css'
 import './drawer-menu-v2.css'
 import './planned-assignees-groups.css'
 import './planning-sale-mobile-fix.css'
+// Unified UI is intentionally loaded last: one final responsive authority.
+import './unified-ui-v1.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
@@ -42,6 +44,7 @@ import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 import { initAdminSectionNavigation } from './admin-section-nav.js'
 import { initDrawerMenuV2 } from './drawer-menu-v2.js'
 import { initPlannedAssigneeGroups } from './planned-assignees-groups.js'
+import { initUnifiedUiV1 } from './unified-ui-v1.js'
 
 // Link personale del tecnico esterno (/tecnico/<token>): pagina pubblica
 // leggera, separata dal flusso PIN/Home dell'app principale.
@@ -63,6 +66,7 @@ if (!technicianMatch) {
   initAdminSectionNavigation()
   initDrawerMenuV2()
   initPlannedAssigneeGroups()
+  initUnifiedUiV1()
 
   // Una subscription Web Push appartiene al browser/dispositivo, ma RandApp
   // può essere usata su più hotel. Quando il login cambia struttura,
