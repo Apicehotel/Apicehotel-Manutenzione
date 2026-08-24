@@ -1,3 +1,5 @@
+import './mobile-nav-refine.css'
+
 const NAV_KEYS = {
   home: 'home',
   segnalazioni: 'issues',
