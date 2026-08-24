@@ -59,14 +59,12 @@
     font-size: calc(var(--mobile-create) * .58) !important;
   }
 
-  /* Remove the old cradle/half-moon: it caused the white cut-out on iPhone. */
   .unified-create-proxy::before,
   .unified-create-proxy::after {
     content: none !important;
     display: none !important;
   }
 
-  /* Reserve scrollable content space for fixed chrome. */
   .ops-main,
   .operations,
   .drawer-panel,
@@ -83,15 +81,85 @@
   .local-data-note {
     bottom: calc(var(--mobile-nav-bottom) + var(--mobile-nav-h) + 8px) !important;
   }
+
+  /* Admin gate uses the same persistent-bottom principle without bypassing PIN auth. */
+  .admin-gate-page {
+    min-height: 100dvh !important;
+    padding-bottom: calc(var(--mobile-nav-h) + 30px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gate-nav {
+    position: fixed !important;
+    z-index: 10040 !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: var(--mobile-nav-bottom) !important;
+    height: var(--mobile-nav-h) !important;
+    margin: 0 !important;
+    padding: 4px 5px !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 2px !important;
+    border: 1px solid color-mix(in srgb, var(--app-line-strong) 82%, white) !important;
+    border-radius: 17px !important;
+    background: rgba(255,255,255,.97) !important;
+    box-shadow: 0 7px 22px rgba(14, 30, 21, .12) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-gate-nav button {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 5px 2px 3px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: transparent !important;
+    color: #617289 !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    font-weight: 760 !important;
+    box-shadow: none !important;
+  }
+
+  .admin-gate-nav button[data-action="home"] {
+    color: var(--app-accent) !important;
+    background: var(--app-accent-soft) !important;
+  }
+
+  .admin-gate-nav button[data-locked="true"] {
+    opacity: .42 !important;
+    cursor: default !important;
+  }
+
+  .admin-gate-nav-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
+  }
 }
 
 @media (max-width: 430px) {
-  .app-nav {
+  .app-nav,
+  .admin-gate-nav {
     left: 8px !important;
     right: 8px !important;
   }
 
-  .app-nav button span {
+  .app-nav button span,
+  .admin-gate-nav button span:last-child {
     font-size: 9px !important;
   }
 }
