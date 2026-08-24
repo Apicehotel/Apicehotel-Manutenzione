@@ -1,28 +1,31 @@
-// Admin section navigation: real views (Utenti / Sensori) plus Home action.
-// The controls are mounted into the existing AdminPanel without changing
-// the large App.jsx component. SensorsPanel keeps its React state and handlers.
+import { mountRoleNavigationConfig } from './role-navigation-config.js'
 
+// Admin section navigation: real views (Utenti / Sensori / Navigazione) plus Home action.
 const VIEW_KEY = 'randapp.admin-view'
+const VIEWS = new Set(['users','sensors','navigation'])
 
 function getInitialView() {
   try {
     const saved = sessionStorage.getItem(VIEW_KEY)
-    return saved === 'sensors' ? 'sensors' : 'users'
+    return VIEWS.has(saved) ? saved : 'users'
   } catch {
     return 'users'
   }
 }
 
 function applyView(panel, view) {
-  const normalized = view === 'sensors' ? 'sensors' : 'users'
+  const normalized = VIEWS.has(view) ? view : 'users'
   panel.dataset.adminView = normalized
 
   const title = panel.querySelector('.admin-heading h1')
   const subtitle = panel.querySelector('.admin-heading p')
-  if (title) title.textContent = normalized === 'sensors' ? 'Sensori' : 'Utenti'
-  if (subtitle) subtitle.textContent = normalized === 'sensors'
-    ? 'Gestisci sensori e visibilità nelle strutture.'
-    : 'Gestisci utenti, ruoli e accessi alle strutture.'
+  const copy = {
+    users: ['Utenti', 'Gestisci utenti, ruoli e accessi alle strutture.'],
+    sensors: ['Sensori', 'Gestisci sensori e visibilità nelle strutture.'],
+    navigation: ['Navigazione', 'Scegli cosa mostrare sotto, nel menu laterale o disattivare per ogni ruolo.'],
+  }
+  if (title) title.textContent = copy[normalized][0]
+  if (subtitle) subtitle.textContent = copy[normalized][1]
 
   panel.querySelectorAll('.admin-section-nav button[data-view]').forEach((button) => {
     const active = button.dataset.view === normalized
@@ -30,6 +33,7 @@ function applyView(panel, view) {
     button.setAttribute('aria-current', active ? 'page' : 'false')
   })
 
+  if (normalized === 'navigation') mountRoleNavigationConfig(panel)
   try { sessionStorage.setItem(VIEW_KEY, normalized) } catch { /* opzionale */ }
 }
 
@@ -48,6 +52,7 @@ function mountAdminNavigation() {
   nav.innerHTML = `
     <button type="button" data-view="users"><span class="admin-nav-icon" aria-hidden="true">♙</span><span>Utenti</span></button>
     <button type="button" data-view="sensors"><span class="admin-nav-icon" aria-hidden="true">⌁</span><span>Sensori</span></button>
+    <button type="button" data-view="navigation"><span class="admin-nav-icon" aria-hidden="true">☷</span><span>Navigazione</span></button>
     <button type="button" data-action="home"><span class="admin-nav-icon" aria-hidden="true">⌂</span><span>Home</span></button>
   `
 
