@@ -1,72 +1,89 @@
-/* RandApp hotel selector v3
-   Pattern: simple responsive selection list inspired by modern shadcn admin shells.
-   IMPORTANT: original hotel artwork assets stay untouched. No crop, recolor or distortion.
-   Hotel Gio is always the middle option. */
+/* RandApp hotel selector v4
+   One-screen mobile selector inspired by compact modern admin shells.
+   Original hotel artwork assets remain untouched: no crop, recolor or distortion.
+   Visual order is always Choco -> Gio -> Brigantino, with Gio in the middle. */
 
 @media (max-width: 700px) {
   .home-page {
+    height: 100dvh !important;
     min-height: 100dvh !important;
+    overflow: hidden !important;
     background: #f5f7f6 !important;
   }
 
+  .home-page .home-header {
+    display: none !important;
+  }
+
   .home-page .home-content {
-    min-height: 100dvh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
     width: 100% !important;
     max-width: 560px !important;
     margin: 0 auto !important;
-    padding: 24px 18px calc(88px + env(safe-area-inset-bottom)) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    overflow: visible !important;
+    padding: max(10px, env(safe-area-inset-top)) 16px calc(66px + env(safe-area-inset-bottom)) !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    align-content: stretch !important;
+    gap: clamp(8px, 1.5dvh, 14px) !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
   }
 
   .home-page .home-brand-hero {
     display: grid !important;
-    margin: 0 auto 20px !important;
-    padding: 7px 11px 7px 7px !important;
-    border-radius: 14px !important;
+    width: max-content !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 5px 9px 5px 5px !important;
+    border-radius: 12px !important;
   }
 
-  .home-page .home-mascot { width: 44px !important; height: 44px !important; }
-  .home-page .home-brand-title { font-size: 17px !important; }
-  .home-page .home-brand-tagline { font-size: 10px !important; }
+  .home-page .home-mascot {
+    width: clamp(34px, 5.6dvh, 42px) !important;
+    height: clamp(34px, 5.6dvh, 42px) !important;
+  }
+
+  .home-page .home-brand-title { font-size: clamp(14px, 2.2dvh, 17px) !important; }
+  .home-page .home-brand-tagline { font-size: clamp(8px, 1.35dvh, 10px) !important; }
 
   .home-page .home-intro {
     width: 100% !important;
-    margin: 0 0 18px !important;
+    margin: 0 !important;
     padding: 0 2px !important;
     text-align: left !important;
   }
 
   .home-page .home-intro h1 {
-    margin: 0 0 5px !important;
-    font-size: clamp(27px, 7.5vw, 34px) !important;
-    line-height: 1.08 !important;
+    margin: 0 0 3px !important;
+    font-size: clamp(22px, 4.1dvh, 31px) !important;
+    line-height: 1.04 !important;
     letter-spacing: -.035em !important;
   }
 
   .home-page .home-intro p {
     margin: 0 !important;
     color: #6b756f !important;
-    font-size: 14px !important;
-    line-height: 1.4 !important;
+    font-size: clamp(11px, 1.8dvh, 14px) !important;
+    line-height: 1.25 !important;
   }
 
   .home-page .hotel-slider {
     width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    overflow: visible !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    gap: clamp(6px, 1.15dvh, 10px) !important;
+    overflow: hidden !important;
     scroll-snap-type: none !important;
-    touch-action: pan-y !important;
+    touch-action: manipulation !important;
   }
 
-  /* Source order is Gio, Choco, Brigantino. CSS ordering keeps Gio visually centered. */
+  /* HOTELS source order is Gio, Choco, Brigantino. Keep Gio visually centered. */
   .home-page .showcase-card:nth-child(1) { order: 2 !important; }
   .home-page .showcase-card:nth-child(2) { order: 1 !important; }
   .home-page .showcase-card:nth-child(3) { order: 3 !important; }
@@ -74,33 +91,33 @@
   .home-page .showcase-card {
     width: 100% !important;
     max-width: none !important;
-    height: clamp(150px, 20dvh, 188px) !important;
-    min-height: 150px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     margin: 0 !important;
-    padding: 12px !important;
+    padding: clamp(5px, .9dvh, 8px) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     border: 1px solid #dce4df !important;
-    border-radius: 18px !important;
+    border-radius: clamp(12px, 2dvh, 17px) !important;
     background: #fff !important;
-    box-shadow: 0 3px 14px rgba(17,34,25,.055) !important;
+    box-shadow: 0 2px 10px rgba(17,34,25,.05) !important;
     transform: none !important;
     opacity: 1 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
   }
 
-  /* Gio: same untouched artwork, only a subtle selected/focal container. */
   .home-page .showcase-card:nth-child(1) {
     border-color: #0f7658 !important;
-    box-shadow: 0 5px 18px rgba(15,118,88,.11) !important;
+    box-shadow: 0 3px 14px rgba(15,118,88,.10) !important;
   }
 
   .home-page .showcase-card:active { transform: scale(.985) !important; }
   .home-page .showcase-card:focus-visible {
     outline: 3px solid rgba(14,118,87,.26) !important;
-    outline-offset: 2px !important;
+    outline-offset: 1px !important;
   }
 
   .home-page .showcase-card .hotel-card-img {
@@ -111,7 +128,7 @@
     max-height: 100% !important;
     object-fit: contain !important;
     object-position: center !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     background: transparent !important;
   }
 
@@ -119,16 +136,39 @@
   .home-page .mobile-help { display: none !important; }
 
   .home-page .home-admin {
-    bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-    min-height: 46px !important;
+    position: fixed !important;
+    z-index: 100 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+    min-height: 44px !important;
     min-width: 132px !important;
-    padding: 9px 16px !important;
-    border-radius: 14px !important;
+    padding: 8px 16px !important;
+    border-radius: 13px !important;
     font-size: 14px !important;
   }
 }
 
-/* Tablet and desktop: the same three-option list, not a different interaction model. */
+/* Very short mobile/browser viewports: retain the same composition and shrink fluidly. */
+@media (max-width: 700px) and (max-height: 680px) {
+  .home-page .home-content {
+    padding-top: max(6px, env(safe-area-inset-top)) !important;
+    padding-inline: 12px !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom)) !important;
+    gap: 6px !important;
+  }
+  .home-page .home-brand-hero { padding: 3px 7px 3px 3px !important; }
+  .home-page .home-mascot { width: 30px !important; height: 30px !important; }
+  .home-page .home-brand-title { font-size: 13px !important; }
+  .home-page .home-brand-tagline { font-size: 8px !important; }
+  .home-page .home-intro h1 { font-size: 21px !important; }
+  .home-page .home-intro p { font-size: 10px !important; }
+  .home-page .hotel-slider { gap: 5px !important; }
+  .home-page .showcase-card { padding: 4px !important; border-radius: 11px !important; }
+  .home-page .home-admin { min-height: 40px !important; bottom: calc(6px + env(safe-area-inset-bottom)) !important; }
+}
+
+/* Tablet/desktop retain the same logical order with comfortable vertical cards. */
 @media (min-width: 701px) {
   .home-page .hotel-slider {
     width: min(100%, 760px) !important;
@@ -137,11 +177,9 @@
     flex-direction: column !important;
     gap: 14px !important;
   }
-
   .home-page .showcase-card:nth-child(1) { order: 2 !important; }
   .home-page .showcase-card:nth-child(2) { order: 1 !important; }
   .home-page .showcase-card:nth-child(3) { order: 3 !important; }
-
   .home-page .showcase-card {
     width: 100% !important;
     max-width: none !important;
@@ -150,14 +188,12 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
-
   .home-page .showcase-card:nth-child(1) {
     border-color: #0f7658 !important;
     box-shadow: 0 12px 32px rgba(15,118,88,.11) !important;
   }
-
   .home-page .showcase-card .hotel-card-img {
     width: auto !important;
     height: auto !important;
