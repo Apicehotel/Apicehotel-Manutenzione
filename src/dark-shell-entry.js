@@ -67,6 +67,8 @@ function installGlobalEntry() {
   if (loadSession()) return
   const root = document.getElementById('root')
   if (!root || document.getElementById('approved-dark-entry')) return
+  // While Settings/Admin is open, never cover it with the unauthenticated entry.
+  if (root.querySelector('.admin-gate-page') || root.querySelector('.global-admin')) return
 
   const overlay = document.createElement('div')
   overlay.id = 'approved-dark-entry'
@@ -154,7 +156,19 @@ function installGlobalEntry() {
 }
 
 export function initApprovedDarkShellEntry() {
-  const run = () => setTimeout(installGlobalEntry, 40)
+  let timer = null
+  const run = () => {
+    clearTimeout(timer)
+    timer = setTimeout(installGlobalEntry, 50)
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true })
   else run()
+
+  // React swaps Home/Admin views without reloading. Re-check after each swap so
+  // Home from Settings returns to the approved RandApp entry, never the old hotel selector.
+  const root = document.getElementById('root')
+  if (root) {
+    const observer = new MutationObserver(run)
+    observer.observe(root, { childList: true, subtree: true })
+  }
 }
