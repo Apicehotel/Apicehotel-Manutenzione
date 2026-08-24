@@ -35,6 +35,16 @@ p,small,.muted,.subtitle,.session-note span{color:var(--approved-muted) !importa
 .location-suggestions button{color:#eef7fb !important;background:transparent !important}
 .location-suggestions button:hover{background:rgba(22,163,174,.12) !important}
 
+/* Admin back action: keep the escape route in the thumb zone, not at the top. */
+.admin-gate-page{display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:flex-start !important;gap:14px !important}
+.admin-gate-page>.admin-gate{order:1 !important;width:min(100%,500px) !important}
+.admin-gate-page>.back-link{order:2 !important;width:min(100%,500px) !important;min-height:58px !important;margin:0 auto !important;border:1px solid var(--approved-line) !important;border-radius:18px !important;background:rgba(8,25,41,.76) !important;color:transparent !important;font-size:0 !important;font-weight:800 !important;display:flex !important;align-items:center !important;justify-content:center !important;box-shadow:0 12px 26px rgba(0,0,0,.18) !important}
+.admin-gate-page>.back-link::after{content:'← Torna a RandApp';color:#e5eef4 !important;font-size:16px !important;letter-spacing:0 !important}
+@media(max-width:959px){
+  .admin-gate-page{padding-bottom:calc(22px + env(safe-area-inset-bottom)) !important}
+  .admin-gate-page>.back-link{position:relative !important;inset:auto !important;flex:0 0 auto !important}
+}
+
 /* Main app shell */
 .operations{min-height:100dvh !important;padding-bottom:calc(84px + env(safe-area-inset-bottom)) !important}
 .ops-header{background:rgba(4,17,30,.92) !important;border-bottom:1px solid var(--approved-line) !important;color:var(--approved-text) !important;box-shadow:0 10px 28px rgba(0,0,0,.18) !important;backdrop-filter:blur(18px) !important}
