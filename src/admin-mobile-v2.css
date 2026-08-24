@@ -1,5 +1,5 @@
-/* RandApp Admin Mobile v3
-   Native-style bottom navigation: Utenti / Sensori / Home.
+/* RandApp Admin Mobile v4
+   One fixed bottom navigation row: Utenti / Sensori / Navigazione / Home.
    Desktop remains untouched; mobile content gets safe bottom clearance. */
 @media (max-width: 760px) {
   .operations .ops-main.global-admin {
@@ -9,66 +9,94 @@
 
   .global-admin .admin-panel {
     width: 100% !important;
-    padding: max(10px, env(safe-area-inset-top)) 12px calc(104px + env(safe-area-inset-bottom)) !important;
+    padding: max(10px, env(safe-area-inset-top)) 12px calc(92px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
   }
 
-  /* Bottom app navigation: three equal, thumb-friendly destinations. */
+  /* Single admin bottom bar. Four destinations, never wraps to a second row. */
   .global-admin .admin-section-nav {
     position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: max(4px, env(safe-area-inset-bottom)) !important;
     top: auto !important;
-    z-index: 80 !important;
-    width: 100% !important;
+    z-index: 10040 !important;
+    width: auto !important;
+    height: 58px !important;
     margin: 0 !important;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    padding: 4px 5px !important;
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
-    gap: 7px !important;
-    background: rgba(248,250,253,.96) !important;
-    border-top: 1px solid #dce5ef !important;
-    border-bottom: 0 !important;
-    box-shadow: 0 -8px 24px rgba(22,42,67,.08) !important;
-    backdrop-filter: blur(18px) !important;
-    -webkit-backdrop-filter: blur(18px) !important;
+    grid-template-columns: repeat(4, minmax(0,1fr)) !important;
+    grid-template-rows: 1fr !important;
+    align-items: stretch !important;
+    gap: 2px !important;
+    overflow: visible !important;
+    border: 1px solid #dce5ef !important;
+    border-radius: 17px !important;
+    background: rgba(255,255,255,.97) !important;
+    box-shadow: 0 7px 22px rgba(14,30,21,.12) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+    box-sizing: border-box !important;
   }
+
   .global-admin .admin-section-nav button {
     min-width: 0 !important;
-    min-height: 52px !important;
-    border-radius: 12px !important;
-    padding: 5px 6px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 5px 2px 3px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 2px !important;
-    border: 1px solid transparent !important;
+    border: 0 !important;
+    border-radius: 11px !important;
     background: transparent !important;
     color: #617289 !important;
-    font-size: 11px !important;
-    line-height: 1.1 !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
     text-align: center !important;
     box-shadow: none !important;
+    overflow: hidden !important;
   }
+
+  .global-admin .admin-section-nav button > span:last-child {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
   .global-admin .admin-section-nav button.active {
     background: #eaf2ff !important;
-    border-color: #d4e4fb !important;
     color: #1267dc !important;
   }
+
   .global-admin .admin-nav-icon {
-    width: 25px !important;
-    height: 25px !important;
+    width: 23px !important;
+    height: 23px !important;
+    display: grid !important;
+    place-items: center !important;
     border-radius: 8px !important;
     background: transparent !important;
-    font-size: 18px !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
   }
+
   .global-admin .admin-section-nav button.active .admin-nav-icon {
     background: rgba(18,103,220,.08) !important;
   }
 
-  /* Home now lives in bottom navigation, so remove the duplicate old control. */
-  .global-admin .admin-heading .back-link { display: none !important; }
+  /* Home lives only in the bottom navigation: remove duplicate controls. */
+  .global-admin .admin-heading .back-link,
+  .global-admin > .back-link,
+  .global-admin .admin-panel > .back-link {
+    display: none !important;
+  }
 
   .global-admin .admin-heading {
     min-height: 0 !important;
@@ -115,14 +143,12 @@
   .global-admin .user-edit-form { grid-column:1/-1!important; }
   .global-admin .user-edit-actions { display:grid!important;grid-template-columns:1fr 1fr!important; }
   .global-admin .admin-panel[data-admin-view="sensors"] .sensors-panel { margin:0!important;padding:0!important;border-top:0!important; }
-
-  /* Old fixed Home treatment must never compete with the new bottom bar. */
-  .global-admin > .back-link,.global-admin .admin-panel > .back-link { display:none!important; }
 }
 
 @media (max-width:390px) {
   .global-admin .admin-panel { padding-left:10px!important;padding-right:10px!important; }
-  .global-admin .admin-section-nav { padding-left:8px!important;padding-right:8px!important;gap:5px!important; }
+  .global-admin .admin-section-nav { left:6px!important;right:6px!important;padding-left:4px!important;padding-right:4px!important; }
+  .global-admin .admin-section-nav button { font-size:9px!important; }
   .global-admin .admin-role-group tbody tr { padding:12px!important;gap:9px 6px!important; }
   .global-admin .admin-user-actions { grid-template-columns:1fr!important; }
 }
