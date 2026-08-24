@@ -25,12 +25,9 @@ function normalizeNav(nav) {
     delete button.dataset.uiSlot
   })
 
-  // HOME owns the fixed center slot. Other existing destinations fill the
-  // remaining four slots without inventing navigation that a role cannot use.
   if (home) home.dataset.uiSlot = '3'
   const slots = ['1', '2', '4', '5']
   others.slice(0, 4).forEach((button, index) => { button.dataset.uiSlot = slots[index] })
-
   nav.dataset.uiNormalized = 'true'
 }
 
@@ -73,7 +70,43 @@ function ensureCreateProxy(operations) {
   return button
 }
 
+function ensureAdminGateNav() {
+  const gatePage = document.querySelector('.admin-gate-page')
+  if (!gatePage || gatePage.querySelector(':scope > .admin-gate-nav')) return
+
+  const nav = document.createElement('nav')
+  nav.className = 'admin-gate-nav'
+  nav.setAttribute('aria-label', 'Navigazione amministrazione')
+
+  const items = [
+    ['Utenti', '♙'],
+    ['Sensori', '⌁'],
+    ['Navigazione', '☷'],
+    ['Home', '⌂'],
+  ]
+
+  items.forEach(([label, icon], index) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.innerHTML = `<span class="admin-gate-nav-icon" aria-hidden="true">${icon}</span><span>${label}</span>`
+
+    if (index < 3) {
+      button.disabled = true
+      button.dataset.locked = 'true'
+      button.setAttribute('aria-label', `${label} — disponibile dopo il PIN Admin`)
+    } else {
+      button.dataset.action = 'home'
+      button.addEventListener('click', () => gatePage.querySelector('.back-link')?.click())
+    }
+    nav.appendChild(button)
+  })
+
+  gatePage.appendChild(nav)
+}
+
 function syncUnifiedUi() {
+  ensureAdminGateNav()
+
   const operations = document.querySelector('.operations')
   if (!operations || operations.querySelector('.global-admin')) return
 
