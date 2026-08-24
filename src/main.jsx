@@ -31,9 +31,11 @@ import './admin-mobile-v2.css'
 import './drawer-menu-v2.css'
 import './planned-assignees-groups.css'
 import './planning-sale-mobile-fix.css'
-// Unified UI v1 remains as compatibility layer; v2 is the final visual authority.
+// Unified UI v1 remains as compatibility layer; v2 is the final structural authority.
 import './unified-ui-v1.css'
 import './unified-ui-v2.css'
+// Approved visual direction from the validated Dark Shell previews.
+import './approved-dark-shell.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
