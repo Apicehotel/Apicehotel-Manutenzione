@@ -1,16 +1,125 @@
-/* Mobile hotel selector: keep swipe navigation, but never leave the carousel
-   parked between two hotels. Each gesture settles on one complete card. */
+/* RandApp hotel selector v2
+   Mobile/tablet entry uses a vertical list of the three original hotel artworks.
+   Artwork assets remain untouched: no crop, recolor or distortion. */
+
 @media (max-width: 700px) {
+  .home-page {
+    min-height: 100dvh !important;
+    background: #f5f7f6 !important;
+  }
+
+  .home-page .home-content {
+    min-height: 100dvh !important;
+    padding: 24px 18px calc(94px + env(safe-area-inset-bottom)) !important;
+    display: block !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-page .home-brand-hero {
+    display: none !important;
+  }
+
+  .home-page .home-intro {
+    width: min(100%, 520px) !important;
+    margin: 0 auto 18px !important;
+    padding: 0 2px !important;
+    text-align: left !important;
+  }
+
+  .home-page .home-intro h1 {
+    margin: 0 0 5px !important;
+    font-size: clamp(26px, 7.5vw, 34px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .home-page .home-intro p {
+    margin: 0 !important;
+    color: #6b756f !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
   .home-page .hotel-slider {
-    scroll-snap-type: x mandatory;
-    scroll-snap-stop: always;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
+    width: min(100%, 520px) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    overscroll-behavior-x: auto !important;
+    touch-action: pan-y !important;
   }
 
   .home-page .showcase-card {
-    scroll-snap-align: center;
-    scroll-snap-stop: always;
+    width: 100% !important;
+    max-width: none !important;
+    height: 164px !important;
+    min-height: 164px !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    display: grid !important;
+    place-items: center !important;
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+    border: 1px solid #dce4df !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    box-shadow: 0 3px 14px rgba(17,34,25,.055) !important;
+    transform: none !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .home-page .showcase-card:active {
+    transform: scale(.985) !important;
+    background: #fafcfb !important;
+  }
+
+  .home-page .showcase-card:focus-visible {
+    outline: 3px solid rgba(14,118,87,.26) !important;
+    outline-offset: 2px !important;
+  }
+
+  .home-page .showcase-card .hotel-card-img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+  }
+
+  .home-page .slider-dots,
+  .home-page .mobile-help {
+    display: none !important;
+  }
+
+  .home-page .home-admin {
+    bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    min-height: 46px !important;
+    min-width: 132px !important;
+    padding: 9px 16px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 900px) {
+  .home-page .hotel-slider {
+    width: min(100%, 620px) !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .home-page .showcase-card {
+    max-width: none !important;
+    height: 190px !important;
   }
 }
