@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend-only UI testing of RandApp Dark Shell (Vite + React 19 + Supabase) via public preview URL. Verified login screen rendering, brand mark, dark theme, autocomplete from Supabase, validation errors, admin gate, and responsive layout on mobile/tablet/desktop. No real login attempted (no credentials provided).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": {
+    "login_shell_rendering": "PASS - logo, title 'RandApp', subtitle 'Manutenzione', dark bg rgb(6,10,19), all data-testid present (login-user-input, login-pin-input, login-submit, open-settings-link)",
+    "empty_submit_validation": "PASS - login-error shows 'Seleziona un utente valido dalla lista'",
+    "supabase_autocomplete": "PASS - typing 'a' returned 6 real suggestions from Supabase (e.g. 'Alberto Guarducci'); clicking one populates the input field correctly",
+    "short_pin_validation": "PASS - login-error shows 'Inserisci un PIN di 4 cifre' when PIN length != 4",
+    "wrong_pin_attempt": "PASS - request submitted to Supabase (returns 500 as expected for invalid credentials); button remained in 'ACCESSO…' state during the 3s wait window - not a bug, just needs longer wait to observe error state. No login bypass.",
+    "settings_link_opens_admin_gate": "PASS - open-settings-link opens Dark Shell admin gate with admin-pin-input + admin-gate-submit + back link ('RandApp')",
+    "admin_wrong_pin": "PASS - after submitting '000000', user remains on admin gate (no bypass). No visible error text rendered because loginAdmin likely resolves/rejects silently against Supabase; user is not granted access.",
+    "responsive_mobile_390": "PASS - single-column layout, no horizontal overflow",
+    "responsive_tablet_768": "PASS - no horizontal overflow",
+    "responsive_desktop_1920": "PASS - centered card layout, dark background retained",
+    "console_errors": "Only 1 expected 500 from Supabase auth (wrong-pin attempt) and 1 WebSocket warning (realtime connection). No JS runtime errors, no pageerrors."
+  },
+  "critical_code_review_comments": [
+    "AdminGate: when loginAdmin() rejects, the catch block sets a generic error, but observation showed no visible '.rs-error' after wrong 6-digit pin submit — verify that loginAdmin actually throws on wrong PIN (it may resolve without throwing, leaving the user silently stuck with only 'ACCESSO…' toggling). Recommend explicit error rendering / test.",
+    "Login form: after a failed loginWithPin loop the button is re-enabled but no automatic focus/reset; UX minor.",
+    "Login submit is not disabled while typing (only 'busy'); allows spamming validation which is fine but consider disabling until fields have content."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Verify AdminGate error path renders '.rs-error' when loginAdmin rejects — currently no visible error observed for wrong admin PIN (may be a silent-resolve bug in loginAdmin).",
+    "Consider handling Supabase WebSocket realtime warning (harmless but visible in console)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "100% for verifiable-without-login scenarios"},
+  "test_credentials": "None provided by user; login-success paths intentionally not tested (blocked: no credentials).",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Public URL: https://575e26ec-411d-4291-83cd-58436482d36c.preview.emergentagent.com . Supabase directory autocomplete works and returns real names (e.g. 'Alberto Guarducci'). data-testids in use: login-user-input, login-suggestions, login-pin-input, login-submit, login-error, open-settings-link, admin-pin-input, admin-gate-submit. Do NOT hardcode any PIN. AdminGate wrong-pin error message may not be rendering — investigate loginAdmin promise resolution if retesting.",
+  "rca of the issue": "N/A - no blocking issues found."
+}

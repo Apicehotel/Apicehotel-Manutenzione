@@ -6,3 +6,6 @@ dist
 .DS_Store
 .vercel
 test/artifacts
+
+# Preview launcher for Emergent supervisor (not part of the app)
+/frontend
