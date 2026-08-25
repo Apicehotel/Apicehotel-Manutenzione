@@ -17,14 +17,14 @@ test('Planning Sale non usa più localStorage: fetch iniziale + tempo reale via 
 
 test('src/sale-data.js: stesso ponte app<->riga DB già usato per interventi/avvisi urgenti, mappa lo stato a 3 livelli', async () => {
   const source = await readFile(new URL('../src/sale-data.js', import.meta.url), 'utf8')
-  assert.match(source, /export async function fetchBookings\(hotelId\) \{/)
-  assert.match(source, /export async function insertBooking\(item\) \{/)
-  assert.match(source, /export async function updateBookingRow\(id, changes\) \{/)
-  assert.match(source, /export async function deleteBookingRow\(id\) \{/)
-  assert.match(source, /export function subscribeBookings\(hotelId, onChange\) \{/)
-  assert.match(source, /status: row\.stato \|\| 'pending',/)
-  assert.match(source, /toFinishBy: row\.da_finire_da \|\| null,/)
-  assert.match(source, /doneBy: row\.completata_da \|\| null,/)
+  assert.match(source, /export async function fetchBookings\(hotelId\)\s*\{/)
+  assert.match(source, /export async function insertBooking\(item\)\s*\{/)
+  assert.match(source, /export async function updateBookingRow\(id\s*,\s*changes\)\s*\{/)
+  assert.match(source, /export async function deleteBookingRow\(id\)\s*\{/)
+  assert.match(source, /export function subscribeBookings\(hotelId\s*,\s*onChange\)\s*\{/)
+  assert.match(source, /status\s*:\s*row\.stato\s*\|\|\s*'pending'/)
+  assert.match(source, /toFinishBy\s*:\s*row\.da_finire_da\s*\|\|\s*null/)
+  assert.match(source, /doneBy\s*:\s*row\.completata_da\s*\|\|\s*null/)
 })
 
 test('Feedback non è più solo locale: invio su Supabase, visibile agli admin in tempo reale', async () => {
@@ -39,7 +39,7 @@ test('Feedback non è più solo locale: invio su Supabase, visibile agli admin i
   assert.match(app, /useEffect\(\(\) => \{ refresh\(\); const unsub = subscribeFeedback\(hotel\.id, refresh\); return unsub \}, \[hotel\.id\]\)/)
   // Visibile solo agli admin, raggiungibile da Altro.
   assert.match(app, /\{user\.role === 'admin' && <button onClick=\{\(\) => \{ setTab\('Feedback ricevuti'\); setMenuOpen\(false\) \}\}>/)
-  assert.match(feedbackData, /export async function insertFeedback\(hotelId, userName, text\) \{/)
-  assert.match(feedbackData, /export async function fetchFeedback\(hotelId\) \{/)
-  assert.match(feedbackData, /export function subscribeFeedback\(hotelId, onChange\) \{/)
+  assert.match(feedbackData, /export async function insertFeedback\(hotelId\s*,\s*userName\s*,\s*text\)\s*\{/)
+  assert.match(feedbackData, /export async function fetchFeedback\(hotelId\)\s*\{/)
+  assert.match(feedbackData, /export function subscribeFeedback\(hotelId\s*,\s*onChange\)\s*\{/)
 })
