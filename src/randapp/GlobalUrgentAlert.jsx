@@ -45,7 +45,7 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
 
   const active = useMemo(() => items.filter(priorityFive).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [items])
   const openItems = useMemo(() => active.filter((item) => item.status === 'aperta'), [active])
-  const current = openItems[0] || active[0] || null
+  const visible = active.slice(0, 2)
 
   const ring = useCallback(() => {
     if (!openItems.length || hidden) return
@@ -61,43 +61,41 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7)
       gain.connect(ctx.destination)
       ;[760, 960].forEach((freq, index) => {
-        const osc = ctx.createOscillator()
-        osc.type = 'sawtooth'
-        osc.frequency.setValueAtTime(freq, now + index * 0.08)
-        osc.connect(gain)
-        osc.start(now + index * 0.08)
-        osc.stop(now + 0.68)
+        const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, now + index * 0.08); osc.connect(gain); osc.start(now + index * 0.08); osc.stop(now + 0.68)
       })
     } catch { /* richiamo visivo resta attivo */ }
   }, [hidden, openItems.length])
 
   useEffect(() => {
     if (!openItems.length || hidden) return undefined
-    ring()
-    const timer = window.setInterval(ring, REPEAT_MS)
+    ring(); const timer = window.setInterval(ring, REPEAT_MS)
     return () => window.clearInterval(timer)
   }, [hidden, openItems.length, ring])
 
-  if (hidden || !current) return null
-
-  const canTake = MANAGE_ROLES.has(user?.role) && current.status === 'aperta'
-  const take = async () => {
-    await updateUrgentRow(current.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name || 'Utente' })
-    await load()
-  }
+  if (hidden || !visible.length) return null
+  const canManage = MANAGE_ROLES.has(user?.role)
+  const take = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name || 'Utente' }); await load() }
+  const done = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'completata', completedBy: user?.name || 'Utente' }); await load() }
 
   return (
-    <aside className={`rs-global-urgent ${current.status === 'aperta' ? 'is-open' : 'is-taken'}`} data-ring={ringKey} data-testid="global-priority-5" role="alert" aria-live="assertive">
-      <button type="button" className="rs-global-urgent__main" onClick={onOpen}>
-        <span className="rs-global-urgent__icon"><Icon name="warning" /></span>
-        <span className="rs-global-urgent__copy">
-          <strong>PRIORITÀ 5 · {current.status === 'aperta' ? 'URGENZA ATTIVA' : 'PRESA IN CARICO'}</strong>
-          <span>{current.location ? `${current.location} · ` : ''}{current.note}</span>
-          <small>{active.length > 1 ? `${active.length} urgenze attive · Tocca per vedere tutte` : 'Tocca per aprire gli avvisi urgenti'}</small>
-        </span>
-        <Icon name="chevronRight" />
-      </button>
-      {canTake && <Button size="sm" variant="primary" onClick={take}>Prendi in carico</Button>}
+    <aside className={`rs-global-urgent ${openItems.length ? 'is-open' : 'is-taken'}`} data-ring={ringKey} data-testid="global-priority-5" role="alert" aria-live="assertive">
+      {visible.map((item) => (
+        <div className="rs-global-urgent__row" key={item.id}>
+          <button type="button" className="rs-global-urgent__main" onClick={onOpen}>
+            <span className="rs-global-urgent__icon"><Icon name="warning" /></span>
+            <span className="rs-global-urgent__copy">
+              <strong>PRIORITÀ 5 · {item.status === 'aperta' ? 'URGENZA ATTIVA' : 'PRESA IN CARICO'}</strong>
+              <span>{item.location ? `${item.location} · ` : ''}{item.note}</span>
+              <small>{item.status === 'presa_in_carico' ? `${item.takenBy || 'Un operatore'} sta andando` : (active.length > 2 ? `${active.length} urgenze attive` : 'Richiede presa in carico')}</small>
+            </span>
+            <Icon name="chevronRight" />
+          </button>
+          {canManage && <div className="rs-global-urgent__actions">
+            {item.status === 'aperta' && <Button size="sm" variant="primary" onClick={() => take(item)}>Vado</Button>}
+            {item.status === 'presa_in_carico' && <><Button size="sm" variant="primary" onClick={() => done(item)}>Fatto</Button><Button size="sm" variant="outline" onClick={onOpen}>Non risolvibile</Button></>}
+          </div>}
+        </div>
+      ))}
     </aside>
   )
 }
