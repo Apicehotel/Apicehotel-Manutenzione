@@ -103,9 +103,9 @@ test('core lists refresh after local queue replay or conflict resolution', async
   for (const src of files) assert.match(src, /apice-offline-data-changed/)
 })
 
-test('housekeeping keeps offline data isolated per hotel and separates day/work mutations', async () => {
-  const housekeeping = await read('../src/housekeeping.jsx')
-  assert.match(housekeeping, /apiceHousekeeping-\$\{hotelId\}/)
+test('housekeeping v2 keeps offline data isolated per hotel and separates day/work mutations', async () => {
+  const housekeeping = await read('../src/housekeeping-v2.jsx')
+  assert.match(housekeeping, /randappHousekeepingV2-\$\{hotelId\}/)
   assert.match(housekeeping, /outbox:'&key,camera,kind'/)
   assert.match(housekeeping, /key:`work:\$\{camera\}`/)
   assert.match(housekeeping, /key:`day:\$\{camera\}`/)
