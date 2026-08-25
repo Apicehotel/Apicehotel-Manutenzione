@@ -3,6 +3,7 @@ import Dexie from 'dexie'
 import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 import { exportHousekeepingYearXlsx, parseSlopePrivacyRows } from './housekeeping-report.js'
+import { parseBrigantinoBookingRows } from './housekeeping-brigantino.js'
 import './housekeeping-v2.css'
 
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
@@ -24,11 +25,14 @@ const gioSectionFromGroup = (value) => gioSections.find((section) => String(valu
 const gioFloorFromGroup = (value) => Number(String(value || '').match(/P(\d+)/)?.[1] || 1)
 const same = (a,b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 const permanentSyncError = (error) => /row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint/i.test(String(error?.message || error || ''))
-const actorId = (user) => user?.auth_user_id || user?.authUserId || user?.id || null
+const actorId = (user) => {
+  const value = user?.auth_user_id || user?.authUserId || user?.id || null
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')) ? value : null
+}
 const isRole = (user, ...roles) => roles.includes(user?.role)
 const canWork = (user) => isRole(user,'Governante','Capo Governante','Reception','Direzione','admin') || ['Governante','Reception'].includes(user?.department)
 const canManageRoom = (user) => isRole(user,'Reception','Direzione','admin') || user?.department === 'Reception'
-const canUpload = (user) => isRole(user,'Reception','Portiere Notturno','Direzione','admin') || user?.department === 'Reception'
+const canUpload = (user) => isRole(user,'Reception','Direzione','admin') || user?.department === 'Reception'
 const canExport = (user) => isRole(user,'Reception','Direzione','admin') || user?.department === 'Reception'
 const shouldNotifyHead = (user) => isRole(user,'Reception','Direzione','admin') || user?.department === 'Reception'
 
@@ -68,6 +72,11 @@ async function parseWorkbook(file, hotelId) {
   const XLSX = await import('xlsx')
   const workbook = XLSX.read(await file.arrayBuffer(), { type:'array', cellDates:true })
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header:1, raw:true, defval:'' })
+  const brigantino = parseBrigantinoBookingRows(rows)
+  if (brigantino) {
+    if (hotelId !== 'brigantino') return { ...brigantino, wrongHotel:true }
+    return brigantino
+  }
   const revenue = parseRevenueReport(rows)
   if (revenue) return revenue
   return { kind:'housekeeping', rooms:parseSlopePrivacyRows(rows, roomMetaForHotel(hotelId)) }
@@ -94,10 +103,10 @@ export function Housekeeping({ user, hotel }) {
   const [uploading,setUploading] = useState(false)
   const [exporting,setExporting] = useState(false)
   const [year,setYear] = useState(currentYear())
-  const [revenueReport,setRevenueReport] = useState(null)
+  const [localReport,setLocalReport] = useState(null)
   const fileRef = useRef(null)
 
-  useEffect(() => { setGroup(groups[0]?.name || ''); setRevenueReport(null) }, [hotel.id, groups])
+  useEffect(() => { setGroup(groups[0]?.name || ''); setLocalReport(null) }, [hotel.id, groups])
 
   const loadLocal = useCallback(async () => {
     const [g,w,p,b] = await Promise.all([cache.giorno.toArray(),cache.lavoro.toArray(),cache.outbox.count(),cache.failures.count()])
@@ -124,11 +133,14 @@ export function Housekeeping({ user, hotel }) {
           const table=item.kind==='work'?'camere_lavoro':'camere_giorno'
           const {data:remote,error}=await hotelGioClient.from(table).select('*').eq('hotel_id',hotel.id).eq('camera',item.camera).maybeSingle()
           if(error)throw error
-          if(remote){const conflicts=Object.keys(item.baseValues).filter((field)=>!same(remote[field],item.baseValues[field]));if(conflicts.length){const err=new Error(`Conflitto camera ${item.camera}: ${conflicts.join(', ')}`);err.code='OFFLINE_CONFLICT';throw err}}
+          if(remote){
+            const conflicts=Object.keys(item.baseValues).filter((field)=>!same(remote[field],item.baseValues[field]))
+            if(conflicts.length){const err=new Error(`Conflitto camera ${item.camera}: ${conflicts.join(', ')}`);err.code='OFFLINE_CONFLICT';throw err}
+          }
         }
-        let result
-        if(item.kind==='work') result=await hotelGioClient.from('camere_lavoro').upsert(item.payload)
-        else result=await hotelGioClient.from('camere_giorno').update(item.payload).eq('hotel_id',hotel.id).eq('camera',item.camera)
+        const result=item.kind==='work'
+          ? await hotelGioClient.from('camere_lavoro').upsert(item.payload)
+          : await hotelGioClient.from('camere_giorno').update(item.payload).eq('hotel_id',hotel.id).eq('camera',item.camera)
         if(result.error)throw result.error
         if(item.notify?.length) {
           try {
@@ -141,7 +153,9 @@ export function Housekeeping({ user, hotel }) {
         if(error?.code==='OFFLINE_CONFLICT'||permanentSyncError(error)) {
           await cache.failures.put({...item,error:String(error?.message||error),failedAt:Date.now()});await cache.outbox.delete(item.key)
           setMessage(`Camera ${item.camera}: modifica bloccata, richiede verifica`)
-        } else { await cache.outbox.update(item.key,{attempts:Number(item.attempts||0)+1,lastError:String(error?.message||error)});break }
+        } else {
+          await cache.outbox.update(item.key,{attempts:Number(item.attempts||0)+1,lastError:String(error?.message||error)});break
+        }
       }
     }
     await refresh()
@@ -189,18 +203,23 @@ export function Housekeeping({ user, hotel }) {
 
   const upload=async(event)=>{
     const file=event.target.files?.[0];event.target.value='';if(!file)return
-    setUploading(true);setMessage('')
+    setUploading(true);setMessage('');setLocalReport(null)
     try{
       const parsed=await parseWorkbook(file,hotel.id)
-      if(parsed.kind==='revenue') {
-        if(parsed.hotelId&&parsed.hotelId!==hotel.id){setRevenueReport(null);setMessage(`Il report appartiene a ${parsed.structureName}. Seleziona la struttura corretta.`)}
-        else {setRevenueReport(parsed);setMessage(`Report ${parsed.structureName}: ${parsed.rows.length} giorni letti localmente.`)}
-      } else {
-        setRevenueReport(null)
-        const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user?.name||'Utente',p_camere:parsed.rooms})
-        if(error)throw error
-        setMessage(`Caricate ${parsed.rooms.length} camere. Dati ospite esclusi dal trasferimento.`);await refresh()
+      if(parsed.kind==='brigantino-report') {
+        if(parsed.wrongHotel){setMessage('Questo è un file del Brigantino. Seleziona Hotel Il Brigantino prima di caricarlo.');return}
+        setLocalReport(parsed)
+        setMessage(`Brigantino: ${parsed.rows.length} gruppi letti. “*” = letto fisso; suffissi numerici ignorati. Il file resta locale perché è un report prenotazioni, non uno stato camere.`)
+        return
       }
+      if(parsed.kind==='revenue') {
+        if(parsed.hotelId&&parsed.hotelId!==hotel.id){setMessage(`Il report appartiene a ${parsed.structureName}. Seleziona la struttura corretta.`);return}
+        setLocalReport(parsed);setMessage(`Report ${parsed.structureName}: ${parsed.rows.length} giorni letti localmente.`);return
+      }
+      if(!parsed.rooms?.length)throw new Error('Nessuna camera riconosciuta nel file')
+      const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user?.name||'Utente',p_camere:parsed.rooms})
+      if(error)throw error
+      setMessage(`Caricate ${parsed.rooms.length} camere. Dati ospite esclusi dal trasferimento.`);await refresh()
     }catch(error){setMessage(`File non leggibile: ${error?.message||'formato non riconosciuto'}`)}finally{setUploading(false)}
   }
 
@@ -215,16 +234,29 @@ export function Housekeeping({ user, hotel }) {
     }catch(error){setMessage(`Export non riuscito: ${error?.message||error}`)}finally{setExporting(false)}
   }
 
-  const retryBlocked=async()=>{const failures=await cache.failures.toArray();if(!failures.length)return;await cache.outbox.bulkPut(failures.map(({error:_,failedAt:__,...item})=>({...item,attempts:0,lastError:null})));await cache.failures.clear();await loadLocal();drain()}
+  const retryBlocked=async()=>{
+    const failures=await cache.failures.toArray();if(!failures.length)return
+    await cache.outbox.bulkPut(failures.map(({error:_,failedAt:__,...item})=>({...item,attempts:0,lastError:null})))
+    await cache.failures.clear();await loadLocal();drain()
+  }
 
   return <section className="hk2-page" data-testid="housekeeping-v2">
-    <header className="hk2-head"><div><h1>Housekeeping</h1><p><span className={blocked?'hk2-dot blocked':pending?'hk2-dot pending':'hk2-dot synced'}/>{blocked?`${blocked} modifiche da verificare`:pending?`${pending} modifiche in attesa`:'Sincronizzato'}</p></div><div className="hk2-head-actions">{canExport(user)&&<div className="hk2-export"><select aria-label="Anno resoconto" value={year} onChange={(e)=>setYear(Number(e.target.value))}>{[currentYear()-1,currentYear(),currentYear()+1].map((value)=><option value={value} key={value}>{value}</option>)}</select><button type="button" className="hk2-secondary" disabled={exporting} onClick={exportYear}>{exporting?'Creo Excel…':'Resoconto anno'}</button></div>}{canUpload(user)&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button type="button" className="hk2-primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Carico…':'Carica XLS'}</button></>}</div></header>
+    <header className="hk2-head">
+      <div><h1>Housekeeping</h1><p><span className={blocked?'hk2-dot blocked':pending?'hk2-dot pending':'hk2-dot synced'}/>{blocked?`${blocked} modifiche da verificare`:pending?`${pending} modifiche in attesa`:'Sincronizzato'}</p></div>
+      <div className="hk2-head-actions">
+        {canExport(user)&&<div className="hk2-export"><select aria-label="Anno resoconto" value={year} onChange={(e)=>setYear(Number(e.target.value))}>{[currentYear()-1,currentYear(),currentYear()+1].map((value)=><option value={value} key={value}>{value}</option>)}</select><button type="button" className="hk2-secondary" disabled={exporting} onClick={exportYear}>{exporting?'Creo Excel…':'Resoconto anno'}</button></div>}
+        {canUpload(user)&&<><input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={upload}/><button type="button" className="hk2-primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Carico…':'Carica Housekeeping'}</button></>}
+      </div>
+    </header>
+
+    {canUpload(user)&&<div className="hk2-upload-card"><div><strong>Aggiorna Housekeeping</strong><span>Reception e Direzione caricano manualmente il file .xls/.xlsx della struttura selezionata.</span></div><button type="button" className="hk2-primary" disabled={uploading} onClick={()=>fileRef.current?.click()}>{uploading?'Lettura file…':'Scegli file'}</button></div>}
     {blocked>0&&<button type="button" className="hk2-secondary" onClick={retryBlocked}>Riprova modifiche bloccate</button>}
     {message&&<p className="hk2-message" role="status">{message}</p>}
-    {revenueReport?<RevenueReport report={revenueReport} onClose={()=>setRevenueReport(null)}/>:<>
+
+    {localReport?<LocalReport report={localReport} onClose={()=>setLocalReport(null)}/>:<>
       {hotel.id==='hotelgio'?<div className="hk2-selectors"><div className="hk2-segment">{gioSections.map((section)=>{const active=gioSectionFromGroup(group)===section;return <button type="button" className={active?'active':''} key={section} onClick={()=>{const next=groups.find((item)=>item.name.startsWith(section));if(next)setGroup(next.name)}}>{section}</button>})}</div><div className="hk2-floors">{groups.filter((item)=>item.name.startsWith(gioSectionFromGroup(group))).map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>setGroup(item.name)}>P{gioFloorFromGroup(item.name)}</button>)}</div></div>:<div className="hk2-floors">{groups.map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>setGroup(item.name)}>{item.name}</button>)}</div>}
       <div className="hk2-toolbar"><strong>{hotel.id==='hotelgio'?`${gioSectionFromGroup(group)} · Piano ${gioFloorFromGroup(group)}`:group||hotel.name}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
-      {loading?<div className="hk2-empty">Carico Housekeeping…</div>:!rooms.length?<div className="hk2-empty">Carica il file Housekeeping di oggi per iniziare.</div>:<div className="hk2-grid">{rooms.map((room)=><button type="button" key={room.camera} className={`hk2-room hk2-room--${room.lavoro} hk2-room--${room.stato_slope}`} onClick={()=>setOpen(room)}><span className="hk2-room-number">{room.camera}</span><span className="hk2-room-type">{room.tipologia||'Camera'}</span><span className="hk2-room-slope">{slopeLabels[room.stato_slope]||room.stato_slope}</span><span className="hk2-room-work">{workLabels[room.lavoro]||room.lavoro}</span>{room.operational_note&&<span className="hk2-room-note">Nota</span>}</button>)}</div>}
+      {loading?<div className="hk2-empty">Carico Housekeeping…</div>:!rooms.length?<div className="hk2-empty">{canUpload(user)?'Nessuna camera caricata. Usa “Scegli file” qui sopra.':'Nessuna camera disponibile per questa sezione.'}</div>:<div className="hk2-grid">{rooms.map((room)=><button type="button" key={room.camera} className={`hk2-room hk2-room--${room.lavoro} hk2-room--${room.stato_slope}`} onClick={()=>setOpen(room)}><span className="hk2-room-number">{room.camera}</span><span className="hk2-room-type">{room.tipologia||'Camera'}</span><span className="hk2-room-slope">{slopeLabels[room.stato_slope]||room.stato_slope}</span><span className="hk2-room-work">{workLabels[room.lavoro]||room.lavoro}</span>{room.operational_note&&<span className="hk2-room-note">Nota</span>}</button>)}</div>}
     </>}
     {open&&<RoomSheet room={open} workAllowed={canWork(user)} manageAllowed={canManageRoom(user)} onClose={()=>setOpen(null)} onState={setWorkState} onSave={saveDetails}/>} 
   </section>
@@ -236,6 +268,7 @@ function RoomSheet({room,workAllowed,manageAllowed,onClose,onState,onSave}) {
   return <div className="hk2-backdrop" onClick={onClose}><section className="hk2-sheet" role="dialog" aria-modal="true" aria-labelledby="hk2-title" onClick={(e)=>e.stopPropagation()}><header><div><small>Camera</small><h2 id="hk2-title">{room.camera}</h2></div><button type="button" className="hk2-close" onClick={onClose} aria-label="Chiudi">×</button></header><div className="hk2-detail"><strong>{room.tipologia||'Camera'}</strong><span>{slopeLabels[room.stato_slope]||room.stato_slope}{room.arrivo?` · arrivo ${dateOnly(room.arrivo)}`:''}{room.partenza?` · partenza ${dateOnly(room.partenza)}`:''}</span>{room.letti&&<span>Letti: {room.letti}</span>}{room.operational_note&&<p><b>Nota operativa:</b> {room.operational_note}</p>}</div>{workAllowed&&<div className="hk2-actions">{stateEntries.map(([key,label])=><button type="button" className={room.lavoro===key?'active':''} key={key} onClick={()=>onState(room.camera,key)}>{label}</button>)}</div>}{workAllowed&&<form className="hk2-form" onSubmit={(e)=>{e.preventDefault();onSave(room.camera,fields)}}>{manageAllowed&&<><label>Stato soggiorno<select value={fields.stato_slope} onChange={(e)=>setFields({...fields,stato_slope:e.target.value})}>{Object.entries(slopeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label><label>Configurazione letti<input value={fields.letti} onChange={(e)=>setFields({...fields,letti:e.target.value})}/></label></>}<label>Note operative RandApp<textarea rows="3" value={fields.operational_note} onChange={(e)=>setFields({...fields,operational_note:e.target.value})} placeholder="Solo informazioni operative, nessun dato ospite"/></label><button type="submit" className="hk2-primary">Salva modifica</button></form>}</section></div>
 }
 
-function RevenueReport({report,onClose}) {
-  return <section className="hk2-revenue"><div className="hk2-revenue-head"><div><h2>{report.structureName}</h2><p>{report.rows.length} giorni letti dal file</p></div><button type="button" className="hk2-secondary" onClick={onClose}>Chiudi</button></div><div className="hk2-table-wrap"><table><thead><tr>{report.headers.map((header,index)=><th key={`${header}-${index}`}>{header}</th>)}</tr></thead><tbody>{report.rows.map((row,index)=><tr key={index}>{row.map((value,col)=><td key={col}>{value instanceof Date?value.toLocaleDateString('it-IT'):String(value??'')}</td>)}</tr>)}</tbody></table></div></section>
+function LocalReport({report,onClose}) {
+  const brigantino=report.kind==='brigantino-report'
+  return <section className="hk2-revenue"><div className="hk2-revenue-head"><div><h2>{report.structureName}</h2><p>{brigantino?'Report Prenotazioni normalizzato localmente':`${report.rows.length} giorni letti dal file`}</p></div><button type="button" className="hk2-secondary" onClick={onClose}>Chiudi</button></div>{brigantino&&<p className="hk2-message">Regole applicate: * = letto fisso; suffissi numerici finali ignorati; (n.a.) e TOTALI esclusi.</p>}<div className="hk2-table-wrap"><table><thead><tr>{report.headers.map((header,index)=><th key={`${header}-${index}`}>{header}</th>)}</tr></thead><tbody>{report.rows.map((row,index)=><tr key={index}>{row.map((value,col)=><td key={col}>{value instanceof Date?value.toLocaleDateString('it-IT'):String(value??'')}</td>)}</tr>)}</tbody></table></div></section>
 }
