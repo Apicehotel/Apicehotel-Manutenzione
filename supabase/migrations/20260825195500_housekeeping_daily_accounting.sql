@@ -1,4 +1,4 @@
--- Housekeeping v2: storico giornaliero, ruolo Capo Governante e audit modifiche.
+-- Housekeeping v2: storico giornaliero, ruolo Capo Governante, audit e ntfy.
 -- Privacy by design: nessun dato ospite viene archiviato in queste tabelle.
 
 alter table public.hotel_memberships drop constraint if exists hotel_memberships_role_check;
@@ -64,8 +64,7 @@ alter table public.housekeeping_change_events enable row level security;
 
 drop policy if exists housekeeping_completions_read on public.housekeeping_completions;
 create policy housekeeping_completions_read on public.housekeeping_completions
-for select to authenticated
-using (public.is_hotel_member(hotel_id));
+for select to authenticated using (public.is_hotel_member(hotel_id));
 
 drop policy if exists housekeeping_completions_write on public.housekeeping_completions;
 create policy housekeeping_completions_write on public.housekeeping_completions
@@ -75,16 +74,13 @@ with check (public.has_hotel_role(hotel_id, array['admin','Direzione','Reception
 
 drop policy if exists housekeeping_changes_read on public.housekeeping_change_events;
 create policy housekeeping_changes_read on public.housekeeping_change_events
-for select to authenticated
-using (public.is_hotel_member(hotel_id));
+for select to authenticated using (public.is_hotel_member(hotel_id));
 
 drop policy if exists housekeeping_changes_insert on public.housekeeping_change_events;
 create policy housekeeping_changes_insert on public.housekeeping_change_events
 for insert to authenticated
 with check (public.has_hotel_role(hotel_id, array['admin','Direzione','Reception']));
 
--- Una governante che completa nuovamente la stessa camera nello stesso giorno
--- aggiorna il record esistente: non viene mai contato un doppione.
 create or replace function public.upsert_housekeeping_completion(
   p_hotel_id text,
   p_camera text,
@@ -93,9 +89,7 @@ create or replace function public.upsert_housekeeping_completion(
   p_floor integer,
   p_housekeeper_name text
 ) returns public.housekeeping_completions
-language plpgsql
-security definer
-set search_path = public
+language plpgsql security definer set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -122,10 +116,73 @@ begin
     completed_at = excluded.completed_at,
     updated_at = now()
   returning * into v_row;
-
   return v_row;
 end;
 $$;
 
+create or replace function public.clear_housekeeping_completion(p_hotel_id text, p_camera text)
+returns void
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if auth.uid() is null then raise exception 'Non autenticato' using errcode='28000'; end if;
+  if not public.has_hotel_role(p_hotel_id, array['admin','Direzione','Reception','Governante','Capo Governante']) then
+    raise exception 'Non autorizzato' using errcode='42501';
+  end if;
+  delete from public.housekeeping_completions
+   where hotel_id=p_hotel_id and work_date=current_date and camera=p_camera;
+end;
+$$;
+
+create or replace function public.dispatch_housekeeping_ntfy()
+returns trigger
+language plpgsql security definer
+set search_path = public, extensions
+as $$
+declare
+  cfg jsonb;
+  enabled_flag boolean;
+  topic text;
+  server text;
+  hotel_name text;
+  msg text;
+begin
+  if new.changed_by_role not in ('Direzione','Reception') then return new; end if;
+  select enabled, config into enabled_flag, cfg
+    from public.integration_settings where key='housekeeping_ntfy';
+  if coalesce(enabled_flag,false) is not true then return new; end if;
+  topic := coalesce(cfg->'topics'->>new.hotel_id,'');
+  if topic='' then return new; end if;
+  server := rtrim(coalesce(cfg->>'server','https://ntfy.sh'),'/');
+  select name into hotel_name from public.hotels where id=new.hotel_id;
+  msg := format('Camera %s · %s modificato da %s', new.camera, new.field_name, new.changed_by_name);
+  perform net.http_post(
+    url := server,
+    headers := '{"Content-Type":"application/json"}'::jsonb,
+    body := jsonb_build_object(
+      'topic', topic,
+      'title', 'Housekeeping · ' || coalesce(hotel_name,new.hotel_id),
+      'message', msg,
+      'priority', 4,
+      'tags', jsonb_build_array('house','memo'),
+      'click', 'https://apicehotel.vercel.app/?section=housekeeping&hotel_id=' || new.hotel_id || '&camera=' || new.camera
+    ),
+    timeout_milliseconds := 10000
+  );
+  return new;
+exception when others then
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_dispatch_housekeeping_ntfy on public.housekeeping_change_events;
+create trigger trg_dispatch_housekeeping_ntfy
+after insert on public.housekeeping_change_events
+for each row execute function public.dispatch_housekeeping_ntfy();
+
 revoke execute on function public.upsert_housekeeping_completion(text,text,text,text,integer,text) from public, anon;
+revoke execute on function public.clear_housekeeping_completion(text,text) from public, anon;
+revoke execute on function public.dispatch_housekeeping_ntfy() from public, anon, authenticated;
 grant execute on function public.upsert_housekeeping_completion(text,text,text,text,integer,text) to authenticated, service_role;
+grant execute on function public.clear_housekeeping_completion(text,text) to authenticated, service_role;
+grant execute on function public.dispatch_housekeeping_ntfy() to service_role;
