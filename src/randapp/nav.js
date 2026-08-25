@@ -19,8 +19,7 @@ export function buildNav(user, hotel) {
       id: 'operativita', label: 'Operatività', items: [
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canViewPlanned(user) },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canViewUrgent(user) },
-        { id: 'planning-work', icon: 'calendar', label: 'Planning lavori', show: canViewPlanningMenu(user) },
-        { id: 'planning-sale', icon: 'calendar', label: 'Planning sale', show: hotel?.id === 'hotelgio' && canViewPlanningMenu(user) },
+        { id: 'planning-work', icon: 'calendar', label: 'Planning', show: canViewPlanningMenu(user) },
         { id: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping', show: canViewHousekeeping(user) },
         { id: 'temperature', icon: 'thermometer', label: 'Temperature', show: canViewTemperature(user) },
         { id: 'technicians', icon: 'phone', label: 'Rubrica tecnici', show: canViewTechnicianDirectory(user) },
