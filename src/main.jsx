@@ -6,6 +6,7 @@ import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
 import './randapp/shell.css'
+import './randapp/migrated.css'
 import './offline-status.css'
 import './operation-feedback.css'
 import './offline-status.js'
@@ -21,8 +22,6 @@ const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/
 initUiSize()
 initTheme()
 
-// The standalone technician portal keeps its legacy stylesheet; load it only on that route
-// so the main RandApp Dark Shell stays free of accumulated CSS.
 if (technicianMatch) {
   import('./styles.css')
 }
