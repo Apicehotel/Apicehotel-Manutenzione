@@ -33,6 +33,7 @@ source = source.replace(renderOld, renderNew)
 // il browser mostra il menu nativo disponibile (libreria, fotocamera, file) senza
 // MutationObserver, listener globali o click sintetici.
 source = source.replace(', [photoPickerOpen, setPhotoPickerOpen] = useState(false)', '')
+source = source.replace('; setPhotoPickerOpen(false)', '')
 const nativePhotoMarkup = `<label className="completion-photo-field">Foto (opzionale)<span className="photo-picker-trigger"><Icon name="camera" /><span>{completionPhotoName ? 'Cambia foto' : 'Fotocamera'}</span></span><input className="photo-input native-photo-input" type="file" accept="image/*" onChange={(e) => pickCompletionPhoto(e.target.files?.[0])} />{completionPhoto && <img className="photo-preview" src={completionPhoto} alt="Anteprima foto completamento" />}{completionPhotoName && <small className="photo-selected">Selezionata: {completionPhotoName}</small>}</label><label>Note sul lavoro fatto (facoltative)`
 const oldPhotoPattern = /<label>Foto \(opzionale\)<button type="button" className="photo-picker-trigger"[\s\S]*?<\/label><label>Note sul lavoro fatto \(facoltative\)/u
 if (oldPhotoPattern.test(source)) {
@@ -40,6 +41,7 @@ if (oldPhotoPattern.test(source)) {
 } else if (!source.includes('className="completion-photo-field"')) {
   throw new Error('Blocco picker foto dettaglio non trovato')
 }
+if (source.includes('setPhotoPickerOpen')) throw new Error('Residuo stato photoPickerOpen ancora presente')
 
 fs.writeFileSync(path, source)
 console.log('Hotel switch + native photo picker patch applicate a src/App.jsx')
