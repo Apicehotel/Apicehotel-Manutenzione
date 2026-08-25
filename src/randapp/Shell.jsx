@@ -11,6 +11,7 @@ import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
 import InsertLauncher from './InsertLauncher.jsx'
+import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import './mobile-nav-tune.css'
 import {
   InterventionsView, UrgentView,
@@ -54,6 +55,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
+  const [urgentCreateOpen, setUrgentCreateOpen] = useState(false)
   const [settings, setSettings] = useState(null)
   const hotel = hotelById(session.hotelId) || HOTELS[0]
 
@@ -89,7 +91,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       return
     }
     if (id === 'urgent') {
-      setView('urgent')
+      setUrgentCreateOpen(true)
       return
     }
     if (id === 'intervention') {
@@ -192,6 +194,13 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </div>
 
       <InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} />
+      <UrgentCreateSheet
+        open={urgentCreateOpen}
+        onClose={() => setUrgentCreateOpen(false)}
+        hotel={hotel}
+        user={user}
+        onSaved={() => setView('urgent')}
+      />
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
