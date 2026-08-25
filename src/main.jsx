@@ -13,7 +13,6 @@ import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
 import { repairPushSubscription } from './push.js'
-import { initNtfyProfileSetup } from './ntfy-profile.js'
 import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
@@ -36,7 +35,6 @@ createRoot(document.getElementById('root')).render(
 
 if (!technicianMatch) {
   registerPwa()
-  initNtfyProfileSetup()
   initPresenceStatusSync()
   initUrgentOwnershipGuard()
 
