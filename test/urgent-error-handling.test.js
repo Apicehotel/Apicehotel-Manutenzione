@@ -2,10 +2,14 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test("insertUrgent non nasconde più gli errori: logga (come HotelGio) e lancia invece di restituire null in silenzio", async () => {
+test("insertUrgent conserva gli errori reali ma mette in coda solo i problemi di rete/offline", async () => {
   const urgents = await readFile(new URL('../src/urgents-data.js', import.meta.url), 'utf8')
-  assert.match(urgents, /export async function insertUrgent\(item\) \{\n  if \(!supabase\) throw new Error\('Supabase non configurato'\)\n  const \{ data, error \} = await supabase\.from\('richieste_urgenti'\)\.insert\(toRow\(item\)\)\.select\(\)\.single\(\)\n  if \(error\) \{ console\.error\('insertUrgent', error\); throw new Error\(error\.message\) \}/)
-  assert.doesNotMatch(urgents, /catch \{ return null \}/)
+  assert.match(urgents, /export async function insertUrgent\(item\)/)
+  assert.match(urgents, /if\(!supabase\|\|!onlineNow\(\)\).*enqueueMutation/)
+  assert.match(urgents, /catch\(error\)\{if\(isTransientNetworkError\(error\)\).*enqueueMutation/)
+  assert.match(urgents, /operationFailed\(error,'Avviso urgente non salvato'\);throw error/)
+  assert.match(urgents, /_notifyOnSync:true/)
+  assert.doesNotMatch(urgents, /catch\s*\{\s*return null\s*\}/)
 })
 
 test("il form Avvisi Urgenti mostra l'errore reale e non chiude più il form come se fosse riuscito quando la creazione fallisce", async () => {
