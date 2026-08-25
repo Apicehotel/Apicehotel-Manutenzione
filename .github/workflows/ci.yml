@@ -41,7 +41,7 @@ jobs:
 
       - name: Start preview server
         run: |
-          npm run preview -- --host 127.0.0.1 > /tmp/apice-vite.log 2>&1 &
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/apice-vite.log 2>&1 &
           echo $! > /tmp/apice-vite.pid
           for i in {1..30}; do
             if curl --fail --silent http://127.0.0.1:4173 >/dev/null; then
