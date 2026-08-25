@@ -10,6 +10,7 @@ import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
+import InsertLauncher from './InsertLauncher.jsx'
 import './mobile-nav-tune.css'
 import {
   InterventionsView, UrgentView,
@@ -52,6 +53,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [createSignal, setCreateSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
+  const [insertOpen, setInsertOpen] = useState(false)
   const [settings, setSettings] = useState(null)
   const hotel = hotelById(session.hotelId) || HOTELS[0]
 
@@ -77,6 +79,22 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (target?.settings) { setSettings(target.settings); return }
     if (target?.view) { setView(target.view); if (target.create) setCreateSignal((n) => n + 1); return }
     setView(item.id)
+  }
+
+  const pickInsert = (id) => {
+    setInsertOpen(false)
+    if (id === 'issue') {
+      setView('issues')
+      setCreateSignal((n) => n + 1)
+      return
+    }
+    if (id === 'intervention') {
+      setView('interventions')
+      return
+    }
+    if (id === 'planning-work' || id === 'planning-sale') {
+      setView('planning-work')
+    }
   }
 
   if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} />
@@ -166,10 +184,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
           ))}
         </nav>
-        {view !== 'issues' && (
-          <button className="rs-navfab" onClick={() => { setView('issues'); setCreateSignal((n) => n + 1) }} data-testid="fab-new" aria-label="Nuova segnalazione"><Icon name="plus" /></button>
-        )}
+        <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>
       </div>
+
+      <InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} />
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
