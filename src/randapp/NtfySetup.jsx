@@ -33,22 +33,23 @@ export default function NtfySetup({ hotelId }) {
   const [error,setError]=useState('')
 
   useEffect(()=>{ setEnabled(getStore(enabledKey)==='1'); setVerified(Boolean(getStore(verifiedKey))); setConfig(null); setStatus(''); setError('') },[enabledKey,verifiedKey])
-  useEffect(()=>{ if(!enabled||!hotelId||config) return; let live=true; setBusy(true); setStatus('Carico configurazione ntfy…'); invoke('ntfy-config',hotelId).then(c=>{if(!live)return;if(!c.enabled)throw new Error('Il secondo canale ntfy è disattivato per questa struttura.');setConfig(c);setStatus('')}).catch(e=>live&&setError(e.message)).finally(()=>live&&setBusy(false)); return()=>{live=false} },[enabled,hotelId,config])
+  useEffect(()=>{ if(!enabled||!hotelId||config) return; let live=true; setBusy(true); setStatus('Carico configurazione ntfy…'); invoke('ntfy-config',hotelId).then(c=>{if(!live)return;if(!c.enabled)throw new Error('Il canale ntfy è disattivato per questa struttura.');setConfig(c);setStatus('')}).catch(e=>live&&setError(e.message)).finally(()=>live&&setBusy(false)); return()=>{live=false} },[enabled,hotelId,config])
 
+  const housekeeping=config?.channel==='housekeeping'
   const activate=()=>{setStore(enabledKey,'1');setEnabled(true);setError('')}
   const disable=()=>{setStore(enabledKey,null);setEnabled(false);setConfig(null);setStatus('');setError('')}
   const copy=async()=>{try{await navigator.clipboard.writeText(config.topic);setStatus('Topic copiato ✓')}catch{setError('Copia automatica non riuscita: seleziona il topic e copialo.') }}
-  const test=async()=>{setBusy(true);setError('');setStatus('Invio allarme di prova…');try{await invoke('ntfy-alert',hotelId,{test:true});setStore(verifiedKey,new Date().toISOString());setVerified(true);setStatus('Test inviato ✓ Controlla ntfy: deve arrivare una notifica con priorità massima.')}catch(e){setError(e.message);setStatus('')}finally{setBusy(false)}}
+  const test=async()=>{setBusy(true);setError('');setStatus('Invio notifica di prova…');try{await invoke('ntfy-alert',hotelId,{test:true,...(housekeeping?{channel:'housekeeping'}:{})});setStore(verifiedKey,new Date().toISOString());setVerified(true);setStatus(housekeeping?'Test inviato ✓ Riceverai qui le modifiche Housekeeping di Direzione e Reception.':'Test inviato ✓ Controlla ntfy: deve arrivare una notifica con priorità massima.')}catch(e){setError(e.message);setStatus('')}finally{setBusy(false)}}
 
   return <section className="rs-section" data-testid="ntfy-setup">
-    <div className="rs-section__head"><h2>Allarme esterno ntfy</h2>{verified&&<span className="rs-badge rs-badge--accent">Testato ✓</span>}</div>
+    <div className="rs-section__head"><h2>{housekeeping?'Notifiche Housekeeping ntfy':'Allarme esterno ntfy'}</h2>{verified&&<span className="rs-badge rs-badge--accent">Testato ✓</span>}</div>
     <Card className="rs-card--pad">
-      <p className="rs-ntfy-intro">Secondo canale indipendente per gli Avvisi Urgenti, oltre alle notifiche RandApp.</p>
+      <p className="rs-ntfy-intro">{housekeeping?'Canale riservato alla Capo Governante: riceve le modifiche Housekeeping effettuate da Direzione e Reception.':'Secondo canale indipendente per gli Avvisi Urgenti, oltre alle notifiche RandApp.'}</p>
       {!enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Attiva e configura ntfy</Button></div> : <>
         {config&&<>
-          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi il topic</b><b>3. Prova l'allarme</b></div>
+          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi il topic</b><b>3. Prova la notifica</b></div>
           {config.apps&&<div className="rs-op-card__actions">{config.apps.ios&&<a className="rs-button rs-button--outline" href={config.apps.ios} target="_blank" rel="noreferrer">iPhone / iPad</a>}{config.apps.android&&<a className="rs-button rs-button--outline" href={config.apps.android} target="_blank" rel="noreferrer">Android</a>}{config.apps.web&&<a className="rs-button rs-button--outline" href={config.apps.web} target="_blank" rel="noreferrer">PC / Web</a>}</div>}
-          <div className="rs-ntfy-topic"><small>Topic della struttura — non condividerlo</small><code>{config.topic}</code><Button type="button" variant="outline" onClick={copy}>Copia topic</Button></div>
+          <div className="rs-ntfy-topic"><small>{housekeeping?'Topic Housekeeping personale del ruolo — non condividerlo':'Topic della struttura — non condividerlo'}</small><code>{config.topic}</code><Button type="button" variant="outline" onClick={copy}>Copia topic</Button></div>
           <div className="rs-op-card__actions"><Button type="button" onClick={test} disabled={busy}>{verified?'Ripeti test ntfy':'Invia test ntfy'}</Button><Button type="button" variant="ghost" onClick={disable} disabled={busy}>Nascondi configurazione</Button></div>
         </>}
         {!config&&!error&&<p>{busy?'Caricamento…':'Configurazione non disponibile.'}</p>}

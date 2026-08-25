@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
+import HousekeepingCompletionAlerts from './randapp/HousekeepingCompletionAlerts.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
@@ -8,6 +9,7 @@ import { initTheme } from './randapp/theme.js'
 import './randapp/shell.css'
 import './randapp/migrated.css'
 import './randapp/insert-form.css'
+import './randapp/housekeeping-alert.css'
 import './offline-status.css'
 import './operation-feedback.css'
 import './offline-status.js'
@@ -29,7 +31,7 @@ if (technicianMatch) {
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppErrorBoundary>
-      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} /> : <App />}
+      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} /> : <><App /><HousekeepingCompletionAlerts /></>}
     </AppErrorBoundary>
   </React.StrictMode>,
 )
