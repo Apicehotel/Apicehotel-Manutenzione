@@ -4,10 +4,16 @@ import test from 'node:test'
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8')
 
-test('ntfy setup is mounted only inside the notification profile area', async () => {
-  const [main, setup] = await Promise.all([read('../src/main.jsx'), read('../src/ntfy-profile.js')])
-  assert.match(main, /initNtfyProfileSetup/)
-  assert.match(main, /ntfy-profile\.css/)
+test('ntfy setup is mounted only inside the RandApp profile area', async () => {
+  const [main, profile, setup] = await Promise.all([
+    read('../src/main.jsx'),
+    read('../src/randapp/Profile.jsx'),
+    read('../src/ntfy-profile.js'),
+  ])
+  assert.match(profile, /import NtfySetup from '\.\/NtfySetup\.jsx'/)
+  assert.match(profile, /<NtfySetup hotelId=\{hotel\?\.id\} \/>/)
+  assert.doesNotMatch(main, /initNtfyProfileSetup/)
+  assert.doesNotMatch(main, /ntfy-profile\.css/)
   assert.match(setup, /\.profile-notif-section/)
   assert.match(setup, /Attiva e configura ntfy/)
 })
