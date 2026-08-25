@@ -1,0 +1,15 @@
+.rs-form:has([data-testid="issue-title-input"]){grid-template-columns:minmax(0,1fr) 58px;column-gap:8px}
+.rs-form:has([data-testid="issue-title-input"])> *{grid-column:1/-1}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"]){grid-column:1;grid-row:auto;min-width:0}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset{grid-column:2;align-self:end;margin:0;padding:0;border:0;min-width:0;height:100%}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset>legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-actions{display:block;height:100%}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:first-child{display:none}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child{position:relative;width:58px;height:100%;min-height:96px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid var(--rs-line-strong);border-radius:14px;background:var(--rs-surface-2);color:var(--rs-cyan);cursor:pointer;overflow:hidden}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child strong{font-size:0}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child strong::after{content:'+';font-size:1.15rem;font-weight:800;line-height:1}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child .rs-icon{width:22px;height:22px}
+.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-preview{position:absolute;width:34px;height:34px;object-fit:cover;border-radius:9px;right:12px;margin-top:-42px;pointer-events:none}
+.rs-form:has([data-testid="issue-title-input"]) [data-testid="issue-title-input"]{min-height:96px;height:100%;resize:vertical}
+@media(max-width:420px){.rs-form:has([data-testid="issue-title-input"]){grid-template-columns:minmax(0,1fr) 52px;column-gap:7px}.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child{width:52px}}
