@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanned, subscribePlanned } from '../planned-data.js'
-import { fetchBookings, subscribeBookings } from '../sale-data.js'
+import { fetchBookings } from '../sale-data.js'
 import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { Icon, Spinner } from './ui.jsx'
 
@@ -50,9 +50,8 @@ export default function PlanningHub({ hotel, user }) {
   useEffect(()=>{
     load()
     const offWork = subscribePlanned(hotel.id, load)
-    const offSale = hasSales ? subscribeBookings(hotel.id, load) : null
-    return ()=>{ offWork?.(); offSale?.() }
-  },[hotel.id,hasSales,load])
+    return ()=>{ offWork?.() }
+  },[hotel.id,load])
 
   useEffect(()=>{ if(!hasSales && section==='sale') setSection('work') },[hasSales,section])
 
