@@ -8,6 +8,12 @@ const ACTIONS = [
     subtitle: 'Guasto, camera, zona o problema da gestire',
   },
   {
+    id: 'urgent',
+    icon: 'warning',
+    title: 'Nuovo allarme',
+    subtitle: 'Crea un avviso urgente per la struttura',
+  },
+  {
     id: 'intervention',
     icon: 'wrench',
     title: 'Nuovo intervento',
@@ -61,7 +67,7 @@ export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
               cursor:'pointer',
             }}
           >
-            <span style={{width:46,height:46,borderRadius:14,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={item.icon} /></span>
+            <span style={{width:46,height:46,borderRadius:14,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:item.id === 'urgent' ? 'var(--rs-warn)' : 'var(--rs-cyan)'}}><Icon name={item.icon} /></span>
             <span style={{minWidth:0}}>
               <strong style={{display:'block',fontFamily:'Sora',fontSize:'.95rem',marginBottom:3}}>{item.title}</strong>
               <small style={{display:'block',color:'var(--rs-text-2)',fontSize:'.78rem',lineHeight:1.35}}>{item.subtitle}</small>
