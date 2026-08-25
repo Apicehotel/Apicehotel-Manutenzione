@@ -12,6 +12,7 @@ import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
 import InsertLauncher from './InsertLauncher.jsx'
 import UrgentCreateSheet from './UrgentCreateSheet.jsx'
+import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import './mobile-nav-tune.css'
 import {
   InterventionsView, UrgentView,
@@ -140,6 +141,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     </div>
   )
 
+  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen
+
   return (
     <div className="rs-root">
       <div className="rs-app rs-app--with-side">
@@ -179,6 +182,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <IconButton icon="menu" label="Menu" onClick={() => setDrawer(true)} data-testid="header-menu" />
           </div>
         </header>
+
+        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden} onOpen={() => setView('urgent')} />
 
         <main className="rs-content" data-testid="main-content">{renderView()}</main>
 
