@@ -1,6 +1,5 @@
-/* Mobile layout corrections: restore full-width 5-item navigation and make planning controls compact, centered and stable. */
+/* Mobile layout corrections: full-width nav + one-line planning selector. */
 @media (max-width: 899px) {
-  /* Bottom navigation: full viewport width, five equal cells, Home exactly in the middle. */
   .rs-bottomnav {
     left: 0;
     right: 0;
@@ -40,58 +39,21 @@
     right: max(18px, env(safe-area-inset-right));
   }
 
-  /* Planning: never allow the legacy stylesheet to stack these controls vertically. */
-  .rs-legacy.rs-legacy--planning .calendar-views {
-    width: 100% !important;
-    max-width: 560px !important;
-    margin: 0 auto !important;
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-    flex-direction: initial !important;
-    flex-wrap: nowrap !important;
+  /* Planning controls: one single row
+     ‹  SETTIMANA  OGGI  QUINDICINA  ›
+     OGGI stays geometrically central. Giorno is intentionally hidden. */
+  .rs-legacy.rs-legacy--planning .calendar-page {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(86px, 1fr) minmax(0, 1fr) 44px !important;
+    column-gap: 6px !important;
+    row-gap: 14px !important;
   }
 
-  .rs-legacy.rs-legacy--planning .calendar-views > button {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 48px !important;
-    margin: 0 !important;
-    padding: 8px 6px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    white-space: nowrap !important;
+  .rs-legacy.rs-legacy--planning .calendar-page > header,
+  .rs-legacy.rs-legacy--planning .calendar-days,
+  .rs-legacy.rs-legacy--planning .shift-legend {
+    grid-column: 1 / -1 !important;
   }
 
-  /* Previous / Today / Next: a compact three-button stepper centered as one control. */
-  .rs-legacy.rs-legacy--planning .calendar-nav {
-    width: min(100%, 244px) !important;
-    margin: 0 auto !important;
-    display: grid !important;
-    grid-template-columns: 48px minmax(108px, 132px) 48px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    flex-direction: initial !important;
-    flex-wrap: nowrap !important;
-  }
-
-  .rs-legacy.rs-legacy--planning .calendar-nav > button {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 48px !important;
-    margin: 0 !important;
-    padding: 8px 6px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-  }
-
-  /* Keep the planning heading compact and prevent the count from floating awkwardly. */
   .rs-legacy.rs-legacy--planning .calendar-page > header {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto !important;
@@ -103,21 +65,62 @@
     white-space: nowrap;
     align-self: start;
   }
+
+  .rs-legacy.rs-legacy--planning .calendar-views,
+  .rs-legacy.rs-legacy--planning .calendar-nav {
+    display: contents !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .calendar-views > button,
+  .rs-legacy.rs-legacy--planning .calendar-nav > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    padding: 7px 5px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    border-radius: 12px !important;
+  }
+
+  /* remove Giorno entirely */
+  .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(1) {
+    display: none !important;
+  }
+
+  /* outer arrows */
+  .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(1) { grid-column: 1 !important; grid-row: 2 !important; }
+  .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(3) { grid-column: 5 !important; grid-row: 2 !important; }
+
+  /* three central choices */
+  .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(2) { grid-column: 2 !important; grid-row: 2 !important; }
+  .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(2) {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    color: var(--rs-cyan) !important;
+    font-weight: 800 !important;
+    border-color: var(--rs-line-strong) !important;
+  }
+  .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(3) { grid-column: 4 !important; grid-row: 2 !important; }
+
+  .rs-legacy.rs-legacy--planning .calendar-days { grid-row: 3 !important; }
+  .rs-legacy.rs-legacy--planning .shift-legend { grid-row: 3 !important; }
+  .rs-legacy.rs-legacy--planning .shift-legend + .calendar-days { grid-row: 4 !important; }
 }
 
 @media (max-width: 390px) {
-  .rs-legacy.rs-legacy--planning .calendar-views {
-    gap: 6px !important;
+  .rs-legacy.rs-legacy--planning .calendar-page {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(72px, .9fr) minmax(0, 1fr) 40px !important;
+    column-gap: 4px !important;
   }
 
-  .rs-legacy.rs-legacy--planning .calendar-views > button {
-    font-size: .92rem !important;
-    padding-inline: 4px !important;
-  }
-
-  .rs-legacy.rs-legacy--planning .calendar-nav {
-    width: min(100%, 228px) !important;
-    grid-template-columns: 46px minmax(100px, 120px) 46px !important;
-    gap: 6px !important;
+  .rs-legacy.rs-legacy--planning .calendar-views > button,
+  .rs-legacy.rs-legacy--planning .calendar-nav > button {
+    min-height: 44px !important;
+    padding-inline: 3px !important;
+    font-size: .82rem !important;
   }
 }
