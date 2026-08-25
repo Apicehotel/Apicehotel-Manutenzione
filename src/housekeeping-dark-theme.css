@@ -1,0 +1,43 @@
+/* Housekeeping V2 bridge to the approved RandApp Dark Shell. */
+:root{
+  --rs-card:var(--approved-panel,#0b2136);
+  --rs-soft:var(--approved-panel-2,#071827);
+  --rs-border:var(--approved-line,rgba(82,137,169,.30));
+  --rs-text:var(--approved-text,#f4f8fb);
+  --rs-muted:var(--approved-muted,#92a5b7);
+  --rs-accent:var(--approved-accent,#16c6cf);
+}
+.hk2-page{color:var(--approved-text,#f4f8fb)}
+.hk2-upload-card,.hk2-room,.hk2-sheet,.hk2-table-wrap,.hk2-actions button{
+  background:linear-gradient(145deg,rgba(13,35,56,.97),rgba(7,23,39,.97));
+  border-color:var(--approved-line,rgba(82,137,169,.30));
+  color:var(--approved-text,#f4f8fb);
+  box-shadow:0 14px 34px rgba(0,0,0,.19);
+}
+.hk2-upload-card{background:linear-gradient(135deg,rgba(9,53,82,.94),rgba(6,40,63,.96))}
+.hk2-segment{background:rgba(3,15,27,.72);border:1px solid rgba(82,137,169,.18)}
+.hk2-segment button,.hk2-floors button{color:var(--approved-muted,#92a5b7)}
+.hk2-segment button.active,.hk2-floors button.active{
+  background:linear-gradient(135deg,rgba(14,160,173,.26),rgba(23,100,168,.34));
+  color:#fff;box-shadow:none;border-color:rgba(79,191,213,.28)
+}
+.hk2-floors button,.hk2-head-actions select,.hk2-toolbar select,.hk2-export select,.hk2-form select,.hk2-form input,.hk2-form textarea{
+  background:rgba(4,19,32,.82);color:var(--approved-text,#f4f8fb);border-color:rgba(109,150,179,.34)
+}
+.hk2-primary{background:linear-gradient(110deg,#08b5b8,#0786c4 48%,#245fb1);color:#fff;box-shadow:0 10px 24px rgba(0,119,180,.22)}
+.hk2-secondary{background:rgba(7,25,42,.84);color:var(--approved-text,#f4f8fb);border-color:var(--approved-line,rgba(82,137,169,.30))}
+.hk2-room-number{color:var(--approved-text,#f4f8fb)}
+.hk2-room-type{color:var(--approved-muted,#92a5b7)}
+.hk2-room-work{background:rgba(255,255,255,.07);color:#dce7f0}
+.hk2-room--fatto{border-color:rgba(34,197,94,.58)}
+.hk2-room--fatto .hk2-room-work{background:rgba(34,197,94,.18);color:#8df0ad}
+.hk2-room--corso{border-color:rgba(245,158,11,.62)}
+.hk2-room--corso .hk2-room-work{background:rgba(245,158,11,.17);color:#ffd27a}
+.hk2-room--nondist{border-color:rgba(148,163,184,.55)}
+.hk2-room--nondist .hk2-room-work{background:rgba(148,163,184,.14);color:#d5dee8}
+.hk2-room--b2b .hk2-room-slope{color:#ff9c9c}.hk2-room--partenza .hk2-room-slope{color:#ffc66d}.hk2-room--arrivo .hk2-room-slope{color:#70dce8}
+.hk2-detail,.hk2-message{background:rgba(4,19,32,.76);color:var(--approved-text,#f4f8fb);border:1px solid rgba(82,137,169,.18)}
+.hk2-detail span,.hk2-sheet small,.hk2-upload-card span{color:var(--approved-muted,#92a5b7)}
+.hk2-table-wrap th{background:#071827;color:var(--approved-text,#f4f8fb)}
+.hk2-table-wrap td{background:rgba(7,24,39,.86);color:var(--approved-text,#f4f8fb)}
+.hk2-close{border-color:var(--approved-line,rgba(82,137,169,.30));color:var(--approved-text,#f4f8fb)}
