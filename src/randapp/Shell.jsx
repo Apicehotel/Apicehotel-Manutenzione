@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
-import { Icon, IconButton, Sheet, Button, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
+import { Icon, IconButton, Sheet, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
 import { logoFor, hotelById, firstName } from './helpers.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import Home from './Home.jsx'
 import Issues from './Issues.jsx'
 import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
-import SoonScreen from './SoonScreen.jsx'
+import {
+  InterventionsView, PlanningWorkView, PlanningSaleView, UrgentView,
+  TemperatureView, HousekeepingView, TechnicianDirectoryView,
+  FeedbackView, PinView, ManualView,
+} from './MigratedViews.jsx'
 
 const BOTTOM_NAV = [
   { id: 'issues', icon: 'issues', label: 'Segnalazioni' },
@@ -17,21 +21,6 @@ const BOTTOM_NAV = [
   { id: 'planning-work', icon: 'calendar', label: 'Planning' },
   { id: 'menu', icon: 'menu', label: 'Menu' },
 ]
-
-const SOON_META = {
-  interventions: { icon: 'wrench', title: 'Interventi', desc: 'Le attività pianificate e assegnate verranno collegate qui riusando la logica esistente (planned-data).' },
-  'planning-work': { icon: 'calendar', title: 'Planning lavori', desc: 'La pianificazione lavori sarà migrata mantenendo questo design system.' },
-  'planning-sale': { icon: 'calendar', title: 'Planning sale', desc: 'La pianificazione sale (Hotel Giò) sarà collegata alla logica esistente.' },
-  temperature: { icon: 'thermometer', title: 'Temperature', desc: 'Le letture dei sensori eWeLink saranno migrate qui riusando i servizi già presenti.' },
-  housekeeping: { icon: 'housekeeping', title: 'Housekeeping', desc: 'La gestione camere sarà collegata mantenendo la logica attuale.' },
-  urgent: { icon: 'warning', title: 'Avvisi urgenti', desc: 'La gestione avvisi e la sirena verranno migrate qui senza rifare il layout.' },
-  technicians: { icon: 'phone', title: 'Rubrica tecnici', desc: 'La rubrica dei tecnici esterni sarà collegata nel prossimo passaggio.' },
-  'feedback-received': { icon: 'message', title: 'Feedback ricevuti', desc: 'La bacheca feedback per gli amministratori sarà migrata qui.' },
-  profile: { icon: 'user', title: 'Il mio profilo', desc: 'Dati profilo, email e telefono. Sezione in migrazione nel Dark Shell.' },
-  pin: { icon: 'lock', title: 'Cambia PIN', desc: 'Cambio del PIN personale. Sezione in migrazione nel Dark Shell.' },
-  manual: { icon: 'book', title: 'Manuale', desc: 'Guida rapida all\'uso dell\'app. Sezione in migrazione.' },
-  feedback: { icon: 'message', title: 'Invia feedback', desc: 'Invia suggerimenti e segnalazioni sull\'app. Sezione in migrazione.' },
-}
 
 function NavGroups({ user, hotel, variant, current, onPick }) {
   const groups = useMemo(() => buildNav(user, hotel), [user, hotel])
@@ -60,7 +49,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [createSignal, setCreateSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
-  const [settings, setSettings] = useState(null) // null | tab id
+  const [settings, setSettings] = useState(null)
   const hotel = hotelById(session.hotelId) || HOTELS[0]
 
   useEffect(() => {
@@ -93,12 +82,25 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'home') return <Home user={user} hotel={hotel} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
+
     const guard = VIEW_GUARDS[view]
     if (guard && user && !guard(user, hotel)) {
       return <EmptyState icon="lock" title="Accesso non consentito">Il tuo ruolo ({user.role}) non può usare questa sezione.</EmptyState>
     }
-    const meta = SOON_META[view] || { icon: 'sparkles', title: 'RandApp', desc: 'Sezione in arrivo.' }
-    return <SoonScreen {...meta} />
+
+    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
+    if (view === 'planning-work') return <PlanningWorkView user={user} hotel={hotel} />
+    if (view === 'planning-sale') return <PlanningSaleView user={user} hotel={hotel} />
+    if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
+    if (view === 'temperature') return <TemperatureView hotel={hotel} />
+    if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
+    if (view === 'technicians') return <TechnicianDirectoryView users={users} hotel={hotel} />
+    if (view === 'feedback-received') return <FeedbackView user={user} hotel={hotel} received />
+    if (view === 'feedback') return <FeedbackView user={user} hotel={hotel} />
+    if (view === 'pin') return <PinView user={user} />
+    if (view === 'manual') return <ManualView />
+
+    return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
   }
 
   const DrawerHeader = (
@@ -191,14 +193,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <div className="rs-drawer__scroll">
               <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} />
               <span className="rs-drawer__label">Preferenze</span>
-              <div className="rs-drawer__setting">
-                <small>Tema</small>
-                <ThemeControl />
-              </div>
-              <div className="rs-drawer__setting">
-                <small>Dimensione interfaccia</small>
-                <UiSizeControl />
-              </div>
+              <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
+              <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
             </div>
             <button className="rs-drawer__item rs-drawer__item--danger" onClick={onLogout} data-testid="drawer-logout">
               <Icon name="logout" /> <span>Esci</span>
