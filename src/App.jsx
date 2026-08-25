@@ -369,7 +369,7 @@ function IssueDetail({ issue, permissions, currentUser, users, onClose, onUpdate
   const canAct = issue.status === 'todo' && permissions.includes('complete')
   const externalTechnicians = users.filter((person) => person.role === 'Tecnico esterno')
   const confirmComplete = () => { onUpdate(issue.id, { status: 'done', completionNote: noteDraft.trim() || null, completionPhotoData: completionPhoto, completedBy: currentUser.name, completedAt: Date.now() }); onClose() }
-  const pickCompletionPhoto = async (file) => { const data = await readPhotoAsDataUrl(file); setCompletionPhoto(data); setCompletionPhotoName(file?.name || ''); setPhotoPickerOpen(false) }
+  const pickCompletionPhoto = async (file) => { const data = await readPhotoAsDataUrl(file); setCompletionPhoto(data); setCompletionPhotoName(file?.name || '') }
   const confirmPiece = () => { if (!pieceDraft.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: pieceDraft.trim(), pieceWaitingSince: Date.now() }); onClose() }
   const pieceArrived = () => { onUpdate(issue.id, { status: 'todo', pieceArrivedAt: Date.now() }); onClose() }
   const savePieceDecision = (decision) => onUpdate(issue.id, { pieceDecision: decision, pieceDecisionBy: currentUser.name, pieceDecisionAt: Date.now() })
