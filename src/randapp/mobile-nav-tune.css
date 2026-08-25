@@ -1,4 +1,4 @@
-/* Mobile layout corrections: restore full-width 5-item navigation and center calendar controls. */
+/* Mobile layout corrections: restore full-width 5-item navigation and make planning controls compact, centered and stable. */
 @media (max-width: 899px) {
   /* Bottom navigation: full viewport width, five equal cells, Home exactly in the middle. */
   .rs-bottomnav {
@@ -40,39 +40,84 @@
     right: max(18px, env(safe-area-inset-right));
   }
 
-  /* Planning period selector: three homogeneous buttons across the available width. */
-  .rs-legacy--planning .calendar-views {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    margin-inline: 0;
+  /* Planning: never allow the legacy stylesheet to stack these controls vertically. */
+  .rs-legacy.rs-legacy--planning .calendar-views {
+    width: 100% !important;
+    max-width: 560px !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    flex-direction: initial !important;
+    flex-wrap: nowrap !important;
   }
 
-  .rs-legacy--planning .calendar-views > button {
-    width: 100%;
-    min-width: 0;
-    margin: 0;
-    justify-content: center;
-    text-align: center;
+  .rs-legacy.rs-legacy--planning .calendar-views > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 8px 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
   }
 
-  /* Previous / Today / Next: Today is geometrically centered, arrows symmetric at its sides. */
-  .rs-legacy--planning .calendar-nav {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 48px minmax(96px, 132px) 48px;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-inline: auto;
+  /* Previous / Today / Next: a compact three-button stepper centered as one control. */
+  .rs-legacy.rs-legacy--planning .calendar-nav {
+    width: min(100%, 244px) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: 48px minmax(108px, 132px) 48px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex-direction: initial !important;
+    flex-wrap: nowrap !important;
   }
 
-  .rs-legacy--planning .calendar-nav > button {
-    width: 100%;
-    min-width: 0;
-    margin: 0;
-    justify-content: center;
-    text-align: center;
+  .rs-legacy.rs-legacy--planning .calendar-nav > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 8px 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep the planning heading compact and prevent the count from floating awkwardly. */
+  .rs-legacy.rs-legacy--planning .calendar-page > header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: start !important;
+    column-gap: 12px !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .calendar-page > header > span {
+    white-space: nowrap;
+    align-self: start;
+  }
+}
+
+@media (max-width: 390px) {
+  .rs-legacy.rs-legacy--planning .calendar-views {
+    gap: 6px !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .calendar-views > button {
+    font-size: .92rem !important;
+    padding-inline: 4px !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .calendar-nav {
+    width: min(100%, 228px) !important;
+    grid-template-columns: 46px minmax(100px, 120px) 46px !important;
+    gap: 6px !important;
   }
 }
