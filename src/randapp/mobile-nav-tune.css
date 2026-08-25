@@ -1,16 +1,18 @@
-/* Mobile bottom navigation: centered, compact and homogeneous across phone widths. */
+/* Mobile layout corrections: restore full-width 5-item navigation and center calendar controls. */
 @media (max-width: 899px) {
+  /* Bottom navigation: full viewport width, five equal cells, Home exactly in the middle. */
   .rs-bottomnav {
-    left: 50%;
-    right: auto;
-    width: min(100%, 560px);
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    width: 100%;
+    transform: none;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    padding-left: max(10px, env(safe-area-inset-left));
-    padding-right: max(10px, env(safe-area-inset-right));
-    border-left: 1px solid var(--rs-line);
-    border-right: 1px solid var(--rs-line);
-    border-radius: 18px 18px 0 0;
+    gap: 2px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
   }
 
   .rs-navbtn {
@@ -35,6 +37,42 @@
   }
 
   .rs-navfab {
-    right: max(18px, calc((100vw - 560px) / 2 + 18px));
+    right: max(18px, env(safe-area-inset-right));
+  }
+
+  /* Planning period selector: three homogeneous buttons across the available width. */
+  .rs-legacy--planning .calendar-views {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-inline: 0;
+  }
+
+  .rs-legacy--planning .calendar-views > button {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Previous / Today / Next: Today is geometrically centered, arrows symmetric at its sides. */
+  .rs-legacy--planning .calendar-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 48px minmax(96px, 132px) 48px;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-inline: auto;
+  }
+
+  .rs-legacy--planning .calendar-nav > button {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    justify-content: center;
+    text-align: center;
   }
 }
