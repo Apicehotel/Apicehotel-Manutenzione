@@ -8,6 +8,7 @@ import Home from './Home.jsx'
 import Issues from './Issues.jsx'
 import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
+import PresenceChip from './PresenceChip.jsx'
 import {
   InterventionsView, PlanningWorkView, PlanningSaleView, UrgentView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
@@ -148,7 +149,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </span>
             {allowedHotels.length > 1 && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
-          <IconButton icon="menu" label="Menu" onClick={() => setDrawer(true)} data-testid="header-menu" />
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <PresenceChip user={user} />
+            <IconButton icon="menu" label="Menu" onClick={() => setDrawer(true)} data-testid="header-menu" />
+          </div>
         </header>
 
         <main className="rs-content" data-testid="main-content">{renderView()}</main>
