@@ -18,10 +18,10 @@ test("Planning lavori: azione 'Segna da finire' accanto a 'Intervento completato
 
 test('Planning lavori: da_finire persiste su Supabase (nuove colonne da_finire_da/da_finire_il), non solo in stato locale', async () => {
   const plannedData = await readFile(new URL('../src/planned-data.js', import.meta.url), 'utf8')
-  assert.match(plannedData, /toFinishBy: row\.da_finire_da \|\| null,/)
-  assert.match(plannedData, /toFinishAt: row\.da_finire_il \? new Date\(row\.da_finire_il\)\.getTime\(\) : null,/)
-  assert.match(plannedData, /set\('da_finire_da', item\.toFinishBy\)/)
-  assert.match(plannedData, /if \(item\.toFinishAt !== undefined\) row\.da_finire_il = item\.toFinishAt \? new Date\(item\.toFinishAt\)\.toISOString\(\) : null/)
+  assert.match(plannedData, /toFinishBy\s*:\s*row\.da_finire_da\s*\|\|\s*null/)
+  assert.match(plannedData, /toFinishAt\s*:\s*row\.da_finire_il\s*\?\s*new Date\(row\.da_finire_il\)\.getTime\(\)\s*:\s*null/)
+  assert.match(plannedData, /set\('da_finire_da'\s*,\s*item\.toFinishBy\)/)
+  assert.match(plannedData, /if\s*\(item\.toFinishAt\s*!==\s*undefined\)\s*row\.da_finire_il\s*=\s*item\.toFinishAt\s*\?\s*new Date\(item\.toFinishAt\)\.toISOString\(\)\s*:\s*null/)
 })
 
 test('Planning Sale: Modifica una prenotazione esistente (prima esisteva solo Elimina, non si poteva correggere sala/date/cliente)', async () => {
