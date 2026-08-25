@@ -10,54 +10,79 @@ await mkdir(artifacts, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const failures = []
 
-async function checkPage({ name, width, height }) {
+const viewports = [
+  { name: 'iphone-se-320x568', width: 320, height: 568 },
+  { name: 'iphone-390x844', width: 390, height: 844 },
+  { name: 'large-phone-430x932', width: 430, height: 932 },
+  { name: 'tablet-768x1024', width: 768, height: 1024 },
+  { name: 'desktop-1440x1000', width: 1440, height: 1000 },
+]
+
+async function assertNoHorizontalOverflow(page, label) {
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  assert.ok(overflow <= 1, `Overflow orizzontale di ${overflow}px su ${label}`)
+}
+
+async function assertNoFatalRuntimeErrors(pageErrors, consoleErrors, label) {
+  if (pageErrors.length) throw new Error(`${label}: Page errors: ${pageErrors.join(' | ')}`)
+  const fatalConsole = consoleErrors.filter((text) => /uncaught|referenceerror|typeerror|syntaxerror/i.test(text))
+  if (fatalConsole.length) throw new Error(`${label}: Console runtime errors: ${fatalConsole.join(' | ')}`)
+}
+
+async function checkLoginShell({ name, width, height }, theme = 'dark') {
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })
   const page = await context.newPage()
   const pageErrors = []
   const consoleErrors = []
-
   page.on('pageerror', (error) => pageErrors.push(error.message))
-  page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text())
-  })
+  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()) })
 
   try {
-    await page.goto(baseUrl, { waitUntil: 'networkidle' })
-    await page.getByRole('heading', { name: 'Seleziona una struttura' }).waitFor()
+    await page.addInitScript((selectedTheme) => localStorage.setItem('apicehotel.theme.v1', selectedTheme), theme)
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
 
-    for (const hotel of ['Hotel Giò', 'ChocoHotel', 'Il Brigantino']) {
-      assert.equal(await page.getByRole('button', { name: hotel, exact: true }).isVisible(), true, `${hotel} non visibile su ${name}`)
-    }
+    assert.equal(await page.getByRole('heading', { name: 'RandApp' }).isVisible(), true, `Brand RandApp non visibile su ${name}`)
+    assert.equal(await page.getByTestId('login-user-input').isVisible(), true, `Campo Utente non visibile su ${name}`)
+    assert.equal(await page.getByTestId('login-pin-input').isVisible(), true, `Campo PIN non visibile su ${name}`)
+    assert.equal(await page.getByTestId('login-submit').isVisible(), true, `ACCEDI non visibile su ${name}`)
+    assert.equal(await page.getByTestId('open-settings-link').isVisible(), true, `Impostazioni non visibili su ${name}`)
 
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    assert.ok(overflow <= 1, `Overflow orizzontale di ${overflow}px su ${name}`)
+    const resolvedTheme = await page.evaluate(() => document.documentElement.dataset.theme)
+    assert.equal(resolvedTheme, theme, `Tema ${theme} non applicato su ${name}`)
+    await assertNoHorizontalOverflow(page, `${name}-${theme}`)
 
-    await page.screenshot({ path: fileURLToPath(new URL(`${name}.png`, artifacts)), fullPage: true })
+    const submitBox = await page.getByTestId('login-submit').boundingBox()
+    assert.ok(submitBox && submitBox.width >= 44 && submitBox.height >= 44, `Touch target ACCEDI troppo piccolo su ${name}`)
+    const settingsBox = await page.getByTestId('open-settings-link').boundingBox()
+    assert.ok(settingsBox && settingsBox.width >= 44 && settingsBox.height >= 44, `Touch target Impostazioni troppo piccolo su ${name}`)
 
-    // Verifica il percorso fino al login senza dipendere da PIN demo o segreti CI.
-    await page.getByRole('button', { name: 'Hotel Giò', exact: true }).click()
-    await page.getByLabel('PIN di 4 cifre').waitFor()
-    assert.equal(await page.getByRole('button', { name: 'Accedi' }).isVisible(), true)
+    await page.screenshot({ path: fileURLToPath(new URL(`${name}-${theme}.png`, artifacts)), fullPage: true })
 
-    const loginOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    assert.ok(loginOverflow <= 1, `Overflow login di ${loginOverflow}px su ${name}`)
+    // Verifica che il percorso Impostazioni sia raggiungibile senza credenziali reali.
+    await page.getByTestId('open-settings-link').click()
+    await page.getByRole('heading', { name: 'Impostazioni' }).waitFor({ state: 'visible' })
+    assert.equal(await page.getByTestId('admin-pin-input').isVisible(), true, `PIN amministratore non visibile su ${name}`)
+    assert.equal(await page.getByTestId('admin-gate-submit').isVisible(), true, `ENTRA admin non visibile su ${name}`)
+    await assertNoHorizontalOverflow(page, `${name}-${theme}-settings`)
 
-    if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join(' | ')}`)
+    // Il ritorno deve riportare al nuovo login RandApp, mai alla vecchia scelta struttura.
+    await page.getByRole('button', { name: /RandApp/ }).click()
+    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
+    assert.equal(await page.getByText('Seleziona una struttura', { exact: true }).count(), 0, `Vecchia home struttura riapparsa su ${name}`)
 
-    // Errori di rete/API sono possibili in CI senza credenziali Supabase; gli errori JS runtime no.
-    const fatalConsole = consoleErrors.filter((text) => /uncaught|referenceerror|typeerror|syntaxerror/i.test(text))
-    if (fatalConsole.length) throw new Error(`Console runtime errors: ${fatalConsole.join(' | ')}`)
+    await assertNoFatalRuntimeErrors(pageErrors, consoleErrors, `${name}-${theme}`)
   } catch (error) {
-    failures.push(`${name}: ${error.message}`)
+    failures.push(`${name}-${theme}: ${error.message}`)
   } finally {
     await context.close()
   }
 }
 
 try {
-  await checkPage({ name: 'home-320x568', width: 320, height: 568 })
-  await checkPage({ name: 'home-390x844', width: 390, height: 844 })
-  await checkPage({ name: 'home-1440x1000', width: 1440, height: 1000 })
+  for (const viewport of viewports) await checkLoginShell(viewport, 'dark')
+  // Light viene verificato su telefono, tablet e desktop; usa gli stessi componenti/token.
+  for (const viewport of [viewports[1], viewports[3], viewports[4]]) await checkLoginShell(viewport, 'light')
 } finally {
   await browser.close()
 }
@@ -66,5 +91,5 @@ if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1
 } else {
-  console.log('E2E OK: selezione hotel, layout responsive, assenza overflow, apertura login e nessun errore runtime fatale')
+  console.log('E2E OK: nuovo login Dark Shell, Dark/Light, responsive 320-1440px, touch target, assenza overflow, accesso/ritorno Impostazioni e nessun errore runtime fatale')
 }
