@@ -15,7 +15,7 @@ test('push client verifies subscription per hotel and repairs on hotel change', 
 
 test('service worker preserves notification destination on existing PC/mobile window', async () => {
   const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(sw, /apicehotel-manutenzione-v9/)
+  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v\d+'/)
   assert.match(sw, /await existing\.navigate\(targetUrl\)/)
   assert.match(sw, /type: 'notification-click'/)
   assert.match(sw, /hotelId: payload\.hotelId/)
