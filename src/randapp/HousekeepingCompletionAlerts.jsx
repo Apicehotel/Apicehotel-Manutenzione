@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { hotelGioClient } from '../hotelgio-data.js'
+import { fetchDirectory } from '../users-data.js'
+import { loadSession } from '../session.js'
+import { hotelById } from './helpers.js'
 
+const SESSION_EVENT = 'apice-session-changed'
 const isReception = (user) => user?.role === 'Reception' || user?.department === 'Reception'
 const roomLabel = (row) => `Camera ${row?.camera || '—'}`
 const timeLabel = (value) => {
@@ -8,11 +12,32 @@ const timeLabel = (value) => {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function HousekeepingCompletionAlerts({ user, hotel }) {
+export default function HousekeepingCompletionAlerts() {
+  const [session, setSession] = useState(loadSession())
+  const [user, setUser] = useState(null)
   const [queue, setQueue] = useState([])
   const [openList, setOpenList] = useState(false)
   const seen = useRef(new Set())
-  const enabled = isReception(user) && Boolean(hotel?.id)
+  const hotel = hotelById(session?.hotelId)
+  const enabled = Boolean(session?.hotelId && isReception(user))
+
+  useEffect(() => {
+    const onSessionChange = () => setSession(loadSession())
+    window.addEventListener(SESSION_EVENT, onSessionChange)
+    return () => window.removeEventListener(SESSION_EVENT, onSessionChange)
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    setUser(null)
+    if (!session?.hotelId || !session?.userId) return () => { active = false }
+    fetchDirectory(session.hotelId).then(({ users }) => {
+      if (!active) return
+      const rows = users || []
+      setUser(rows.find((row) => row.auth_user_id === session.userId || row.id === session.userId || row.legacy_id === session.userId) || null)
+    }).catch(() => { if (active) setUser(null) })
+    return () => { active = false }
+  }, [session?.hotelId, session?.userId])
 
   useEffect(() => {
     setQueue([])
@@ -20,36 +45,31 @@ export default function HousekeepingCompletionAlerts({ user, hotel }) {
     seen.current.clear()
     if (!enabled) return undefined
 
+    const addRow = (row, version) => {
+      const key = `${row.id || `${row.hotel_id}:${row.work_date}:${row.camera}`}:${version || row.updated_at || row.completed_at || ''}`
+      if (seen.current.has(key)) return
+      seen.current.add(key)
+      setQueue((current) => [...current.slice(-9), row])
+    }
+
     const channel = hotelGioClient
-      .channel(`randapp-hk-completions-${hotel.id}`)
+      .channel(`randapp-hk-completions-${session.hotelId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'housekeeping_completions',
-        filter: `hotel_id=eq.${hotel.id}`,
-      }, (payload) => {
-        const row = payload.new || {}
-        const key = row.id || `${row.hotel_id}:${row.work_date}:${row.camera}:${row.completed_at}`
-        if (seen.current.has(key)) return
-        seen.current.add(key)
-        setQueue((current) => [...current.slice(-9), row])
-      })
+        filter: `hotel_id=eq.${session.hotelId}`,
+      }, (payload) => addRow(payload.new || {}, payload.new?.completed_at))
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'housekeeping_completions',
-        filter: `hotel_id=eq.${hotel.id}`,
-      }, (payload) => {
-        const row = payload.new || {}
-        const key = `${row.id || row.camera}:${row.updated_at || row.completed_at}`
-        if (seen.current.has(key)) return
-        seen.current.add(key)
-        setQueue((current) => [...current.slice(-9), row])
-      })
+        filter: `hotel_id=eq.${session.hotelId}`,
+      }, (payload) => addRow(payload.new || {}, payload.new?.updated_at))
       .subscribe()
 
     return () => { hotelGioClient.removeChannel(channel) }
-  }, [enabled, hotel?.id])
+  }, [enabled, session?.hotelId])
 
   const latest = queue[queue.length - 1]
   const summary = useMemo(() => {
@@ -61,7 +81,7 @@ export default function HousekeepingCompletionAlerts({ user, hotel }) {
   if (!enabled || !queue.length) return null
 
   return (
-    <aside className="rs-hk-alert" role="status" aria-live="polite" data-testid="housekeeping-completion-alert">
+    <aside className="rs-hk-alert" role="status" aria-live="polite" aria-label={`Aggiornamento Housekeeping ${hotel?.name || ''}`} data-testid="housekeeping-completion-alert">
       <div className="rs-hk-alert__body">
         <strong>{summary}</strong>
         {queue.length === 1 ? (
