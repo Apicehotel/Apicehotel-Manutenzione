@@ -86,16 +86,12 @@
     border-radius: 12px !important;
   }
 
-  /* remove Giorno entirely */
   .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(1) {
     display: none !important;
   }
 
-  /* outer arrows */
   .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(1) { grid-column: 1 !important; grid-row: 2 !important; }
   .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(3) { grid-column: 5 !important; grid-row: 2 !important; }
-
-  /* three central choices */
   .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(2) { grid-column: 2 !important; grid-row: 2 !important; }
   .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(2) {
     grid-column: 3 !important;
@@ -104,11 +100,34 @@
     font-weight: 800 !important;
     border-color: var(--rs-line-strong) !important;
   }
+  .rs-legacy.rs-legacy--planning .calendar-nav > button:nth-child(2).active {
+    background: color-mix(in srgb, var(--rs-cyan) 12%, transparent) !important;
+    box-shadow: inset 0 -2px 0 var(--rs-cyan) !important;
+  }
   .rs-legacy.rs-legacy--planning .calendar-views > button:nth-child(3) { grid-column: 4 !important; grid-row: 2 !important; }
 
   .rs-legacy.rs-legacy--planning .calendar-days { grid-row: 3 !important; }
   .rs-legacy.rs-legacy--planning .shift-legend { grid-row: 3 !important; }
   .rs-legacy.rs-legacy--planning .shift-legend + .calendar-days { grid-row: 4 !important; }
+
+  /* Today lists: neutral = da fare, orange = da finire, green = completed. */
+  .rs-legacy.rs-legacy--planning .work-event.pending,
+  .rs-legacy.rs-legacy--planning .sale-event.pending {
+    border-left: 5px solid #8b95a5 !important;
+    background: color-mix(in srgb, #8b95a5 8%, var(--rs-card)) !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .work-event.da_finire,
+  .rs-legacy.rs-legacy--planning .sale-event.da_finire {
+    border-left: 5px solid #e59a23 !important;
+    background: color-mix(in srgb, #e59a23 10%, var(--rs-card)) !important;
+  }
+
+  .rs-legacy.rs-legacy--planning .work-event.done,
+  .rs-legacy.rs-legacy--planning .sale-event.done {
+    border-left: 5px solid #2ea66f !important;
+    background: color-mix(in srgb, #2ea66f 10%, var(--rs-card)) !important;
+  }
 }
 
 @media (max-width: 390px) {
