@@ -9,8 +9,9 @@ import Issues from './Issues.jsx'
 import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
+import PlanningHub from './PlanningHub.jsx'
 import {
-  InterventionsView, PlanningWorkView, PlanningSaleView, UrgentView,
+  InterventionsView, UrgentView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
   FeedbackView, PinView, ManualView,
 } from './MigratedViews.jsx'
@@ -90,8 +91,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
 
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
-    if (view === 'planning-work') return <PlanningWorkView user={user} hotel={hotel} />
-    if (view === 'planning-sale') return <PlanningSaleView user={user} hotel={hotel} />
+    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub user={user} hotel={hotel} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
