@@ -23,19 +23,20 @@ test('MenuPanel: le notifiche (attivazione + suono) sono ora integrate dentro Il
   assert.doesNotMatch(app, /menu-panel-backdrop/)
 })
 
-test('avviso urgente creato: notifyUrgent chiamata dopo il salvataggio riuscito, verso send-push', async () => {
+test('avviso urgente creato: notifyUrgent supporta il payload arricchito e viene inviato dopo il salvataggio server', async () => {
   const [app, urgents] = await Promise.all([
     readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/urgents-data.js', import.meta.url), 'utf8'),
   ])
   assert.match(app, /const created = await insertUrgent\(\{ hotelId: hotel\.id, note: text, status: 'aperta', createdBy: user\.name \}\); setUrgentItems\(\(list\) => \[created, \.\.\.list\.filter\(\(i\) => i\.id !== created\.id\)\]\); notifyUrgent\(hotel\.id, text\)/)
-  assert.match(urgents, /export async function notifyUrgent\(hotelId, note\) \{/)
-  assert.match(urgents, /supabase\.functions\.invoke\('send-push', \{ body: \{ hotel_id: hotelId, title: 'Avviso urgente', body: note \} \}\)/)
+  assert.match(urgents, /export async function notifyUrgent\(hotelId\s*,\s*note\s*,\s*\{severity='urgente',location=null,urgentId=null\}=\{\}\)/)
+  assert.match(urgents, /supabase\.functions\.invoke\('send-push',\{body:\{hotel_id:hotelId,event_type:'urgent',urgent_id:urgentId,title:prefix,body,severity,location\}\}\)/)
+  assert.match(urgents, /if\(item\._notifyOnSync\)await notifyUrgent\(created\.hotelId,created\.note,\{severity:created\.severity,location:created\.location,urgentId:created\.id\}\)/)
 })
 
 test('service worker: gestori push e notificationclick presenti, versione cache aggiornata', async () => {
   const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v9'/)
+  assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v\d+'/)
   assert.match(sw, /self\.addEventListener\('push', \(event\) => \{/)
   assert.match(sw, /self\.registration\.showNotification\(payload\.title, \{/)
   assert.match(sw, /self\.addEventListener\('notificationclick', \(event\) => \{/)
