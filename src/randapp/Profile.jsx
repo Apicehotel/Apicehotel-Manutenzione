@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { updateOwnProfile, setOwnPresence } from '../auth-data.js'
+import { updateOwnProfile } from '../auth-data.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { logoFor } from './helpers.js'
 import NtfySetup from './NtfySetup.jsx'
@@ -23,12 +23,6 @@ export default function Profile({ user, hotel }) {
     catch(err){ setError(err?.message||'Aggiornamento non riuscito') }
     finally { setBusy(false) }
   }
-  const presence=async(value)=>{
-    setBusy(true); setMessage(''); setError('')
-    try { await setOwnPresence(value); setMessage(value?'Presenza in struttura attivata.':'Presenza disattivata.') }
-    catch(err){ setError(err?.message||'Aggiornamento presenza non riuscito') }
-    finally { setBusy(false) }
-  }
 
   return <div data-testid="profile-view">
     <div className="rs-page-title"><div><h1>Il mio profilo</h1><p>{hotel?.name}</p></div></div>
@@ -48,16 +42,12 @@ export default function Profile({ user, hotel }) {
     </section>
 
     <section className="rs-section">
-      <div className="rs-section__head"><h2>Contatti e presenza</h2></div>
+      <div className="rs-section__head"><h2>Contatti</h2></div>
       <Card className="rs-card--pad">
         <form className="rs-migrated-form" onSubmit={save}>
           <Field label="Email"><TextInput value={email} type="email" autoComplete="email" onChange={e=>setEmail(e.target.value)} /></Field>
           <Field label="Telefono"><TextInput value={phone} inputMode="tel" autoComplete="tel" onChange={e=>setPhone(e.target.value)} /></Field>
-          <div className="rs-op-card__actions">
-            <Button type="submit" disabled={busy}>Salva dati</Button>
-            <Button type="button" variant="outline" onClick={()=>presence(true)} disabled={busy}>Sono in struttura</Button>
-            <Button type="button" variant="ghost" onClick={()=>presence(false)} disabled={busy}>Fuori struttura</Button>
-          </div>
+          <div className="rs-op-card__actions"><Button type="submit" disabled={busy}>Salva dati</Button></div>
           {message&&<p className="rs-success">{message}</p>}{error&&<p className="rs-error">{error}</p>}
         </form>
       </Card>
