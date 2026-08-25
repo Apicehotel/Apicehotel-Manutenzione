@@ -6,24 +6,18 @@ export const HOTELS = [
 
 // Matrice ruoli approvata: i quattro ruoli base seguono il modello Hotel Giò,
 // i ruoli specializzati Multi Hotel restano separati. "Responsabile" è rimosso.
-// "Supremo" supervisiona tutta l'operatività manutentiva: può inserire nuove
-// segnalazioni ma non può assegnare, prendere in carico o completare lavori.
-export const ROLES = ['admin', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine/Jazz', 'Colazione Jazz']
+// "Capo Governante" ha gli stessi permessi operativi di Governante e in più
+// riceve le notifiche Housekeeping della propria struttura.
+export const ROLES = ['admin', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'Governante', 'Capo Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine/Jazz', 'Colazione Jazz']
 
 export const ROLE_PERMISSIONS = {
   admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'planning_sale'],
-
-  // Supremo vede tutti i reparti e può inserire manutenzioni, ma resta
-  // completamente passivo sugli stati operativi: niente assign/take_charge/complete.
   Supremo: ['create', 'read_all_departments', 'read_own_hotel'],
-
-  // Ruoli base allineati al comportamento Hotel Giò approvato.
   Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
   manutentore: ['create', 'take_charge', 'complete', 'read_all_departments'],
   Governante: ['create', 'read_own_hotel'],
+  'Capo Governante': ['create', 'read_own_hotel', 'housekeeping_notifications'],
   Reception: ['create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'read_own_hotel'],
-
-  // Ruoli specializzati Multi Hotel mantenuti come deciso.
   'Direttore Centro Congressi': ['create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'planning_sale'],
   'Portiere Notturno': ['create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'read_own_hotel'],
   'Tecnico esterno': ['take_charge', 'complete', 'read_own_hotel'],
@@ -32,12 +26,8 @@ export const ROLE_PERMISSIONS = {
   'Colazione Jazz': ['create', 'read_own_hotel'],
 }
 
-// Nessun utente o PIN demo viene incluso nel bundle frontend.
 export const USERS = []
 
-// Destinatari WhatsApp separati per struttura. Il numero del Giò riceve
-// le segnalazioni provenienti da Hotel Giò. Le altre strutture verranno
-// abilitate appena saranno disponibili i rispettivi numeri.
 export const WHATSAPP = Object.freeze({
   enabled: true,
   destinations: Object.freeze({
@@ -47,6 +37,4 @@ export const WHATSAPP = Object.freeze({
   }),
 })
 
-// Twilio resta disabilitato finché webhook e credenziali server-side non
-// sono configurati: nessun segreto Twilio deve finire nel bundle frontend.
 export const TWILIO = Object.freeze({ enabled: false, inboundWebhook: null, automaticMessages: false })
