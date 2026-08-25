@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { updateOwnProfile, setOwnPresence } from '../auth-data.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { logoFor } from './helpers.js'
+import NtfySetup from './NtfySetup.jsx'
 
 function Row({ label, value }) {
   return <div className="rs-profile-row"><span>{label}</span><b>{value || '—'}</b></div>
@@ -69,5 +70,7 @@ export default function Profile({ user, hotel }) {
         <div className="rs-pref"><div className="rs-pref__label"><Icon name="sliders" /><div><b>Dimensione interfaccia</b><small>Più contenuto o più leggibilità</small></div></div><UiSizeControl /></div>
       </Card>
     </section>
+
+    <NtfySetup hotelId={hotel?.id} />
   </div>
 }
