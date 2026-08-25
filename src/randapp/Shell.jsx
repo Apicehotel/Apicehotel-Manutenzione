@@ -88,6 +88,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       setCreateSignal((n) => n + 1)
       return
     }
+    if (id === 'urgent') {
+      setView('urgent')
+      return
+    }
     if (id === 'intervention') {
       setView('interventions')
       return
