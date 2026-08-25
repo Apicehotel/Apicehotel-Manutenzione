@@ -10,6 +10,7 @@ import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
+import './mobile-nav-tune.css'
 import {
   InterventionsView, UrgentView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
