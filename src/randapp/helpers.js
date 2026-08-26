@@ -66,27 +66,43 @@ export const readPhotoAsDataUrl = (file) => new Promise((resolve) => {
 
 // Ridimensiona (lato lungo max 1000px) e ricomprime in JPEG q.62 prima del salvataggio,
 // per non appesantire lo storage. Ritorna null se il file non e' un'immagine valida.
+// Ridimensiona (lato lungo max 1000px) e ricomprime in JPEG q.62 prima del salvataggio,
+// per non appesantire lo storage. Usa createObjectURL (piu' affidabile di un data URL su
+// iOS per foto HEIC dalla fotocamera) e verifica che il risultato non sia nero: alcune
+// versioni di Safari possono produrre un canvas completamente nero nel decode HEIC.
+// In quel caso, o in caso di qualunque errore, si salva la foto originale non compressa
+// piuttosto che una foto rotta.
 export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
   if (!file || !file.size) return resolve(null)
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const img = new Image()
-    img.onload = () => {
+  const objectUrl = URL.createObjectURL(file)
+  const img = new Image()
+  const fallback = () => { URL.revokeObjectURL(objectUrl); readPhotoAsDataUrl(file).then(resolve) }
+  img.onload = () => {
+    try {
       const max = 1000
-      let { width: w, height: h } = img
+      let w = img.naturalWidth || img.width
+      let h = img.naturalHeight || img.height
       if (w > h && w > max) { h = Math.round((h * max) / w); w = max }
       else if (h > max) { w = Math.round((w * max) / h); h = max }
       const canvas = document.createElement('canvas')
       canvas.width = w
       canvas.height = h
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+      const sampleW = Math.min(w, 24)
+      const sampleH = Math.min(h, 24)
+      const sample = ctx.getImageData(0, 0, sampleW, sampleH).data
+      let allBlack = true
+      for (let i = 0; i < sample.length; i += 4) {
+        if (sample[i] > 8 || sample[i + 1] > 8 || sample[i + 2] > 8) { allBlack = false; break }
+      }
+      URL.revokeObjectURL(objectUrl)
+      if (allBlack) return readPhotoAsDataUrl(file).then(resolve)
       resolve(canvas.toDataURL('image/jpeg', 0.62))
-    }
-    img.onerror = () => resolve(null)
-    img.src = typeof e.target.result === 'string' ? e.target.result : ''
+    } catch { fallback() }
   }
-  reader.onerror = () => resolve(null)
-  reader.readAsDataURL(file)
+  img.onerror = fallback
+  img.src = objectUrl
 })
 
 export function csvCell(value = '') { return `"${String(value).replaceAll('"', '""')}"` }
