@@ -1,194 +1,426 @@
 import { useEffect, useMemo, useState } from 'react'
+import ReactGridLayout, { useContainerWidth, verticalCompactor } from 'react-grid-layout'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { create } from 'zustand'
+import { z } from 'zod'
+import {
+  AlertTriangle,
+  ClipboardList,
+  CloudSun,
+  GripVertical,
+  LayoutGrid,
+  MoreHorizontal,
+  Plus,
+  RotateCcw,
+  Wrench,
+  X,
+} from 'lucide-react'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
 import { fetchIssues } from '../issues-data.js'
 import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
 import { fetchOperationalWeather } from '../weather-data.js'
-import { Card, Icon, Spinner } from './ui.jsx'
+import { Card, Spinner } from './ui.jsx'
 import { firstName, can, isToday, URGENCY_META } from './helpers.js'
 
+const COLS = 3
 const MAX_ROWS = 3
-const MAX_PER_ROW = 3
-const MAX_WIDGETS = MAX_ROWS * MAX_PER_ROW
-const WIDGET_IDS = ['issues', 'urgent', 'interventions', 'quick', 'weather']
-const DEFAULT_ROWS = [['issues', 'urgent', 'interventions']]
+const WIDGET_IDS = ['issues', 'urgent', 'interventions', 'weather', 'quick']
+const WIDGET_TITLES = {
+  issues: 'Segnalazioni aperte',
+  urgent: 'Urgenti',
+  interventions: 'Interventi oggi',
+  weather: 'Meteo operativo',
+  quick: 'Azioni rapide',
+}
 
-const storageKey = (user, hotel) => `randapp.home.widgets.v4:${user?.id || user?.name || 'user'}:${hotel?.id || 'hotel'}`
-const defaultLayout = () => ({ rows: DEFAULT_ROWS.map((row) => [...row]) })
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
-const normalizeLayout = (raw) => {
-  if (!raw || !Array.isArray(raw.rows)) return defaultLayout()
+const LayoutItemSchema = z.object({
+  i: z.enum(WIDGET_IDS),
+  x: z.number().int().min(0).max(COLS - 1),
+  y: z.number().int().min(0),
+  w: z.number().int().min(1).max(COLS),
+  h: z.number().int().min(1).max(2),
+}).passthrough()
+
+const SavedLayoutSchema = z.object({
+  version: z.literal(5),
+  layout: z.array(LayoutItemSchema).max(9),
+})
+
+const item = (i, x, y, w = 1, h = 1) => ({
+  i,
+  x,
+  y,
+  w,
+  h,
+  minW: 1,
+  maxW: 3,
+  minH: 1,
+  maxH: 2,
+})
+
+const defaultLayout = () => [
+  item('issues', 0, 0),
+  item('urgent', 1, 0),
+  item('interventions', 2, 0),
+  item('weather', 0, 1),
+  item('quick', 1, 1, 2),
+]
+
+const normalizeLayout = (value) => {
+  const parsed = z.array(LayoutItemSchema).safeParse(value)
+  if (!parsed.success || parsed.data.length === 0) return defaultLayout()
   const seen = new Set()
-  const rows = raw.rows.slice(0, MAX_ROWS).map((row) => Array.isArray(row)
-    ? row.filter((id) => WIDGET_IDS.includes(id) && !seen.has(id) && seen.add(id)).slice(0, MAX_PER_ROW)
-    : []).filter((row) => row.length)
-  return rows.length ? { rows } : defaultLayout()
+  return parsed.data
+    .filter((entry) => !seen.has(entry.i) && seen.add(entry.i))
+    .map((entry) => ({
+      ...entry,
+      x: Math.min(entry.x, COLS - entry.w),
+      minW: 1,
+      maxW: 3,
+      minH: 1,
+      maxH: 2,
+    }))
 }
 
-const loadLayout = (user, hotel) => {
-  try { return normalizeLayout(JSON.parse(localStorage.getItem(storageKey(user, hotel)) || 'null')) }
-  catch { return defaultLayout() }
+const loadStoredLayout = (key) => {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return defaultLayout()
+    const parsed = SavedLayoutSchema.safeParse(JSON.parse(raw))
+    return parsed.success ? normalizeLayout(parsed.data.layout) : defaultLayout()
+  } catch {
+    return defaultLayout()
+  }
 }
 
-const saveLayout = (user, hotel, layout) => {
-  try { localStorage.setItem(storageKey(user, hotel), JSON.stringify(layout)) } catch { /* Local storage opzionale. */ }
+const saveStoredLayout = (key, layout) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ version: 5, layout: normalizeLayout(layout) }))
+  } catch {
+    // La Home resta utilizzabile anche con storage locale non disponibile.
+  }
 }
 
-const flattenRows = (rows) => rows.flat().slice(0, MAX_WIDGETS)
+const useWidgetStore = create((set, get) => ({
+  storageKey: '',
+  layout: defaultLayout(),
+  hydrate: (storageKey) => {
+    const layout = loadStoredLayout(storageKey)
+    set({ storageKey, layout })
+  },
+  setLayout: (next) => {
+    const layout = normalizeLayout(typeof next === 'function' ? next(get().layout) : next)
+    set({ layout })
+    if (get().storageKey) saveStoredLayout(get().storageKey, layout)
+  },
+  reset: () => {
+    const layout = defaultLayout()
+    set({ layout })
+    if (get().storageKey) saveStoredLayout(get().storageKey, layout)
+  },
+}))
 
-export default function Home({ user, hotel, onNavigate, personalizeSignal = 0 }) {
-  const [loading, setLoading] = useState(true)
-  const [issues, setIssues] = useState([])
-  const [urgents, setUrgents] = useState([])
-  const [planned, setPlanned] = useState([])
-  const [weather, setWeather] = useState(null)
-  const [weatherError, setWeatherError] = useState('')
+const useDeviceClass = () => {
+  const classify = () => {
+    if (typeof window === 'undefined') return 'desktop'
+    if (window.innerWidth < 600) return 'phone'
+    if (window.innerWidth < 1024) return 'tablet'
+    return 'desktop'
+  }
+  const [deviceClass, setDeviceClass] = useState(classify)
+  useEffect(() => {
+    const onResize = () => setDeviceClass(classify())
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return deviceClass
+}
+
+const sizeName = (w) => (w <= 1 ? 'S' : w === 2 ? 'M' : 'L')
+
+function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const [editing, setEditing] = useState(false)
-  const [layout, setLayout] = useState(() => loadLayout(user, hotel))
-  const [draggedId, setDraggedId] = useState(null)
 
   useEffect(() => {
-    setLayout(loadLayout(user, hotel))
-    setEditing(false)
-  }, [user?.id, user?.name, hotel.id])
+    if (personalizeSignal > 0) setEditing(true)
+  }, [personalizeSignal])
 
-  useEffect(() => { if (personalizeSignal > 0) setEditing(true) }, [personalizeSignal])
-  useEffect(() => { saveLayout(user, hotel, layout) }, [layout, user?.id, user?.name, hotel.id])
+  const issuesQuery = useQuery({
+    queryKey: ['home', hotel.id, 'issues'],
+    queryFn: () => fetchIssues(hotel.id),
+  })
+  const urgentsQuery = useQuery({
+    queryKey: ['home', hotel.id, 'urgents'],
+    queryFn: () => fetchUrgents(hotel.id),
+  })
+  const plannedQuery = useQuery({
+    queryKey: ['home', hotel.id, 'planned'],
+    queryFn: () => fetchPlanned(hotel.id),
+  })
+  const weatherQuery = useQuery({
+    queryKey: ['home', hotel.id, 'weather'],
+    queryFn: ({ signal }) => fetchOperationalWeather(hotel.id, { signal }),
+    refetchInterval: 5 * 60_000,
+  })
 
-  useEffect(() => {
-    let active = true
-    setLoading(true)
-    Promise.allSettled([fetchIssues(hotel.id), fetchUrgents(hotel.id), fetchPlanned(hotel.id)]).then((res) => {
-      if (!active) return
-      setIssues(res[0].value?.issues || [])
-      setUrgents(res[1].value?.items || [])
-      setPlanned(res[2].value?.items || [])
-      setLoading(false)
-    })
-    return () => { active = false }
-  }, [hotel.id])
+  const loading = issuesQuery.isPending || urgentsQuery.isPending || plannedQuery.isPending
+  const issues = issuesQuery.data?.issues || []
+  const urgents = urgentsQuery.data?.items || []
+  const planned = plannedQuery.data?.items || []
 
-  const visibleIds = flattenRows(layout.rows)
-  const weatherEnabled = visibleIds.includes('weather')
-  useEffect(() => {
-    if (!weatherEnabled) { setWeather(null); setWeatherError(''); return undefined }
-    let active = true
-    const controller = new AbortController()
-    setWeather(null)
-    setWeatherError('')
-    fetchOperationalWeather(hotel.id, { signal: controller.signal })
-      .then((data) => { if (active) setWeather(data) })
-      .catch(() => { if (active) setWeatherError('Meteo non disponibile') })
-    return () => { active = false; controller.abort() }
-  }, [hotel.id, weatherEnabled])
-
-  const openIssues = issues.filter((i) => i.status !== 'done')
-  const openUrgents = urgents.filter((u) => u.status !== 'completata')
-  const todayInterventions = planned.filter((p) => p.status !== 'done' && (isToday(p.scheduledAt) || (p.scheduledAt && p.scheduledUntil && p.scheduledAt <= Date.now() && p.scheduledUntil >= Date.now())))
+  const openIssues = issues.filter((entry) => entry.status !== 'done')
+  const openUrgents = urgents.filter((entry) => entry.status !== 'completata')
+  const todayInterventions = planned.filter((entry) => entry.status !== 'done' && (
+    isToday(entry.scheduledAt)
+    || (entry.scheduledAt && entry.scheduledUntil && entry.scheduledAt <= Date.now() && entry.scheduledUntil >= Date.now())
+  ))
   const recent = [...issues].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4)
 
-  const weatherVisual = weatherError
-    ? { icon: '⚪', title: 'Meteo', message: weatherError, tone: 'muted' }
+  const weather = weatherQuery.data
+  const weatherVisual = weatherQuery.isError
+    ? { icon: '⚪', title: 'Meteo', message: 'Meteo non disponibile', tone: 'muted' }
     : weather?.level === 'danger'
       ? { icon: '🌬️', title: 'ALLARME METEO', message: weather.message || 'Chiudere gli ombrelloni', tone: 'danger' }
       : weather?.level === 'warning'
         ? { icon: weather?.rainProbability >= 60 ? '🌧️' : '💨', title: 'Attenzione meteo', message: weather.message || 'Controllare gli esterni', tone: 'warning' }
         : { icon: '☀️', title: 'Meteo OK', message: 'Nessuna azione richiesta', tone: 'ok' }
 
-  const widgets = useMemo(() => ({
-    weather: { title: 'Meteo operativo', render: () => <Card className={`rs-home-widget__card rs-weather-tile rs-weather-tile--${weatherVisual.tone}`} data-testid="weather-widget"><span className="rs-weather-tile__icon">{weatherVisual.icon}</span><strong>{weatherVisual.title}</strong><span>{weatherVisual.message}</span></Card> },
-    issues: { title: 'Segnalazioni aperte', render: () => <Card as="button" className="rs-stat rs-home-widget__card" onClick={() => !editing && onNavigate?.('issues')} data-testid="stat-issues"><span className="rs-stat__icon"><Icon name="issues" /></span><b className="rs-stat__count">{openIssues.length}</b><h3>Segnalazioni aperte</h3><p>{openIssues.length ? 'Da gestire' : 'Tutto in ordine'}</p></Card> },
-    urgent: { title: 'Urgenti', render: () => <Card as="button" className="rs-stat rs-home-widget__card" onClick={() => !editing && onNavigate?.('urgent')} data-testid="stat-urgent"><span className="rs-stat__icon warn"><Icon name="warning" /></span><b className="rs-stat__count">{openUrgents.length}</b><h3>Urgenti</h3><p>{openUrgents.length ? 'Richiedono azione' : 'Nessun avviso'}</p></Card> },
-    interventions: { title: 'Interventi oggi', render: () => <Card as="button" className="rs-stat rs-home-widget__card" onClick={() => !editing && onNavigate?.('interventions')} data-testid="stat-interventions"><span className="rs-stat__icon blue"><Icon name="wrench" /></span><b className="rs-stat__count">{todayInterventions.length}</b><h3>Interventi oggi</h3><p>Pianificati</p></Card> },
-    quick: { title: 'Azioni rapide', render: () => <Card className="rs-card--pad rs-home-widget__card rs-home-widget__quick"><div className="rs-section__head"><h2>Azioni rapide</h2></div><div className="rs-quick">{can(user, 'create') && <button className="rs-quickbtn accent" onClick={() => onNavigate?.('issues')}><Icon name="plus" /> Nuova segnalazione</button>}<button className="rs-quickbtn" onClick={() => onNavigate?.('urgent')}><Icon name="warning" /> Urgenti</button><button className="rs-quickbtn" onClick={() => onNavigate?.('interventions')}><Icon name="wrench" /> Interventi</button></div></Card> },
-  }), [editing, onNavigate, openIssues.length, openUrgents.length, todayInterventions.length, user, weatherVisual])
-
-  const hiddenIds = WIDGET_IDS.filter((id) => !visibleIds.includes(id))
-
-  const updateRows = (producer) => setLayout((current) => normalizeLayout({ rows: producer(current.rows.map((row) => [...row])) }))
-  const hideWidget = (id) => updateRows((rows) => rows.map((row) => row.filter((item) => item !== id)).filter((row) => row.length))
-  const showWidget = (id) => updateRows((rows) => {
-    if (flattenRows(rows).length >= MAX_WIDGETS) return rows
-    const last = rows[rows.length - 1]
-    if (last && last.length < MAX_PER_ROW) last.push(id)
-    else if (rows.length < MAX_ROWS) rows.push([id])
-    return rows
-  })
-
-  const locate = (rows, id) => {
-    for (let r = 0; r < rows.length; r += 1) {
-      const c = rows[r].indexOf(id)
-      if (c >= 0) return [r, c]
-    }
-    return [-1, -1]
-  }
-
-  const moveWidget = (id, direction) => updateRows((rows) => {
-    const [r, c] = locate(rows, id)
-    if (r < 0) return rows
-    if (direction === 'left' && c > 0) [rows[r][c - 1], rows[r][c]] = [rows[r][c], rows[r][c - 1]]
-    if (direction === 'right' && c < rows[r].length - 1) [rows[r][c + 1], rows[r][c]] = [rows[r][c], rows[r][c + 1]]
-    if (direction === 'up' && r > 0 && rows[r - 1].length < MAX_PER_ROW) { rows[r].splice(c, 1); rows[r - 1].push(id) }
-    if (direction === 'down' && r < MAX_ROWS - 1) {
-      if (!rows[r + 1]) rows[r + 1] = []
-      if (rows[r + 1].length < MAX_PER_ROW) { rows[r].splice(c, 1); rows[r + 1].push(id) }
-    }
-    return rows.filter((row) => row.length)
-  })
-
-  const dropOn = (targetId) => {
-    if (!draggedId || draggedId === targetId) return
-    updateRows((rows) => {
-      const [sr, sc] = locate(rows, draggedId)
-      const [tr, tc] = locate(rows, targetId)
-      if (sr < 0 || tr < 0) return rows
-      rows[sr][sc] = targetId
-      rows[tr][tc] = draggedId
-      return rows
-    })
-    setDraggedId(null)
-  }
+  const widgetData = useMemo(() => ({
+    issues: { count: openIssues.length, message: openIssues.length ? 'Da gestire' : 'Tutto in ordine' },
+    urgent: { count: openUrgents.length, message: openUrgents.length ? 'Richiedono azione' : 'Nessun avviso' },
+    interventions: { count: todayInterventions.length, message: 'Pianificati' },
+  }), [openIssues.length, openUrgents.length, todayInterventions.length])
 
   return (
-    <div data-testid="home-view" className={editing ? 'rs-home is-editing' : 'rs-home'}>
-      <style>{`
-        .rs-home-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px}
-        .rs-home-finish,.rs-home-reset,.rs-home-add{min-height:44px;border:1px solid var(--rs-border);border-radius:12px;background:var(--rs-surface);color:var(--rs-text);padding:9px 13px;font:inherit;font-weight:700}.rs-home-finish{background:var(--rs-accent);color:#fff;border-color:transparent}
-        .rs-home-dashboard{display:flex;flex-direction:column;gap:clamp(8px,1.8vw,14px);width:100%}
-        .rs-home-row{display:grid;grid-template-columns:repeat(var(--row-count),minmax(0,1fr));gap:clamp(8px,1.8vw,14px);width:100%;align-items:stretch}
-        .rs-home-widget{position:relative;min-width:0;min-height:clamp(122px,18vw,170px)}
-        .rs-home-widget>.rs-home-widget__card{width:100%;height:100%;min-height:inherit;margin:0;text-align:left;overflow:hidden}
-        .rs-home-widget__controls{display:flex;flex-wrap:wrap;gap:4px;position:absolute;z-index:4;top:6px;right:6px;max-width:118px;justify-content:flex-end}
-        .rs-home-widget__controls button{width:30px;height:30px;border-radius:9px;border:1px solid var(--rs-border);background:var(--rs-surface);color:var(--rs-text);font-size:15px;font-weight:800}.rs-home-widget__controls button:disabled{opacity:.3}.rs-home.is-editing .rs-home-widget__card{padding-top:42px;cursor:grab}.rs-home-widget.is-dragging{opacity:.55}
-        .rs-home-catalog{margin-top:14px;padding:12px;border:1px dashed var(--rs-border);border-radius:14px}.rs-home-catalog h3{margin:0 0 5px;font-size:14px}.rs-home-catalog p{margin:0 0 10px;color:var(--rs-text-2);font-size:.82rem}.rs-home-catalog__list{display:flex;gap:8px;flex-wrap:wrap}
-        .rs-home-activity{margin-top:clamp(14px,2.4vw,22px)}.rs-home-recent{width:100%;border:0;background:transparent;color:inherit;text-align:left}
-        .rs-weather-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center!important;padding:clamp(10px,2vw,16px)!important}.rs-weather-tile__icon{font-size:clamp(1.7rem,5vw,2.5rem);line-height:1}.rs-weather-tile strong{font-size:clamp(.82rem,2.2vw,1.05rem)}.rs-weather-tile span:last-child{font-size:clamp(.66rem,1.8vw,.8rem);color:var(--rs-text-2);line-height:1.2}.rs-weather-tile--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.6)}.rs-weather-tile--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.75)}.rs-weather-tile--muted{opacity:.8}
-        @media(max-width:520px){.rs-home-row{gap:8px}.rs-home-widget{min-height:118px}.rs-home-row[style*="--row-count: 3"] .rs-stat__icon{display:none}.rs-home-row[style*="--row-count: 3"] .rs-stat__count{font-size:1.45rem}.rs-home-row[style*="--row-count: 3"] .rs-stat h3{font-size:.72rem}.rs-home-row[style*="--row-count: 3"] .rs-stat p{display:none}}
-      `}</style>
-
-      <section className="rs-hero"><h1>Ciao, {firstName(user?.name)}</h1><p>{hotel.name} · ecco la situazione di oggi</p></section>
+    <div data-testid="home-view" className={editing ? 'rs-home rs-widget-home is-editing' : 'rs-home rs-widget-home'}>
+      <style>{HOME_STYLES}</style>
+      <section className="rs-hero">
+        <h1>Ciao, {firstName(user?.name)}</h1>
+        <p>{hotel.name} · ecco la situazione di oggi</p>
+      </section>
 
       {loading ? <Spinner label="Carico i dati della struttura…" /> : <>
-        {editing && <div className="rs-home-toolbar"><button className="rs-home-reset" type="button" onClick={() => setLayout(defaultLayout())}>Ripristina</button><button className="rs-home-finish" type="button" onClick={() => setEditing(false)}>Fine</button></div>}
+        <WidgetDashboard
+          user={user}
+          hotel={hotel}
+          editing={editing}
+          setEditing={setEditing}
+          widgetData={widgetData}
+          weatherVisual={weatherVisual}
+          onNavigate={onNavigate}
+        />
 
-        <div className="rs-home-dashboard" data-testid="home-stats">
-          {layout.rows.map((row, rowIndex) => <div className="rs-home-row" key={`row-${rowIndex}`} style={{ '--row-count': row.length }}>
-            {row.map((id, colIndex) => <div className={`rs-home-widget${draggedId === id ? ' is-dragging' : ''}`} key={id} data-widget-id={id} draggable={editing} onDragStart={() => setDraggedId(id)} onDragOver={(e) => editing && e.preventDefault()} onDrop={() => dropOn(id)}>
-              {editing && <div className="rs-home-widget__controls" aria-label={`Controlli ${widgets[id].title}`}>
-                <button type="button" onClick={() => moveWidget(id, 'left')} disabled={colIndex === 0} aria-label="Sposta a sinistra">←</button>
-                <button type="button" onClick={() => moveWidget(id, 'right')} disabled={colIndex === row.length - 1} aria-label="Sposta a destra">→</button>
-                <button type="button" onClick={() => moveWidget(id, 'up')} disabled={rowIndex === 0 || layout.rows[rowIndex - 1]?.length >= MAX_PER_ROW} aria-label="Sposta sopra">↑</button>
-                <button type="button" onClick={() => moveWidget(id, 'down')} disabled={rowIndex >= MAX_ROWS - 1 || layout.rows[rowIndex + 1]?.length >= MAX_PER_ROW} aria-label="Sposta sotto">↓</button>
-                <button type="button" onClick={() => hideWidget(id)} aria-label={`Nascondi ${widgets[id].title}`}>×</button>
-              </div>}
-              {widgets[id].render()}
-            </div>)}
-          </div>)}
-        </div>
-
-        {editing && <div className="rs-home-catalog"><h3>Widget disponibili</h3><p>Fino a 3 widget per riga e 3 righe. Puoi creare liberamente disposizioni 3/2/1, 2/2, 1/3/2 e altre combinazioni.</p>{hiddenIds.length ? <div className="rs-home-catalog__list">{hiddenIds.map((id) => <button key={id} className="rs-home-add" type="button" onClick={() => showWidget(id)} disabled={visibleIds.length >= MAX_WIDGETS}>+ {widgets[id].title}</button>)}</div> : <p>Tutti i widget disponibili sono già nella Home.</p>}</div>}
-
-        <Card className="rs-card--pad rs-home-activity"><div className="rs-section__head"><h2>Attività recenti</h2></div>{recent.length === 0 ? <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Nessuna segnalazione registrata.</p> : <div className="rs-list">{recent.map((issue) => <button key={issue.id} className="rs-issue rs-home-recent" onClick={() => onNavigate?.('issues')}><span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} /><span className="rs-issue__main"><span className="rs-issue__room">{issue.room}</span><span className="rs-issue__title">{issue.title}</span></span></button>)}</div>}</Card>
+        <Card className="rs-card--pad rs-home-activity">
+          <div className="rs-section__head"><h2>Attività recenti</h2></div>
+          {recent.length === 0
+            ? <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Nessuna segnalazione registrata.</p>
+            : <div className="rs-list">{recent.map((issue) => (
+              <button key={issue.id} className="rs-issue rs-home-recent" onClick={() => onNavigate?.('issues')}>
+                <span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} />
+                <span className="rs-issue__main">
+                  <span className="rs-issue__room">{issue.room}</span>
+                  <span className="rs-issue__title">{issue.title}</span>
+                </span>
+              </button>
+            ))}</div>}
+        </Card>
       </>}
     </div>
   )
+}
+
+function WidgetDashboard({ user, hotel, editing, setEditing, widgetData, weatherVisual, onNavigate }) {
+  const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 420 })
+  const deviceClass = useDeviceClass()
+  const layout = useWidgetStore((state) => state.layout)
+  const hydrate = useWidgetStore((state) => state.hydrate)
+  const setLayout = useWidgetStore((state) => state.setLayout)
+  const reset = useWidgetStore((state) => state.reset)
+
+  const storageKey = `randapp.home.widget-engine.v5:${user?.id || user?.name || 'user'}:${hotel.id}:${deviceClass}`
+
+  useEffect(() => {
+    hydrate(storageKey)
+  }, [hydrate, storageKey])
+
+  const visibleIds = layout.map((entry) => entry.i)
+  const hiddenIds = WIDGET_IDS.filter((id) => !visibleIds.includes(id))
+
+  const changeSize = (id, w) => {
+    setLayout((current) => current.map((entry) => entry.i === id
+      ? { ...entry, w, x: Math.min(entry.x, COLS - w) }
+      : entry))
+  }
+
+  const removeWidget = (id) => {
+    if (layout.length <= 1) return
+    setLayout((current) => current.filter((entry) => entry.i !== id))
+  }
+
+  const addWidget = (id) => {
+    if (visibleIds.includes(id) || layout.length >= 9) return
+    setLayout((current) => [...current, item(id, 0, Math.min(MAX_ROWS - 1, 2), 1, 1)])
+  }
+
+  return <>
+    {editing && <div className="rs-widget-toolbar">
+      <button type="button" className="rs-widget-toolbar__button" onClick={reset}><RotateCcw size={17} /> Ripristina</button>
+      <button type="button" className="rs-widget-toolbar__button is-primary" onClick={() => setEditing(false)}>Fine</button>
+    </div>}
+
+    <div ref={containerRef} className="rs-widget-grid-shell" data-testid="home-stats">
+      {mounted && <ReactGridLayout
+        width={width}
+        layout={layout}
+        gridConfig={{ cols: COLS, rowHeight: 126, margin: [10, 10], containerPadding: [0, 0], maxRows: MAX_ROWS }}
+        dragConfig={{ enabled: editing, handle: '.rs-widget-drag', cancel: 'button,summary,.rs-widget-action', bounded: true, allowMobileScroll: true }}
+        resizeConfig={{ enabled: editing, handles: ['se'] }}
+        compactor={verticalCompactor}
+        onLayoutChange={(next) => setLayout(next.map((entry) => ({ ...entry })))}
+      >
+        {layout.map((entry) => <div key={entry.i} className="rs-widget-grid-item">
+          <WidgetFrame
+            id={entry.i}
+            layoutItem={entry}
+            editing={editing}
+            onSize={changeSize}
+            onRemove={removeWidget}
+          >
+            <WidgetContent
+              id={entry.i}
+              size={sizeName(entry.w)}
+              data={widgetData[entry.i]}
+              weatherVisual={weatherVisual}
+              editing={editing}
+              user={user}
+              onNavigate={onNavigate}
+            />
+          </WidgetFrame>
+        </div>)}
+      </ReactGridLayout>}
+    </div>
+
+    {editing && <div className="rs-widget-catalog">
+      <div className="rs-widget-catalog__head"><LayoutGrid size={18} /><div><strong>Widget disponibili</strong><span>Trascina e ridimensiona. S, M e L cambiano automaticamente il contenuto.</span></div></div>
+      {hiddenIds.length
+        ? <div className="rs-widget-catalog__list">{hiddenIds.map((id) => <button key={id} type="button" onClick={() => addWidget(id)}><Plus size={16} /> {WIDGET_TITLES[id]}</button>)}</div>
+        : <p>Tutti i widget disponibili sono già nella Home.</p>}
+    </div>}
+  </>
+}
+
+function WidgetFrame({ id, layoutItem, editing, onSize, onRemove, children }) {
+  return <div className={`rs-widget-frame rs-widget-frame--${sizeName(layoutItem.w).toLowerCase()}`}>
+    {editing && <div className="rs-widget-editbar">
+      <span className="rs-widget-drag" title="Trascina" aria-label={`Trascina ${WIDGET_TITLES[id]}`}><GripVertical size={18} /></span>
+      <details className="rs-widget-menu">
+        <summary aria-label={`Opzioni ${WIDGET_TITLES[id]}`}><MoreHorizontal size={18} /></summary>
+        <div className="rs-widget-menu__panel">
+          <span>Dimensione</span>
+          <div className="rs-widget-menu__sizes">
+            {[1, 2, 3].map((w) => <button key={w} type="button" className={layoutItem.w === w ? 'is-active' : ''} onClick={() => onSize(id, w)}>{sizeName(w)}</button>)}
+          </div>
+          <button type="button" className="rs-widget-menu__remove" onClick={() => onRemove(id)}><X size={15} /> Rimuovi</button>
+        </div>
+      </details>
+    </div>}
+    {children}
+  </div>
+}
+
+function WidgetContent({ id, size, data, weatherVisual, editing, user, onNavigate }) {
+  if (id === 'quick') return <QuickActions size={size} user={user} onNavigate={onNavigate} />
+  if (id === 'weather') return <WeatherWidget size={size} visual={weatherVisual} />
+
+  const config = {
+    issues: { icon: ClipboardList, title: 'Segnalazioni', route: 'issues', tone: 'cyan' },
+    urgent: { icon: AlertTriangle, title: 'Urgenti', route: 'urgent', tone: 'amber' },
+    interventions: { icon: Wrench, title: 'Interventi', route: 'interventions', tone: 'blue' },
+  }[id]
+  if (!config) return null
+  const Icon = config.icon
+
+  return <Card as="button" className={`rs-widget-card rs-widget-stat rs-widget-stat--${config.tone} rs-widget-card--${size.toLowerCase()}`} onClick={() => !editing && onNavigate?.(config.route)} data-testid={`stat-${id}`}>
+    <span className="rs-widget-stat__icon"><Icon size={size === 'S' ? 20 : 24} /></span>
+    <strong className="rs-widget-stat__count">{data?.count ?? 0}</strong>
+    <span className="rs-widget-stat__title">{config.title}</span>
+    {size !== 'S' && <span className="rs-widget-stat__message">{data?.message}</span>}
+  </Card>
+}
+
+function WeatherWidget({ size, visual }) {
+  return <Card className={`rs-widget-card rs-widget-weather rs-widget-weather--${visual.tone} rs-widget-card--${size.toLowerCase()}`} data-testid="weather-widget">
+    <span className="rs-widget-weather__icon">{visual.icon}</span>
+    <strong>{size === 'S' && visual.title === 'Meteo OK' ? 'Meteo OK' : visual.title}</strong>
+    {size !== 'S' && <span>{visual.message}</span>}
+    {size === 'L' && <span className="rs-widget-weather__hint"><CloudSun size={15} /> controllo automatico attivo</span>}
+  </Card>
+}
+
+function QuickActions({ size, user, onNavigate }) {
+  const actions = [
+    can(user, 'create') ? { icon: Plus, label: 'Nuova segnalazione', short: 'Nuova', route: 'issues', accent: true } : null,
+    { icon: AlertTriangle, label: 'Urgenti', short: 'Urgenti', route: 'urgent' },
+    { icon: Wrench, label: 'Interventi', short: 'Interventi', route: 'interventions' },
+  ].filter(Boolean)
+
+  return <Card className={`rs-widget-card rs-widget-quick rs-widget-card--${size.toLowerCase()}`}>
+    {size === 'L' && <strong className="rs-widget-quick__title">Azioni rapide</strong>}
+    <div className={`rs-widget-quick__actions rs-widget-quick__actions--${size.toLowerCase()}`}>
+      {actions.map(({ icon: ActionIcon, label, short, route, accent }) => <button key={route + label} type="button" className={accent ? 'is-accent' : ''} onClick={() => onNavigate?.(route)} aria-label={label}>
+        <ActionIcon size={size === 'S' ? 20 : 18} />
+        {size !== 'S' && <span>{size === 'M' ? short : label}</span>}
+      </button>)}
+    </div>
+  </Card>
+}
+
+const HOME_STYLES = `
+  .rs-widget-home{--wg-gap:clamp(8px,1.4vw,12px)}
+  .rs-widget-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px}
+  .rs-widget-toolbar__button{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:8px 12px;border:1px solid var(--rs-border);border-radius:12px;background:var(--rs-surface);color:var(--rs-text);font:inherit;font-weight:700}
+  .rs-widget-toolbar__button.is-primary{background:var(--rs-accent);color:#fff;border-color:transparent}
+  .rs-widget-grid-shell{width:100%;min-height:126px}
+  .react-grid-layout{position:relative;transition:height .2s ease}
+  .react-grid-item{transition:all .18s ease}
+  .react-grid-item.react-grid-placeholder{background:color-mix(in srgb,var(--rs-accent) 22%,transparent);border-radius:18px;opacity:.8}
+  .react-grid-item>.react-resizable-handle{opacity:0;transition:opacity .15s ease}
+  .is-editing .react-grid-item>.react-resizable-handle{opacity:1}
+  .rs-widget-grid-item,.rs-widget-frame{height:100%;min-width:0;overflow:visible}
+  .rs-widget-frame{position:relative}
+  .rs-widget-frame>.rs-widget-card{width:100%;height:100%;min-height:0;margin:0;overflow:hidden}
+  .rs-widget-editbar{position:absolute;z-index:7;top:6px;left:6px;right:6px;display:flex;align-items:center;justify-content:space-between;height:32px;pointer-events:none}
+  .rs-widget-drag,.rs-widget-menu>summary{pointer-events:auto;display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--rs-border);border-radius:9px;background:color-mix(in srgb,var(--rs-surface) 94%,transparent);backdrop-filter:blur(10px);color:var(--rs-text-2)}
+  .rs-widget-drag{cursor:grab}.rs-widget-menu{position:relative;pointer-events:auto}.rs-widget-menu>summary{list-style:none;cursor:pointer}.rs-widget-menu>summary::-webkit-details-marker{display:none}
+  .rs-widget-menu__panel{position:absolute;z-index:20;top:35px;right:0;width:138px;padding:9px;border:1px solid var(--rs-border);border-radius:12px;background:var(--rs-surface);box-shadow:0 10px 28px rgba(0,0,0,.18);display:grid;gap:8px}.rs-widget-menu__panel>span{font-size:.7rem;color:var(--rs-text-2);font-weight:700}.rs-widget-menu__sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.rs-widget-menu__sizes button{height:30px;border:1px solid var(--rs-border);border-radius:8px;background:transparent;color:var(--rs-text);font:inherit;font-size:.72rem;font-weight:800}.rs-widget-menu__sizes button.is-active{background:var(--rs-accent);border-color:transparent;color:#fff}.rs-widget-menu__remove{display:flex;align-items:center;justify-content:center;gap:5px;min-height:32px;border:0;border-radius:8px;background:rgba(239,68,68,.1);color:#d95b64;font:inherit;font-size:.72rem;font-weight:800}
+  .is-editing .rs-widget-card{padding-top:44px!important}
+  .rs-widget-card{border-radius:clamp(15px,2vw,20px)!important}
+  .rs-widget-stat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto 1fr;align-content:center;column-gap:10px;text-align:left!important;padding:clamp(12px,2.2vw,20px)!important}
+  .rs-widget-stat__icon{grid-row:1/3;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--rs-accent) 12%,transparent);color:var(--rs-accent)}
+  .rs-widget-stat--amber .rs-widget-stat__icon{background:rgba(245,158,11,.12);color:#d98700}.rs-widget-stat--blue .rs-widget-stat__icon{background:rgba(59,130,246,.12);color:#3b82f6}
+  .rs-widget-stat__count{font-size:clamp(1.6rem,4vw,2.6rem);line-height:.95}.rs-widget-stat__title{font-weight:800;font-size:clamp(.78rem,1.8vw,.98rem)}.rs-widget-stat__message{grid-column:1/-1;align-self:end;color:var(--rs-text-2);font-size:.78rem}
+  .rs-widget-card--s.rs-widget-stat{grid-template-columns:auto 1fr;grid-template-rows:1fr auto;padding:12px!important}.rs-widget-card--s .rs-widget-stat__icon{grid-row:1;align-self:start;width:34px;height:34px}.rs-widget-card--s .rs-widget-stat__count{justify-self:end;align-self:start;font-size:1.75rem}.rs-widget-card--s .rs-widget-stat__title{grid-column:1/-1;align-self:end;font-size:.78rem}
+  .rs-widget-weather{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center!important;padding:12px!important}.rs-widget-weather__icon{font-size:2rem;line-height:1}.rs-widget-weather strong{font-size:clamp(.78rem,2vw,1rem)}.rs-widget-weather>span:not(.rs-widget-weather__icon){font-size:.72rem;color:var(--rs-text-2);line-height:1.2}.rs-widget-weather__hint{display:flex;align-items:center;gap:5px}.rs-widget-weather--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}.rs-widget-weather--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.7)}.rs-widget-weather--muted{opacity:.82}
+  .rs-widget-quick{display:flex;flex-direction:column;justify-content:center;gap:9px;padding:12px!important}.rs-widget-quick__title{font-size:.9rem}.rs-widget-quick__actions{display:grid;gap:7px}.rs-widget-quick__actions--s{grid-template-columns:repeat(3,1fr)}.rs-widget-quick__actions--m{grid-template-columns:repeat(3,minmax(0,1fr))}.rs-widget-quick__actions--l{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rs-widget-quick__actions button{min-width:0;min-height:42px;border:1px solid var(--rs-border);border-radius:11px;background:var(--rs-surface-2,var(--rs-surface));color:var(--rs-text);display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;font:inherit;font-size:.74rem;font-weight:750;white-space:nowrap;overflow:hidden}.rs-widget-quick__actions button.is-accent{background:var(--rs-accent);border-color:transparent;color:#fff}.rs-widget-quick__actions--s button{padding:0}
+  .rs-widget-catalog{margin-top:14px;padding:13px;border:1px dashed var(--rs-border);border-radius:15px}.rs-widget-catalog__head{display:flex;gap:9px;align-items:flex-start}.rs-widget-catalog__head>div{display:flex;flex-direction:column;gap:2px}.rs-widget-catalog__head span,.rs-widget-catalog p{font-size:.76rem;color:var(--rs-text-2)}.rs-widget-catalog__list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.rs-widget-catalog__list button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 10px;border:1px solid var(--rs-border);border-radius:11px;background:var(--rs-surface);color:var(--rs-text);font:inherit;font-weight:700}
+  .rs-home-activity{margin-top:clamp(14px,2.4vw,22px)}.rs-home-recent{width:100%;border:0;background:transparent;color:inherit;text-align:left}
+  @media(max-width:520px){.rs-widget-home .rs-hero{margin-bottom:14px}.rs-widget-grid-shell{margin-inline:-2px;width:calc(100% + 4px)}.rs-widget-stat{column-gap:6px}.rs-widget-quick__actions button{font-size:.68rem}.rs-widget-card--m .rs-widget-quick__actions button span{max-width:64px;overflow:hidden;text-overflow:ellipsis}.rs-widget-editbar{left:4px;right:4px}}
+`
+
+export default function Home(props) {
+  return <QueryClientProvider client={queryClient}><HomeData {...props} /></QueryClientProvider>
 }
