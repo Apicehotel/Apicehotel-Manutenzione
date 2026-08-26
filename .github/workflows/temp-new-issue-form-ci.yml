@@ -1,0 +1,30 @@
+name: temp-new-issue-form-ci
+on:
+  push:
+    branches:
+      - feature/new-issue-form-polish
+jobs:
+  build-test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/apice-vite.log 2>&1 &
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/apice-vite.log
+          exit 1
+      - env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+        run: npm run test:e2e
