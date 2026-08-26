@@ -7,19 +7,20 @@ import { Card, Icon, Spinner } from './ui.jsx'
 import { firstName, can, isToday, URGENCY_META } from './helpers.js'
 
 const MAX_WIDGETS = 9
-const DEFAULT_WIDGET_ORDER = ['weather', 'issues', 'urgent', 'interventions', 'quick', 'recent']
+const DEFAULT_WIDGET_ORDER = ['issues', 'urgent', 'interventions', 'quick', 'recent', 'weather']
+const DEFAULT_HIDDEN = ['weather']
 
 const storageKey = (user, hotel) => `randapp.home.widgets.v1:${user?.id || user?.name || 'user'}:${hotel?.id || 'hotel'}`
 
 const loadLayout = (user, hotel) => {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey(user, hotel)) || 'null')
-    if (!parsed || !Array.isArray(parsed.order) || !Array.isArray(parsed.hidden)) return { order: DEFAULT_WIDGET_ORDER, hidden: [] }
+    if (!parsed || !Array.isArray(parsed.order) || !Array.isArray(parsed.hidden)) return { order: DEFAULT_WIDGET_ORDER, hidden: DEFAULT_HIDDEN }
     const known = new Set(DEFAULT_WIDGET_ORDER)
     const order = [...parsed.order.filter((id) => known.has(id)), ...DEFAULT_WIDGET_ORDER.filter((id) => !parsed.order.includes(id))]
     return { order: order.slice(0, MAX_WIDGETS), hidden: parsed.hidden.filter((id) => known.has(id)) }
   } catch {
-    return { order: DEFAULT_WIDGET_ORDER, hidden: [] }
+    return { order: DEFAULT_WIDGET_ORDER, hidden: DEFAULT_HIDDEN }
   }
 }
 
@@ -70,7 +71,7 @@ export default function Home({ user, hotel, onNavigate }) {
       setUrgents(res[1].value?.items || [])
       setPlanned(res[2].value?.items || [])
       if (res[3].status === 'fulfilled') setWeather(res[3].value)
-      else setWeatherError('Meteo temporaneamente non disponibile')
+      else setWeatherError('Meteo non disponibile')
       setLoading(false)
     })
     return () => { active = false; controller.abort() }
@@ -81,10 +82,18 @@ export default function Home({ user, hotel, onNavigate }) {
   const todayInterventions = planned.filter((p) => p.status !== 'done' && (isToday(p.scheduledAt) || (p.scheduledAt && p.scheduledUntil && p.scheduledAt <= Date.now() && p.scheduledUntil >= Date.now())))
   const recent = [...issues].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4)
 
+  const weatherVisual = weatherError
+    ? { icon: '⚪', title: 'Meteo', message: weatherError, tone: 'muted' }
+    : weather?.level === 'danger'
+      ? { icon: '🌬️', title: 'ALLARME METEO', message: weather.message || 'Chiudere gli ombrelloni', tone: 'danger' }
+      : weather?.level === 'warning'
+        ? { icon: weather?.rainProbability >= 60 ? '🌧️' : '💨', title: 'Attenzione meteo', message: weather.message || 'Controllare gli esterni', tone: 'warning' }
+        : { icon: '☀️', title: 'Meteo OK', message: 'Nessuna azione richiesta', tone: 'ok' }
+
   const widgets = useMemo(() => ({
     weather: {
       title: 'Meteo operativo',
-      render: () => <Card className={`rs-card--pad rs-home-widget__card rs-weather-widget rs-weather-widget--${weather?.level || 'ok'}`} data-testid="weather-widget"><div className="rs-section__head"><h2><Icon name="warning" /> Meteo operativo</h2>{weather?.level === 'danger' ? <span className="rs-badge">ALLARME</span> : weather?.level === 'warning' ? <span className="rs-badge">ATTENZIONE</span> : <span className="rs-badge">OK</span>}</div>{weatherError ? <p className="rs-weather-widget__message">{weatherError}</p> : weather ? <><p className="rs-weather-widget__message"><b>{weather.message}</b></p><div className="rs-weather-widget__metrics"><span>💨 Raffiche <b>{weather.gust} km/h</b></span><span>🌧️ Pioggia <b>{weather.rainProbability}%</b></span></div><small>Meteo locale della struttura · allarmi automatici separati dalla personalizzazione</small></> : <p className="rs-weather-widget__message">Caricamento meteo…</p>}</Card>,
+      render: () => <Card className={`rs-home-widget__card rs-weather-tile rs-weather-tile--${weatherVisual.tone}`} data-testid="weather-widget"><span className="rs-weather-tile__icon">{weatherVisual.icon}</span><strong>{weatherVisual.title}</strong><span>{weatherVisual.message}</span></Card>,
     },
     issues: {
       title: 'Segnalazioni aperte',
@@ -106,7 +115,7 @@ export default function Home({ user, hotel, onNavigate }) {
       title: 'Attività recenti',
       render: () => <Card className="rs-card--pad rs-home-widget__card rs-home-widget__recent"><div className="rs-section__head"><h2>Attività recenti</h2>{recent.length > 0 && <button onClick={() => onNavigate?.('issues')}>Tutte</button>}</div>{recent.length === 0 ? <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Nessuna segnalazione registrata per {hotel.name}.</p> : <div className="rs-list">{recent.map((issue) => <button key={issue.id} className="rs-issue rs-home-recent" onClick={() => onNavigate?.('issues')} data-testid={`recent-${issue.id}`}><span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} /><span className="rs-issue__main"><span className="rs-issue__top"><span className="rs-issue__room">{issue.room}</span></span><span className="rs-issue__title">{issue.title}</span><span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}</span></span></button>)}</div>}</Card>,
     },
-  }), [editing, hotel.name, onNavigate, openIssues.length, openUrgents.length, recent, todayInterventions.length, user, weather, weatherError])
+  }), [editing, hotel.name, onNavigate, openIssues.length, openUrgents.length, recent, todayInterventions.length, user, weatherVisual])
 
   const visibleIds = layout.order.filter((id) => !layout.hidden.includes(id)).slice(0, MAX_WIDGETS)
   const hiddenIds = DEFAULT_WIDGET_ORDER.filter((id) => layout.hidden.includes(id))
@@ -122,7 +131,7 @@ export default function Home({ user, hotel, onNavigate }) {
     ;[order[index], order[next]] = [order[next], order[index]]
     return { ...current, order }
   })
-  const resetLayout = () => setLayout({ order: DEFAULT_WIDGET_ORDER, hidden: [] })
+  const resetLayout = () => setLayout({ order: DEFAULT_WIDGET_ORDER, hidden: DEFAULT_HIDDEN })
 
   return (
     <div data-testid="home-view" className={editing ? 'rs-home is-editing' : 'rs-home'}>
@@ -142,16 +151,15 @@ export default function Home({ user, hotel, onNavigate }) {
         .rs-home-recent{width:100%;border:0;background:transparent;color:inherit;text-align:left}
         .rs-home-widget__recent .rs-list{margin-top:8px}
         .rs-home-widget__quick .rs-quick{margin-top:10px}
-        .rs-weather-widget{display:flex;flex-direction:column;justify-content:center;gap:8px}
-        .rs-weather-widget .rs-section__head{margin:0}
-        .rs-weather-widget .rs-section__head h2{display:flex;align-items:center;gap:7px;margin:0}
-        .rs-weather-widget__message{margin:0;color:var(--rs-text)}
-        .rs-weather-widget__metrics{display:flex;gap:10px;flex-wrap:wrap;color:var(--rs-text-2);font-size:.88rem}
-        .rs-weather-widget small{color:var(--rs-text-2)}
-        .rs-weather-widget--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}
-        .rs-weather-widget--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.7)}
-        @media (max-width:720px){.rs-home-grid{gap:8px}.rs-home-widget>.rs-home-widget__card{min-height:132px;padding-left:12px;padding-right:12px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{transform:scale(.85);transform-origin:left top}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.7rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.84rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{font-size:.72rem}.rs-weather-widget__metrics{font-size:.78rem}}
-        @media (max-width:390px){.rs-home-grid{gap:6px}.rs-home-widget>.rs-home-widget__card{min-height:122px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{display:none}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.5rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.76rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{display:none}}
+        .rs-weather-tile{aspect-ratio:1/1;min-height:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center!important;padding:14px!important;overflow:hidden}
+        .rs-weather-tile__icon{font-size:2.2rem;line-height:1}
+        .rs-weather-tile strong{font-size:1rem}
+        .rs-weather-tile span:last-child{font-size:.78rem;color:var(--rs-text-2);line-height:1.25}
+        .rs-weather-tile--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.6)}
+        .rs-weather-tile--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.75)}
+        .rs-weather-tile--muted{opacity:.8}
+        @media (max-width:720px){.rs-home-grid{gap:8px}.rs-home-widget>.rs-home-widget__card{min-height:132px;padding-left:12px;padding-right:12px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{transform:scale(.85);transform-origin:left top}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.7rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.84rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{font-size:.72rem}.rs-weather-tile__icon{font-size:1.8rem}}
+        @media (max-width:390px){.rs-home-grid{gap:6px}.rs-home-widget>.rs-home-widget__card{min-height:122px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{display:none}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.5rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.76rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{display:none}.rs-weather-tile strong{font-size:.84rem}.rs-weather-tile span:last-child{font-size:.7rem}}
       `}</style>
 
       <section className="rs-hero">
@@ -175,7 +183,7 @@ export default function Home({ user, hotel, onNavigate }) {
             ))}
           </div>
 
-          {editing && <div className="rs-home-hidden"><h3>Widget nascosti</h3>{hiddenIds.length ? <div className="rs-home-hidden__list">{hiddenIds.map((id) => <button key={id} className="rs-home-add" type="button" onClick={() => showWidget(id)} disabled={visibleIds.length >= MAX_WIDGETS}>+ {widgets[id].title}</button>)}</div> : <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Tutti i widget sono visibili. Massimo 9: 3 colonne × 3 righe.</p>}</div>}
+          {editing && <div className="rs-home-hidden"><h3>Widget disponibili</h3>{hiddenIds.length ? <div className="rs-home-hidden__list">{hiddenIds.map((id) => <button key={id} className="rs-home-add" type="button" onClick={() => showWidget(id)} disabled={visibleIds.length >= MAX_WIDGETS}>+ {widgets[id].title}</button>)}</div> : <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Tutti i widget sono già nella Home. Massimo 9: 3 colonne × 3 righe.</p>}</div>}
         </>
       )}
     </div>
