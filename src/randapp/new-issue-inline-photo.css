@@ -28,10 +28,26 @@
   min-width: 0;
 }
 
+/* legend stays screen-reader-only: fully out of flow, never affects layout */
 [data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) legend {
-  visibility: hidden !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
-  overflow: hidden;
+  border: 0 !important;
+}
+
+/* Real spacer (not the legend) matching the height of the description label,
+   so the photo tile lines up with the textarea regardless of legend rendering quirks. */
+[data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions)::before {
+  content: '';
+  display: block;
+  height: 20px;
+  width: 1px;
 }
 
 /* One visual target. Camera remains the primary mobile action.
