@@ -1,279 +1,150 @@
 /* RandApp — Nuova segnalazione v2
-   Visual-only refinement: keeps Issues.jsx business logic untouched.
-   Mobile-first, progressive on tablet/desktop. */
+   Mobile-first visual refinement. Business logic remains in Issues.jsx. */
 
 [data-testid='new-issue-form'] {
-  --issue-gap: 18px;
-  width: min(100%, 880px);
+  --issue-gap: 16px;
+  width: min(100%, 900px);
   margin-inline: auto;
   gap: var(--issue-gap) !important;
-  padding: 4px 0 18px !important;
+  padding: 2px 0 18px !important;
 }
 
 [data-testid='new-issue-form'] .rs-form__head {
   align-items: center;
   gap: 12px;
-  margin-bottom: 2px;
+  margin: 0 0 2px;
 }
-
-[data-testid='new-issue-form'] .rs-form__head .rs-iconbtn {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-}
-
-[data-testid='new-issue-form'] .rs-form__head h2 {
-  margin: 0;
-  font-size: clamp(1.28rem, 4.8vw, 1.58rem);
-  line-height: 1.12;
-  letter-spacing: -.025em;
-}
-
-[data-testid='new-issue-form'] .rs-form__head p {
-  margin-top: 4px;
-  font-size: .82rem;
-  color: var(--rs-text-2);
-}
+[data-testid='new-issue-form'] .rs-form__head .rs-iconbtn { width: 44px; height: 44px; border-radius: 14px; }
+[data-testid='new-issue-form'] .rs-form__head h2 { margin: 0; font-size: clamp(1.24rem, 4.4vw, 1.52rem); line-height: 1.12; letter-spacing: -.025em; }
+[data-testid='new-issue-form'] .rs-form__head p { margin: 3px 0 0; font-size: .8rem; color: var(--rs-text-2); }
 
 [data-testid='new-issue-form'] .rs-field,
-[data-testid='new-issue-form'] .rs-fieldset {
-  gap: 9px !important;
-}
-
+[data-testid='new-issue-form'] .rs-fieldset { gap: 8px !important; }
 [data-testid='new-issue-form'] .rs-field__label,
 [data-testid='new-issue-form'] .rs-fieldset legend {
   color: var(--rs-text) !important;
-  font-family: 'Sora', 'Manrope', system-ui, sans-serif;
-  font-size: 1rem !important;
+  font-family: 'Sora','Manrope',system-ui,sans-serif;
+  font-size: .98rem !important;
   font-weight: 750 !important;
   letter-spacing: -.012em;
 }
 
-/* Camera / Zona */
+/* Camera / zona */
 [data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   width: 100%;
-  min-height: 52px !important;
+  min-height: 50px !important;
   padding: 4px !important;
-  margin: 0 0 9px !important;
+  margin: 0 0 8px !important;
   border: 1px solid var(--rs-line) !important;
   border-radius: 16px !important;
   background: var(--rs-surface-2) !important;
 }
-
 [data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented button {
-  min-width: 0;
-  min-height: 42px !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: transparent !important;
-  color: var(--rs-text-2) !important;
-  font-size: .96rem !important;
-  font-weight: 750 !important;
-  box-shadow: none !important;
+  min-width: 0; min-height: 40px !important; border: 0 !important; border-radius: 12px !important;
+  background: transparent !important; color: var(--rs-text-2) !important; font-size: .94rem !important; font-weight: 750 !important; box-shadow: none !important;
 }
-
 [data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented button.active {
   color: var(--rs-text) !important;
-  background: color-mix(in srgb, var(--rs-blue) 12%, var(--rs-surface)) !important;
+  background: linear-gradient(135deg,color-mix(in srgb,var(--rs-blue) 16%,var(--rs-surface)),color-mix(in srgb,var(--rs-cyan) 10%,var(--rs-surface))) !important;
   box-shadow: inset 0 0 0 1px var(--rs-line-strong) !important;
 }
-
 html[data-theme='light'] [data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented button.active {
-  background: linear-gradient(135deg, rgba(47,111,240,.13), rgba(11,184,212,.09)) !important;
+  background: linear-gradient(135deg,rgba(47,111,240,.13),rgba(11,184,212,.10)) !important;
 }
+[data-testid='new-issue-form'] .rs-input { min-height: 52px !important; padding-inline: 15px !important; border-radius: 16px !important; background: var(--rs-surface) !important; }
+[data-testid='new-issue-form'] .rs-input > .rs-icon { width: 21px; height: 21px; }
 
-[data-testid='new-issue-form'] .rs-input {
-  min-height: 54px !important;
-  padding-inline: 16px !important;
-  border-radius: 16px !important;
-  background: var(--rs-surface) !important;
-}
-
-[data-testid='new-issue-form'] .rs-input > .rs-icon {
-  width: 22px;
-  height: 22px;
-}
-
-/* All chips default to compact content-width pills. */
-[data-testid='new-issue-form'] .rs-chips {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center;
-  gap: 8px !important;
-}
-
+/* Compact content-width pills. */
+[data-testid='new-issue-form'] .rs-chips { display: flex !important; flex-wrap: wrap !important; align-items: center; gap: 8px !important; }
 [data-testid='new-issue-form'] .rs-chip {
-  flex: 0 0 auto !important;
-  width: auto !important;
-  min-width: 0 !important;
-  min-height: 42px !important;
-  padding: 9px 14px !important;
-  border-radius: 999px !important;
-  border: 1px solid var(--rs-line) !important;
-  background: color-mix(in srgb, var(--rs-surface-2) 94%, transparent) !important;
-  color: var(--rs-text) !important;
-  font-size: .88rem !important;
-  line-height: 1.1;
-  font-weight: 600 !important;
-  box-shadow: none !important;
+  flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; min-height: 40px !important;
+  display: inline-flex !important; align-items: center; justify-content: center; gap: 7px;
+  padding: 8px 13px !important; border-radius: 999px !important; border: 1px solid var(--rs-line) !important;
+  background: color-mix(in srgb,var(--rs-surface-2) 94%,transparent) !important; color: var(--rs-text) !important;
+  font-size: .86rem !important; line-height: 1.1; font-weight: 600 !important; box-shadow: none !important;
 }
-
 [data-testid='new-issue-form'] .rs-chip.active {
-  border-color: color-mix(in srgb, var(--rs-cyan) 58%, transparent) !important;
-  background: color-mix(in srgb, var(--rs-cyan) 14%, var(--rs-surface-2)) !important;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rs-cyan) 14%, transparent) !important;
+  border-color: color-mix(in srgb,var(--rs-cyan) 58%,transparent) !important;
+  background: color-mix(in srgb,var(--rs-cyan) 14%,var(--rs-surface-2)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--rs-cyan) 14%,transparent) !important;
 }
 
-/* Urgency is the one group that intentionally fills the row. */
-[data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 8px !important;
-}
+/* Category recognition without another icon dependency. */
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip::before { width: 1.05em; text-align: center; color: var(--rs-text-2); font-weight: 800; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(1)::before { content: '◉'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(2)::before { content: 'ϟ'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(3)::before { content: '❄'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(4)::before { content: '▱'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(5)::before { content: '▦'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(6)::before { content: '⌁'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(7)::before { content: '▤'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(8)::before { content: '≋'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(9)::before { content: '▥'; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip:nth-child(10)::before { content: '•••'; font-size: .72em; letter-spacing: .05em; }
+[data-testid='new-issue-form'] .rs-fieldset:nth-of-type(3) .rs-chip.active::before { color: var(--rs-cyan); }
 
-[data-testid='new-issue-form'] [data-testid^='urgency-'] {
-  width: 100% !important;
-  min-height: 46px !important;
-  justify-content: center;
-  border-radius: 15px !important;
-  font-weight: 800 !important;
-}
-
-[data-testid='new-issue-form'] .rs-chip.active.high {
-  border-color: color-mix(in srgb, var(--rs-danger) 70%, transparent) !important;
-  background: color-mix(in srgb, var(--rs-danger) 11%, var(--rs-surface-2)) !important;
-}
-[data-testid='new-issue-form'] .rs-chip.active.mid {
-  border-color: color-mix(in srgb, var(--rs-warn) 72%, transparent) !important;
-  background: color-mix(in srgb, var(--rs-warn) 14%, var(--rs-surface-2)) !important;
-}
-[data-testid='new-issue-form'] .rs-chip.active.low {
-  border-color: color-mix(in srgb, var(--rs-ok) 64%, transparent) !important;
-  background: color-mix(in srgb, var(--rs-ok) 11%, var(--rs-surface-2)) !important;
-}
-
-/* Requested behaviour: urgency labels stay dark/neutral in light theme. */
+/* Urgency fills one row. */
+[data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 8px !important; }
+[data-testid='new-issue-form'] [data-testid^='urgency-'] { width: 100% !important; min-height: 44px !important; justify-content: center; border-radius: 15px !important; font-weight: 800 !important; }
+[data-testid='new-issue-form'] .rs-chip.active.high { border-color: color-mix(in srgb,var(--rs-danger) 72%,transparent) !important; background: color-mix(in srgb,var(--rs-danger) 10%,var(--rs-surface-2)) !important; }
+[data-testid='new-issue-form'] .rs-chip.active.mid { border-color: color-mix(in srgb,var(--rs-warn) 74%,transparent) !important; background: color-mix(in srgb,var(--rs-warn) 13%,var(--rs-surface-2)) !important; }
+[data-testid='new-issue-form'] .rs-chip.active.low { border-color: color-mix(in srgb,var(--rs-ok) 66%,transparent) !important; background: color-mix(in srgb,var(--rs-ok) 10%,var(--rs-surface-2)) !important; }
 html[data-theme='light'] [data-testid='new-issue-form'] [data-testid^='urgency-'],
 html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.high,
 html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.mid,
-html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.low {
-  color: #111827 !important;
-}
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.low { color: #111827 !important; }
 
-/* Description: enough room to type, without becoming half the page. */
+/* Description: useful, not oversized. */
 [data-testid='new-issue-form'] .rs-textarea {
-  min-height: 126px !important;
-  height: 126px;
-  max-height: 220px;
-  resize: vertical;
-  padding: 15px 16px !important;
-  border-radius: 17px !important;
-  font-size: .96rem !important;
-  line-height: 1.45;
-  background: var(--rs-surface) !important;
+  min-height: 118px !important; height: 118px; max-height: 210px; resize: vertical;
+  padding: 14px 16px !important; border-radius: 17px !important; font-size: .95rem !important; line-height: 1.45; background: var(--rs-surface) !important;
 }
 
-/* Photo area: functional two-source chooser, compact and balanced. */
+/* Photo block: two real sources, no fake multi-photo slots. */
+[data-testid='new-issue-form'] .rs-fieldset:has(.rs-photo-actions) { margin-top: 1px; }
 [data-testid='new-issue-form'] .rs-photo-actions {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 9px !important;
+  display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; width: 100%;
 }
-
 [data-testid='new-issue-form'] .rs-photo-action {
-  min-height: 68px !important;
-  padding: 10px 12px !important;
-  flex-direction: row !important;
-  justify-content: center;
-  gap: 8px !important;
-  border-radius: 15px !important;
-  background: color-mix(in srgb, var(--rs-surface) 96%, transparent) !important;
+  min-height: 58px !important; padding: 9px 11px !important; flex-direction: row !important; justify-content: center;
+  gap: 8px !important; border-radius: 15px !important; border-style: dashed !important;
+  background: color-mix(in srgb,var(--rs-surface) 96%,transparent) !important;
 }
+[data-testid='new-issue-form'] .rs-photo-action .rs-icon { width: 21px !important; height: 21px !important; }
+[data-testid='new-issue-form'] .rs-photo-action strong { font-size: .8rem; }
+[data-testid='new-issue-form'] .rs-photo-preview { width: min(100%,240px) !important; height: 138px; max-height: 138px !important; object-fit: cover; border-radius: 15px !important; }
 
-[data-testid='new-issue-form'] .rs-photo-action .rs-icon {
-  width: 22px !important;
-  height: 22px !important;
-}
-
-[data-testid='new-issue-form'] .rs-photo-action strong {
-  font-size: .82rem;
-}
-
-[data-testid='new-issue-form'] .rs-photo-preview {
-  width: min(100%, 260px) !important;
-  height: 150px;
-  max-height: 150px !important;
-  object-fit: cover;
-  border-radius: 15px !important;
-}
-
-/* Final actions: clear hierarchy and safe bottom spacing. */
+/* Final actions: a single compact footer block. */
 [data-testid='new-issue-form'] .rs-form-actions {
-  display: grid !important;
-  grid-template-columns: minmax(108px, .72fr) minmax(0, 1.65fr) !important;
-  gap: 10px !important;
-  padding: 4px 0 0 !important;
+  display: grid !important; grid-template-columns: minmax(102px,.72fr) minmax(0,1.65fr) !important;
+  gap: 9px !important; padding: 2px 0 0 !important; margin-top: 0 !important;
 }
+[data-testid='new-issue-form'] .rs-form-actions .rs-btn { min-height: 50px !important; border-radius: 16px !important; font-size: .93rem !important; }
 
-[data-testid='new-issue-form'] .rs-form-actions .rs-btn {
-  min-height: 52px !important;
-  border-radius: 16px !important;
-  font-size: .94rem !important;
-}
-
-/* The global + is redundant while the creation form is already open. */
+/* Global + is redundant while already creating an issue. */
 @supports selector(body:has([data-testid='new-issue-form'])) {
-  body:has([data-testid='new-issue-form']) .rs-navfab {
-    display: none !important;
-  }
+  body:has([data-testid='new-issue-form']) .rs-navfab { display: none !important; }
 }
 
 @media (max-width: 390px) {
-  [data-testid='new-issue-form'] { --issue-gap: 16px; }
-  [data-testid='new-issue-form'] .rs-chip {
-    min-height: 40px !important;
-    padding: 8px 12px !important;
-    font-size: .84rem !important;
-  }
-  [data-testid='new-issue-form'] [data-testid^='urgency-'] {
-    padding-inline: 6px !important;
-  }
-  [data-testid='new-issue-form'] .rs-photo-action strong {
-    font-size: .78rem;
-  }
+  [data-testid='new-issue-form'] { --issue-gap: 14px; }
+  [data-testid='new-issue-form'] .rs-chip { min-height: 38px !important; padding: 7px 11px !important; font-size: .82rem !important; }
+  [data-testid='new-issue-form'] [data-testid^='urgency-'] { padding-inline: 5px !important; }
+  [data-testid='new-issue-form'] .rs-photo-action strong { font-size: .76rem; }
 }
 
 @media (min-width: 700px) {
-  [data-testid='new-issue-form'] {
-    --issue-gap: 22px;
-    padding: 10px 10px 30px !important;
-  }
-  [data-testid='new-issue-form'] .rs-chip {
-    min-height: 44px !important;
-    padding-inline: 16px !important;
-  }
-  [data-testid='new-issue-form'] .rs-textarea {
-    min-height: 144px !important;
-    height: 144px;
-  }
-  [data-testid='new-issue-form'] .rs-photo-actions {
-    width: min(100%, 520px);
-  }
-  [data-testid='new-issue-form'] .rs-form-actions {
-    width: min(100%, 520px);
-    margin-left: auto;
-    grid-template-columns: 150px 1fr !important;
-  }
+  [data-testid='new-issue-form'] { --issue-gap: 20px; padding: 8px 10px 30px !important; }
+  [data-testid='new-issue-form'] .rs-chip { min-height: 42px !important; padding-inline: 15px !important; }
+  [data-testid='new-issue-form'] .rs-textarea { min-height: 136px !important; height: 136px; }
+  [data-testid='new-issue-form'] .rs-photo-actions { width: min(100%,500px); }
+  [data-testid='new-issue-form'] .rs-form-actions { width: min(100%,500px); margin-left: auto !important; grid-template-columns: 145px 1fr !important; }
 }
 
 @media (min-width: 1024px) {
-  [data-testid='new-issue-form'] {
-    width: min(100%, 920px);
-  }
+  [data-testid='new-issue-form'] { width: min(100%,920px); }
   [data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented,
-  [data-testid='new-issue-form'] .rs-input {
-    max-width: 720px;
-  }
+  [data-testid='new-issue-form'] .rs-input { max-width: 720px; }
 }
