@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
+// Applica la sistemazione definitiva del menu laterale e la pulizia cache.
 const path = 'src/randapp/Shell.jsx'
 let s = readFileSync(path, 'utf8')
 
