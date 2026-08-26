@@ -1,0 +1,19 @@
+/* Category icon layer: works in both Camera and Zona modes.
+   The category fieldset is the only chip group with at least 5 choices. */
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip::before {
+  width: 1.05em;
+  text-align: center;
+  color: var(--rs-text-2);
+  font-weight: 800;
+}
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(1)::before { content: '◉'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(2)::before { content: 'ϟ'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(3)::before { content: '❄'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(4)::before { content: '▱'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(5)::before { content: '▦'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(6)::before { content: '⌁'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(7)::before { content: '▤'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(8)::before { content: '≋'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(9)::before { content: '▥'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(10)::before { content: '•••'; font-size: .72em; letter-spacing: .05em; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip.active::before { color: var(--rs-cyan); }
