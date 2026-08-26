@@ -47,6 +47,7 @@ function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, er
 
 const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel.id]
+  const photoInputRef = useRef(null)
   const [mode, setMode] = useState('camera')
   const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null })
   const [saving, setSaving] = useState(false)
@@ -139,7 +140,8 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
       <fieldset className="rs-fieldset">
         <legend>Foto (opzionale)</legend>
         <div className="rs-photo-actions">
-          <label className="rs-photo-action"><input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Foto</strong></label>
+          <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
+          <button type="button" className="rs-photo-action" onClick={() => photoInputRef.current?.click()}><Icon name="camera" /><strong>Foto</strong></button>
         </div>
         {draft.photoData && (
           <div className="rs-photo-preview-wrap">
