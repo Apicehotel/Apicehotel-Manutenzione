@@ -1,8 +1,0 @@
-name: temp-layout-audit
-on: [push]
-jobs:
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python3 scripts/temp-layout-audit.py
