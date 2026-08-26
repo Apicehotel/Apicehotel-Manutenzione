@@ -1,0 +1,26 @@
+name: temp-photo-pipeline-fix
+on: [push]
+permissions:
+  contents: write
+jobs:
+  patch-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python3 scripts/temp-photo-pipeline-fix.py
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Issues.jsx src/randapp/helpers.js src/randapp/shell.css src/photo-storage.js src/offline-store.js test/photo-pipeline-hardening.test.js
+          git diff --cached --quiet || git commit -m "Harden photo pipeline and add lightbox"
+          git push
