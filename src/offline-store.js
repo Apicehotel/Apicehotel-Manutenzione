@@ -79,7 +79,7 @@ export const makeClientMutationId = () => uuid()
 
 export async function putOfflineBlob(blob, meta = {}) {
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
-  if (!(blob instanceof Blob)) throw new Error('Foto offline non valida')
+  if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('Foto offline vuota o non valida')
   const id = makeOfflineId('offline-blob')
   await db.blobs.put({ id, blob, meta, createdAt: now() })
   return id
