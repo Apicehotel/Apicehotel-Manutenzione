@@ -21,6 +21,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/main.jsx src/randapp/Shell.jsx src/randapp/shell.css src/randapp/Home.jsx src/randapp/insert-form.css src/randapp/housekeeping-alert.css
+          git add src/main.jsx src/randapp/Shell.jsx src/randapp/shell.css src/randapp/Home.jsx src/randapp/insert-form.css src/randapp/housekeeping-alert.css test/housekeeping.test.js test/issues-layout.test.js test/layout-hardening.test.js
           git diff --cached --quiet || git commit -m "Harden RandApp layout flow across screens"
           git push
