@@ -3,7 +3,7 @@ import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
-import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, readPhotoAsDataUrl, compressPhotoAsDataUrl } from './helpers.js'
+import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -235,7 +235,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <textarea className="rs-textarea" rows="3" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Cosa è stato fatto" data-testid="completion-note" />
           </Field>
           <label className="rs-photo-action" style={{ borderStyle: 'dashed' }}>
-            <input type="file" accept="image/*" onChange={async (e) => setPhoto(await readPhotoAsDataUrl(e.target.files?.[0]))} />
+            <input type="file" accept="image/*" onChange={async (e) => setPhoto(await compressPhotoAsDataUrl(e.target.files?.[0]))} />
             <Icon name="camera" /><strong>{photo ? 'Foto aggiunta' : 'Aggiungi foto completamento'}</strong>
           </label>
           {photo && <img className="rs-photo-preview" src={photo} alt="Anteprima" />}
