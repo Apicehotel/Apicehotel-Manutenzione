@@ -15,6 +15,7 @@ import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
+import './new-issue-compact.css'
 import {
   InterventionsView, UrgentView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
