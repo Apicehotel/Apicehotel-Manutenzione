@@ -1,0 +1,173 @@
+/* RandApp adaptive layout layer — loaded last on purpose. */
+:root {
+  --rs-page-pad-x: clamp(12px, 2.1vw, 28px);
+  --rs-page-pad-top: clamp(12px, 1.8vw, 24px);
+  --rs-page-gap: clamp(10px, 1.5vw, 18px);
+  --rs-content-max: 1440px;
+  --rs-reading-max: 1120px;
+}
+
+html, body, #root { width: 100%; min-width: 0; }
+body { overflow-x: hidden; }
+
+.rs-root, .rs-app, .rs-content, .rs-card, .rs-section, .rs-list, .rs-grid, .rs-form, .rs-page {
+  min-width: 0;
+}
+
+.rs-content {
+  width: min(100%, var(--rs-content-max));
+  max-width: var(--rs-content-max);
+  padding-left: max(var(--rs-page-pad-x), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--rs-page-pad-x), env(safe-area-inset-right, 0px));
+  padding-top: var(--rs-page-pad-top);
+}
+
+.rs-content > * { max-width: 100%; }
+.rs-content img, .rs-content video, .rs-content canvas, .rs-content svg { max-width: 100%; }
+
+.rs-card { min-width: 0; }
+.rs-card--pad { padding: clamp(14px, 1.8vw, 22px); }
+
+.rs-section__head,
+.rs-pagehead,
+.rs-toolbar,
+.rs-actions,
+.rs-filterbar,
+.rs-quick,
+.rs-tabs,
+.rs-form-actions {
+  gap: var(--rs-page-gap);
+  min-width: 0;
+}
+
+.rs-section__head,
+.rs-pagehead,
+.rs-toolbar,
+.rs-actions,
+.rs-filterbar,
+.rs-form-actions {
+  flex-wrap: wrap;
+}
+
+.rs-section__head > *,
+.rs-pagehead > *,
+.rs-toolbar > *,
+.rs-actions > *,
+.rs-filterbar > *,
+.rs-form-actions > * { min-width: 0; }
+
+.rs-input, .rs-input input, .rs-input select, .rs-input textarea,
+.rs-textarea, input, select, textarea { max-width: 100%; min-width: 0; }
+
+.rs-list, .rs-grid, .rs-quick { width: 100%; }
+.rs-list > *, .rs-grid > *, .rs-quick > * { min-width: 0; }
+
+/* Long labels/IDs should wrap rather than force horizontal scrolling. */
+.rs-card, .rs-issue, .rs-issue__main, .rs-issue__title, .rs-issue__meta,
+.rs-section__head h1, .rs-section__head h2, .rs-pagehead h1, .rs-pagehead h2,
+.rs-drawer__item span, .rs-sidebar__item span {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* Tables keep their structure on wide screens and scroll inside their own area on mobile. */
+.rs-table-wrap, .rs-table-container, .rs-scroll-x {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Desktop / Windows: use the available screen instead of a narrow phone-like column. */
+@media (min-width: 960px) {
+  .rs-app--with-side {
+    grid-template-columns: clamp(220px, 18vw, 286px) minmax(0, 1fr);
+  }
+
+  .rs-content {
+    width: 100%;
+    margin: 0;
+    max-width: none;
+    padding-left: clamp(22px, 2.4vw, 40px);
+    padding-right: clamp(22px, 2.4vw, 40px);
+    padding-bottom: clamp(28px, 3vw, 48px);
+  }
+
+  .rs-header {
+    padding-left: clamp(22px, 2.4vw, 40px);
+    padding-right: clamp(22px, 2.4vw, 40px);
+  }
+
+  .rs-content > .rs-home,
+  .rs-content > .rs-page,
+  .rs-content > .rs-view,
+  .rs-content > section,
+  .rs-content > form {
+    width: min(100%, var(--rs-content-max));
+  }
+
+  .rs-bottomnav, .rs-navfab { display: none; }
+}
+
+/* Tablet: keep generous touch targets but reduce dead space. */
+@media (min-width: 640px) and (max-width: 959px) {
+  .rs-content {
+    padding-left: clamp(18px, 3vw, 28px);
+    padding-right: clamp(18px, 3vw, 28px);
+  }
+
+  .rs-card--pad { padding: clamp(16px, 2.5vw, 22px); }
+}
+
+/* iOS / Android: fit the viewport, safe areas and compact spacing without crushing controls. */
+@media (max-width: 639px) {
+  :root {
+    --rs-page-pad-x: clamp(10px, 3.5vw, 16px);
+    --rs-page-pad-top: clamp(8px, 2.8vw, 14px);
+    --rs-page-gap: 8px;
+  }
+
+  .rs-content {
+    width: 100%;
+    padding-left: max(var(--rs-page-pad-x), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--rs-page-pad-x), env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 18px);
+  }
+
+  .rs-header {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+
+  .rs-card { border-radius: clamp(14px, 4vw, 18px); }
+  .rs-card--pad { padding: 12px; }
+
+  .rs-btn, .rs-iconbtn, button, [role='button'] { touch-action: manipulation; }
+  .rs-btn, .rs-iconbtn { min-height: 44px; }
+
+  .rs-section__head h1, .rs-pagehead h1 { font-size: clamp(1.45rem, 7vw, 2rem); }
+  .rs-section__head h2, .rs-pagehead h2 { font-size: clamp(1.1rem, 5vw, 1.45rem); }
+
+  .rs-drawer { width: min(92vw, 380px); }
+
+  .rs-bottomnav {
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Very narrow phones: prevent controls from colliding. */
+@media (max-width: 380px) {
+  .rs-content { padding-left: 10px; padding-right: 10px; }
+  .rs-hotelchip { gap: 8px; padding-left: 9px; padding-right: 9px; }
+  .rs-hotelchip img { width: 34px; height: 34px; }
+  .rs-navbtn small { font-size: .58rem; }
+}
+
+/* Large Windows displays: retain readable line lengths while using horizontal space for dashboards. */
+@media (min-width: 1500px) {
+  .rs-content { padding-left: 48px; padding-right: 48px; }
+  .rs-content > .rs-home { max-width: 1500px; }
+  .rs-content > :not(.rs-home) { max-width: var(--rs-content-max); }
+}
