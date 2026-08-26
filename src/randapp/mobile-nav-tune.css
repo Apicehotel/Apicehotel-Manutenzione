@@ -143,3 +143,242 @@
     font-size: .82rem !important;
   }
 }
+
+/* ============================================================
+   New issue form — responsive operational layout
+   Keeps business logic untouched while making the whole screen
+   reflow as one unit on iOS, Android and desktop.
+   ============================================================ */
+[data-testid='new-issue-form'] {
+  width: min(100%, 940px);
+  margin-inline: auto;
+  gap: clamp(20px, 2.6vw, 30px);
+  padding: 4px 2px 10px;
+}
+
+[data-testid='new-issue-form'] .rs-form__head {
+  padding-bottom: 2px;
+}
+
+[data-testid='new-issue-form'] .rs-form__head h2 {
+  font-size: clamp(1.28rem, 2vw, 1.6rem);
+}
+
+[data-testid='new-issue-form'] .rs-form__head p {
+  margin-top: 4px;
+}
+
+[data-testid='new-issue-form'] .rs-field,
+[data-testid='new-issue-form'] .rs-fieldset {
+  gap: 10px;
+}
+
+[data-testid='new-issue-form'] .rs-field__label,
+[data-testid='new-issue-form'] .rs-fieldset legend {
+  color: var(--rs-text);
+  font-family: 'Sora', 'Manrope', system-ui, sans-serif;
+  font-size: clamp(.94rem, 1.7vw, 1.08rem);
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+[data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented {
+  width: 100%;
+  min-height: 58px;
+  margin-bottom: 12px !important;
+  padding: 4px;
+  border-radius: 18px;
+  background: var(--rs-surface-2);
+}
+
+[data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented button {
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: .96rem;
+  font-weight: 750;
+}
+
+[data-testid='new-issue-form'] .rs-input {
+  min-height: 60px;
+  border-radius: 18px;
+  padding-inline: 18px;
+}
+
+[data-testid='new-issue-form'] .rs-input > .rs-icon {
+  width: 23px;
+  height: 23px;
+}
+
+[data-testid='new-issue-form'] .rs-input input {
+  font-size: 1rem;
+}
+
+[data-testid='new-issue-form'] .rs-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, max-content));
+  align-items: stretch;
+  gap: 10px;
+}
+
+[data-testid='new-issue-form'] .rs-chip {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border-radius: 16px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--rs-text);
+  background: color-mix(in srgb, var(--rs-surface-2) 90%, transparent);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rs-cyan) 28%, transparent);
+}
+
+/* Urgency: semantic colour belongs to the control, never to the label text. */
+[data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) {
+  grid-template-columns: repeat(3, minmax(0, 150px));
+}
+
+[data-testid='new-issue-form'] [data-testid^='urgency-'] {
+  font-weight: 800;
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.high {
+  background: color-mix(in srgb, var(--rs-danger) 14%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-danger) 55%, transparent);
+  color: var(--rs-text);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.mid {
+  background: color-mix(in srgb, var(--rs-warn) 15%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-warn) 58%, transparent);
+  color: var(--rs-text);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.low {
+  background: color-mix(in srgb, var(--rs-ok) 13%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-ok) 48%, transparent);
+  color: var(--rs-text);
+}
+
+html[data-theme='light'] [data-testid='new-issue-form'] [data-testid^='urgency-'],
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.high,
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.mid,
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.low {
+  color: #111827 !important;
+}
+
+[data-testid='new-issue-form'] .rs-textarea {
+  min-height: 168px;
+  resize: vertical;
+  border-radius: 20px;
+  padding: 18px 20px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+[data-testid='new-issue-form'] .rs-photo-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action {
+  min-height: 86px;
+  justify-content: center;
+  border-radius: 18px;
+  border-width: 1px;
+  background: color-mix(in srgb, var(--rs-surface) 92%, transparent);
+}
+
+[data-testid='new-issue-form'] .rs-photo-preview {
+  width: min(100%, 360px);
+  max-height: 190px;
+  margin-top: 2px;
+  align-self: flex-start;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+[data-testid='new-issue-form'] .rs-form-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, .7fr) minmax(210px, 1.4fr);
+  gap: 12px;
+  align-items: stretch;
+  padding-right: calc(var(--rs-fab-h) + 24px);
+}
+
+[data-testid='new-issue-form'] .rs-form-actions .rs-btn {
+  min-height: 56px;
+  border-radius: 18px;
+  font-size: .98rem;
+}
+
+@media (min-width: 900px) {
+  [data-testid='new-issue-form'] {
+    padding: 10px 14px 30px;
+  }
+
+  [data-testid='new-issue-form'] .rs-chips {
+    grid-template-columns: repeat(auto-fit, minmax(145px, max-content));
+  }
+
+  [data-testid='new-issue-form'] .rs-form-actions {
+    padding-right: 0;
+    grid-template-columns: 180px minmax(260px, 360px);
+    justify-content: end;
+  }
+}
+
+@media (max-width: 560px) {
+  [data-testid='new-issue-form'] {
+    gap: 22px;
+  }
+
+  [data-testid='new-issue-form'] .rs-form__head {
+    align-items: flex-start;
+  }
+
+  [data-testid='new-issue-form'] .rs-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-testid='new-issue-form'] [data-testid^='urgency-'] {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  [data-testid='new-issue-form'] .rs-form-actions {
+    grid-template-columns: minmax(104px, .72fr) minmax(0, 1.5fr);
+    padding-right: calc(var(--rs-fab-h) + 14px);
+  }
+}
+
+@media (max-width: 360px) {
+  [data-testid='new-issue-form'] .rs-chips {
+    grid-template-columns: 1fr;
+  }
+
+  [data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions,
+  [data-testid='new-issue-form'] .rs-form-actions {
+    grid-template-columns: 1fr;
+  }
+
+  [data-testid='new-issue-form'] .rs-form-actions {
+    padding-right: calc(var(--rs-fab-h) + 12px);
+  }
+}
