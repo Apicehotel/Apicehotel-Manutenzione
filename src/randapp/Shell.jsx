@@ -13,6 +13,7 @@ import PlanningHub from './PlanningHub.jsx'
 import InsertLauncher from './InsertLauncher.jsx'
 import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
+import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import {
   InterventionsView, UrgentView,
@@ -222,7 +223,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden} onOpen={() => setView('urgent')} />
 
-        <main className="rs-content" data-testid="main-content">{renderView()}</main>
+        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>
 
         <nav className="rs-bottomnav" data-testid="bottom-nav">
           {BOTTOM_NAV.map((item) => (
