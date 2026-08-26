@@ -9,6 +9,7 @@ import {
   CloudSun,
   GripVertical,
   LayoutGrid,
+  MoreHorizontal,
   Plus,
   RotateCcw,
   Wrench,
@@ -285,7 +286,7 @@ function WidgetDashboard({ user, hotel, editing, setEditing, widgetData, weather
         width={width}
         layout={layout}
         gridConfig={{ cols: COLS, rowHeight: 126, margin: [10, 10], containerPadding: [0, 0], maxRows: MAX_ROWS }}
-        dragConfig={{ enabled: editing, handle: '.rs-widget-drag', cancel: 'button,.rs-widget-action', bounded: true, allowMobileScroll: true }}
+        dragConfig={{ enabled: editing, handle: '.rs-widget-drag', cancel: 'button,summary,.rs-widget-action', bounded: true, allowMobileScroll: true }}
         resizeConfig={{ enabled: editing, handles: ['se'] }}
         compactor={verticalCompactor}
         onLayoutChange={(next) => setLayout(next.map((entry) => ({ ...entry })))}
@@ -324,11 +325,17 @@ function WidgetDashboard({ user, hotel, editing, setEditing, widgetData, weather
 function WidgetFrame({ id, layoutItem, editing, onSize, onRemove, children }) {
   return <div className={`rs-widget-frame rs-widget-frame--${sizeName(layoutItem.w).toLowerCase()}`}>
     {editing && <div className="rs-widget-editbar">
-      <span className="rs-widget-drag" title="Trascina"><GripVertical size={18} /></span>
-      <div className="rs-widget-sizes" aria-label={`Dimensione ${WIDGET_TITLES[id]}`}>
-        {[1, 2, 3].map((w) => <button key={w} type="button" className={layoutItem.w === w ? 'is-active' : ''} onClick={() => onSize(id, w)}>{sizeName(w)}</button>)}
-      </div>
-      <button type="button" className="rs-widget-remove" onClick={() => onRemove(id)} aria-label={`Rimuovi ${WIDGET_TITLES[id]}`}><X size={16} /></button>
+      <span className="rs-widget-drag" title="Trascina" aria-label={`Trascina ${WIDGET_TITLES[id]}`}><GripVertical size={18} /></span>
+      <details className="rs-widget-menu">
+        <summary aria-label={`Opzioni ${WIDGET_TITLES[id]}`}><MoreHorizontal size={18} /></summary>
+        <div className="rs-widget-menu__panel">
+          <span>Dimensione</span>
+          <div className="rs-widget-menu__sizes">
+            {[1, 2, 3].map((w) => <button key={w} type="button" className={layoutItem.w === w ? 'is-active' : ''} onClick={() => onSize(id, w)}>{sizeName(w)}</button>)}
+          </div>
+          <button type="button" className="rs-widget-menu__remove" onClick={() => onRemove(id)}><X size={15} /> Rimuovi</button>
+        </div>
+      </details>
     </div>}
     {children}
   </div>
@@ -392,15 +399,13 @@ const HOME_STYLES = `
   .react-grid-item.react-grid-placeholder{background:color-mix(in srgb,var(--rs-accent) 22%,transparent);border-radius:18px;opacity:.8}
   .react-grid-item>.react-resizable-handle{opacity:0;transition:opacity .15s ease}
   .is-editing .react-grid-item>.react-resizable-handle{opacity:1}
-  .rs-widget-grid-item,.rs-widget-frame{height:100%;min-width:0}
+  .rs-widget-grid-item,.rs-widget-frame{height:100%;min-width:0;overflow:visible}
   .rs-widget-frame{position:relative}
   .rs-widget-frame>.rs-widget-card{width:100%;height:100%;min-height:0;margin:0;overflow:hidden}
-  .rs-widget-editbar{position:absolute;z-index:6;top:6px;left:6px;right:6px;display:flex;align-items:center;gap:6px;height:32px;padding:3px 4px;border:1px solid var(--rs-border);border-radius:10px;background:color-mix(in srgb,var(--rs-surface) 92%,transparent);backdrop-filter:blur(10px)}
-  .rs-widget-drag{display:grid;place-items:center;width:27px;height:27px;cursor:grab;color:var(--rs-text-2)}
-  .rs-widget-sizes{display:flex;gap:3px;margin-left:auto}
-  .rs-widget-sizes button,.rs-widget-remove{display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--rs-text-2);font:inherit;font-size:.72rem;font-weight:800}
-  .rs-widget-sizes button.is-active{background:var(--rs-accent);color:#fff}
-  .rs-widget-remove{color:#d95b64}
+  .rs-widget-editbar{position:absolute;z-index:7;top:6px;left:6px;right:6px;display:flex;align-items:center;justify-content:space-between;height:32px;pointer-events:none}
+  .rs-widget-drag,.rs-widget-menu>summary{pointer-events:auto;display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--rs-border);border-radius:9px;background:color-mix(in srgb,var(--rs-surface) 94%,transparent);backdrop-filter:blur(10px);color:var(--rs-text-2)}
+  .rs-widget-drag{cursor:grab}.rs-widget-menu{position:relative;pointer-events:auto}.rs-widget-menu>summary{list-style:none;cursor:pointer}.rs-widget-menu>summary::-webkit-details-marker{display:none}
+  .rs-widget-menu__panel{position:absolute;z-index:20;top:35px;right:0;width:138px;padding:9px;border:1px solid var(--rs-border);border-radius:12px;background:var(--rs-surface);box-shadow:0 10px 28px rgba(0,0,0,.18);display:grid;gap:8px}.rs-widget-menu__panel>span{font-size:.7rem;color:var(--rs-text-2);font-weight:700}.rs-widget-menu__sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.rs-widget-menu__sizes button{height:30px;border:1px solid var(--rs-border);border-radius:8px;background:transparent;color:var(--rs-text);font:inherit;font-size:.72rem;font-weight:800}.rs-widget-menu__sizes button.is-active{background:var(--rs-accent);border-color:transparent;color:#fff}.rs-widget-menu__remove{display:flex;align-items:center;justify-content:center;gap:5px;min-height:32px;border:0;border-radius:8px;background:rgba(239,68,68,.1);color:#d95b64;font:inherit;font-size:.72rem;font-weight:800}
   .is-editing .rs-widget-card{padding-top:44px!important}
   .rs-widget-card{border-radius:clamp(15px,2vw,20px)!important}
   .rs-widget-stat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto 1fr;align-content:center;column-gap:10px;text-align:left!important;padding:clamp(12px,2.2vw,20px)!important}
@@ -413,7 +418,7 @@ const HOME_STYLES = `
   .rs-widget-quick__actions button{min-width:0;min-height:42px;border:1px solid var(--rs-border);border-radius:11px;background:var(--rs-surface-2,var(--rs-surface));color:var(--rs-text);display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;font:inherit;font-size:.74rem;font-weight:750;white-space:nowrap;overflow:hidden}.rs-widget-quick__actions button.is-accent{background:var(--rs-accent);border-color:transparent;color:#fff}.rs-widget-quick__actions--s button{padding:0}
   .rs-widget-catalog{margin-top:14px;padding:13px;border:1px dashed var(--rs-border);border-radius:15px}.rs-widget-catalog__head{display:flex;gap:9px;align-items:flex-start}.rs-widget-catalog__head>div{display:flex;flex-direction:column;gap:2px}.rs-widget-catalog__head span,.rs-widget-catalog p{font-size:.76rem;color:var(--rs-text-2)}.rs-widget-catalog__list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.rs-widget-catalog__list button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 10px;border:1px solid var(--rs-border);border-radius:11px;background:var(--rs-surface);color:var(--rs-text);font:inherit;font-weight:700}
   .rs-home-activity{margin-top:clamp(14px,2.4vw,22px)}.rs-home-recent{width:100%;border:0;background:transparent;color:inherit;text-align:left}
-  @media(max-width:520px){.rs-widget-home .rs-hero{margin-bottom:14px}.rs-widget-grid-shell{margin-inline:-2px;width:calc(100% + 4px)}.rs-widget-stat{column-gap:6px}.rs-widget-quick__actions button{font-size:.68rem}.rs-widget-card--m .rs-widget-quick__actions button span{max-width:64px;overflow:hidden;text-overflow:ellipsis}.rs-widget-editbar{left:4px;right:4px}.rs-widget-sizes button,.rs-widget-remove{width:24px;height:24px}}
+  @media(max-width:520px){.rs-widget-home .rs-hero{margin-bottom:14px}.rs-widget-grid-shell{margin-inline:-2px;width:calc(100% + 4px)}.rs-widget-stat{column-gap:6px}.rs-widget-quick__actions button{font-size:.68rem}.rs-widget-card--m .rs-widget-quick__actions button span{max-width:64px;overflow:hidden;text-overflow:ellipsis}.rs-widget-editbar{left:4px;right:4px}}
 `
 
 export default function Home(props) {
