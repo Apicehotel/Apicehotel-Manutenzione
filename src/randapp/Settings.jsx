@@ -41,9 +41,18 @@ function UsersTab() {
     return q ? users.filter((u) => `${u.name} ${u.role} ${u.email || ''}`.toLowerCase().includes(q)) : users
   }, [users, search])
   const groups = useMemo(() => {
-    const known = ROLES.map((role) => ({ role, list: filtered.filter((u) => u.role === role) })).filter((g) => g.list.length)
+    const housekeepingRoles = new Set(['Governante', 'Capo Governante'])
+    const housekeepingUsers = filtered.filter((u) => housekeepingRoles.has(u.role))
+    const housekeepingByHotel = HOTELS.map((hotel) => ({
+      role: `Housekeeping · ${hotel.short}`,
+      hotelId: hotel.id,
+      list: housekeepingUsers.filter((u) => (u.hotels || []).includes(hotel.id)),
+    })).filter((g) => g.list.length)
+    const known = ROLES.filter((role) => !housekeepingRoles.has(role))
+      .map((role) => ({ role, list: filtered.filter((u) => u.role === role) }))
+      .filter((g) => g.list.length)
     const other = filtered.filter((u) => !ROLES.includes(u.role))
-    return other.length ? [...known, { role: 'Altro', list: other }] : known
+    return [...housekeepingByHotel, ...known, ...(other.length ? [{ role: 'Altro', list: other }] : [])]
   }, [filtered])
 
   const save = async (target, changes) => {
@@ -126,7 +135,7 @@ function UsersTab() {
               <b>{role}</b><span>{list.length}</span><i><Icon name="chevronDown" /></i>
             </button>
             {openGroups[role] !== false && list.map((u) => (
-              <Card key={u.auth_user_id || u.id} className="rs-usercard">
+              <Card key={`${role}-${u.auth_user_id || u.id}`} className="rs-usercard">
                 <div className="rs-usercard__top">
                   <div><strong>{u.name}</strong><small>{[u.email, u.phone].filter(Boolean).join(' · ') || u.department || '—'}</small>{!u.active && <Badge tone="high" className="rs-badge">Disattivato</Badge>}</div>
                   {u.protected && <Badge tone="accent">Protetto</Badge>}
