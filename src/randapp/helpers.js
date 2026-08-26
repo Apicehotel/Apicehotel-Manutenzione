@@ -89,16 +89,25 @@ export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
       canvas.height = h
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, w, h)
-      const sampleW = Math.min(w, 24)
-      const sampleH = Math.min(h, 24)
-      const sample = ctx.getImageData(0, 0, sampleW, sampleH).data
+      // Campiona una griglia di punti sparsi su tutta l'immagine (non solo un angolo):
+      // una foto reale puo' benissimo avere un angolo scuro (es. tetto, alberi), quindi
+      // controllare solo l'angolo in alto a sinistra dava falsi positivi e faceva
+      // salvare l'originale pesante invece della versione compressa.
+      const cols = 6
+      const rows = 6
       let allBlack = true
-      for (let i = 0; i < sample.length; i += 4) {
-        if (sample[i] > 8 || sample[i + 1] > 8 || sample[i + 2] > 8) { allBlack = false; break }
+      outer:
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = Math.min(w - 1, Math.round((c + 0.5) * (w / cols)))
+          const y = Math.min(h - 1, Math.round((r + 0.5) * (h / rows)))
+          const [red, green, blue] = ctx.getImageData(x, y, 1, 1).data
+          if (red > 8 || green > 8 || blue > 8) { allBlack = false; break outer }
+        }
       }
       URL.revokeObjectURL(objectUrl)
       if (allBlack) return readPhotoAsDataUrl(file).then(resolve)
-      resolve(canvas.toDataURL('image/jpeg', 0.62))
+      resolve(canvas.toDataURL('image/jpeg', 0.6))
     } catch { fallback() }
   }
   img.onerror = fallback

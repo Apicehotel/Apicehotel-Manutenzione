@@ -143,13 +143,13 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
           <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
           <button type="button" className="rs-photo-action" onClick={() => photoInputRef.current?.click()}><Icon name="camera" /><strong>Foto</strong></button>
         </div>
-        {draft.photoData && (
-          <div className="rs-photo-preview-wrap">
-            <img className="rs-photo-preview" src={draft.photoData} alt="Anteprima" />
-            <button type="button" className="rs-photo-remove" aria-label="Rimuovi foto" onClick={() => setDraft((c) => ({ ...c, photoData: null, photoName: '' }))}><Icon name="close" /></button>
-          </div>
-        )}
       </fieldset>
+      {draft.photoData && (
+        <div className="rs-photo-preview-wrap rs-photo-preview-wrap--full">
+          <img className="rs-photo-preview" src={draft.photoData} alt="Anteprima" />
+          <button type="button" className="rs-photo-remove" aria-label="Rimuovi foto" onClick={() => setDraft((c) => ({ ...c, photoData: null, photoName: '' }))}><Icon name="close" /></button>
+        </div>
+      )}
       <div className="rs-form-actions">
         <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
         <Button variant="primary" icon="plus" disabled={!validLocation || !draft.title.trim() || saving} data-testid="submit-issue">{saving ? 'Invio…' : 'Invia segnalazione'}</Button>
