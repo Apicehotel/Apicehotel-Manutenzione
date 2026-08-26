@@ -1,0 +1,50 @@
+name: Bootstrap widget engine dependencies
+
+on:
+  push:
+    paths:
+      - '.github/workflows/bootstrap-widget-engine-deps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install current dependencies
+        run: npm ci
+
+      - name: Install widget engine dependencies
+        run: npm install --save zustand zod lucide-react @tanstack/react-query
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Commit dependency files
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Dependencies already present; nothing to commit."
+            exit 0
+          fi
+          git commit -m "Add widget engine dependencies"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
