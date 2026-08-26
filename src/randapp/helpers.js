@@ -53,9 +53,13 @@ export const isToday = (timestamp) => {
 }
 
 export const readPhotoAsDataUrl = (file) => new Promise((resolve) => {
-  if (!file) return resolve(null)
+  if (!file || !file.size) return resolve(null)
   const reader = new FileReader()
-  reader.onload = () => resolve(reader.result)
+  reader.onload = () => {
+    const result = typeof reader.result === 'string' ? reader.result : ''
+    const comma = result.indexOf(',')
+    resolve(result.startsWith('data:image/') && comma >= 0 && result.length > comma + 1 ? result : null)
+  }
   reader.onerror = () => resolve(null)
   reader.readAsDataURL(file)
 })
