@@ -687,3 +687,61 @@ html[data-theme='light'] .rs-sidebar__brand img { background: #ffffff; }
 .rs-pref__label .rs-icon { color: var(--rs-cyan); width: 22px; height: 22px; }
 .rs-pref__label b { display: block; font-size: .95rem; }
 .rs-pref__label small { color: var(--rs-text-2); font-size: .78rem; }
+
+/* issue filters responsive */
+.rs-issue-filter-scroll {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
+.rs-issue-filter-scroll > .rs-segmented {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .rs-toolbar {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .rs-issue-filter-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: 2px 18px 4px 0;
+  }
+
+  .rs-issue-filter-scroll::-webkit-scrollbar { display: none; }
+
+  .rs-issue-filter-scroll > .rs-segmented {
+    width: max-content;
+    min-width: 100%;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 4px;
+  }
+
+  .rs-issue-filter-scroll > .rs-segmented > button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+    scroll-snap-align: start;
+    padding-inline: 13px;
+  }
+
+  [data-testid="issues-list"] { margin-top: 2px; }
+}
+
+@media (min-width: 721px) {
+  .rs-issue-filter-scroll > .rs-segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(max-content, 1fr);
+  }
+}
+

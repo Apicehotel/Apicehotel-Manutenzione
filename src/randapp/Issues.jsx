@@ -277,8 +277,10 @@ export default function Issues({ user, hotel, users, createSignal }) {
       <div className="rs-toolbar">
         <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search"
           onChange={(e) => setSearch(e.target.value)} />
-        <Segmented value={filter} onChange={setFilter}
-          options={FILTERS.map(([k, l]) => [k, l, k === 'all' ? issues.length : (counts[k] || 0)])} />
+        <div className="rs-issue-filter-scroll" data-testid="issue-filters">
+          <Segmented value={filter} onChange={setFilter}
+            options={FILTERS.map(([k, l]) => [k, l, k === 'all' ? issues.length : (counts[k] || 0)])} />
+        </div>
       </div>
 
       {loading ? <Spinner label="Carico le segnalazioni…" /> : filtered.length === 0 ? (
