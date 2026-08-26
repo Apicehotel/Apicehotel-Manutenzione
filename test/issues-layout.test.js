@@ -13,9 +13,10 @@ test('issues toolbar remains in normal document flow', () => {
   assert.doesNotMatch(rule, /position:\s*sticky/)
 })
 
-test('issues list owns safe bottom spacing and never compensates with negative overlap', () => {
-  assert.match(css, /\[data-testid='issues-list'\][\s\S]*?padding-bottom:\s*clamp\(/)
-  assert.doesNotMatch(css, /\[data-testid=['"]issues-list['"]\][\s\S]{0,160}margin-top:\s*-/)
+test('global content owns FAB/nav safe spacing and issues never compensate with overlap', () => {
+  assert.match(css, /--rs-content-bottom-clearance:\s*calc\([^;]*var\(--rs-nav-h\)[^;]*var\(--rs-safe-bottom\)[^;]*var\(--rs-fab-h\)/)
+  assert.match(css, /\.rs-content\s*\{[\s\S]*?padding:[^;]*var\(--rs-content-bottom-clearance\)/)
+  assert.doesNotMatch(css, /\[data-testid=['"]issues-list['"]\][\s\S]{0,180}margin-top:\s*-/)
 })
 
 test('mobile issue filters use adaptive grid without horizontal scrolling', () => {
