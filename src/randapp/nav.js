@@ -29,7 +29,6 @@ export function buildNav(user, hotel) {
     {
       id: 'account', label: 'Account', items: [
         { id: 'profile', icon: 'user', label: 'Il mio profilo', show: true },
-        { id: 'pin', icon: 'lock', label: 'Cambia PIN', show: true },
         { id: 'manual', icon: 'book', label: 'Manuale', show: true },
         { id: 'feedback', icon: 'message', label: 'Invia feedback', show: true },
       ],
