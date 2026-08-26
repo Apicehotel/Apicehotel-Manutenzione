@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchUrgents, subscribeUrgents, updateUrgentRow } from '../urgents-data.js'
 import { Button, Icon } from './ui.jsx'
+import { canViewUrgent } from './helpers.js'
 import './global-urgent.css'
 
 const REPEAT_MS = 30000
@@ -15,20 +16,29 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
   const [ringKey, setRingKey] = useState(0)
   const audioRef = useRef(null)
   const unlockedRef = useRef(false)
+  const allowed = canViewUrgent(user)
 
   const load = useCallback(async () => {
-    if (!hotel?.id) return
+    if (!allowed || !hotel?.id) {
+      setItems([])
+      return
+    }
     const result = await fetchUrgents(hotel.id)
     setItems(result.items || [])
-  }, [hotel?.id])
+  }, [allowed, hotel?.id])
 
   useEffect(() => {
+    if (!allowed) {
+      setItems([])
+      return undefined
+    }
     load()
     if (!hotel?.id) return undefined
     return subscribeUrgents(hotel.id, load)
-  }, [hotel?.id, load])
+  }, [allowed, hotel?.id, load])
 
   useEffect(() => {
+    if (!allowed) return undefined
     const unlock = () => {
       if (unlockedRef.current) return
       try {
@@ -41,14 +51,14 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
     }
     window.addEventListener('pointerdown', unlock, { passive: true })
     return () => window.removeEventListener('pointerdown', unlock)
-  }, [])
+  }, [allowed])
 
   const active = useMemo(() => items.filter(priorityFive).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [items])
   const openItems = useMemo(() => active.filter((item) => item.status === 'aperta'), [active])
   const visible = active.slice(0, 2)
 
   const ring = useCallback(() => {
-    if (!openItems.length || hidden) return
+    if (!allowed || !openItems.length || hidden) return
     setRingKey((n) => n + 1)
     try { if (navigator.vibrate) navigator.vibrate([180, 100, 180, 100, 300]) } catch { /* non supportato */ }
     try {
@@ -64,15 +74,15 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
         const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, now + index * 0.08); osc.connect(gain); osc.start(now + index * 0.08); osc.stop(now + 0.68)
       })
     } catch { /* richiamo visivo resta attivo */ }
-  }, [hidden, openItems.length])
+  }, [allowed, hidden, openItems.length])
 
   useEffect(() => {
-    if (!openItems.length || hidden) return undefined
+    if (!allowed || !openItems.length || hidden) return undefined
     ring(); const timer = window.setInterval(ring, REPEAT_MS)
     return () => window.clearInterval(timer)
-  }, [hidden, openItems.length, ring])
+  }, [allowed, hidden, openItems.length, ring])
 
-  if (hidden || !visible.length) return null
+  if (!allowed || hidden || !visible.length) return null
   const canManage = MANAGE_ROLES.has(user?.role)
   const take = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name || 'Utente' }); await load() }
   const done = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'completata', completedBy: user?.name || 'Utente' }); await load() }
