@@ -1,9 +1,11 @@
-/* New issue: description + single photo tile as one responsive row. */
+/* New issue: compact description + one real photo control.
+   Inspired by accessible single-file dropzone patterns: one target, preview in-place,
+   no duplicated visual controls. Existing native input stays the source of truth. */
 [data-testid='new-issue-form'] {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.34fr);
-  column-gap: 12px !important;
-  row-gap: var(--issue-gap, 16px) !important;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  column-gap: 10px !important;
+  row-gap: var(--issue-gap, 14px) !important;
   align-items: start;
 }
 
@@ -12,7 +14,6 @@
   min-width: 0;
 }
 
-/* Description field sits left, photo fieldset sits right. */
 [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) {
   grid-column: 1;
   margin: 0 !important;
@@ -21,108 +22,142 @@
 [data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) {
   grid-column: 2;
   margin: 0 !important;
-  align-self: stretch;
+  padding: 0 !important;
+  border: 0 !important;
+  align-self: end;
+  min-width: 0;
 }
 
 [data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) legend {
-  margin-bottom: 8px;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
-/* One visual photo tile: both real inputs share the same box. */
+/* One visual target. Camera remains the primary mobile action.
+   The gallery input overlays the same tile, so there is never a second box or label. */
 [data-testid='new-issue-form'] .rs-photo-actions {
   position: relative;
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0 !important;
+  display: block !important;
   width: 100% !important;
-  min-height: 118px;
-  border: 1px dashed color-mix(in srgb, var(--rs-cyan) 52%, var(--rs-line)) !important;
+  height: 118px !important;
+  min-height: 118px !important;
+  border: 1px dashed color-mix(in srgb, var(--rs-cyan) 55%, var(--rs-line)) !important;
   border-radius: 18px !important;
   overflow: hidden;
-  background: color-mix(in srgb, var(--rs-surface) 96%, transparent) !important;
+  background: color-mix(in srgb, var(--rs-surface) 97%, transparent) !important;
 }
 
 [data-testid='new-issue-form'] .rs-photo-action {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   min-width: 0;
-  min-height: 118px !important;
+  min-height: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 10px 6px !important;
+  padding: 8px !important;
   flex-direction: column !important;
-  gap: 5px !important;
+  gap: 4px !important;
+  cursor: pointer;
 }
 
-[data-testid='new-issue-form'] .rs-photo-action + .rs-photo-action {
-  border-left: 1px solid color-mix(in srgb, var(--rs-line) 78%, transparent) !important;
+/* Keep one native picker visually. On touch devices camera is primary; on desktop
+   the standard image picker is primary. The alternate label must not create UI clutter. */
+[data-testid='new-issue-form'] .rs-photo-action:first-child {
+  z-index: 2;
+}
+[data-testid='new-issue-form'] .rs-photo-action:last-child {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-testid='new-issue-form'] .rs-photo-action:first-child {
+    opacity: 0;
+    pointer-events: none;
+  }
+  [data-testid='new-issue-form'] .rs-photo-action:last-child {
+    z-index: 2;
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 [data-testid='new-issue-form'] .rs-photo-action .rs-icon {
-  width: 22px !important;
-  height: 22px !important;
+  width: 25px !important;
+  height: 25px !important;
   color: var(--rs-cyan);
 }
 
 [data-testid='new-issue-form'] .rs-photo-action strong {
-  font-size: .72rem !important;
-  line-height: 1.15;
-  text-align: center;
+  font-size: 0 !important;
+  line-height: 1;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action strong::after {
+  content: 'Foto';
+  font-size: .76rem;
+  font-weight: 750;
+  color: var(--rs-muted);
 }
 
 [data-testid='new-issue-form'] .rs-photo-preview {
-  grid-column: 1 / -1;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3;
   width: 100% !important;
-  height: 118px !important;
-  max-height: 118px !important;
-  margin-top: 8px;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
   object-fit: cover;
-  border-radius: 18px !important;
+  border-radius: 17px !important;
+  pointer-events: none;
 }
 
-/* Description height matches photo tile for a balanced row. */
 [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
   min-height: 118px !important;
   height: 118px !important;
   resize: vertical;
 }
 
-/* Keep actions full-width below the pair. */
 [data-testid='new-issue-form'] > .rs-form-actions {
   grid-column: 1 / -1;
+  margin-top: 0 !important;
 }
 
-/* Tight phones: do not force a cramped side-by-side pair. */
-@media (max-width: 359px) {
+/* Very narrow phones: preserve usable text width instead of squeezing it. */
+@media (max-width: 374px) {
   [data-testid='new-issue-form'] {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 86px;
+    column-gap: 8px !important;
   }
-
-  [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']),
-  [data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) {
-    grid-column: 1;
-  }
-
-  [data-testid='new-issue-form'] .rs-photo-actions {
-    min-height: 88px;
-  }
-
-  [data-testid='new-issue-form'] .rs-photo-action {
-    min-height: 88px !important;
-    flex-direction: row !important;
+  [data-testid='new-issue-form'] .rs-photo-actions,
+  [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
+    height: 108px !important;
+    min-height: 108px !important;
   }
 }
 
-/* Larger layouts: give description more room while preserving the single tile. */
+/* Tablet / desktop: still one compact uploader, never a tall sidebar. */
 @media (min-width: 700px) {
   [data-testid='new-issue-form'] {
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.30fr);
-    column-gap: 16px !important;
+    grid-template-columns: minmax(0, 1fr) 132px;
+    column-gap: 14px !important;
   }
-
   [data-testid='new-issue-form'] .rs-photo-actions,
-  [data-testid='new-issue-form'] .rs-photo-action,
   [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
-    min-height: 136px !important;
-    height: 136px !important;
+    height: 126px !important;
+    min-height: 126px !important;
   }
 }
