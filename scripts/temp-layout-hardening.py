@@ -67,3 +67,32 @@ s = p.read_text()
 s = s.replace("import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'\n", "import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'\nimport HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'\n", 1)
 s = s.replace('<main className="rs-content" data-testid="main-content">{renderView()}</main>', '<main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>', 1)
 p.write_text(s)
+
+# Existing tests now validate the centralized architecture instead of old per-screen workarounds.
+p = Path('test/housekeeping.test.js')
+s = p.read_text()
+s = s.replace('const [entry,source,css,pkg,config,helpers,main,alerts,migration] = await Promise.all([', 'const [entry,source,css,pkg,config,helpers,main,shell,alerts,migration] = await Promise.all([', 1)
+s = s.replace("    readFile(new URL('../src/main.jsx',import.meta.url),'utf8'),\n    readFile(new URL('../src/randapp/HousekeepingCompletionAlerts.jsx',import.meta.url),'utf8'),", "    readFile(new URL('../src/main.jsx',import.meta.url),'utf8'),\n    readFile(new URL('../src/randapp/Shell.jsx',import.meta.url),'utf8'),\n    readFile(new URL('../src/randapp/HousekeepingCompletionAlerts.jsx',import.meta.url),'utf8'),", 1)
+s = s.replace('  assert.match(main,/HousekeepingCompletionAlerts/)\n', "  assert.doesNotMatch(main,/HousekeepingCompletionAlerts/)\n  assert.match(shell,/import HousekeepingCompletionAlerts/)\n  assert.match(shell,/<HousekeepingCompletionAlerts \/>/)\n", 1)
+p.write_text(s)
+
+p = Path('test/issues-layout.test.js')
+s = p.read_text()
+old = """test('issues list owns safe bottom spacing and never compensates with negative overlap', () => {
+  assert.match(css, /\\[data-testid='issues-list'\\][\\s\\S]*?padding-bottom:\\s*clamp\\(/)
+  assert.doesNotMatch(css, /\\[data-testid=['\"]issues-list['\"]\\][\\s\\S]{0,160}margin-top:\\s*-/)
+})
+"""
+new = """test('global content owns FAB/nav safe spacing and issues never compensate with overlap', () => {
+  assert.match(css, /--rs-content-bottom-clearance:\\s*calc\\([^;]*var\\(--rs-nav-h\\)[^;]*var\\(--rs-safe-bottom\\)[^;]*var\\(--rs-fab-h\\)/)
+  assert.match(css, /\\.rs-content\\s*\\{[\\s\\S]*?padding:[^;]*var\\(--rs-content-bottom-clearance\\)/)
+  assert.doesNotMatch(css, /\\[data-testid=['\"]issues-list['\"]\\][\\s\\S]{0,180}margin-top:\\s*-/)
+})
+"""
+if old not in s:
+    raise SystemExit('Issues layout test block not found')
+p.write_text(s.replace(old, new, 1))
+
+# Permanent cross-screen guardrails for this bug family.
+p = Path('test/layout-hardening.test.js')
+p.write_text("""import test from 'node:test'\nimport assert from 'node:assert/strict'\nimport { readFile } from 'node:fs/promises'\n\nconst [shellCss, hkCss, insertCss, home, shell, main] = await Promise.all([\n  readFile(new URL('../src/randapp/shell.css', import.meta.url), 'utf8'),\n  readFile(new URL('../src/randapp/housekeeping-alert.css', import.meta.url), 'utf8'),\n  readFile(new URL('../src/randapp/insert-form.css', import.meta.url), 'utf8'),\n  readFile(new URL('../src/randapp/Home.jsx', import.meta.url), 'utf8'),\n  readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8'),\n  readFile(new URL('../src/main.jsx', import.meta.url), 'utf8'),\n])\n\ntest('all RandApp pages reserve bottom space for nav, safe-area and global FAB', () => {\n  assert.match(shellCss, /--rs-content-bottom-clearance:[^;]*--rs-nav-h[^;]*--rs-safe-bottom[^;]*--rs-fab-h/)\n  assert.match(shellCss, /\\.rs-content\\s*\\{[\\s\\S]*?var\\(--rs-content-bottom-clearance\\)/)\n})\n\ntest('Housekeeping completion alert participates in page flow instead of covering the screen', () => {\n  assert.doesNotMatch(hkCss, /\\.rs-hk-alert\\{[^}]*position:fixed/)\n  assert.match(hkCss, /\\.rs-hk-alert\\{[^}]*position:relative/)\n  assert.match(shell, /<HousekeepingCompletionAlerts \/>/)\n  assert.doesNotMatch(main, /HousekeepingCompletionAlerts/)\n})\n\ntest('issue photo preview does not use absolute negative overlap compensation', () => {\n  const match = insertCss.match(/\\.rs-form:has\\(\\[data-testid=\\\"issue-title-input\\\"\\]\\)[^\\n]*\\.rs-photo-preview\\{([^}]*)\\}/)\n  assert.ok(match, 'photo preview rule missing')\n  assert.doesNotMatch(match[1], /position:absolute|margin(?:-top)?:\\s*-/)\n  assert.match(match[1], /position:static/)\n})\n\ntest('mobile Home widget grid stays inside its container without negative gutter expansion', () => {\n  assert.doesNotMatch(home, /rs-widget-grid-shell\\{margin-inline:-/)\n  assert.doesNotMatch(home, /rs-widget-grid-shell\\{[^}]*width:calc\\(100%\\s*\\+/)\n})\n""")
