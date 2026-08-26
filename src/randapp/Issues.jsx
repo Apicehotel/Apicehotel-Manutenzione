@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTEL_LOCATIONS } from '../locations.js'
+import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, readPhotoAsDataUrl } from './helpers.js'
@@ -49,10 +50,28 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
   const [mode, setMode] = useState('camera')
   const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null })
   const [saving, setSaving] = useState(false)
+  const [roomStatusSuggested, setRoomStatusSuggested] = useState(false)
   const validLocation = mode === 'camera'
     ? catalog.roomGroups.some((g) => g.rooms.includes(draft.location.trim()))
     : catalog.zones.some((z) => z.name === draft.location.trim())
   const pickPhoto = async (file) => { const photoData = await readPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })) }
+
+  // Suggerimento automatico dello Stato camera in base all'housekeeping di oggi
+  // (tabella camere_giorno / Slope): non forza nulla, resta sempre modificabile a mano.
+  useEffect(() => {
+    const room = draft.location.trim()
+    if (mode !== 'camera' || !room) return
+    let cancelled = false
+    hotelGioClient.from('camere_giorno').select('stato_slope').eq('hotel_id', hotel.id).eq('camera', room).maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const mappa = { libera: 'libera', arrivo: 'in_arrivo', partenza: 'fermata_cliente', fermata: 'fermata_cliente', b2b: 'fermata_cliente' }
+        const suggerito = mappa[data.stato_slope]
+        if (suggerito) { setDraft((c) => ({ ...c, roomStatus: suggerito })); setRoomStatusSuggested(true) }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [mode, draft.location, hotel.id])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -89,9 +108,10 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
       {mode === 'camera' && (
         <fieldset className="rs-fieldset">
           <legend>Stato camera (opzionale)</legend>
+          {roomStatusSuggested && <small className="rs-suggested-hint">🏠 Suggerito da Housekeeping (oggi) — puoi cambiarlo</small>}
           <div className="rs-chips">
             {ROOM_STATUS_OPTIONS.map(([k, l]) => (
-              <button type="button" key={k} className={`rs-chip ${draft.roomStatus === k ? 'active' : ''}`} onClick={() => setDraft({ ...draft, roomStatus: draft.roomStatus === k ? null : k })}>{l}</button>
+              <button type="button" key={k} className={`rs-chip ${draft.roomStatus === k ? 'active' : ''}`} onClick={() => { setRoomStatusSuggested(false); setDraft({ ...draft, roomStatus: draft.roomStatus === k ? null : k }) }}>{l}</button>
             ))}
           </div>
         </fieldset>
