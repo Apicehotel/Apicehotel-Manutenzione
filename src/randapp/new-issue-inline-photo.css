@@ -135,6 +135,27 @@
   pointer-events: none;
 }
 
+/* Anteprima a piena larghezza sotto Descrizione+Foto, non più schiacciata nel riquadro stretto. */
+[data-testid='new-issue-form'] > .rs-photo-preview-wrap--full {
+  grid-column: 1 / -1;
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  pointer-events: auto;
+  margin-top: 2px;
+}
+
+[data-testid='new-issue-form'] > .rs-photo-preview-wrap--full .rs-photo-preview {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 260px !important;
+  display: block;
+  object-fit: cover;
+  border-radius: 14px !important;
+}
+
 [data-testid='new-issue-form'] .rs-photo-remove {
   position: absolute;
   top: 6px;
