@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { changeOwnPin, updateOwnProfile } from '../auth-data.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
-import { logoFor } from './helpers.js'
+import { hotelById, logoFor } from './helpers.js'
 import NtfySetup from './NtfySetup.jsx'
 
 function Row({ label, value }) {
@@ -22,6 +22,12 @@ export default function Profile({ user, hotel }) {
   const [pinError,setPinError]=useState('')
 
   useEffect(()=>{ setEmail(user?.email||''); setPhone(user?.phone||'') },[user])
+
+  const accessibleHotelNames = Array.from(new Set([hotel?.id, ...(user?.hotels || [])]))
+    .filter(Boolean)
+    .map((id) => hotelById(id)?.name)
+    .filter(Boolean)
+    .join(' · ')
 
   const save=async(e)=>{
     e.preventDefault(); setBusy(true); setMessage(''); setError('')
@@ -55,7 +61,7 @@ export default function Profile({ user, hotel }) {
       <Card className="rs-card--pad">
         <Row label="Nome" value={user?.name} />
         <Row label="Ruolo" value={user?.role} />
-        <Row label="Struttura attiva" value={hotel?.name} />
+        <Row label="Strutture abilitate" value={accessibleHotelNames} />
       </Card>
     </section>
 
