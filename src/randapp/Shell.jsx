@@ -59,6 +59,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [insertOpen, setInsertOpen] = useState(false)
   const [urgentCreateOpen, setUrgentCreateOpen] = useState(false)
   const [settings, setSettings] = useState(null)
+  const [cacheBusy, setCacheBusy] = useState(false)
+  const [cacheStatus, setCacheStatus] = useState('')
   const hotel = hotelById(session.hotelId) || HOTELS[0]
 
   useEffect(() => {
@@ -89,6 +91,30 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     setDrawer(false)
     setView('home')
     setPersonalizeSignal((n) => n + 1)
+  }
+
+  const clearAppCache = async () => {
+    if (cacheBusy) return
+    const ok = window.confirm('Pulisci la cache dell’app? Sessione, PIN e preferenze resteranno invariati.')
+    if (!ok) return
+    setCacheBusy(true)
+    setCacheStatus('Pulizia…')
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((registration) => registration.update().catch(() => undefined)))
+      }
+      setCacheStatus('Cache pulita')
+      window.setTimeout(() => window.location.reload(), 500)
+    } catch (error) {
+      console.error('Cache cleanup failed', error)
+      setCacheStatus('Errore pulizia')
+      setCacheBusy(false)
+    }
   }
 
   const pickInsert = (id) => {
@@ -172,6 +198,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
               <ThemeControl />
               <span className="rs-sidebar__label">Dimensione interfaccia</span>
               <UiSizeControl />
+              <span className="rs-sidebar__label">Sistema</span>
+              <button className="rs-sidebar__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span></button>
             </div>
           </div>
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
@@ -248,6 +276,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
               </button>
               <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
               <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
+              <span className="rs-drawer__label">Sistema</span>
+              <button className="rs-drawer__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="drawer-clear-cache">
+                <Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span><i><Icon name="chevronRight" /></i>
+              </button>
             </div>
             <button className="rs-drawer__item rs-drawer__item--danger" onClick={onLogout} data-testid="drawer-logout">
               <Icon name="logout" /> <span>Esci</span>
