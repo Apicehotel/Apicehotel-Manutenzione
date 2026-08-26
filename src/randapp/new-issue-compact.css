@@ -1,0 +1,283 @@
+/* New issue form — compact operational density.
+   Loaded after mobile-nav-tune.css to override only the creation form. */
+
+[data-testid='new-issue-form'] {
+  width: min(100%, 920px);
+  margin-inline: auto;
+  gap: 16px;
+  padding: 0 0 12px;
+}
+
+[data-testid='new-issue-form'] .rs-form__head {
+  gap: 10px;
+  padding-bottom: 0;
+}
+
+[data-testid='new-issue-form'] .rs-form__head h2 {
+  font-size: 1.2rem;
+}
+
+[data-testid='new-issue-form'] .rs-form__head p {
+  margin-top: 2px;
+  font-size: .78rem;
+}
+
+[data-testid='new-issue-form'] .rs-field,
+[data-testid='new-issue-form'] .rs-fieldset {
+  gap: 7px;
+}
+
+[data-testid='new-issue-form'] .rs-field__label,
+[data-testid='new-issue-form'] .rs-fieldset legend {
+  color: var(--rs-text);
+  font-family: 'Sora', 'Manrope', system-ui, sans-serif;
+  font-size: .94rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+[data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented {
+  min-height: 48px;
+  margin-bottom: 8px !important;
+  padding: 3px;
+  border-radius: 15px;
+}
+
+[data-testid='new-issue-form'] .rs-autocomplete > .rs-segmented button {
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: .9rem;
+  font-weight: 750;
+}
+
+[data-testid='new-issue-form'] .rs-input {
+  min-height: 50px;
+  border-radius: 15px;
+  padding-inline: 14px;
+}
+
+[data-testid='new-issue-form'] .rs-input > .rs-icon {
+  width: 20px;
+  height: 20px;
+}
+
+[data-testid='new-issue-form'] .rs-input input {
+  font-size: .94rem;
+}
+
+/* Default choice groups use natural-width pills rather than giant tiles. */
+[data-testid='new-issue-form'] .rs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+[data-testid='new-issue-form'] .rs-chip {
+  min-height: 40px;
+  width: auto;
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 13px;
+  border-radius: 999px;
+  line-height: 1.15;
+  text-align: center;
+  font-size: .86rem;
+  color: var(--rs-text);
+  background: color-mix(in srgb, var(--rs-surface-2) 92%, transparent);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rs-cyan) 24%, transparent);
+}
+
+/* Urgency remains a clear 3-way control, but without oversized height. */
+[data-testid='new-issue-form'] .rs-chips:has([data-testid^='urgency-']) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 460px;
+}
+
+[data-testid='new-issue-form'] [data-testid^='urgency-'] {
+  width: 100%;
+  min-height: 42px;
+  padding-inline: 8px;
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.high {
+  background: color-mix(in srgb, var(--rs-danger) 13%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-danger) 52%, transparent);
+  color: var(--rs-text);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.mid {
+  background: color-mix(in srgb, var(--rs-warn) 14%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-warn) 55%, transparent);
+  color: var(--rs-text);
+}
+
+[data-testid='new-issue-form'] .rs-chip.active.low {
+  background: color-mix(in srgb, var(--rs-ok) 12%, var(--rs-surface-2));
+  border-color: color-mix(in srgb, var(--rs-ok) 46%, transparent);
+  color: var(--rs-text);
+}
+
+html[data-theme='light'] [data-testid='new-issue-form'] [data-testid^='urgency-'],
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.high,
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.mid,
+html[data-theme='light'] [data-testid='new-issue-form'] .rs-chip.active.low {
+  color: #111827 !important;
+}
+
+[data-testid='new-issue-form'] .rs-textarea {
+  min-height: 112px;
+  resize: vertical;
+  border-radius: 16px;
+  padding: 13px 15px;
+  font-size: .94rem;
+  line-height: 1.45;
+}
+
+[data-testid='new-issue-form'] .rs-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action {
+  min-height: 50px;
+  width: auto;
+  flex: 0 1 auto;
+  flex-direction: row;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: .78rem;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action .rs-icon {
+  width: 20px;
+  height: 20px;
+}
+
+[data-testid='new-issue-form'] .rs-photo-preview {
+  width: min(100%, 260px);
+  max-height: 150px;
+  margin-top: 2px;
+  align-self: flex-start;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+[data-testid='new-issue-form'] .rs-form-actions {
+  display: grid;
+  grid-template-columns: minmax(96px, .62fr) minmax(0, 1.38fr);
+  gap: 9px;
+  align-items: stretch;
+  padding-right: 0;
+}
+
+[data-testid='new-issue-form'] .rs-form-actions .rs-btn {
+  min-height: 50px;
+  border-radius: 15px;
+  padding-inline: 12px;
+  font-size: .9rem;
+}
+
+/* The global + is redundant while the new-issue form is already open. */
+.rs-app:has([data-testid='new-issue-form']) .rs-navfab {
+  display: none;
+}
+
+/* With the FAB hidden, normal bottom-nav clearance is enough. */
+.rs-app:has([data-testid='new-issue-form']) .rs-content {
+  padding-bottom: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 24px);
+}
+
+@media (max-width: 430px) {
+  [data-testid='new-issue-form'] {
+    gap: 14px;
+  }
+
+  [data-testid='new-issue-form'] .rs-chip {
+    min-height: 38px;
+    padding: 7px 11px;
+    font-size: .83rem;
+  }
+
+  [data-testid='new-issue-form'] .rs-chips:not(:has([data-testid^='urgency-'])) {
+    gap: 6px;
+  }
+
+  [data-testid='new-issue-form'] .rs-textarea {
+    min-height: 104px;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-action {
+    width: 100%;
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 350px) {
+  [data-testid='new-issue-form'] .rs-form-actions {
+    grid-template-columns: 1fr;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 700px) {
+  [data-testid='new-issue-form'] {
+    gap: 19px;
+    padding-inline: 6px;
+  }
+
+  [data-testid='new-issue-form'] .rs-chip {
+    min-height: 42px;
+    padding-inline: 14px;
+  }
+
+  [data-testid='new-issue-form'] .rs-textarea {
+    min-height: 126px;
+  }
+
+  [data-testid='new-issue-form'] .rs-form-actions {
+    grid-template-columns: 150px minmax(240px, 330px);
+    justify-content: end;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-testid='new-issue-form'] {
+    gap: 22px;
+    padding: 8px 14px 28px;
+  }
+
+  [data-testid='new-issue-form'] .rs-field__label,
+  [data-testid='new-issue-form'] .rs-fieldset legend {
+    font-size: 1rem;
+  }
+
+  [data-testid='new-issue-form'] .rs-chip {
+    min-height: 44px;
+    font-size: .9rem;
+  }
+
+  [data-testid='new-issue-form'] .rs-textarea {
+    min-height: 138px;
+  }
+}
