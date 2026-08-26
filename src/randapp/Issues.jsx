@@ -3,7 +3,7 @@ import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
-import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, readPhotoAsDataUrl } from './helpers.js'
+import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, readPhotoAsDataUrl, compressPhotoAsDataUrl } from './helpers.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -54,7 +54,7 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
   const validLocation = mode === 'camera'
     ? catalog.roomGroups.some((g) => g.rooms.includes(draft.location.trim()))
     : catalog.zones.some((z) => z.name === draft.location.trim())
-  const pickPhoto = async (file) => { const photoData = await readPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })) }
+  const pickPhoto = async (file) => { const photoData = await compressPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })) }
 
   // Suggerimento automatico dello Stato camera in base all'housekeeping di oggi
   // (tabella camere_giorno / Slope): non forza nulla, resta sempre modificabile a mano.

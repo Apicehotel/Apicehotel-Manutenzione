@@ -64,6 +64,31 @@ export const readPhotoAsDataUrl = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file)
 })
 
+// Ridimensiona (lato lungo max 1000px) e ricomprime in JPEG q.62 prima del salvataggio,
+// per non appesantire lo storage. Ritorna null se il file non e' un'immagine valida.
+export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
+  if (!file || !file.size) return resolve(null)
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const img = new Image()
+    img.onload = () => {
+      const max = 1000
+      let { width: w, height: h } = img
+      if (w > h && w > max) { h = Math.round((h * max) / w); w = max }
+      else if (h > max) { w = Math.round((w * max) / h); h = max }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', 0.62))
+    }
+    img.onerror = () => resolve(null)
+    img.src = typeof e.target.result === 'string' ? e.target.result : ''
+  }
+  reader.onerror = () => resolve(null)
+  reader.readAsDataURL(file)
+})
+
 export function csvCell(value = '') { return `"${String(value).replaceAll('"', '""')}"` }
 export function exportIssuesCsv(issues, hotel) {
   const headers = ['Struttura', 'Camera o zona', 'Problema', 'Gravità', 'Stato', 'Reparto', 'Categoria', 'Data']
