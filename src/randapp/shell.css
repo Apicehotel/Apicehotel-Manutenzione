@@ -38,6 +38,8 @@
   --rs-safe-bottom: env(safe-area-inset-bottom, 0px);
   --rs-scale: 1;
   --rs-nav-h: calc(68px * var(--rs-scale));
+  --rs-fab-h: calc(58px * var(--rs-scale));
+  --rs-content-bottom-clearance: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + var(--rs-fab-h) + 36px * var(--rs-scale));
   --rs-header-h: calc(62px * var(--rs-scale));
   --rs-max: 1180px;
   font-synthesis: none;
@@ -92,7 +94,7 @@ a { color: var(--rs-cyan); }
   width: 100%;
   max-width: var(--rs-max);
   margin: 0 auto;
-  padding: calc(16px * var(--rs-scale)) calc(16px * var(--rs-scale)) calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 20px * var(--rs-scale));
+  padding: calc(16px * var(--rs-scale)) calc(16px * var(--rs-scale)) var(--rs-content-bottom-clearance);
   overflow-x: hidden;
 }
 .rs-content--flush { padding-bottom: calc(var(--rs-safe-bottom) + 20px); }
@@ -157,7 +159,7 @@ a { color: var(--rs-cyan); }
 .rs-navbtn--fab { }
 .rs-navfab {
   position: fixed; right: 18px; bottom: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 16px);
-  z-index: 45; width: calc(58px * var(--rs-scale)); height: calc(58px * var(--rs-scale)); border-radius: 20px; border: 0; cursor: pointer;
+  z-index: 45; width: var(--rs-fab-h); height: var(--rs-fab-h); border-radius: 20px; border: 0; cursor: pointer;
   display: grid; place-items: center; color: #04121e;
   background: var(--rs-grad-primary);
   box-shadow: 0 14px 34px -10px rgba(34, 211, 238, .6), 0 0 0 1px rgba(255,255,255,.14) inset;
@@ -525,13 +527,6 @@ a { color: var(--rs-cyan); }
   position: relative;
   z-index: 0;
   margin-top: 0;
-  padding-bottom: clamp(88px, 14vh, 132px);
-}
-
-@media (min-width: 1024px) {
-  [data-testid='issues-list'] {
-    padding-bottom: 24px;
-  }
 }
 
 .rs-page-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 4px 4px; }

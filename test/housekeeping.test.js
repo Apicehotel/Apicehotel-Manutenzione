@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('Housekeeping v2 mantiene offline, privacy, griglia 4/3/2 e ruoli', async()=>{
-  const [entry,source,css,pkg,config,helpers,main,alerts,migration] = await Promise.all([
+  const [entry,source,css,pkg,config,helpers,main,shell,alerts,migration] = await Promise.all([
     readFile(new URL('../src/housekeeping.jsx',import.meta.url),'utf8'),
     readFile(new URL('../src/housekeeping-v2.jsx',import.meta.url),'utf8'),
     readFile(new URL('../src/housekeeping-v2.css',import.meta.url),'utf8'),
@@ -11,6 +11,7 @@ test('Housekeeping v2 mantiene offline, privacy, griglia 4/3/2 e ruoli', async()
     readFile(new URL('../src/config.js',import.meta.url),'utf8'),
     readFile(new URL('../src/randapp/helpers.js',import.meta.url),'utf8'),
     readFile(new URL('../src/main.jsx',import.meta.url),'utf8'),
+    readFile(new URL('../src/randapp/Shell.jsx',import.meta.url),'utf8'),
     readFile(new URL('../src/randapp/HousekeepingCompletionAlerts.jsx',import.meta.url),'utf8'),
     readFile(new URL('../supabase/migrations/20260825201500_housekeeping_completion_realtime.sql',import.meta.url),'utf8'),
   ])
@@ -34,7 +35,9 @@ test('Housekeeping v2 mantiene offline, privacy, griglia 4/3/2 e ruoli', async()
   assert.match(config,/['"]Capo Governante['"]/)
   assert.match(config,/housekeeping_notifications/)
   assert.match(helpers,/canViewHousekeeping[^\n]*Capo Governante/)
-  assert.match(main,/HousekeepingCompletionAlerts/)
+  assert.doesNotMatch(main,/HousekeepingCompletionAlerts/)
+  assert.match(shell,/import HousekeepingCompletionAlerts/)
+  assert.match(shell,/<HousekeepingCompletionAlerts \/>/)
   assert.match(alerts,/housekeeping_completions/)
   assert.match(alerts,/Reception/)
   assert.match(migration,/trg_sync_housekeeping_completion_from_work/)
