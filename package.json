@@ -13,11 +13,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
+    "@tanstack/react-query": "^5.102.5",
     "dexie": "^4.4.4",
+    "lucide-react": "^1.34.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-grid-layout": "^2.2.4",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
