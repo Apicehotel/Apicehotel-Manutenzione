@@ -1,0 +1,128 @@
+/* New issue: description + single photo tile as one responsive row. */
+[data-testid='new-issue-form'] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.34fr);
+  column-gap: 12px !important;
+  row-gap: var(--issue-gap, 16px) !important;
+  align-items: start;
+}
+
+[data-testid='new-issue-form'] > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* Description field sits left, photo fieldset sits right. */
+[data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) {
+  grid-column: 1;
+  margin: 0 !important;
+}
+
+[data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) {
+  grid-column: 2;
+  margin: 0 !important;
+  align-self: stretch;
+}
+
+[data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) legend {
+  margin-bottom: 8px;
+}
+
+/* One visual photo tile: both real inputs share the same box. */
+[data-testid='new-issue-form'] .rs-photo-actions {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0 !important;
+  width: 100% !important;
+  min-height: 118px;
+  border: 1px dashed color-mix(in srgb, var(--rs-cyan) 52%, var(--rs-line)) !important;
+  border-radius: 18px !important;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--rs-surface) 96%, transparent) !important;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action {
+  min-width: 0;
+  min-height: 118px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 10px 6px !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action + .rs-photo-action {
+  border-left: 1px solid color-mix(in srgb, var(--rs-line) 78%, transparent) !important;
+}
+
+[data-testid='new-issue-form'] .rs-photo-action .rs-icon {
+  width: 22px !important;
+  height: 22px !important;
+  color: var(--rs-cyan);
+}
+
+[data-testid='new-issue-form'] .rs-photo-action strong {
+  font-size: .72rem !important;
+  line-height: 1.15;
+  text-align: center;
+}
+
+[data-testid='new-issue-form'] .rs-photo-preview {
+  grid-column: 1 / -1;
+  width: 100% !important;
+  height: 118px !important;
+  max-height: 118px !important;
+  margin-top: 8px;
+  object-fit: cover;
+  border-radius: 18px !important;
+}
+
+/* Description height matches photo tile for a balanced row. */
+[data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
+  min-height: 118px !important;
+  height: 118px !important;
+  resize: vertical;
+}
+
+/* Keep actions full-width below the pair. */
+[data-testid='new-issue-form'] > .rs-form-actions {
+  grid-column: 1 / -1;
+}
+
+/* Tight phones: do not force a cramped side-by-side pair. */
+@media (max-width: 359px) {
+  [data-testid='new-issue-form'] {
+    grid-template-columns: 1fr;
+  }
+
+  [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']),
+  [data-testid='new-issue-form'] > .rs-fieldset:has(.rs-photo-actions) {
+    grid-column: 1;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions {
+    min-height: 88px;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-action {
+    min-height: 88px !important;
+    flex-direction: row !important;
+  }
+}
+
+/* Larger layouts: give description more room while preserving the single tile. */
+@media (min-width: 700px) {
+  [data-testid='new-issue-form'] {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.30fr);
+    column-gap: 16px !important;
+  }
+
+  [data-testid='new-issue-form'] .rs-photo-actions,
+  [data-testid='new-issue-form'] .rs-photo-action,
+  [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
+    min-height: 136px !important;
+    height: 136px !important;
+  }
+}
