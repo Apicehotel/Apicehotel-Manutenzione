@@ -132,6 +132,29 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
   )
 })
 
+function IssuePhoto({ src, alt }) {
+  const [failed, setFailed] = useState(false)
+  const [open, setOpen] = useState(false)
+  useEffect(() => { setFailed(false); setOpen(false) }, [src])
+  useEffect(() => {
+    if (!open) return undefined
+    const close = (event) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', close)
+    return () => document.removeEventListener('keydown', close)
+  }, [open])
+  if (!src || failed) return <div className="rs-photo-unavailable"><Icon name="image" /><span>Foto non disponibile</span></div>
+  return <>
+    <button type="button" className="rs-detail-photo-button" onClick={() => setOpen(true)} aria-label={`Ingrandisci ${alt}`}>
+      <img className="rs-detail-photo" src={src} alt={alt} onError={() => setFailed(true)} />
+      <span className="rs-detail-photo-hint">Tocca per ingrandire</span>
+    </button>
+    {open && <div className="rs-photo-lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={() => setOpen(false)}>
+      <button type="button" className="rs-photo-lightbox__close" onClick={() => setOpen(false)} aria-label="Chiudi foto">×</button>
+      <img src={src} alt={alt} onError={() => { setFailed(true); setOpen(false) }} onClick={(event) => event.stopPropagation()} />
+    </div>}
+  </>
+}
+
 function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -167,12 +190,12 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
         <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
         {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
       </dl>
-      {issue.photoData && <img className="rs-detail-photo" src={issue.photoData} alt="Foto segnalazione" />}
+      {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
 
       {issue.status === 'tecnico' && <div className="rs-note rs-note--tecnico">Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong>{issue.technicianName && <> · assegnato a <strong>{issue.technicianName}</strong></>}</div>}
       {issue.status === 'waiting' && <div className="rs-note rs-note--waiting">In attesa del pezzo: <strong>{issue.pieceName}</strong></div>}
       {issue.pieceReplaced && <div className="rs-note">Pezzo sostituito: <strong>{issue.pieceReplaced}</strong>{issue.pieceReplacedBy && <> · {issue.pieceReplacedBy}</>}</div>}
-      {issue.status === 'done' && <div className="rs-note rs-note--done">Completata da <strong>{issue.completedBy}</strong>{issue.completionNote && <p style={{ margin: '6px 0 0' }}>{issue.completionNote}</p>}{issue.completionPhotoData && <img className="rs-detail-photo" src={issue.completionPhotoData} alt="Foto riparazione" />}</div>}
+      {issue.status === 'done' && <div className="rs-note rs-note--done">Completata da <strong>{issue.completedBy}</strong>{issue.completionNote && <p style={{ margin: '6px 0 0' }}>{issue.completionNote}</p>}{(issue.completionPhotoData || issue.completionPhotoPath) && <IssuePhoto src={issue.completionPhotoData} alt="Foto riparazione" />}</div>}
 
       {issue.status === 'todo' && canComplete && !asking && (
         <div className="rs-actions-stack">

@@ -12,8 +12,10 @@ const tokenId = (value) => String(value).slice(TOKEN_PREFIX.length)
 
 function dataUrlToBlob(dataUrl) {
   const [head, body] = String(dataUrl).split(',', 2)
+  if (!body) throw new Error('Foto vuota o non valida')
   const mime = head.match(/^data:([^;]+)/)?.[1] || 'image/jpeg'
-  const binary = atob(body || '')
+  const binary = atob(body)
+  if (!binary.length) throw new Error('Foto vuota o non valida')
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
   return new Blob([bytes], { type: mime })
@@ -39,7 +41,7 @@ async function materializePhoto(value) {
   if (isOfflineToken(value)) {
     const id = tokenId(value)
     const row = await getOfflineBlob(id)
-    if (!row?.blob) throw new Error('Foto offline non più disponibile sul dispositivo')
+    if (!row?.blob || row.blob.size <= 0) throw new Error('Foto offline non più disponibile o vuota sul dispositivo')
     return { blob: row.blob, cleanupId: id }
   }
   return null
@@ -54,6 +56,7 @@ export async function uploadPhotoValue(value, { hotelId, entity = 'issues', kind
   if (!supabase) throw new Error('Supabase non configurato')
   if (!hotelId) throw new Error('hotelId mancante per upload foto')
   const materialized = await materializePhoto(value)
+  if (!materialized?.blob || materialized.blob.size <= 0) throw new Error('Foto vuota: caricamento annullato')
   const ext = extensionFor(materialized.blob)
   const objectId = materialized.cleanupId || uuid()
   const path = `${hotelId}/${entity}/${objectId}/${kind}.${ext}`
