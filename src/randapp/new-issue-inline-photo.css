@@ -48,10 +48,17 @@
   width: 100% !important;
   height: 118px !important;
   min-height: 118px !important;
-  border: 1px dashed color-mix(in srgb, var(--rs-cyan) 55%, var(--rs-line)) !important;
-  border-radius: 18px !important;
+  border: 1px solid var(--rs-line) !important;
+  border-radius: 17px !important;
   overflow: hidden;
-  background: color-mix(in srgb, var(--rs-surface) 97%, transparent) !important;
+  background: var(--rs-surface) !important;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+[data-testid='new-issue-form'] .rs-photo-actions:focus-within,
+[data-testid='new-issue-form'] .rs-photo-actions:has(.rs-photo-action:active) {
+  border-color: var(--rs-line-strong) !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, .14);
 }
 
 [data-testid='new-issue-form'] .rs-photo-action {
@@ -97,7 +104,7 @@
 [data-testid='new-issue-form'] .rs-photo-action .rs-icon {
   width: 25px !important;
   height: 25px !important;
-  color: var(--rs-cyan);
+  color: var(--rs-text-2);
 }
 
 [data-testid='new-issue-form'] .rs-photo-action strong {

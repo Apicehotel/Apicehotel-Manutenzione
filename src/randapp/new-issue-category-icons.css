@@ -6,7 +6,7 @@
   color: var(--rs-text-2);
   font-weight: 800;
 }
-[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(1)::before { content: '◉'; }
+[data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(1)::before { content: '⌀'; }
 [data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(2)::before { content: 'ϟ'; }
 [data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(3)::before { content: '❄'; }
 [data-testid='new-issue-form'] .rs-fieldset:has(> .rs-chips > .rs-chip:nth-child(5)) .rs-chip:nth-child(4)::before { content: '▱'; }
