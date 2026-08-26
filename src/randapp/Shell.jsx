@@ -53,6 +53,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [users, setUsers] = useState([])
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [personalizeSignal, setPersonalizeSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
@@ -84,6 +85,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     setView(item.id)
   }
 
+  const openHomePersonalize = () => {
+    setDrawer(false)
+    setView('home')
+    setPersonalizeSignal((n) => n + 1)
+  }
+
   const pickInsert = (id) => {
     setInsertOpen(false)
     if (id === 'issue') {
@@ -107,7 +114,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} />
 
   const renderView = () => {
-    if (view === 'home') return <Home user={user} hotel={hotel} onNavigate={(v) => pick({ id: v })} />
+    if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
 
@@ -159,6 +166,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           <div className="rs-sidebar__scroll">
             <NavGroups user={user} hotel={hotel} variant="sidebar" current={view} onPick={pick} />
             <div className="rs-sidebar__prefs">
+              <span className="rs-sidebar__label">Home</span>
+              <button className="rs-sidebar__item" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span></button>
               <span className="rs-sidebar__label">Tema</span>
               <ThemeControl />
               <span className="rs-sidebar__label">Dimensione interfaccia</span>
@@ -234,6 +243,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <div className="rs-drawer__scroll">
               <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} />
               <span className="rs-drawer__label">Preferenze</span>
+              <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home">
+                <Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i>
+              </button>
               <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
               <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
             </div>
