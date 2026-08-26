@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
+// Applica la spaziatura approvata nel mockup 2.
 const path = 'src/randapp/Home.jsx'
 let source = readFileSync(path, 'utf8')
 
