@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchIssues } from '../issues-data.js'
 import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
+import { fetchOperationalWeather } from '../weather-data.js'
 import { Card, Icon, Spinner } from './ui.jsx'
 import { firstName, can, isToday, URGENCY_META } from './helpers.js'
 
 const MAX_WIDGETS = 9
-const DEFAULT_WIDGET_ORDER = ['issues', 'urgent', 'interventions', 'quick', 'recent']
+const DEFAULT_WIDGET_ORDER = ['weather', 'issues', 'urgent', 'interventions', 'quick', 'recent']
 
 const storageKey = (user, hotel) => `randapp.home.widgets.v1:${user?.id || user?.name || 'user'}:${hotel?.id || 'hotel'}`
 
@@ -38,6 +39,8 @@ export default function Home({ user, hotel, onNavigate }) {
   const [issues, setIssues] = useState([])
   const [urgents, setUrgents] = useState([])
   const [planned, setPlanned] = useState([])
+  const [weather, setWeather] = useState(null)
+  const [weatherError, setWeatherError] = useState('')
   const [editing, setEditing] = useState(false)
   const [layout, setLayout] = useState(() => loadLayout(user, hotel))
 
@@ -52,15 +55,25 @@ export default function Home({ user, hotel, onNavigate }) {
 
   useEffect(() => {
     let active = true
+    const controller = new AbortController()
     setLoading(true)
-    Promise.allSettled([fetchIssues(hotel.id), fetchUrgents(hotel.id), fetchPlanned(hotel.id)]).then((res) => {
+    setWeather(null)
+    setWeatherError('')
+    Promise.allSettled([
+      fetchIssues(hotel.id),
+      fetchUrgents(hotel.id),
+      fetchPlanned(hotel.id),
+      fetchOperationalWeather(hotel.id, { signal: controller.signal }),
+    ]).then((res) => {
       if (!active) return
       setIssues(res[0].value?.issues || [])
       setUrgents(res[1].value?.items || [])
       setPlanned(res[2].value?.items || [])
+      if (res[3].status === 'fulfilled') setWeather(res[3].value)
+      else setWeatherError('Meteo temporaneamente non disponibile')
       setLoading(false)
     })
-    return () => { active = false }
+    return () => { active = false; controller.abort() }
   }, [hotel.id])
 
   const openIssues = issues.filter((i) => i.status !== 'done')
@@ -69,6 +82,10 @@ export default function Home({ user, hotel, onNavigate }) {
   const recent = [...issues].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4)
 
   const widgets = useMemo(() => ({
+    weather: {
+      title: 'Meteo operativo',
+      render: () => <Card className={`rs-card--pad rs-home-widget__card rs-weather-widget rs-weather-widget--${weather?.level || 'ok'}`} data-testid="weather-widget"><div className="rs-section__head"><h2><Icon name="warning" /> Meteo operativo</h2>{weather?.level === 'danger' ? <span className="rs-badge">ALLARME</span> : weather?.level === 'warning' ? <span className="rs-badge">ATTENZIONE</span> : <span className="rs-badge">OK</span>}</div>{weatherError ? <p className="rs-weather-widget__message">{weatherError}</p> : weather ? <><p className="rs-weather-widget__message"><b>{weather.message}</b></p><div className="rs-weather-widget__metrics"><span>💨 Raffiche <b>{weather.gust} km/h</b></span><span>🌧️ Pioggia <b>{weather.rainProbability}%</b></span></div><small>Aggiornato automaticamente · allarmi ntfy indipendenti dal widget</small></> : <p className="rs-weather-widget__message">Caricamento meteo…</p>}</Card>,
+    },
     issues: {
       title: 'Segnalazioni aperte',
       render: () => <Card as="button" className="rs-stat rs-home-widget__card" onClick={() => !editing && onNavigate?.('issues')} data-testid="stat-issues"><span className="rs-stat__icon"><Icon name="issues" /></span><b className="rs-stat__count">{openIssues.length}</b><h3>Segnalazioni aperte</h3><p>{openIssues.length ? 'Da gestire' : 'Tutto in ordine'}</p></Card>,
@@ -89,7 +106,7 @@ export default function Home({ user, hotel, onNavigate }) {
       title: 'Attività recenti',
       render: () => <Card className="rs-card--pad rs-home-widget__card rs-home-widget__recent"><div className="rs-section__head"><h2>Attività recenti</h2>{recent.length > 0 && <button onClick={() => onNavigate?.('issues')}>Tutte</button>}</div>{recent.length === 0 ? <p style={{ margin: 0, color: 'var(--rs-text-2)' }}>Nessuna segnalazione registrata per {hotel.name}.</p> : <div className="rs-list">{recent.map((issue) => <button key={issue.id} className="rs-issue rs-home-recent" onClick={() => onNavigate?.('issues')} data-testid={`recent-${issue.id}`}><span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} /><span className="rs-issue__main"><span className="rs-issue__top"><span className="rs-issue__room">{issue.room}</span></span><span className="rs-issue__title">{issue.title}</span><span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}</span></span></button>)}</div>}</Card>,
     },
-  }), [editing, hotel.name, onNavigate, openIssues.length, openUrgents.length, recent, todayInterventions.length, user])
+  }), [editing, hotel.name, onNavigate, openIssues.length, openUrgents.length, recent, todayInterventions.length, user, weather, weatherError])
 
   const visibleIds = layout.order.filter((id) => !layout.hidden.includes(id)).slice(0, MAX_WIDGETS)
   const hiddenIds = DEFAULT_WIDGET_ORDER.filter((id) => layout.hidden.includes(id))
@@ -125,7 +142,15 @@ export default function Home({ user, hotel, onNavigate }) {
         .rs-home-recent{width:100%;border:0;background:transparent;color:inherit;text-align:left}
         .rs-home-widget__recent .rs-list{margin-top:8px}
         .rs-home-widget__quick .rs-quick{margin-top:10px}
-        @media (max-width:720px){.rs-home-grid{gap:8px}.rs-home-widget>.rs-home-widget__card{min-height:132px;padding-left:12px;padding-right:12px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{transform:scale(.85);transform-origin:left top}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.7rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.84rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{font-size:.72rem}}
+        .rs-weather-widget{display:flex;flex-direction:column;justify-content:center;gap:8px}
+        .rs-weather-widget .rs-section__head{margin:0}
+        .rs-weather-widget .rs-section__head h2{display:flex;align-items:center;gap:7px;margin:0}
+        .rs-weather-widget__message{margin:0;color:var(--rs-text)}
+        .rs-weather-widget__metrics{display:flex;gap:10px;flex-wrap:wrap;color:var(--rs-text-2);font-size:.88rem}
+        .rs-weather-widget small{color:var(--rs-text-2)}
+        .rs-weather-widget--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}
+        .rs-weather-widget--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.7)}
+        @media (max-width:720px){.rs-home-grid{gap:8px}.rs-home-widget>.rs-home-widget__card{min-height:132px;padding-left:12px;padding-right:12px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{transform:scale(.85);transform-origin:left top}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.7rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.84rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{font-size:.72rem}.rs-weather-widget__metrics{font-size:.78rem}}
         @media (max-width:390px){.rs-home-grid{gap:6px}.rs-home-widget>.rs-home-widget__card{min-height:122px}.rs-home-grid[style*="--home-cols:3"] .rs-stat__icon{display:none}.rs-home-grid[style*="--home-cols:3"] .rs-stat__count{font-size:1.5rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat h3{font-size:.76rem}.rs-home-grid[style*="--home-cols:3"] .rs-stat p{display:none}}
       `}</style>
 
