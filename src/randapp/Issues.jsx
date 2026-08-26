@@ -120,7 +120,7 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
         <legend>Foto (opzionale)</legend>
         <div className="rs-photo-actions">
           <label className="rs-photo-action"><input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} /><Icon name="image" /><strong>Galleria</strong></label>
-          <label className="rs-photo-action"><input type="file" onChange={(e) => pickPhoto(e.target.files?.[0])} /><Icon name="file" /><strong>File</strong></label>
+          <label className="rs-photo-action"><input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} /><Icon name="file" /><strong>File</strong></label>
         </div>
         {draft.photoData && <img className="rs-photo-preview" src={draft.photoData} alt="Anteprima" />}
         {!draft.photoData && draft.photoName && <small className="photo-selected">Selezionato: {draft.photoName}</small>}
