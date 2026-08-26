@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchIssues } from '../issues-data.js'
 import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
 import { Card, Icon, Spinner } from './ui.jsx'
-import { firstName, can, isToday, URGENCY_META } from './helpers.js'
+import {
+  firstName, can, isToday, URGENCY_META,
+  canViewUrgent, canViewPlanned, canViewHousekeeping,
+} from './helpers.js'
 
 export default function Home({ user, hotel, onNavigate }) {
   const [loading, setLoading] = useState(true)
@@ -11,18 +14,30 @@ export default function Home({ user, hotel, onNavigate }) {
   const [urgents, setUrgents] = useState([])
   const [planned, setPlanned] = useState([])
 
+  const permissions = useMemo(() => ({
+    urgent: canViewUrgent(user),
+    interventions: canViewPlanned(user),
+    housekeeping: canViewHousekeeping(user),
+  }), [user])
+
   useEffect(() => {
     let active = true
     setLoading(true)
-    Promise.allSettled([fetchIssues(hotel.id), fetchUrgents(hotel.id), fetchPlanned(hotel.id)]).then((res) => {
+
+    const requests = [fetchIssues(hotel.id)]
+    if (permissions.urgent) requests.push(fetchUrgents(hotel.id))
+    if (permissions.interventions) requests.push(fetchPlanned(hotel.id))
+
+    Promise.allSettled(requests).then((results) => {
       if (!active) return
-      setIssues(res[0].value?.issues || [])
-      setUrgents(res[1].value?.items || [])
-      setPlanned(res[2].value?.items || [])
+      let cursor = 0
+      setIssues(results[cursor++]?.value?.issues || [])
+      setUrgents(permissions.urgent ? (results[cursor++]?.value?.items || []) : [])
+      setPlanned(permissions.interventions ? (results[cursor++]?.value?.items || []) : [])
       setLoading(false)
     })
     return () => { active = false }
-  }, [hotel.id])
+  }, [hotel.id, permissions.urgent, permissions.interventions])
 
   const openIssues = issues.filter((i) => i.status !== 'done')
   const openUrgents = urgents.filter((u) => u.status !== 'completata')
@@ -30,10 +45,10 @@ export default function Home({ user, hotel, onNavigate }) {
   const recent = [...issues].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 4)
 
   const stats = [
-    { icon: 'issues', cls: '', count: openIssues.length, title: 'Segnalazioni aperte', sub: openIssues.length ? 'Da gestire' : 'Tutto in ordine', view: 'issues' },
-    { icon: 'warning', cls: 'warn', count: openUrgents.length, title: 'Urgenti', sub: openUrgents.length ? 'Richiedono azione' : 'Nessun avviso', view: 'urgent' },
-    { icon: 'wrench', cls: 'blue', count: todayInterventions.length, title: 'Interventi oggi', sub: 'Pianificati', view: 'interventions' },
-  ]
+    { icon: 'issues', cls: '', count: openIssues.length, title: 'Segnalazioni aperte', sub: openIssues.length ? 'Da gestire' : 'Tutto in ordine', view: 'issues', show: true },
+    { icon: 'warning', cls: 'warn', count: openUrgents.length, title: 'Urgenti', sub: openUrgents.length ? 'Richiedono azione' : 'Nessun avviso', view: 'urgent', show: permissions.urgent },
+    { icon: 'wrench', cls: 'blue', count: todayInterventions.length, title: 'Interventi oggi', sub: 'Pianificati', view: 'interventions', show: permissions.interventions },
+  ].filter((item) => item.show)
 
   return (
     <div data-testid="home-view">
@@ -66,12 +81,21 @@ export default function Home({ user, hotel, onNavigate }) {
               <button className="rs-quickbtn" onClick={() => onNavigate?.('issues')} data-testid="quick-open-issues">
                 <Icon name="issues" /> Vedi segnalazioni
               </button>
-              <button className="rs-quickbtn" onClick={() => onNavigate?.('urgent')} data-testid="quick-urgent">
-                <Icon name="warning" /> Avvisi urgenti
-              </button>
-              <button className="rs-quickbtn" onClick={() => onNavigate?.('interventions')} data-testid="quick-planning">
-                <Icon name="wrench" /> Interventi
-              </button>
+              {permissions.housekeeping && (
+                <button className="rs-quickbtn" onClick={() => onNavigate?.('housekeeping')} data-testid="quick-housekeeping">
+                  <Icon name="housekeeping" /> Housekeeping
+                </button>
+              )}
+              {permissions.urgent && (
+                <button className="rs-quickbtn" onClick={() => onNavigate?.('urgent')} data-testid="quick-urgent">
+                  <Icon name="warning" /> Avvisi urgenti
+                </button>
+              )}
+              {permissions.interventions && (
+                <button className="rs-quickbtn" onClick={() => onNavigate?.('interventions')} data-testid="quick-planning">
+                  <Icon name="wrench" /> Interventi
+                </button>
+              )}
             </div>
           </section>
 
