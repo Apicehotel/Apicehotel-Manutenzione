@@ -1,8 +1,5 @@
 name: temp-fix-issue-filters
-on:
-  push:
-    branches:
-      - fix/issue-filter-mobile
+on: [push]
 permissions:
   contents: write
 jobs:
@@ -11,99 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/issue-filter-mobile
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Patch issue filters
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/randapp/Issues.jsx')
-          s = p.read_text()
-          old = '''        <Segmented value={filter} onChange={setFilter}\n          options={FILTERS.map(([k, l]) => [k, l, k === 'all' ? issues.length : (counts[k] || 0)])} />'''
-          new = '''        <div className="rs-issue-filter-scroll" data-testid="issue-filters">\n          <Segmented value={filter} onChange={setFilter}\n            options={FILTERS.map(([k, l]) => [k, l, k === 'all' ? issues.length : (counts[k] || 0)])} />\n        </div>'''
-          if old not in s:
-              raise SystemExit('Segmented filter block not found')
-          p.write_text(s.replace(old, new, 1))
-
-          css = Path('src/randapp/shell.css')
-          c = css.read_text()
-          marker = '/* issue filters responsive */'
-          block = r'''
-
-/* issue filters responsive */
-.rs-issue-filter-scroll {
-  position: relative;
-  min-width: 0;
-  width: 100%;
-}
-
-.rs-issue-filter-scroll > .rs-segmented {
-  width: 100%;
-}
-
-@media (max-width: 720px) {
-  .rs-toolbar {
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-
-  .rs-issue-filter-scroll {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    padding: 2px 18px 4px 0;
-    margin-right: -2px;
-  }
-
-  .rs-issue-filter-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .rs-issue-filter-scroll > .rs-segmented {
-    width: max-content;
-    min-width: 100%;
-    display: inline-flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    padding: 4px;
-  }
-
-  .rs-issue-filter-scroll > .rs-segmented > button {
-    flex: 0 0 auto;
-    min-width: max-content;
-    white-space: nowrap;
-    scroll-snap-align: start;
-    padding-inline: 13px;
-  }
-
-  .rs-issue-filter-scroll > .rs-segmented > button span,
-  .rs-issue-filter-scroll > .rs-segmented > button small {
-    flex: 0 0 auto;
-  }
-
-  [data-testid="issues-list"] {
-    margin-top: 2px;
-  }
-}
-
-@media (min-width: 721px) {
-  .rs-issue-filter-scroll > .rs-segmented {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(max-content, 1fr);
-  }
-}
-'''
-          if marker not in c:
-              css.write_text(c.rstrip() + block + '\n')
-          PY
+      - run: python3 scripts/temp-fix-issue-filters.py
       - run: npm ci
       - run: npm run build
       - run: npm test -- --run
@@ -113,4 +23,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/randapp/Issues.jsx src/randapp/shell.css
           git diff --cached --quiet || git commit -m "Fix mobile issue filters"
-          git push origin HEAD:fix/issue-filter-mobile
+          git push
