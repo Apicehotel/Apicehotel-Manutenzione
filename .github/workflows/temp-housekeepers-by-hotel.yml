@@ -1,0 +1,26 @@
+name: temp-housekeepers-by-hotel
+on: [push]
+permissions:
+  contents: write
+jobs:
+  patch-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python3 scripts/temp-housekeepers-by-hotel.py
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Settings.jsx test/housekeepers-by-hotel.test.js
+          git diff --cached --quiet || git commit -m "Group housekeepers by hotel"
+          git push
