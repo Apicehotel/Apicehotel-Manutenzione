@@ -141,7 +141,12 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
         <div className="rs-photo-actions">
           <label className="rs-photo-action"><input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} /><Icon name="camera" /><strong>Foto</strong></label>
         </div>
-        {draft.photoData && <img className="rs-photo-preview" src={draft.photoData} alt="Anteprima" />}
+        {draft.photoData && (
+          <div className="rs-photo-preview-wrap">
+            <img className="rs-photo-preview" src={draft.photoData} alt="Anteprima" />
+            <button type="button" className="rs-photo-remove" aria-label="Rimuovi foto" onClick={() => setDraft((c) => ({ ...c, photoData: null, photoName: '' }))}><Icon name="close" /></button>
+          </div>
+        )}
       </fieldset>
       <div className="rs-form-actions">
         <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
