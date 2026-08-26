@@ -1,0 +1,75 @@
+name: Apply widget titles
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-widget-titles.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch Home widget titles
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/randapp/Home.jsx')
+          s = p.read_text()
+          old_weather = '''function WeatherWidget({ size, visual }) {
+  return <Card className={`rs-widget-card rs-widget-weather rs-widget-weather--${visual.tone} rs-widget-card--${size.toLowerCase()}`} data-testid="weather-widget">
+    <span className="rs-widget-weather__icon">{visual.icon}</span>
+    <strong>{size === 'S' && visual.title === 'Meteo OK' ? 'Meteo OK' : visual.title}</strong>
+    {size !== 'S' && <span>{visual.message}</span>}
+    {size === 'L' && <span className="rs-widget-weather__hint"><CloudSun size={15} /> controllo automatico attivo</span>}
+  </Card>
+}'''
+          new_weather = '''function WeatherWidget({ size, visual }) {
+  return <Card className={`rs-widget-card rs-widget-weather rs-widget-weather--${visual.tone} rs-widget-card--${size.toLowerCase()}`} data-testid="weather-widget">
+    <strong className="rs-widget-panel-title">Meteo</strong>
+    <div className="rs-widget-weather__body">
+      <span className="rs-widget-weather__icon">{visual.icon}</span>
+      <strong className="rs-widget-weather__status">{size === 'S' && visual.title === 'Meteo OK' ? 'Meteo OK' : visual.title}</strong>
+      {size !== 'S' && <span>{visual.message}</span>}
+      {size === 'L' && <span className="rs-widget-weather__hint"><CloudSun size={15} /> controllo automatico attivo</span>}
+    </div>
+  </Card>
+}'''
+          if old_weather not in s:
+              raise SystemExit('WeatherWidget target not found')
+          s = s.replace(old_weather, new_weather)
+          old_quick = '''  return <Card className={`rs-widget-card rs-widget-quick rs-widget-card--${size.toLowerCase()}`}>
+    {size === 'L' && <strong className="rs-widget-quick__title">Azioni rapide</strong>}'''
+          new_quick = '''  return <Card className={`rs-widget-card rs-widget-quick rs-widget-card--${size.toLowerCase()}`}>
+    <strong className="rs-widget-panel-title">Azioni rapide</strong>'''
+          if old_quick not in s:
+              raise SystemExit('QuickActions target not found')
+          s = s.replace(old_quick, new_quick)
+          old_css = '''  .rs-widget-weather{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center!important;padding:12px!important}.rs-widget-weather__icon{font-size:2rem;line-height:1}.rs-widget-weather strong{font-size:clamp(.78rem,2vw,1rem)}.rs-widget-weather>span:not(.rs-widget-weather__icon){font-size:.72rem;color:var(--rs-text-2);line-height:1.2}.rs-widget-weather__hint{display:flex;align-items:center;gap:5px}.rs-widget-weather--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}.rs-widget-weather--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.7)}.rs-widget-weather--muted{opacity:.82}
+  .rs-widget-quick{display:flex;flex-direction:column;justify-content:center;gap:9px;padding:12px!important}.rs-widget-quick__title{font-size:.9rem}.rs-widget-quick__actions{display:grid;gap:7px}'''
+          new_css = '''  .rs-widget-panel-title{align-self:flex-start;font-size:.78rem;font-weight:800;line-height:1;color:var(--rs-text);white-space:nowrap}
+  .rs-widget-weather{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;text-align:center!important;padding:12px!important}.rs-widget-weather__body{min-height:0;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}.rs-widget-weather__icon{font-size:2rem;line-height:1}.rs-widget-weather__status{font-size:clamp(.78rem,2vw,1rem)}.rs-widget-weather__body>span:not(.rs-widget-weather__icon){font-size:.72rem;color:var(--rs-text-2);line-height:1.2}.rs-widget-weather__hint{display:flex;align-items:center;gap:5px}.rs-widget-weather--warning{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}.rs-widget-weather--danger{box-shadow:inset 0 0 0 2px rgba(239,68,68,.7)}.rs-widget-weather--muted{opacity:.82}
+  .rs-widget-quick{display:flex;flex-direction:column;justify-content:flex-start;gap:9px;padding:12px!important}.rs-widget-quick__actions{display:grid;gap:7px;flex:1;align-content:center}'''
+          if old_css not in s:
+              raise SystemExit('CSS target not found')
+          s = s.replace(old_css, new_css)
+          p.write_text(s)
+      - run: npm run build
+      - run: npm test
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Home.jsx
+          git commit -m "Add titles to weather and quick actions widgets"
+          git push
