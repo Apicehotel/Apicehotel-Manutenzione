@@ -1,0 +1,26 @@
+name: temp-fix-issues-layout
+on: [push]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python3 scripts/temp-fix-issues-layout.py
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/shell.css
+          git diff --cached --quiet || git commit -m "Fix structural spacing in issues screen"
+          git push
