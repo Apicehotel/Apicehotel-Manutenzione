@@ -363,7 +363,7 @@ function WidgetContent({ id, size, data, weatherVisual, editing, user, onNavigat
 
 function WeatherWidget({ size, visual }) {
   return <Card className={`rs-widget-card rs-widget-weather rs-widget-weather--${visual.tone} rs-widget-card--${size.toLowerCase()}`} data-testid="weather-widget">
-    <span className="rs-widget-weather__icon">{visual.icon}</span>
+    <strong className="rs-widget-panel-title">Meteo</strong><span className="rs-widget-weather__icon">{visual.icon}</span>
     <strong>{size === 'S' && visual.title === 'Meteo OK' ? 'Meteo OK' : visual.title}</strong>
     {size !== 'S' && <span>{visual.message}</span>}
     {size === 'L' && <span className="rs-widget-weather__hint"><CloudSun size={15} /> controllo automatico attivo</span>}
@@ -378,7 +378,7 @@ function QuickActions({ size, user, onNavigate }) {
   ].filter(Boolean)
 
   return <Card className={`rs-widget-card rs-widget-quick rs-widget-card--${size.toLowerCase()}`}>
-    {size === 'L' && <strong className="rs-widget-quick__title">Azioni rapide</strong>}
+    <strong className="rs-widget-panel-title">Azioni rapide</strong>
     <div className={`rs-widget-quick__actions rs-widget-quick__actions--${size.toLowerCase()}`}>
       {actions.map(({ icon: ActionIcon, label, short, route, accent }) => <button key={route + label} type="button" className={accent ? 'is-accent' : ''} onClick={() => onNavigate?.(route)} aria-label={label}>
         <ActionIcon size={size === 'S' ? 20 : 18} />
@@ -407,7 +407,7 @@ const HOME_STYLES = `
   .rs-widget-drag{cursor:grab}.rs-widget-menu{position:relative;pointer-events:auto}.rs-widget-menu>summary{list-style:none;cursor:pointer}.rs-widget-menu>summary::-webkit-details-marker{display:none}
   .rs-widget-menu__panel{position:absolute;z-index:20;top:35px;right:0;width:138px;padding:9px;border:1px solid var(--rs-border);border-radius:12px;background:var(--rs-surface);box-shadow:0 10px 28px rgba(0,0,0,.18);display:grid;gap:8px}.rs-widget-menu__panel>span{font-size:.7rem;color:var(--rs-text-2);font-weight:700}.rs-widget-menu__sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.rs-widget-menu__sizes button{height:30px;border:1px solid var(--rs-border);border-radius:8px;background:transparent;color:var(--rs-text);font:inherit;font-size:.72rem;font-weight:800}.rs-widget-menu__sizes button.is-active{background:var(--rs-accent);border-color:transparent;color:#fff}.rs-widget-menu__remove{display:flex;align-items:center;justify-content:center;gap:5px;min-height:32px;border:0;border-radius:8px;background:rgba(239,68,68,.1);color:#d95b64;font:inherit;font-size:.72rem;font-weight:800}
   .is-editing .rs-widget-card{padding-top:44px!important}
-  .rs-widget-card{border-radius:clamp(15px,2vw,20px)!important}
+  .rs-widget-card{position:relative;border-radius:clamp(15px,2vw,20px)!important}.rs-widget-panel-title{position:absolute;top:12px;left:12px;font-size:.78rem;font-weight:800;line-height:1;color:var(--rs-text);white-space:nowrap}.is-editing .rs-widget-panel-title{top:48px}
   .rs-widget-stat{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto 1fr;align-content:center;column-gap:10px;text-align:left!important;padding:clamp(12px,2.2vw,20px)!important}
   .rs-widget-stat__icon{grid-row:1/3;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--rs-accent) 12%,transparent);color:var(--rs-accent)}
   .rs-widget-stat--amber .rs-widget-stat__icon{background:rgba(245,158,11,.12);color:#d98700}.rs-widget-stat--blue .rs-widget-stat__icon{background:rgba(59,130,246,.12);color:#3b82f6}
