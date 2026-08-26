@@ -540,6 +540,7 @@ a { color: var(--rs-cyan); }
 .rs-form__head p { margin: 2px 0 0; color: var(--rs-text-2); font-size: .82rem; }
 .rs-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
 .rs-fieldset legend { padding: 0; font-size: .82rem; font-weight: 700; color: var(--rs-text-2); }
+.rs-suggested-hint { display: block; font-size: .78rem; font-weight: 600; color: var(--rs-ok, #0e5c49); }
 .rs-photo-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rs-photo-action { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px; border-radius: 15px; border: 1px dashed var(--rs-line-strong); background: var(--rs-surface); color: var(--rs-text-2); cursor: pointer; font-weight: 600; font-size: .82rem; }
 .rs-photo-action .rs-icon { color: var(--rs-cyan); width: 24px; height: 24px; }

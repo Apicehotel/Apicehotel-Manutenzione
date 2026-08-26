@@ -26,6 +26,7 @@
   border: 0 !important;
   align-self: start;
   min-width: 0;
+  position: relative;
 }
 
 /* legend stays screen-reader-only: fully out of flow, never affects layout */
@@ -120,6 +121,38 @@
   object-fit: cover;
   border-radius: 17px !important;
   pointer-events: none;
+}
+
+[data-testid='new-issue-form'] .rs-photo-preview-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+[data-testid='new-issue-form'] .rs-photo-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+}
+
+[data-testid='new-issue-form'] .rs-photo-remove .rs-icon {
+  width: 14px;
+  height: 14px;
+  color: #fff;
 }
 
 [data-testid='new-issue-form'] > .rs-field:has([data-testid='issue-title-input']) .rs-textarea {
