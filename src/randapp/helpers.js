@@ -1,4 +1,5 @@
 import { HOTELS, ROLE_PERMISSIONS } from '../config.js'
+import { canUser } from '../permissions.js'
 
 export const RANDAPP_LOGOS = {
   hotelgio: '/logos/randapp-hotelgio.webp',
@@ -12,20 +13,21 @@ export const hotelById = (hotelId) => HOTELS.find((h) => h.id === hotelId) || nu
 
 export const normalize = (value) => String(value || '').trim().toLocaleLowerCase('it')
 
+// Compatibilità temporanea con i vecchi permessi generici. I gate di modulo
+// passano invece sempre dalla matrice centrale in permissions.js.
 export const permsFor = (user) => ROLE_PERMISSIONS[user?.role] || []
 export const can = (user, permission) => permsFor(user).includes(permission)
 
-// Gate di permesso portati 1:1 dal frontend originale (src/App.jsx).
-export const canSendUrgent = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'Reception'].includes(u?.role)
-export const canManageUrgent = (u) => ['admin', 'manutentore', 'Direttore Centro Congressi', 'Portiere Notturno', 'Reception'].includes(u?.role)
-export const canViewUrgent = (u) => canSendUrgent(u) || canManageUrgent(u)
-export const canViewTechnicianDirectory = (u) => canSendUrgent(u) || u?.role === 'admin'
-export const canCreatePlanned = (u) => ['admin', 'Responsabile', 'Direzione', 'Direttore Centro Congressi'].includes(u?.role)
-export const canViewPlanned = (u) => canCreatePlanned(u) || ['manutentore', 'Tecnico esterno', 'Reception'].includes(u?.role)
-export const canViewPlanningMenu = (u) => ['admin', 'manutentore', 'Direttore Centro Congressi', 'Reception'].includes(u?.role)
-export const canViewTemperature = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'manutentore', 'Reception', 'Colazione Jazz'].includes(u?.role)
-export const canViewHousekeeping = (u) => ['admin', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'Governante', 'Capo Governante', 'Reception'].includes(u?.role)
-export const isAdminUser = (u) => u?.role === 'admin' || Boolean(u?.can_admin) || Boolean(u?.can_access_admin) || can(u, 'manage_users')
+export const canSendUrgent = (u) => canUser(u, 'urgent', 'create')
+export const canManageUrgent = (u) => canUser(u, 'urgent', 'edit') || canUser(u, 'urgent', 'take_charge') || canUser(u, 'urgent', 'complete')
+export const canViewUrgent = (u) => canUser(u, 'urgent', 'view')
+export const canViewTechnicianDirectory = (u) => canUser(u, 'technicians', 'view')
+export const canCreatePlanned = (u) => canUser(u, 'planning_work', 'create')
+export const canViewPlanned = (u) => canUser(u, 'interventions', 'view') || canUser(u, 'planning_work', 'view')
+export const canViewPlanningMenu = (u) => canUser(u, 'planning_work', 'view') || canUser(u, 'planning_sale', 'view')
+export const canViewTemperature = (u) => canUser(u, 'temperature', 'view')
+export const canViewHousekeeping = (u) => canUser(u, 'housekeeping', 'view')
+export const isAdminUser = (u) => canUser(u, 'users', 'manage') || canUser(u, 'role_permissions', 'manage') || canUser(u, 'app_settings', 'manage')
 
 export const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'Utente'
 
@@ -64,14 +66,6 @@ export const readPhotoAsDataUrl = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file)
 })
 
-// Ridimensiona (lato lungo max 1000px) e ricomprime in JPEG q.62 prima del salvataggio,
-// per non appesantire lo storage. Ritorna null se il file non e' un'immagine valida.
-// Ridimensiona (lato lungo max 1000px) e ricomprime in JPEG q.62 prima del salvataggio,
-// per non appesantire lo storage. Usa createObjectURL (piu' affidabile di un data URL su
-// iOS per foto HEIC dalla fotocamera) e verifica che il risultato non sia nero: alcune
-// versioni di Safari possono produrre un canvas completamente nero nel decode HEIC.
-// In quel caso, o in caso di qualunque errore, si salva la foto originale non compressa
-// piuttosto che una foto rotta.
 export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
   if (!file || !file.size) return resolve(null)
   const objectUrl = URL.createObjectURL(file)
@@ -89,10 +83,6 @@ export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
       canvas.height = h
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, w, h)
-      // Campiona una griglia di punti sparsi su tutta l'immagine (non solo un angolo):
-      // una foto reale puo' benissimo avere un angolo scuro (es. tetto, alberi), quindi
-      // controllare solo l'angolo in alto a sinistra dava falsi positivi e faceva
-      // salvare l'originale pesante invece della versione compressa.
       const cols = 6
       const rows = 6
       let allBlack = true
