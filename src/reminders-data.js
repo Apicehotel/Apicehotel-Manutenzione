@@ -1,7 +1,11 @@
 import { supabase } from './supabase.js'
+import { canUser } from './permissions.js'
 
-export const REMINDER_SEND_ROLES = ['admin', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Reception']
-export const canSendReminder = (user) => REMINDER_SEND_ROLES.includes(user?.role)
+export const canViewReminder = (user) => canUser(user, 'reminders', 'view')
+export const canSendReminder = (user) => canUser(user, 'reminders', 'create')
+export const canEditReminder = (user) => canUser(user, 'reminders', 'edit')
+export const canDeleteReminder = (user) => canUser(user, 'reminders', 'delete')
+export const canManageReminder = (user) => canUser(user, 'reminders', 'manage')
 
 export async function fetchReminders(hotelId) {
   if (!supabase) return []
