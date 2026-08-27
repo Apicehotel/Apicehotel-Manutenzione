@@ -52,7 +52,8 @@ function NavigationTab(){
 function AppearanceTab(){return <section><div className="rs-page-title"><div><h1>Aspetto</h1><p>Tema e dimensione interfaccia</p></div></div><Card className="rs-card--pad" style={{marginBottom:12}}><ThemeControl/></Card><Card className="rs-card--pad"><UiSizeControl/></Card></section>}
 const TABS=[{id:'users',icon:'users',label:'Utenti',render:()=> <UsersTab/>},{id:'sensors',icon:'sensor',label:'Sensori',render:()=> <SensorsTab/>},{id:'navigation',icon:'sliders',label:'Ruoli',render:()=> <NavigationTab/>},{id:'usage',icon:'activity',label:'Consumi',render:()=> <UsageTab/>},{id:'appearance',icon:'sparkles',label:'Aspetto',render:()=> <AppearanceTab/>}]
 function bytesToMB(b){return (b/(1024*1024)).toFixed(1)}
-const DB_LIMIT_BYTES=500*1024*1024
+function bytesToGB(b){return (b/(1024*1024*1024)).toFixed(2)}
+const DB_LIMIT_BYTES=8*1024*1024*1024 // Piano Pro: 8 GB inclusi, oltre si paga a consumo ($0.125/GB)
 function BarraLimite({label,valore,limite,unita=''}){const pct=Math.min(100,(valore/limite)*100),colore=pct>80?'#C81E1E':pct>50?'#B9762A':'#0F6B5C';return <div style={{marginBottom:12}}><div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,marginBottom:4}}><span style={{color:'var(--rs-text-2)'}}>{label}</span><span style={{fontWeight:700,color:'var(--rs-text)'}}>{valore}{unita} / {limite}{unita}</span></div><div style={{height:8,background:'var(--rs-surface-2)',borderRadius:999,overflow:'hidden'}}><div style={{width:pct+'%',height:'100%',background:colore,borderRadius:999}}/></div></div>}
 function RigaStat({label,valore}){return <div style={{display:'flex',justifyContent:'space-between',fontSize:13.5,padding:'6px 0',borderBottom:'1px solid var(--rs-line)'}}><span style={{color:'var(--rs-text-2)'}}>{label}</span><span style={{fontWeight:700,color:'var(--rs-text)'}}>{valore}</span></div>}
 function UsageTab(){
@@ -64,7 +65,8 @@ function UsageTab(){
     {loading ? <Spinner label="Carico i dati…"/> : stats && <>
       <Card className="rs-card--pad" style={{marginBottom:12}}>
         <strong style={{display:'block',marginBottom:12}}>Database (Apice MultiHotel)</strong>
-        <BarraLimite label="Spazio occupato" valore={bytesToMB(stats.db_size_bytes)} limite={bytesToMB(DB_LIMIT_BYTES)} unita=" MB"/>
+        <BarraLimite label="Spazio occupato" valore={bytesToGB(stats.db_size_bytes)} limite={bytesToGB(DB_LIMIT_BYTES)} unita=" GB"/>
+        <RigaStat label="Piano" valore="Pro (8 GB inclusi, poi $0.125/GB)"/>
         <RigaStat label="Utenti" valore={stats.utenti}/>
         <RigaStat label="Segnalazioni" valore={stats.segnalazioni}/>
         <RigaStat label="Interventi" valore={stats.interventi}/>
