@@ -77,12 +77,12 @@ function SensorsTab(){
 }
 
 function NavigationTab(){
-  const[role,setRole]=useState('admin'),[config,setConfig]=useState(null),[rows,setRows]=useState([]),[draftPerms,setDraftPerms]=useState({}),[dirty,setDirty]=useState({}),[openGroups,setOpenGroups]=useState({}),[status,setStatus]=useState(''),[saving,setSaving]=useState(false)
-  const load=async()=>{const [permRows,navResult]=await Promise.all([fetchRolePermissionRows(),supabase?supabase.from('app_config').select('value').eq('key',NAV_KEY).maybeSingle():Promise.resolve({data:null})]);setRows(permRows);const p={};permRows.forEach(r=>{p[`${r.role}|${r.module}|${r.action}`]=Boolean(r.allowed)});setDraftPerms(p);try{setConfig(navResult?.data?.value?JSON.parse(navResult.data.value):{}}catch{setConfig({})}}
+  const[role,setRole]=useState('admin'),[config,setConfig]=useState(null),[draftPerms,setDraftPerms]=useState({}),[dirty,setDirty]=useState({}),[openGroups,setOpenGroups]=useState({}),[status,setStatus]=useState(''),[saving,setSaving]=useState(false)
+  const load=async()=>{const [permRows,navResult]=await Promise.all([fetchRolePermissionRows(),supabase?supabase.from('app_config').select('value').eq('key',NAV_KEY).maybeSingle():Promise.resolve({data:null})]);const p={};permRows.forEach(r=>{p[`${r.role}|${r.module}|${r.action}`]=Boolean(r.allowed)});setDraftPerms(p);try{setConfig(navResult?.data?.value?JSON.parse(navResult.data.value):{})}catch{setConfig({})}}
   useEffect(()=>{load().catch(e=>{setStatus(e?.message||'Errore caricamento');setConfig({})})},[])
   const permKey=(r,m,a)=>`${r}|${m}|${a}`
   const getPerm=(m,a)=>Boolean(draftPerms[permKey(role,m,a)])
-  const togglePerm=(m,a)=>{if(role==='Supremo')return;const k=permKey(role,m,a);setDraftPerms(p=>({...p,[k]:!p[k]}));setDirty(d=>({...d,[k]:{role,module:m,action:a,allowed:!draftPerms[k]}}));setStatus('')}
+  const togglePerm=(m,a)=>{if(role==='Supremo')return;const k=permKey(role,m,a);const next=!draftPerms[k];setDraftPerms(p=>({...p,[k]:next}));setDirty(d=>({...d,[k]:{role,module:m,action:a,allowed:next}}));setStatus('')}
   const placement=(r,k)=>config?.[r]?.[k]||'off'
   const bottomCount=r=>NAV_ITEMS.filter(([k])=>placement(r,k)==='bottom').length
   const setPlacement=(k,v)=>{setStatus('');if(v==='bottom'&&placement(role,k)!=='bottom'&&bottomCount(role)>=5)return setStatus('Massimo 5 voci nella barra sotto.');setConfig(c=>({...c,[role]:{...(c?.[role]||{}),[k]:v,...(k==='planning_work'?{planning_sale:v}:{})}}))}
