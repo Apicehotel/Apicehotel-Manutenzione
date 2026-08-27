@@ -287,7 +287,7 @@ const FILTERS = [
 export default function Issues({ user, hotel, users, createSignal }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('todo')
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState(null)
