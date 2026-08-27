@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../planned-data.js'
-import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from '../urgents-data.js'
+import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } from '../urgents-data.js'
 import { fetchFeedback, insertFeedback, subscribeFeedback } from '../feedback-data.js'
-import { fetchIssues, subscribeIssues } from '../issues-data.js'
+import { fetchIssues, insertIssue, subscribeIssues } from '../issues-data.js'
 import { changeOwnPin, updateOwnProfile, setOwnPresence } from '../auth-data.js'
 import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { TemperatureSensors } from '../temperature.jsx'
 import { Housekeeping } from '../housekeeping.jsx'
 import { Button, Card, EmptyState, Field, Icon, IconButton, Badge, Spinner, TextInput, Sheet, ConfirmDialog } from './ui.jsx'
-import { canCreatePlanned, compressPhotoAsDataUrl } from './helpers.js'
+import { canCreatePlanned, canSendUrgent, ISSUE_CATEGORIES, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 
 const fmt = (value) => value ? new Date(value).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 const whatsappLink = (phone) => {
@@ -168,11 +168,13 @@ export function UrgentView({ hotel, user }) {
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
   const [creating, setCreating] = useState(false)
+  const [transforming, setTransforming] = useState(null)
   const load = useCallback(async () => { const result = await fetchUrgents(hotel.id); setItems(result.items || []); setLoading(false) }, [hotel.id])
   useEffect(() => { load(); return subscribeUrgents(hotel.id, load) }, [hotel.id, load])
   const create = async (e) => { e.preventDefault(); if (!note.trim()) return; await insertUrgent({ hotelId: hotel.id, note: note.trim(), createdBy: user?.name, severity: 'urgente' }); setNote(''); setCreating(false); load() }
   const take = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name }); load() }
   const done = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'completata', completedBy: user?.name }); load() }
+  if (transforming) return <TransformUrgentForm urgent={transforming} hotel={hotel} user={user} onCancel={() => setTransforming(null)} onDone={() => { setTransforming(null); load() }} />
   return <div data-testid="urgent-view">
     <PageTitle title="Avvisi urgenti" subtitle={`${hotel.name} · ${items.filter(i=>i.status!=='completata').length} attivi`} action={<Button icon="plus" onClick={()=>setCreating(v=>!v)}>Nuovo</Button>} />
     {creating && <Card className="rs-card--pad"><form className="rs-migrated-form" onSubmit={create}><Field label="Messaggio urgente"><textarea className="rs-textarea" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Descrivi l'urgenza…" /></Field><Button type="submit" disabled={!note.trim()}>Invia avviso</Button></form></Card>}
@@ -180,11 +182,66 @@ export function UrgentView({ hotel, user }) {
       {items.map(item => <Card key={item.id} className="rs-card--pad rs-op-card">
         <div className="rs-op-card__head"><div><strong>{item.location || 'Avviso urgente'}</strong><small>{fmt(item.createdAt)} · {item.createdBy || '—'}</small></div><StatusPill status={item.status}/></div>
         <p>{item.note}</p>
-        {item.status==='aperta' && <div className="rs-op-card__actions"><Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button></div>}
-        {item.status==='presa_in_carico' && <div className="rs-op-card__actions"><Button icon="check" onClick={()=>done(item)}>Completa</Button></div>}
+        {item.transformedIssueId && <small style={{ color: 'var(--rs-teal)' }}>✓ Trasformato in segnalazione</small>}
+        <div className="rs-op-card__actions">
+          {item.status==='aperta' && <Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button>}
+          {item.status==='presa_in_carico' && <Button icon="check" onClick={()=>done(item)}>Completa</Button>}
+          {canSendUrgent(user) && item.status !== 'completata' && !item.transformed && <Button variant="ghost" icon="issues" onClick={()=>setTransforming(item)}>Trasforma in segnalazione</Button>}
+        </div>
       </Card>)}
     </div>}
   </div>
+}
+
+function TransformUrgentForm({ urgent, hotel, user, onCancel, onDone }) {
+  const [location, setLocation] = useState('')
+  const [category, setCategory] = useState(ISSUE_CATEGORIES[0])
+  const [urgency, setUrgency] = useState('alta')
+  const [note, setNote] = useState(urgent.note || '')
+  const [saving, setSaving] = useState(false)
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!location.trim() || !note.trim() || saving) return
+    setSaving(true)
+    try {
+      const issue = await insertIssue({
+        hotelId: hotel.id,
+        room: location.trim(),
+        category,
+        urgency,
+        title: note.trim(),
+        status: 'todo',
+        createdAt: Date.now(),
+        createdByName: user?.name || 'App',
+        origin: 'App',
+      })
+      await linkUrgentToIssue(urgent.id, hotel.id, issue.id, user?.name)
+      onDone()
+    } finally { setSaving(false) }
+  }
+  return (
+    <form className="rs-form" onSubmit={submit} data-testid="transform-urgent-form">
+      <div className="rs-form__head">
+        <IconButton icon="chevronLeft" label="Indietro" onClick={onCancel} />
+        <div><h2>Trasforma in segnalazione</h2><p>{hotel.name}</p></div>
+      </div>
+      <div className="rs-note rs-note--waiting">Richiesta urgente originale, da <strong>{urgent.createdBy}</strong>: "{urgent.note}"<br/>Verrà segnata come gestita e collegata alla nuova segnalazione.</div>
+      <Field label="Camera o zona"><TextInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Es. Camera 214 o Hall" required autoFocus /></Field>
+      <fieldset className="rs-fieldset">
+        <legend>Categoria</legend>
+        <div className="rs-chips">{ISSUE_CATEGORIES.map((item) => <button type="button" key={item} className={`rs-chip ${category === item ? 'active' : ''}`} onClick={() => setCategory(item)}>{item}</button>)}</div>
+      </fieldset>
+      <fieldset className="rs-fieldset">
+        <legend>Urgenza</legend>
+        <div className="rs-chips">{Object.entries(URGENCY_META).map(([k, v]) => <button type="button" key={k} className={`rs-chip ${urgency === k ? 'active' : ''}`} onClick={() => setUrgency(k)}>{v.label}</button>)}</div>
+      </fieldset>
+      <Field label="Note"><textarea className="rs-textarea" rows="4" value={note} onChange={(e) => setNote(e.target.value)} required /></Field>
+      <div className="rs-form-actions">
+        <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
+        <Button variant="primary" icon="plus" disabled={!location.trim() || !note.trim() || saving}>{saving ? 'Creo…' : 'Crea segnalazione e chiudi urgenza'}</Button>
+      </div>
+    </form>
+  )
 }
 
 export function TemperatureView({ hotel }) {
