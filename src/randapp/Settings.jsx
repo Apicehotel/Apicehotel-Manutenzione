@@ -12,8 +12,8 @@ const PERMISSION_LABELS = {
   complete: 'Completa lavori', read_all_departments: 'Tutti i reparti', planning_sale: 'Planning Sale', take_charge: 'Presa in carico', read_own_hotel: 'Lettura struttura',
 }
 const NAV_ITEMS = [
-  ['home', 'Home'], ['issues', 'Segnalazioni'], ['interventions', 'Interventi'], ['planning_work', 'Planning lavori'],
-  ['planning_sale', 'Planning Sale'], ['housekeeping', 'Housekeeping'], ['temperature', 'Temperature'], ['urgent', 'Avvisi urgenti'],
+  ['home', 'Home'], ['issues', 'Segnalazioni'], ['interventions', 'Interventi'], ['planning_work', 'Planning'],
+  ['housekeeping', 'Housekeeping'], ['temperature', 'Temperature'], ['urgent', 'Avvisi urgenti'],
   ['technicians', 'Rubrica tecnici'], ['structure', 'Cambia struttura'], ['profile', 'Il mio profilo'], ['feedback', 'Feedback'],
 ]
 const PLACEMENTS = [['bottom', 'Sotto'], ['side', 'Laterale'], ['off', 'Off']]
@@ -229,12 +229,18 @@ function NavigationTab() {
   const setPlacement = (key, value) => {
     setStatus('')
     if (value === 'bottom' && placement(role, key) !== 'bottom' && bottomCount(role) >= 5) { setStatus('Massimo 5 voci nella barra sotto.'); return }
-    setConfig((c) => ({ ...c, [role]: { ...(c[role] || {}), [key]: value } }))
+    setConfig((c) => ({ ...c, [role]: { ...(c[role] || {}), [key]: value, ...(key === 'planning_work' ? { planning_sale: value } : {}) } }))
   }
   const saveConfig = async () => {
     if (!supabase) return
     setSaving(true); setStatus('')
-    try { const { error } = await supabase.from('app_config').update({ value: JSON.stringify(config) }).eq('key', NAV_KEY); if (error) throw error; setStatus('Configurazione salvata') }
+    try {
+      const normalized = Object.fromEntries(Object.entries(config || {}).map(([r, value]) => [r, { ...value, planning_sale: value?.planning_work || 'off' }]))
+      const { error } = await supabase.from('app_config').update({ value: JSON.stringify(normalized) }).eq('key', NAV_KEY)
+      if (error) throw error
+      setConfig(normalized)
+      setStatus('Configurazione salvata')
+    }
     catch (e) { setStatus(e?.message || 'Salvataggio non riuscito') }
     finally { setSaving(false) }
   }
