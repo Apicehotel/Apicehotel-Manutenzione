@@ -73,7 +73,7 @@ function UsageTab(){
     }catch(e){setError('Errore nel caricamento: '+String(e?.message||e))}
     setLoading(false)
   }
-  const saveNote=async()=>{setSavingNote(true);try{await supabase.from('app_config').upsert({key:'vercel_usage_note',value:vercelDraft});setVercelNote(vercelDraft)}finally{setSavingNote(false)}}
+  const saveNote=async()=>{setSavingNote(true);try{await supabase.from('app_config').update({value:vercelDraft}).eq('key','vercel_usage_note');setVercelNote(vercelDraft)}finally{setSavingNote(false)}}
   useEffect(()=>{carica()},[])
   return <section><div className="rs-page-title"><div><h1>Consumi</h1><p>Database Supabase e progetti Vercel (piano Pro)</p></div><Button variant="ghost" onClick={carica}>{loading?'Carico…':'↻ Aggiorna'}</Button></div>
     {error && <Card className="rs-card--pad" style={{color:'#C81E1E'}}>{error}</Card>}
