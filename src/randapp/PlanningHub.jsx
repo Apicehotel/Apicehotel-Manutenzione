@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanningWork, subscribePlanningWork } from '../planning-work-data.js'
 import { fetchBookings } from '../sale-data.js'
-import { PlanningSale } from '../planning.jsx'
 import { Icon, Spinner } from './ui.jsx'
 import PlanningWorkSimple from './PlanningWorkSimple.jsx'
+import PlanningSaleV2 from './PlanningSaleV2.jsx'
 import PlannedCreateSheet from './PlannedCreateSheet.jsx'
 
 const isoDay = (value = new Date()) => { const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
@@ -61,7 +61,7 @@ export default function PlanningHub({ hotel, user, createRequest = null }) {
   return <div data-testid="planning-hub">
     <div className="rs-page-title"><div><h1>Planning</h1><p>{section?'Calendario operativo.':'Lavori e sale restano separati.'}</p></div>{section&&<button type="button" className="rs-btn rs-btn--ghost" onClick={()=>setSection(null)}>‹ Oggi</button>}</div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10,marginBottom:16}}><PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>setSection('work')}/><PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>setSection('sale')}/></div>
-    {!section?<div style={{display:'grid',gap:12}}><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Lavori oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todayWork.length?`${todayWork.length} lavor${todayWork.length===1?'o':'i'} nel planning.`:'Nessun lavoro previsto oggi.'}</p></div><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Sale oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todaySales.length?`${todaySales.length} attività/prenotazioni.`:'Nessuna sala prevista oggi.'}</p></div></div>:section==='work'?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:<div className="rs-legacy rs-legacy--planning"><PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal}/></div>}
+    {!section?<div style={{display:'grid',gap:12}}><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Lavori oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todayWork.length?`${todayWork.length} lavor${todayWork.length===1?'o':'i'} nel planning.`:'Nessun lavoro previsto oggi.'}</p></div><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Sale oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todaySales.length?`${todaySales.length} attività/prenotazioni.`:'Nessuna sala prevista oggi.'}</p></div></div>:section==='work'?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:<PlanningSaleV2 hotel={hotel} user={user} openRequest={saleCreateSignal}/>}    
     <PlannedCreateSheet open={interventionCreateOpen} onClose={()=>setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={()=>setInterventionCreateOpen(false)}/>
   </div>
 }
