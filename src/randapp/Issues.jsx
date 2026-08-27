@@ -3,7 +3,7 @@ import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
-import { can, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
+import { can, canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -219,7 +219,21 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
 
       {issue.status === 'tecnico' && <div className="rs-note rs-note--tecnico">Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong>{issue.technicianName && <> · assegnato a <strong>{issue.technicianName}</strong></>}</div>}
-      {issue.status === 'waiting' && <div className="rs-note rs-note--waiting">In attesa del pezzo: <strong>{issue.pieceName}</strong></div>}
+      {issue.status === 'waiting' && (
+        <div className="rs-note rs-note--waiting">
+          In attesa del pezzo: <strong>{issue.pieceName}</strong>
+          {issue.pieceDecision ? (
+            <p style={{ margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="package" /> <strong>{issue.pieceDecisionBy}</strong> {issue.pieceDecision === 'ritiro' ? 'andrà a ritirarlo' : 'lo ordinerà'}
+            </p>
+          ) : canSendUrgent(user) && (
+            <div className="rs-action-pair" style={{ marginTop: 8 }}>
+              <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ritiro', pieceDecisionBy: user?.name })}>Vado a prenderlo</Button>
+              <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ordine', pieceDecisionBy: user?.name })}>Lo ordino</Button>
+            </div>
+          )}
+        </div>
+      )}
       {issue.pieceReplaced && <div className="rs-note">Pezzo sostituito: <strong>{issue.pieceReplaced}</strong>{issue.pieceReplacedBy && <> · {issue.pieceReplacedBy}</>}</div>}
       {issue.status === 'done' && <div className="rs-note rs-note--done">Completata da <strong>{issue.completedBy}</strong>{issue.completionNote && <p style={{ margin: '6px 0 0' }}>{issue.completionNote}</p>}{(issue.completionPhotoData || issue.completionPhotoPath) && <IssuePhoto src={issue.completionPhotoData} alt="Foto riparazione" />}</div>}
 
