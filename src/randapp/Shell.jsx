@@ -11,6 +11,7 @@ import Settings from './Settings.jsx'
 import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
+import RemindersView from './RemindersView.jsx'
 import InsertLauncher from './InsertLauncher.jsx'
 import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
@@ -31,6 +32,7 @@ const NAV_BUTTONS = [
   { id: 'planning-work', key: 'planning_work', icon: 'calendar', label: 'Planning' },
   { id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
   { id: 'urgent', key: 'urgent', icon: 'warning', label: 'Urgenti' },
+  { id: 'reminders', key: 'reminders', icon: 'bell', label: 'Promemoria' },
   { id: 'temperature', key: 'temperature', icon: 'thermometer', label: 'Temperature' },
   { id: 'technicians', key: 'technicians', icon: 'phone', label: 'Tecnici' },
   { id: 'profile', key: 'profile', icon: 'user', label: 'Profilo' },
@@ -126,7 +128,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'temperature', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'reminders', 'temperature', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -234,6 +236,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
+    if (view === 'reminders') return <RemindersView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
     if (view === 'technicians') return <TechnicianDirectoryView users={users} hotel={hotel} />
@@ -319,7 +322,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         <div className="rs-notification-center">
           <p className="rs-notification-center__intro">Avvisi e promemoria della struttura in un unico punto.</p>
           {viewAllowed('urgent') && <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('urgent') }}><span><Icon name="warning" /></span><span><strong>Avvisi urgenti</strong><small>Apri gli avvisi attivi della struttura.</small></span><Icon name="chevronRight" /></button>}
-          <div className="rs-notification-center__reserved"><strong><Icon name="bell" /> Promemoria</strong><small style={{display:'block',marginTop:4}}>Promemoria ntfy destinati al tuo ruolo compariranno qui.</small></div>
+          {viewAllowed('reminders') && <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('reminders') }}><span><Icon name="bell" /></span><span><strong>Promemoria</strong><small>Crea e gestisci promemoria per ruolo.</small></span><Icon name="chevronRight" /></button>}
         </div>
       </Sheet>
 
