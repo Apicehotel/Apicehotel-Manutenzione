@@ -26,6 +26,12 @@
 .rs-planned-location{display:grid;gap:8px}
 .rs-planned-location .rs-segmented{margin:0}
 .rs-planned-location .rs-input{min-height:44px;font-size:16px}
+.rs-planned-autocomplete{position:relative}
+.rs-planned-suggestions{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;max-height:260px;overflow:auto;border:1px solid var(--rs-line-strong);border-radius:13px;background:var(--rs-surface);box-shadow:var(--rs-shadow);padding:5px;overscroll-behavior:contain}
+.rs-planned-suggestions button{width:100%;border:0;background:transparent;color:var(--rs-text);display:grid;gap:2px;text-align:left;padding:9px 10px;border-radius:9px;cursor:pointer}
+.rs-planned-suggestions button:active,.rs-planned-suggestions button:hover{background:var(--rs-surface-2)}
+.rs-planned-suggestions button span{font-weight:750;font-size:.84rem}
+.rs-planned-suggestions button small{font-size:.68rem;color:var(--rs-text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rs-planned-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .rs-planned-categories button,.rs-planned-pills button{border:1px solid var(--rs-line);background:var(--rs-surface-2);color:var(--rs-text-2);border-radius:12px;min-height:42px;padding:8px 9px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;cursor:pointer}
 .rs-planned-categories button.is-selected,.rs-planned-pills button.is-selected{border-color:var(--rs-cyan);background:color-mix(in srgb,var(--rs-cyan) 12%,var(--rs-surface));color:var(--rs-text);box-shadow:0 0 0 1px color-mix(in srgb,var(--rs-cyan) 20%,transparent)}
