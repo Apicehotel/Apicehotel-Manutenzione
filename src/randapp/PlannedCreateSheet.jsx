@@ -9,8 +9,12 @@ const CATEGORIES = [
   ['Arredo', 'wrench'], ['Edilizio', 'hotel'], ['Giardinaggio', 'sparkles'],
   ['Pulizia filtri', 'wind'], ['Idromassaggio', 'droplet'], ['Extra Piani', 'hotel'], ['Varie', 'wrench'],
 ]
+
 const toTimestamp = (value) => value ? new Date(value).getTime() : null
-const isEvenRoom = (room) => { const n = Number(String(room).replace(/\D/g, '')); return Number.isFinite(n) && n % 2 === 0 }
+const isEvenRoom = (room) => {
+  const n = Number(String(room).replace(/\D/g, ''))
+  return Number.isFinite(n) && n % 2 === 0
+}
 const assigneeKey = (person) => {
   const raw = person?.auth_user_id || person?.legacy_id || person?.id || person?.name || ''
   const prefix = person?.role === 'Tecnico esterno' ? 'ext' : 'usr'
@@ -34,11 +38,16 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   useEffect(() => {
     if (!open || !hotel?.id) return
     let active = true
-    fetchDirectory(hotel.id).then(({ users }) => { if (active) setDirectory(users || []) }).catch(() => { if (active) setDirectory([]) })
+    fetchDirectory(hotel.id)
+      .then(({ users }) => { if (active) setDirectory(users || []) })
+      .catch(() => { if (active) setDirectory([]) })
     return () => { active = false }
   }, [open, hotel?.id])
 
-  const floorEntries = useMemo(() => (catalog?.roomGroups || []).map((group, index) => ({ group, index })), [catalog])
+  const floorEntries = useMemo(
+    () => (catalog?.roomGroups || []).map((group, index) => ({ group, index })),
+    [catalog],
+  )
   const rooms = useMemo(() => floorEntries.flatMap(({ group }) => group.rooms || []), [floorEntries])
   const isChecklist = category === 'Pulizia filtri' || category === 'Idromassaggio'
   const isExtraFloors = category === 'Extra Piani'
@@ -52,8 +61,13 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   }, [availableFloors])
 
   const selectedFloors = floorEntries.filter(({ index }) => selectedFloorIds.includes(index))
-  const checklistRooms = selectedFloors.flatMap(({ group }) => category === 'Idromassaggio' ? (group.rooms || []).filter(isEvenRoom) : (group.rooms || []))
-  const candidates = useMemo(() => directory.filter((person) => ['manutentore', 'Tecnico esterno'].includes(person.role)), [directory])
+  const checklistRooms = selectedFloors.flatMap(({ group }) => (
+    category === 'Idromassaggio' ? (group.rooms || []).filter(isEvenRoom) : (group.rooms || [])
+  ))
+  const candidates = useMemo(
+    () => directory.filter((person) => ['manutentore', 'Tecnico esterno'].includes(person.role)),
+    [directory],
+  )
   const internal = candidates.filter((person) => person.role !== 'Tecnico esterno')
   const external = candidates.filter((person) => person.role === 'Tecnico esterno')
   const roomTrim = location.trim()
@@ -85,83 +99,199 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   })
 
   const reset = () => {
-    setMode('camera'); setLocation(''); setCategory('Varie'); setNotes(''); setScheduledAt(''); setScheduledUntil('')
-    setAssignees([]); setSelectedFloorIds([]); setError('')
+    setMode('camera')
+    setLocation('')
+    setCategory('Varie')
+    setNotes('')
+    setScheduledAt('')
+    setScheduledUntil('')
+    setAssignees([])
+    setSelectedFloorIds([])
+    setError('')
   }
   const close = () => { reset(); onClose?.() }
   const chooseCategory = (next) => {
-    setCategory(next); setSelectedFloorIds([])
+    setCategory(next)
+    setSelectedFloorIds([])
     if (['Pulizia filtri', 'Idromassaggio', 'Extra Piani'].includes(next)) setLocation('')
   }
 
   const save = async (event) => {
     event.preventDefault()
     if (!valid || saving) return
-    setSaving(true); setError('')
+    setSaving(true)
+    setError('')
     try {
       const floorLabel = selectedFloors.map(({ group }) => group.name).join(', ')
       const start = toTimestamp(scheduledAt)
       const end = scheduledUntil ? toTimestamp(scheduledUntil) : start
       const resolvedLocation = (isChecklist || isExtraFloors) ? floorLabel : roomTrim
-      const resolvedNotes = notes.trim() || (isExtraFloors ? `Extra Piani — ${floorLabel}` : isChecklist ? `${category} ${floorLabel}` : '')
+      const resolvedNotes = notes.trim() || (isExtraFloors
+        ? `Extra Piani — ${floorLabel}`
+        : isChecklist ? `${category} ${floorLabel}` : '')
       const savedAssignees = assignees.map(({ id, name, role }) => ({ id, name, role }))
       await insertPlanned({
-        hotelId: hotel.id, location: resolvedLocation, locationMode: (isChecklist || isExtraFloors) ? 'zona' : mode,
-        category, notes: resolvedNotes, scheduledAt: start, scheduledUntil: end, assignees: savedAssignees,
-        rooms: (isChecklist || isExtraFloors) ? checklistRooms : null, roomsDone: {}, roomGroupIds: selectedFloorIds,
-        status: 'pending', createdBy: user?.name || '',
+        hotelId: hotel.id,
+        location: resolvedLocation,
+        locationMode: (isChecklist || isExtraFloors) ? 'zona' : mode,
+        category,
+        notes: resolvedNotes,
+        scheduledAt: start,
+        scheduledUntil: end,
+        assignees: savedAssignees,
+        rooms: (isChecklist || isExtraFloors) ? checklistRooms : null,
+        roomsDone: {},
+        roomGroupIds: selectedFloorIds,
+        status: 'pending',
+        createdBy: user?.name || '',
       })
-      reset(); onSaved?.(); onClose?.()
-    } catch (err) { setError(err?.message || 'Salvataggio non riuscito, riprova') }
-    finally { setSaving(false) }
+      reset()
+      onSaved?.()
+      onClose?.()
+    } catch (err) {
+      setError(err?.message || 'Salvataggio non riuscito, riprova')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const choiceStyle = (active) => ({
-    border: `1px solid ${active ? 'var(--rs-cyan)' : 'var(--rs-line)'}`,
-    background: active ? 'color-mix(in srgb,var(--rs-cyan) 12%,var(--rs-surface))' : 'var(--rs-surface)',
-    color: active ? 'var(--rs-text)' : 'var(--rs-text-2)', borderRadius:12, minHeight:40, padding:'8px 11px', fontWeight:750, cursor:'pointer',
-  })
+  const selectedNames = assignees.map((entry) => entry.name).filter(Boolean)
 
-  const AssigneeRow = ({ person, isExternal = false }) => {
+  const AssigneeCard = ({ person, isExternal = false }) => {
     const key = assigneeKey(person)
     const selected = assignees.some((entry) => entry.key === key)
-    return <button type="button" aria-pressed={selected} onClick={() => toggleAssignee(person)} style={{width:'100%',display:'grid',gridTemplateColumns:'38px minmax(0,1fr) 24px',alignItems:'center',gap:10,padding:'9px 10px',borderRadius:13,border:`1px solid ${selected ? 'var(--rs-cyan)' : 'var(--rs-line)'}`,background:selected?'color-mix(in srgb,var(--rs-cyan) 10%,var(--rs-surface))':'var(--rs-surface)',color:'var(--rs-text)',textAlign:'left',cursor:'pointer'}}>
-      <span style={{width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:isExternal?'var(--rs-warn)':'var(--rs-cyan)'}}><Icon name={isExternal ? 'wrench' : 'user'} /></span>
-      <span style={{minWidth:0}}><strong style={{display:'block',fontSize:'.88rem'}}>{person.name}</strong><small style={{display:'block',color:'var(--rs-text-3)',marginTop:2}}>{person.role}</small></span>
-      <span aria-hidden="true" style={{width:20,height:20,borderRadius:7,border:`1px solid ${selected?'var(--rs-cyan)':'var(--rs-line-strong)'}`,background:selected?'var(--rs-cyan)':'transparent',display:'grid',placeItems:'center',color:'white'}}>{selected ? '✓' : ''}</span>
-    </button>
+    return (
+      <button
+        type="button"
+        className={`rs-planned-assignee ${selected ? 'is-selected' : ''}`}
+        aria-pressed={selected}
+        onClick={() => toggleAssignee(person)}
+      >
+        <span className={`rs-planned-assignee__icon ${isExternal ? 'is-external' : ''}`}>
+          <Icon name={isExternal ? 'wrench' : 'user'} />
+        </span>
+        <span className="rs-planned-assignee__text">
+          <strong>{person.name}</strong>
+          <small>{isExternal ? 'Tecnico esterno' : 'Manutentore'}</small>
+        </span>
+        <span className="rs-planned-assignee__check" aria-hidden="true">{selected ? '✓' : ''}</span>
+      </button>
+    )
   }
 
-  return <Sheet open={open} onClose={close} className="rs-insert-shell">
-    <form onSubmit={save} style={{display:'grid',gap:16}}>
-      <div><h2 style={{margin:0,fontFamily:'Sora',fontSize:'1.2rem'}}>Nuovo intervento pianificato</h2><p style={{margin:'4px 0 0',color:'var(--rs-text-2)',fontSize:'.82rem'}}>{hotel?.name} · pianificazione operativa</p></div>
+  return (
+    <Sheet open={open} onClose={close} className="rs-insert-shell rs-planned-sheet">
+      <form onSubmit={save} className="rs-planned-form">
+        <header className="rs-planned-head">
+          <div>
+            <h2>Nuovo intervento</h2>
+            <p>{hotel?.name} · pianifica e assegna</p>
+          </div>
+          <span className="rs-planned-head__icon"><Icon name="calendar" /></span>
+        </header>
 
-      {(isChecklist || isExtraFloors) ? <Field label={isExtraFloors ? 'Piani *' : 'Piano *'}>
-        <div style={{display:'flex',flexWrap:'wrap',gap:7}}>{availableFloors.map(({ group, index }) => <button key={`${group.name}-${index}`} type="button" style={choiceStyle(selectedFloorIds.includes(index))} onClick={() => toggleFloor(index)}>{group.name}</button>)}</div>
-        {!!selectedFloorIds.length && <small style={{display:'block',marginTop:7,color:'var(--rs-text-3)'}}>{isExtraFloors ? `${selectedFloorIds.length} piani selezionati` : `${checklistRooms.length} camere da spuntare`}{category === 'Idromassaggio' ? ' · solo camere pari' : ''}</small>}
-      </Field> : <Field label="Camera o zona *"><div style={{display:'grid',gap:8}}>
-        <div className="rs-segmented"><button type="button" className={mode === 'camera' ? 'active' : ''} onClick={() => { setMode('camera'); setLocation('') }}>Camera</button><button type="button" className={mode === 'zona' ? 'active' : ''} onClick={() => { setMode('zona'); setLocation('') }}>Zona</button></div>
-        {mode === 'camera' ? <input className="rs-input" list="planned-room-list" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Numero camera" autoFocus /> : <input className="rs-input" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Es. Hall, cucina, giardino" autoFocus />}
-        <datalist id="planned-room-list">{rooms.map((room) => <option key={room} value={room} />)}</datalist>{location && !validLocation && <small style={{color:'var(--rs-danger)'}}>{mode === 'camera' ? 'Camera non valida.' : 'Inserisci una zona.'}</small>}
-      </div></Field>}
+        <section className="rs-planned-block">
+          {(isChecklist || isExtraFloors) ? (
+            <Field label={isExtraFloors ? 'Piani *' : 'Piano *'}>
+              <div className="rs-planned-pills">
+                {availableFloors.map(({ group, index }) => {
+                  const selected = selectedFloorIds.includes(index)
+                  return (
+                    <button key={`${group.name}-${index}`} type="button" className={selected ? 'is-selected' : ''} onClick={() => toggleFloor(index)}>
+                      {group.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {!!selectedFloorIds.length && (
+                <small className="rs-planned-hint">
+                  {isExtraFloors ? `${selectedFloorIds.length} piani selezionati` : `${checklistRooms.length} camere da spuntare`}
+                  {category === 'Idromassaggio' ? ' · solo camere pari' : ''}
+                </small>
+              )}
+            </Field>
+          ) : (
+            <Field label="Dove *">
+              <div className="rs-planned-location">
+                <div className="rs-segmented">
+                  <button type="button" className={mode === 'camera' ? 'active' : ''} onClick={() => { setMode('camera'); setLocation('') }}>Camera</button>
+                  <button type="button" className={mode === 'zona' ? 'active' : ''} onClick={() => { setMode('zona'); setLocation('') }}>Zona</button>
+                </div>
+                {mode === 'camera' ? (
+                  <input className="rs-input" list="planned-room-list" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Numero camera" autoFocus />
+                ) : (
+                  <input className="rs-input" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Es. Hall, cucina, giardino" autoFocus />
+                )}
+                <datalist id="planned-room-list">{rooms.map((room) => <option key={room} value={room} />)}</datalist>
+                {location && !validLocation && <small className="rs-planned-error">{mode === 'camera' ? 'Camera non valida.' : 'Inserisci una zona.'}</small>}
+              </div>
+            </Field>
+          )}
+        </section>
 
-      <Field label="Categoria *"><div style={{display:'flex',flexWrap:'wrap',gap:7}}>{CATEGORIES.map(([label, icon]) => <button key={label} type="button" style={choiceStyle(category === label)} onClick={() => chooseCategory(label)}><span style={{display:'inline-flex',alignItems:'center',gap:6}}><Icon name={icon} /> {label}</span></button>)}</div></Field>
-      <Field label={isChecklist || isExtraFloors ? 'Descrizione (opzionale)' : 'Descrizione *'}><textarea className="rs-textarea" rows="3" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Descrivi l'intervento…" /></Field>
+        <section className="rs-planned-block">
+          <Field label="Categoria *">
+            <div className="rs-planned-categories">
+              {CATEGORIES.map(([label, icon]) => (
+                <button key={label} type="button" className={category === label ? 'is-selected' : ''} onClick={() => chooseCategory(label)}>
+                  <Icon name={icon} /><span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
+        </section>
 
-      <Field label={isExtraFloors ? 'Periodo *' : 'Data e ora *'}><div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10}}>
-        <label style={{display:'grid',gap:5,fontSize:'.75rem',color:'var(--rs-text-2)'}}>Da<input className="rs-input" type={isExtraFloors ? 'date' : 'datetime-local'} value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} /></label>
-        <label style={{display:'grid',gap:5,fontSize:'.75rem',color:'var(--rs-text-2)'}}>A{isExtraFloors ? '' : ' (opzionale)'}<input className="rs-input" type={isExtraFloors ? 'date' : 'datetime-local'} min={scheduledAt || undefined} value={scheduledUntil} onChange={(event) => setScheduledUntil(event.target.value)} /></label>
-      </div>{scheduledAt && scheduledUntil && !validEnd && <small style={{display:'block',marginTop:7,color:'var(--rs-danger)'}}>La data finale deve essere successiva alla data iniziale.</small>}</Field>
+        <section className="rs-planned-block rs-planned-block--compact">
+          <Field label={isChecklist || isExtraFloors ? 'Descrizione' : 'Descrizione *'}>
+            <textarea className="rs-textarea rs-planned-description" rows="2" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Cosa bisogna fare?" />
+          </Field>
+        </section>
 
-      <Field label="Assegna a *"><div style={{display:'grid',gap:8}}>
-        {internal.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em'}}>Personale interno</small>{internal.map((person) => <AssigneeRow key={assigneeKey(person)} person={person} />)}</>}
-        {external.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em',marginTop:4}}>Tecnici esterni</small>{external.map((person) => <AssigneeRow key={assigneeKey(person)} person={person} isExternal />)}</>}
-        {!candidates.length && <small style={{color:'var(--rs-danger)'}}>Nessun manutentore o tecnico disponibile per questa struttura.</small>}
-      </div></Field>
+        <section className="rs-planned-block rs-planned-block--compact">
+          <Field label={isExtraFloors ? 'Periodo *' : 'Quando *'}>
+            <div className="rs-planned-dates">
+              <label><span>Da</span><input className="rs-input" type={isExtraFloors ? 'date' : 'datetime-local'} value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} /></label>
+              <label><span>A {isExtraFloors ? '' : <em>opzionale</em>}</span><input className="rs-input" type={isExtraFloors ? 'date' : 'datetime-local'} min={scheduledAt || undefined} value={scheduledUntil} onChange={(event) => setScheduledUntil(event.target.value)} /></label>
+            </div>
+            {scheduledAt && scheduledUntil && !validEnd && <small className="rs-planned-error">La data finale deve essere successiva alla data iniziale.</small>}
+          </Field>
+        </section>
 
-      {error && <p className="rs-error" role="alert">{error}</p>}
-      {!valid && !error && <small style={{color:'var(--rs-text-3)'}}>Compila i campi obbligatori (*) per pianificare l'intervento.</small>}
-      <div className="rs-form-actions"><Button type="button" variant="ghost" onClick={close}>Annulla</Button><Button type="submit" variant="primary" disabled={!valid || saving}>{saving ? 'Salvo…' : 'Pianifica intervento'}</Button></div>
-    </form>
-  </Sheet>
+        <section className="rs-planned-block rs-planned-people">
+          <div className="rs-planned-section-head">
+            <div><strong>Chi lo esegue *</strong><small>Puoi scegliere più persone</small></div>
+            {assignees.length > 0 && <span>{assignees.length} selezionat{assignees.length === 1 ? 'o' : 'i'}</span>}
+          </div>
+
+          {internal.length > 0 && (
+            <div className="rs-planned-people-group">
+              <small className="rs-planned-group-title">Personale interno</small>
+              <div className="rs-planned-assignee-grid">
+                {internal.map((person) => <AssigneeCard key={assigneeKey(person)} person={person} />)}
+              </div>
+            </div>
+          )}
+
+          {external.length > 0 && (
+            <div className="rs-planned-people-group">
+              <small className="rs-planned-group-title">Tecnici esterni</small>
+              <div className="rs-planned-assignee-grid">
+                {external.map((person) => <AssigneeCard key={assigneeKey(person)} person={person} isExternal />)}
+              </div>
+            </div>
+          )}
+
+          {!candidates.length && <small className="rs-planned-error">Nessun manutentore o tecnico disponibile per questa struttura.</small>}
+          {selectedNames.length > 0 && <div className="rs-planned-selected-summary"><Icon name="check" /><span>{selectedNames.join(', ')}</span></div>}
+        </section>
+
+        {error && <p className="rs-error" role="alert">{error}</p>}
+
+        <footer className="rs-planned-actions">
+          <Button type="button" variant="ghost" onClick={close}>Annulla</Button>
+          <Button type="submit" variant="primary" disabled={!valid || saving}>{saving ? 'Salvo…' : 'Pianifica'}</Button>
+        </footer>
+      </form>
+    </Sheet>
+  )
 }
