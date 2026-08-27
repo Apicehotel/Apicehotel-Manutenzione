@@ -16,6 +16,7 @@ import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
+import './header-mobile.css'
 import {
   InterventionsView, UrgentView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
@@ -61,6 +62,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [hotelSheet, setHotelSheet] = useState(false)
   const [insertOpen, setInsertOpen] = useState(false)
   const [urgentCreateOpen, setUrgentCreateOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [settings, setSettings] = useState(null)
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
@@ -195,7 +197,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     </div>
   )
 
-  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen
+  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || notificationsOpen
 
   return (
     <div className="rs-root">
@@ -237,7 +239,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           </button>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <PresenceChip user={user} />
-            <IconButton icon="menu" label="Menu" onClick={() => setDrawer(true)} data-testid="header-menu" />
+            <IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />
           </div>
         </header>
 
@@ -278,6 +280,21 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
           )
         })}
+      </Sheet>
+
+      <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
+        <div className="rs-notification-center">
+          <p className="rs-notification-center__intro">Avvisi e promemoria della struttura in un unico punto.</p>
+          <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('urgent') }}>
+            <span><Icon name="warning" /></span>
+            <span><strong>Avvisi urgenti</strong><small>Apri gli avvisi attivi della struttura.</small></span>
+            <Icon name="chevronRight" />
+          </button>
+          <div className="rs-notification-center__reserved">
+            <strong><Icon name="bell" /> Promemoria</strong>
+            <small style={{display:'block',marginTop:4}}>Questo spazio è pronto per i nuovi promemoria ntfy per ruolo.</small>
+          </div>
+        </div>
       </Sheet>
 
       {drawer && (
