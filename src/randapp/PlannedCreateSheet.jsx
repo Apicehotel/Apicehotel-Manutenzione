@@ -11,6 +11,11 @@ const CATEGORIES = [
 ]
 const toTimestamp = (value) => value ? new Date(value).getTime() : null
 const isEvenRoom = (room) => { const n = Number(String(room).replace(/\D/g, '')); return Number.isFinite(n) && n % 2 === 0 }
+const assigneeKey = (person) => {
+  const raw = person?.auth_user_id || person?.legacy_id || person?.id || person?.name || ''
+  const prefix = person?.role === 'Tecnico esterno' ? 'ext' : 'usr'
+  return `${prefix}:${String(raw).trim().toLowerCase()}`
+}
 
 export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel?.id]
@@ -61,9 +66,18 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
       ? selectedFloorIds.length === 1 && validStart && validEnd && assignees.length > 0
       : validLocation && notes.trim() && validStart && validEnd && assignees.length > 0
 
-  const toggleAssignee = (person) => setAssignees((current) => current.some((entry) => entry.id === person.id)
-    ? current.filter((entry) => entry.id !== person.id)
-    : [...current, { id: person.id, name: person.name, role: person.role }])
+  const toggleAssignee = (person) => {
+    const key = assigneeKey(person)
+    if (!key || key.endsWith(':')) return
+    setAssignees((current) => current.some((entry) => entry.key === key)
+      ? current.filter((entry) => entry.key !== key)
+      : [...current, {
+          key,
+          id: person.auth_user_id || person.legacy_id || person.id || key,
+          name: person.name,
+          role: person.role,
+        }])
+  }
 
   const toggleFloor = (index) => setSelectedFloorIds((current) => {
     if (isExtraFloors) return current.includes(index) ? current.filter((value) => value !== index) : [...current, index]
@@ -90,9 +104,10 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
       const end = scheduledUntil ? toTimestamp(scheduledUntil) : start
       const resolvedLocation = (isChecklist || isExtraFloors) ? floorLabel : roomTrim
       const resolvedNotes = notes.trim() || (isExtraFloors ? `Extra Piani — ${floorLabel}` : isChecklist ? `${category} ${floorLabel}` : '')
+      const savedAssignees = assignees.map(({ id, name, role }) => ({ id, name, role }))
       await insertPlanned({
         hotelId: hotel.id, location: resolvedLocation, locationMode: (isChecklist || isExtraFloors) ? 'zona' : mode,
-        category, notes: resolvedNotes, scheduledAt: start, scheduledUntil: end, assignees,
+        category, notes: resolvedNotes, scheduledAt: start, scheduledUntil: end, assignees: savedAssignees,
         rooms: (isChecklist || isExtraFloors) ? checklistRooms : null, roomsDone: {}, roomGroupIds: selectedFloorIds,
         status: 'pending', createdBy: user?.name || '',
       })
@@ -108,11 +123,12 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   })
 
   const AssigneeRow = ({ person, isExternal = false }) => {
-    const selected = assignees.some((entry) => entry.id === person.id)
-    return <button type="button" onClick={() => toggleAssignee(person)} style={{width:'100%',display:'grid',gridTemplateColumns:'38px minmax(0,1fr) 24px',alignItems:'center',gap:10,padding:'9px 10px',borderRadius:13,border:`1px solid ${selected ? 'var(--rs-line-strong)' : 'var(--rs-line)'}`,background:selected?'var(--rs-surface-3)':'var(--rs-surface)',color:'var(--rs-text)',textAlign:'left',cursor:'pointer'}}>
+    const key = assigneeKey(person)
+    const selected = assignees.some((entry) => entry.key === key)
+    return <button type="button" aria-pressed={selected} onClick={() => toggleAssignee(person)} style={{width:'100%',display:'grid',gridTemplateColumns:'38px minmax(0,1fr) 24px',alignItems:'center',gap:10,padding:'9px 10px',borderRadius:13,border:`1px solid ${selected ? 'var(--rs-cyan)' : 'var(--rs-line)'}`,background:selected?'color-mix(in srgb,var(--rs-cyan) 10%,var(--rs-surface))':'var(--rs-surface)',color:'var(--rs-text)',textAlign:'left',cursor:'pointer'}}>
       <span style={{width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:isExternal?'var(--rs-warn)':'var(--rs-cyan)'}}><Icon name={isExternal ? 'wrench' : 'user'} /></span>
       <span style={{minWidth:0}}><strong style={{display:'block',fontSize:'.88rem'}}>{person.name}</strong><small style={{display:'block',color:'var(--rs-text-3)',marginTop:2}}>{person.role}</small></span>
-      <span style={{width:20,height:20,borderRadius:7,border:`1px solid ${selected?'var(--rs-cyan)':'var(--rs-line-strong)'}`,background:selected?'var(--rs-cyan)':'transparent',display:'grid',placeItems:'center',color:'white'}}>{selected ? '✓' : ''}</span>
+      <span aria-hidden="true" style={{width:20,height:20,borderRadius:7,border:`1px solid ${selected?'var(--rs-cyan)':'var(--rs-line-strong)'}`,background:selected?'var(--rs-cyan)':'transparent',display:'grid',placeItems:'center',color:'white'}}>{selected ? '✓' : ''}</span>
     </button>
   }
 
@@ -138,8 +154,8 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
       </div>{scheduledAt && scheduledUntil && !validEnd && <small style={{display:'block',marginTop:7,color:'var(--rs-danger)'}}>La data finale deve essere successiva alla data iniziale.</small>}</Field>
 
       <Field label="Assegna a *"><div style={{display:'grid',gap:8}}>
-        {internal.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em'}}>Personale interno</small>{internal.map((person) => <AssigneeRow key={person.id} person={person} />)}</>}
-        {external.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em',marginTop:4}}>Tecnici esterni</small>{external.map((person) => <AssigneeRow key={person.id} person={person} isExternal />)}</>}
+        {internal.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em'}}>Personale interno</small>{internal.map((person) => <AssigneeRow key={assigneeKey(person)} person={person} />)}</>}
+        {external.length > 0 && <><small style={{fontWeight:800,color:'var(--rs-text-3)',textTransform:'uppercase',letterSpacing:'.05em',marginTop:4}}>Tecnici esterni</small>{external.map((person) => <AssigneeRow key={assigneeKey(person)} person={person} isExternal />)}</>}
         {!candidates.length && <small style={{color:'var(--rs-danger)'}}>Nessun manutentore o tecnico disponibile per questa struttura.</small>}
       </div></Field>
 
