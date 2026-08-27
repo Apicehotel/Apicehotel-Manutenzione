@@ -10,15 +10,18 @@ export async function fetchReminders(hotelId) {
   return data || []
 }
 
+async function uploadReminderPhoto(hotelId, photoFile) {
+  if (!photoFile) return null
+  const ext = String(photoFile.name || 'foto.jpg').split('.').pop()?.toLowerCase() || 'jpg'
+  const photoPath = `${hotelId}/promemoria/${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage.from('maintenance-photos').upload(photoPath, photoFile, { upsert: false, contentType: photoFile.type || 'image/jpeg' })
+  if (error) throw error
+  return photoPath
+}
+
 export async function createReminder(reminder, photoFile = null) {
   if (!supabase) throw new Error('Supabase non disponibile')
-  let photoPath = null
-  if (photoFile) {
-    const ext = String(photoFile.name || 'foto.jpg').split('.').pop()?.toLowerCase() || 'jpg'
-    photoPath = `${reminder.hotel_id}/promemoria/${crypto.randomUUID()}.${ext}`
-    const { error: uploadError } = await supabase.storage.from('maintenance-photos').upload(photoPath, photoFile, { upsert: false, contentType: photoFile.type || 'image/jpeg' })
-    if (uploadError) throw uploadError
-  }
+  const photoPath = await uploadReminderPhoto(reminder.hotel_id, photoFile)
   const payload = { ...reminder, photo_path: photoPath }
   const { data, error } = await supabase.from('promemoria').insert(payload).select().single()
   if (error) {
@@ -31,6 +34,27 @@ export async function createReminder(reminder, photoFile = null) {
 export async function updateReminder(id, changes) {
   const { data, error } = await supabase.from('promemoria').update({ ...changes, updated_at: new Date().toISOString() }).eq('id', id).select().single()
   if (error) throw error
+  return data
+}
+
+export async function updateReminderWithPhoto(item, changes, photoFile = null, removePhoto = false) {
+  if (!supabase) throw new Error('Supabase non disponibile')
+  let nextPhotoPath = item.photo_path || null
+  let uploadedPath = null
+  if (photoFile) {
+    uploadedPath = await uploadReminderPhoto(item.hotel_id, photoFile)
+    nextPhotoPath = uploadedPath
+  } else if (removePhoto) {
+    nextPhotoPath = null
+  }
+  const { data, error } = await supabase.from('promemoria').update({ ...changes, photo_path: nextPhotoPath, updated_at: new Date().toISOString() }).eq('id', item.id).select().single()
+  if (error) {
+    if (uploadedPath) await supabase.storage.from('maintenance-photos').remove([uploadedPath]).catch(() => {})
+    throw error
+  }
+  if (item.photo_path && item.photo_path !== nextPhotoPath) {
+    await supabase.storage.from('maintenance-photos').remove([item.photo_path]).catch(() => {})
+  }
   return data
 }
 
