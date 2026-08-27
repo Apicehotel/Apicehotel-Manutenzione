@@ -30,12 +30,11 @@ const ACTIONS = [
     icon: 'hotel',
     title: 'Planning sale',
     subtitle: 'Prenotazioni e attività sale',
-    gioOnly: true,
   },
 ]
 
 export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
-  const actions = ACTIONS.filter((item) => !item.gioOnly || hotel?.id === 'hotelgio')
+  const actions = ACTIONS
   const pick = (id) => {
     if (id === 'intervention') {
       try { sessionStorage.setItem('randapp.pending-insert', 'planning-work') } catch { /* il flusso resta navigabile anche senza storage */ }
