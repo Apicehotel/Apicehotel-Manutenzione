@@ -55,7 +55,7 @@ test('Planning Sale is decomposed into focused components', async () => {
   ])
 })
 
-test('active CSS is explicit at the runtime entry and old global stacks are not loaded', async () => {
+test('active CSS is explicit at the runtime entry and legacy global stacks are gone', async () => {
   const main = await source('src/main.jsx')
   assert.match(main, /randapp\/shell\.css/)
   assert.match(main, /randapp\/adaptive-layout\.css/)
