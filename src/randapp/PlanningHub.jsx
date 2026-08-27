@@ -3,6 +3,7 @@ import { fetchPlanned, subscribePlanned } from '../planned-data.js'
 import { fetchBookings } from '../sale-data.js'
 import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { Icon, Spinner } from './ui.jsx'
+import PlannedCreateSheet from './PlannedCreateSheet.jsx'
 
 const startDay = (value = new Date()) => { const d = new Date(value); d.setHours(0,0,0,0); return d }
 const endDay = (value = new Date()) => { const d = startDay(value); d.setDate(d.getDate()+1); return d.getTime()-1 }
@@ -55,6 +56,8 @@ export default function PlanningHub({ hotel, user }) {
   const [planned,setPlanned] = useState([])
   const [bookings,setBookings] = useState([])
   const [loading,setLoading] = useState(true)
+  const [workCreateOpen,setWorkCreateOpen] = useState(false)
+  const [saleCreateSignal,setSaleCreateSignal] = useState(0)
   const hasSales = hotel?.id === 'hotelgio'
 
   const load = useCallback(async()=>{
@@ -75,6 +78,22 @@ export default function PlanningHub({ hotel, user }) {
     const offWork = subscribePlanned(hotel.id, load)
     return ()=>{ offWork?.() }
   },[hotel.id,load])
+
+  useEffect(() => {
+    let pending = null
+    try {
+      pending = sessionStorage.getItem('randapp.pending-insert')
+      if (pending) sessionStorage.removeItem('randapp.pending-insert')
+    } catch { /* nessun blocco se sessionStorage non è disponibile */ }
+    if (pending === 'planning-work') {
+      setSection('work')
+      setWorkCreateOpen(true)
+    }
+    if (pending === 'planning-sale' && hasSales) {
+      setSection('sale')
+      setSaleCreateSignal((value) => value + 1)
+    }
+  }, [hasSales])
 
   const todayWork = useMemo(()=>{
     const start = startDay().getTime(), end = endDay()
@@ -117,7 +136,9 @@ export default function PlanningHub({ hotel, user }) {
       {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />}
       <div style={{display:'flex',gap:'12px',alignItems:'center',fontSize:'.72rem',color:'var(--rs-text-3)',flexWrap:'wrap'}}><span>● Grigio · Da fare</span><span style={{color:'var(--rs-warn)'}}>● Arancione · Da finire</span><span style={{color:'var(--rs-ok)'}}>● Verde · Completate</span></div>
     </div> : <div className="rs-legacy rs-legacy--planning">
-      {section==='work' ? <PlanningWork items={planned} onOpen={()=>{}} /> : <PlanningSale hotel={hotel} user={user} />}
+      {section==='work' ? <PlanningWork items={planned} onOpen={()=>{}} /> : <PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal} />}
     </div>}
+
+    <PlannedCreateSheet open={workCreateOpen} onClose={()=>setWorkCreateOpen(false)} hotel={hotel} user={user} onSaved={load} />
   </div>
 }
