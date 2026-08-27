@@ -234,13 +234,26 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       </dl>
       {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
 
-      {issue.technicianAskedBy && issue.status === 'todo' && (
-        <div className="rs-note rs-note--tecnico">{issue.technicianAskedBy} chiede di contattare un tecnico.</div>
-      )}
       {issue.status === 'tecnico' && (
         <div className="rs-note rs-note--tecnico">
-          Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong>{issue.technicianName && <> · assegnato a <strong>{issue.technicianName}</strong></>}
-          {canSendUrgent(user) && (
+          {issue.technicianName ? (
+            <>Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong> · assegnato a <strong>{issue.technicianName}</strong></>
+          ) : (
+            <>In attesa di contatto tecnico{issue.technicianAskedBy && <> — richiesto da <strong>{issue.technicianAskedBy}</strong></>}</>
+          )}
+          {canSendUrgent(user) && !issue.technicianName && (
+            <div style={{ marginTop: 8 }}>
+              <Field label="Quale tecnico esterno?">
+                <select className="rs-select" value={techChoice} onChange={(e) => setTechChoice(e.target.value)}>
+                  <option value="">Scegli…</option>
+                  {technicians.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </Field>
+              {!technicians.length && <p className="rs-field__hint">Nessun tecnico esterno configurato per questa struttura.</p>}
+              <Button variant="primary" disabled={!techChoice} onClick={confirmTech} style={{ marginTop: 8 }}>Assegna tecnico</Button>
+            </div>
+          )}
+          {canSendUrgent(user) && issue.technicianName && (
             <div style={{ marginTop: 8 }}>
               <Field label="Nota per il tecnico (facoltativa)">
                 <textarea className="rs-textarea" rows="2" value={techNote} onChange={(e) => setTechNote(e.target.value)} placeholder="Aggiungi dettagli per il tecnico" />
@@ -281,9 +294,9 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <Button variant="ghost" icon="package" onClick={() => setAsking('piece')} data-testid="action-piece">Serve pezzo</Button>
             {!issue.pieceReplaced && <Button variant="ghost" icon="package" onClick={() => setAsking('replaced')}>Pezzo sostituito</Button>}
           </div>
-          <Button variant="ghost" icon="message" disabled={!canSendUrgent(user) && Boolean(issue.technicianAskedBy)}
-            onClick={() => canSendUrgent(user) ? setAsking('tech') : onUpdate(issue.id, { technicianAskedBy: user?.name })}>
-            {canSendUrgent(user) ? 'Chiedi un tecnico' : (issue.technicianAskedBy ? 'Tecnico già richiesto' : 'Chiedi un tecnico')}
+          <Button variant="ghost" icon="message"
+            onClick={() => { if (canSendUrgent(user)) setAsking('tech'); else { onUpdate(issue.id, { status: 'tecnico', technicianAskedBy: user?.name }); onClose() } }}>
+            Chiedi un tecnico
           </Button>
           <Field label="Note sul lavoro fatto (facoltative)">
             <textarea className="rs-textarea" rows="3" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Cosa è stato fatto" data-testid="completion-note" />
@@ -297,7 +310,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
         </div>
       )}
       {issue.status === 'waiting' && canComplete && <div className="rs-actions-stack"><Button variant="primary" onClick={pieceArrived}>Pezzo arrivato, torna in Da fare</Button></div>}
-      {issue.status === 'tecnico' && canComplete && <div className="rs-actions-stack"><Button variant="primary" icon="check" onClick={techDone}>Segna completata (tecnico)</Button></div>}
+      {issue.status === 'tecnico' && issue.technicianName && canComplete && <div className="rs-actions-stack"><Button variant="primary" icon="check" onClick={techDone}>Segna completata (tecnico)</Button></div>}
 
       {asking === 'piece' && (
         <div className="rs-actions-stack">
