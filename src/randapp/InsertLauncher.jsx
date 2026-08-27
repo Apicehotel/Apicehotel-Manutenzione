@@ -17,13 +17,13 @@ const ACTIONS = [
     id: 'intervention',
     icon: 'wrench',
     title: 'Nuovo intervento',
-    subtitle: 'Apri la sezione interventi e lavori programmati',
+    subtitle: 'Pianifica un intervento con data, periodo e assegnazione',
   },
   {
     id: 'planning-work',
     icon: 'calendar',
     title: 'Planning lavori',
-    subtitle: 'Pianifica un lavoro con data, periodo e assegnazione',
+    subtitle: 'Apri il calendario dei lavori pianificati',
   },
   {
     id: 'planning-sale',
@@ -37,7 +37,12 @@ const ACTIONS = [
 export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
   const actions = ACTIONS.filter((item) => !item.gioOnly || hotel?.id === 'hotelgio')
   const pick = (id) => {
-    if (id === 'planning-work' || id === 'planning-sale') {
+    if (id === 'intervention') {
+      try { sessionStorage.setItem('randapp.pending-insert', 'planning-work') } catch { /* il flusso resta navigabile anche senza storage */ }
+      onPick('planning-work')
+      return
+    }
+    if (id === 'planning-sale') {
       try { sessionStorage.setItem('randapp.pending-insert', id) } catch { /* il flusso resta navigabile anche senza storage */ }
     }
     onPick(id)
