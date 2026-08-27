@@ -2,10 +2,18 @@ import {
   can, isAdminUser, canViewPlanned, canViewUrgent, canViewPlanningMenu,
   canViewTemperature, canViewHousekeeping, canViewTechnicianDirectory,
 } from './helpers.js'
+import { ITEM_TO_NAV_KEY, placementFor } from './role-navigation.js'
 
-// Costruisce il menu completo dell'app, filtrato dai permessi reali del ruolo.
-// Ogni voce corrisponde a una sezione realmente presente nel repository.
-export function buildNav(user, hotel) {
+const placementAllows = (config, user, itemId, wanted = null) => {
+  const key = ITEM_TO_NAV_KEY[itemId]
+  if (!key) return true
+  const placement = placementFor(config, user?.role, key)
+  return wanted ? placement === wanted : placement !== 'off'
+}
+
+// Costruisce il menu completo dell'app, filtrato sia dai permessi funzionali
+// sia dalla configurazione Ruoli & Navigazione salvata in Supabase.
+export function buildNav(user, hotel, navigationConfig = null, placement = null) {
   if (!user) return []
   const groups = [
     {
@@ -42,11 +50,13 @@ export function buildNav(user, hotel) {
     },
   ]
   return groups
-    .map((group) => ({ ...group, items: group.items.filter((item) => item.show) }))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.show && placementAllows(navigationConfig, user, item.id, placement)),
+    }))
     .filter((group) => group.items.length)
 }
 
-// Mappa una voce di menu su come deve essere gestita (view interna o tab impostazioni).
 export const NAV_TARGET = {
   'new-issue': { view: 'issues', create: true },
   'admin-users': { settings: 'users' },
@@ -54,7 +64,7 @@ export const NAV_TARGET = {
   'admin-sensors': { settings: 'sensors' },
 }
 
-// Guardie di permesso per bloccare l'accesso diretto a sezioni non consentite.
+// Guardie funzionali: la Shell aggiunge anche il gate dinamico Off/Sotto/Laterale.
 export const VIEW_GUARDS = {
   interventions: canViewPlanned,
   urgent: canViewUrgent,
