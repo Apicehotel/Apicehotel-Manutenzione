@@ -13,6 +13,10 @@
 .rs-reminder-selected{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .rs-reminder-time-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .rs-reminder-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rs-reminder-dates .rs-field{min-width:0}
+.rs-reminder-dates .rs-input[type='date']{width:100%;min-height:52px;padding:10px 14px;border-radius:14px;font-size:1rem;text-align:left;color:var(--rs-text);background:var(--rs-surface)}
+.rs-reminder-dates .rs-input[type='date']::-webkit-date-and-time-value{text-align:left;min-height:28px;line-height:28px}
+.rs-reminder-dates .rs-input[type='date']::-webkit-calendar-picker-indicator{width:22px;height:22px;opacity:.75}
 .rs-reminder-file{display:grid;gap:8px;max-width:430px}
 .rs-reminder-file .rs-input[type='file']{width:100%;min-height:42px;padding:5px 7px;font-size:.82rem}
 .rs-reminder-file .rs-input[type='file']::file-selector-button{min-height:30px;padding:4px 10px;margin-right:8px;border-radius:10px;border:1px solid var(--rs-line);background:var(--rs-surface-2);color:var(--rs-text);font:inherit;font-size:.78rem}
@@ -30,7 +34,8 @@
   .rs-reminder-head p{font-size:.82rem;line-height:1.35}
   .rs-reminder-form-card{padding:14px!important}
   .rs-reminder-form{gap:15px}
-  .rs-reminder-dates{grid-template-columns:1fr}
+  .rs-reminder-dates{grid-template-columns:1fr;gap:14px}
+  .rs-reminder-dates .rs-input[type='date']{min-height:56px;padding:12px 14px;font-size:1rem;border-radius:15px}
   .rs-reminder-time-row{grid-template-columns:minmax(0,1fr) 88px}
   .rs-reminder-file{max-width:100%}
   .rs-reminder-file .rs-input[type='file']{min-height:38px;padding:3px 5px;font-size:.72rem}
