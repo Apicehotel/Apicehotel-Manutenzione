@@ -3,7 +3,8 @@ import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
-import { can, canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
+import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
+import { canUser } from '../permissions.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -201,8 +202,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [techChoice, setTechChoice] = useState('')
   const [techNote, setTechNote] = useState(issue.technicianNote || '')
   const [confirmDel, setConfirmDel] = useState(false)
-  const canComplete = can(user, 'complete') || can(user, 'take_charge')
-  const canAssign = can(user, 'assign')
+  const canComplete = canUser(user, 'issues', 'complete') || canUser(user, 'issues', 'take_charge')
+  const canDelete = canUser(user, 'issues', 'delete')
   const technicians = (users || []).filter((p) => p.role === 'Tecnico esterno')
   const meta = ISSUE_STATUS_META[issue.status] || {}
 
@@ -222,7 +223,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Badge tone={URGENCY_META[issue.urgency]?.tone}>{URGENCY_META[issue.urgency]?.label || issue.urgency}</Badge>
         <Badge tone={meta.tone}>{meta.label}</Badge>
-        {canAssign && <IconButton icon="trash" label="Elimina" style={{ marginLeft: 'auto' }} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
+        {canDelete && <IconButton icon="trash" label="Elimina" style={{ marginLeft: 'auto' }} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
       </div>
       <h2 className="rs-detail-room">{issue.room}</h2>
       <p className="rs-detail-desc">{issue.title}</p>
@@ -359,7 +360,7 @@ export default function Issues({ user, hotel, users, createSignal }) {
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState(null)
 
-  useEffect(() => { if (createSignal && can(user, 'create')) setCreating(true) }, [createSignal])
+  useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) setCreating(true) }, [createSignal])
 
   const reload = () => fetchIssues(hotel.id).then(({ issues: list }) => setIssues(list || [])).catch(() => {}).finally(() => setLoading(false))
 
@@ -394,7 +395,7 @@ export default function Issues({ user, hotel, users, createSignal }) {
     <div data-testid="issues-view">
       <div className="rs-page-title">
         <div><h1>Segnalazioni</h1><p>{hotel.name}</p></div>
-        {can(user, 'create') && <Button variant="primary" icon="plus" onClick={() => setCreating(true)} data-testid="open-new-issue">Nuova</Button>}
+        {canUser(user, 'issues', 'create') && <Button variant="primary" icon="plus" onClick={() => setCreating(true)} data-testid="open-new-issue">Nuova</Button>}
       </div>
       <div className="rs-toolbar">
         <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search"
