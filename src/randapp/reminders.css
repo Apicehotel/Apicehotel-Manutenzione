@@ -13,7 +13,9 @@
 .rs-reminder-selected{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .rs-reminder-time-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .rs-reminder-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.rs-reminder-file{display:grid;gap:8px}
+.rs-reminder-file{display:grid;gap:8px;max-width:430px}
+.rs-reminder-file .rs-input[type='file']{width:100%;min-height:42px;padding:5px 7px;font-size:.82rem}
+.rs-reminder-file .rs-input[type='file']::file-selector-button{min-height:30px;padding:4px 10px;margin-right:8px;border-radius:10px;border:1px solid var(--rs-line);background:var(--rs-surface-2);color:var(--rs-text);font:inherit;font-size:.78rem}
 .rs-reminder-form-actions{display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 4px);padding-top:8px;background:linear-gradient(180deg,transparent,var(--rs-surface) 28%);z-index:2}
 .rs-reminder-card{padding:16px}
 .rs-reminder-card-top{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:start}
@@ -30,6 +32,9 @@
   .rs-reminder-form{gap:15px}
   .rs-reminder-dates{grid-template-columns:1fr}
   .rs-reminder-time-row{grid-template-columns:minmax(0,1fr) 88px}
+  .rs-reminder-file{max-width:100%}
+  .rs-reminder-file .rs-input[type='file']{min-height:38px;padding:3px 5px;font-size:.72rem}
+  .rs-reminder-file .rs-input[type='file']::file-selector-button{min-height:28px;padding:3px 8px;margin-right:6px;font-size:.72rem}
   .rs-reminder-card{padding:14px!important}
   .rs-reminder-card-top{grid-template-columns:34px minmax(0,1fr);gap:10px}
   .rs-reminder-icon{width:34px;height:34px}
