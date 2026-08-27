@@ -63,9 +63,30 @@ export async function deletePlanningWorkDay(id) {
 
 export function subscribePlanningWork(hotelId, onChange) {
   if (!supabase) return () => {}
-  const channel = supabase.channel(`planning-lavori-${hotelId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'planning_lavori' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'planning_lavori_giorni' }, onChange)
-    .subscribe()
-  return () => supabase.removeChannel(channel)
+
+  // React StrictMode può montare/smontare/rimontare rapidamente il componente.
+  // Supabase non permette di aggiungere nuovi postgres_changes a un canale già
+  // sottoscritto con lo stesso topic, quindi ogni sottoscrizione usa un topic unico.
+  const suffix = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const channel = supabase
+    .channel(`planning-lavori-${hotelId}-${suffix}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'planning_lavori',
+      filter: `hotel_id=eq.${hotelId}`,
+    }, onChange)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'planning_lavori_giorni',
+    }, onChange)
+
+  channel.subscribe()
+
+  return () => {
+    supabase.removeChannel(channel).catch(() => undefined)
+  }
 }
