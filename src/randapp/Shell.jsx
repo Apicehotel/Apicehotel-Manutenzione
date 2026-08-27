@@ -55,6 +55,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [users, setUsers] = useState([])
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [plannedCreateSignal, setPlannedCreateSignal] = useState(0)
   const [personalizeSignal, setPersonalizeSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
@@ -132,6 +133,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
     if (id === 'intervention') {
       setView('interventions')
+      setPlannedCreateSignal((n) => n + 1)
       return
     }
     if (id === 'planning-work' || id === 'planning-sale') {
@@ -151,7 +153,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       return <EmptyState icon="lock" title="Accesso non consentito">Il tuo ruolo ({user.role}) non può usare questa sezione.</EmptyState>
     }
 
-    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
+    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} users={users} createSignal={plannedCreateSignal} />
     if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub user={user} hotel={hotel} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />

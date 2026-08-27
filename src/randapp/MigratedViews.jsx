@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../planned-data.js'
+import { fetchPlanned, insertPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../planned-data.js'
 import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from '../urgents-data.js'
 import { fetchFeedback, insertFeedback, subscribeFeedback } from '../feedback-data.js'
 import { changeOwnPin, updateOwnProfile, setOwnPresence } from '../auth-data.js'
@@ -7,7 +7,7 @@ import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { TemperatureSensors } from '../temperature.jsx'
 import { Housekeeping } from '../housekeeping.jsx'
 import { Button, Card, EmptyState, Field, Icon, IconButton, Badge, Spinner, TextInput, Sheet, ConfirmDialog } from './ui.jsx'
-import { canCreatePlanned, compressPhotoAsDataUrl } from './helpers.js'
+import { canCreatePlanned, ISSUE_CATEGORIES, compressPhotoAsDataUrl } from './helpers.js'
 
 const fmt = (value) => value ? new Date(value).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 const whatsappLink = (phone) => {
@@ -37,21 +37,26 @@ function isAssignedTo(item, user) {
   return (item.assignees || []).some((a) => String(a?.name || a || '').trim().toLowerCase() === name)
 }
 
-export function InterventionsView({ hotel, user }) {
+export function InterventionsView({ hotel, user, users, createSignal }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
+  const [creating, setCreating] = useState(false)
+  const canManageAll = canCreatePlanned(user) || user?.role === 'manutentore'
   const load = useCallback(async () => { const result = await fetchPlanned(hotel.id); setItems(result.items || []); setLoading(false) }, [hotel.id])
   useEffect(() => { load(); return subscribePlanned(hotel.id, load) }, [hotel.id, load])
+  useEffect(() => { if (createSignal && canManageAll) setCreating(true) }, [createSignal])
   const visible = useMemo(() => items.filter((item) => filter === 'all' || (filter === 'done' ? item.status === 'done' : item.status !== 'done')), [items, filter])
   const doUpdate = async (id, changes) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i)))
     try { await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { load() }
   }
   const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); load() }
+  if (creating) return <NewPlannedForm hotel={hotel} user={user} users={users} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); load() }} />
   return <div data-testid="interventions-view">
-    <PageTitle title="Interventi" subtitle={`${hotel.name} · ${items.filter(i => i.status !== 'done').length} aperti`} />
+    <PageTitle title="Interventi" subtitle={`${hotel.name} · ${items.filter(i => i.status !== 'done').length} aperti`}
+      action={canManageAll && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Nuova</Button>} />
     <div className="rs-segmented rs-migrated-tabs">
       {[['active','Aperti'],['done','Fatti'],['all','Tutti']].map(([id,label]) => <button type="button" key={id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{label}</button>)}
     </div>
@@ -70,6 +75,84 @@ export function InterventionsView({ hotel, user }) {
     </div>}
     {selected && <PlannedDetail item={selected} user={user} onClose={() => setSelected(null)} onUpdate={doUpdate} onDelete={doDelete} />}
   </div>
+}
+
+function NewPlannedForm({ hotel, user, users, onCancel, onSaved }) {
+  const [location, setLocation] = useState('')
+  const [category, setCategory] = useState(ISSUE_CATEGORIES[0])
+  const [notes, setNotes] = useState('')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [roomsText, setRoomsText] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState([])
+  const [saving, setSaving] = useState(false)
+  const assignable = (users || []).filter((p) => ['manutentore', 'Tecnico esterno'].includes(p.role))
+  const toggleAssignee = (id) => setAssigneeIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!location.trim() || saving) return
+    setSaving(true)
+    const rooms = roomsText.split(/[,\n]/).map((r) => r.trim()).filter(Boolean)
+    const assignees = assignable.filter((p) => assigneeIds.includes(p.id)).map((p) => ({ name: p.name }))
+    try {
+      await insertPlanned({
+        hotelId: hotel.id,
+        location: location.trim(),
+        locationMode: 'zona',
+        category,
+        notes: notes.trim() || null,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : null,
+        rooms: rooms.length ? rooms : null,
+        assignees: assignees.length ? assignees : [],
+        status: 'pending',
+        createdBy: user?.name || 'App',
+      })
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <form className="rs-form" onSubmit={submit} data-testid="new-planned-form">
+      <div className="rs-form__head">
+        <IconButton icon="chevronLeft" label="Indietro" onClick={onCancel} />
+        <div><h2>Nuovo intervento</h2><p>{hotel.name} · stato iniziale Da fare</p></div>
+      </div>
+      <Field label="Camera o zona">
+        <TextInput value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Es. Camera 214 o Hall" required />
+      </Field>
+      <fieldset className="rs-fieldset">
+        <legend>Categoria</legend>
+        <div className="rs-chips">
+          {ISSUE_CATEGORIES.map((item) => (
+            <button type="button" key={item} className={`rs-chip ${category === item ? 'active' : ''}`} onClick={() => setCategory(item)}>{item}</button>
+          ))}
+        </div>
+      </fieldset>
+      <Field label="Descrizione del lavoro">
+        <textarea className="rs-textarea" rows="4" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Cosa va fatto" />
+      </Field>
+      <Field label="Data programmata (opzionale)">
+        <input type="date" className="rs-select" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+      </Field>
+      <Field label="Camere da spuntare (opzionale)" hint="Una per riga o separate da virgola, per lavori su più stanze">
+        <textarea className="rs-textarea" rows="2" value={roomsText} onChange={(e) => setRoomsText(e.target.value)} placeholder={'101, 102, 103'} />
+      </Field>
+      {!!assignable.length && (
+        <fieldset className="rs-fieldset">
+          <legend>Assegna a (opzionale)</legend>
+          <div className="rs-chips">
+            {assignable.map((p) => (
+              <button type="button" key={p.id} className={`rs-chip ${assigneeIds.includes(p.id) ? 'active' : ''}`} onClick={() => toggleAssignee(p.id)}>{p.name}</button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      <div className="rs-form-actions">
+        <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
+        <Button variant="primary" icon="plus" disabled={!location.trim() || saving}>{saving ? 'Invio…' : 'Crea intervento'}</Button>
+      </div>
+    </form>
+  )
 }
 
 function PlannedDetail({ item, user, onClose, onUpdate, onDelete }) {
