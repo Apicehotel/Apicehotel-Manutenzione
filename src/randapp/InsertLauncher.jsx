@@ -10,10 +10,15 @@ const ACTIONS = [
 const normalize=(value='')=>String(value).trim().toLocaleLowerCase('it')
 const canManageSale=(user)=>normalize(user?.role)==='direttore centro congressi'
 
-export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
+export default function InsertLauncher({ open, onClose, hotel, user, onPick, allowedActions = null }) {
   const managesSale=canManageSale(user)
-  const visibleActions=ACTIONS.filter((item)=>item.id!=='planning-sale'||managesSale)
+  const visibleActions=ACTIONS.filter((item)=>{
+    if(item.id==='planning-sale'&&!managesSale)return false
+    if(allowedActions&&allowedActions[item.id]===false)return false
+    return true
+  })
   const pick=(id)=>{
+    if(allowedActions&&allowedActions[id]===false)return
     if(id==='intervention'||id==='planning-work'){
       try{sessionStorage.setItem('randapp.insert-source',id)}catch{}
     }
