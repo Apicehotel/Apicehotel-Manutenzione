@@ -1,0 +1,11 @@
+@media (max-width: 899px) {
+  .rs-bottomnav .rs-navbtn[data-testid='nav-home'] {
+    grid-row: 1;
+  }
+
+  .rs-bottomnav[data-count='1'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
+  .rs-bottomnav[data-count='2'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
+  .rs-bottomnav[data-count='3'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
+  .rs-bottomnav[data-count='4'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
+  .rs-bottomnav[data-count='5'] .rs-navbtn[data-testid='nav-home'] { grid-column: 3; }
+}
