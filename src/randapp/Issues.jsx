@@ -277,11 +277,11 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
 }
 
 const FILTERS = [
-  ['all', 'Tutte'],
   ['todo', 'Da fare'],
-  ['waiting', 'Attesa pezzo'],
   ['tecnico', 'Tecnico'],
+  ['waiting', 'Attesa pezzo'],
   ['done', 'Completate'],
+  ['all', 'Tutte'],
 ]
 
 export default function Issues({ user, hotel, users, createSignal }) {
