@@ -1,0 +1,44 @@
+import { useEffect, useMemo, useState } from 'react'
+import { ROLES } from '../config.js'
+import { canSendReminder, createReminder, deleteReminder, fetchReminders, subscribeReminders, updateReminder } from '../reminders-data.js'
+import { Button, Card, Field, TextInput, Icon, EmptyState, Spinner } from './ui.jsx'
+
+const WEEKDAYS = [['mon','Lun'],['tue','Mar'],['wed','Mer'],['thu','Gio'],['fri','Ven'],['sat','Sab'],['sun','Dom']]
+const repeatLabel = (r) => r.repeat_kind === 'once' ? 'Una volta' : r.repeat_kind === 'daily' ? 'Ogni giorno' : r.repeat_kind === 'weekly' ? 'Giorni selezionati' : 'Ogni mese'
+const today = () => new Date().toISOString().slice(0,10)
+const uniqSorted = (list) => [...new Set(list.filter(Boolean))].sort()
+
+export default function RemindersView({ hotel, user }) {
+  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[creating,setCreating]=useState(false),[saving,setSaving]=useState(false),[message,setMessage]=useState('')
+  const [text,setText]=useState(''),[roles,setRoles]=useState(['manutentore']),[repeat,setRepeat]=useState('once'),[weekdays,setWeekdays]=useState([]),[times,setTimes]=useState(['09:00']),[startDate,setStartDate]=useState(today()),[endDate,setEndDate]=useState(''),[photo,setPhoto]=useState(null)
+  const allowed=canSendReminder(user)
+  const load=async()=>{try{setItems(await fetchReminders(hotel.id))}catch(e){setMessage(e?.message||'Errore caricamento')}finally{setLoading(false)}}
+  useEffect(()=>{setLoading(true);load();const off=subscribeReminders(hotel.id,load);return()=>off?.()},[hotel.id])
+  const activeCount=useMemo(()=>items.filter(x=>x.active).length,[items])
+  const toggleRole=(role)=>setRoles(list=>list.includes(role)?list.filter(x=>x!==role):[...list,role])
+  const toggleDay=(day)=>setWeekdays(list=>list.includes(day)?list.filter(x=>x!==day):[...list,day])
+  const addTime=()=>setTimes(list=>uniqSorted([...list,'12:00']))
+  const setTime=(index,value)=>setTimes(list=>uniqSorted(list.map((x,i)=>i===index?value:x)))
+  const removeTime=(index)=>setTimes(list=>list.filter((_,i)=>i!==index))
+  const reset=()=>{setText('');setRoles(['manutentore']);setRepeat('once');setWeekdays([]);setTimes(['09:00']);setStartDate(today());setEndDate('');setPhoto(null)}
+  const save=async(e)=>{e.preventDefault();if(!text.trim())return setMessage('Inserisci il testo del promemoria');if(!roles.length)return setMessage('Scegli almeno un ruolo destinatario');if(!times.length)return setMessage('Aggiungi almeno un orario');if(repeat==='weekly'&&!weekdays.length)return setMessage('Scegli almeno un giorno della settimana');setSaving(true);setMessage('');try{await createReminder({hotel_id:hotel.id,message:text.trim(),target_roles:roles,repeat_kind:repeat,weekdays:repeat==='weekly'?weekdays:[],month_day:repeat==='monthly'?Number(startDate.slice(8,10)):null,times:uniqSorted(times),start_date:startDate,end_date:endDate||null,active:true,created_by:user?.auth_user_id||user?.id||null,created_by_name:user?.name||'',created_by_role:user?.role||''},photo);reset();setCreating(false);setMessage('Promemoria salvato · ntfy priorità 5');await load()}catch(e2){setMessage(e2?.message||'Salvataggio non riuscito')}finally{setSaving(false)}}
+  const toggleActive=async(item)=>{try{await updateReminder(item.id,{active:!item.active});await load()}catch(e){setMessage(e?.message||'Aggiornamento non riuscito')}}
+  const remove=async(item)=>{if(!window.confirm('Eliminare questo promemoria?'))return;try{await deleteReminder(item.id);await load()}catch(e){setMessage(e?.message||'Eliminazione non riuscita')}}
+  if(!allowed)return <EmptyState icon="lock" title="Promemoria">Il tuo ruolo non può creare o gestire promemoria.</EmptyState>
+  if(loading)return <Spinner label="Carico promemoria…"/>
+  return <section data-testid="reminders-view">
+    <div className="rs-page-title"><div><h1>Promemoria</h1><p>{hotel.name} · {activeCount} attivi · invio ntfy sempre priorità 5</p></div><Button variant={creating?'ghost':'primary'} icon={creating?'close':'plus'} onClick={()=>setCreating(v=>!v)}>{creating?'Chiudi':'Nuovo'}</Button></div>
+    {message&&<p className="rs-badge rs-badge--accent" style={{display:'inline-flex',margin:'0 0 12px'}}>{message}</p>}
+    {creating&&<Card className="rs-card--pad" style={{marginBottom:16}}><form className="rs-form" onSubmit={save}>
+      <Field label="Messaggio"><textarea className="rs-textarea" value={text} onChange={e=>setText(e.target.value)} placeholder="Es. Controllare irrigazione prima di uscire" maxLength={500}/></Field>
+      <fieldset className="rs-fieldset"><legend>Destinatari per ruolo</legend><div className="rs-chips">{ROLES.map(role=><button type="button" key={role} className={`rs-chip ${roles.includes(role)?'active':''}`} onClick={()=>toggleRole(role)}>{roles.includes(role)?'✓ ':''}{role}</button>)}</div></fieldset>
+      <Field label="Ripetizione"><select className="rs-select" value={repeat} onChange={e=>setRepeat(e.target.value)}><option value="once">Una volta</option><option value="daily">Ogni giorno</option><option value="weekly">Giorni selezionati</option><option value="monthly">Ogni mese</option></select></Field>
+      {repeat==='weekly'&&<fieldset className="rs-fieldset"><legend>Giorni</legend><div className="rs-chips">{WEEKDAYS.map(([key,label])=><button type="button" key={key} className={`rs-chip ${weekdays.includes(key)?'active':''}`} onClick={()=>toggleDay(key)}>{label}</button>)}</div></fieldset>}
+      <fieldset className="rs-fieldset"><legend>Orari</legend><div style={{display:'grid',gap:8}}>{times.map((time,index)=><div key={`${time}-${index}`} style={{display:'grid',gridTemplateColumns:'1fr auto',gap:8}}><input className="rs-input" type="time" value={time} onChange={e=>setTime(index,e.target.value)}/><Button type="button" variant="ghost" size="sm" icon="trash" onClick={()=>removeTime(index)} disabled={times.length===1}>Togli</Button></div>)}</div><Button type="button" variant="ghost" size="sm" icon="plus" onClick={addTime} style={{marginTop:8}}>Aggiungi orario</Button></fieldset>
+      <div className="rs-two-col" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><Field label="Dal"><input className="rs-input" type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/></Field><Field label="Fino al (opzionale)"><input className="rs-input" type="date" value={endDate} min={startDate} onChange={e=>setEndDate(e.target.value)}/></Field></div>
+      <Field label="Foto opzionale"><input className="rs-input" type="file" accept="image/*" capture="environment" onChange={e=>setPhoto(e.target.files?.[0]||null)}/>{photo&&<small className="rs-field__hint">{photo.name}</small>}</Field>
+      <Button variant="primary" disabled={saving}>{saving?'Salvo…':'Salva promemoria'}</Button>
+    </form></Card>}
+    {!items.length?<EmptyState icon="bell" title="Nessun promemoria">Crea il primo promemoria per questa struttura.</EmptyState>:<div style={{display:'grid',gap:10}}>{items.map(item=><Card key={item.id} className="rs-card--pad"><div style={{display:'flex',gap:10,alignItems:'flex-start'}}><span style={{width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name="bell"/></span><div style={{minWidth:0,flex:1}}><strong style={{display:'block'}}>{item.message}</strong><small style={{display:'block',marginTop:5,color:'var(--rs-text-2)'}}>{repeatLabel(item)} · {(item.times||[]).join(' · ')}</small><small style={{display:'block',marginTop:3,color:'var(--rs-text-3)'}}>{(item.target_roles||[]).join(', ')}</small>{item.repeat_kind==='weekly'&&<small style={{display:'block',marginTop:3,color:'var(--rs-text-3)'}}>{(item.weekdays||[]).join(' · ')}</small>}<small style={{display:'block',marginTop:3,color:'var(--rs-text-3)'}}>Dal {item.start_date}{item.end_date?` al ${item.end_date}`:' · senza scadenza'}{item.photo_path?' · 📷 foto':''}</small></div><span className={`rs-badge ${item.active?'rs-badge--done':'rs-badge--low'}`}>{item.active?'Attivo':'Pausa'}</span></div><div style={{display:'flex',gap:8,marginTop:12}}><Button variant="ghost" size="sm" onClick={()=>toggleActive(item)}>{item.active?'Pausa':'Riattiva'}</Button><Button variant="danger" size="sm" icon="trash" onClick={()=>remove(item)}>Elimina</Button></div></Card>)}</div>}
+  </section>
+}
