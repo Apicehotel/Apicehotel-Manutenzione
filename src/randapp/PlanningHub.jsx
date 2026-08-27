@@ -51,26 +51,25 @@ function TodaySection({ title, icon, items, emptyText }) {
   </section>
 }
 
-export default function PlanningHub({ hotel, user }) {
+export default function PlanningHub({ hotel, user, createRequest = null }) {
   const [section,setSection] = useState(null)
   const [planned,setPlanned] = useState([])
   const [bookings,setBookings] = useState([])
   const [loading,setLoading] = useState(true)
   const [workCreateOpen,setWorkCreateOpen] = useState(false)
   const [saleCreateSignal,setSaleCreateSignal] = useState(0)
-  const hasSales = Boolean(hotel?.id)
 
   const load = useCallback(async()=>{
     setLoading(true)
     try {
       const [workResult,saleResult] = await Promise.all([
         fetchPlanning(hotel.id),
-        hasSales ? fetchBookings(hotel.id) : Promise.resolve({items:[]}),
+        fetchBookings(hotel.id),
       ])
       setPlanned(workResult.items || [])
       setBookings(saleResult.items || [])
     } finally { setLoading(false) }
-  },[hotel.id,hasSales])
+  },[hotel.id])
 
   useEffect(()=>{
     setSection(null)
@@ -80,20 +79,17 @@ export default function PlanningHub({ hotel, user }) {
   },[hotel.id,load])
 
   useEffect(() => {
-    let pending = null
-    try {
-      pending = sessionStorage.getItem('randapp.pending-insert')
-      if (pending) sessionStorage.removeItem('randapp.pending-insert')
-    } catch { /* nessun blocco se sessionStorage non è disponibile */ }
-    if (pending === 'planning-work') {
+    if (!createRequest?.nonce) return
+    if (createRequest.kind === 'work') {
       setSection('work')
       setWorkCreateOpen(true)
+      return
     }
-    if (pending === 'planning-sale' && hasSales) {
+    if (createRequest.kind === 'sale') {
       setSection('sale')
       setSaleCreateSignal((value) => value + 1)
     }
-  }, [hasSales])
+  }, [createRequest?.nonce, createRequest?.kind])
 
   const todayWork = useMemo(()=>{
     const start = startDay().getTime(), end = endDay()
@@ -126,14 +122,14 @@ export default function PlanningHub({ hotel, user }) {
   return <div data-testid="planning-hub">
     <div className="rs-page-title"><div><h1>Planning</h1><p>{section ? 'Calendario operativo.' : 'Oggi · lavori e sale della giornata.'}</p></div>{section && <button type="button" className="rs-btn rs-btn--ghost" onClick={()=>setSection(null)}>‹ Oggi</button>}</div>
 
-    <div style={{display:'grid',gridTemplateColumns:hasSales?'repeat(2,minmax(0,1fr))':'minmax(0,360px)',gap:'10px',marginBottom:'16px'}}>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:'10px',marginBottom:'16px'}}>
       <PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>setSection('work')} />
-      {hasSales && <PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>setSection('sale')} />}
+      <PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>setSection('sale')} />
     </div>
 
     {!section ? <div style={{display:'grid',gap:'18px'}}>
       <TodaySection title="Lavori oggi" icon="wrench" items={todayWork} emptyText="Nessun lavoro previsto oggi." />
-      {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />}
+      <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />
       <div style={{display:'flex',gap:'12px',alignItems:'center',fontSize:'.72rem',color:'var(--rs-text-3)',flexWrap:'wrap'}}><span>● Grigio · Da fare</span><span style={{color:'var(--rs-warn)'}}>● Arancione · Da finire</span><span style={{color:'var(--rs-ok)'}}>● Verde · Completate</span></div>
     </div> : <div className="rs-legacy rs-legacy--planning">
       {section==='work' ? <PlanningWork items={planned} onOpen={()=>{}} /> : <PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal} />}
