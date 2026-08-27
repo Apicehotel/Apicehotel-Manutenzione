@@ -1,0 +1,25 @@
+import { useEffect, useState } from 'react'
+import { ROLES } from '../../config.js'
+import { supabase } from '../../supabase.js'
+import { fetchRolePermissionRows, saveRolePermission, PERMISSION_ACTIONS } from '../../permissions.js'
+import { Button, Card, Field, Icon, Spinner } from '../ui.jsx'
+import { ACTION_LABELS, ACTIONS_BY_MODULE, NAV_ITEMS, NAV_KEY, PERMISSION_GROUPS, PLACEMENTS, ROLE_PRIORITY } from './settings-constants.js'
+
+export default function RolesTab(){
+  const[role,setRole]=useState('admin'),[config,setConfig]=useState(null),[draftPerms,setDraftPerms]=useState({}),[dirty,setDirty]=useState({}),[openGroups,setOpenGroups]=useState({}),[status,setStatus]=useState(''),[saving,setSaving]=useState(false)
+  const load=async()=>{const [permRows,navResult]=await Promise.all([fetchRolePermissionRows(),supabase?supabase.from('app_config').select('value').eq('key',NAV_KEY).maybeSingle():Promise.resolve({data:null})]);const p={};permRows.forEach(r=>{p[`${r.role}|${r.module}|${r.action}`]=Boolean(r.allowed)});setDraftPerms(p);try{setConfig(navResult?.data?.value?JSON.parse(navResult.data.value):{})}catch{setConfig({})}}
+  useEffect(()=>{load().catch(e=>{setStatus(e?.message||'Errore caricamento');setConfig({})})},[])
+  const permKey=(r,m,a)=>`${r}|${m}|${a}`
+  const getPerm=(m,a)=>Boolean(draftPerms[permKey(role,m,a)])
+  const togglePerm=(m,a)=>{if(role==='Supremo')return;const k=permKey(role,m,a);const next=!draftPerms[k];setDraftPerms(p=>({...p,[k]:next}));setDirty(d=>({...d,[k]:{role,module:m,action:a,allowed:next}}));setStatus('')}
+  const placement=(r,k)=>config?.[r]?.[k]||'off'
+  const bottomCount=r=>NAV_ITEMS.filter(([k])=>placement(r,k)==='bottom').length
+  const setPlacement=(k,v)=>{setStatus('');if(v==='bottom'&&placement(role,k)!=='bottom'&&bottomCount(role)>=5)return setStatus('Massimo 5 voci nella barra sotto.');setConfig(c=>({...c,[role]:{...(c?.[role]||{}),[k]:v,...(k==='planning_work'?{planning_sale:v}:{})}}))}
+  const saveAll=async()=>{setSaving(true);setStatus('');try{await Promise.all(Object.values(dirty).map(change=>saveRolePermission(change.role,change.module,change.action,change.allowed)));const normalized=Object.fromEntries(Object.entries(config||{}).map(([r,v])=>[r,{...v,planning_sale:v?.planning_work||'off'}]));const{error}=await supabase.from('app_config').update({value:JSON.stringify(normalized)}).eq('key',NAV_KEY);if(error)throw error;setConfig(normalized);setDirty({});setStatus('Permessi e navigazione salvati')}catch(e){setStatus(e?.message||'Salvataggio non riuscito')}finally{setSaving(false)}}
+  if(config===null)return <Spinner label="Carico ruoli e permessi…"/>
+  return <section data-testid="settings-navigation"><div className="rs-page-title"><div><h1>Ruoli & Permessi</h1><p>Permessi operativi separati dalla posizione nei menu</p></div></div><Card className="rs-card--pad"><Field label="Ruolo da configurare"><select className="rs-select" value={role} onChange={e=>{setRole(e.target.value);setOpenGroups({});setStatus('')}}>{ROLE_PRIORITY.filter(r=>ROLES.includes(r)).map(r=><option key={r}>{r}</option>)}</select></Field>{role==='Supremo'&&<p className="rs-field__hint" style={{marginTop:10}}>Regola fissa: Supremo può visualizzare e inserire, senza modifica, eliminazione o gestione.</p>}</Card>
+    <h2 style={{fontFamily:'Sora',fontSize:'1rem',margin:'22px 4px 10px'}}>Permessi</h2>
+    <div style={{display:'grid',gap:8}}>{PERMISSION_GROUPS.map(group=>{const open=Boolean(openGroups[group.id]);return <Card key={group.id} className="rs-card--pad"><button type="button" className={`rs-role-group__head ${open?'open':''}`} style={{width:'100%'}} onClick={()=>setOpenGroups(o=>({...o,[group.id]:!open}))}><b>{group.label}</b><i><Icon name="chevronDown"/></i></button>{open&&<div style={{display:'grid',gap:12,marginTop:12}}>{group.modules.map(([module,label])=><div key={module} style={{borderTop:'1px solid var(--rs-line)',paddingTop:10}}><strong>{label}</strong><div className="rs-chips" style={{marginTop:8}}>{(ACTIONS_BY_MODULE[module]||PERMISSION_ACTIONS).map(action=>{const active=getPerm(module,action);return <button type="button" key={action} className={`rs-chip ${active?'active':''}`} disabled={role==='Supremo'} onClick={()=>togglePerm(module,action)}>{active?'✓ ':''}{ACTION_LABELS[action]||action}</button>})}</div></div>)}</div>}</Card>})}</div>
+    <h2 style={{fontFamily:'Sora',fontSize:'1rem',margin:'22px 4px 10px'}}>Navigazione</h2><Card className="rs-card--pad"><p className="rs-field__hint">{bottomCount(role)}/5 voci nella barra sotto · Home viene mantenuta centrale dalla navigator.</p>{NAV_ITEMS.map(([key,label])=><div className="rs-navrow" key={key}><span>{label}</span><div className="rs-navseg">{PLACEMENTS.map(([val,l])=><button key={val} className={placement(role,key)===val?'active':''} onClick={()=>setPlacement(key,val)}>{l}</button>)}</div></div>)}{status&&<p className="rs-badge rs-badge--accent" style={{display:'inline-flex',marginTop:12}}>{status}</p>}<Button variant="primary" style={{marginTop:14}} onClick={saveAll} disabled={saving}>{saving?'Salvo…':'Salva permessi e navigazione'}</Button></Card>
+  </section>
+}
