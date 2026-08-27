@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
 import { Icon, IconButton, Sheet, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
-import { logoFor, hotelById, firstName } from './helpers.js'
+import { can, canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
+import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import Home from './Home.jsx'
 import Issues from './Issues.jsx'
 import Settings from './Settings.jsx'
@@ -23,16 +24,26 @@ import {
   FeedbackView, PinView, ManualView,
 } from './MigratedViews.jsx'
 
-const BOTTOM_NAV = [
-  { id: 'issues', icon: 'issues', label: 'Segnalazioni' },
-  { id: 'interventions', icon: 'wrench', label: 'Interventi' },
-  { id: 'home', icon: 'home', label: 'Home' },
-  { id: 'planning-work', icon: 'calendar', label: 'Planning' },
-  { id: 'menu', icon: 'menu', label: 'Menu' },
+const NAV_BUTTONS = [
+  { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
+  { id: 'interventions', key: 'interventions', icon: 'wrench', label: 'Interventi' },
+  { id: 'home', key: 'home', icon: 'home', label: 'Home' },
+  { id: 'planning-work', key: 'planning_work', icon: 'calendar', label: 'Planning' },
+  { id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
+  { id: 'urgent', key: 'urgent', icon: 'warning', label: 'Urgenti' },
+  { id: 'temperature', key: 'temperature', icon: 'thermometer', label: 'Temperature' },
+  { id: 'technicians', key: 'technicians', icon: 'phone', label: 'Tecnici' },
+  { id: 'profile', key: 'profile', icon: 'user', label: 'Profilo' },
+  { id: 'manual', key: 'manual', icon: 'book', label: 'Manuale' },
+  { id: 'feedback', key: 'feedback', icon: 'message', label: 'Feedback' },
+  { id: 'feedback-received', key: 'feedback_received', icon: 'message', label: 'Ricevuti' },
+  { id: 'structure', key: 'structure', icon: 'hotel', label: 'Struttura' },
+  { id: 'menu', key: 'other', icon: 'menu', label: 'Menu' },
 ]
 
-function NavGroups({ user, hotel, variant, current, onPick }) {
-  const groups = useMemo(() => buildNav(user, hotel), [user, hotel])
+function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
+  const placement = variant === 'drawer' ? 'side' : null
+  const groups = useMemo(() => buildNav(user, hotel, navigationConfig, placement), [user, hotel, navigationConfig, placement])
   const itemCls = variant === 'sidebar' ? 'rs-sidebar__item' : 'rs-drawer__item'
   return (
     <>
@@ -66,6 +77,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [settings, setSettings] = useState(null)
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
+  const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId) || HOTELS[0]
 
   useEffect(() => {
@@ -78,6 +90,13 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }).catch(() => {})
     return () => { active = false }
   }, [session.hotelId, session.userId])
+
+  useEffect(() => {
+    let active = true
+    fetchRoleNavigation().then((config) => { if (active) setNavigationConfig(config) }).catch(() => {})
+    const unsubscribe = subscribeRoleNavigation((config) => { if (active) setNavigationConfig(config) })
+    return () => { active = false; unsubscribe?.() }
+  }, [])
 
   useEffect(() => {
     const onSaleCreated = (event) => {
@@ -96,16 +115,41 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return Array.from(set).filter(Boolean)
   }, [session.hotelId, user])
 
+  const placement = useCallback((key) => placementFor(navigationConfig, user?.role, key), [navigationConfig, user?.role])
+
+  const viewAllowed = useCallback((targetView) => {
+    if (!user) return true
+    const guard = VIEW_GUARDS[targetView]
+    if (guard && !guard(user, hotel)) return false
+    const key = VIEW_TO_NAV_KEY[targetView]
+    return !key || placement(key) !== 'off'
+  }, [user, hotel, placement])
+
+  const safeView = useMemo(() => {
+    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'temperature', 'profile', 'manual', 'feedback']
+    return order.find((candidate) => viewAllowed(candidate)) || 'home'
+  }, [viewAllowed])
+
+  useEffect(() => {
+    if (user && !viewAllowed(view)) {
+      setPlanningCreateRequest(null)
+      setView(safeView)
+    }
+  }, [user, view, viewAllowed, safeView])
+
   const pick = (item) => {
     setDrawer(false)
     const target = NAV_TARGET[item.id]
+    const nextView = target?.view || item.id
     if (target?.settings) { setSettings(target.settings); return }
-    if (target?.view) { setView(target.view); if (target.create) setCreateSignal((n) => n + 1); return }
-    setView(item.id)
+    if (!viewAllowed(nextView)) return
+    setView(nextView)
+    if (target?.create) setCreateSignal((n) => n + 1)
   }
 
   const openHomePersonalize = () => {
     setDrawer(false)
+    if (!viewAllowed('home')) return
     setView('home')
     setPersonalizeSignal((n) => n + 1)
   }
@@ -135,6 +179,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const requestPlanningCreate = (kind) => {
+    if (!viewAllowed('planning-work')) return
+    if (kind === 'sale' && !viewAllowed('planning-sale')) return
     const returnView = view
     setView('planning-work')
     setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1, returnView }))
@@ -142,12 +188,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const pickInsert = (id) => {
     setInsertOpen(false)
-    if (id === 'issue') {
+    if (id === 'issue' && viewAllowed('issues')) {
       setView('issues')
       setCreateSignal((n) => n + 1)
       return
     }
-    if (id === 'urgent') {
+    if (id === 'urgent' && viewAllowed('urgent')) {
       setUrgentCreateOpen(true)
       return
     }
@@ -155,25 +201,38 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       requestPlanningCreate('work')
       return
     }
-    if (id === 'planning-sale') {
-      requestPlanningCreate('sale')
-    }
+    if (id === 'planning-sale') requestPlanningCreate('sale')
   }
+
+  const bottomNav = useMemo(() => {
+    if (!user) return []
+    const allowed = NAV_BUTTONS.filter((item) => {
+      if (placement(item.key) !== 'bottom') return false
+      if (item.id === 'menu' || item.id === 'structure') return true
+      return viewAllowed(item.id)
+    })
+    if (allowed.length <= 5) return allowed
+    const menu = allowed.find((item) => item.id === 'menu')
+    return menu ? [...allowed.filter((item) => item.id !== 'menu').slice(0, 4), menu] : allowed.slice(0, 5)
+  }, [user, placement, viewAllowed])
+
+  const insertAllowed = useMemo(() => ({
+    issue: Boolean(user && can(user, 'create') && viewAllowed('issues')),
+    urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
+    intervention: Boolean(user && canCreatePlanned(user) && viewAllowed('interventions') && viewAllowed('planning-work')),
+    'planning-work': Boolean(user && canCreatePlanned(user) && viewAllowed('planning-work')),
+    'planning-sale': Boolean(user && viewAllowed('planning-sale')),
+  }), [user, viewAllowed])
 
   if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} />
 
   const renderView = () => {
+    if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
     if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
-
-    const guard = VIEW_GUARDS[view]
-    if (guard && user && !guard(user, hotel)) {
-      return <EmptyState icon="lock" title="Accesso non consentito">Il tuo ruolo ({user.role}) non può usare questa sezione.</EmptyState>
-    }
-
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
-    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} />
+    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
@@ -182,118 +241,85 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'feedback') return <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') return <PinView user={user} />
     if (view === 'manual') return <ManualView />
-
     return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
   }
 
   const DrawerHeader = (
     <div className="rs-drawer__head">
       <img src={logoFor(hotel.id)} alt="" />
-      <div style={{ minWidth: 0 }}>
-        <b>{hotel.name}</b>
-        <small>{user ? `${user.name} · ${user.role}` : 'Manutenzione'}</small>
-      </div>
+      <div style={{ minWidth: 0 }}><b>{hotel.name}</b><small>{user ? `${user.name} · ${user.role}` : 'Manutenzione'}</small></div>
       <IconButton icon="close" label="Chiudi" onClick={() => setDrawer(false)} style={{ marginLeft: 'auto' }} />
     </div>
   )
 
+  const showStructureSide = allowedHotels.length > 1 && placement('structure') === 'side'
+  const showCacheSide = placement('cache') === 'side'
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || notificationsOpen
+
+  const handleBottom = (item) => {
+    if (item.id === 'menu') { setDrawer(true); return }
+    if (item.id === 'structure') { setHotelSheet(true); return }
+    if (viewAllowed(item.id)) setView(item.id)
+  }
 
   return (
     <div className="rs-root">
       <div className="rs-app rs-app--with-side">
         <aside className="rs-sidebar" data-testid="sidebar">
-          <div className="rs-sidebar__brand">
-            <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div>
-          </div>
-          {allowedHotels.length > 1 && (
-            <button className="rs-sidebar__switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel">
-              <Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronDown" /></i>
-            </button>
+          <div className="rs-sidebar__brand"><img src={logoFor(hotel.id)} alt={hotel.name} /><div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div></div>
+          {allowedHotels.length > 1 && placement('structure') !== 'off' && (
+            <button className="rs-sidebar__switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronDown" /></i></button>
           )}
           <div className="rs-sidebar__scroll">
-            <NavGroups user={user} hotel={hotel} variant="sidebar" current={view} onPick={pick} />
+            <NavGroups user={user} hotel={hotel} variant="sidebar" current={view} onPick={pick} navigationConfig={navigationConfig} />
             <div className="rs-sidebar__prefs">
-              <span className="rs-sidebar__label">Home</span>
-              <button className="rs-sidebar__item" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span></button>
-              <span className="rs-sidebar__label">Tema</span>
-              <ThemeControl />
-              <span className="rs-sidebar__label">Dimensione interfaccia</span>
-              <UiSizeControl />
-              <span className="rs-sidebar__label">Sistema</span>
-              <button className="rs-sidebar__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span></button>
+              {viewAllowed('home') && <><span className="rs-sidebar__label">Home</span><button className="rs-sidebar__item" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span></button></>}
+              <span className="rs-sidebar__label">Tema</span><ThemeControl />
+              <span className="rs-sidebar__label">Dimensione interfaccia</span><UiSizeControl />
+              {placement('cache') !== 'off' && <><span className="rs-sidebar__label">Sistema</span><button className="rs-sidebar__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span></button></>}
             </div>
           </div>
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
         </aside>
 
         <header className="rs-header">
-          <button className="rs-hotelchip" onClick={() => allowedHotels.length > 1 ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
+          <button className="rs-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
             <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <span className="rs-hotelchip__text">
-              <b>{hotel.name}</b>
-              <small>{user ? `${firstName(user.name)} · ${user.role || ''}` : 'Caricamento…'}</small>
-            </span>
-            {allowedHotels.length > 1 && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
+            <span className="rs-hotelchip__text"><b>{hotel.name}</b><small>{user ? `${firstName(user.name)} · ${user.role || ''}` : 'Caricamento…'}</small></span>
+            {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <PresenceChip user={user} />
-            <IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />
-          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><PresenceChip user={user} /><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" /></div>
         </header>
 
-        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden} onOpen={() => setView('urgent')} />
-
+        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>
 
         <nav className="rs-bottomnav" data-testid="bottom-nav">
-          {BOTTOM_NAV.map((item) => (
-            <button key={item.id} className={`rs-navbtn ${view === item.id ? 'active' : ''}`}
-              onClick={() => item.id === 'menu' ? setDrawer(true) : setView(item.id)} data-testid={`nav-${item.id}`}>
+          {bottomNav.map((item) => (
+            <button key={item.id} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`}>
               <Icon name={item.icon} /><small>{item.label}</small>
             </button>
           ))}
         </nav>
-        <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>
+        {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>}
       </div>
 
-      <InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} />
-      <UrgentCreateSheet
-        open={urgentCreateOpen}
-        onClose={() => setUrgentCreateOpen(false)}
-        hotel={hotel}
-        user={user}
-        onSaved={() => setView('urgent')}
-      />
+      <InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} />
+      <UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} />
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
           const h = hotelById(id)
           if (!h) return null
-          return (
-            <button key={id} className={`rs-hotelrow ${id === hotel.id ? 'selected' : ''}`} data-testid={`switch-hotel-${id}`}
-              onClick={() => { onSwitchHotel(id); setHotelSheet(false) }}>
-              <img src={logoFor(id)} alt={h.name} />
-              <span><b>{h.name}</b><small>{id === hotel.id ? 'Struttura attiva' : 'Passa a questa struttura'}</small></span>
-              <i>{id === hotel.id ? <Icon name="check" /> : <Icon name="chevronRight" />}</i>
-            </button>
-          )
+          return <button key={id} className={`rs-hotelrow ${id === hotel.id ? 'selected' : ''}`} data-testid={`switch-hotel-${id}`} onClick={() => { onSwitchHotel(id); setHotelSheet(false) }}><img src={logoFor(id)} alt={h.name} /><span><b>{h.name}</b><small>{id === hotel.id ? 'Struttura attiva' : 'Passa a questa struttura'}</small></span><i>{id === hotel.id ? <Icon name="check" /> : <Icon name="chevronRight" />}</i></button>
         })}
       </Sheet>
 
       <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
         <div className="rs-notification-center">
           <p className="rs-notification-center__intro">Avvisi e promemoria della struttura in un unico punto.</p>
-          <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('urgent') }}>
-            <span><Icon name="warning" /></span>
-            <span><strong>Avvisi urgenti</strong><small>Apri gli avvisi attivi della struttura.</small></span>
-            <Icon name="chevronRight" />
-          </button>
-          <div className="rs-notification-center__reserved">
-            <strong><Icon name="bell" /> Promemoria</strong>
-            <small style={{display:'block',marginTop:4}}>Questo spazio è pronto per i nuovi promemoria ntfy per ruolo.</small>
-          </div>
+          {viewAllowed('urgent') && <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('urgent') }}><span><Icon name="warning" /></span><span><strong>Avvisi urgenti</strong><small>Apri gli avvisi attivi della struttura.</small></span><Icon name="chevronRight" /></button>}
+          <div className="rs-notification-center__reserved"><strong><Icon name="bell" /> Promemoria</strong><small style={{display:'block',marginTop:4}}>Promemoria ntfy destinati al tuo ruolo compariranno qui.</small></div>
         </div>
       </Sheet>
 
@@ -301,27 +327,16 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         <div className="rs-overlay" onClick={() => setDrawer(false)} style={{ justifyContent: 'flex-end' }}>
           <aside className="rs-drawer" onClick={(e) => e.stopPropagation()} data-testid="drawer">
             {DrawerHeader}
-            {allowedHotels.length > 1 && (
-              <button className="rs-drawer__switch" onClick={() => { setDrawer(false); setHotelSheet(true) }} data-testid="drawer-switch-hotel">
-                <Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronRight" /></i>
-              </button>
-            )}
+            {showStructureSide && <button className="rs-drawer__switch" onClick={() => { setDrawer(false); setHotelSheet(true) }} data-testid="drawer-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronRight" /></i></button>}
             <div className="rs-drawer__scroll">
-              <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} />
+              <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} navigationConfig={navigationConfig} />
               <span className="rs-drawer__label">Preferenze</span>
-              <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home">
-                <Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i>
-              </button>
+              {viewAllowed('home') && <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i></button>}
               <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
               <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
-              <span className="rs-drawer__label">Sistema</span>
-              <button className="rs-drawer__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="drawer-clear-cache">
-                <Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span><i><Icon name="chevronRight" /></i>
-              </button>
+              {showCacheSide && <><span className="rs-drawer__label">Sistema</span><button className="rs-drawer__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="drawer-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span><i><Icon name="chevronRight" /></i></button></>}
             </div>
-            <button className="rs-drawer__item rs-drawer__item--danger" onClick={onLogout} data-testid="drawer-logout">
-              <Icon name="logout" /> <span>Esci</span>
-            </button>
+            <button className="rs-drawer__item rs-drawer__item--danger" onClick={onLogout} data-testid="drawer-logout"><Icon name="logout" /> <span>Esci</span></button>
           </aside>
         </div>
       )}
