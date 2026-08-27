@@ -28,9 +28,9 @@ function SaleEventCalendar({bookings}){
   </section>
 }
 
-export default function PlanningHub({hotel,user,createRequest=null}){
+export default function PlanningHub({hotel,user,createRequest=null,allowSale=true}){
   const [section,setSection]=useState(null),[work,setWork]=useState([]),[bookings,setBookings]=useState([]),[loading,setLoading]=useState(true),[workCreateSignal,setWorkCreateSignal]=useState(0),[saleCreateSignal,setSaleCreateSignal]=useState(0),[interventionCreateOpen,setInterventionCreateOpen]=useState(false)
-  const canSeeSale=canOperateSalePlanning(user)
+  const canSeeSale=allowSale&&canOperateSalePlanning(user)
   const load=useCallback(async()=>{setLoading(true);try{const workPromise=fetchPlanningWork(hotel.id);const salesPromise=canSeeSale?fetchBookings(hotel.id):Promise.resolve({items:[]});const [workItems,sales]=await Promise.all([workPromise,salesPromise]);setWork(workItems||[]);setBookings(sales.items||[])}finally{setLoading(false)}},[hotel.id,canSeeSale])
   useEffect(()=>{setSection(null);load();const offWork=subscribePlanningWork(hotel.id,load);const offSales=canSeeSale?subscribeBookings(hotel.id,load):null;return()=>{offWork?.();offSales?.()}},[hotel.id,load,canSeeSale])
   useEffect(()=>{if(!createRequest?.nonce)return;if(createRequest.kind==='work'){let source='planning-work';try{source=sessionStorage.getItem('randapp.insert-source')||source;sessionStorage.removeItem('randapp.insert-source')}catch{}if(source==='intervention'){setSection(null);setInterventionCreateOpen(true)}else{setSection('work');setWorkCreateSignal(n=>n+1)}}if(createRequest.kind==='sale'&&canSeeSale){setSection('sale');setSaleCreateSignal(n=>n+1)}},[createRequest?.nonce,createRequest?.kind,canSeeSale])
