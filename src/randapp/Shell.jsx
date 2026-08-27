@@ -21,7 +21,7 @@ import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
 import {
-  InterventionsView, UrgentView,
+  InterventionsView, UrgentView, MyWorkView,
   TemperatureView, HousekeepingView, TechnicianDirectoryView,
   FeedbackView, PinView, ManualView,
 } from './MigratedViews.jsx'
@@ -236,6 +236,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
+    if (view === 'my-work') return <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'reminders') return <RemindersView user={user} hotel={hotel} />
