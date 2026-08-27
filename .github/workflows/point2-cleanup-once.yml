@@ -1,0 +1,88 @@
+name: Point 2 cleanup once
+on:
+  push:
+    paths:
+      - '.github/workflows/point2-cleanup-once.yml'
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove obsolete monolith tests and legacy UI layers
+        run: |
+          rm -f \
+            test/header-and-profile-consolidation.test.js \
+            test/home-selection.test.js \
+            test/hotel-switch-session.test.js \
+            test/housekeepers-by-hotel.test.js \
+            test/housekeeping.test.js \
+            test/interventions.test.js \
+            test/issue-filters.test.js \
+            test/menu.test.js \
+            test/mobile-mockup-fixes.test.js \
+            test/notification-sound.test.js \
+            test/own-issues.test.js \
+            test/planning-choice.test.js \
+            test/planning.test.js \
+            test/presence.test.js \
+            test/profile.test.js \
+            test/push-notifications.test.js \
+            test/sale-and-feedback-realtime.test.js \
+            test/sale-calendar-view.test.js \
+            test/settings-full-pages.test.js \
+            test/temperature.test.js \
+            test/ui-scale.test.js \
+            test/urgent-error-handling.test.js \
+            test/urgent.test.js \
+            src/admin-dashboard-v2.css \
+            src/admin-entry-visibility.css \
+            src/admin-mobile-footer.css \
+            src/admin-mobile-v2.css \
+            src/admin-section-nav.css \
+            src/admin-section-nav.js \
+            src/approved-dark-shell-clean.css \
+            src/approved-dark-shell.css \
+            src/brand-theme.css \
+            src/clean-ui.css \
+            src/dark-shell-entry.css \
+            src/dark-shell-entry.js \
+            src/desktop-layout.css \
+            src/drawer-menu-v2.css \
+            src/drawer-menu-v2.js \
+            src/header-scale.css \
+            src/home-fab-fix.css \
+            src/hotel-selector-desktop.css \
+            src/hotel-selector-mobile-lock.css \
+            src/mobile-nav-refine.css \
+            src/mockup-ui.css \
+            src/ntfy-profile.css \
+            src/ntfy-profile.js \
+            src/planning-sale-mobile-fix.css \
+            src/randapp-ambient-theme.css \
+            src/randapp-design-system.css \
+            src/randapp-desktop-v2.css \
+            src/randapp-edge-fit.css \
+            src/randapp-layout-overhaul.css \
+            src/randapp-ui-v2.css \
+            src/role-navigation-config.css \
+            src/role-navigation-config.js \
+            src/unified-ui-v1.css \
+            src/unified-ui-v1.js \
+            src/unified-ui-v2.css \
+            src/urgent-actions-fix.css \
+            src/urgent-send-fab.css \
+            src/planning.jsx \
+            .github/workflows/dark-shell-full-test.yml \
+            .github/workflows/install-npm-dependency-v2.yml \
+            .github/workflows/install-npm-dependency.yml
+          rm -f .github/workflows/point2-cleanup-once.yml
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "refactor: finish point 2 legacy cleanup"
+          git push
