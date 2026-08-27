@@ -12,6 +12,7 @@ import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import PlanningHub from './PlanningHub.jsx'
 import RemindersView from './RemindersView.jsx'
+import NotificationInbox from './NotificationInbox.jsx'
 import InsertLauncher from './InsertLauncher.jsx'
 import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
@@ -76,6 +77,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [insertOpen, setInsertOpen] = useState(false)
   const [urgentCreateOpen, setUrgentCreateOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationUnread, setNotificationUnread] = useState(0)
   const [settings, setSettings] = useState(null)
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
@@ -291,7 +293,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <span className="rs-hotelchip__text"><b>{hotel.name}</b><small>{user ? `${firstName(user.name)} · ${user.role || ''}` : 'Caricamento…'}</small></span>
             {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><PresenceChip user={user} /><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" /></div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><PresenceChip user={user} /><span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span></div>
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
@@ -319,11 +321,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </Sheet>
 
       <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
-        <div className="rs-notification-center">
-          <p className="rs-notification-center__intro">Avvisi e promemoria della struttura in un unico punto.</p>
-          {viewAllowed('urgent') && <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('urgent') }}><span><Icon name="warning" /></span><span><strong>Avvisi urgenti</strong><small>Apri gli avvisi attivi della struttura.</small></span><Icon name="chevronRight" /></button>}
-          {viewAllowed('reminders') && <button type="button" className="rs-notification-center__item" onClick={() => { setNotificationsOpen(false); setView('reminders') }}><span><Icon name="bell" /></span><span><strong>Promemoria</strong><small>Crea e gestisci promemoria per ruolo.</small></span><Icon name="chevronRight" /></button>}
-        </div>
+        <NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setView('reminders') }} />
       </Sheet>
 
       {drawer && (
