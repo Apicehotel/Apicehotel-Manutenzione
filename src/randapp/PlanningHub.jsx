@@ -58,7 +58,7 @@ export default function PlanningHub({ hotel, user }) {
   const [loading,setLoading] = useState(true)
   const [workCreateOpen,setWorkCreateOpen] = useState(false)
   const [saleCreateSignal,setSaleCreateSignal] = useState(0)
-  const hasSales = hotel?.id === 'hotelgio'
+  const hasSales = Boolean(hotel?.id)
 
   const load = useCallback(async()=>{
     setLoading(true)
@@ -133,7 +133,7 @@ export default function PlanningHub({ hotel, user }) {
 
     {!section ? <div style={{display:'grid',gap:'18px'}}>
       <TodaySection title="Lavori oggi" icon="wrench" items={todayWork} emptyText="Nessun lavoro previsto oggi." />
-      {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />
+      {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />}
       <div style={{display:'flex',gap:'12px',alignItems:'center',fontSize:'.72rem',color:'var(--rs-text-3)',flexWrap:'wrap'}}><span>● Grigio · Da fare</span><span style={{color:'var(--rs-warn)'}}>● Arancione · Da finire</span><span style={{color:'var(--rs-ok)'}}>● Verde · Completate</span></div>
     </div> : <div className="rs-legacy rs-legacy--planning">
       {section==='work' ? <PlanningWork items={planned} onOpen={()=>{}} /> : <PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal} />}
