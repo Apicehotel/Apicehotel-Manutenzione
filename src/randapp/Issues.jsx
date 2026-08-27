@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
+import { signedPhotoUrl } from '../photo-storage.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import { can, canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 
@@ -181,14 +182,15 @@ function IssuePhoto({ src, alt }) {
   </>
 }
 
-function technicianWaLink(issue, extraNote) {
+function technicianWaLink(issue, extraNote, photoUrl) {
   const phone = String(issue.technicianPhone || '').replace(/[^\d+]/g, '').replace(/^\+/, '')
   if (!phone) return null
   const lines = [`Ciao ${issue.technicianName}, c'è un intervento da fare in ${issue.room}${issue.category ? ` (${issue.category})` : ''}.`]
   if (issue.title) lines.push(`Descrizione: ${issue.title}`)
   if (extraNote) lines.push(extraNote)
   lines.push(`Urgenza: ${URGENCY_META[issue.urgency]?.label || issue.urgency}`)
-  if (issue.photoData || issue.photoPath) lines.push('📷 Ti mando subito la foto.')
+  if (photoUrl) lines.push(`📷 Foto: ${photoUrl}`)
+  else if (issue.photoData || issue.photoPath) lines.push('📷 Ti mando subito la foto.')
   return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n\n'))}`
 }
 
@@ -200,6 +202,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [asking, setAsking] = useState('')
   const [techChoice, setTechChoice] = useState('')
   const [techNote, setTechNote] = useState(issue.technicianNote || '')
+  const [sendingWa, setSendingWa] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const canComplete = can(user, 'complete') || can(user, 'take_charge')
   const canAssign = can(user, 'assign')
@@ -212,6 +215,19 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const confirmTech = () => { const t = technicians.find((p) => p.id === techChoice); if (!t) return; onUpdate(issue.id, { status: 'tecnico', technicianRequestedBy: user?.name, technicianId: t.id, technicianName: t.name, technicianPhone: t.phone || null }); onClose() }
   const pieceArrived = () => { onUpdate(issue.id, { status: 'todo' }); onClose() }
   const techDone = () => { onUpdate(issue.id, { status: 'done', completedBy: user?.name, completedAt: Date.now() }); onClose() }
+  const openWhatsApp = async () => {
+    // Apri subito una finestra vuota (azione diretta dell'utente) e naviga dopo:
+    // se aspettassimo il link della foto prima di chiamare window.open, Safari/iOS
+    // bloccherebbe il popup perché non lo riconoscerebbe più come gesto diretto.
+    const win = window.open('', '_blank')
+    setSendingWa(true)
+    let photoUrl = null
+    try { photoUrl = await signedPhotoUrl(issue.photoPath || issue.photoData) } catch { /* niente foto, il messaggio parte comunque senza link */ }
+    setSendingWa(false)
+    const link = technicianWaLink(issue, techNote.trim(), photoUrl)
+    if (win) win.location.href = link
+    else window.open(link, '_blank')
+  }
 
   return (
     <Sheet open onClose={onClose} className="rs-issue-detail">
@@ -243,8 +259,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
               </Field>
               <div className="rs-action-pair" style={{ marginTop: 8 }}>
                 <Button variant="ghost" onClick={() => onUpdate(issue.id, { technicianNote: techNote.trim() || null })}>Salva nota</Button>
-                {technicianWaLink(issue, techNote.trim()) && (
-                  <Button variant="primary" icon="message" onClick={() => window.open(technicianWaLink(issue, techNote.trim()), '_blank')}>Apri WhatsApp</Button>
+                {issue.technicianPhone && (
+                  <Button variant="primary" icon="message" disabled={sendingWa} onClick={openWhatsApp}>{sendingWa ? 'Preparo…' : 'Apri WhatsApp'}</Button>
                 )}
               </div>
               {!issue.technicianPhone && <p className="rs-field__hint">Numero del tecnico non disponibile.</p>}
