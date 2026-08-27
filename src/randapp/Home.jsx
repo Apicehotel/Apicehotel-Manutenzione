@@ -22,7 +22,8 @@ import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
 import { fetchOperationalWeather } from '../weather-data.js'
 import { Card, Spinner } from './ui.jsx'
-import { firstName, can, isToday, URGENCY_META } from './helpers.js'
+import { firstName, isToday, URGENCY_META } from './helpers.js'
+import { canUser } from '../permissions.js'
 
 const COLS = 3
 const MAX_ROWS = 3
@@ -372,7 +373,7 @@ function WeatherWidget({ size, visual }) {
 
 function QuickActions({ size, user, onNavigate }) {
   const actions = [
-    can(user, 'create') ? { icon: Plus, label: 'Nuova segnalazione', short: 'Nuova', route: 'issues', accent: true } : null,
+    canUser(user, 'issues', 'create') ? { icon: Plus, label: 'Nuova segnalazione', short: 'Nuova', route: 'issues', accent: true } : null,
     { icon: AlertTriangle, label: 'Urgenti', short: 'Urgenti', route: 'urgent' },
     { icon: Wrench, label: 'Interventi', short: 'Interventi', route: 'interventions' },
   ].filter(Boolean)
