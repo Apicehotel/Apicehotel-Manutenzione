@@ -77,6 +77,18 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return () => { active = false }
   }, [session.hotelId, session.userId])
 
+  useEffect(() => {
+    const onSaleCreated = (event) => {
+      if (planningCreateRequest?.kind !== 'sale') return
+      if (event.detail?.hotelId && event.detail.hotelId !== hotel.id) return
+      const returnView = planningCreateRequest.returnView || 'planning-work'
+      setPlanningCreateRequest(null)
+      setView(returnView)
+    }
+    window.addEventListener('randapp-sale-booking-created', onSaleCreated)
+    return () => window.removeEventListener('randapp-sale-booking-created', onSaleCreated)
+  }, [planningCreateRequest, hotel.id])
+
   const allowedHotels = useMemo(() => {
     const set = new Set([session.hotelId, ...(user?.hotels || [])])
     return Array.from(set).filter(Boolean)
@@ -121,8 +133,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const requestPlanningCreate = (kind) => {
+    const returnView = view
     setView('planning-work')
-    setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1 }))
+    setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1, returnView }))
   }
 
   const pickInsert = (id) => {
@@ -158,7 +171,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
 
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
-    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub user={user} hotel={hotel} createRequest={planningCreateRequest} />
+    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
