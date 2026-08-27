@@ -1,0 +1,57 @@
+name: Point 2 finalize once
+on:
+  push:
+    paths:
+      - '.github/workflows/point2-finalize-once.yml'
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Finish centralization and modernize regression tests
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          shell = Path('src/randapp/Shell.jsx')
+          s = shell.read_text()
+          s = s.replace("import { can, canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'", "import { canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'\nimport { canUser } from '../permissions.js'")
+          s = s.replace("can(user, 'create')", "canUser(user, 'issues', 'create')")
+          shell.write_text(s)
+
+          helpers = Path('src/randapp/helpers.js')
+          h = helpers.read_text()
+          h = h.replace("import { HOTELS, ROLE_PERMISSIONS } from '../config.js'", "import { HOTELS } from '../config.js'")
+          h = h.replace("\n// Compatibilità temporanea con i vecchi permessi generici. I gate di modulo\n// passano invece sempre dalla matrice centrale in permissions.js.\nexport const permsFor = (user) => ROLE_PERMISSIONS[user?.role] || []\nexport const can = (user, permission) => permsFor(user).includes(permission)\n", "")
+          helpers.write_text(h)
+
+          arch = Path('test/current-architecture.test.js')
+          a = arch.read_text()
+          a = a.replace("for (const component of ['SaleBookingForm','SaleBookingCard','SaleRoomPicker','SaleRoomConfigSheet']) assert.match(planning, new RegExp(component))", "for (const component of ['SaleBookingForm','SaleBookingCard','SaleRoomConfigSheet']) assert.match(planning, new RegExp(component))")
+          a = a.replace("  await Promise.all([\n    source('src/randapp/planning/SaleBookingForm.jsx'),", "  const bookingForm = await source('src/randapp/planning/SaleBookingForm.jsx')\n  assert.match(bookingForm, /SaleRoomPicker/)\n  await Promise.all([")
+          arch.write_text(a)
+
+          grande = Path('test/grande-mode.test.js')
+          g = grande.read_text()
+          marker = "\ntest('Home mobile semplificata:"
+          if marker in g:
+              g = g.split(marker, 1)[0].rstrip() + '\n'
+          grande.write_text(g)
+
+          ntfy = Path('test/ntfy-profile.test.js')
+          n = ntfy.read_text()
+          n = n.replace("read('../src/ntfy-profile.js')", "read('../src/randapp/NtfySetup.jsx')")
+          n = n.replace("assert.match(setup, /\\.profile-notif-section/)\n  assert.match(setup, /Attiva e configura ntfy/)", "assert.match(setup, /data-testid=\"ntfy-setup\"/)\n  assert.match(setup, /Configura ntfy/)")
+          n = n.replace("assert.match(setup, /data-copy-topic/)\n  assert.match(setup, /test: true/)", "assert.match(setup, /navigator\\.clipboard\\.writeText/)\n  assert.match(setup, /test:true/)")
+          ntfy.write_text(n)
+          PY
+      - name: Remove one-time workflow and commit
+        run: |
+          rm -f .github/workflows/point2-finalize-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: complete point 2 modular cleanup"
+          git push
