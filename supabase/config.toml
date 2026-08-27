@@ -1,0 +1,7 @@
+# Solo l'impostazione per la nuova funzione public-issue: nessuna verifica JWT,
+# perché è pensata per essere aperta senza login (link mandato al tecnico esterno
+# via WhatsApp). Le altre funzioni già deployate mantengono la loro configurazione
+# esistente lato Supabase (non gestita da questo file finché non viene generato
+# con `supabase init` / `supabase functions list`).
+[functions.public-issue]
+verify_jwt = false

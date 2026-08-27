@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
 import TechnicianPortal from './technician-portal.jsx'
+import PublicIssueView from './public-issue-view.jsx'
 import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
@@ -24,18 +25,21 @@ import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
+const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 
 initUiSize()
 initTheme()
 
-if (technicianMatch) {
+if (technicianMatch || publicIssueMatch) {
   import('./styles.css')
 }
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppErrorBoundary>
-      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} /> : <App />}
+      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
+        : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
+        : <App />}
     </AppErrorBoundary>
   </React.StrictMode>,
 )

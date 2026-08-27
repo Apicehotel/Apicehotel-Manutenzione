@@ -927,3 +927,15 @@ html[data-ui-size="large"] .toolbar-actions { grid-template-columns: minmax(220p
 .tech-job-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: var(--font-xs); color: #5c645e; }
 .tech-job-eta { font-size: var(--font-sm); color: #0e5c49; background: #eef8f3; border-radius: 8px; padding: 6px 10px; }
 .tech-job-action { width: 100%; }
+
+/* Pagina pubblica /s/<id> — dettagli di una segnalazione, link mandato al tecnico esterno via WhatsApp */
+.public-issue-page { min-height: 100vh; background: #f4f2ed; display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; box-sizing: border-box; }
+.public-issue-card { width: 100%; max-width: 420px; background: #fff; border-radius: 16px; border: 1px solid #e4e0d6; padding: 20px; box-sizing: border-box; }
+.public-issue-hotel { font-size: var(--font-xs); color: #5c645e; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 4px; }
+.public-issue-card h1 { font-size: 22px; margin: 0 0 8px; }
+.public-issue-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: var(--font-sm); color: #5c645e; margin-bottom: 10px; }
+.public-issue-meta span { background: #f4f2ed; border-radius: 999px; padding: 3px 10px; }
+.public-issue-title { font-size: var(--font-md); line-height: 1.45; color: #33362f; margin: 0 0 12px; }
+.public-issue-photo { width: 100%; border-radius: 12px; border: 1px solid #e4e0d6; display: block; margin-bottom: 12px; }
+.public-issue-date { font-size: var(--font-xs); color: #5c645e; margin: 0; }
+.public-issue-error { color: #b23a2e; }
