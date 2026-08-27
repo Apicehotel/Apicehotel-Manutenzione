@@ -1,16 +1,23 @@
-with roles as (
-  select distinct hotel_id, role from public.hotel_memberships where active
+with roles(role) as (
+  values ('admin'),('Supremo'),('Direzione'),('Direttore Centro Congressi'),('Portiere Notturno'),('manutentore'),('Tecnico esterno'),('Governante'),('Capo Governante'),('Reception'),('Isola dei Golosi'),('Ristorante Wine/Jazz'),('Colazione Jazz')
+), hotels(hotel_id) as (
+  values ('hotelgio'),('chocohotel'),('brigantino')
+), setting as (
+  select config from public.integration_settings where key='ntfy_alerts'
 ), per_hotel as (
-  select hotel_id,
+  select h.hotel_id,
     jsonb_object_agg(
-      role,
-      'randapp-rem-' || replace(hotel_id,'_','-') || '-' || replace(replace(encode(gen_random_bytes(18),'base64'),'/','_'),'+','-')
+      r.role,
+      coalesce(
+        (select config->'role_topics'->h.hotel_id->>r.role from setting),
+        'randapp-rem-' || h.hotel_id || '-' || replace(replace(encode(gen_random_bytes(18),'base64'),'/','_'),'+','-')
+      )
     ) as role_topics
-  from roles
-  group by hotel_id
+  from hotels h cross join roles r
+  group by h.hotel_id
 ), all_topics as (
-  select jsonb_object_agg(hotel_id, role_topics) as v from per_hotel
+  select jsonb_object_agg(hotel_id,role_topics) v from per_hotel
 )
-update public.integration_settings s
-set config = coalesce(s.config,'{}'::jsonb) || jsonb_build_object('role_topics',(select v from all_topics))
-where s.key='ntfy_alerts' and not (coalesce(s.config,'{}'::jsonb) ? 'role_topics');
+update public.integration_settings
+set config=coalesce(config,'{}'::jsonb)||jsonb_build_object('role_topics',(select v from all_topics))
+where key='ntfy_alerts';
