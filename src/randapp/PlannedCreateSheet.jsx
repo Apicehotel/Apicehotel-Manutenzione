@@ -1,14 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { insertPlanned } from '../planned-data.js'
 import { HOTEL_LOCATIONS } from '../locations.js'
+import { fetchDirectory } from '../users-data.js'
 import { Button, Field, Sheet } from './ui.jsx'
 
 const ISSUE_CATEGORIES = ['Idraulico', 'Elettrico', 'Climatizzazione', 'Arredo', 'Edilizio', 'Giardinaggio', 'Pulizia filtri', 'Idromassaggio', 'Extra Piani', 'Varie']
 
 const toTimestamp = (value) => value ? new Date(value).getTime() : null
 
-export default function PlannedCreateSheet({ open, onClose, hotel, users = [], user, onSaved }) {
+export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel?.id]
+  const [directory, setDirectory] = useState([])
   const [mode, setMode] = useState('camera')
   const [location, setLocation] = useState('')
   const [category, setCategory] = useState('Varie')
@@ -19,7 +21,14 @@ export default function PlannedCreateSheet({ open, onClose, hotel, users = [], u
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const candidates = useMemo(() => users.filter((person) => person.hotels?.includes(hotel?.id) && ['manutentore', 'Tecnico esterno'].includes(person.role)), [users, hotel?.id])
+  useEffect(() => {
+    if (!open || !hotel?.id) return
+    let active = true
+    fetchDirectory(hotel.id).then(({ users }) => { if (active) setDirectory(users || []) }).catch(() => { if (active) setDirectory([]) })
+    return () => { active = false }
+  }, [open, hotel?.id])
+
+  const candidates = useMemo(() => directory.filter((person) => ['manutentore', 'Tecnico esterno'].includes(person.role)), [directory])
   const rooms = useMemo(() => catalog?.roomGroups?.flatMap((group) => group.rooms) || [], [catalog])
   const validLocation = mode === 'camera' ? rooms.includes(location.trim()) : location.trim().length > 0
   const validPeriod = scheduledAt && scheduledUntil && toTimestamp(scheduledUntil) >= toTimestamp(scheduledAt)
