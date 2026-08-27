@@ -181,6 +181,17 @@ function IssuePhoto({ src, alt }) {
   </>
 }
 
+function technicianWaLink(issue, extraNote) {
+  const phone = String(issue.technicianPhone || '').replace(/[^\d+]/g, '').replace(/^\+/, '')
+  if (!phone) return null
+  const lines = [`Ciao ${issue.technicianName}, c'è un intervento da fare in ${issue.room}${issue.category ? ` (${issue.category})` : ''}.`]
+  if (issue.title) lines.push(`Descrizione: ${issue.title}`)
+  if (extraNote) lines.push(extraNote)
+  lines.push(`Urgenza: ${URGENCY_META[issue.urgency]?.label || issue.urgency}`)
+  if (issue.photoData || issue.photoPath) lines.push('📷 Ti mando subito la foto.')
+  return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n\n'))}`
+}
+
 function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -188,6 +199,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [replaced, setReplaced] = useState('')
   const [asking, setAsking] = useState('')
   const [techChoice, setTechChoice] = useState('')
+  const [techNote, setTechNote] = useState(issue.technicianNote || '')
   const [confirmDel, setConfirmDel] = useState(false)
   const canComplete = can(user, 'complete') || can(user, 'take_charge')
   const canAssign = can(user, 'assign')
@@ -218,7 +230,28 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       </dl>
       {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
 
-      {issue.status === 'tecnico' && <div className="rs-note rs-note--tecnico">Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong>{issue.technicianName && <> · assegnato a <strong>{issue.technicianName}</strong></>}</div>}
+      {issue.technicianAskedBy && issue.status === 'todo' && (
+        <div className="rs-note rs-note--tecnico">{issue.technicianAskedBy} chiede di contattare un tecnico.</div>
+      )}
+      {issue.status === 'tecnico' && (
+        <div className="rs-note rs-note--tecnico">
+          Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong>{issue.technicianName && <> · assegnato a <strong>{issue.technicianName}</strong></>}
+          {canSendUrgent(user) && (
+            <div style={{ marginTop: 8 }}>
+              <Field label="Nota per il tecnico (facoltativa)">
+                <textarea className="rs-textarea" rows="2" value={techNote} onChange={(e) => setTechNote(e.target.value)} placeholder="Aggiungi dettagli per il tecnico" />
+              </Field>
+              <div className="rs-action-pair" style={{ marginTop: 8 }}>
+                <Button variant="ghost" onClick={() => onUpdate(issue.id, { technicianNote: techNote.trim() || null })}>Salva nota</Button>
+                {technicianWaLink(issue, techNote.trim()) && (
+                  <Button variant="primary" icon="message" onClick={() => window.open(technicianWaLink(issue, techNote.trim()), '_blank')}>Apri WhatsApp</Button>
+                )}
+              </div>
+              {!issue.technicianPhone && <p className="rs-field__hint">Numero del tecnico non disponibile.</p>}
+            </div>
+          )}
+        </div>
+      )}
       {issue.status === 'waiting' && (
         <div className="rs-note rs-note--waiting">
           In attesa del pezzo: <strong>{issue.pieceName}</strong>
@@ -244,7 +277,10 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <Button variant="ghost" icon="package" onClick={() => setAsking('piece')} data-testid="action-piece">Serve pezzo</Button>
             {!issue.pieceReplaced && <Button variant="ghost" icon="package" onClick={() => setAsking('replaced')}>Pezzo sostituito</Button>}
           </div>
-          <Button variant="ghost" icon="message" onClick={() => setAsking('tech')}>Chiedi un tecnico</Button>
+          <Button variant="ghost" icon="message" disabled={!canSendUrgent(user) && Boolean(issue.technicianAskedBy)}
+            onClick={() => canSendUrgent(user) ? setAsking('tech') : onUpdate(issue.id, { technicianAskedBy: user?.name })}>
+            {canSendUrgent(user) ? 'Chiedi un tecnico' : (issue.technicianAskedBy ? 'Tecnico già richiesto' : 'Chiedi un tecnico')}
+          </Button>
           <Field label="Note sul lavoro fatto (facoltative)">
             <textarea className="rs-textarea" rows="3" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Cosa è stato fatto" data-testid="completion-note" />
           </Field>
