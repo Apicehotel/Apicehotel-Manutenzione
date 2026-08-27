@@ -8,6 +8,7 @@ const url = import.meta.env.VITE_SUPABASE_URL || 'https://ooqlfldcrnkudhgjnied.s
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX'
 
 export const supabaseUrl = url
+export const supabaseAnonKey = anonKey
 
 export const supabase = url && anonKey
   ? createClient(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true } })
