@@ -312,7 +312,13 @@ export default function Issues({ user, hotel, users, createSignal }) {
       .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
   }, [issues, filter, search])
 
-  const doUpdate = async (id, changes) => { await updateIssueRow(id, { ...changes, hotelId: hotel.id }); reload() }
+  const doUpdate = async (id, changes) => {
+    // Aggiornamento ottimistico: la lista mostra subito il nuovo stato (es. "Completata")
+    // senza aspettare l'upload della foto + il round-trip di rete, che restano comunque
+    // in corso in background e si riconciliano con reload() alla fine.
+    setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i)))
+    try { await updateIssueRow(id, { ...changes, hotelId: hotel.id }) } finally { reload() }
+  }
   const doDelete = async (id) => { await deleteIssueRow(id, hotel.id); reload() }
 
   if (creating) return <NewIssueForm hotel={hotel} user={user} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); reload() }} />
