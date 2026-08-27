@@ -2,6 +2,7 @@ import {
   can, isAdminUser, canViewPlanned, canViewUrgent, canViewPlanningMenu,
   canViewTemperature, canViewHousekeeping, canViewTechnicianDirectory,
 } from './helpers.js'
+import { canSendReminder } from '../reminders-data.js'
 import { ITEM_TO_NAV_KEY, placementFor } from './role-navigation.js'
 
 const placementAllows = (config, user, itemId, wanted = null) => {
@@ -11,8 +12,6 @@ const placementAllows = (config, user, itemId, wanted = null) => {
   return wanted ? placement === wanted : placement !== 'off'
 }
 
-// Costruisce il menu completo dell'app, filtrato sia dai permessi funzionali
-// sia dalla configurazione Ruoli & Navigazione salvata in Supabase.
 export function buildNav(user, hotel, navigationConfig = null, placement = null) {
   if (!user) return []
   const groups = [
@@ -27,6 +26,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'operativita', label: 'Operatività', items: [
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canViewPlanned(user) },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canViewUrgent(user) },
+        { id: 'reminders', icon: 'bell', label: 'Promemoria', show: canSendReminder(user) },
         { id: 'planning-work', icon: 'calendar', label: 'Planning', show: canViewPlanningMenu(user) },
         { id: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping', show: canViewHousekeeping(user) },
         { id: 'temperature', icon: 'thermometer', label: 'Temperature', show: canViewTemperature(user) },
@@ -64,10 +64,10 @@ export const NAV_TARGET = {
   'admin-sensors': { settings: 'sensors' },
 }
 
-// Guardie funzionali: la Shell aggiunge anche il gate dinamico Off/Sotto/Laterale.
 export const VIEW_GUARDS = {
   interventions: canViewPlanned,
   urgent: canViewUrgent,
+  reminders: canSendReminder,
   'planning-work': canViewPlanningMenu,
   'planning-sale': (u, hotel) => hotel?.id === 'hotelgio' && canViewPlanningMenu(u),
   housekeeping: canViewHousekeeping,
