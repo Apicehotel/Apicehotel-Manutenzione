@@ -7,6 +7,7 @@ const admin = createClient(url, service, { auth: { persistSession: false, autoRe
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-randapp-request", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control":"no-store" } });
 const URGENT_ROLES = new Set(["admin","manutentore","Direzione","Direttore Centro Congressi","Reception","Portiere Notturno"]);
+const APPS = {ios:"https://apps.apple.com/it/app/ntfy/id1625396347",android:"https://play.google.com/store/apps/details?id=io.heckel.ntfy",web:"https://ntfy.sh/app"};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -21,30 +22,40 @@ Deno.serve(async (req: Request) => {
     const { data:membership } = await admin.from("hotel_memberships").select("role,active").eq("auth_user_id",userData.user.id).eq("hotel_id",hotelId).maybeSingle();
     if (!membership?.active) return json({ ok:false,error:"forbidden" },403);
 
-    const housekeeping = membership.role === "Capo Governante";
-    if (!housekeeping && !URGENT_ROLES.has(membership.role)) {
-      const { data:setting } = await admin.from("integration_settings").select("enabled,config").eq("key","ntfy_alerts").maybeSingle();
-      const reminderTopic = String(setting?.config?.role_topics?.[hotelId]?.[membership.role] || "");
-      if (!setting?.enabled || !reminderTopic) return json({ ok:true,enabled:false,channel:"reminders" });
-      return json({ok:true,enabled:true,server:String(setting.config?.server||"https://ntfy.sh"),topic:reminderTopic,channel:"reminders",role:membership.role,apps:{ios:"https://apps.apple.com/it/app/ntfy/id1625396347",android:"https://play.google.com/store/apps/details?id=io.heckel.ntfy",web:"https://ntfy.sh/app"}});
-    }
+    const role = String(membership.role || "");
+    const [{ data:alerts }, { data:housekeepingSetting }] = await Promise.all([
+      admin.from("integration_settings").select("enabled,config").eq("key","ntfy_alerts").maybeSingle(),
+      role === "Capo Governante"
+        ? admin.from("integration_settings").select("enabled,config").eq("key","ntfy_housekeeping").maybeSingle()
+        : Promise.resolve({ data:null }),
+    ]);
 
-    const key = housekeeping ? "ntfy_housekeeping" : "ntfy_alerts";
-    const { data:setting } = await admin.from("integration_settings").select("enabled,config").eq("key",key).maybeSingle();
-    if (!setting?.enabled) return json({ ok:true,enabled:false,channel:housekeeping?"housekeeping":"urgent" });
-    const server = String(setting.config?.server || "https://ntfy.sh");
-    const topic = String(setting.config?.topics?.[hotelId] || "");
-    const reminderTopic = String(setting.config?.role_topics?.[hotelId]?.[membership.role] || "");
-    if (!topic && !reminderTopic) return json({ ok:false,error:"topic_not_configured" },404);
+    const alertServer = String(alerts?.config?.server || "https://ntfy.sh");
+    const urgentTopic = alerts?.enabled && URGENT_ROLES.has(role) ? String(alerts.config?.topics?.[hotelId] || "") : "";
+    const reminderTopic = alerts?.enabled ? String(alerts.config?.role_topics?.[hotelId]?.[role] || "") : "";
+    const housekeepingTopic = role === "Capo Governante" && housekeepingSetting?.enabled ? String(housekeepingSetting.config?.topics?.[hotelId] || "") : "";
+
+    const channels = [
+      urgentTopic ? { id:"urgent", label:"Avvisi urgenti", topic:urgentTopic, priority:5 } : null,
+      reminderTopic ? { id:"reminders", label:`Promemoria · ${role}`, topic:reminderTopic, priority:5 } : null,
+      housekeepingTopic ? { id:"housekeeping", label:"Housekeeping", topic:housekeepingTopic, priority:5 } : null,
+    ].filter(Boolean);
+
+    if (!channels.length) return json({ ok:true,enabled:false,role,channels:[],apps:APPS });
+    const primary = channels[0] as {id:string,label:string,topic:string,priority:number};
     return json({
       ok:true,
       enabled:true,
-      server,
-      topic,
+      server: alertServer,
+      role,
+      channels,
+      apps:APPS,
+      // Backward compatibility for older clients.
+      topic: primary.topic,
+      channel: primary.id,
       reminder_topic: reminderTopic || null,
-      role: membership.role,
-      channel:housekeeping?"housekeeping":"urgent",
-      apps:{ios:"https://apps.apple.com/it/app/ntfy/id1625396347",android:"https://play.google.com/store/apps/details?id=io.heckel.ntfy",web:"https://ntfy.sh/app"}
+      urgent_topic: urgentTopic || null,
+      housekeeping_topic: housekeepingTopic || null,
     });
   } catch (error) {
     console.error("ntfy-config", error instanceof Error ? error.message : "unknown");
