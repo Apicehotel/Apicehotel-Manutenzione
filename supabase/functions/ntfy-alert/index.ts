@@ -23,34 +23,42 @@ Deno.serve(async(req:Request)=>{
     const {data:membership}=await admin.from("hotel_memberships").select("role,active").eq("auth_user_id",userData.user.id).eq("hotel_id",hotelId).maybeSingle();
     if(!membership?.active) return json({ok:false,error:"forbidden"},403);
 
-    const housekeeping=body?.channel==="housekeeping";
-    const allowed=housekeeping?HOUSEKEEPING_SEND_ROLES.has(membership.role):URGENT_ROLES.has(membership.role);
-    if(!allowed) return json({ok:false,error:"forbidden"},403);
+    const test=body?.test===true;
+    const channel=String(body?.channel||"urgent");
+    const role=String(membership.role||"");
+    const housekeeping=channel==="housekeeping";
+    const reminders=channel==="reminders";
+
+    if(reminders && !test) return json({ok:false,error:"forbidden"},403);
+    if(housekeeping && !(HOUSEKEEPING_SEND_ROLES.has(role) || (test && role==="Capo Governante"))) return json({ok:false,error:"forbidden"},403);
+    if(!housekeeping && !reminders && !URGENT_ROLES.has(role)) return json({ok:false,error:"forbidden"},403);
 
     const settingKey=housekeeping?"ntfy_housekeeping":"ntfy_alerts";
     const {data:setting}=await admin.from("integration_settings").select("enabled,config").eq("key",settingKey).maybeSingle();
-    if(!setting?.enabled) return json({ok:true,enabled:false,status:"disabled",channel:housekeeping?"housekeeping":"urgent"});
+    if(!setting?.enabled) return json({ok:true,enabled:false,status:"disabled",channel});
     const server=String(setting.config?.server||"https://ntfy.sh").replace(/\/$/,"");
-    const topic=String(setting.config?.topics?.[hotelId]||"");
+    const topic=reminders
+      ? String(setting.config?.role_topics?.[hotelId]?.[role]||"")
+      : String(setting.config?.topics?.[hotelId]||"");
     if(!topic) return json({ok:false,error:"topic_not_configured"},404);
-    const test=body?.test===true;
+
     const title=test
-      ? `TEST RandApp · ${HOTEL_NAMES[hotelId]||hotelId}`
+      ? (reminders?`TEST Promemoria · ${HOTEL_NAMES[hotelId]||hotelId}`:housekeeping?`TEST Housekeeping · ${HOTEL_NAMES[hotelId]||hotelId}`:`TEST Avvisi · ${HOTEL_NAMES[hotelId]||hotelId}`)
       : String(body?.title||(housekeeping?`Housekeeping · ${HOTEL_NAMES[hotelId]||hotelId}`:`ALLARME · ${HOTEL_NAMES[hotelId]||hotelId}`)).slice(0,120);
     const message=test
-      ? (housekeeping?"Test ntfy Housekeeping riuscito. Riceverai qui le modifiche operative di Direzione e Reception.":"Test ntfy riuscito. Il secondo canale di allarme è configurato su questo dispositivo.")
+      ? (reminders?`Canale Promemoria ${role} configurato correttamente.`:housekeeping?"Canale ntfy Housekeeping configurato correttamente.":"Canale ntfy Avvisi Urgenti configurato correttamente.")
       : String(body?.message||(housekeeping?"Modifica Housekeeping in RandApp":"Nuovo avviso urgente in RandApp")).slice(0,500);
     const publishBody:Record<string,unknown>={
       topic,
       title,
       message,
-      priority:test?5:Math.max(1,Math.min(5,Number(body?.priority)||(housekeeping?4:5))),
-      tags:housekeeping?["broom","hotel"]:(test?["white_check_mark","bell"]:["rotating_light","warning"]),
+      priority:5,
+      tags:reminders?["bell","memo"]:housekeeping?["broom","hotel"]:(test?["white_check_mark","bell"]:["rotating_light","warning"]),
     };
     if(body?.url) publishBody.click=String(body.url).slice(0,1000);
     const res=await fetch(server,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(publishBody)});
     if(!res.ok){const text=await res.text().catch(()=>"");console.error("ntfy-alert delivery",res.status,text.slice(0,500));return json({ok:false,error:"delivery_failed",status:res.status,detail:text.slice(0,160)},502)}
     const delivered=await res.json().catch(()=>({}));
-    return json({ok:true,status:"sent",id:delivered?.id||null,time:delivered?.time||null,test,channel:housekeeping?"housekeeping":"urgent"});
+    return json({ok:true,status:"sent",id:delivered?.id||null,time:delivered?.time||null,test,channel});
   }catch(error){console.error("ntfy-alert",error instanceof Error?error.message:"unknown");return json({ok:false,error:"send_failed"},500)}
 });
