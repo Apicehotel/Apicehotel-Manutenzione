@@ -4,6 +4,7 @@ import { fetchBookings } from '../sale-data.js'
 import { PlanningSale } from '../planning.jsx'
 import { Icon, Spinner } from './ui.jsx'
 import PlanningWorkSimple from './PlanningWorkSimple.jsx'
+import PlannedCreateSheet from './PlannedCreateSheet.jsx'
 
 const isoDay = (value = new Date()) => { const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 
@@ -23,6 +24,7 @@ export default function PlanningHub({ hotel, user, createRequest = null }) {
   const [loading,setLoading]=useState(true)
   const [workCreateSignal,setWorkCreateSignal]=useState(0)
   const [saleCreateSignal,setSaleCreateSignal]=useState(0)
+  const [interventionCreateOpen,setInterventionCreateOpen]=useState(false)
 
   const load=useCallback(async()=>{
     setLoading(true)
@@ -35,7 +37,17 @@ export default function PlanningHub({ hotel, user, createRequest = null }) {
   useEffect(()=>{setSection(null);load();const off=subscribePlanningWork(hotel.id,load);return()=>off?.()},[hotel.id,load])
   useEffect(()=>{
     if(!createRequest?.nonce)return
-    if(createRequest.kind==='work'){setSection('work');setWorkCreateSignal((n)=>n+1)}
+    if(createRequest.kind==='work'){
+      let source='planning-work'
+      try { source=sessionStorage.getItem('randapp.insert-source')||source; sessionStorage.removeItem('randapp.insert-source') } catch { /* fallback */ }
+      if(source==='intervention'){
+        setSection(null)
+        setInterventionCreateOpen(true)
+      }else{
+        setSection('work')
+        setWorkCreateSignal((n)=>n+1)
+      }
+    }
     if(createRequest.kind==='sale'){setSection('sale');setSaleCreateSignal((n)=>n+1)}
   },[createRequest?.nonce,createRequest?.kind])
 
@@ -50,5 +62,6 @@ export default function PlanningHub({ hotel, user, createRequest = null }) {
     <div className="rs-page-title"><div><h1>Planning</h1><p>{section?'Calendario operativo.':'Lavori e sale restano separati.'}</p></div>{section&&<button type="button" className="rs-btn rs-btn--ghost" onClick={()=>setSection(null)}>‹ Oggi</button>}</div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10,marginBottom:16}}><PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>setSection('work')}/><PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>setSection('sale')}/></div>
     {!section?<div style={{display:'grid',gap:12}}><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Lavori oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todayWork.length?`${todayWork.length} lavor${todayWork.length===1?'o':'i'} nel planning.`:'Nessun lavoro previsto oggi.'}</p></div><div style={{border:'1px solid var(--rs-line)',borderRadius:16,padding:14,background:'var(--rs-surface)'}}><strong>Sale oggi</strong><p style={{margin:'6px 0 0',color:'var(--rs-text-2)'}}>{todaySales.length?`${todaySales.length} attività/prenotazioni.`:'Nessuna sala prevista oggi.'}</p></div></div>:section==='work'?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:<div className="rs-legacy rs-legacy--planning"><PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal}/></div>}
+    <PlannedCreateSheet open={interventionCreateOpen} onClose={()=>setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={()=>setInterventionCreateOpen(false)}/>
   </div>
 }
