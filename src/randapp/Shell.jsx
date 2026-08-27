@@ -294,7 +294,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>
 
-        <nav className="rs-bottomnav" data-testid="bottom-nav">
+        <nav className="rs-bottomnav" data-count={bottomNav.length} style={{ '--rs-bottom-count': Math.max(1, Math.min(5, bottomNav.length)) }} data-testid="bottom-nav">
           {bottomNav.map((item) => (
             <button key={item.id} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`}>
               <Icon name={item.icon} /><small>{item.label}</small>
