@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from './supabase.js'
 
 // Pagina pubblica e in sola lettura: /s/<id>. Nessun login, pensata per il link
-// mandato al tecnico esterno via WhatsApp. Vedi supabase/functions/public-issue.
+// mandato al tecnico esterno via WhatsApp. Vedi supabase/functions/public-iss
+// (nome deployato "public-iss" per una svista in dashboard — mai rinominato, il
+// codice qui punta a quello slug).
 
 const URGENCY_LABEL = { alta: 'Alta', media: 'Media', bassa: 'Bassa' }
 const STATUS_LABEL = { todo: 'Da fare', waiting: 'Attesa pezzo', tecnico: 'Tecnico', done: 'Completata' }
@@ -23,7 +25,7 @@ export default function PublicIssueView({ id }) {
       if (!isSupabaseConfigured) { setError('Servizio non disponibile'); setLoading(false); return }
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        const url = `${supabaseUrl}/functions/v1/public-issue?id=${encodeURIComponent(id)}`
+        const url = `${supabaseUrl}/functions/v1/public-iss?id=${encodeURIComponent(id)}`
         const res = await fetch(url, {
           headers: {
             apikey: supabaseAnonKey,
