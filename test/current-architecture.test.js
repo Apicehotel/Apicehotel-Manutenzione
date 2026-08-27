@@ -44,10 +44,11 @@ test('permissions are module/action based and central', async () => {
 
 test('Planning Sale is decomposed into focused components', async () => {
   const planning = await source('src/randapp/PlanningSaleSimple.jsx')
-  for (const component of ['SaleBookingForm','SaleBookingCard','SaleRoomPicker','SaleRoomConfigSheet']) assert.match(planning, new RegExp(component))
+  for (const component of ['SaleBookingForm','SaleBookingCard','SaleRoomConfigSheet']) assert.match(planning, new RegExp(component))
   assert.ok(planning.length < 15000, 'PlanningSaleSimple must stay an orchestrator rather than a monolith')
+  const bookingForm = await source('src/randapp/planning/SaleBookingForm.jsx')
+  assert.match(bookingForm, /SaleRoomPicker/)
   await Promise.all([
-    source('src/randapp/planning/SaleBookingForm.jsx'),
     source('src/randapp/planning/SaleBookingCard.jsx'),
     source('src/randapp/planning/SaleRoomPicker.jsx'),
     source('src/randapp/planning/SaleRoomConfigSheet.jsx'),

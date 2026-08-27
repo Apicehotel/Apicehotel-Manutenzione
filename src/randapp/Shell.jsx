@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
 import { Icon, IconButton, Sheet, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
-import { can, canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
+import { canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
+import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import Home from './Home.jsx'
@@ -223,7 +224,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [user, placement, viewAllowed])
 
   const insertAllowed = useMemo(() => ({
-    issue: Boolean(user && can(user, 'create') && viewAllowed('issues')),
+    issue: Boolean(user && canUser(user, 'issues', 'create') && viewAllowed('issues')),
     urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
     intervention: Boolean(user && canCreatePlanned(user) && viewAllowed('interventions') && viewAllowed('planning-work')),
     'planning-work': Boolean(user && canCreatePlanned(user) && viewAllowed('planning-work')),

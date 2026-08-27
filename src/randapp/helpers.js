@@ -1,4 +1,4 @@
-import { HOTELS, ROLE_PERMISSIONS } from '../config.js'
+import { HOTELS } from '../config.js'
 import { canUser } from '../permissions.js'
 
 export const RANDAPP_LOGOS = {
@@ -12,11 +12,6 @@ export const cardFor = (hotelId) => HOTELS.find((h) => h.id === hotelId)?.card |
 export const hotelById = (hotelId) => HOTELS.find((h) => h.id === hotelId) || null
 
 export const normalize = (value) => String(value || '').trim().toLocaleLowerCase('it')
-
-// Compatibilità temporanea con i vecchi permessi generici. I gate di modulo
-// passano invece sempre dalla matrice centrale in permissions.js.
-export const permsFor = (user) => ROLE_PERMISSIONS[user?.role] || []
-export const can = (user, permission) => permsFor(user).includes(permission)
 
 export const canSendUrgent = (u) => canUser(u, 'urgent', 'create')
 export const canManageUrgent = (u) => canUser(u, 'urgent', 'edit') || canUser(u, 'urgent', 'take_charge') || canUser(u, 'urgent', 'complete')
