@@ -1,0 +1,17 @@
+@media (max-width: 899px) {
+  .rs-bottomnav {
+    bottom: 0 !important;
+    padding-top: 4px !important;
+    padding-bottom: max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) !important;
+  }
+
+  .rs-navbtn {
+    min-height: 48px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .rs-navfab {
+    bottom: calc(58px + max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) + 12px) !important;
+  }
+}
