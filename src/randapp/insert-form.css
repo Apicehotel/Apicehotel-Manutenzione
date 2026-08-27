@@ -13,20 +13,76 @@
 .rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-preview{position:static;width:100%;height:auto;aspect-ratio:1/1;max-height:52px;object-fit:cover;border-radius:9px;margin:6px 0 0;pointer-events:none}
 .rs-form:has([data-testid="issue-title-input"]) [data-testid="issue-title-input"]{min-height:96px;height:100%;resize:vertical}
 
-/* Planning: i controlli datetime affiancati diventavano troppo stretti su iPhone.
-   Su mobile Da/A sono due righe piene, più leggibili e facili da toccare. */
-.rs-insert-shell form > div:has(input[type="datetime-local"]){align-items:end}
-.rs-insert-shell input[type="datetime-local"]{min-height:46px;width:100%;box-sizing:border-box}
+/* Nuovo layout pianificazione: più corto, leggibile e pensato per mobile. */
+.rs-planned-sheet{--planned-gap:12px}
+.rs-planned-form{display:grid;gap:var(--planned-gap);padding-bottom:2px}
+.rs-planned-head{display:flex;align-items:center;gap:12px;padding:2px 0 4px}
+.rs-planned-head>div{min-width:0;flex:1}
+.rs-planned-head h2{margin:0;font-family:Sora;font-size:1.2rem;line-height:1.15;color:var(--rs-text)}
+.rs-planned-head p{margin:4px 0 0;color:var(--rs-text-2);font-size:.8rem}
+.rs-planned-head__icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--rs-surface-2);color:var(--rs-cyan);flex:0 0 auto}
+.rs-planned-block{border:1px solid var(--rs-line);background:var(--rs-surface);border-radius:16px;padding:12px}
+.rs-planned-block--compact{padding:10px 12px}
+.rs-planned-location{display:grid;gap:8px}
+.rs-planned-location .rs-segmented{margin:0}
+.rs-planned-location .rs-input{min-height:44px;font-size:16px}
+.rs-planned-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.rs-planned-categories button,.rs-planned-pills button{border:1px solid var(--rs-line);background:var(--rs-surface-2);color:var(--rs-text-2);border-radius:12px;min-height:42px;padding:8px 9px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;cursor:pointer}
+.rs-planned-categories button.is-selected,.rs-planned-pills button.is-selected{border-color:var(--rs-cyan);background:color-mix(in srgb,var(--rs-cyan) 12%,var(--rs-surface));color:var(--rs-text);box-shadow:0 0 0 1px color-mix(in srgb,var(--rs-cyan) 20%,transparent)}
+.rs-planned-categories .rs-icon{width:16px;height:16px;flex:0 0 auto}
+.rs-planned-pills{display:flex;flex-wrap:wrap;gap:7px}
+.rs-planned-pills button{min-width:86px}
+.rs-planned-hint{display:block;margin-top:7px;color:var(--rs-text-3)}
+.rs-planned-description{min-height:76px;resize:vertical;font-size:16px}
+.rs-planned-dates{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+.rs-planned-dates label{display:grid;gap:5px;min-width:0}
+.rs-planned-dates label>span{display:flex;align-items:center;gap:5px;font-size:.76rem;font-weight:700;color:var(--rs-text-2)}
+.rs-planned-dates em{font-style:normal;font-weight:500;color:var(--rs-text-3)}
+.rs-planned-dates .rs-input{width:100%;min-height:48px;font-size:16px;box-sizing:border-box}
+.rs-planned-error{display:block;margin-top:6px;color:var(--rs-danger);font-size:.76rem}
+.rs-planned-people{display:grid;gap:12px}
+.rs-planned-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.rs-planned-section-head>div{display:grid;gap:2px}
+.rs-planned-section-head strong{font-size:.92rem;color:var(--rs-text)}
+.rs-planned-section-head small{color:var(--rs-text-3);font-size:.72rem}
+.rs-planned-section-head>span{font-size:.7rem;font-weight:800;color:var(--rs-cyan);background:color-mix(in srgb,var(--rs-cyan) 10%,var(--rs-surface));border:1px solid color-mix(in srgb,var(--rs-cyan) 35%,var(--rs-line));border-radius:999px;padding:5px 8px;white-space:nowrap}
+.rs-planned-people-group{display:grid;gap:7px}
+.rs-planned-group-title{text-transform:uppercase;letter-spacing:.05em;font-weight:800;color:var(--rs-text-3);font-size:.68rem}
+.rs-planned-assignee-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.rs-planned-assignee{width:100%;min-width:0;min-height:58px;display:grid;grid-template-columns:30px minmax(0,1fr) 18px;align-items:center;gap:7px;padding:8px;border:1px solid var(--rs-line);border-radius:13px;background:var(--rs-surface-2);color:var(--rs-text);text-align:left;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.rs-planned-assignee.is-selected{border-color:var(--rs-cyan);background:color-mix(in srgb,var(--rs-cyan) 11%,var(--rs-surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--rs-cyan) 18%,transparent)}
+.rs-planned-assignee__icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--rs-surface);color:var(--rs-cyan)}
+.rs-planned-assignee__icon.is-external{color:var(--rs-warn)}
+.rs-planned-assignee__icon .rs-icon{width:16px;height:16px}
+.rs-planned-assignee__text{min-width:0;display:grid;gap:1px}
+.rs-planned-assignee__text strong{font-size:.8rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-planned-assignee__text small{font-size:.62rem;color:var(--rs-text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-planned-assignee__check{width:17px;height:17px;border-radius:6px;border:1px solid var(--rs-line-strong);display:grid;place-items:center;font-size:.68rem;font-weight:900;color:white}
+.rs-planned-assignee.is-selected .rs-planned-assignee__check{background:var(--rs-cyan);border-color:var(--rs-cyan)}
+.rs-planned-selected-summary{display:flex;align-items:center;gap:7px;border-radius:12px;background:var(--rs-surface-2);padding:8px 10px;color:var(--rs-text-2);font-size:.74rem;min-width:0}
+.rs-planned-selected-summary .rs-icon{width:15px;height:15px;color:var(--rs-cyan);flex:0 0 auto}
+.rs-planned-selected-summary span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-planned-actions{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:8px;margin:2px -2px -2px;padding:10px 2px calc(4px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,color-mix(in srgb,var(--rs-surface) 0%,transparent),var(--rs-surface) 22%,var(--rs-surface) 100%);backdrop-filter:blur(8px)}
+.rs-planned-actions .rs-btn{min-height:48px}
 
-/* Lista assegnatari: su iOS uno swipe verticale iniziato sulla prima riga
-   poteva essere interpretato anche come tap (si notava soprattutto su Aly,
-   essendo il primo elemento). Diamo priorità esplicita allo scroll verticale
-   e togliamo selezione/test highlight durante il gesto. */
-.rs-insert-shell button[aria-pressed]{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-
-@media(max-width:560px){
-  .rs-insert-shell form > div:has(input[type="datetime-local"]){grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
-  .rs-insert-shell input[type="datetime-local"]{min-height:50px;font-size:16px}
+@media(min-width:700px){
+  .rs-planned-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .rs-planned-head,.rs-planned-people,.rs-planned-actions{grid-column:1/-1}
+  .rs-planned-categories{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rs-planned-dates{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rs-planned-assignee-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
-@media(max-width:420px){.rs-form:has([data-testid="issue-title-input"]){grid-template-columns:minmax(0,1fr) 52px;column-gap:7px}.rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child{width:52px}}
+@media(max-width:420px){
+  .rs-form:has([data-testid="issue-title-input"]){grid-template-columns:minmax(0,1fr) 52px;column-gap:7px}
+  .rs-form:has([data-testid="issue-title-input"])>.rs-field:has([data-testid="issue-title-input"])+.rs-fieldset .rs-photo-action:last-child{width:52px}
+  .rs-planned-sheet{--planned-gap:10px}
+  .rs-planned-block{padding:10px;border-radius:14px}
+  .rs-planned-categories{gap:6px}
+  .rs-planned-categories button{min-height:40px;padding:7px 6px;font-size:.76rem}
+  .rs-planned-assignee-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .rs-planned-assignee{grid-template-columns:28px minmax(0,1fr) 16px;gap:6px;padding:7px;min-height:54px}
+  .rs-planned-assignee__icon{width:28px;height:28px}
+  .rs-planned-assignee__text strong{font-size:.76rem}
+  .rs-planned-assignee__text small{font-size:.58rem}
+}
