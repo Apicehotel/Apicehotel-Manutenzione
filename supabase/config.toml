@@ -1,7 +1,9 @@
-# Solo l'impostazione per la nuova funzione public-issue: nessuna verifica JWT,
-# perché è pensata per essere aperta senza login (link mandato al tecnico esterno
-# via WhatsApp). Le altre funzioni già deployate mantengono la loro configurazione
-# esistente lato Supabase (non gestita da questo file finché non viene generato
-# con `supabase init` / `supabase functions list`).
-[functions.public-issue]
+# Solo l'impostazione per la funzione public-iss (nome deployato per una svista
+# in dashboard — la sorgente vive comunque in supabase/functions/public-iss):
+# nessuna verifica JWT, perché è pensata per essere aperta senza login (link
+# mandato al tecnico esterno via WhatsApp). Le altre funzioni già deployate
+# mantengono la loro configurazione esistente lato Supabase (non gestita da
+# questo file finché non viene generato con `supabase init` / `supabase
+# functions list`).
+[functions.public-iss]
 verify_jwt = false
