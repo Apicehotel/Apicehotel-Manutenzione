@@ -36,6 +36,12 @@ const ACTIONS = [
 
 export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
   const actions = ACTIONS.filter((item) => !item.gioOnly || hotel?.id === 'hotelgio')
+  const pick = (id) => {
+    if (id === 'planning-work' || id === 'planning-sale') {
+      try { sessionStorage.setItem('randapp.pending-insert', id) } catch { /* il flusso resta navigabile anche senza storage */ }
+    }
+    onPick(id)
+  }
   return (
     <Sheet open={open} onClose={onClose} className="rs-insert-shell">
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
@@ -49,7 +55,7 @@ export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
           <button
             key={item.id}
             type="button"
-            onClick={() => onPick(item.id)}
+            onClick={() => pick(item.id)}
             data-testid={`insert-${item.id}`}
             style={{
               width:'100%',
