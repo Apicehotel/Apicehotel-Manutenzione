@@ -6,8 +6,7 @@ export const ROLE_NAV_ITEMS = [
   ['home', 'Home'],
   ['issues', 'Segnalazioni'],
   ['interventions', 'Interventi'],
-  ['planning_work', 'Planning lavori'],
-  ['planning_sale', 'Planning Sale'],
+  ['planning_work', 'Planning'],
   ['housekeeping', 'Housekeeping'],
   ['temperature', 'Temperature'],
   ['urgent', 'Avvisi urgenti'],
@@ -28,7 +27,8 @@ export const VIEW_TO_NAV_KEY = {
   issues: 'issues',
   interventions: 'interventions',
   'planning-work': 'planning_work',
-  'planning-sale': 'planning_sale',
+  // Planning is one navigation permission: the hub decides whether the Sale section is available by role/hotel.
+  'planning-sale': 'planning_work',
   housekeeping: 'housekeeping',
   temperature: 'temperature',
   urgent: 'urgent',
@@ -48,7 +48,7 @@ export const ITEM_TO_NAV_KEY = {
   urgent: 'urgent',
   reminders: 'reminders',
   'planning-work': 'planning_work',
-  'planning-sale': 'planning_sale',
+  'planning-sale': 'planning_work',
   housekeeping: 'housekeeping',
   temperature: 'temperature',
   technicians: 'technicians',
@@ -63,7 +63,6 @@ const FALLBACK = {
   issues: 'bottom',
   interventions: 'side',
   planning_work: 'side',
-  planning_sale: 'side',
   housekeeping: 'side',
   temperature: 'side',
   urgent: 'side',
@@ -91,7 +90,8 @@ export function parseRoleNavigation(value) {
 }
 
 export function placementFor(config, role, key) {
-  return config?.[role]?.[key] || FALLBACK[key] || 'off'
+  const canonicalKey = key === 'planning_sale' ? 'planning_work' : key
+  return config?.[role]?.[canonicalKey] || FALLBACK[canonicalKey] || 'off'
 }
 
 export function isNavVisible(config, role, key) {
