@@ -10,6 +10,7 @@ const CATEGORIES = [
   ['Pulizia filtri', 'wind'], ['Idromassaggio', 'droplet'], ['Extra Piani', 'hotel'], ['Varie', 'wrench'],
 ]
 
+const normalizeText = (value) => String(value || '').trim().toLowerCase()
 const toTimestamp = (value) => value ? new Date(value).getTime() : null
 const isEvenRoom = (room) => {
   const n = Number(String(room).replace(/\D/g, ''))
@@ -26,6 +27,7 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   const [directory, setDirectory] = useState([])
   const [mode, setMode] = useState('camera')
   const [location, setLocation] = useState('')
+  const [locationFocus, setLocationFocus] = useState(false)
   const [category, setCategory] = useState('Varie')
   const [notes, setNotes] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
@@ -49,6 +51,7 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
     [catalog],
   )
   const rooms = useMemo(() => floorEntries.flatMap(({ group }) => group.rooms || []), [floorEntries])
+  const zones = useMemo(() => catalog?.zones || [], [catalog])
   const isChecklist = category === 'Pulizia filtri' || category === 'Idromassaggio'
   const isExtraFloors = category === 'Extra Piani'
   const availableFloors = useMemo(() => {
@@ -71,7 +74,24 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   const internal = candidates.filter((person) => person.role !== 'Tecnico esterno')
   const external = candidates.filter((person) => person.role === 'Tecnico esterno')
   const roomTrim = location.trim()
-  const validLocation = mode === 'camera' ? rooms.includes(roomTrim) : roomTrim.length > 0
+  const zoneMatch = useMemo(() => {
+    const query = normalizeText(location)
+    if (!query) return null
+    return zones.find((zone) => normalizeText(zone.name) === query || (zone.aliases || []).some((alias) => normalizeText(alias) === query)) || null
+  }, [location, zones])
+  const resolvedLocation = mode === 'zona' && zoneMatch ? zoneMatch.name : roomTrim
+  const validLocation = mode === 'camera' ? rooms.includes(roomTrim) : Boolean(zoneMatch)
+  const locationSuggestions = useMemo(() => {
+    const query = normalizeText(location)
+    if (mode === 'camera') {
+      const source = query ? rooms.filter((room) => normalizeText(room).includes(query)) : rooms
+      return source.slice(0, 8).map((room) => ({ value: room, label: room, meta: floorEntries.find(({ group }) => (group.rooms || []).includes(room))?.group?.name || '' }))
+    }
+    const source = query
+      ? zones.filter((zone) => normalizeText(zone.name).includes(query) || (zone.aliases || []).some((alias) => normalizeText(alias).includes(query)))
+      : zones
+    return source.slice(0, 8).map((zone) => ({ value: zone.name, label: zone.name, meta: (zone.aliases || []).slice(0, 2).join(' · ') }))
+  }, [floorEntries, location, mode, rooms, zones])
   const validStart = Boolean(scheduledAt)
   const validEnd = !scheduledUntil || toTimestamp(scheduledUntil) >= toTimestamp(scheduledAt)
   const valid = isExtraFloors
@@ -101,6 +121,7 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   const reset = () => {
     setMode('camera')
     setLocation('')
+    setLocationFocus(false)
     setCategory('Varie')
     setNotes('')
     setScheduledAt('')
@@ -115,6 +136,10 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
     setSelectedFloorIds([])
     if (['Pulizia filtri', 'Idromassaggio', 'Extra Piani'].includes(next)) setLocation('')
   }
+  const chooseLocation = (value) => {
+    setLocation(value)
+    setLocationFocus(false)
+  }
 
   const save = async (event) => {
     event.preventDefault()
@@ -125,14 +150,14 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
       const floorLabel = selectedFloors.map(({ group }) => group.name).join(', ')
       const start = toTimestamp(scheduledAt)
       const end = scheduledUntil ? toTimestamp(scheduledUntil) : start
-      const resolvedLocation = (isChecklist || isExtraFloors) ? floorLabel : roomTrim
+      const finalLocation = (isChecklist || isExtraFloors) ? floorLabel : resolvedLocation
       const resolvedNotes = notes.trim() || (isExtraFloors
         ? `Extra Piani — ${floorLabel}`
         : isChecklist ? `${category} ${floorLabel}` : '')
       const savedAssignees = assignees.map(({ id, name, role }) => ({ id, name, role }))
       await insertPlanned({
         hotelId: hotel.id,
-        location: resolvedLocation,
+        location: finalLocation,
         locationMode: (isChecklist || isExtraFloors) ? 'zona' : mode,
         category,
         notes: resolvedNotes,
@@ -214,16 +239,35 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
             <Field label="Dove *">
               <div className="rs-planned-location">
                 <div className="rs-segmented">
-                  <button type="button" className={mode === 'camera' ? 'active' : ''} onClick={() => { setMode('camera'); setLocation('') }}>Camera</button>
-                  <button type="button" className={mode === 'zona' ? 'active' : ''} onClick={() => { setMode('zona'); setLocation('') }}>Zona</button>
+                  <button type="button" className={mode === 'camera' ? 'active' : ''} onClick={() => { setMode('camera'); setLocation(''); setLocationFocus(false) }}>Camera</button>
+                  <button type="button" className={mode === 'zona' ? 'active' : ''} onClick={() => { setMode('zona'); setLocation(''); setLocationFocus(false) }}>Zona</button>
                 </div>
-                {mode === 'camera' ? (
-                  <input className="rs-input" list="planned-room-list" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Numero camera" autoFocus />
-                ) : (
-                  <input className="rs-input" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Es. Hall, cucina, giardino" autoFocus />
+                <div className="rs-planned-autocomplete">
+                  <input
+                    className="rs-input"
+                    value={location}
+                    onFocus={() => setLocationFocus(true)}
+                    onChange={(event) => { setLocation(event.target.value); setLocationFocus(true) }}
+                    onBlur={() => window.setTimeout(() => setLocationFocus(false), 120)}
+                    placeholder={mode === 'camera' ? 'Scrivi numero camera' : 'Scrivi o cerca una zona'}
+                    autoComplete="off"
+                    inputMode={mode === 'camera' ? 'numeric' : 'text'}
+                    autoFocus
+                  />
+                  {locationFocus && locationSuggestions.length > 0 && (
+                    <div className="rs-planned-suggestions" role="listbox">
+                      {locationSuggestions.map((item) => (
+                        <button key={`${mode}:${item.value}`} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseLocation(item.value)}>
+                          <span>{item.label}</span>{item.meta && <small>{item.meta}</small>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {location && validLocation && mode === 'zona' && zoneMatch && normalizeText(zoneMatch.name) !== normalizeText(location) && (
+                  <small className="rs-planned-hint">Zona riconosciuta: {zoneMatch.name}</small>
                 )}
-                <datalist id="planned-room-list">{rooms.map((room) => <option key={room} value={room} />)}</datalist>
-                {location && !validLocation && <small className="rs-planned-error">{mode === 'camera' ? 'Camera non valida.' : 'Inserisci una zona.'}</small>}
+                {location && !validLocation && <small className="rs-planned-error">{mode === 'camera' ? 'Seleziona una camera valida.' : 'Seleziona una zona valida.'}</small>}
               </div>
             </Field>
           )}
