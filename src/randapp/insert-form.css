@@ -17,6 +17,13 @@
    Su mobile Da/A sono due righe piene, più leggibili e facili da toccare. */
 .rs-insert-shell form > div:has(input[type="datetime-local"]){align-items:end}
 .rs-insert-shell input[type="datetime-local"]{min-height:46px;width:100%;box-sizing:border-box}
+
+/* Lista assegnatari: su iOS uno swipe verticale iniziato sulla prima riga
+   poteva essere interpretato anche come tap (si notava soprattutto su Aly,
+   essendo il primo elemento). Diamo priorità esplicita allo scroll verticale
+   e togliamo selezione/test highlight durante il gesto. */
+.rs-insert-shell button[aria-pressed]{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+
 @media(max-width:560px){
   .rs-insert-shell form > div:has(input[type="datetime-local"]){grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
   .rs-insert-shell input[type="datetime-local"]{min-height:50px;font-size:16px}
