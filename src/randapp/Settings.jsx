@@ -50,5 +50,35 @@ function NavigationTab(){
  return <section data-testid="settings-navigation"><div className="rs-page-title"><div><h1>Ruoli & Navigazione</h1><p>Permessi e posizione delle funzioni per ruolo</p></div></div><h2 style={{fontFamily:'Sora',fontSize:'1rem',margin:'10px 4px'}}>Ruolo da configurare</h2><Card className="rs-card--pad"><Field label="Seleziona ruolo"><select className="rs-select" value={role} onChange={e=>setRole(e.target.value)} data-testid="nav-role-select">{ROLES.map(r=><option key={r}>{r}</option>)}</select></Field><div style={{marginTop:14}}><strong style={{fontFamily:'Sora'}}>Permessi</strong><div className="rs-perm-card__list" style={{marginTop:8}}>{perms.map(p=><Badge key={p} tone="accent">{PERMISSION_LABELS[p]||p}</Badge>)}{!perms.length&&<span className="rs-field__hint">Nessun permesso</span>}</div></div></Card><h2 style={{fontFamily:'Sora',fontSize:'1rem',margin:'22px 4px 10px'}}>Navigazione</h2><Card className="rs-card--pad">{config===null?<Spinner/>:<><p className="rs-field__hint">{bottomCount(role)}/5 voci nella barra sotto · {role}</p>{NAV_ITEMS.map(([key,label])=><div className="rs-navrow" key={key}><span>{label}</span><div className="rs-navseg">{PLACEMENTS.map(([val,l])=><button key={val} className={placement(role,key)===val?'active':''} onClick={()=>setPlacement(key,val)}>{l}</button>)}</div></div>)}{status&&<p className="rs-badge rs-badge--accent" style={{display:'inline-flex',marginTop:12}}>{status}</p>}<Button variant="primary" style={{marginTop:14}} onClick={saveConfig} disabled={saving}>{saving?'Salvo…':'Salva configurazione'}</Button></>}</Card></section>
 }
 function AppearanceTab(){return <section><div className="rs-page-title"><div><h1>Aspetto</h1><p>Tema e dimensione interfaccia</p></div></div><Card className="rs-card--pad" style={{marginBottom:12}}><ThemeControl/></Card><Card className="rs-card--pad"><UiSizeControl/></Card></section>}
-const TABS=[{id:'users',icon:'users',label:'Utenti',render:()=> <UsersTab/>},{id:'sensors',icon:'sensor',label:'Sensori',render:()=> <SensorsTab/>},{id:'navigation',icon:'sliders',label:'Ruoli',render:()=> <NavigationTab/>},{id:'appearance',icon:'sparkles',label:'Aspetto',render:()=> <AppearanceTab/>}]
+const TABS=[{id:'users',icon:'users',label:'Utenti',render:()=> <UsersTab/>},{id:'sensors',icon:'sensor',label:'Sensori',render:()=> <SensorsTab/>},{id:'navigation',icon:'sliders',label:'Ruoli',render:()=> <NavigationTab/>},{id:'usage',icon:'activity',label:'Consumi',render:()=> <UsageTab/>},{id:'appearance',icon:'sparkles',label:'Aspetto',render:()=> <AppearanceTab/>}]
+function bytesToMB(b){return (b/(1024*1024)).toFixed(1)}
+const DB_LIMIT_BYTES=500*1024*1024
+function BarraLimite({label,valore,limite,unita=''}){const pct=Math.min(100,(valore/limite)*100),colore=pct>80?'#C81E1E':pct>50?'#B9762A':'#0F6B5C';return <div style={{marginBottom:12}}><div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,marginBottom:4}}><span style={{color:'var(--rs-text-2)'}}>{label}</span><span style={{fontWeight:700,color:'var(--rs-text)'}}>{valore}{unita} / {limite}{unita}</span></div><div style={{height:8,background:'var(--rs-surface-2)',borderRadius:999,overflow:'hidden'}}><div style={{width:pct+'%',height:'100%',background:colore,borderRadius:999}}/></div></div>}
+function RigaStat({label,valore}){return <div style={{display:'flex',justifyContent:'space-between',fontSize:13.5,padding:'6px 0',borderBottom:'1px solid var(--rs-line)'}}><span style={{color:'var(--rs-text-2)'}}>{label}</span><span style={{fontWeight:700,color:'var(--rs-text)'}}>{valore}</span></div>}
+function UsageTab(){
+  const[stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('')
+  const carica=async()=>{setLoading(true);setError('');try{const{data,error:err}=await supabase.rpc('get_usage_stats');if(err)throw err;setStats(data)}catch(e){setError('Errore nel caricamento: '+String(e?.message||e))}setLoading(false)}
+  useEffect(()=>{carica()},[])
+  return <section><div className="rs-page-title"><div><h1>Consumi</h1><p>Utilizzo del database Supabase (piano gratuito) e conteggi per struttura</p></div><Button variant="ghost" onClick={carica}>{loading?'Carico…':'↻ Aggiorna'}</Button></div>
+    {error && <Card className="rs-card--pad" style={{color:'#C81E1E'}}>{error}</Card>}
+    {loading ? <Spinner label="Carico i dati…"/> : stats && <>
+      <Card className="rs-card--pad" style={{marginBottom:12}}>
+        <strong style={{display:'block',marginBottom:12}}>Database (Apice MultiHotel)</strong>
+        <BarraLimite label="Spazio occupato" valore={bytesToMB(stats.db_size_bytes)} limite={bytesToMB(DB_LIMIT_BYTES)} unita=" MB"/>
+        <RigaStat label="Utenti" valore={stats.utenti}/>
+        <RigaStat label="Segnalazioni" valore={stats.segnalazioni}/>
+        <RigaStat label="Interventi" valore={stats.interventi}/>
+        <RigaStat label="Planning lavori" valore={stats.planning_lavori}/>
+        <RigaStat label="Richieste urgenti" valore={stats.richieste_urgenti}/>
+        <RigaStat label="Iscrizioni push attive" valore={stats.push_subscriptions}/>
+      </Card>
+      {HOTELS.map(h=>{const perHotel=stats.per_hotel?.[h.id];return perHotel && <Card key={h.id} className="rs-card--pad" style={{marginBottom:12}}>
+        <strong style={{display:'block',marginBottom:12}}>{h.name}</strong>
+        <RigaStat label="Segnalazioni" valore={perHotel.segnalazioni}/>
+        <RigaStat label="Interventi" valore={perHotel.interventi}/>
+        <RigaStat label="Richieste urgenti" valore={perHotel.richieste_urgenti}/>
+      </Card>})}
+    </>}
+  </section>
+}
 export default function Settings({initialTab='users',onExit}){const[tab,setTab]=useState(initialTab),active=TABS.find(t=>t.id===tab);return <div className="rs-root"><div className="rs-app"><header className="rs-settings-head"><div className="rs-settings-head__brand"><Icon name="gear"/><div><b>Impostazioni</b><small>RandApp Manutenzione</small></div></div><Button variant="ghost" size="sm" icon="logout" onClick={onExit}>Esci</Button></header><main className="rs-content">{active?.render()}</main><nav className="rs-settings-nav">{TABS.map(t=><button key={t.id} className={`rs-navbtn ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}><Icon name={t.icon}/><small>{t.label}</small></button>)}<button className="rs-navbtn" onClick={onExit}><Icon name="home"/><small>RandApp</small></button></nav></div></div>}

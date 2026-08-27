@@ -46,6 +46,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
         { id: 'admin-users', icon: 'users', label: 'Utenti', show: isAdminUser(user) },
         { id: 'admin-navigation', icon: 'sliders', label: 'Ruoli e permessi', show: isAdminUser(user) },
         { id: 'admin-sensors', icon: 'sensor', label: 'Sensori', show: isAdminUser(user) },
+        { id: 'admin-usage', icon: 'activity', label: 'Consumi', show: isAdminUser(user) },
       ],
     },
   ]
@@ -62,6 +63,7 @@ export const NAV_TARGET = {
   'admin-users': { settings: 'users' },
   'admin-navigation': { settings: 'navigation' },
   'admin-sensors': { settings: 'sensors' },
+  'admin-usage': { settings: 'usage' },
 }
 
 export const VIEW_GUARDS = {
