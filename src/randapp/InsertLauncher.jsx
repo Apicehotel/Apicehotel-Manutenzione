@@ -16,36 +16,25 @@ const ACTIONS = [
   {
     id: 'intervention',
     icon: 'wrench',
-    title: 'Nuovo intervento',
-    subtitle: 'Pianifica un intervento con data, periodo e assegnazione',
+    title: 'Pianifica intervento',
+    subtitle: 'Crea un intervento pianificato con data, periodo e assegnazione',
   },
   {
     id: 'planning-work',
     icon: 'calendar',
     title: 'Planning lavori',
-    subtitle: 'Apri il calendario dei lavori pianificati',
+    subtitle: 'Aggiungi un lavoro al planning',
   },
   {
     id: 'planning-sale',
     icon: 'hotel',
     title: 'Planning sale',
-    subtitle: 'Prenotazioni e attività sale',
+    subtitle: 'Aggiungi una prenotazione o attività sala',
   },
 ]
 
 export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
-  const actions = ACTIONS
-  const pick = (id) => {
-    if (id === 'intervention') {
-      try { sessionStorage.setItem('randapp.pending-insert', 'planning-work') } catch { /* il flusso resta navigabile anche senza storage */ }
-      onPick('planning-work')
-      return
-    }
-    if (id === 'planning-sale') {
-      try { sessionStorage.setItem('randapp.pending-insert', id) } catch { /* il flusso resta navigabile anche senza storage */ }
-    }
-    onPick(id)
-  }
+  const pick = (id) => onPick(id)
   return (
     <Sheet open={open} onClose={onClose} className="rs-insert-shell">
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
@@ -55,7 +44,7 @@ export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
         </div>
       </div>
       <div style={{display:'grid',gap:10}}>
-        {actions.map((item) => (
+        {ACTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -86,7 +75,7 @@ export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
           </button>
         ))}
       </div>
-      <p style={{margin:'14px 2px 0',color:'var(--rs-text-3)',fontSize:'.72rem',lineHeight:1.4}}>Stesso stile e stessi temi RandApp. Ogni voce mantiene i propri campi e la propria logica.</p>
+      <p style={{margin:'14px 2px 0',color:'var(--rs-text-3)',fontSize:'.72rem',lineHeight:1.4}}>Ogni voce apre direttamente il relativo inserimento.</p>
     </Sheet>
   )
 }
