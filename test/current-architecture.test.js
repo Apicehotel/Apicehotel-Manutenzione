@@ -33,13 +33,19 @@ test('admin is split into focused tabs and Settings only orchestrates them', asy
 })
 
 test('permissions are module/action based and central', async () => {
-  const permissions = await source('src/permissions.js')
-  const nav = await source('src/randapp/nav.js')
+  const [permissions, nav, helpers, shell] = await Promise.all([
+    source('src/permissions.js'),
+    source('src/randapp/nav.js'),
+    source('src/randapp/helpers.js'),
+    source('src/randapp/Shell.jsx'),
+  ])
   assert.match(permissions, /PERMISSION_ACTIONS/)
   assert.match(permissions, /PERMISSION_MODULES/)
   assert.match(permissions, /canUser/)
   assert.match(nav, /canUser/)
+  assert.match(shell, /canUser\(user, 'issues', 'create'\)/)
   assert.doesNotMatch(nav, /ROLE_PERMISSIONS/)
+  assert.doesNotMatch(helpers, /ROLE_PERMISSIONS|permsFor|export const can =/)
 })
 
 test('Planning Sale is decomposed into focused components', async () => {
