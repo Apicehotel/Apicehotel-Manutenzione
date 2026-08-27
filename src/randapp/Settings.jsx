@@ -58,9 +58,24 @@ function BarraLimite({label,valore,limite,unita=''}){const pct=Math.min(100,(val
 function RigaStat({label,valore}){return <div style={{display:'flex',justifyContent:'space-between',fontSize:13.5,padding:'6px 0',borderBottom:'1px solid var(--rs-line)'}}><span style={{color:'var(--rs-text-2)'}}>{label}</span><span style={{fontWeight:700,color:'var(--rs-text)'}}>{valore}</span></div>}
 function UsageTab(){
   const[stats,setStats]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('')
-  const carica=async()=>{setLoading(true);setError('');try{const{data,error:err}=await supabase.rpc('get_usage_stats');if(err)throw err;setStats(data)}catch(e){setError('Errore nel caricamento: '+String(e?.message||e))}setLoading(false)}
+  const[vercelNote,setVercelNote]=useState(''),[vercelDraft,setVercelDraft]=useState(''),[savingNote,setSavingNote]=useState(false)
+  const carica=async()=>{
+    setLoading(true);setError('')
+    try{
+      const[statsRes,noteRes]=await Promise.all([
+        supabase.rpc('get_usage_stats'),
+        supabase.from('app_config').select('value').eq('key','vercel_usage_note').maybeSingle(),
+      ])
+      if(statsRes.error)throw statsRes.error
+      setStats(statsRes.data)
+      const note=noteRes.data?.value||''
+      setVercelNote(note);setVercelDraft(note)
+    }catch(e){setError('Errore nel caricamento: '+String(e?.message||e))}
+    setLoading(false)
+  }
+  const saveNote=async()=>{setSavingNote(true);try{await supabase.from('app_config').upsert({key:'vercel_usage_note',value:vercelDraft});setVercelNote(vercelDraft)}finally{setSavingNote(false)}}
   useEffect(()=>{carica()},[])
-  return <section><div className="rs-page-title"><div><h1>Consumi</h1><p>Utilizzo del database Supabase (piano gratuito) e conteggi per struttura</p></div><Button variant="ghost" onClick={carica}>{loading?'Carico…':'↻ Aggiorna'}</Button></div>
+  return <section><div className="rs-page-title"><div><h1>Consumi</h1><p>Database Supabase e progetti Vercel (piano Pro)</p></div><Button variant="ghost" onClick={carica}>{loading?'Carico…':'↻ Aggiorna'}</Button></div>
     {error && <Card className="rs-card--pad" style={{color:'#C81E1E'}}>{error}</Card>}
     {loading ? <Spinner label="Carico i dati…"/> : stats && <>
       <Card className="rs-card--pad" style={{marginBottom:12}}>
@@ -80,6 +95,13 @@ function UsageTab(){
         <RigaStat label="Interventi" valore={perHotel.interventi}/>
         <RigaStat label="Richieste urgenti" valore={perHotel.richieste_urgenti}/>
       </Card>})}
+      <Card className="rs-card--pad" style={{marginBottom:12}}>
+        <strong style={{display:'block',marginBottom:12}}>Vercel (team Apicehotel, piano Pro)</strong>
+        <RigaStat label="Progetti collegati" valore="apicehotel-manutenzionr, gh-connect-bridge, hotelgio, chocohotel, brigantino-login-preview"/>
+        <p style={{fontSize:'.78rem',color:'var(--rs-text-2)',margin:'10px 0 6px'}}>Banda e minuti di build non sono leggibili automaticamente qui — controllali su vercel.com/apicehotel/~/usage e aggiorna la nota:</p>
+        <textarea className="rs-textarea" rows="2" value={vercelDraft} onChange={(e)=>setVercelDraft(e.target.value)} placeholder="Es. Banda: 12/1000 GB · Build: 40min"/>
+        <Button variant="ghost" disabled={savingNote||vercelDraft===vercelNote} onClick={saveNote} style={{marginTop:8}}>{savingNote?'Salvo…':'Salva nota'}</Button>
+      </Card>
     </>}
   </section>
 }
