@@ -17,14 +17,16 @@ import InsertLauncher from './InsertLauncher.jsx'
 import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
+import InterventionsView from './operations/InterventionsView.jsx'
+import UrgentView from './operations/UrgentView.jsx'
+import MyWorkView from './operations/MyWorkView.jsx'
+import {
+  TemperatureView, HousekeepingView, TechnicianDirectoryView,
+  FeedbackView, PinView, ManualView,
+} from './operations/UtilityViews.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
-import {
-  InterventionsView, UrgentView, MyWorkView,
-  TemperatureView, HousekeepingView, TechnicianDirectoryView,
-  FeedbackView, PinView, ManualView,
-} from './MigratedViews.jsx'
 
 const NAV_BUTTONS = [
   { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
