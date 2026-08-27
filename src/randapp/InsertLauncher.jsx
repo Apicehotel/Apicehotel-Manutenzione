@@ -1,4 +1,4 @@
-import { Icon } from './ui.jsx'
+import { Icon, Sheet } from './ui.jsx'
 
 const ACTIONS = [
   { id: 'issue', icon: 'issues', title: 'Nuova segnalazione', subtitle: 'Guasto, camera, zona o problema da gestire' },
@@ -19,33 +19,9 @@ export default function InsertLauncher({ open, onClose, hotel, user, onPick }) {
     }
     onPick(id)
   }
-  if(!open)return null
-
-  return <div
-    role="presentation"
-    onClick={onClose}
-    style={{position:'fixed',inset:0,zIndex:70,background:'rgba(3,6,12,.38)',backdropFilter:'blur(3px)',WebkitBackdropFilter:'blur(3px)'}}
-  >
-    <section
-      role="dialog"
-      aria-modal="true"
-      aria-label="Nuovo inserimento"
-      onClick={e=>e.stopPropagation()}
-      style={{position:'fixed',left:'max(12px,env(safe-area-inset-left))',right:'max(12px,env(safe-area-inset-right))',bottom:'calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 86px)',zIndex:71,maxWidth:520,margin:'0 auto',padding:12,borderRadius:22,border:'1px solid var(--rs-line-strong)',background:'color-mix(in srgb,var(--rs-surface) 94%,transparent)',boxShadow:'0 24px 70px -24px rgba(0,0,0,.9)',maxHeight:'min(62dvh,520px)',overflowY:'auto',overscrollBehavior:'contain'}}
-    >
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'2px 2px 10px'}}>
-        <div style={{minWidth:0,flex:1}}>
-          <h2 style={{margin:0,fontFamily:'Sora',fontSize:'1rem',color:'var(--rs-text)'}}>Inserisci</h2>
-          <p style={{margin:'2px 0 0',color:'var(--rs-text-3)',fontSize:'.72rem',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{hotel?.name||'Struttura'}{user?.name?` · ${user.name}`:''}</p>
-        </div>
-        <button type="button" className="rs-iconbtn" onClick={onClose} aria-label="Chiudi" style={{width:36,height:36,borderRadius:12}}><Icon name="close"/></button>
-      </div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
-        {visibleActions.map((item)=><button key={item.id} type="button" onClick={()=>pick(item.id)} data-testid={`insert-${item.id}`} style={{minWidth:0,minHeight:82,display:'grid',gridTemplateRows:'28px auto',alignContent:'center',gap:7,textAlign:'left',padding:11,borderRadius:15,border:'1px solid var(--rs-line)',background:'var(--rs-surface-2)',color:'var(--rs-text)',cursor:'pointer'}}>
-          <span style={{width:28,height:28,borderRadius:9,display:'grid',placeItems:'center',background:'var(--rs-surface)',color:item.id==='urgent'?'var(--rs-warn)':'var(--rs-cyan)'}}><Icon name={item.icon}/></span>
-          <span style={{minWidth:0}}><strong style={{display:'block',fontFamily:'Sora',fontSize:'.78rem',lineHeight:1.15}}>{item.title}</strong><small style={{display:'block',marginTop:3,color:'var(--rs-text-3)',fontSize:'.62rem',lineHeight:1.25}}>{item.subtitle}</small></span>
-        </button>)}
-      </div>
-    </section>
-  </div>
+  return <Sheet open={open} onClose={onClose} className="rs-insert-shell">
+    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}><div style={{minWidth:0}}><h2 style={{margin:0,fontFamily:'Sora',fontSize:'1.2rem',color:'var(--rs-text)'}}>Nuovo inserimento</h2><p style={{margin:'4px 0 0',color:'var(--rs-text-2)',fontSize:'.86rem'}}>{hotel?.name||'Struttura'}{user?.name?` · ${user.name}`:''}</p></div></div>
+    <div style={{display:'grid',gap:10}}>{visibleActions.map((item)=><button key={item.id} type="button" onClick={()=>pick(item.id)} data-testid={`insert-${item.id}`} style={{width:'100%',display:'grid',gridTemplateColumns:'46px minmax(0,1fr) 22px',alignItems:'center',gap:12,textAlign:'left',padding:14,borderRadius:16,border:'1px solid var(--rs-line)',background:'var(--rs-surface)',color:'var(--rs-text)',boxShadow:'var(--rs-shadow)',cursor:'pointer'}}><span style={{width:46,height:46,borderRadius:14,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:item.id==='urgent'?'var(--rs-warn)':'var(--rs-cyan)'}}><Icon name={item.icon}/></span><span style={{minWidth:0}}><strong style={{display:'block',fontFamily:'Sora',fontSize:'.95rem',marginBottom:3}}>{item.title}</strong><small style={{display:'block',color:'var(--rs-text-2)',fontSize:'.78rem',lineHeight:1.35}}>{item.subtitle}</small></span><span style={{color:'var(--rs-text-3)'}}><Icon name="chevronRight"/></span></button>)}</div>
+    <p style={{margin:'14px 2px 0',color:'var(--rs-text-3)',fontSize:'.72rem',lineHeight:1.4}}>{managesSale?'Planning sale è gestito per la struttura dal Direttore Centro Congressi.':'Gli inserimenti sale sono riservati al Direttore Centro Congressi della struttura.'}</p>
+  </Sheet>
 }
