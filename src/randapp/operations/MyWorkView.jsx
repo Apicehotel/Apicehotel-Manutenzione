@@ -1,0 +1,18 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { fetchIssues, subscribeIssues } from '../../issues-data.js'
+import { fetchPlanned, subscribePlanned } from '../../planned-data.js'
+import { Card, EmptyState, Spinner, TextInput } from '../ui.jsx'
+import { PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
+
+export default function MyWorkView({hotel,user}){
+  const[issues,setIssues]=useState([]),[planned,setPlanned]=useState([]),[loading,setLoading]=useState(true),[q,setQ]=useState('')
+  const load=useCallback(async()=>{const[issuesRes,plannedRes]=await Promise.all([fetchIssues(hotel.id),fetchPlanned(hotel.id)]);setIssues(issuesRes.items||[]);setPlanned(plannedRes.items||[]);setLoading(false)},[hotel.id])
+  useEffect(()=>{load();const offI=subscribeIssues(hotel.id,load),offP=subscribePlanned(hotel.id,load);return()=>{offI?.();offP?.()}},[hotel.id,load])
+  const name=String(user?.name||'').trim().toLowerCase()
+  const myDoneIssues=useMemo(()=>issues.filter(i=>i.status==='done'&&(String(i.completedBy||'').trim().toLowerCase()===name||String(i.technicianName||'').trim().toLowerCase()===name)).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)),[issues,name])
+  const myPlanned=useMemo(()=>planned.filter(p=>isAssignedTo(p,user)).sort((a,b)=>(b.scheduledAt||0)-(a.scheduledAt||0)),[planned,user])
+  const myPlannedPending=myPlanned.filter(p=>p.status!=='done'),myPlannedDone=myPlanned.filter(p=>p.status==='done'),query=q.trim().toLowerCase()
+  const matches=(room,text)=>!query||String(room||'').toLowerCase().includes(query)||String(text||'').toLowerCase().includes(query)
+  const filtPending=myPlannedPending.filter(p=>matches(p.location,p.notes)),filtPlannedDone=myPlannedDone.filter(p=>matches(p.location,p.notes)),filtIssuesDone=myDoneIssues.filter(i=>matches(i.room,i.title)),total=myPlannedPending.length+myPlannedDone.length+myDoneIssues.length
+  return <div data-testid="my-work-view"><PageTitle title="I miei lavori" subtitle={`${hotel.name} · ${total} totali`}/><TextInput value={q} onChange={e=>setQ(e.target.value)} placeholder="Cerca per camera o testo…" style={{marginBottom:14}}/>{loading?<Spinner label="Carico…"/>:total===0?<EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState>:<>{!!filtPending.length&&<><p className="rs-actions-heading">Da fare / in attesa ({filtPending.length})</p><div className="rs-migrated-list">{filtPending.map(p=><Card key={p.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{p.location||'Intervento'}</strong><small>{p.category||'Manutenzione'} · {fmt(p.scheduledAt)}</small></div><StatusPill status={p.status}/></div>{p.notes&&<p>{p.notes}</p>}</Card>)}</div></>}{!!filtPlannedDone.length&&<><p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p><div className="rs-migrated-list">{filtPlannedDone.map(p=><Card key={p.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{p.location||'Intervento'}</strong><small>{fmt(p.completedAt)}</small></div><StatusPill status={p.status}/></div>{p.notes&&<p>{p.notes}</p>}</Card>)}</div></>}{!!filtIssuesDone.length&&<><p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p><div className="rs-migrated-list">{filtIssuesDone.map(i=><Card key={i.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{i.room||'Segnalazione'}</strong><small>{i.category||'Manutenzione'} · {fmt(i.completedAt)}</small></div><StatusPill status={i.status}/></div>{i.title&&<p>{i.title}</p>}</Card>)}</div></>}</>}</div>
+}
