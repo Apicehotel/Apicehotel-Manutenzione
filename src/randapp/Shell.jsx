@@ -55,6 +55,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [users, setUsers] = useState([])
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [personalizeSignal, setPersonalizeSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
@@ -119,6 +120,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
   }
 
+  const requestPlanningCreate = (kind) => {
+    setView('planning-work')
+    setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1 }))
+  }
+
   const pickInsert = (id) => {
     setInsertOpen(false)
     if (id === 'issue') {
@@ -130,12 +136,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       setUrgentCreateOpen(true)
       return
     }
-    if (id === 'intervention') {
-      setView('interventions')
+    if (id === 'intervention' || id === 'planning-work') {
+      requestPlanningCreate('work')
       return
     }
-    if (id === 'planning-work' || id === 'planning-sale') {
-      setView('planning-work')
+    if (id === 'planning-sale') {
+      requestPlanningCreate('sale')
     }
   }
 
@@ -152,7 +158,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
 
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
-    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub user={user} hotel={hotel} />
+    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub user={user} hotel={hotel} createRequest={planningCreateRequest} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
