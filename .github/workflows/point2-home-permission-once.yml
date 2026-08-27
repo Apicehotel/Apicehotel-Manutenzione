@@ -1,0 +1,27 @@
+name: Point 2 Home permission once
+on:
+  push:
+    paths:
+      - '.github/workflows/point2-home-permission-once.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python <<'PY'
+          from pathlib import Path
+          p=Path('src/randapp/Home.jsx')
+          s=p.read_text()
+          s=s.replace("import { firstName, can, isToday, URGENCY_META } from './helpers.js'", "import { firstName, isToday, URGENCY_META } from './helpers.js'\nimport { canUser } from '../permissions.js'")
+          s=s.replace("can(user, 'create') ?", "canUser(user, 'issues', 'create') ?")
+          p.write_text(s)
+          PY
+          rm -f .github/workflows/point2-home-permission-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: centralize Home create permission"
+          git push
