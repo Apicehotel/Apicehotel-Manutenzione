@@ -1,0 +1,40 @@
+import { useEffect, useMemo, useState } from 'react'
+import { HOTELS, ROLES } from '../../config.js'
+import { fetchUsers, insertUser, updateUserRow, updateUserPin, setUserActive, permanentlyDeleteUser, getTechnicianLink } from '../../users-data.js'
+import { Button, Card, Field, TextInput, Icon, Badge, Spinner, EmptyState, Modal, ConfirmDialog } from '../ui.jsx'
+import { ALL_HOTEL_IDS, ROLE_PRIORITY } from './settings-constants.js'
+
+export default function UsersTab() {
+  const [users,setUsers]=useState([]),[loading,setLoading]=useState(true),[search,setSearch]=useState(''),[creating,setCreating]=useState(false),[message,setMessage]=useState(''),[techLink,setTechLink]=useState(null),[confirmDel,setConfirmDel]=useState(null),[openGroups,setOpenGroups]=useState({})
+  const empty={name:'',role:'Reception',pin:'',hotels:[...ALL_HOTEL_IDS]}
+  const [draft,setDraft]=useState(empty)
+  const reload=()=>fetchUsers(ALL_HOTEL_IDS).then(r=>setUsers(r.users||[])).catch(()=>setUsers([])).finally(()=>setLoading(false))
+  useEffect(()=>{reload()},[])
+  const filtered=useMemo(()=>{const q=search.trim().toLocaleLowerCase('it');return q?users.filter(u=>`${u.name} ${u.role} ${u.department||''}`.toLocaleLowerCase('it').includes(q)):users},[users,search])
+  const groups=useMemo(()=>{
+    const hk=new Set(['Governante','Capo Governante'])
+    const hkUsers=filtered.filter(u=>hk.has(u.role))
+    const byHotel=HOTELS.map(h=>({role:`Housekeeping · ${h.short}`,rank:ROLE_PRIORITY.indexOf('Capo Governante'),list:hkUsers.filter(u=>(u.hotels||[]).includes(h.id)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'it'))})).filter(g=>g.list.length)
+    const known=ROLE_PRIORITY.filter(r=>!hk.has(r)).map(r=>({role:r,rank:ROLE_PRIORITY.indexOf(r),list:filtered.filter(u=>u.role===r).sort((a,b)=>String(a.name).localeCompare(String(b.name),'it'))})).filter(g=>g.list.length)
+    const other=filtered.filter(u=>!ROLES.includes(u.role)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'it'))
+    return [...known,...byHotel,...(other.length?[{role:'Altro',rank:999,list:other}]:[])].sort((a,b)=>a.rank-b.rank||a.role.localeCompare(b.role,'it'))
+  },[filtered])
+  useEffect(()=>{if(!search.trim())return;const next={};groups.forEach(g=>{next[g.role]=true});setOpenGroups(next)},[search,groups])
+  const save=async(t,c)=>{if(t.protected)return setMessage('Account protetto: non modificabile');try{await updateUserRow(t.auth_user_id||t.id,c);await reload();setMessage('Modifiche salvate')}catch(e){setMessage(e?.message||'Errore durante il salvataggio')}}
+  const toggleHotel=(t,id)=>{const hotels=(t.hotels||[]).includes(id)?t.hotels.filter(x=>x!==id):[...(t.hotels||[]),id];if(!hotels.length)return setMessage('Ogni utente deve mantenere almeno una struttura');save(t,{hotels})}
+  const resetPin=async t=>{const pin=window.prompt(`Nuovo PIN di 4 cifre per ${t.name}`)||'';if(!/^\d{4}$/.test(pin))return setMessage('PIN non valido');try{await updateUserPin(t.auth_user_id||t.id,pin);setMessage(`PIN di ${t.name} aggiornato`)}catch(e){setMessage(e?.message||'Errore durante il cambio PIN')}}
+  const toggleActive=async t=>{try{await setUserActive(t.auth_user_id||t.id,!t.active);await reload()}catch(e){setMessage(e?.message||'Errore')}}
+  const remove=async t=>{try{await permanentlyDeleteUser(t.auth_user_id||t.id);await reload();setMessage(`${t.name} eliminato`)}catch(e){setMessage(e?.message||"Errore durante l'eliminazione")}finally{setConfirmDel(null)}}
+  const showLink=async t=>{try{const token=await getTechnicianLink(t.auth_user_id||t.id);setTechLink({name:t.name,url:`${window.location.origin}/tecnico/${token}`})}catch(e){setMessage(e?.message||'Errore link')}}
+  const create=async e=>{e.preventDefault();if(!draft.name.trim()||!/^\d{4}$/.test(draft.pin)||!draft.hotels.length)return setMessage('Inserisci nome, PIN di 4 cifre e almeno una struttura');try{await insertUser({...draft,name:draft.name.trim(),email:'',phone:''});await reload();setDraft(empty);setCreating(false);setMessage(`${draft.name.trim()} aggiunto`)}catch(err){setMessage(err?.message||'Errore durante la creazione')}}
+  if(loading)return <Spinner label="Carico gli utenti…"/>
+  return <section data-testid="settings-users">
+    <div className="rs-page-title"><div><h1>Utenti</h1><p>Gestisci utenti, ruoli e strutture</p></div><Button variant={creating?'ghost':'primary'} icon={creating?'close':'plus'} onClick={()=>setCreating(v=>!v)}>{creating?'Annulla':'Nuovo'}</Button></div>
+    {creating&&<Card className="rs-card--pad" style={{marginBottom:14}}><form className="rs-form" onSubmit={create}><Field label="Nome"><TextInput value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></Field><Field label="Ruolo"><select className="rs-select" value={draft.role} onChange={e=>setDraft({...draft,role:e.target.value})}>{ROLE_PRIORITY.filter(r=>ROLES.includes(r)).map(r=><option key={r}>{r}</option>)}</select></Field><Field label="PIN di 4 cifre"><TextInput icon="lock" inputMode="numeric" value={draft.pin} onChange={e=>setDraft({...draft,pin:e.target.value.replace(/\D/g,'').slice(0,4)})}/></Field><fieldset className="rs-fieldset"><legend>Strutture abilitate</legend><div className="rs-hotel-toggles">{HOTELS.map(h=><button type="button" key={h.id} className={`rs-hotel-toggle ${draft.hotels.includes(h.id)?'on':''}`} onClick={()=>setDraft({...draft,hotels:draft.hotels.includes(h.id)?draft.hotels.filter(x=>x!==h.id):[...draft.hotels,h.id]})}>{draft.hotels.includes(h.id)?'✓ ':''}{h.short}</button>)}</div></fieldset><Button variant="primary">Salva utente</Button></form></Card>}
+    <TextInput icon="search" value={search} placeholder="Cerca utente…" onChange={e=>setSearch(e.target.value)}/>
+    {message&&<p className="rs-badge rs-badge--accent" style={{display:'inline-flex',margin:'12px 0'}}>{message}</p>}
+    <div style={{marginTop:14}}>{groups.length===0?<EmptyState icon="users" title="Nessun utente"/>:groups.map(({role,list})=>{const open=Boolean(openGroups[role]);return <div className="rs-role-group" key={role}><button className={`rs-role-group__head ${open?'open':''}`} onClick={()=>setOpenGroups(c=>({...c,[role]:!open}))}><b>{role}</b><span>{list.length}</span><i><Icon name="chevronDown"/></i></button>{open&&list.map(u=><Card key={`${role}-${u.auth_user_id||u.id}`} className="rs-usercard"><div className="rs-usercard__top"><div><strong>{u.name}</strong><small>{u.department||u.role||'—'}</small>{!u.active&&<Badge tone="high">Disattivato</Badge>}</div>{u.protected&&<Badge tone="accent">Protetto</Badge>}</div><select className="rs-select" value={u.role} disabled={u.protected} onChange={e=>save(u,{role:e.target.value})}>{ROLE_PRIORITY.filter(r=>ROLES.includes(r)).map(r=><option key={r}>{r}</option>)}</select><div className="rs-hotel-toggles">{HOTELS.map(h=><button key={h.id} className={`rs-hotel-toggle ${(u.hotels||[]).includes(h.id)?'on':''}`} disabled={u.protected} onClick={()=>toggleHotel(u,h.id)}>{(u.hotels||[]).includes(h.id)?'✓ ':''}{h.short}</button>)}</div><div className="rs-usercard__actions"><Button variant="ghost" size="sm" onClick={()=>resetPin(u)} disabled={u.protected}>PIN</Button>{u.role==='Tecnico esterno'&&<Button variant="ghost" size="sm" onClick={()=>showLink(u)}>Link</Button>}<Button variant="ghost" size="sm" onClick={()=>toggleActive(u)} disabled={u.protected}>{u.active?'Disattiva':'Attiva'}</Button><Button variant="danger" size="sm" onClick={()=>setConfirmDel(u)} disabled={u.protected}>Elimina</Button></div></Card>)}</div>})}</div>
+    <Modal open={!!techLink} onClose={()=>setTechLink(null)} title={techLink?`Link di ${techLink.name}`:''}><TextInput value={techLink?.url||''} readOnly onFocus={e=>e.target.select()}/><Button variant="ghost" onClick={()=>navigator.clipboard?.writeText(techLink?.url||'')}>Copia link</Button></Modal>
+    <ConfirmDialog open={!!confirmDel} title="Eliminare l'utente?" danger confirmLabel="Elimina definitivamente" message={confirmDel?`${confirmDel.name} verrà eliminato definitivamente.`:''} onCancel={()=>setConfirmDel(null)} onConfirm={()=>remove(confirmDel)}/>
+  </section>
+}
