@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchPlanned, subscribePlanned } from '../planned-data.js'
+import { fetchPlanning, subscribePlanned } from '../planned-data.js'
 import { fetchBookings } from '../sale-data.js'
 import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { Icon, Spinner } from './ui.jsx'
@@ -64,7 +64,7 @@ export default function PlanningHub({ hotel, user }) {
     setLoading(true)
     try {
       const [workResult,saleResult] = await Promise.all([
-        fetchPlanned(hotel.id),
+        fetchPlanning(hotel.id),
         hasSales ? fetchBookings(hotel.id) : Promise.resolve({items:[]}),
       ])
       setPlanned(workResult.items || [])
@@ -133,7 +133,7 @@ export default function PlanningHub({ hotel, user }) {
 
     {!section ? <div style={{display:'grid',gap:'18px'}}>
       <TodaySection title="Lavori oggi" icon="wrench" items={todayWork} emptyText="Nessun lavoro previsto oggi." />
-      {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />}
+      {hasSales && <TodaySection title="Sale oggi" icon="calendar" items={todaySales} emptyText="Nessuna sala prevista oggi." />
       <div style={{display:'flex',gap:'12px',alignItems:'center',fontSize:'.72rem',color:'var(--rs-text-3)',flexWrap:'wrap'}}><span>● Grigio · Da fare</span><span style={{color:'var(--rs-warn)'}}>● Arancione · Da finire</span><span style={{color:'var(--rs-ok)'}}>● Verde · Completate</span></div>
     </div> : <div className="rs-legacy rs-legacy--planning">
       {section==='work' ? <PlanningWork items={planned} onOpen={()=>{}} /> : <PlanningSale hotel={hotel} user={user} openRequest={saleCreateSignal} />}
