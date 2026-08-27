@@ -20,6 +20,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
         { id: 'home', icon: 'home', label: 'Home', show: true },
         { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: true },
         { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: can(user, 'create') },
+        { id: 'my-work', icon: 'check', label: 'I miei lavori', show: true },
       ],
     },
     {

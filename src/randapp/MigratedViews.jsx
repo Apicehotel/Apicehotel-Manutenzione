@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../planned-data.js'
 import { fetchUrgents, insertUrgent, updateUrgentRow, subscribeUrgents } from '../urgents-data.js'
 import { fetchFeedback, insertFeedback, subscribeFeedback } from '../feedback-data.js'
+import { fetchIssues, subscribeIssues } from '../issues-data.js'
 import { changeOwnPin, updateOwnProfile, setOwnPresence } from '../auth-data.js'
 import { PlanningWork, PlanningSale } from '../planning.jsx'
 import { TemperatureSensors } from '../temperature.jsx'
@@ -27,7 +28,7 @@ function statusTone(status) {
 }
 
 function StatusPill({ status }) {
-  const labels = { pending: 'Da fare', in_progress: 'In corso', da_finire: 'Da finire', done: 'Fatto', aperta: 'Aperta', presa_in_carico: 'Presa in carico', completata: 'Completata' }
+  const labels = { pending: 'Da fare', todo: 'Da fare', in_progress: 'In corso', da_finire: 'Da finire', waiting: 'Attesa pezzo', tecnico: 'Tecnico', done: 'Fatto', aperta: 'Aperta', presa_in_carico: 'Presa in carico', completata: 'Completata' }
   return <span className={`rs-badge rs-badge--${statusTone(status)}`}>{labels[status] || status}</span>
 }
 
@@ -198,6 +199,66 @@ export function TechnicianDirectoryView({ users = [], hotel }) {
   const technicians = users.filter(person => person.role === 'Tecnico esterno').sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'it'))
   return <div data-testid="technicians-view"><PageTitle title="Rubrica tecnici" subtitle={hotel.name} />
     {!technicians.length ? <EmptyState icon="phone" title="Nessun tecnico esterno">Aggiungi i tecnici da Gestione utenti con ruolo “Tecnico esterno”.</EmptyState> : <div className="rs-migrated-list">{technicians.map(tech => { const wa=whatsappLink(tech.phone); return <Card className="rs-card--pad rs-tech-card" key={tech.id || tech.name}><div><strong>{tech.name}</strong><small>{tech.phone || 'Numero non inserito'}</small></div>{wa && <a className="rs-btn rs-btn--outline rs-btn--sm" href={wa} target="_blank" rel="noopener noreferrer"><Icon name="message"/><span>WhatsApp</span></a>}</Card> })}</div>}
+  </div>
+}
+
+export function MyWorkView({ hotel, user }) {
+  const [issues, setIssues] = useState([])
+  const [planned, setPlanned] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState('')
+  const load = useCallback(async () => {
+    const [issuesRes, plannedRes] = await Promise.all([fetchIssues(hotel.id), fetchPlanned(hotel.id)])
+    setIssues(issuesRes.items || [])
+    setPlanned(plannedRes.items || [])
+    setLoading(false)
+  }, [hotel.id])
+  useEffect(() => { load(); const offI = subscribeIssues(hotel.id, load); const offP = subscribePlanned(hotel.id, load); return () => { offI?.(); offP?.() } }, [hotel.id, load])
+
+  const name = String(user?.name || '').trim().toLowerCase()
+  const myDoneIssues = useMemo(() => issues
+    .filter((i) => i.status === 'done' && (String(i.completedBy || '').trim().toLowerCase() === name || String(i.technicianName || '').trim().toLowerCase() === name))
+    .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)), [issues, name])
+  const myPlanned = useMemo(() => planned
+    .filter((p) => isAssignedTo(p, user))
+    .sort((a, b) => (b.scheduledAt || 0) - (a.scheduledAt || 0)), [planned, user])
+  const myPlannedPending = myPlanned.filter((p) => p.status !== 'done')
+  const myPlannedDone = myPlanned.filter((p) => p.status === 'done')
+
+  const query = q.trim().toLowerCase()
+  const matches = (room, text) => !query || String(room || '').toLowerCase().includes(query) || String(text || '').toLowerCase().includes(query)
+  const filtPending = myPlannedPending.filter((p) => matches(p.location, p.notes))
+  const filtPlannedDone = myPlannedDone.filter((p) => matches(p.location, p.notes))
+  const filtIssuesDone = myDoneIssues.filter((i) => matches(i.room, i.title))
+
+  const total = myPlannedPending.length + myPlannedDone.length + myDoneIssues.length
+
+  return <div data-testid="my-work-view">
+    <PageTitle title="I miei lavori" subtitle={`${hotel.name} · ${total} totali`} />
+    <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cerca per camera o testo…" style={{ marginBottom: 14 }} />
+    {loading ? <Spinner label="Carico…" /> : total === 0 ? <EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState> : <>
+      {!!filtPending.length && <>
+        <p className="rs-actions-heading">Da fare / in attesa ({filtPending.length})</p>
+        <div className="rs-migrated-list">{filtPending.map((p) => <Card key={p.id} className="rs-card--pad rs-op-card">
+          <div className="rs-op-card__head"><div><strong>{p.location || 'Intervento'}</strong><small>{p.category || 'Manutenzione'} · {fmt(p.scheduledAt)}</small></div><StatusPill status={p.status} /></div>
+          {p.notes && <p>{p.notes}</p>}
+        </Card>)}</div>
+      </>}
+      {!!filtPlannedDone.length && <>
+        <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
+        <div className="rs-migrated-list">{filtPlannedDone.map((p) => <Card key={p.id} className="rs-card--pad rs-op-card">
+          <div className="rs-op-card__head"><div><strong>{p.location || 'Intervento'}</strong><small>{fmt(p.completedAt)}</small></div><StatusPill status={p.status} /></div>
+          {p.notes && <p>{p.notes}</p>}
+        </Card>)}</div>
+      </>}
+      {!!filtIssuesDone.length && <>
+        <p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p>
+        <div className="rs-migrated-list">{filtIssuesDone.map((i) => <Card key={i.id} className="rs-card--pad rs-op-card">
+          <div className="rs-op-card__head"><div><strong>{i.room || 'Segnalazione'}</strong><small>{i.category || 'Manutenzione'} · {fmt(i.completedAt)}</small></div><StatusPill status={i.status} /></div>
+          {i.title && <p>{i.title}</p>}
+        </Card>)}</div>
+      </>}
+    </>}
   </div>
 }
 
