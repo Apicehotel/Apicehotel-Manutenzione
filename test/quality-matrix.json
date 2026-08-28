@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "hotels": ["hotelgio", "chocohotel", "brigantino"],
   "platforms": ["ios-webkit", "android-chromium", "windows-chromium"],
   "networkStates": ["online", "offline", "reconnect"],
@@ -16,6 +16,7 @@
     {"id":"pwa-platform","tests":["test/pwa.test.js","test/e2e.mjs","test/device-acceptance.mjs"],"why":"Installabilità e comportamento browser su iOS, Android e Windows"},
     {"id":"weather-operations","tests":["test/weather-data.test.js"],"why":"Allarmi vento/pioggia devono produrre azioni operative corrette"},
     {"id":"diagnostics-recovery","tests":["test/point16-diagnostics.test.js"],"why":"Errori classificati, codici RAND, stato operativo e recuperi sicuri devono restare disponibili"},
-    {"id":"database-security","tests":["test/point17-database-security.test.js","test/point11-multihotel.test.js","test/point8-security.test.js"],"why":"RLS, grant, RPC e isolamento cross-hotel devono fallire chiusi anche con client ostile"}
+    {"id":"database-security","tests":["test/point17-database-security.test.js","test/point11-multihotel.test.js","test/point8-security.test.js"],"why":"RLS, grant, RPC e isolamento cross-hotel devono fallire chiusi anche con client ostile"},
+    {"id":"final-cleanup","tests":["test/point18-final-cleanup.test.js"],"why":"Dipendenze morte, artefatti debug, bridge legacy e documentazione obsoleta non devono rientrare nel progetto"}
   ]
 }
