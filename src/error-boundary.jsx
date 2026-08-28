@@ -18,6 +18,10 @@ export default class AppErrorBoundary extends Component {
       message: error?.message || 'Errore render React',
       detail: `${error?.stack || ''}\n${info?.componentStack || ''}`,
     })).catch(() => {})
+    import('./external-telemetry.js').then(({ captureExternalError }) => captureExternalError(error, {
+      source: 'react-render',
+      componentStack: String(info?.componentStack || '').slice(0, 2000),
+    })).catch(() => {})
   }
 
   render() {
