@@ -86,15 +86,11 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [open, setOpen] = useState(false)
   useEffect(() => { loadDirectoryAll().then(setDirectory).catch(() => setDirectory([])) }, [])
   const q = normalize(query)
-  const suggestions = useMemo(() => {
-    if (!q || matched) return []
-    const starts = directory.filter((u) => normalize(u.name).startsWith(q))
-    const contains = directory.filter((u) => {
-      const name = normalize(u.name)
-      return !name.startsWith(q) && name.includes(q)
-    })
-    return [...starts, ...contains].slice(0, 6)
-  }, [directory, q, matched])
+  const suggestions = useMemo(() => (
+    q && !matched
+      ? directory.filter((u) => normalize(u.name).startsWith(q)).slice(0, 6)
+      : []
+  ), [directory, q, matched])
 
   const submit = async (e) => {
     e.preventDefault(); setError('')
