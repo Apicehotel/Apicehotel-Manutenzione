@@ -1,11 +1,6 @@
 // Endpoint pubblico e in sola lettura: restituisce un sottoinsieme sicuro di una
-// singola segnalazione, dato il suo id (UUID, di fatto non indovinabile — nessun
-// altro segreto richiesto). Usato dalla paginetta pubblica /s/<id> linkata nel
-// messaggio WhatsApp al tecnico esterno. Non richiede login.
-//
-// Espone solo: camera/zona, categoria, urgenza, stato, descrizione, nome struttura,
-// data creazione, e un signed URL della foto (se presente) — mai altri dati sensibili
-// (nomi del personale, reparto interno, note di completamento, ecc.).
+// singola segnalazione, dato il suo id. Non richiede login e non restituisce mai
+// dati del personale, credenziali o dettagli tecnici del backend.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -14,18 +9,19 @@ const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "GET, OPTIONS" };
-const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
 
 const BUCKET = "maintenance-photos";
 const isDataUrl = (v: unknown) => typeof v === "string" && v.startsWith("data:image/");
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "GET") return json({ ok: false, error: "Metodo non consentito" }, 405);
 
   try {
-    const id = new URL(req.url).searchParams.get("id");
-    if (!id) return json({ ok: false, error: "id mancante" }, 400);
+    const id = new URL(req.url).searchParams.get("id")?.trim() || "";
+    if (!UUID.test(id)) return json({ ok: false, error: "Identificativo non valido" }, 400);
 
     const { data: row, error } = await admin
       .from("segnalazioni")
@@ -41,7 +37,9 @@ Deno.serve(async (req: Request) => {
     if (row.foto_prima) {
       if (isDataUrl(row.foto_prima)) photoUrl = row.foto_prima;
       else {
-        const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(row.foto_prima, 60 * 60 * 24 * 7);
+        // Il link pubblico alla segnalazione può essere riaperto in qualsiasi momento,
+        // ma il link diretto alla foto dura soltanto 15 minuti e viene rigenerato.
+        const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(row.foto_prima, 60 * 15);
         photoUrl = signed?.signedUrl || null;
       }
     }
@@ -61,8 +59,7 @@ Deno.serve(async (req: Request) => {
       },
     });
   } catch (error) {
-    console.error("public-issue", error);
-    const message = error instanceof Error ? error.message : "Errore";
-    return json({ ok: false, error: message }, 500);
+    console.error("public-issue", error instanceof Error ? error.name : "unknown");
+    return json({ ok: false, error: "Servizio temporaneamente non disponibile" }, 500);
   }
 });
