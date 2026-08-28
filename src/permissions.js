@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js'
 
 export const PERMISSION_ACTIONS = ['view','create','edit','assign','take_charge','complete','delete','manage']
-export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings']
+export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings','sensors','usage','diagnostics']
 const CACHE_KEY='randapp-role-permissions-v1'
 const allow=(...actions)=>new Set(actions)
 const fallback={
@@ -31,7 +31,7 @@ function applyRows(rows,persist=true){const next={};for(const row of rows||[]){i
 if(typeof window!=='undefined')loadLocal()
 
 export function canRole(role,module,action='view'){
-  if(role==='Supremo')return ['view','create'].includes(action)&&!['users','role_permissions','app_settings'].includes(module)
+  if(role==='Supremo')return ['view','create'].includes(action)&&!['users','role_permissions','app_settings','sensors','usage','diagnostics'].includes(module)
   if(live?.[role]?.[module])return live[role][module].has(action)
   return Boolean(fallback?.[role]?.[module]?.has(action))
 }
