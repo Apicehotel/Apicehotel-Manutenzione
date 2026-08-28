@@ -1,21 +1,25 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import { chromium, webkit, devices } from 'playwright'
 
 const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
 const artifacts = new URL('./artifacts/', import.meta.url)
 await mkdir(artifacts, { recursive: true })
 
-const browser = await chromium.launch({ headless: true })
 const failures = []
 
-const viewports = [
+const desktopViewports = [
   { name: 'iphone-se-320x568', width: 320, height: 568 },
   { name: 'iphone-390x844', width: 390, height: 844 },
   { name: 'large-phone-430x932', width: 430, height: 932 },
   { name: 'tablet-768x1024', width: 768, height: 1024 },
   { name: 'desktop-1440x1000', width: 1440, height: 1000 },
+]
+
+const engineScenarios = [
+  { name: 'android-pixel7-chromium', type: chromium, context: devices['Pixel 7'] },
+  { name: 'ios-iphone13-webkit', type: webkit, context: devices['iPhone 13'] },
 ]
 
 async function assertNoHorizontalOverflow(page, label) {
@@ -29,8 +33,8 @@ async function assertNoFatalRuntimeErrors(pageErrors, consoleErrors, label) {
   if (fatalConsole.length) throw new Error(`${label}: Console runtime errors: ${fatalConsole.join(' | ')}`)
 }
 
-async function checkLoginShell({ name, width, height }, theme = 'dark') {
-  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })
+async function checkLoginShell(browser, label, contextOptions, theme = 'dark') {
+  const context = await browser.newContext(contextOptions)
   const page = await context.newPage()
   const pageErrors = []
   const consoleErrors = []
@@ -42,54 +46,72 @@ async function checkLoginShell({ name, width, height }, theme = 'dark') {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
     await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
 
-    assert.equal(await page.getByRole('heading', { name: 'RandApp' }).isVisible(), true, `Brand RandApp non visibile su ${name}`)
-    assert.equal(await page.getByTestId('login-user-input').isVisible(), true, `Campo Utente non visibile su ${name}`)
-    assert.equal(await page.getByTestId('login-pin-input').isVisible(), true, `Campo PIN non visibile su ${name}`)
-    assert.equal(await page.getByTestId('login-submit').isVisible(), true, `ACCEDI non visibile su ${name}`)
-    assert.equal(await page.getByTestId('open-settings-link').isVisible(), true, `Impostazioni non visibili su ${name}`)
+    assert.equal(await page.getByRole('heading', { name: 'RandApp' }).isVisible(), true, `Brand RandApp non visibile su ${label}`)
+    assert.equal(await page.getByTestId('login-user-input').isVisible(), true, `Campo Utente non visibile su ${label}`)
+    assert.equal(await page.getByTestId('login-pin-input').isVisible(), true, `Campo PIN non visibile su ${label}`)
+    assert.equal(await page.getByTestId('login-submit').isVisible(), true, `ACCEDI non visibile su ${label}`)
+    assert.equal(await page.getByTestId('open-settings-link').isVisible(), true, `Impostazioni non visibili su ${label}`)
 
     const resolvedTheme = await page.evaluate(() => document.documentElement.dataset.theme)
-    assert.equal(resolvedTheme, theme, `Tema ${theme} non applicato su ${name}`)
-    await assertNoHorizontalOverflow(page, `${name}-${theme}`)
+    assert.equal(resolvedTheme, theme, `Tema ${theme} non applicato su ${label}`)
+    await assertNoHorizontalOverflow(page, `${label}-${theme}`)
 
     const submitBox = await page.getByTestId('login-submit').boundingBox()
-    assert.ok(submitBox && submitBox.width >= 44 && submitBox.height >= 44, `Touch target ACCEDI troppo piccolo su ${name}`)
+    assert.ok(submitBox && submitBox.width >= 44 && submitBox.height >= 44, `Touch target ACCEDI troppo piccolo su ${label}`)
     const settingsBox = await page.getByTestId('open-settings-link').boundingBox()
-    assert.ok(settingsBox && settingsBox.width >= 44 && settingsBox.height >= 44, `Touch target Impostazioni troppo piccolo su ${name}`)
+    assert.ok(settingsBox && settingsBox.width >= 44 && settingsBox.height >= 44, `Touch target Impostazioni troppo piccolo su ${label}`)
 
-    await page.screenshot({ path: fileURLToPath(new URL(`${name}-${theme}.png`, artifacts)), fullPage: true })
+    await page.screenshot({ path: fileURLToPath(new URL(`${label}-${theme}.png`, artifacts)), fullPage: true })
 
-    // Verifica che il percorso Impostazioni sia raggiungibile senza credenziali reali.
     await page.getByTestId('open-settings-link').click()
     await page.getByRole('heading', { name: 'Impostazioni' }).waitFor({ state: 'visible' })
-    assert.equal(await page.getByTestId('admin-pin-input').isVisible(), true, `PIN amministratore non visibile su ${name}`)
-    assert.equal(await page.getByTestId('admin-gate-submit').isVisible(), true, `ENTRA admin non visibile su ${name}`)
-    await assertNoHorizontalOverflow(page, `${name}-${theme}-settings`)
+    assert.equal(await page.getByTestId('admin-pin-input').isVisible(), true, `PIN amministratore non visibile su ${label}`)
+    assert.equal(await page.getByTestId('admin-gate-submit').isVisible(), true, `ENTRA admin non visibile su ${label}`)
+    await assertNoHorizontalOverflow(page, `${label}-${theme}-settings`)
 
-    // Il ritorno deve riportare al nuovo login RandApp, mai alla vecchia scelta struttura.
     await page.getByRole('button', { name: /RandApp/ }).click()
     await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
-    assert.equal(await page.getByText('Seleziona una struttura', { exact: true }).count(), 0, `Vecchia home struttura riapparsa su ${name}`)
+    assert.equal(await page.getByText('Seleziona una struttura', { exact: true }).count(), 0, `Vecchia home struttura riapparsa su ${label}`)
 
-    await assertNoFatalRuntimeErrors(pageErrors, consoleErrors, `${name}-${theme}`)
+    await context.setOffline(true)
+    await page.waitForTimeout(150)
+    assert.equal(await page.getByRole('heading', { name: 'Bentornato' }).isVisible(), true, `Login instabile offline su ${label}`)
+    await assertNoHorizontalOverflow(page, `${label}-${theme}-offline`)
+    await context.setOffline(false)
+
+    await assertNoFatalRuntimeErrors(pageErrors, consoleErrors, `${label}-${theme}`)
   } catch (error) {
-    failures.push(`${name}-${theme}: ${error.message}`)
+    failures.push(`${label}-${theme}: ${error.message}`)
   } finally {
     await context.close()
   }
 }
 
+const chromiumBrowser = await chromium.launch({ headless: true })
 try {
-  for (const viewport of viewports) await checkLoginShell(viewport, 'dark')
-  // Light viene verificato su telefono, tablet e desktop; usa gli stessi componenti/token.
-  for (const viewport of [viewports[1], viewports[3], viewports[4]]) await checkLoginShell(viewport, 'light')
+  for (const viewport of desktopViewports) {
+    await checkLoginShell(chromiumBrowser, viewport.name, { viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1 }, 'dark')
+  }
+  for (const viewport of [desktopViewports[1], desktopViewports[3], desktopViewports[4]]) {
+    await checkLoginShell(chromiumBrowser, viewport.name, { viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1 }, 'light')
+  }
 } finally {
-  await browser.close()
+  await chromiumBrowser.close()
+}
+
+for (const scenario of engineScenarios) {
+  const browser = await scenario.type.launch({ headless: true })
+  try {
+    await checkLoginShell(browser, scenario.name, scenario.context, 'dark')
+    await checkLoginShell(browser, scenario.name, scenario.context, 'light')
+  } finally {
+    await browser.close()
+  }
 }
 
 if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1
 } else {
-  console.log('E2E OK: nuovo login Dark Shell, Dark/Light, responsive 320-1440px, touch target, assenza overflow, accesso/ritorno Impostazioni e nessun errore runtime fatale')
+  console.log('E2E OK: Chromium desktop/tablet, Android Pixel Chromium, iPhone WebKit, Dark/Light, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
 }
