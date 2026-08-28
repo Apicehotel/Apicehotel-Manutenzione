@@ -151,6 +151,14 @@ async function authHealth() {
   return Boolean(data?.user)
 }
 
+export function getTelemetryReadiness() {
+  const env = import.meta.env || {}
+  return {
+    sentry: { installed: true, configured: Boolean(env.VITE_SENTRY_DSN), enabled: env.VITE_SENTRY_ENABLED === 'true' && Boolean(env.VITE_SENTRY_DSN) },
+    opentelemetry: { installed: true, configured: Boolean(env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT), enabled: env.VITE_OTEL_ENABLED === 'true' && Boolean(env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT) },
+  }
+}
+
 export async function getDiagnosticsSnapshot({ hotelId = loadSession()?.hotelId || null } = {}) {
   const checks = await Promise.all([
     timed(supabaseHealth), timed(authHealth), timed(serviceWorkerHealth), timed(pushHealth), timed(() => getOfflineStatus()),
@@ -175,8 +183,36 @@ export async function getDiagnosticsSnapshot({ hotelId = loadSession()?.hotelId 
       serviceWorker: sw, push, offlineQueue: offline,
       ntfy: { ok: !hotelId || ntfyConfigured, value: { configured: ntfyConfigured, verified: ntfyVerified } },
     },
+    telemetry: getTelemetryReadiness(),
     storage, localDiagnosticQueue: readQueue().length,
   }
+}
+
+export async function getOperationalHealth(hotelId = loadSession()?.hotelId || null) {
+  if (!supabase || !hotelId) return null
+  const { data, error } = await supabase.rpc('get_operational_health', { p_hotel_id: hotelId })
+  if (error) throw error
+  return data || null
+}
+
+export async function fetchDiagnosticIncidents(hotelId = loadSession()?.hotelId || null, limit = 20) {
+  if (!supabase || !hotelId) return []
+  const { data, error } = await supabase.rpc('get_diagnostic_incidents', { p_hotel_id: hotelId, p_limit: limit })
+  if (error) throw error
+  return data || []
+}
+
+export async function retryFailedUrgentJob(hotelId, jobId) {
+  if (!supabase || !hotelId || !jobId) return false
+  const { data, error } = await supabase.rpc('retry_failed_urgent_job', { p_hotel_id: hotelId, p_job_id: jobId })
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function repairPushForHotel(hotelId = loadSession()?.hotelId || null) {
+  if (!hotelId) return false
+  const { repairPushSubscription } = await import('./push.js')
+  return repairPushSubscription(hotelId)
 }
 
 export async function fetchRecentDiagnosticEvents(hotelId = null, limit = 30) {
