@@ -27,10 +27,11 @@ export default function NtfyShortLink({ alias }) {
         setManual('Topic ntfy copiato ✓ Incollalo nel campo Topic di ntfy.')
         return
       }
-      // ntfy iOS expects its native subscription URL here. The RandApp HTTPS
-      // short URL is only our protected resolver and must never be pasted as a topic.
-      window.location.href=result.subscription_link || result.deep_link
-      setManual('Se ntfy non apre la schermata di iscrizione, usa “Copia topic ntfy”.')
+      // Safari on iOS rejects the ntfy:// custom scheme in this flow.
+      // Open the verified HTTPS ntfy topic instead: if the app is associated it
+      // can take over, otherwise the ntfy web page remains a valid fallback.
+      const target=result.web_link || `${result.server || 'https://ntfy.sh'}/${encodeURIComponent(result.topic)}`
+      window.location.assign(target)
     }catch(err){ setError(friendlyNtfyError(err)) }
     finally{ setBusy(false) }
   }
@@ -42,9 +43,9 @@ export default function NtfyShortLink({ alias }) {
       <div className="rs-section__head"><h1>Canale notifiche</h1><span className="rs-badge rs-badge--accent">Protetto</span></div>
       <p>Stai aprendo il link breve personale:</p>
       <code style={{display:'block',fontSize:'1.1em',margin:'12px 0'}}>{parsed.alias}</code>
-      <p>RandApp verifica identità, proprietario del codice e accesso alla struttura. Poi passa a ntfy soltanto il topic tecnico necessario alla sottoscrizione.</p>
-      <div className="rs-op-card__actions"><Button type="button" onClick={()=>resolve('open')} disabled={busy}>{busy?'Verifico…':'Configura in ntfy'}</Button><Button type="button" variant="outline" onClick={goLogin}>Apri RandApp</Button></div>
-      <details style={{marginTop:14}}><summary>Configurazione manuale</summary><p><small>Usala solo se l’apertura diretta non funziona. Il topic tecnico viene copiato soltanto dopo il controllo autorizzazioni.</small></p><Button type="button" variant="outline" onClick={()=>resolve('copy')} disabled={busy}>Copia topic ntfy</Button></details>
+      <p>RandApp verifica identità, proprietario del codice e accesso alla struttura. Poi apre il canale ntfy corretto senza usare il link RandApp come topic.</p>
+      <div className="rs-op-card__actions"><Button type="button" onClick={()=>resolve('open')} disabled={busy}>{busy?'Verifico…':'Apri canale ntfy'}</Button><Button type="button" variant="outline" onClick={goLogin}>Apri RandApp</Button></div>
+      <details style={{marginTop:14}}><summary>Configurazione manuale</summary><p><small>Per aggiungere manualmente la sottoscrizione nell’app ntfy, copia il topic verificato qui sotto.</small></p><Button type="button" variant="outline" onClick={()=>resolve('copy')} disabled={busy}>Copia topic ntfy</Button></details>
       {manual&&<p className="rs-success" role="status">{manual}</p>}{error&&<p className="rs-error" role="alert">{error}</p>}
     </Card>
   </main>
