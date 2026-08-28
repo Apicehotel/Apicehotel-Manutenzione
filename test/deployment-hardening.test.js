@@ -1,0 +1,20 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const vercel = readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')
+const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
+
+test('SPA rewrite excludes immutable/static asset namespaces', () => {
+  assert.match(vercel, /\(\?!assets\//)
+  assert.match(vercel, /icons\//)
+  assert.match(vercel, /manifest\\\\\.webmanifest/)
+})
+
+test('service worker validates MIME before caching dynamic assets', () => {
+  assert.match(sw, /isValidDynamicAsset/)
+  assert.match(sw, /content-type/)
+  assert.match(sw, /javascript/)
+  assert.match(sw, /text\/css/)
+  assert.match(sw, /CACHE_NAME = 'apicehotel-manutenzione-v13'/)
+})
