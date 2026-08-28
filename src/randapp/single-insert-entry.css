@@ -1,0 +1,4 @@
+/* Single creation entry point: all new operational items start from the global floating + launcher. */
+[data-testid='issues-view'] [data-testid='open-new-issue'] {
+  display: none !important;
+}
