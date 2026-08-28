@@ -52,6 +52,7 @@ if (!technicianMatch) {
   registerPwa()
   initPresenceStatusSync()
   initUrgentOwnershipGuard()
+  import('./diagnostics-client.js').then(({ installDiagnosticsCapture }) => installDiagnosticsCapture()).catch(() => {})
 
   const repair = (hotelId) => repairPushSubscription(hotelId).catch((error) => {
     if (navigator.onLine) console.warn('Ripristino notifiche non riuscito', error)
