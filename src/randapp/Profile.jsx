@@ -65,12 +65,13 @@ export default function Profile({ user, hotel }) {
 
   const saveNotificationCode=async(e)=>{
     e.preventDefault(); setNotificationMessage(''); setNotificationError('')
+    if(savedNotificationCode){ setNotificationError('Il codice notifiche è definitivo e non può essere modificato.'); return }
     if(notificationCode.length!==6){ setNotificationError('Scegli esattamente 6 cifre.'); return }
     setNotificationBusy(true)
     try {
       const code=await saveOwnNotificationCode(notificationCode)
       setNotificationCode(code); setSavedNotificationCode(code)
-      setNotificationMessage('Codice notifiche salvato ✓ Vale per tutte le tue strutture.')
+      setNotificationMessage('Codice notifiche salvato definitivamente ✓')
     } catch(err){ setNotificationError(err?.message||'Salvataggio codice non riuscito') }
     finally { setNotificationBusy(false) }
   }
@@ -83,61 +84,31 @@ export default function Profile({ user, hotel }) {
       <div><strong>{user?.name || 'Utente'}</strong><span className="rs-badge rs-badge--accent">{user?.role || '—'}</span></div>
     </Card>
 
-    <section className="rs-section">
-      <div className="rs-section__head"><h2>Dati account</h2></div>
-      <Card className="rs-card--pad">
-        <Row label="Nome" value={user?.name} />
-        <Row label="Ruolo" value={user?.role} />
-        <Row label="Strutture abilitate" value={accessibleHotelNames} />
-      </Card>
-    </section>
+    <section className="rs-section"><div className="rs-section__head"><h2>Dati account</h2></div><Card className="rs-card--pad"><Row label="Nome" value={user?.name} /><Row label="Ruolo" value={user?.role} /><Row label="Strutture abilitate" value={accessibleHotelNames} /></Card></section>
 
-    <section className="rs-section">
-      <div className="rs-section__head"><h2>Contatti</h2></div>
-      <Card className="rs-card--pad">
-        <form className="rs-migrated-form" onSubmit={save}>
-          <Field label="Email"><TextInput value={email} type="email" autoComplete="email" onChange={e=>setEmail(e.target.value)} /></Field>
-          <Field label="Telefono"><TextInput value={phone} inputMode="tel" autoComplete="tel" onChange={e=>setPhone(e.target.value)} /></Field>
-          <div className="rs-op-card__actions"><Button type="submit" disabled={busy}>Salva dati</Button></div>
-          {message&&<p className="rs-success">{message}</p>}{error&&<p className="rs-error">{error}</p>}
-        </form>
-      </Card>
-    </section>
+    <section className="rs-section"><div className="rs-section__head"><h2>Contatti</h2></div><Card className="rs-card--pad"><form className="rs-migrated-form" onSubmit={save}><Field label="Email"><TextInput value={email} type="email" autoComplete="email" onChange={e=>setEmail(e.target.value)} /></Field><Field label="Telefono"><TextInput value={phone} inputMode="tel" autoComplete="tel" onChange={e=>setPhone(e.target.value)} /></Field><div className="rs-op-card__actions"><Button type="submit" disabled={busy}>Salva dati</Button></div>{message&&<p className="rs-success">{message}</p>}{error&&<p className="rs-error">{error}</p>}</form></Card></section>
 
-    <section className="rs-section" data-testid="profile-pin">
-      <div className="rs-section__head"><h2>Sicurezza</h2></div>
-      <Card className="rs-card--pad">
-        <form className="rs-migrated-form" onSubmit={savePin}>
-          <Field label="PIN attuale"><TextInput icon="lock" {...pinProps(currentPin,setCurrentPin)} /></Field>
-          <Field label="Nuovo PIN"><TextInput icon="lock" {...pinProps(newPin,setNewPin)} /></Field>
-          <Field label="Ripeti nuovo PIN"><TextInput icon="lock" {...pinProps(confirmPin,setConfirmPin)} /></Field>
-          {pinError&&<p className="rs-error">{pinError}</p>}{pinMessage&&<p className="rs-success">{pinMessage}</p>}
-          <Button type="submit" disabled={pinBusy||currentPin.length!==4||newPin.length!==4||confirmPin.length!==4}>{pinBusy?'Salvo…':'Cambia PIN'}</Button>
-        </form>
-      </Card>
-    </section>
+    <section className="rs-section" data-testid="profile-pin"><div className="rs-section__head"><h2>Sicurezza</h2></div><Card className="rs-card--pad"><form className="rs-migrated-form" onSubmit={savePin}><Field label="PIN attuale"><TextInput icon="lock" {...pinProps(currentPin,setCurrentPin)} /></Field><Field label="Nuovo PIN"><TextInput icon="lock" {...pinProps(newPin,setNewPin)} /></Field><Field label="Ripeti nuovo PIN"><TextInput icon="lock" {...pinProps(confirmPin,setConfirmPin)} /></Field>{pinError&&<p className="rs-error">{pinError}</p>}{pinMessage&&<p className="rs-success">{pinMessage}</p>}<Button type="submit" disabled={pinBusy||currentPin.length!==4||newPin.length!==4||confirmPin.length!==4}>{pinBusy?'Salvo…':'Cambia PIN'}</Button></form></Card></section>
 
-    <section className="rs-section" data-testid="profile-preferences">
-      <div className="rs-section__head"><h2>Preferenze</h2></div>
-      <Card className="rs-card--pad rs-pref-block">
-        <div className="rs-pref"><div className="rs-pref__label"><Icon name="sparkles" /><div><b>Tema</b><small>Sistema segue il tuo dispositivo</small></div></div><ThemeControl /></div>
-        <div className="rs-pref"><div className="rs-pref__label"><Icon name="sliders" /><div><b>Dimensione interfaccia</b><small>Più contenuto o più leggibilità</small></div></div><UiSizeControl /></div>
-      </Card>
-    </section>
+    <section className="rs-section" data-testid="profile-preferences"><div className="rs-section__head"><h2>Preferenze</h2></div><Card className="rs-card--pad rs-pref-block"><div className="rs-pref"><div className="rs-pref__label"><Icon name="sparkles" /><div><b>Tema</b><small>Sistema segue il tuo dispositivo</small></div></div><ThemeControl /></div><div className="rs-pref"><div className="rs-pref__label"><Icon name="sliders" /><div><b>Dimensione interfaccia</b><small>Più contenuto o più leggibilità</small></div></div><UiSizeControl /></div></Card></section>
 
     <section className="rs-section" data-testid="notification-code">
-      <div className="rs-section__head"><h2>Codice notifiche</h2>{savedNotificationCode&&<span className="rs-badge rs-badge--accent">Configurato ✓</span>}</div>
+      <div className="rs-section__head"><h2>Codice notifiche</h2>{savedNotificationCode&&<span className="rs-badge rs-badge--accent">Definitivo ✓</span>}</div>
       <Card className="rs-card--pad">
-        <p className="rs-ntfy-intro">Scegli 6 cifre personali. Sono solo un identificativo leggibile: non sono il PIN e non vengono usate come chiave di sicurezza. Lo stesso codice vale per Giò, Choco e Brigantino.</p>
-        <form className="rs-migrated-form" onSubmit={saveNotificationCode}>
-          <Field label="Le tue 6 cifre"><TextInput icon="bell" value={notificationCode} inputMode="numeric" autoComplete="off" placeholder="Es. 482710" onChange={e=>setNotificationCode(normalizeNotificationCode(e.target.value))} /></Field>
-          {notificationCode.length===6&&hotel?.id&&<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {['urgent','reminders','assignments'].map((id)=><code key={id} className="rs-badge">{buildNotificationAlias(hotel.id,id,notificationCode)}</code>)}
-          </div>}
+        {savedNotificationCode ? <>
+          <p className="rs-ntfy-intro">Questo codice è stato assegnato definitivamente al tuo profilo e non può essere cambiato.</p>
+          <Row label="Le tue 6 cifre" value={savedNotificationCode} />
+          {hotel?.id&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>{['urgent','reminders','assignments'].map((id)=><code key={id} className="rs-badge">{buildNotificationAlias(hotel.id,id,savedNotificationCode)}</code>)}</div>}
           <small>Formato: HOTEL-TIPO-CODICE · AV avvisi · PR promemoria · IP interventi personali.</small>
+        </> : <form className="rs-migrated-form" onSubmit={saveNotificationCode}>
+          <p className="rs-ntfy-intro">Scegli con attenzione 6 cifre personali: dopo il salvataggio saranno definitive e non potranno più essere cambiate.</p>
+          <Field label="Le tue 6 cifre"><TextInput icon="bell" value={notificationCode} inputMode="numeric" autoComplete="off" placeholder="Es. 482710" onChange={e=>setNotificationCode(normalizeNotificationCode(e.target.value))} /></Field>
+          {notificationCode.length===6&&hotel?.id&&<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{['urgent','reminders','assignments'].map((id)=><code key={id} className="rs-badge">{buildNotificationAlias(hotel.id,id,notificationCode)}</code>)}</div>}
+          <small>Il codice è un identificativo, non il PIN. Una volta salvato viene bloccato.</small>
           {notificationError&&<p className="rs-error" role="alert">{notificationError}</p>}{notificationMessage&&<p className="rs-success" role="status">{notificationMessage}</p>}
-          <Button type="submit" disabled={notificationBusy||notificationCode.length!==6||notificationCode===savedNotificationCode}>{notificationBusy?'Salvo…':savedNotificationCode?'Aggiorna codice':'Salva codice'}</Button>
-        </form>
+          <Button type="submit" disabled={notificationBusy||notificationCode.length!==6}>{notificationBusy?'Salvo…':'Salva definitivamente'}</Button>
+        </form>}
+        {savedNotificationCode&&notificationError&&<p className="rs-error" role="alert">{notificationError}</p>}
       </Card>
     </section>
 
