@@ -9,6 +9,7 @@ const critical = [
   'test/point10-housekeeping.test.js',
   'test/point11-multihotel.test.js',
   'test/point13-work-home.test.js',
+  'test/point16-diagnostics.test.js',
   'test/offline-resilience-v2.test.js',
   'test/offline-retry.test.js',
   'test/photo-pipeline-hardening.test.js',
