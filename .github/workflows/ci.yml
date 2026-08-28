@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-test-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,8 +39,8 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Start preview server
         run: |
@@ -55,7 +55,7 @@ jobs:
           cat /tmp/apice-vite.log
           exit 1
 
-      - name: E2E responsive smoke
+      - name: E2E cross-platform smoke
         env:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:e2e
