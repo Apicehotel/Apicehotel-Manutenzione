@@ -30,14 +30,23 @@ test('assignment dispatcher targets selected users and requires assign permissio
   assert.match(dispatcher,/channel:"ntfy"/)
   assert.match(dispatcher,/event_type:"assignment"/)
   assert.match(dispatcher,/intervention_id:interventionId/)
-  assert.match(dispatcher,/requested\.filter\(id=>assigned\.includes\(id\)\)/)
+  assert.match(dispatcher,/assignedSet\.has\(id\)/)
 })
 
-test('assigned intervention also appears in the personal RandApp inbox',()=>{
-  assert.match(inboxData,/\.contains\('assegnatari', \[\{ id: authUserId \}\]\)/)
+test('dispatcher resolves legacy and auth ids to the same active hotel member',()=>{
+  assert.match(dispatcher,/legacy_user_id/)
+  assert.match(dispatcher,/authByAny\.set\(String\(profile\.legacy_user_id\),authId\)/)
+  assert.match(dispatcher,/const normalize=/)
+  assert.match(dispatcher,/memberAuthIds/)
+  assert.match(dispatcher,/recipientIds=targets\.filter\(id=>allowed\.has\(id\)\)/)
+})
+
+test('assigned intervention also appears in the personal RandApp inbox for auth or legacy id',()=>{
+  assert.match(inboxData,/user\?\.legacy_id/)
+  assert.match(inboxData,/const ownIds = new Set/)
+  assert.match(inboxData,/assigneeIds\(row\.assegnatari\)\.some\(\(id\) => ownIds\.has\(id\)\)/)
   assert.match(inboxData,/keyOf\('assignment', row\.id\)/)
   assert.match(inboxData,/title: 'Intervento assegnato'/)
-  assert.match(inboxData,/table: 'interventi'/)
   assert.match(inboxUi,/filter === 'assignment'/)
   assert.match(inboxUi,/>Interventi<\/button>/)
   assert.match(inboxUi,/type === 'assignment' \? 'wrench'/)
