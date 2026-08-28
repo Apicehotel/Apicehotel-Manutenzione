@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "hotels": ["hotelgio", "chocohotel", "brigantino"],
   "platforms": ["ios-webkit", "android-chromium", "windows-chromium"],
   "networkStates": ["online", "offline", "reconnect"],
@@ -15,6 +15,7 @@
     {"id":"work-home","tests":["test/point13-work-home.test.js"],"why":"La Home deve mostrare priorità hotel/ruolo corrette"},
     {"id":"pwa-platform","tests":["test/pwa.test.js","test/e2e.mjs","test/device-acceptance.mjs"],"why":"Installabilità e comportamento browser su iOS, Android e Windows"},
     {"id":"weather-operations","tests":["test/weather-data.test.js"],"why":"Allarmi vento/pioggia devono produrre azioni operative corrette"},
-    {"id":"diagnostics-recovery","tests":["test/point16-diagnostics.test.js"],"why":"Errori classificati, codici RAND, stato operativo e recuperi sicuri devono restare disponibili"}
+    {"id":"diagnostics-recovery","tests":["test/point16-diagnostics.test.js"],"why":"Errori classificati, codici RAND, stato operativo e recuperi sicuri devono restare disponibili"},
+    {"id":"database-security","tests":["test/point17-database-security.test.js","test/point11-multihotel.test.js","test/point8-security.test.js"],"why":"RLS, grant, RPC e isolamento cross-hotel devono fallire chiusi anche con client ostile"}
   ]
 }
