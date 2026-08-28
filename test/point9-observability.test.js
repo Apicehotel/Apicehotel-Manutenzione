@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 
 const migration = read('supabase/migrations/20260828083000_point9_operational_health.sql')
 const sensorAliasFix = read('supabase/migrations/20260828084500_fix_hotelgio_sensor_membership_alias.sql')
+const completion = read('supabase/migrations/20260828090000_point9_completion_hardening.sql')
 const diagnostics = read('src/diagnostics-client.js')
 const telemetry = read('src/external-telemetry.js')
 const panel = read('src/randapp/admin/DiagnosticsTab.jsx')
@@ -71,4 +72,38 @@ test('point 9: diagnostics exposes a single operational state plus 3.0 readiness
 test('point 9: Hotel Gio sensor visibility accepts the canonical production hotel id', () => {
   assert.match(sensorAliasFix, /hm\.hotel_id in \('gio','hotelgio'\)/)
   assert.match(sensorAliasFix, /mostra_hotelgio/)
+})
+
+test('point 9 completion: missing weather and missing cron jobs cannot report healthy', () => {
+  assert.match(completion, /v_weather_checked is null/)
+  assert.match(completion, /cardinality\(v_expected_cron\) - count\(\*\) filter \(where active is true\)/)
+  assert.match(completion, /diagnostic-retention-daily/)
+  assert.match(completion, /'expected', cardinality\(v_expected_cron\)/)
+})
+
+test('point 9 completion: operational recovery does not expose raw worker errors', () => {
+  assert.match(completion, /Errore worker registrato · dettaglio protetto/)
+  assert.doesNotMatch(completion, /'error',\s*last_error/)
+})
+
+test('point 9 completion: incidents fail closed for non-admin callers', () => {
+  assert.match(completion, /get_diagnostic_incidents/)
+  assert.match(completion, /if auth\.uid\(\) is null or not public\.can_admin_hotel\(p_hotel_id\) then/)
+  assert.match(completion, /raise exception 'Non autorizzato'/)
+})
+
+test('point 9 completion: diagnostic history is bounded and health queries are indexed', () => {
+  assert.match(completion, /promemoria_invio_hotel_created_status_idx/)
+  assert.match(completion, /notification_outbox_hotel_created_status_idx/)
+  assert.match(completion, /created_at < now\(\) - interval '30 days'/)
+  assert.match(completion, /'17 3 \* \* \*'/)
+})
+
+test('point 9 completion: external telemetry redacts sensitive context and attributes', () => {
+  assert.match(telemetry, /redactDiagnosticText/)
+  assert.match(telemetry, /sanitizeTelemetryValue/)
+  assert.match(telemetry, /access_token/)
+  assert.match(telemetry, /event\.extra = sanitizeTelemetryValue/)
+  assert.match(telemetry, /captureException\(error, \{ extra: sanitizeTelemetryValue\(context\) \}\)/)
+  assert.match(telemetry, /span\.setAttribute\(key, safeValue\)/)
 })
