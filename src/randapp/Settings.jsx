@@ -3,14 +3,14 @@ import { Button, Icon, IconButton } from './ui.jsx'
 import UsersTab from './admin/UsersTab.jsx'
 import SensorsTab from './admin/SensorsTab.jsx'
 import RolesTab from './admin/RolesTab.jsx'
-import AppearanceTab from './admin/AppearanceTab.jsx'
+import UsageTab from './admin/UsageTab.jsx'
 import DiagnosticsTab from './admin/DiagnosticsTab.jsx'
 
 const TABS = [
   { id:'users', icon:'users', label:'Utenti', Component:UsersTab },
   { id:'sensors', icon:'sensor', label:'Sensori', Component:SensorsTab },
   { id:'navigation', icon:'sliders', label:'Ruoli', Component:RolesTab },
-  { id:'appearance', icon:'sparkles', label:'Aspetto', Component:AppearanceTab },
+  { id:'usage', icon:'activity', label:'Consumi', Component:UsageTab },
 ]
 const DIAGNOSTICS = { id:'diagnostics', icon:'wrench', label:'Diagnostica', Component:DiagnosticsTab }
 const ALL_TABS = [...TABS, DIAGNOSTICS]
