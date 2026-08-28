@@ -1,0 +1,72 @@
+/* Auth theme coherence — login and admin gate must follow the resolved app theme. */
+
+/* LIGHT: cards and controls use light surfaces/text instead of the dark auth lock. */
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard {
+  background: linear-gradient(155deg, rgba(255,255,255,.96), rgba(244,248,253,.96));
+  border-color: rgba(38, 86, 148, .18);
+  box-shadow: 0 24px 68px -38px rgba(28,60,120,.38), 0 1px 0 rgba(255,255,255,.9) inset;
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header h1,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-textback {
+  color: var(--rs-text);
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header p,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header p,
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-field__label,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-field__label {
+  color: var(--rs-text-2);
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input {
+  background: rgba(255,255,255,.86);
+  border-color: rgba(38,86,148,.20);
+  color: var(--rs-text);
+  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset;
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input input,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input input {
+  color: var(--rs-text);
+  -webkit-text-fill-color: var(--rs-text);
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input input::placeholder,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input input::placeholder {
+  color: var(--rs-text-3);
+  opacity: 1;
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input > .rs-icon,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input > .rs-icon {
+  color: #60738f;
+}
+
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-settings-link {
+  background: rgba(247,250,254,.9);
+  border-color: rgba(38,86,148,.20);
+  color: var(--rs-text);
+}
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-settings-link small { color: var(--rs-text-2); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider { color: var(--rs-text-3); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider::before,
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider::after { background: rgba(38,86,148,.18); }
+
+/* Keep the brand mark neutral and readable in both themes. */
+html[data-theme='light'] .rs-auth .rs-brand__logo {
+  background: rgba(255,255,255,.92);
+  border-color: rgba(11,184,212,.78);
+  box-shadow: 0 18px 52px -26px rgba(47,111,240,.34);
+}
+
+/* DARK: explicitly preserve readable auth contrast if another layer changes tokens. */
+html[data-theme='dark'] .rs-auth:has([data-testid='login-submit']) .rs-authcard,
+html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard {
+  color: var(--rs-text);
+}
+html[data-theme='dark'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header h1,
+html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1 { color: var(--rs-text); }
