@@ -11,20 +11,19 @@ const fallback={
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Supremo[m]=allow('view','create')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Direzione[m]=allow('view','create','edit','assign','take_charge','complete')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','reminders','notifications','temperature','technicians'])fallback['Direttore Centro Congressi'][m]=allow('view','create','edit','assign','take_charge','complete')
-fallback['Direttore Centro Congressi'].planning_sale=allow('view','create','edit','assign','take_charge','complete','delete','manage')
+fallback['Direttore Centro Congressi'].planning_sale=allow(...PERMISSION_ACTIONS)
 for(const m of ['home','issues','interventions','planning_work','urgent','notifications','housekeeping'])fallback['Portiere Notturno'][m]=allow('view')
 fallback['Portiere Notturno'].issues=allow('view','create','assign','take_charge','complete');fallback['Portiere Notturno'].interventions=allow('view','assign','take_charge','complete')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','notifications','temperature','technicians'])fallback.manutentore[m]=allow('view')
 fallback.manutentore.issues=allow('view','create','edit','take_charge','complete');fallback.manutentore.interventions=allow('view','create','edit','take_charge','complete');fallback.manutentore.planning_work=allow('view','create','edit','take_charge','complete');fallback.manutentore.planning_sale=allow('view','take_charge','complete')
 for(const m of ['issues','interventions','planning_work','notifications'])fallback['Tecnico esterno'][m]=allow('view')
 fallback['Tecnico esterno'].issues=allow('view','take_charge','complete');fallback['Tecnico esterno'].interventions=allow('view','take_charge','complete')
-for(const r of ['Governante','Capo Governante']){fallback[r].home=allow('view');fallback[r].issues=allow('view','create');fallback[r].housekeeping=allow('view');fallback[r].notifications=allow('view')}
-fallback['Capo Governante'].housekeeping=allow('view','edit','complete')
+for(const r of ['Governante','Capo Governante']){fallback[r].home=allow('view');fallback[r].issues=allow('view','create');fallback[r].housekeeping=allow('view','edit','complete');fallback[r].notifications=allow('view')}
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Reception[m]=allow('view')
-fallback.Reception.issues=allow('view','create','assign','take_charge','complete');fallback.Reception.interventions=allow('view','assign','take_charge','complete');fallback.Reception.urgent=allow('view','create');fallback.Reception.reminders=allow('view','create','edit','delete','manage')
+fallback.Reception.issues=allow('view','create','assign','take_charge','complete');fallback.Reception.interventions=allow('view','assign','take_charge','complete');fallback.Reception.housekeeping=allow('view','edit','complete');fallback.Reception.urgent=allow('view','create');fallback.Reception.reminders=allow('view','create','edit','delete','manage')
 for(const r of ['Isola dei Golosi','Ristorante Wine/Jazz','Colazione Jazz']){fallback[r].home=allow('view');fallback[r].issues=allow('view','create');fallback[r].notifications=allow('view')}
 fallback['Colazione Jazz'].temperature=allow('view')
-for(const r of ['Direzione','Direttore Centro Congressi'])fallback[r].reminders=allow('view','create','edit','delete','manage')
+for(const r of ['Direzione','Direttore Centro Congressi'])fallback[r].reminders=allow(...PERMISSION_ACTIONS)
 
 let live={}
 function loadLocal(){try{const raw=localStorage.getItem(CACHE_KEY);const rows=raw?JSON.parse(raw):[];if(Array.isArray(rows))applyRows(rows,false)}catch{}}
