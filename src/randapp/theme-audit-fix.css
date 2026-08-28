@@ -1,0 +1,70 @@
+/* Final theme audit layer.
+   Purpose: keep late feature/reference overrides aligned with the resolved RandApp theme.
+   Loaded after all visual feature CSS. */
+
+/* Hotel selector: reference layout must not force dark cards in light mode. */
+html[data-theme='light'] .rs-hotelselect__head .rs-brand__logo {
+  background: rgba(255,255,255,.94);
+  border-color: rgba(11,184,212,.78);
+  box-shadow: 0 18px 52px -26px rgba(47,111,240,.34);
+}
+html[data-theme='light'] .rs-hotelselect__grid .rs-hotel-option {
+  background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(241,246,252,.96));
+  border-color: var(--rs-line);
+  color: var(--rs-text);
+  box-shadow: 0 18px 42px -28px rgba(28,60,120,.34);
+}
+html[data-theme='light'] .rs-hotelselect__grid .rs-hotel-option__text b { color: var(--rs-text); }
+html[data-theme='light'] .rs-hotelselect__grid .rs-hotel-option__text small { color: var(--rs-text-2); }
+html[data-theme='light'] .rs-hotelselect__grid .rs-hotel-option i { color: var(--rs-cyan); }
+
+/* Explicit dark counterpart so future light rules cannot leak back. */
+html[data-theme='dark'] .rs-hotelselect__grid .rs-hotel-option {
+  background: linear-gradient(145deg, rgba(18,31,52,.97), rgba(11,21,37,.96));
+  border-color: rgba(88,172,232,.22);
+  color: var(--rs-text);
+}
+html[data-theme='dark'] .rs-hotelselect__grid .rs-hotel-option__text b { color: var(--rs-text); }
+html[data-theme='dark'] .rs-hotelselect__grid .rs-hotel-option__text small { color: var(--rs-text-2); }
+
+/* Legacy Planning Sale had fixed light surfaces. Rebind them to theme tokens. */
+.rs-legacy .sale-form {
+  background: var(--rs-chrome-solid) !important;
+  color: var(--rs-text) !important;
+}
+.rs-legacy .sale-form > header {
+  background: var(--rs-chrome-solid) !important;
+  color: var(--rs-text) !important;
+}
+.rs-legacy .sale-form .panel-close {
+  background: var(--rs-surface-2) !important;
+  color: var(--rs-text) !important;
+  border-color: var(--rs-line) !important;
+}
+.rs-legacy .sale-form input,
+.rs-legacy .sale-form textarea,
+.rs-legacy .sale-form select {
+  background: var(--rs-surface-2) !important;
+  color: var(--rs-text) !important;
+  border-color: var(--rs-line) !important;
+}
+.rs-legacy .sale-form input::placeholder,
+.rs-legacy .sale-form textarea::placeholder { color: var(--rs-text-3); opacity: 1; }
+
+/* Usage/Admin decorative surfaces must stay visible in light mode too. */
+html[data-theme='light'] .rs-usage-overall__time,
+html[data-theme='light'] .rs-usage-mini__icon {
+  background: color-mix(in srgb, var(--rs-surface-2) 86%, transparent);
+}
+
+/* Native controls should inherit resolved text/background instead of browser defaults. */
+html[data-theme='light'] .rs-root select,
+html[data-theme='light'] .rs-root input,
+html[data-theme='light'] .rs-root textarea {
+  color-scheme: light;
+}
+html[data-theme='dark'] .rs-root select,
+html[data-theme='dark'] .rs-root input,
+html[data-theme='dark'] .rs-root textarea {
+  color-scheme: dark;
+}
