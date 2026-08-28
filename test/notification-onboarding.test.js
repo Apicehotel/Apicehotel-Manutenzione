@@ -22,6 +22,16 @@ test('onboarding handles iOS home-screen and denied permission states',()=>{
   assert.match(onboarding,/Riabilitale nelle impostazioni/)
 })
 
+test('assignment notification click routes to the right hotel and interventions',()=>{
+  assert.match(onboarding,/notification'\)!=='assignment'/)
+  assert.match(onboarding,/switch-hotel-\$\{targetHotel\}/)
+  assert.match(onboarding,/nav-interventions/)
+  assert.match(onboarding,/sidebar-interventions/)
+  assert.match(onboarding,/drawer-interventions/)
+  assert.match(onboarding,/type==='notification-click'/)
+  assert.match(onboarding,/clearAssignmentParams\(\)/)
+})
+
 test('onboarding is initialized for the authenticated RandApp shell',()=>{
   assert.match(main,/initNotificationOnboarding/)
   assert.match(main,/notification-onboarding\.css/)
