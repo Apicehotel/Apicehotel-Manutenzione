@@ -13,14 +13,21 @@ async function signedPhoto(path) {
 
 export async function fetchNotificationInbox(hotelId, user) {
   if (!supabase || !hotelId || !user?.role) return { items: [], unread: 0 }
-  const [{ data: urgents, error: urgentError }, { data: sends, error: sendError }, { data: reads, error: readError }] = await Promise.all([
+  const { data: auth } = await supabase.auth.getUser()
+  const authUserId = auth?.user?.id || null
+  const assignmentQuery = authUserId
+    ? supabase.from('interventi').select('id,camera,categoria,note,stato,assegnatari,programmato_dal,creato_il,updated_at').eq('hotel_id', hotelId).eq('sezione', 'intervento').contains('assegnatari', [{ id: authUserId }]).gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(80)
+    : Promise.resolve({ data: [], error: null })
+  const [{ data: urgents, error: urgentError }, { data: sends, error: sendError }, { data: reads, error: readError }, { data: assignments, error: assignmentError }] = await Promise.all([
     supabase.from('richieste_urgenti').select('id,nota,stato,gravita,posizione,reparto,foto,creato_da,creato_il,updated_at').eq('hotel_id', hotelId).gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(60),
     supabase.from('promemoria_invio').select('id,promemoria_id,scheduled_for,sent_at,status').eq('hotel_id', hotelId).eq('status', 'sent').gte('sent_at', sinceIso()).order('sent_at', { ascending: false }).limit(80),
     supabase.from('notification_reads').select('source_type,source_id,read_at').eq('hotel_id', hotelId),
+    assignmentQuery,
   ])
   if (urgentError) throw urgentError
   if (sendError) throw sendError
   if (readError) throw readError
+  if (assignmentError) throw assignmentError
 
   const reminderIds = [...new Set((sends || []).map((x) => x.promemoria_id).filter(Boolean))]
   let reminders = []
@@ -62,7 +69,20 @@ export async function fetchNotificationInbox(hotelId, user) {
     }
   }))
 
-  const items = [...urgentItems, ...reminderItems.filter(Boolean)]
+  const assignmentItems = (assignments || []).map((row) => ({
+    key: keyOf('assignment', row.id),
+    type: 'assignment',
+    sourceId: String(row.id),
+    title: 'Intervento assegnato',
+    message: row.note || row.categoria || 'Ti è stato assegnato un intervento',
+    meta: [row.camera, row.categoria, row.programmato_dal ? new Date(row.programmato_dal).toLocaleString('it-IT') : null].filter(Boolean).join(' · '),
+    at: row.creato_il || row.updated_at,
+    photo: null,
+    read: readSet.has(keyOf('assignment', row.id)),
+    status: row.stato,
+  }))
+
+  const items = [...urgentItems, ...reminderItems.filter(Boolean), ...assignmentItems]
     .sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0))
     .slice(0, 100)
   return { items, unread: items.filter((x) => !x.read).length }
@@ -106,6 +126,7 @@ export function subscribeNotificationInbox(hotelId, onChange) {
   const channel = supabase.channel(`notification-inbox-${hotelId}-${Date.now()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'richieste_urgenti', filter: `hotel_id=eq.${hotelId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'promemoria_invio', filter: `hotel_id=eq.${hotelId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'interventi', filter: `hotel_id=eq.${hotelId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'notification_reads', filter: `hotel_id=eq.${hotelId}` }, onChange)
     .subscribe()
   return () => { supabase.removeChannel(channel) }
