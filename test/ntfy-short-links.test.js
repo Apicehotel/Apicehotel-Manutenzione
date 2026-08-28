@@ -11,7 +11,7 @@ test('short notification URLs are first-class RandApp routes',()=>{
   assert.match(main,/NtfyShortLink/)
   assert.match(main,/ntfy_short/)
   assert.match(view,/parseNotificationAlias/)
-  assert.match(view,/result\.subscription_link \|\| result\.deep_link/)
+  assert.match(view,/resolveNtfyShortLink\(parsed\.alias\)/)
 })
 
 test('short-link resolver is authenticated, owner-bound and hotel-scoped',()=>{
@@ -25,13 +25,15 @@ test('short-link resolver is authenticated, owner-bound and hotel-scoped',()=>{
   assert.match(edge,/topic_not_configured/)
 })
 
-test('authorized short link hands ntfy a native subscription URI, never the RandApp HTTPS URL',()=>{
+test('authorized short link uses documented Android handoff and safe iOS copy fallback',()=>{
   const setup=read('src/randapp/ntfy/NtfySetup.jsx')
   const view=read('src/randapp/ntfy/NtfyShortLink.jsx')
   const edge=read('supabase/functions/ntfy-resolve/index.ts')
   assert.doesNotMatch(setup,/clipboard\.writeText\(channel\.topic\)/)
-  assert.match(view,/resolve\('open'\)/)
-  assert.match(view,/resolve\('copy'\)/)
+  assert.match(view,/const isIOS=/)
+  assert.match(view,/await copyTopic\(result\.topic\)/)
+  assert.match(view,/result\.app_link\|\|'https:\/\/ntfy\.sh\/app'/)
+  assert.match(view,/if\(result\.subscription_link\)/)
   assert.match(view,/Copia topic ntfy/)
   assert.match(edge,/const subscriptionLink=`ntfy:\/\//)
   assert.match(edge,/subscription_link:subscriptionLink/)
