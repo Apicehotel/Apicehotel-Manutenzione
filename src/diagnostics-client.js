@@ -15,6 +15,19 @@ const buildInfo = typeof __RANDAPP_BUILD__ !== 'undefined'
 const crop = (value, max = MAX_TEXT) => String(value ?? '').slice(0, max)
 const online = () => typeof navigator === 'undefined' || navigator.onLine
 
+export function redactDiagnosticText(value) {
+  let text = String(value ?? '')
+  const rules = [
+    [/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi, 'Bearer [REDACTED]'],
+    [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, '[JWT REDACTED]'],
+    [/\bsb_(?:publishable|secret)_[A-Za-z0-9_-]+\b/gi, '[SUPABASE KEY REDACTED]'],
+    [/(authorization|apikey|api_key|token|access_token|refresh_token|password|passwd|pin)\s*[:=]\s*([^\s,;&]+)/gi, '$1=[REDACTED]'],
+    [/("(?:authorization|apikey|api_key|token|access_token|refresh_token|password|passwd|pin)"\s*:\s*")[^"]+/gi, '$1[REDACTED]'],
+  ]
+  for (const [pattern, replacement] of rules) text = text.replace(pattern, replacement)
+  return crop(text)
+}
+
 function readQueue() {
   try {
     const rows = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]')
@@ -24,12 +37,8 @@ function readQueue() {
 function writeQueue(rows) {
   try { localStorage.setItem(QUEUE_KEY, JSON.stringify(rows.slice(-MAX_QUEUE))) } catch {}
 }
-function enqueue(row) {
-  writeQueue([...readQueue(), row])
-}
-function fingerprint(row) {
-  return `${row.hotel_id}|${row.kind}|${row.message}|${row.route}`
-}
+function enqueue(row) { writeQueue([...readQueue(), row]) }
+function fingerprint(row) { return `${row.hotel_id}|${row.kind}|${row.message}|${row.route}` }
 function shouldReport(row) {
   const now = Date.now()
   for (const [key, expires] of recent.entries()) if (expires <= now) recent.delete(key)
@@ -44,10 +53,10 @@ function payloadFor({ severity = 'error', kind = 'runtime', message, detail = ''
   if (!session?.hotelId || !message) return null
   return {
     hotel_id: session.hotelId,
-    severity,
+    severity: crop(severity, 20),
     kind: crop(kind, 80),
-    message: crop(message, 500),
-    detail: crop(detail),
+    message: crop(redactDiagnosticText(message), 500),
+    detail: crop(redactDiagnosticText(detail)),
     app_build: crop(buildInfo?.sha || 'dev', 80),
     route: typeof location !== 'undefined' ? crop(location.pathname, 300) : null,
     user_agent: typeof navigator !== 'undefined' ? crop(navigator.userAgent, 700) : null,
@@ -75,7 +84,8 @@ export async function flushDiagnosticEvents() {
   if (!queue.length) return { sent: 0, pending: 0 }
   const remaining = []
   let sent = 0
-  for (const row of queue) {
+  for (const queued of queue) {
+    const row = { ...queued, message: crop(redactDiagnosticText(queued.message), 500), detail: crop(redactDiagnosticText(queued.detail)) }
     try {
       const { error } = await supabase.from('diagnostic_events').insert(row)
       if (error) throw error
@@ -114,7 +124,7 @@ async function timed(check, timeoutMs = 5000) {
     ])
     return { ok: true, ms: Math.round(performance.now() - start), value }
   } catch (error) {
-    return { ok: false, ms: Math.round(performance.now() - start), error: crop(error?.message || error, 300) }
+    return { ok: false, ms: Math.round(performance.now() - start), error: crop(redactDiagnosticText(error?.message || error), 300) }
   }
 }
 
@@ -143,11 +153,7 @@ async function authHealth() {
 
 export async function getDiagnosticsSnapshot({ hotelId = loadSession()?.hotelId || null } = {}) {
   const checks = await Promise.all([
-    timed(supabaseHealth),
-    timed(authHealth),
-    timed(serviceWorkerHealth),
-    timed(pushHealth),
-    timed(() => getOfflineStatus()),
+    timed(supabaseHealth), timed(authHealth), timed(serviceWorkerHealth), timed(pushHealth), timed(() => getOfflineStatus()),
   ])
   const [api, auth, sw, push, offline] = checks
   const realtimeConnected = Boolean(supabase?.realtime?.isConnected?.())
@@ -159,29 +165,17 @@ export async function getDiagnosticsSnapshot({ hotelId = loadSession()?.hotelId 
     }
   } catch {}
   const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || navigator.standalone === true
-  const ntfyConfigured = hotelId
-    ? localStorage.getItem(`apicehotel.ntfy.setup.v2.${hotelId}`) === '1'
-    : false
-  const ntfyVerified = hotelId
-    ? localStorage.getItem(`apicehotel.ntfy.verified.v2.${hotelId}`) === '1'
-    : false
-
+  const ntfyConfigured = hotelId ? localStorage.getItem(`apicehotel.ntfy.setup.v2.${hotelId}`) === '1' : false
+  const ntfyVerified = hotelId ? localStorage.getItem(`apicehotel.ntfy.verified.v2.${hotelId}`) === '1' : false
   return {
-    generatedAt: new Date().toISOString(),
-    build: buildInfo,
-    hotelId,
+    generatedAt: new Date().toISOString(), build: buildInfo, hotelId,
     platform: { online: online(), standalone, userAgent: navigator.userAgent },
     services: {
-      supabaseApi: api,
-      auth,
-      realtime: { ok: realtimeConnected, value: realtimeConnected },
-      serviceWorker: sw,
-      push,
-      offlineQueue: offline,
+      supabaseApi: api, auth, realtime: { ok: realtimeConnected, value: realtimeConnected },
+      serviceWorker: sw, push, offlineQueue: offline,
       ntfy: { ok: !hotelId || ntfyConfigured, value: { configured: ntfyConfigured, verified: ntfyVerified } },
     },
-    storage,
-    localDiagnosticQueue: readQueue().length,
+    storage, localDiagnosticQueue: readQueue().length,
   }
 }
 
