@@ -33,13 +33,19 @@ jobs:
       - name: Dependency security audit
         run: npm audit --audit-level=high
 
+      - name: Quality matrix
+        run: npm run test:matrix
+
+      - name: Critical operational gate
+        run: npm run test:critical
+
       - name: Build
         run: npm run build
 
       - name: Bundle budget
         run: node scripts/check-bundle.mjs
 
-      - name: Unit tests
+      - name: Full unit and contract suite
         run: npm test
 
       - name: Install Playwright Chromium and WebKit
@@ -58,7 +64,7 @@ jobs:
           cat /tmp/apice-vite.log
           exit 1
 
-      - name: E2E cross-platform smoke
+      - name: Cross-platform browser gate
         env:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:e2e
