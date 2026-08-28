@@ -1,3 +1,5 @@
+import { redactDiagnosticText } from './diagnostics-client.js'
+
 const env = import.meta.env || {}
 const buildInfo = typeof __RANDAPP_BUILD__ !== 'undefined' ? __RANDAPP_BUILD__ : { sha: 'dev' }
 
@@ -12,6 +14,25 @@ function enabled(name) {
 function safeSampleRate(value, fallback) {
   const n = Number(value)
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : fallback
+}
+
+function sanitizeTelemetryValue(value, depth = 0) {
+  if (depth > 4) return '[TRUNCATED]'
+  if (typeof value === 'string') return redactDiagnosticText(value)
+  if (typeof value === 'number' || typeof value === 'boolean' || value == null) return value
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => sanitizeTelemetryValue(item, depth + 1))
+  if (typeof value === 'object') {
+    const safe = {}
+    for (const [key, item] of Object.entries(value).slice(0, 80)) {
+      if (/^(authorization|apikey|api_key|token|access_token|refresh_token|password|passwd|pin|cookie|cookies)$/i.test(key)) {
+        safe[key] = '[REDACTED]'
+      } else {
+        safe[key] = sanitizeTelemetryValue(item, depth + 1)
+      }
+    }
+    return safe
+  }
+  return redactDiagnosticText(String(value))
 }
 
 export function externalTelemetryConfig() {
@@ -51,14 +72,19 @@ export async function initExternalTelemetry() {
             delete headers.Authorization
             delete headers.authorization
             delete headers.apikey
-            event.request.headers = headers
+            delete headers.cookie
+            delete headers.Cookie
+            event.request.headers = sanitizeTelemetryValue(headers)
           }
+          if (event?.extra) event.extra = sanitizeTelemetryValue(event.extra)
+          if (event?.contexts) event.contexts = sanitizeTelemetryValue(event.contexts)
+          if (event?.breadcrumbs) event.breadcrumbs = sanitizeTelemetryValue(event.breadcrumbs)
           return event
         },
       })
       sentrySdk = Sentry
     } catch (error) {
-      console.warn('Sentry non inizializzato', error)
+      console.warn('Sentry non inizializzato', redactDiagnosticText(error?.message || error))
     }
   }
 
@@ -81,7 +107,7 @@ export async function initExternalTelemetry() {
       provider.register()
       otelTracer = trace.getTracer('randapp-web', buildInfo?.sha || 'dev')
     } catch (error) {
-      console.warn('OpenTelemetry non inizializzato', error)
+      console.warn('OpenTelemetry non inizializzato', redactDiagnosticText(error?.message || error))
     }
   }
 
@@ -90,15 +116,18 @@ export async function initExternalTelemetry() {
 
 export function captureExternalError(error, context = {}) {
   if (!sentrySdk || !error) return false
-  sentrySdk.captureException(error, { extra: context })
+  sentrySdk.captureException(error, { extra: sanitizeTelemetryValue(context) })
   return true
 }
 
 export function startExternalSpan(name, attributes = {}) {
   if (!otelTracer) return null
-  const span = otelTracer.startSpan(String(name || 'operation'))
+  const span = otelTracer.startSpan(redactDiagnosticText(String(name || 'operation')))
   for (const [key, value] of Object.entries(attributes || {})) {
-    if (['string', 'number', 'boolean'].includes(typeof value)) span.setAttribute(key, value)
+    if (['string', 'number', 'boolean'].includes(typeof value)) {
+      const safeValue = typeof value === 'string' ? redactDiagnosticText(value) : value
+      span.setAttribute(key, safeValue)
+    }
   }
   return span
 }
