@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { changeOwnPin, updateOwnProfile } from '../auth-data.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { hotelById, logoFor } from './helpers.js'
-import NtfySetup from './NtfySetup.jsx'
+import NtfySetup from './ntfy/NtfySetup.jsx'
 
 function Row({ label, value }) {
   return <div className="rs-profile-row"><span>{label}</span><b>{value || '—'}</b></div>
