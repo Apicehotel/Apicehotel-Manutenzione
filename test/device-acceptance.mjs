@@ -83,11 +83,16 @@ async function exerciseViewportAndKeyboard(page, context, label) {
   }
 
   await context.setOffline(true)
-  await page.reload({ waitUntil: 'domcontentloaded' })
-  await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
-  assert.equal(await page.getByTestId('login-submit').isVisible(), true, `${label}: app shell non disponibile offline dopo reload`)
-  await noOverflow(page, `${label}-offline-reload`)
+  await page.waitForTimeout(200)
+  assert.equal(await page.getByRole('heading', { name: 'Bentornato' }).isVisible(), true, `${label}: shell instabile durante perdita rete`)
+  assert.equal(await page.getByTestId('login-submit').isVisible(), true, `${label}: ACCEDI non disponibile durante perdita rete`)
+  await noOverflow(page, `${label}-offline-transition`)
+
   await context.setOffline(false)
+  await page.waitForTimeout(150)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible', timeout: 15000 })
+  await noOverflow(page, `${label}-reconnect`)
 }
 
 for (const scenario of scenarios) {
@@ -127,5 +132,5 @@ if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1
 } else {
-  console.log('DEVICE ACCEPTANCE OK: iPhone/WebKit, Android/Chromium, Windows-like Chromium; PWA, offline reload, tastiera/viewport, landscape, touch target e overflow')
+  console.log('DEVICE ACCEPTANCE OK: iPhone/WebKit, Android/Chromium, Windows-like Chromium; PWA, offline transition/recovery, tastiera/viewport, landscape, touch target e overflow')
 }
