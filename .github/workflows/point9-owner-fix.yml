@@ -1,0 +1,56 @@
+name: Point 9 creator identity fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/point9-owner-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply UUID ownership alignment
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          issues_path = Path('src/randapp/Issues.jsx')
+          issues = issues_path.read_text()
+          old_create = "      createdByName: user?.name || 'App',\n"
+          new_create = "      createdByName: user?.name || 'App',\n      createdByUserId: user?.auth_user_id || user?.id || undefined,\n"
+          if old_create not in issues:
+              raise SystemExit('Issue creation anchor not found')
+          issues = issues.replace(old_create, new_create, 1)
+
+          old_owner = "  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByName) && issue.createdByName === user?.name\n"
+          new_owner = "  const currentAuthUserId = user?.auth_user_id || user?.id || null\n  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByUserId) && issue.createdByUserId === currentAuthUserId\n"
+          if old_owner not in issues:
+              raise SystemExit('Supremo ownership anchor not found')
+          issues = issues.replace(old_owner, new_owner, 1)
+          issues_path.write_text(issues)
+
+          test_path = Path('test/point9-supremo-own-edit.test.js')
+          test = test_path.read_text()
+          old_test = "  assert.match(issues, /isOwnSupremoIssue/)\n"
+          new_test = "  assert.match(issues, /isOwnSupremoIssue/)\n  assert.match(issues, /Boolean\\(issue\\.createdByUserId\\)/)\n  assert.match(issues, /issue\\.createdByUserId === currentAuthUserId/)\n  assert.match(issues, /createdByUserId: user\\?\\.auth_user_id \\|\\| user\\?\\.id \\|\\| undefined/)\n  assert.doesNotMatch(issues, /issue\\.createdByName === user\\?\\.name/)\n"
+          if old_test not in test:
+              raise SystemExit('Point 9 test anchor not found')
+          test_path.write_text(test.replace(old_test, new_test, 1))
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Commit verified fix and remove temporary workflow
+        run: |
+          rm .github/workflows/point9-owner-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Issues.jsx test/point9-supremo-own-edit.test.js .github/workflows/point9-owner-fix.yml
+          git commit -m "fix: align Supremo own-edit with auth identity"
+          git push
