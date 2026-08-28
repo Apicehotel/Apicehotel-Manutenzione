@@ -1,0 +1,178 @@
+/* RandApp Point 12 — final UI coherence layer.
+   Loaded last on purpose: feature CSS may specialize layout, but these rules own
+   interaction, accessibility and control consistency across every module. */
+
+:root {
+  --rs-control-h: calc(46px * var(--rs-scale));
+  --rs-control-h-sm: calc(40px * var(--rs-scale));
+  --rs-control-h-lg: calc(52px * var(--rs-scale));
+  --rs-focus: 0 0 0 3px rgba(34, 211, 238, .24);
+  --rs-page-gap: calc(16px * var(--rs-scale));
+}
+
+/* One interaction contract for every native/custom control. */
+button,
+[role='button'],
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+[role='button']:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--rs-cyan);
+  outline-offset: 2px;
+}
+
+.rs-btn--md { min-height: var(--rs-control-h); }
+.rs-btn--sm { min-height: var(--rs-control-h-sm); }
+.rs-btn--lg { min-height: var(--rs-control-h-lg); }
+.rs-btn--block { width: 100%; }
+.rs-iconbtn { min-width: 44px; min-height: 44px; }
+
+.rs-btn[aria-busy='true'],
+.rs-btn.is-loading {
+  cursor: progress;
+  pointer-events: none;
+}
+
+.rs-btn[aria-busy='true'] .rs-icon,
+.rs-btn.is-loading .rs-icon {
+  animation: rs-spin .8s linear infinite;
+}
+
+/* Inputs/selects/textareas share height, focus and disabled behavior. */
+.rs-input { min-height: var(--rs-control-h); }
+.rs-input input,
+.rs-input select { min-height: calc(var(--rs-control-h) - 2px); }
+.rs-textarea { min-height: calc(112px * var(--rs-scale)); resize: vertical; }
+.rs-input:has(input:disabled),
+.rs-input:has(select:disabled),
+.rs-textarea:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.rs-field:has(.rs-field__error) .rs-input,
+.rs-field:has(.rs-field__error) .rs-textarea {
+  border-color: rgba(246, 96, 125, .55);
+}
+
+.rs-field__error[role='alert'],
+.rs-error[role='alert'] { scroll-margin-top: calc(var(--rs-header-h) + 16px); }
+
+/* Chips, segmented controls and list actions remain usable with Large UI. */
+.rs-chip,
+.rs-segmented button,
+.rs-settings-link,
+.rs-hotel-option,
+.rs-issue,
+.rs-photo-action,
+.rs-navbtn,
+.rs-drawer__item,
+.rs-sidebar__item {
+  min-height: 44px;
+}
+
+.rs-segmented button,
+.rs-chip { line-height: 1.2; }
+
+/* Page rhythm: feature styles can change layout, but not random vertical density. */
+.rs-form,
+.rs-pref-block,
+.rs-modal__body,
+.rs-sheet__body { gap: var(--rs-page-gap); }
+
+.rs-form-actions,
+.rs-modal__actions {
+  display: flex;
+  gap: calc(10px * var(--rs-scale));
+  align-items: stretch;
+}
+
+.rs-form-actions > .rs-btn,
+.rs-modal__actions > .rs-btn { min-width: 0; }
+
+/* Dialogs stay inside the visual viewport when iOS/Android keyboard is open. */
+.rs-overlay {
+  overscroll-behavior: contain;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.rs-sheet,
+.rs-modal {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.rs-sheet { max-height: min(88dvh, 88svh); }
+.rs-modal { max-height: min(90dvh, 90svh); }
+
+/* Consistent operational feedback. */
+.rs-error,
+.rs-field__error {
+  line-height: 1.4;
+}
+
+.rs-empty,
+.rs-spinner {
+  min-height: calc(150px * var(--rs-scale));
+  justify-content: center;
+}
+
+/* Keep content readable in all three UI sizes without horizontal page overflow. */
+.rs-card,
+.rs-field,
+.rs-input,
+.rs-modal,
+.rs-sheet,
+.rs-form,
+.rs-toolbar { min-width: 0; }
+
+img { max-width: 100%; }
+
+@media (max-width: 520px) {
+  .rs-form-actions,
+  .rs-modal__actions { flex-wrap: wrap; }
+  .rs-form-actions > .rs-btn,
+  .rs-modal__actions > .rs-btn { flex: 1 1 140px; }
+  .rs-overlay--center { padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
+}
+
+@media (max-width: 360px) {
+  .rs-form-actions > .rs-btn,
+  .rs-modal__actions > .rs-btn { flex-basis: 100%; }
+}
+
+/* Windows keyboard users + reduced-motion users get first-class behavior. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --rs-line: rgba(100, 190, 240, .34);
+    --rs-line-strong: rgba(100, 210, 245, .68);
+  }
+  html[data-theme='light'] {
+    --rs-line: rgba(28, 72, 126, .34);
+    --rs-line-strong: rgba(10, 92, 156, .64);
+  }
+}
