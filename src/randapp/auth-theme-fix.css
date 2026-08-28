@@ -70,3 +70,45 @@ html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth
 }
 html[data-theme='dark'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header h1,
 html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1 { color: var(--rs-text); }
+
+/* iOS keyboard: compact the brand and keep the active field/suggestions on screen. */
+@media (max-width: 600px) {
+  .rs-auth:has(input:focus) {
+    padding-top: max(calc(var(--rs-safe-top) + 8px), 12px) !important;
+    padding-bottom: max(calc(var(--rs-safe-bottom) + 12px), 16px) !important;
+  }
+  .rs-auth:has(input:focus) .rs-auth__inner { gap: 12px !important; }
+  .rs-auth:has(input:focus) .rs-brand {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    justify-content: center;
+    gap: 10px !important;
+  }
+  .rs-auth:has(input:focus) .rs-brand__logo {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 18px !important;
+  }
+  .rs-auth:has(input:focus) .rs-brand > div:last-child {
+    justify-items: start !important;
+    text-align: left;
+  }
+  .rs-auth:has(input:focus) .rs-brand__title { font-size: 1.65rem !important; }
+  .rs-auth:has(input:focus) .rs-brand__sub { font-size: .82rem !important; }
+  .rs-auth:has(input:focus) .rs-brand__tag { display: none !important; }
+  .rs-auth:has(input:focus) .rs-authcard {
+    padding: 16px !important;
+    gap: 10px !important;
+  }
+  .rs-auth:has(input:focus) .rs-authcard header h1 { font-size: 1.45rem !important; }
+  .rs-auth:has(input:focus) .rs-authcard header p { margin-top: 3px !important; font-size: .86rem !important; }
+  .rs-auth:has(input:focus) .rs-authform { gap: 10px !important; }
+  .rs-auth:has(input:focus) .rs-input { min-height: 50px !important; }
+  .rs-auth:has(input:focus) .rs-suggest {
+    max-height: min(34dvh, 260px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
