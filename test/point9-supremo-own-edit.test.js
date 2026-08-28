@@ -24,6 +24,7 @@ test('Supremo can edit only details of maintenance issues he created', () => {
   assert.match(issues, /issue\.createdByUserId === currentAuthUserId/)
   assert.match(issues, /createdByUserId: user\?\.auth_user_id \|\| user\?\.id \|\| undefined/)
   assert.doesNotMatch(issues, /issue\.createdByName === user\?\.name/)
+  assert.doesNotMatch(issues, /currentAuthUserId = user\?\.auth_user_id \|\| user\?\.legacy_id/)
   assert.match(issues, /Salva modifiche/)
   assert.match(issues, /Stato, assegnazioni e completamento restano in sola lettura/)
 })
