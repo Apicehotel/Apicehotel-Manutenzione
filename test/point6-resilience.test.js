@@ -20,8 +20,11 @@ test('point 6: issue and planned-work forms keep recoverable drafts and surface 
     assert.match(code, /saveDraft\(/)
     assert.match(code, /clearDraft\(/)
     assert.match(code, /operationFailed\(/)
+    assert.match(code, /draftOwner/)
   }
   assert.match(issues, /issue-save-error/)
+  assert.match(issues, /setDraft\(\{ location: '', title: ''/)
+  assert.match(planned, /setLocation\(saved\?\.location/)
   assert.match(planned, /La bozza resta sul dispositivo/)
 })
 

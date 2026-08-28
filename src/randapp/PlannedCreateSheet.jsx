@@ -76,6 +76,19 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (!open || !hotel?.id) return
+    const saved = loadDraft('planned-work', hotel.id, draftOwner)
+    setMode(saved?.mode || 'camera')
+    setLocation(saved?.location || '')
+    setCategory(saved?.category || 'Varie')
+    setNotes(saved?.notes || '')
+    setScheduledAt(saved?.scheduledAt || '')
+    setScheduledUntil(saved?.scheduledUntil || '')
+    setAssignees(saved?.assignees || [])
+    setSelectedFloorIds(saved?.selectedFloorIds || [])
+    setError('')
+  }, [open, hotel?.id, draftOwner])
+  useEffect(() => {
     if (!open || !hotel?.id) return undefined
     const timer = window.setTimeout(() => saveDraft('planned-work', hotel.id, draftOwner, { mode, location, category, notes, scheduledAt, scheduledUntil, assignees, selectedFloorIds }), 250)
     return () => window.clearTimeout(timer)

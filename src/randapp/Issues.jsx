@@ -59,6 +59,12 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
   const [saveError, setSaveError] = useState('')
   const [roomStatusSuggested, setRoomStatusSuggested] = useState(false)
   useEffect(() => {
+    const saved = loadDraft('issue', hotel.id, draftOwner)
+    setMode(saved?.mode || 'camera')
+    setDraft({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null, ...(saved?.draft || {}) })
+    setSaveError('')
+  }, [hotel.id, draftOwner])
+  useEffect(() => {
     const timer = window.setTimeout(() => saveDraft('issue', hotel.id, draftOwner, { mode, draft }), 250)
     return () => window.clearTimeout(timer)
   }, [hotel.id, draftOwner, mode, draft])
