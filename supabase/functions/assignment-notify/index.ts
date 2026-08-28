@@ -27,11 +27,19 @@ Deno.serve(async(req:Request)=>{
   if(!assignPermission?.allowed)return json({ok:false,error:"forbidden"},403);
   const {data:item}=await admin.from("interventi").select("id,hotel_id,sezione,camera,categoria,note,assegnatari,programmato_dal").eq("id",interventionId).eq("hotel_id",hotelId).maybeSingle();
   if(!item||item.sezione!=="intervento")return json({ok:false,error:"intervention_not_found"},404);
-  const assigned=ids(item.assegnatari);const requested=ids(body?.assignee_ids);const targets=requested.length?requested.filter(id=>assigned.includes(id)):assigned;
-  if(!targets.length)return json({ok:true,status:"no_targets",push_sent:0,ntfy_sent:0});
-  const {data:members}=await admin.from("hotel_memberships").select("auth_user_id,active").eq("hotel_id",hotelId).eq("active",true).in("auth_user_id",targets);
-  const allowed=new Set((members||[]).map((m:any)=>m.auth_user_id));const recipientIds=targets.filter(id=>allowed.has(id));
-  const {data:profiles}=await admin.from("profiles").select("auth_user_id,display_name").in("auth_user_id",recipientIds);const nameMap=new Map((profiles||[]).map((p:any)=>[p.auth_user_id,p.display_name]));
+
+  const assignedRaw=ids(item.assegnatari),requestedRaw=ids(body?.assignee_ids);
+  const {data:members}=await admin.from("hotel_memberships").select("auth_user_id,active").eq("hotel_id",hotelId).eq("active",true);
+  const memberAuthIds=[...new Set((members||[]).map((m:any)=>String(m.auth_user_id)).filter(Boolean))];
+  const {data:profiles}=memberAuthIds.length?await admin.from("profiles").select("auth_user_id,legacy_user_id,display_name").in("auth_user_id",memberAuthIds):{data:[] as any[]};
+  const authByAny=new Map<string,string>();const nameMap=new Map<string,string>();
+  for(const authId of memberAuthIds)authByAny.set(authId,authId);
+  for(const profile of profiles||[]){const authId=String(profile.auth_user_id||"");if(!authId)continue;authByAny.set(authId,authId);if(profile.legacy_user_id)authByAny.set(String(profile.legacy_user_id),authId);if(profile.display_name)nameMap.set(authId,String(profile.display_name));}
+  const normalize=(list:string[])=>[...new Set(list.map(id=>authByAny.get(id)).filter(Boolean) as string[])];
+  const assigned=normalize(assignedRaw),requested=normalize(requestedRaw);const assignedSet=new Set(assigned);const targets=requested.length?requested.filter(id=>assignedSet.has(id)):assigned;
+  const allowed=new Set(memberAuthIds);const recipientIds=targets.filter(id=>allowed.has(id));
+  if(!recipientIds.length)return json({ok:true,status:"no_targets",push_sent:0,ntfy_sent:0});
+
   const hotelName=HOTEL_NAMES[hotelId]||hotelId;const title=`Nuovo intervento · ${hotelName}`.slice(0,120);const detail=[item.camera,item.categoria,item.note].filter(Boolean).join(" · ").slice(0,500)||"Ti è stato assegnato un intervento";const targetUrl=`/?notification=assignment&hotel_id=${encodeURIComponent(hotelId)}&intervention_id=${encodeURIComponent(interventionId)}`;
   const {data:pushSetting}=await admin.from("integration_settings").select("enabled").eq("key","push_notifications").maybeSingle();
   let pushSent=0,ntfySent=0;
