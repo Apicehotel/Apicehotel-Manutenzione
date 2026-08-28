@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { setOwnPresence } from '../auth-data.js'
 import { supabase } from '../supabase.js'
-import { Sheet } from './ui.jsx'
 
 const ELIGIBLE_ROLES = new Set(['manutentore', 'Portiere Notturno', 'admin'])
 
@@ -18,7 +17,6 @@ export default function PresenceChip({ user }) {
   const [eligible, setEligible] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [open, setOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!user || !navigator.onLine) return
@@ -47,19 +45,18 @@ export default function PresenceChip({ user }) {
 
   if (!user || !eligible) return null
 
-  const choose = async (next) => {
-    if (busy || next === present) {
-      setOpen(false)
-      return
-    }
+  const toggle = async () => {
+    if (busy) return
     setBusy(true)
     setError('')
     try {
+      const next = !present
       const result = await setOwnPresence(next)
       const actual = Boolean(result?.in_struttura ?? next)
       setPresent(actual)
-      setOpen(false)
-      window.dispatchEvent(new CustomEvent('apice-presence-changed', { detail: { present: actual, role: user.role, eligible: true } }))
+      window.dispatchEvent(new CustomEvent('apice-presence-changed', {
+        detail: { present: actual, role: user.role, eligible: true },
+      }))
     } catch (err) {
       setError(err?.message || 'Cambio presenza non riuscito')
       await refresh()
@@ -68,35 +65,21 @@ export default function PresenceChip({ user }) {
     }
   }
 
-  return <>
+  const stateLabel = present ? 'In struttura' : 'Fuori struttura'
+  return (
     <button
       type="button"
-      className="rs-presence-trigger"
-      onClick={() => setOpen(true)}
+      className="rs-presence-dot-button"
+      onClick={toggle}
       disabled={busy}
       aria-pressed={present}
-      aria-label={present ? 'In struttura. Tocca per cambiare stato' : 'Fuori struttura. Tocca per cambiare stato'}
-      title={error || 'Cambia stato presenza'}
+      aria-label={`${stateLabel}. Tocca per ${present ? 'segnarti fuori struttura' : 'segnarti in struttura'}`}
+      title={error || stateLabel}
       data-testid="presence-chip"
       data-presence={present ? 'in' : 'out'}
     >
-      <span className="rs-presence-trigger__dot" aria-hidden="true" />
-      <span>{busy ? 'Aggiorno…' : present ? 'In struttura' : 'Fuori struttura'}</span>
+      <span className="rs-presence-dot" aria-hidden="true" />
+      <span className="rs-sr-only">{busy ? 'Aggiornamento presenza' : stateLabel}</span>
     </button>
-
-    <Sheet open={open} onClose={() => !busy && setOpen(false)} title="Il tuo stato">
-      <p style={{ margin: '-4px 0 14px', color: 'var(--rs-text-2)' }}>Scegli il tuo stato operativo.</p>
-      <button type="button" className={`rs-presence-choice rs-presence-choice--in ${present ? 'selected' : ''}`} onClick={() => choose(true)} disabled={busy} data-testid="presence-in">
-        <span className="rs-presence-choice__dot" aria-hidden="true" />
-        <span><strong>In struttura</strong><small>Sei presente in hotel. Scade automaticamente dopo 7h20.</small></span>
-        <span className="rs-presence-choice__check" aria-hidden="true">✓</span>
-      </button>
-      <button type="button" className={`rs-presence-choice ${!present ? 'selected' : ''}`} onClick={() => choose(false)} disabled={busy} data-testid="presence-out">
-        <span className="rs-presence-choice__dot" aria-hidden="true" />
-        <span><strong>Fuori struttura</strong><small>Non risulti presente operativamente in hotel.</small></span>
-        <span className="rs-presence-choice__check" aria-hidden="true">✓</span>
-      </button>
-      {error && <p className="rs-error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
-    </Sheet>
-  </>
+  )
 }
