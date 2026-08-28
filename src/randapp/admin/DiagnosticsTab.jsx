@@ -9,7 +9,9 @@ import {
   getOperationalHealth,
   repairPushForHotel,
   retryFailedUrgentJob,
+  retryOfflineSync,
 } from '../../diagnostics-client.js'
+import { deriveDiagnosticStatus } from '../../diagnostic-taxonomy.js'
 import { loadSession } from '../../session.js'
 import './diagnostics.css'
 
@@ -95,6 +97,18 @@ export default function DiagnosticsTab() {
     finally { setRepairing('') }
   }
 
+  const retrySync = async () => {
+    setRepairing('offline'); setMessage('')
+    try {
+      const result = await retryOfflineSync()
+      if (result.reason === 'offline') setMessage('Dispositivo offline: la coda resta protetta e verrà riprovata al ritorno della rete.')
+      else if (result.blocked) setMessage(`Sincronizzazione eseguita: ${result.blocked} operazioni richiedono revisione manuale.`)
+      else setMessage(result.pending ? `${result.pending} operazioni ancora in attesa di retry automatico.` : 'Coda offline sincronizzata.')
+      await refresh()
+    } catch (error) { setMessage(error?.message || 'Sincronizzazione non riuscita') }
+    finally { setRepairing('') }
+  }
+
   const retryUrgent = async (jobId) => {
     setRepairing(jobId); setMessage('')
     try {
@@ -115,20 +129,20 @@ export default function DiagnosticsTab() {
   const storage = snapshot?.storage
   const build = snapshot?.build || {}
   const telemetry = snapshot?.telemetry || {}
-  const overall = operational?.status || 'unknown'
+  const overall = deriveDiagnosticStatus({ snapshot, operational })
   const failedUrgent = operational?.urgent_jobs?.failed || []
 
   return <div className="rs-diag">
     <header className="rs-diag-head">
-      <div><h2>Diagnostica RandApp</h2><p>Salute di produzione, incidenti raggruppati e recupero operativo.</p></div>
+      <div><h2>Diagnostica RandApp</h2><p>Salute di produzione, incidenti classificati e recupero operativo sicuro.</p></div>
       <Button size="sm" variant="ghost" onClick={refresh} disabled={busy}>{busy ? 'Controllo…' : 'Aggiorna'}</Button>
     </header>
 
     {message && <p className="rs-diag-message" role="status">{message}</p>}
 
-    <Card className={`rs-diag-overall rs-diag-overall--${overall}`}>
-      <div><strong>Stato RandApp</strong><span>{statusText(overall)}</span></div>
-      <Badge tone={statusTone(overall)}>{statusText(overall)}</Badge>
+    <Card className={`rs-diag-overall rs-diag-overall--${overall.status}`}>
+      <div><strong>Stato RandApp</strong><span>{overall.label}</span><small>{overall.reason}</small></div>
+      <Badge tone={statusTone(overall.status)}>{overall.label}</Badge>
     </Card>
 
     <Card className="rs-diag-build">
@@ -163,7 +177,7 @@ export default function DiagnosticsTab() {
     </section>
 
     <Card className="rs-diag-telemetry">
-      <div className="rs-diag-section-head"><h3>Preparazione RandApp 3.0</h3><small>telemetria esterna opzionale</small></div>
+      <div className="rs-diag-section-head"><h3>Telemetria esterna</h3><small>opzionale e separata dai log operativi</small></div>
       <div className="rs-diag-grid">
         <HealthRow label="Sentry" status={telemetry.sentry?.enabled ? 'ok' : 'warning'} detail={telemetry.sentry?.enabled ? 'attivo' : telemetry.sentry?.configured ? 'configurato ma disattivato' : 'SDK predisposto · manca DSN'} />
         <HealthRow label="OpenTelemetry" status={telemetry.opentelemetry?.enabled ? 'ok' : 'warning'} detail={telemetry.opentelemetry?.enabled ? 'attivo' : telemetry.opentelemetry?.configured ? 'configurato ma disattivato' : 'SDK predisposto · manca collector OTLP'} />
@@ -173,6 +187,7 @@ export default function DiagnosticsTab() {
     {storage && <Card className="rs-diag-storage"><strong>Archiviazione dispositivo</strong><span>{fmtBytes(storage.usage)} usati su {fmtBytes(storage.quota)}</span></Card>}
 
     <div className="rs-diag-actions">
+      <Button variant="ghost" onClick={retrySync} disabled={repairing === 'offline'}>{repairing === 'offline' ? 'Sincronizzo…' : 'Riprova sincronizzazione'}</Button>
       <Button variant="ghost" onClick={repairPush} disabled={repairing === 'push'}>{repairing === 'push' ? 'Ripristino…' : 'Ripara push'}</Button>
       <Button variant="ghost" onClick={copyReport}>Copia report</Button>
       <Button variant="ghost" onClick={clearEvents} disabled={!events.length}>Pulisci registro</Button>
@@ -191,9 +206,10 @@ export default function DiagnosticsTab() {
       <div className="rs-diag-section-head"><h3>Incidenti raggruppati</h3><small>ultimi 7 giorni</small></div>
       {!incidents.length ? <EmptyState icon="check" title="Nessun incidente attivo">Non risultano pattern di errore recenti per questa struttura.</EmptyState> : incidents.map((incident, index) => (
         <Card key={`${incident.kind}-${incident.message}-${incident.route}-${index}`} className="rs-diag-event">
-          <div className="rs-diag-event__top"><Badge tone={incident.severity === 'fatal' || incident.severity === 'error' ? 'high' : 'waiting'}>{incident.occurrences}× {incident.severity}</Badge><small>{eventLabel(incident.last_seen)}</small></div>
+          <div className="rs-diag-event__top"><div><Badge tone={incident.severity === 'fatal' || incident.severity === 'error' ? 'high' : 'waiting'}>{incident.occurrences}× {incident.severity}</Badge> <Badge>{incident.reference}</Badge></div><small>{eventLabel(incident.last_seen)}</small></div>
           <strong>{incident.message}</strong>
-          <p>{incident.kind} · {incident.route || '—'} · build {incident.app_build || '—'}</p>
+          <p>{incident.categoryLabel} · {incident.kind} · {incident.route || '—'} · build {incident.app_build || '—'}</p>
+          <small>{incident.guidance}</small>
           <small>Prima occorrenza: {eventLabel(incident.first_seen)}</small>
         </Card>
       ))}
@@ -203,9 +219,10 @@ export default function DiagnosticsTab() {
       <div className="rs-diag-section-head"><h3>Eventi recenti</h3><small>{events.length} registrati</small></div>
       {!events.length ? <EmptyState icon="check" title="Nessun errore registrato">Non risultano errori recenti accessibili per questa struttura.</EmptyState> : events.map((event) => (
         <Card key={event.id} className="rs-diag-event">
-          <div className="rs-diag-event__top"><Badge tone={event.severity === 'fatal' || event.severity === 'error' ? 'high' : 'waiting'}>{event.severity}</Badge><small>{eventLabel(event.created_at)}</small></div>
+          <div className="rs-diag-event__top"><div><Badge tone={event.severity === 'fatal' || event.severity === 'error' ? 'high' : 'waiting'}>{event.severity}</Badge> <Badge>{event.reference}</Badge></div><small>{eventLabel(event.created_at)}</small></div>
           <strong>{event.message}</strong>
-          <p>{event.kind} · {event.route || '—'} · build {event.app_build || '—'}</p>
+          <p>{event.categoryLabel} · {event.kind} · {event.route || '—'} · build {event.app_build || '—'}</p>
+          <small>{event.guidance}</small>
           {event.detail && <details><summary>Dettagli tecnici</summary><pre>{event.detail}</pre></details>}
         </Card>
       ))}
