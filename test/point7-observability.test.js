@@ -27,13 +27,13 @@ test('point 7: diagnostics dashboard checks app services and exposes build ident
   assert.match(vite, /VERCEL_GIT_COMMIT_SHA/)
 })
 
-test('point 7: settings keeps five bottom actions and diagnostics is an explicit admin tool', async () => {
+test('point 7: settings keeps current admin actions and diagnostics is an explicit admin tool', async () => {
   const settings = await source('src/randapp/Settings.jsx')
   assert.match(settings, /const TABS = \[/)
   assert.match(settings, /const DIAGNOSTICS/)
   assert.match(settings, /IconButton icon="wrench" label="Diagnostica"/)
-  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|appearance)'/g)].map((match) => match[1])
-  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'appearance'])
+  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|usage)'/g)].map((match) => match[1])
+  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'usage'])
   assert.match(settings, /<small>RandApp<\/small>/)
 })
 
