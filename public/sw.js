@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v12'
+const CACHE_NAME = 'apicehotel-manutenzione-v13'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest?v=9',
@@ -11,6 +11,16 @@ const APP_SHELL = [
   '/logos/card-chocohotel.png',
   '/logos/card-brigantino.png',
 ]
+
+const isValidDynamicAsset = (request, response) => {
+  if (!response?.ok) return false
+  const type = (response.headers.get('content-type') || '').toLowerCase()
+  if (request.destination === 'script' || request.destination === 'worker') {
+    return type.includes('javascript') || type.includes('ecmascript')
+  }
+  if (request.destination === 'style') return type.includes('text/css')
+  return true
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -47,8 +57,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request, { cache: 'no-store' })
         .then((response) => {
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          if (response.ok && (response.headers.get('content-type') || '').includes('text/html')) {
+            const copy = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          }
           return response
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
@@ -56,17 +68,16 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // JS/CSS devono essere network-first: evita che una PWA iOS continui a
-  // eseguire bundle vecchi dopo un deploy. Le altre risorse restano cache-first.
   const dynamicAsset = ['script', 'style', 'worker'].includes(request.destination)
   if (dynamicAsset) {
     event.respondWith(
       fetch(request, { cache: 'no-store' })
         .then((response) => {
-          if (response.ok) {
-            const copy = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          if (!isValidDynamicAsset(request, response)) {
+            return caches.match(request).then((cached) => cached || response)
           }
+          const copy = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
         })
         .catch(() => caches.match(request)),
