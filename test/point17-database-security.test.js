@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const hardening = read('supabase/migrations/20260828160000_point17_database_security_hardening.sql')
+const performance = read('supabase/migrations/20260828161000_point17_database_performance_hardening.sql')
 const point11 = read('supabase/migrations/20260828141000_point11_multihotel_relational_hardening.sql')
 const auth = read('src/auth-data.js')
 const users = read('src/users-data.js')
@@ -24,9 +25,7 @@ test('point 17 service-only tables fail closed for browser roles', () => {
     'auth_pin_credentials','edge_function_secrets','integration_settings','notification_outbox',
     'pin_recovery_requests','technician_access_tokens','urgent_reminder_jobs','weather_alert_state',
     'whatsapp_pending_camera','whatsapp_template_status',
-  ]) {
-    assert.match(hardening, new RegExp(`revoke all privileges on table public\\.${table} from anon, authenticated`, 'i'))
-  }
+  ]) assert.match(hardening, new RegExp(`revoke all privileges on table public\\.${table} from anon, authenticated`, 'i'))
 })
 
 test('point 17 relies on relational hotel integrity instead of a browser-callable definer helper', () => {
@@ -48,11 +47,7 @@ test('point 17 urgent RPCs use the central permission matrix and immutable hotel
 })
 
 test('point 17 exposes privileged operational RPCs only to authenticated/service roles', () => {
-  for (const signature of [
-    'public.prendi_urgente(uuid,text,text)',
-    'public.completa_urgente(uuid,text,text)',
-    'public.get_usage_stats()',
-  ]) {
+  for (const signature of ['public.prendi_urgente(uuid,text,text)','public.completa_urgente(uuid,text,text)','public.get_usage_stats()']) {
     const escaped = signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     assert.match(hardening, new RegExp(`revoke execute on function ${escaped} from public, anon`, 'i'))
     assert.match(hardening, new RegExp(`grant execute on function ${escaped} to authenticated, service_role`, 'i'))
@@ -72,4 +67,21 @@ test('point 17 PIN auth uses bcrypt, lockout and rotating random Supabase creden
   const rotatingPasswords = pinAuth.match(/crypto\.randomUUID\(\)\+crypto\.randomUUID\(\)/g) || []
   assert.ok(rotatingPasswords.length >= 2)
   assert.match(pinAuth, /admin\.auth\.admin\.updateUserById\(authUserId,\{password\}\)/)
+})
+
+test('point 17 covers composite foreign keys and removes exact duplicate indexes', () => {
+  for (const index of ['issue_attachments_issue_hotel_idx','issue_events_issue_hotel_idx','promemoria_invio_reminder_hotel_idx','richieste_urgenti_eventi_urgent_hotel_idx','urgent_reminder_jobs_urgent_hotel_idx']) assert.match(performance, new RegExp(`create index if not exists ${index}`, 'i'))
+  assert.match(performance, /drop index if exists public\.urgent_events_hotel_created_idx/i)
+  assert.match(performance, /drop index if exists public\.tecnici_hotel_idx/i)
+})
+
+test('point 17 RLS auth checks use initplans and broad ALL policies are split', () => {
+  assert.match(performance, /auth_user_id = \(select auth\.uid\(\)\)/i)
+  assert.match(performance, /hm\.auth_user_id = \(select auth\.uid\(\)\)/i)
+  assert.doesNotMatch(performance, /create policy .*_write[\s\S]{0,100}for all/i)
+  for (const table of ['housekeeping_completions','sale_clients','sale_layouts']) {
+    assert.match(performance, new RegExp(`${table}.*permission_insert`, 'i'))
+    assert.match(performance, new RegExp(`${table}.*permission_update`, 'i'))
+    assert.match(performance, new RegExp(`${table}.*permission_delete`, 'i'))
+  }
 })
