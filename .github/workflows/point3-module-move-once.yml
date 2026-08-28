@@ -1,0 +1,53 @@
+name: Point 3 module move once
+on:
+  push:
+    paths:
+      - '.github/workflows/point3-module-move-once.yml'
+permissions:
+  contents: write
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rewire module imports and remove legacy locations
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          replacements = {
+              Path('src/randapp/Shell.jsx'): {
+                  "import RemindersView from './RemindersView.jsx'": "import RemindersView from './reminders/RemindersView.jsx'",
+                  "import NotificationInbox from './NotificationInbox.jsx'": "import NotificationInbox from './notifications/NotificationInbox.jsx'",
+              },
+              Path('src/randapp/Profile.jsx'): {
+                  "import NtfySetup from './NtfySetup.jsx'": "import NtfySetup from './ntfy/NtfySetup.jsx'",
+              },
+          }
+          for path, changes in replacements.items():
+              text = path.read_text()
+              for old, new in changes.items():
+                  if old not in text:
+                      raise SystemExit(f'missing expected import in {path}: {old}')
+                  text = text.replace(old, new)
+              path.write_text(text)
+          PY
+          rm src/randapp/RemindersView.jsx
+          rm src/randapp/NotificationInbox.jsx
+          rm src/randapp/NtfySetup.jsx
+          rm src/randapp/notification-inbox-data.js
+          rm src/randapp/notification-inbox.css
+          rm src/randapp/reminders.css
+          rm src/reminders-data.js
+          rm .github/workflows/point3-module-move-once.yml
+          if grep -R -n -E "(\./RemindersView\.jsx|\./NotificationInbox\.jsx|\./NtfySetup\.jsx|notification-inbox-data\.js|\.\./reminders-data\.js|randapp/reminders\.css|randapp/notification-inbox\.css)" src test --exclude-dir=node_modules; then
+            echo 'Legacy point 3 references remain' >&2
+            exit 1
+          fi
+      - name: Commit final module structure
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'refactor: isolate reminders notifications and ntfy'
+          git push
