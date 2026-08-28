@@ -1,33 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
-import { Icon, IconButton, Sheet, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'
+import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import Home from './Home.jsx'
-import Issues from './Issues.jsx'
-import Settings from './Settings.jsx'
-import Profile from './Profile.jsx'
 import PresenceChip from './PresenceChip.jsx'
-import PlanningHub from './PlanningHub.jsx'
-import RemindersView from './reminders/RemindersView.jsx'
-import NotificationInbox from './notifications/NotificationInbox.jsx'
-import InsertLauncher from './InsertLauncher.jsx'
-import UrgentCreateSheet from './UrgentCreateSheet.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
-import InterventionsView from './operations/InterventionsView.jsx'
-import UrgentView from './operations/UrgentView.jsx'
-import MyWorkView from './operations/MyWorkView.jsx'
-import {
-  TemperatureView, HousekeepingView, TechnicianDirectoryView,
-  FeedbackView, PinView, ManualView,
-} from './operations/UtilityViews.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
+
+
+const Settings = lazy(() => import('./Settings.jsx'))
+const Issues = lazy(() => import('./Issues.jsx'))
+const Profile = lazy(() => import('./Profile.jsx'))
+const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
+const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
+const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
+const InsertLauncher = lazy(() => import('./InsertLauncher.jsx'))
+const UrgentCreateSheet = lazy(() => import('./UrgentCreateSheet.jsx'))
+const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
+const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
+const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
+const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
+  default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
+})))
+const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
+  default: ({ hotel, user }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
+})))
+const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
+const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
+const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
+const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
+
+const ViewFallback = () => <Spinner label="Carico sezione…" />
 
 const NAV_BUTTONS = [
   { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
@@ -231,7 +241,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     'planning-sale': Boolean(user && viewAllowed('planning-sale')),
   }), [user, viewAllowed])
 
-  if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} />
+  if (settings !== null) return <Suspense fallback={<ViewFallback />}><Settings initialTab={settings} onExit={() => setSettings(null)} /></Suspense>
 
   const renderView = () => {
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
@@ -301,7 +311,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
-        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>
+        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
         <nav className="rs-bottomnav" data-count={bottomNav.length} style={{ '--rs-bottom-count': Math.max(1, Math.min(5, bottomNav.length)) }} data-testid="bottom-nav">
           {bottomNav.map((item) => (
@@ -313,8 +323,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>}
       </div>
 
-      <InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} />
-      <UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} />
+      {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} /></Suspense>}
+      {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} /></Suspense>}
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
@@ -325,7 +335,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </Sheet>
 
       <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
-        <NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setView('reminders') }} />
+        <Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setView('reminders') }} /></Suspense>
       </Sheet>
 
       {drawer && (

@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
-import { fetchDirectory } from '../users-data.js'
-import { loginWithPin, loginAdmin } from '../auth-data.js'
 import { loadSession, saveSession, clearSession } from '../session.js'
-import { signOutSupabase } from '../auth-data.js'
 import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
-import Shell from './Shell.jsx'
-import Settings from './Settings.jsx'
+
+const Shell = lazy(() => import('./Shell.jsx'))
+const Settings = lazy(() => import('./Settings.jsx'))
 
 const EVENT = 'apice-session-changed'
 
 async function loadDirectoryAll() {
+  const { fetchDirectory } = await import('../users-data.js')
   const rows = await Promise.all(HOTELS.map(async (hotel) => {
     try {
       const result = await fetchDirectory(hotel.id)
@@ -49,11 +48,11 @@ function AdminGate({ onBack, onExit }) {
   const [ok, setOk] = useState(false)
   const submit = async (e) => {
     e.preventDefault(); setError(''); setBusy(true)
-    try { await loginAdmin(pin); setOk(true) }
+    try { const { loginAdmin } = await import('../auth-data.js'); await loginAdmin(pin); setOk(true) }
     catch { setError('PIN amministratore non valido') }
     finally { setBusy(false) }
   }
-  if (ok) return <Settings onExit={onExit || onBack} />
+  if (ok) return <Suspense fallback={<Spinner label="Carico impostazioni…" />}><Settings onExit={onExit || onBack} /></Suspense>
   return (
     <main className="rs-auth">
       <div className="rs-auth__inner">
@@ -100,6 +99,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     let lastError = null
     for (const hotelId of hotels) {
       try {
+        const { loginWithPin } = await import('../auth-data.js')
         const auth = await loginWithPin({ hotelId, userId: user.legacy_id || user.id, pin })
         const userId = auth?.user?.id || user.id
         onAuthenticated({ user, userId, allowedHotels: hotels, workedHotel: hotelId })
@@ -205,6 +205,7 @@ export default function App() {
   }
 
   const onLogout = async () => {
+    const { signOutSupabase } = await import('../auth-data.js')
     await signOutSupabase()
     clearSession()
     setPending(null)
@@ -212,7 +213,7 @@ export default function App() {
   }
 
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
-  if (session) return <Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()) }} />
+  if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()) }} /></Suspense>
   if (pending) return <HotelSelector pending={pending} onPick={pickHotel} />
   return <Login onAuthenticated={onAuthenticated} onOpenSettings={() => setSettingsFromLogin(true)} />
 }
