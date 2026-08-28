@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hotels": ["hotelgio", "chocohotel", "brigantino"],
+  "platforms": ["ios-webkit", "android-chromium", "windows-chromium"],
+  "networkStates": ["online", "offline", "reconnect"],
+  "roles": ["manutentore", "Governante", "Reception", "Supremo", "Direzione"],
+  "criticalRisks": [
+    {"id":"auth-session","tests":["test/current-architecture.test.js","test/point6-resilience.test.js"],"why":"Login, sessione autenticata e recupero da rete instabile"},
+    {"id":"permissions","tests":["test/current-architecture.test.js","test/point8-security.test.js","test/point9-supremo-own-edit.test.js"],"why":"Azioni e viste devono rispettare ruolo e permessi"},
+    {"id":"hotel-isolation","tests":["test/point11-multihotel.test.js","test/push-multihotel.test.js"],"why":"Nessun dato o notifica deve attraversare i confini tra hotel"},
+    {"id":"maintenance-lifecycle","tests":["test/point5-operational.test.js","test/photo-pipeline-hardening.test.js"],"why":"Segnalazione, presa in carico, intervento, completamento e foto"},
+    {"id":"offline-sync","tests":["test/offline-resilience-v2.test.js","test/offline-retry.test.js","test/point6-resilience.test.js"],"why":"Operazioni offline, retry e conflitti senza perdita dati"},
+    {"id":"housekeeping","tests":["test/point10-housekeeping.test.js","test/housekeeping-report.test.js","test/housekeeping-brigantino.test.js"],"why":"Import giornaliero idempotente, storico e separazione hotel"},
+    {"id":"notifications","tests":["test/issue-push-notifications.test.js","test/push-multihotel.test.js","test/ntfy-profile.test.js"],"why":"Push e ntfy non devono duplicare o mischiare strutture"},
+    {"id":"work-home","tests":["test/point13-work-home.test.js"],"why":"La Home deve mostrare priorità hotel/ruolo corrette"},
+    {"id":"pwa-platform","tests":["test/pwa.test.js","test/e2e.mjs"],"why":"Installabilità e comportamento browser su iOS, Android e Windows"},
+    {"id":"weather-operations","tests":["test/weather-data.test.js"],"why":"Allarmi vento/pioggia devono produrre azioni operative corrette"}
+  ]
+}
