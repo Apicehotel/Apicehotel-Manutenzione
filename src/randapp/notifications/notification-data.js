@@ -3,6 +3,7 @@ import { supabase } from '../../supabase.js'
 const DAYS = 30
 const sinceIso = () => new Date(Date.now() - DAYS * 86400000).toISOString()
 const keyOf = (type, id) => `${type}:${id}`
+const assigneeIds = (value) => [...new Set((Array.isArray(value) ? value : []).map((entry) => String(entry?.id || entry || '').trim()).filter(Boolean))]
 
 async function signedPhoto(path) {
   if (!path) return null
@@ -15,8 +16,9 @@ export async function fetchNotificationInbox(hotelId, user) {
   if (!supabase || !hotelId || !user?.role) return { items: [], unread: 0 }
   const { data: auth } = await supabase.auth.getUser()
   const authUserId = auth?.user?.id || null
-  const assignmentQuery = authUserId
-    ? supabase.from('interventi').select('id,camera,categoria,note,stato,assegnatari,programmato_dal,creato_il,updated_at').eq('hotel_id', hotelId).eq('sezione', 'intervento').contains('assegnatari', [{ id: authUserId }]).gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(80)
+  const ownIds = new Set([authUserId, user?.auth_user_id, user?.legacy_id, user?.id].filter(Boolean).map(String))
+  const assignmentQuery = ownIds.size
+    ? supabase.from('interventi').select('id,camera,categoria,note,stato,assegnatari,programmato_dal,creato_il,updated_at').eq('hotel_id', hotelId).eq('sezione', 'intervento').gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(120)
     : Promise.resolve({ data: [], error: null })
   const [{ data: urgents, error: urgentError }, { data: sends, error: sendError }, { data: reads, error: readError }, { data: assignments, error: assignmentError }] = await Promise.all([
     supabase.from('richieste_urgenti').select('id,nota,stato,gravita,posizione,reparto,foto,creato_da,creato_il,updated_at').eq('hotel_id', hotelId).gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(60),
@@ -69,7 +71,8 @@ export async function fetchNotificationInbox(hotelId, user) {
     }
   }))
 
-  const assignmentItems = (assignments || []).map((row) => ({
+  const personalAssignments = (assignments || []).filter((row) => assigneeIds(row.assegnatari).some((id) => ownIds.has(id)))
+  const assignmentItems = personalAssignments.map((row) => ({
     key: keyOf('assignment', row.id),
     type: 'assignment',
     sourceId: String(row.id),
