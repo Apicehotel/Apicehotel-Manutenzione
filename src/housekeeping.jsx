@@ -1,1 +1,1 @@
-export { Housekeeping } from './housekeeping-v2.jsx'
+export { Housekeeping } from './housekeeping-v3.jsx'
