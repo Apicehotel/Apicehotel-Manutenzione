@@ -12,6 +12,10 @@
     "test:e2e": "node test/e2e.mjs"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
+    "@opentelemetry/sdk-trace-web": "2.10.0",
+    "@sentry/react": "10.71.0",
     "@supabase/supabase-js": "^2.57.0",
     "@tanstack/react-query": "^5.102.5",
     "dexie": "^4.4.4",
