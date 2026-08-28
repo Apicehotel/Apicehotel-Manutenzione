@@ -5,7 +5,7 @@ const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
 const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-randapp-request","Access-Control-Allow-Methods":"POST, OPTIONS"};
-const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"}});
 const URGENT_ROLES=new Set(["admin","manutentore","Direzione","Direttore Centro Congressi","Reception","Portiere Notturno"]);
 const HOTEL_ID:Record<string,string>={GIO:"hotelgio",CHO:"chocohotel",BRI:"brigantino"};
 const CHANNEL_ID:Record<string,string>={AV:"urgent",PR:"reminders",IP:"assignments",HK:"housekeeping"};
@@ -30,7 +30,9 @@ Deno.serve(async(req:Request)=>{
   else if(channel==="housekeeping"){if(role!=="Capo Governante"||!housekeepingSetting?.enabled)return json({ok:false,error:"forbidden"},403);topic=String(housekeepingSetting.config?.topics?.[hotelId]||"");label="Housekeeping";}
   if(!topic)return json({ok:false,error:"topic_not_configured"},404);
   let host="ntfy.sh";try{host=new URL(server).host}catch{}
-  const deepLink=`ntfy://${host}/${encodeURIComponent(topic)}?display=${encodeURIComponent(alias)}`;
-  return json({ok:true,alias,hotel_id:hotelId,channel,label,topic,deep_link:deepLink});
+  // Native ntfy subscription URI: the app receives only the real topic after
+  // authenticated resolution. RandApp's HTTPS short URL is never used as a topic.
+  const subscriptionLink=`ntfy://${host}/${encodeURIComponent(topic)}?display=${encodeURIComponent(alias)}`;
+  return json({ok:true,alias,hotel_id:hotelId,channel,label,topic,subscription_link:subscriptionLink,deep_link:subscriptionLink});
  }catch(error){console.error("ntfy-resolve",error instanceof Error?error.message:"unknown");return json({ok:false,error:"resolve_failed"},500)}
 });
