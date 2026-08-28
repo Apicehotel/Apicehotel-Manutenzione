@@ -1,10 +1,5 @@
 import { Component } from 'react'
 
-// Senza un error boundary, qualsiasi eccezione React durante il render fa
-// scomparire l'intero albero e lascia lo schermo bianco, senza nessun indizio
-// su cosa sia successo. Questo la intercetta e mostra il messaggio reale,
-// con un pulsante per ricaricare, così un errore diventa diagnosticabile
-// invece che un "non vedo niente" muto.
 export default class AppErrorBoundary extends Component {
   constructor(props) {
     super(props)
@@ -17,6 +12,12 @@ export default class AppErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('AppErrorBoundary', error, info?.componentStack)
+    import('./diagnostics-client.js').then(({ reportDiagnosticEvent }) => reportDiagnosticEvent({
+      severity: 'fatal',
+      kind: 'react-render',
+      message: error?.message || 'Errore render React',
+      detail: `${error?.stack || ''}\n${info?.componentStack || ''}`,
+    })).catch(() => {})
   }
 
   render() {
@@ -25,8 +26,7 @@ export default class AppErrorBoundary extends Component {
         <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif', color: '#1b2420', background: '#f4f2ed', minHeight: '100vh' }}>
           <h1 style={{ fontSize: 18, marginBottom: 8 }}>Si è verificato un errore</h1>
           <p style={{ fontSize: 14, color: '#5c645e', marginBottom: 16 }}>
-            L'app ha incontrato un problema imprevisto. Il messaggio qui sotto aiuta a capire cosa è successo — puoi
-            farne uno screenshot.
+            RandApp ha registrato il problema nella diagnostica. Puoi provare a riprendere senza ricaricare oppure ricaricare l'app.
           </p>
           <pre style={{
             whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#fff', border: '1px solid #e4e0d6',
