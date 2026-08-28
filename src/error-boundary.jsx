@@ -1,5 +1,13 @@
 import { Component } from 'react'
 
+const buildInfo = typeof __RANDAPP_BUILD__ !== 'undefined' ? __RANDAPP_BUILD__ : { sha: 'dev' }
+const moduleRecoveryKey = `randapp-module-recovery:${buildInfo?.sha || 'dev'}`
+
+export function isRecoverableModuleError(error) {
+  const message = String(error?.message || error || '')
+  return /failed to fetch dynamically imported module|importing a module script failed|chunkloaderror|loading chunk .* failed|not a valid javascript mime type/i.test(message)
+}
+
 export default class AppErrorBoundary extends Component {
   constructor(props) {
     super(props)
@@ -22,6 +30,15 @@ export default class AppErrorBoundary extends Component {
       source: 'react-render',
       componentStack: String(info?.componentStack || '').slice(0, 2000),
     })).catch(() => {})
+
+    if (typeof window !== 'undefined' && isRecoverableModuleError(error)) {
+      try {
+        if (window.sessionStorage.getItem(moduleRecoveryKey) !== '1') {
+          window.sessionStorage.setItem(moduleRecoveryKey, '1')
+          window.setTimeout(() => window.location.reload(), 250)
+        }
+      } catch {}
+    }
   }
 
   render() {
