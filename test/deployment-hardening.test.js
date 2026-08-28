@@ -6,9 +6,11 @@ const vercel = readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')
 const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
 
 test('SPA rewrite excludes immutable/static asset namespaces', () => {
-  assert.match(vercel, /\(\?!assets\//)
-  assert.match(vercel, /icons\//)
-  assert.match(vercel, /manifest\\\\\.webmanifest/)
+  assert.ok(vercel.includes('(?!assets/'))
+  assert.ok(vercel.includes('icons/'))
+  assert.ok(vercel.includes('logos/'))
+  assert.ok(vercel.includes('manifest\\\\.webmanifest'))
+  assert.ok(vercel.includes('sw\\\\.js'))
 })
 
 test('service worker validates MIME before caching dynamic assets', () => {
