@@ -13,7 +13,8 @@
     {"id":"housekeeping","tests":["test/point10-housekeeping.test.js","test/housekeeping-report.test.js","test/housekeeping-brigantino.test.js"],"why":"Import giornaliero idempotente, storico e separazione hotel"},
     {"id":"notifications","tests":["test/issue-push-notifications.test.js","test/push-multihotel.test.js","test/ntfy-profile.test.js"],"why":"Push e ntfy non devono duplicare o mischiare strutture"},
     {"id":"work-home","tests":["test/point13-work-home.test.js"],"why":"La Home deve mostrare priorità hotel/ruolo corrette"},
-    {"id":"pwa-platform","tests":["test/pwa.test.js","test/e2e.mjs"],"why":"Installabilità e comportamento browser su iOS, Android e Windows"},
-    {"id":"weather-operations","tests":["test/weather-data.test.js"],"why":"Allarmi vento/pioggia devono produrre azioni operative corrette"}
+    {"id":"pwa-platform","tests":["test/pwa.test.js","test/e2e.mjs","test/device-acceptance.mjs"],"why":"Installabilità e comportamento browser su iOS, Android e Windows"},
+    {"id":"weather-operations","tests":["test/weather-data.test.js"],"why":"Allarmi vento/pioggia devono produrre azioni operative corrette"},
+    {"id":"diagnostics-recovery","tests":["test/point16-diagnostics.test.js"],"why":"Errori classificati, codici RAND, stato operativo e recuperi sicuri devono restare disponibili"}
   ]
 }
