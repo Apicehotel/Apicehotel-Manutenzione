@@ -28,10 +28,12 @@ test('point 15 device gate covers iOS Android and Windows-like environments', ()
   assert.match(device, /chromium/)
 })
 
-test('point 15 exercises PWA offline reload keyboard viewport orientation and touch targets', () => {
+test('point 15 exercises PWA offline transition recovery keyboard viewport orientation and touch targets', () => {
   assert.match(device, /navigator\.serviceWorker\.ready/)
   assert.match(device, /context\.setOffline\(true\)/)
-  assert.match(device, /page\.reload/)
+  assert.match(device, /context\.setOffline\(false\)/)
+  assert.match(device, /offline-transition/)
+  assert.match(device, /reconnect/)
   assert.match(device, /pin\.focus\(\)/)
   assert.match(device, /setViewportSize/)
   assert.match(device, /landscape/)
@@ -44,7 +46,7 @@ test('point 15 keeps mobile photo picker compatible with camera or library', () 
   assert.match(issues, /compressPhotoAsDataUrl/)
 })
 
-test('point 15 gate is mandatory in CI and documented for physical-only checks', () => {
+test('point 15 gate is mandatory in CI and physical-only checks stay explicit', () => {
   assert.match(pkg, /"test:device": "node test\/device-acceptance\.mjs"/)
   assert.match(ci, /Device acceptance gate/)
   assert.match(ci, /npm run test:device/)
@@ -53,4 +55,5 @@ test('point 15 gate is mandatory in CI and documented for physical-only checks',
   assert.match(checklist, /Windows — Edge \+ Chrome/)
   assert.match(checklist, /fotocamera\/libreria/)
   assert.match(checklist, /notifica push\/ntfy/)
+  assert.match(checklist, /Disattivare rete, riaprire l'app/)
 })
