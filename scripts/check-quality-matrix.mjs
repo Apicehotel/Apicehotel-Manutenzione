@@ -5,7 +5,7 @@ const root = process.cwd()
 const matrixPath = path.join(root, 'test', 'quality-matrix.json')
 const matrix = JSON.parse(fs.readFileSync(matrixPath, 'utf8'))
 
-const requiredRisks = ['auth-session','permissions','hotel-isolation','maintenance-lifecycle','offline-sync','housekeeping','notifications','work-home','pwa-platform','weather-operations']
+const requiredRisks = ['auth-session','permissions','hotel-isolation','maintenance-lifecycle','offline-sync','housekeeping','notifications','work-home','pwa-platform','weather-operations','diagnostics-recovery']
 const requiredHotels = ['hotelgio','chocohotel','brigantino']
 const requiredPlatforms = ['ios-webkit','android-chromium','windows-chromium']
 const requiredNetwork = ['online','offline','reconnect']
