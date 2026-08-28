@@ -1,0 +1,17 @@
+.hk-history{margin:18px 0 96px;padding:16px;border:1px solid var(--border,#d8dce3);border-radius:18px;background:var(--surface,#fff)}
+.hk-history__head{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.hk-history__head h2{margin:0 0 4px;font-size:1.05rem}.hk-history__head p{margin:0;color:var(--muted,#6b7280);font-size:.9rem}
+.hk-history__head label{display:grid;gap:4px;font-size:.78rem;font-weight:700;color:var(--muted,#6b7280)}
+.hk-history__head select{min-height:40px;border:1px solid var(--border,#d8dce3);border-radius:10px;background:var(--surface,#fff);color:inherit;padding:0 10px}
+.hk-history__summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+.hk-history__summary span{display:grid;gap:2px;padding:10px;border-radius:12px;background:var(--surface-2,#f5f6f8);font-size:.72rem;color:var(--muted,#6b7280)}
+.hk-history__summary b{font-size:1rem;color:var(--text,#111827)}
+.hk-history__groups{display:grid;gap:12px}.hk-history__group{border:1px solid var(--border,#d8dce3);border-radius:14px;overflow:hidden}
+.hk-history__group>header{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--surface-2,#f5f6f8)}
+.hk-history__group>header span,.hk-history__group>header small{color:var(--muted,#6b7280);font-size:.78rem}.hk-history__group>header small{margin-left:auto}
+.hk-history__rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;padding:10px}
+.hk-history__room{display:grid;gap:2px;padding:9px;border-radius:10px;border:1px solid var(--border,#d8dce3);background:var(--surface,#fff)}
+.hk-history__room b{font-size:1rem}.hk-history__room span,.hk-history__room small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hk-history__room span{font-size:.78rem}.hk-history__room small{font-size:.7rem;color:var(--muted,#6b7280)}
+.hk-history__room--b2b{border-width:2px}.hk-history__room--partenza,.hk-history__room--arrivo{border-style:dashed}
+.hk-history__empty,.hk-history__error{margin:14px 0 0;padding:12px;border-radius:12px;background:var(--surface-2,#f5f6f8);font-size:.88rem}.hk-history__error{color:#b42318}
+@media(max-width:640px){.hk-history{margin-inline:0;padding:12px;border-radius:14px}.hk-history__summary{grid-template-columns:repeat(2,minmax(0,1fr))}.hk-history__summary span:last-child{grid-column:span 2}.hk-history__rooms{grid-template-columns:repeat(2,minmax(0,1fr))}}
