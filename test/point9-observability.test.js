@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 const migration = read('supabase/migrations/20260828083000_point9_operational_health.sql')
+const sensorAliasFix = read('supabase/migrations/20260828084500_fix_hotelgio_sensor_membership_alias.sql')
 const diagnostics = read('src/diagnostics-client.js')
 const telemetry = read('src/external-telemetry.js')
 const panel = read('src/randapp/admin/DiagnosticsTab.jsx')
@@ -65,4 +66,9 @@ test('point 9: diagnostics exposes a single operational state plus 3.0 readiness
   assert.match(panel, /Preparazione RandApp 3\.0/)
   assert.match(panel, /Sentry/)
   assert.match(panel, /OpenTelemetry/)
+})
+
+test('point 9: Hotel Gio sensor visibility accepts the canonical production hotel id', () => {
+  assert.match(sensorAliasFix, /hm\.hotel_id in \('gio','hotelgio'\)/)
+  assert.match(sensorAliasFix, /mostra_hotelgio/)
 })
