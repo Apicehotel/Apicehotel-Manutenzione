@@ -1,6 +1,7 @@
 import { supabase, supabaseUrl, supabaseAnonKey } from './supabase.js'
 import { loadSession } from './session.js'
-import { getOfflineStatus } from './offline-store.js'
+import { drainOfflineQueue, getOfflineStatus } from './offline-store.js'
+import { enrichDiagnostic } from './diagnostic-taxonomy.js'
 
 const QUEUE_KEY = 'randapp-diagnostics-queue-v1'
 const MAX_QUEUE = 50
@@ -199,7 +200,7 @@ export async function fetchDiagnosticIncidents(hotelId = loadSession()?.hotelId 
   if (!supabase || !hotelId) return []
   const { data, error } = await supabase.rpc('get_diagnostic_incidents', { p_hotel_id: hotelId, p_limit: limit })
   if (error) throw error
-  return data || []
+  return (data || []).map((row) => enrichDiagnostic({ ...row, hotel_id: row.hotel_id || hotelId }))
 }
 
 export async function retryFailedUrgentJob(hotelId, jobId) {
@@ -215,13 +216,20 @@ export async function repairPushForHotel(hotelId = loadSession()?.hotelId || nul
   return repairPushSubscription(hotelId)
 }
 
+export async function retryOfflineSync() {
+  if (!online()) return { ok: false, reason: 'offline', ...(await getOfflineStatus()) }
+  await drainOfflineQueue()
+  const status = await getOfflineStatus()
+  return { ok: Number(status.blocked || 0) === 0, ...status }
+}
+
 export async function fetchRecentDiagnosticEvents(hotelId = null, limit = 30) {
   if (!supabase) return []
   let query = supabase.from('diagnostic_events').select('id,hotel_id,severity,kind,message,detail,app_build,route,user_agent,created_at').order('created_at', { ascending: false }).limit(limit)
   if (hotelId) query = query.eq('hotel_id', hotelId)
   const { data, error } = await query
   if (error) throw error
-  return data || []
+  return (data || []).map(enrichDiagnostic)
 }
 
 export async function clearDiagnosticEvents(hotelId = null) {
