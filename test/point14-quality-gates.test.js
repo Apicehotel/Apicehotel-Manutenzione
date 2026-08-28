@@ -27,10 +27,10 @@ test('point 14 matrix covers all hotels, platforms and network states', () => {
 
 test('point 14 critical risks cannot silently disappear', () => {
   const ids = new Set(matrix.criticalRisks.map((risk) => risk.id))
-  for (const id of ['auth-session','permissions','hotel-isolation','maintenance-lifecycle','offline-sync','housekeeping','notifications','work-home','pwa-platform','weather-operations']) assert.ok(ids.has(id), `missing ${id}`)
+  for (const id of ['auth-session','permissions','hotel-isolation','maintenance-lifecycle','offline-sync','housekeeping','notifications','work-home','pwa-platform','weather-operations','diagnostics-recovery','database-security']) assert.ok(ids.has(id), `missing ${id}`)
   for (const risk of matrix.criticalRisks) assert.ok(risk.tests.length > 0, `${risk.id} needs tests`)
 })
 
 test('point 14 critical runner includes high-risk production contracts', () => {
-  for (const file of ['point5-operational.test.js','point6-resilience.test.js','point8-security.test.js','point10-housekeeping.test.js','point11-multihotel.test.js','offline-resilience-v2.test.js','push-multihotel.test.js','pwa.test.js']) assert.match(criticalRunner, new RegExp(file.replaceAll('.', '\\.')))
+  for (const file of ['point5-operational.test.js','point6-resilience.test.js','point8-security.test.js','point10-housekeeping.test.js','point11-multihotel.test.js','point17-database-security.test.js','offline-resilience-v2.test.js','push-multihotel.test.js','pwa.test.js']) assert.match(criticalRunner, new RegExp(file.replaceAll('.', '\\.')))
 })
