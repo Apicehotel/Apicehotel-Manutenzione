@@ -4,12 +4,14 @@ import UsersTab from './admin/UsersTab.jsx'
 import SensorsTab from './admin/SensorsTab.jsx'
 import RolesTab from './admin/RolesTab.jsx'
 import AppearanceTab from './admin/AppearanceTab.jsx'
+import DiagnosticsTab from './admin/DiagnosticsTab.jsx'
 
 const TABS = [
   { id:'users', icon:'users', label:'Utenti', Component:UsersTab },
   { id:'sensors', icon:'sensor', label:'Sensori', Component:SensorsTab },
   { id:'navigation', icon:'sliders', label:'Ruoli', Component:RolesTab },
   { id:'appearance', icon:'sparkles', label:'Aspetto', Component:AppearanceTab },
+  { id:'diagnostics', icon:'wrench', label:'Diagnostica', Component:DiagnosticsTab },
 ]
 
 export default function Settings({initialTab='users',onExit}){
