@@ -16,6 +16,7 @@ const critical = [
   'test/offline-retry.test.js',
   'test/photo-pipeline-hardening.test.js',
   'test/issue-push-notifications.test.js',
+  'test/intervention-assignment-notifications.test.js',
   'test/push-multihotel.test.js',
   'test/ntfy-profile.test.js',
   'test/pwa.test.js',
