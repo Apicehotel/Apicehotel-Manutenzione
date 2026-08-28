@@ -28,10 +28,12 @@ export async function saveOwnNotificationCode(code) {
   if (!supabase) throw new Error('Supabase non configurato')
   const normalized = String(code || '').replace(/\D/g, '').slice(0, 6)
   if (!/^\d{6}$/.test(normalized)) throw new Error('Il codice notifiche deve contenere esattamente 6 cifre.')
+  const existing = await getOwnNotificationCode()
+  if (existing) throw new Error('Il codice notifiche è definitivo e non può essere modificato.')
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError || !userData?.user?.id) throw userError || new Error('Sessione non valida')
-  const { data, error } = await supabase.from('user_notification_codes').upsert({ auth_user_id: userData.user.id, code: normalized, updated_at: new Date().toISOString() }, { onConflict: 'auth_user_id' }).select('code').single()
-  if (error?.code === '23505') throw new Error('Questo codice è già stato scelto da un altro operatore. Scegline un altro.')
+  const { data, error } = await supabase.from('user_notification_codes').insert({ auth_user_id: userData.user.id, code: normalized }).select('code').single()
+  if (error?.code === '23505') throw new Error('Questo codice è già stato assegnato. Scegline un altro.')
   if (error) throw error
   return data?.code || normalized
 }
@@ -41,16 +43,12 @@ export async function validateSupabaseSession() {
   const { data: sessionData } = await supabase.auth.getSession()
   const session = sessionData?.session
   if (!session) return { valid: false, user: null }
-  // Se il dispositivo è offline manteniamo la sessione già autenticata. Il JWT
-  // e l'utente sono quelli persistiti da Supabase; le scritture vengono accodate
-  // localmente e validate dal server solo quando la rete torna disponibile.
   if (typeof navigator !== 'undefined' && !navigator.onLine) return { valid: true, user: session.user, offline: true }
   try {
     const { data, error } = await supabase.auth.getUser()
     if (error || !data?.user) return { valid: false, user: null }
     return { valid: true, user: data.user }
   } catch {
-    // Caduta rete durante il controllo: non espellere un utente già autenticato.
     return { valid: true, user: session.user, offline: true }
   }
 }
