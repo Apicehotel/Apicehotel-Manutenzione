@@ -4,6 +4,7 @@ import webpush from "npm:web-push@3.6.7";
 const url=Deno.env.get("SUPABASE_URL")!;
 const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
 const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const APP_ORIGIN=(Deno.env.get("RANDAPP_PUBLIC_URL")||"https://apicehotel.vercel.app").replace(/\/$/,"");
 const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
@@ -40,7 +41,7 @@ Deno.serve(async(req:Request)=>{
   const allowed=new Set(memberAuthIds);const recipientIds=targets.filter(id=>allowed.has(id));
   if(!recipientIds.length)return json({ok:true,status:"no_targets",push_sent:0,ntfy_sent:0});
 
-  const hotelName=HOTEL_NAMES[hotelId]||hotelId;const title=`Nuovo intervento · ${hotelName}`.slice(0,120);const detail=[item.camera,item.categoria,item.note].filter(Boolean).join(" · ").slice(0,500)||"Ti è stato assegnato un intervento";const targetUrl=`/?notification=assignment&hotel_id=${encodeURIComponent(hotelId)}&intervention_id=${encodeURIComponent(interventionId)}`;
+  const hotelName=HOTEL_NAMES[hotelId]||hotelId;const title=`Nuovo intervento · ${hotelName}`.slice(0,120);const detail=[item.camera,item.categoria,item.note].filter(Boolean).join(" · ").slice(0,500)||"Ti è stato assegnato un intervento";const targetUrl=`${APP_ORIGIN}/?notification=assignment&hotel_id=${encodeURIComponent(hotelId)}&intervention_id=${encodeURIComponent(interventionId)}`;
   const {data:pushSetting}=await admin.from("integration_settings").select("enabled").eq("key","push_notifications").maybeSingle();
   let pushSent=0,ntfySent=0;
   if(pushSetting?.enabled&&recipientIds.length){
