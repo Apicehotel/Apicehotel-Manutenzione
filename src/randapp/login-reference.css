@@ -128,31 +128,130 @@
   box-shadow: 0 20px 50px -26px #000;
 }
 
+/* Admin gate shares the same brand treatment, but keeps a denser form card. */
+.rs-auth:has([data-testid='admin-gate-submit']) {
+  min-height: 100dvh;
+  justify-content: flex-start;
+  padding:
+    max(calc(var(--rs-safe-top) + 22px), 28px)
+    clamp(18px, 4.8vw, 26px)
+    max(calc(var(--rs-safe-bottom) + 30px), 36px);
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner {
+  width: min(100%, 560px);
+  max-width: 560px;
+  gap: clamp(20px, 2.6dvh, 28px);
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand { gap: 10px; }
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__logo {
+  width: clamp(118px, 31vw, 142px);
+  height: clamp(118px, 31vw, 142px);
+  border-radius: clamp(29px, 7vw, 36px);
+  overflow: hidden;
+  background: #081425;
+  border: 2px solid rgba(45, 211, 238, .72);
+  box-shadow: 0 18px 52px -24px rgba(34, 211, 238, .68);
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__logo img {
+  width: 116%;
+  height: 116%;
+  max-width: none;
+  object-fit: contain;
+  object-position: 50% 50%;
+  transform: none;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand > div:last-child {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__title {
+  font-size: clamp(2.25rem, 10.4vw, 3.15rem);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__sub {
+  font-size: clamp(1rem, 4.35vw, 1.25rem);
+  line-height: 1.25;
+  font-weight: 800;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard {
+  width: 100%;
+  padding: clamp(21px, 5.2vw, 30px);
+  gap: clamp(15px, 2.1dvh, 20px);
+  border-radius: clamp(22px, 5vw, 28px);
+  background: linear-gradient(155deg, rgba(18, 31, 52, .97), rgba(11, 21, 37, .96));
+  border-color: rgba(88, 172, 232, .22);
+  box-shadow: 0 24px 68px -38px rgba(0,0,0,.92), 0 1px 0 rgba(255,255,255,.025) inset;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1 {
+  font-size: clamp(1.55rem, 6.4vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  font-weight: 800;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header p {
+  margin-top: 7px;
+  font-size: clamp(.9rem, 3.7vw, 1.06rem);
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-field { gap: 8px; }
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-field__label {
+  font-size: clamp(.82rem, 3.35vw, .94rem);
+  color: #aabbd7;
+}
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-input {
+  min-height: clamp(56px, 7.4dvh, 66px);
+  padding-inline: clamp(15px, 3.8vw, 20px);
+  gap: 13px;
+  border-radius: clamp(15px, 3.8vw, 18px);
+  background: rgba(8, 18, 33, .62);
+  border-color: rgba(88, 172, 232, .18);
+}
+.rs-auth:has([data-testid='admin-gate-submit']) [data-testid='admin-gate-submit'] {
+  min-height: clamp(58px, 7.7dvh, 68px);
+  border-radius: clamp(16px, 4vw, 19px);
+  font-size: clamp(.98rem, 4.15vw, 1.14rem);
+  font-weight: 800;
+  box-shadow: 0 16px 34px -19px rgba(34,211,238,.82), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
 /* iPhone-sized viewports: keep the complete card visible without making it oversized. */
 @media (max-width: 480px) {
-  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner { max-width: 420px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { max-width: 420px; }
 }
 
 /* Short phones / landscape: compact progressively instead of clipping below the fold. */
 @media (max-height: 760px) {
-  .rs-auth:has([data-testid='login-submit']) {
+  .rs-auth:has([data-testid='login-submit']),
+  .rs-auth:has([data-testid='admin-gate-submit']) {
     padding-top: max(calc(var(--rs-safe-top) + 10px), 16px);
     padding-bottom: max(calc(var(--rs-safe-bottom) + 18px), 22px);
   }
-  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner { gap: 15px; }
-  .rs-auth:has([data-testid='login-submit']) .rs-brand { gap: 6px; }
-  .rs-auth:has([data-testid='login-submit']) .rs-brand__logo { width: 96px; height: 96px; border-radius: 25px; }
-  .rs-auth:has([data-testid='login-submit']) .rs-brand__title { font-size: 1.9rem; }
-  .rs-auth:has([data-testid='login-submit']) .rs-brand__sub { font-size: .9rem; }
+  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { gap: 15px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-brand,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-brand { gap: 6px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-brand__logo,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__logo { width: 96px; height: 96px; border-radius: 25px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-brand__title,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__title { font-size: 1.9rem; }
+  .rs-auth:has([data-testid='login-submit']) .rs-brand__sub,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__sub { font-size: .9rem; }
   .rs-auth:has([data-testid='login-submit']) .rs-brand__tag { margin-top: 2px; font-size: .7rem; }
-  .rs-auth:has([data-testid='login-submit']) .rs-authcard { padding: 17px; gap: 11px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-authcard,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard { padding: 17px; gap: 11px; }
   .rs-auth:has([data-testid='login-submit']) .rs-authform { gap: 10px; }
-  .rs-auth:has([data-testid='login-submit']) .rs-input { min-height: 48px; }
-  .rs-auth:has([data-testid='login-submit']) [data-testid='login-submit'] { min-height: 50px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-input,
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-input { min-height: 48px; }
+  .rs-auth:has([data-testid='login-submit']) [data-testid='login-submit'],
+  .rs-auth:has([data-testid='admin-gate-submit']) [data-testid='admin-gate-submit'] { min-height: 50px; }
   .rs-auth:has([data-testid='login-submit']) .rs-settings-link { min-height: 60px; }
 }
 
 @media (min-width: 768px) {
-  .rs-auth:has([data-testid='login-submit']) { justify-content: center; padding-top: max(calc(var(--rs-safe-top) + 36px), 48px); }
+  .rs-auth:has([data-testid='login-submit']),
+  .rs-auth:has([data-testid='admin-gate-submit']) { justify-content: center; padding-top: max(calc(var(--rs-safe-top) + 36px), 48px); }
   .rs-auth:has([data-testid='login-submit']) .rs-auth__inner { max-width: 600px; }
+  .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { max-width: 560px; }
 }
