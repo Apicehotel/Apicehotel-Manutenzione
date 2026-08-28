@@ -11,6 +11,7 @@ const critical = [
   'test/point13-work-home.test.js',
   'test/point16-diagnostics.test.js',
   'test/point17-database-security.test.js',
+  'test/point18-final-cleanup.test.js',
   'test/offline-resilience-v2.test.js',
   'test/offline-retry.test.js',
   'test/photo-pipeline-hardening.test.js',
@@ -24,4 +25,4 @@ const critical = [
 const result = spawnSync(process.execPath, ['--test', ...critical], { stdio: 'inherit' })
 if (result.error) throw result.error
 if (result.status !== 0) process.exit(result.status || 1)
-console.log(`Critical gate OK: ${critical.length} suite critiche`) 
+console.log(`Critical gate OK: ${critical.length} suite critiche`)
