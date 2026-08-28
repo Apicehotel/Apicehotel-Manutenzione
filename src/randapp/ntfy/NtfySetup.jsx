@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Icon } from '../ui.jsx'
 import { ENABLE_PREFIX, VERIFIED_PREFIX, friendlyNtfyError, getStore, invokeNtfy, setStore } from './ntfy-client.js'
 
-const channelIcon = (id) => id === 'urgent' ? 'warning' : id === 'housekeeping' ? 'housekeeping' : 'bell'
+const channelIcon = (id) => id === 'urgent' ? 'warning' : id === 'housekeeping' ? 'housekeeping' : id === 'assignments' ? 'wrench' : 'bell'
 
 export default function NtfySetup({ hotelId }) {
   const enabledKey = useMemo(() => `${ENABLE_PREFIX}${hotelId}`, [hotelId])
@@ -14,6 +14,7 @@ export default function NtfySetup({ hotelId }) {
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const android = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '')
 
   useEffect(() => {
     setEnabled(getStore(enabledKey) === '1')
@@ -60,6 +61,12 @@ export default function NtfySetup({ hotelId }) {
       setError('Copia automatica non riuscita: tieni premuto sul topic e copialo.')
     }
   }
+  const deepLink = (channel) => {
+    try {
+      const server = new URL(config?.server || 'https://ntfy.sh')
+      return `ntfy://${server.host}/${encodeURIComponent(channel.topic)}?display=${encodeURIComponent(channel.label)}`
+    } catch { return null }
+  }
   const testAll = async () => {
     if (!channels.length) return
     setBusy(true)
@@ -81,12 +88,15 @@ export default function NtfySetup({ hotelId }) {
   return <section className="rs-section" data-testid="ntfy-setup">
     <div className="rs-section__head"><h2>Notifiche ntfy</h2>{verified && <span className="rs-badge rs-badge--accent">Testato ✓</span>}</div>
     <Card className="rs-card--pad">
-      <p className="rs-ntfy-intro">Canale esterno indipendente da RandApp. Gli Avvisi Urgenti usano il canale della struttura; i Promemoria usano il canale del tuo ruolo.</p>
+      <p className="rs-ntfy-intro">Canale esterno indipendente da RandApp. Gli avvisi urgenti usano il canale della struttura, i promemoria quello del ruolo e gli interventi un canale personale privato per il singolo operatore.</p>
       {!enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Configura ntfy</Button></div> : <>
         {config && <>
           <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi i canali qui sotto</b><b>3. Prova le notifiche</b></div>
           {config.apps && <div className="rs-op-card__actions">{config.apps.ios && <a className="rs-button rs-button--outline" href={config.apps.ios} target="_blank" rel="noreferrer">iPhone / iPad</a>}{config.apps.android && <a className="rs-button rs-button--outline" href={config.apps.android} target="_blank" rel="noreferrer">Android</a>}{config.apps.web && <a className="rs-button rs-button--outline" href={config.apps.web} target="_blank" rel="noreferrer">PC / Web</a>}</div>}
-          <div style={{display:'grid',gap:10,marginTop:12}}>{channels.map((channel) => <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità 5 · non condividere</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{channel.topic}</code></span><Button type="button" variant="outline" size="sm" onClick={() => copy(channel)}>Copia</Button></div>)}</div>
+          <div style={{display:'grid',gap:10,marginTop:12}}>{channels.map((channel) => {
+            const link=deepLink(channel)
+            return <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità {channel.priority || 5} · non condividere</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{channel.topic}</code></span><span style={{display:'flex',gap:6}}>{android&&link&&<a className="rs-button rs-button--outline rs-button--sm" href={link}>Apri</a>}<Button type="button" variant="outline" size="sm" onClick={() => copy(channel)}>Copia</Button></span></div>
+          })}</div>
           <div className="rs-op-card__actions" style={{marginTop:14}}><Button type="button" onClick={testAll} disabled={busy}>{verified?'Ripeti test notifiche':'Prova notifiche'}</Button><Button type="button" variant="ghost" onClick={disable} disabled={busy}>Nascondi configurazione</Button></div>
         </>}
         {!config && !error && <p>{busy ? 'Caricamento…' : 'Configurazione non disponibile.'}</p>}
