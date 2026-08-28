@@ -17,7 +17,10 @@ test('interventions notify only newly added assignees',()=>{
   assert.match(planned,/await notifyNewAssignees\(updated,currentApp\?\.assignees\|\|\[\]\)/)
 })
 
-test('assignment dispatcher targets the selected auth users on both channels',()=>{
+test('assignment dispatcher targets selected users and requires assign permission',()=>{
+  assert.match(dispatcher,/role_permissions/)
+  assert.match(dispatcher,/\.eq\("module","interventions"\)\.eq\("action","assign"\)/)
+  assert.match(dispatcher,/if\(!assignPermission\?\.allowed\)return json\(\{ok:false,error:"forbidden"\},403\)/)
   assert.match(dispatcher,/push_subscriptions/)
   assert.match(dispatcher,/\.in\("utente",recipientIds\)/)
   assert.match(dispatcher,/personalTopic\(hotelId,rid\)/)
