@@ -320,7 +320,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
           ))}
         </nav>
-        {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>}
+        {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => { if (insertAllowed.issue) { pickInsert('issue'); return } setInsertOpen(true) }} data-testid="fab-new" aria-label={insertAllowed.issue ? 'Nuova segnalazione' : 'Nuovo inserimento'}><Icon name="plus" /></button>}
       </div>
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} /></Suspense>}
