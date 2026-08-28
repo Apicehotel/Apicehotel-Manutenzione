@@ -76,8 +76,6 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
     catch (error) { setSaveError('Impossibile preparare la foto. Riprova o invia senza foto.'); operationFailed(error, 'Foto non disponibile') }
   }
 
-  // Suggerimento automatico dello Stato camera in base all'housekeeping di oggi
-  // (tabella camere_giorno / Slope): non forza nulla, resta sempre modificabile a mano.
   useEffect(() => {
     const room = draft.location.trim()
     if (mode !== 'camera' || !room) return
@@ -231,8 +229,12 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [techChoice, setTechChoice] = useState('')
   const [techNote, setTechNote] = useState(issue.technicianNote || '')
   const [confirmDel, setConfirmDel] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editDraft, setEditDraft] = useState(() => ({ room: issue.room || '', title: issue.title || '', urgency: issue.urgency || 'media', category: issue.category || 'Varie' }))
   const canComplete = canUser(user, 'issues', 'complete') || canUser(user, 'issues', 'take_charge')
   const canDelete = canUser(user, 'issues', 'delete')
+  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByName) && issue.createdByName === user?.name
+  const canEditDetails = canUser(user, 'issues', 'edit') || isOwnSupremoIssue
   const technicians = (users || []).filter((p) => p.role === 'Tecnico esterno')
   const meta = ISSUE_STATUS_META[issue.status] || {}
 
@@ -242,6 +244,16 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const confirmTech = () => { const t = technicians.find((p) => p.id === techChoice); if (!t) return; onUpdate(issue.id, { status: 'tecnico', technicianRequestedBy: user?.name, technicianId: t.id, technicianName: t.name, technicianPhone: t.phone || null }); onClose() }
   const pieceArrived = () => { onUpdate(issue.id, { status: 'todo' }); onClose() }
   const techDone = () => { onUpdate(issue.id, { status: 'done', completedBy: user?.name, completedAt: Date.now() }); onClose() }
+  const saveEdit = async () => {
+    if (!editDraft.room.trim() || !editDraft.title.trim()) return
+    await onUpdate(issue.id, {
+      room: editDraft.room.trim(),
+      title: editDraft.title.trim(),
+      urgency: editDraft.urgency,
+      category: editDraft.category,
+    })
+    onClose()
+  }
   const openWhatsApp = () => {
     const pageUrl = `${window.location.origin}/s/${issue.id}`
     window.open(technicianWaLink(issue, techNote.trim(), pageUrl), '_blank')
@@ -252,17 +264,43 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Badge tone={URGENCY_META[issue.urgency]?.tone}>{URGENCY_META[issue.urgency]?.label || issue.urgency}</Badge>
         <Badge tone={meta.tone}>{meta.label}</Badge>
-        {canDelete && <IconButton icon="trash" label="Elimina" style={{ marginLeft: 'auto' }} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
+        {canEditDetails && !editing && <Button size="sm" variant="ghost" style={{ marginLeft: 'auto' }} onClick={() => setEditing(true)}>Modifica</Button>}
+        {canDelete && <IconButton icon="trash" label="Elimina" style={{ marginLeft: canEditDetails ? 0 : 'auto' }} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
       </div>
-      <h2 className="rs-detail-room">{issue.room}</h2>
-      <p className="rs-detail-desc">{issue.title}</p>
-      <p className="rs-detail-origin">Da {issue.origin || 'App'}{issue.createdByName ? ` · ${issue.createdByName}` : ''} · {issue.date}</p>
-      <dl className="rs-meta-grid">
-        <div><dt>Reparto</dt><dd>{issue.department || '—'}</dd></div>
-        <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
-        {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
-      </dl>
-      {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
+      {editing ? (
+        <div className="rs-actions-stack">
+          <Field label="Camera o zona"><TextInput value={editDraft.room} onChange={(e) => setEditDraft((c) => ({ ...c, room: e.target.value }))} /></Field>
+          <Field label="Descrizione"><textarea className="rs-textarea" rows="4" value={editDraft.title} onChange={(e) => setEditDraft((c) => ({ ...c, title: e.target.value }))} /></Field>
+          <fieldset className="rs-fieldset">
+            <legend>Urgenza</legend>
+            <div className="rs-chips">
+              {[['alta', 'Alta', 'high'], ['media', 'Media', 'mid'], ['bassa', 'Bassa', 'low']].map(([k, l, t]) => (
+                <button type="button" key={k} className={`rs-chip ${editDraft.urgency === k ? `active ${t}` : ''}`} onClick={() => setEditDraft((c) => ({ ...c, urgency: k }))}>{l}</button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="rs-fieldset">
+            <legend>Categoria</legend>
+            <div className="rs-chips">
+              {ISSUE_CATEGORIES.map((item) => <button type="button" key={item} className={`rs-chip ${editDraft.category === item ? 'active' : ''}`} onClick={() => setEditDraft((c) => ({ ...c, category: item }))}>{item}</button>)}
+            </div>
+          </fieldset>
+          {isOwnSupremoIssue && <small className="rs-field__hint">Puoi correggere solo i dettagli delle manutenzioni create da te. Stato, assegnazioni e completamento restano in sola lettura.</small>}
+          <div className="rs-form-actions"><Button variant="ghost" onClick={() => setEditing(false)}>Annulla</Button><Button variant="primary" disabled={!editDraft.room.trim() || !editDraft.title.trim()} onClick={saveEdit}>Salva modifiche</Button></div>
+        </div>
+      ) : (
+        <>
+          <h2 className="rs-detail-room">{issue.room}</h2>
+          <p className="rs-detail-desc">{issue.title}</p>
+          <p className="rs-detail-origin">Da {issue.origin || 'App'}{issue.createdByName ? ` · ${issue.createdByName}` : ''} · {issue.date}</p>
+          <dl className="rs-meta-grid">
+            <div><dt>Reparto</dt><dd>{issue.department || '—'}</dd></div>
+            <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
+            {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
+          </dl>
+          {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
+        </>
+      )}
 
       {issue.status === 'tecnico' && (
         <div className="rs-note rs-note--tecnico">
@@ -410,9 +448,6 @@ export default function Issues({ user, hotel, users, createSignal }) {
   }, [issues, filter, search])
 
   const doUpdate = async (id, changes) => {
-    // Aggiornamento ottimistico: la lista mostra subito il nuovo stato (es. "Completata")
-    // senza aspettare l'upload della foto + il round-trip di rete, che restano comunque
-    // in corso in background e si riconciliano con reload() alla fine.
     setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i)))
     try { await updateIssueRow(id, { ...changes, hotelId: hotel.id }) } finally { reload() }
   }
