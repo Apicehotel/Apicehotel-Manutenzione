@@ -1,0 +1,37 @@
+name: Point 6 Draft Isolation Guard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/point6-followup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: python scripts/point6_followup.py
+      - run: |
+          npm test
+          npm run build
+          node scripts/check-bundle.mjs
+      - run: |
+          rm .github/workflows/point6-followup.yml
+          rm scripts/point6_followup.py
+          git config user.name "Apicehotel"
+          git config user.email "appmanutenzioneapice@gmail.com"
+          git add -A
+          git commit -m "fix: isolate resilient drafts per hotel"
+          git push origin main
