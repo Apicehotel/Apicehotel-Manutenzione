@@ -47,7 +47,7 @@ export async function fetchRolePermissionRows(){
 
 export async function saveRolePermission(role,module,action,allowed){
   if(!supabase)throw new Error('Supabase non disponibile')
-  if(role==='Supremo')throw new Error('Supremo ha una regola fissa: visualizza e inserisce soltanto')
+  if(role==='Supremo')throw new Error('Supremo ha una regola fissa: visualizza e inserisce; può correggere soltanto le manutenzioni create da lui')
   const{error}=await supabase.from('role_permissions').upsert({role,module,action,allowed,updated_at:new Date().toISOString()},{onConflict:'role,module,action'})
   if(error)throw error
   if(!live[role])live[role]={};if(!live[role][module])live[role][module]=new Set();if(allowed)live[role][module].add(action);else live[role][module].delete(action)
