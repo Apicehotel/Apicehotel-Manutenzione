@@ -1,0 +1,101 @@
+/* Compact operational presence status in the shared RandApp header. */
+.rs-header {
+  position: relative;
+}
+
+.rs-presence-trigger {
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--rs-text-2);
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: .78rem;
+  line-height: 1.1;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rs-presence-trigger__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.rs-presence-trigger[data-presence='in'] .rs-presence-trigger__dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34,197,94,.36);
+}
+
+.rs-presence-trigger:focus-visible {
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.rs-presence-choice {
+  width: 100%;
+  min-height: 68px;
+  border-radius: 16px;
+  border: 1px solid var(--rs-line);
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  font: inherit;
+}
+
+.rs-presence-choice + .rs-presence-choice { margin-top: 10px; }
+.rs-presence-choice__dot { width: 10px; height: 10px; border-radius: 999px; background: #f59e0b; }
+.rs-presence-choice--in .rs-presence-choice__dot { background: #22c55e; }
+.rs-presence-choice strong { display: block; font-size: .98rem; }
+.rs-presence-choice small { display: block; margin-top: 3px; color: var(--rs-text-2); font-size: .82rem; }
+.rs-presence-choice__check {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid var(--rs-line);
+  display: grid;
+  place-items: center;
+  color: transparent;
+}
+.rs-presence-choice.selected .rs-presence-choice__check {
+  border-color: var(--rs-accent);
+  background: var(--rs-accent);
+  color: white;
+}
+
+/* On phones the status reads as a secondary line belonging to the hotel identity. */
+@media (max-width: 760px) {
+  .rs-header > div:last-child {
+    position: relative;
+    gap: 4px !important;
+  }
+  .rs-header .rs-presence-trigger {
+    position: absolute;
+    right: 62px;
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 112px;
+  }
+  .rs-header-notify { margin-left: 116px; }
+}
+
+@media (max-width: 430px) {
+  .rs-header .rs-presence-trigger {
+    right: 56px;
+    max-width: 92px;
+    font-size: .72rem;
+  }
+  .rs-header-notify { margin-left: 96px; }
+}
