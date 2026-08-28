@@ -21,8 +21,10 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json().catch(()=>({}));
   const hotelId=String(body?.hotel_id||"").trim();const interventionId=String(body?.intervention_id||"").trim();
   if(!hotelId||!interventionId)return json({ok:false,error:"hotel_and_intervention_required"},400);
-  const {data:caller}=await admin.from("hotel_memberships").select("active").eq("auth_user_id",userData.user.id).eq("hotel_id",hotelId).maybeSingle();
+  const {data:caller}=await admin.from("hotel_memberships").select("role,active").eq("auth_user_id",userData.user.id).eq("hotel_id",hotelId).maybeSingle();
   if(!caller?.active)return json({ok:false,error:"forbidden"},403);
+  const {data:assignPermission}=await admin.from("role_permissions").select("allowed").eq("role",caller.role).eq("module","interventions").eq("action","assign").maybeSingle();
+  if(!assignPermission?.allowed)return json({ok:false,error:"forbidden"},403);
   const {data:item}=await admin.from("interventi").select("id,hotel_id,sezione,camera,categoria,note,assegnatari,programmato_dal").eq("id",interventionId).eq("hotel_id",hotelId).maybeSingle();
   if(!item||item.sezione!=="intervento")return json({ok:false,error:"intervention_not_found"},404);
   const assigned=ids(item.assegnatari);const requested=ids(body?.assignee_ids);const targets=requested.length?requested.filter(id=>assigned.includes(id)):assigned;
