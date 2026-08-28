@@ -6,6 +6,7 @@ const planned=fs.readFileSync(new URL('../src/planned-data.js',import.meta.url),
 const dispatcher=fs.readFileSync(new URL('../supabase/functions/assignment-notify/index.ts',import.meta.url),'utf8')
 const ntfyConfig=fs.readFileSync(new URL('../supabase/functions/ntfy-config/index.ts',import.meta.url),'utf8')
 const ntfyAlert=fs.readFileSync(new URL('../supabase/functions/ntfy-alert/index.ts',import.meta.url),'utf8')
+const urgentWorker=fs.readFileSync(new URL('../supabase/functions/urgent-reminder-worker/index.ts',import.meta.url),'utf8')
 const inboxData=fs.readFileSync(new URL('../src/randapp/notifications/notification-data.js',import.meta.url),'utf8')
 const inboxUi=fs.readFileSync(new URL('../src/randapp/notifications/NotificationInbox.jsx',import.meta.url),'utf8')
 
@@ -58,7 +59,14 @@ test('ntfy exposes and tests one private assignment channel per user',()=>{
   assert.match(ntfyConfig,/personalTopic\(hotelId,userData\.user\.id\)/)
   assert.match(ntfyAlert,/channel==="assignments"/)
   assert.match(ntfyAlert,/TEST Interventi/)
-  assert.match(ntfyAlert,/priority:assignments\?4:5/)
+})
+
+test('ntfy priority 5 is reserved for genuine urgent alerts',()=>{
+  assert.match(ntfyAlert,/const priority=test\?3:assignments\?4:reminders\?3:housekeeping\?3:5/)
+  assert.match(ntfyAlert,/status:"sent".*test,channel,priority/)
+  assert.match(urgentWorker,/priority:5/)
+  assert.match(urgentWorker,/tags:\["rotating_light","warning"\]/)
+  assert.match(dispatcher,/priority:4/)
 })
 
 test('notification failure never rolls back the saved intervention',()=>{
