@@ -1,9 +1,11 @@
+import { canUser } from '../../permissions.js'
+
 export const SHIFTS={mattina:'Mattina',pomeriggio:'Pomeriggio',tutto_giorno:'Giornata intera'}
 export const WD=['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
 export const GROUPS=['trumpet','sax','auditorium']
 export const norm=(v='')=>String(v).trim().toLocaleLowerCase('it')
-export const canManageSalePlanning=(user)=>norm(user?.role)==='direttore centro congressi'
-export const canOperateSalePlanning=(user)=>canManageSalePlanning(user)||norm(user?.role)==='manutentore'
+export const canManageSalePlanning=(user)=>canUser(user,'planning_sale','manage')||canUser(user,'planning_sale','edit')||canUser(user,'planning_sale','delete')
+export const canOperateSalePlanning=(user)=>canUser(user,'planning_sale','view')
 export const iso=(value=new Date())=>{const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 export const addDays=(value,n)=>{const d=new Date(value);d.setDate(d.getDate()+n);return d}
 export const parseIso=(value)=>new Date(`${value}T12:00:00`)
