@@ -2,191 +2,37 @@ name: Point 4 performance once
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   refactor:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Apply performance refactor
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          import re
-
-          shell = Path('src/randapp/Shell.jsx')
-          s = shell.read_text()
-          s = s.replace("import { useCallback, useEffect, useMemo, useState } from 'react'", "import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'")
-          s = s.replace("import { Icon, IconButton, Sheet, EmptyState, UiSizeControl, ThemeControl } from './ui.jsx'", "import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'")
-
-          remove_imports = [
-            "import Issues from './Issues.jsx'\n",
-            "import Settings from './Settings.jsx'\n",
-            "import Profile from './Profile.jsx'\n",
-            "import PlanningHub from './PlanningHub.jsx'\n",
-            "import RemindersView from './reminders/RemindersView.jsx'\n",
-            "import NotificationInbox from './notifications/NotificationInbox.jsx'\n",
-            "import InsertLauncher from './InsertLauncher.jsx'\n",
-            "import UrgentCreateSheet from './UrgentCreateSheet.jsx'\n",
-            "import InterventionsView from './operations/InterventionsView.jsx'\n",
-            "import UrgentView from './operations/UrgentView.jsx'\n",
-            "import MyWorkView from './operations/MyWorkView.jsx'\n",
-          ]
-          for imp in remove_imports:
-            s = s.replace(imp, '')
-          s = re.sub(r"import \{\n  TemperatureView, HousekeepingView, TechnicianDirectoryView,\n  FeedbackView, PinView, ManualView,\n\} from './operations/UtilityViews\.jsx'\n", '', s)
-
-          marker = "import './header-mobile.css'\n"
-          lazy_defs = r'''
-
-const Settings = lazy(() => import('./Settings.jsx'))
-const Issues = lazy(() => import('./Issues.jsx'))
-const Profile = lazy(() => import('./Profile.jsx'))
-const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
-const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
-const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
-const InsertLauncher = lazy(() => import('./InsertLauncher.jsx'))
-const UrgentCreateSheet = lazy(() => import('./UrgentCreateSheet.jsx'))
-const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
-const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
-const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
-const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
-  default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
-})))
-const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
-  default: ({ hotel, user }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
-})))
-const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
-const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
-const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
-const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
-
-const ViewFallback = () => <Spinner label="Carico sezione…" />
-'''
-          if lazy_defs.strip() not in s:
-            s = s.replace(marker, marker + lazy_defs)
-
-          s = s.replace("if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} />", "if (settings !== null) return <Suspense fallback={<ViewFallback />}><Settings initialTab={settings} onExit={() => setSettings(null)} /></Suspense>")
-          s = s.replace('<main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts />{renderView()}</main>', '<main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>')
-          s = s.replace('<InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} />', '{insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} /></Suspense>}')
-          s = s.replace('<UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed(\'urgent\')) setView(\'urgent\') }} />', "{urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} /></Suspense>}")
-          s = s.replace('<NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed(\'urgent\')} canManageReminders={viewAllowed(\'reminders\')} onOpenUrgent={() => { setNotificationsOpen(false); setView(\'urgent\') }} onOpenReminders={() => { setNotificationsOpen(false); setView(\'reminders\') }} />', "<Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setView('reminders') }} /></Suspense>")
-          shell.write_text(s)
-
-          src = Path('src/randapp/operations/UtilityViews.jsx').read_text()
-          light = src.replace("import { TemperatureSensors } from '../../temperature.jsx'\n", '').replace("import { Housekeeping } from '../../housekeeping.jsx'\n", '')
-          light = re.sub(r"export function TemperatureView\([^\n]+\n", '', light)
-          light = re.sub(r"export function HousekeepingView\([^\n]+\n", '', light)
-          Path('src/randapp/operations/UtilityLightViews.jsx').write_text(light)
-
-          vite = Path('vite.config.js')
-          v = vite.read_text()
-          if 'manifest: true' not in v:
-            v = v.replace("  plugins: [react()],\n", "  plugins: [react()],\n  build: { manifest: true },\n")
-          vite.write_text(v)
-
-          Path('scripts').mkdir(exist_ok=True)
-          Path('scripts/check-bundle.mjs').write_text(r'''import { readFile, stat } from 'node:fs/promises'
-import path from 'node:path'
-
-const manifest = JSON.parse(await readFile('dist/.vite/manifest.json', 'utf8'))
-const entry = Object.values(manifest).find((item) => item.isEntry)
-if (!entry) throw new Error('Vite manifest: entry chunk non trovato')
-
-const visited = new Set()
-const byFile = new Map(Object.values(manifest).map((item) => [item.file, item]))
-let total = 0
-async function addStatic(file) {
-  if (!file || visited.has(file)) return
-  visited.add(file)
-  const item = byFile.get(file)
-  const size = (await stat(path.join('dist', file))).size
-  total += size
-  for (const imported of item?.imports || []) {
-    const dep = manifest[imported]
-    if (dep?.file) await addStatic(dep.file)
-  }
-}
-await addStatic(entry.file)
-const limit = 700 * 1024
-console.log(`Initial JS: ${(total / 1024).toFixed(1)} KiB across ${visited.size} static chunk(s) (budget ${(limit / 1024).toFixed(0)} KiB)`)
-if (total > limit) throw new Error(`Initial JS bundle oltre budget: ${total} > ${limit}`)
-
-const xlsx = Object.values(manifest).find((item) => String(item.src || '').includes('xlsx') || String(item.file || '').includes('xlsx'))
-if (xlsx && visited.has(xlsx.file)) throw new Error('xlsx è finito nel percorso JS iniziale')
-''')
-
-          ci = Path('.github/workflows/ci.yml')
-          c = ci.read_text()
-          if 'Bundle budget' not in c:
-            c = c.replace("      - name: Unit tests\n", "      - name: Bundle budget\n        run: node scripts/check-bundle.mjs\n\n      - name: Unit tests\n")
-          ci.write_text(c)
-
-          perf = Path('test/performance-architecture.test.js')
-          perf.write_text(r'''import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import test from 'node:test'
-
-const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-
-test('heavy RandApp views are route-lazy while Home stays immediate', async () => {
-  const shell = await source('src/randapp/Shell.jsx')
-  assert.match(shell, /import \{ lazy, Suspense,/)
-  assert.match(shell, /import Home from '\.\/Home\.jsx'/)
-  for (const path of [
-    './Issues.jsx','./Settings.jsx','./Profile.jsx','./PlanningHub.jsx',
-    './reminders/RemindersView.jsx','./notifications/NotificationInbox.jsx',
-    './operations/InterventionsView.jsx','./operations/UrgentView.jsx','./operations/MyWorkView.jsx',
-  ]) assert.match(shell, new RegExp(`lazy\\(\\(\\) => import\\('${path.replaceAll('.', '\\.').replaceAll('/', '\\/')}'\\)`))
-  assert.doesNotMatch(shell, /import Issues from/)
-  assert.match(shell, /<Suspense fallback=\{<ViewFallback \/>\}>\{renderView\(\)\}<\/Suspense>/)
-})
-
-test('Housekeeping and spreadsheet code stay outside initial route graph', async () => {
-  const [shell, report, vite] = await Promise.all([
-    source('src/randapp/Shell.jsx'),
-    source('src/housekeeping-report.js'),
-    source('vite.config.js'),
-  ])
-  assert.match(shell, /lazy\(\(\) => import\('\.\.\/housekeeping\.jsx'\)/)
-  assert.match(report, /await import\('xlsx'\)/)
-  assert.doesNotMatch(report, /^import .* from 'xlsx'/m)
-  assert.match(vite, /manifest: true/)
-})
-
-test('utility routes no longer pull Housekeeping and Temperature together', async () => {
-  const light = await source('src/randapp/operations/UtilityLightViews.jsx')
-  assert.doesNotMatch(light, /housekeeping\.jsx|temperature\.jsx|HousekeepingView|TemperatureView/)
-  assert.match(light, /TechnicianDirectoryView/)
-  assert.match(light, /FeedbackView/)
-  assert.match(light, /PinView/)
-  assert.match(light, /ManualView/)
-})
-''')
-          PY
-      - name: Validate locally in workflow
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply refactor
+        run: node scripts/apply-point4.mjs
+      - name: Validate
         run: |
           npm ci
           npm run build
           node scripts/check-bundle.mjs
           npm test
-      - name: Commit refactor
+      - name: Commit
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/randapp/Shell.jsx src/randapp/operations/UtilityLightViews.jsx vite.config.js scripts/check-bundle.mjs test/performance-architecture.test.js .github/workflows/ci.yml
-          git commit -m 'perf: lazy load heavy RandApp features'
-          git push
-      - name: Remove one-shot workflow
-        run: |
-          git pull --rebase
-          git rm .github/workflows/point4-performance-once.yml
-          git commit -m 'chore: remove point 4 migration workflow'
+          git commit -m "perf: lazy load heavy RandApp features"
           git push
