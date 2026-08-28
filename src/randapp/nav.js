@@ -45,8 +45,8 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'admin', label: 'Amministrazione', items: [
         { id: 'admin-users', icon: 'users', label: 'Utenti', show: canUser(user, 'users', 'manage') },
         { id: 'admin-navigation', icon: 'sliders', label: 'Ruoli e permessi', show: canUser(user, 'role_permissions', 'manage') },
-        { id: 'admin-sensors', icon: 'sensor', label: 'Sensori', show: canUser(user, 'app_settings', 'manage') },
-        { id: 'admin-usage', icon: 'activity', label: 'Consumi', show: canUser(user, 'app_settings', 'manage') },
+        { id: 'admin-sensors', icon: 'sensor', label: 'Sensori', show: canUser(user, 'sensors', 'manage') },
+        { id: 'admin-usage', icon: 'activity', label: 'Consumi', show: canUser(user, 'usage', 'view') },
       ],
     },
   ]
