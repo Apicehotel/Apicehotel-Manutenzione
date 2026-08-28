@@ -35,6 +35,12 @@ export default class AppErrorBoundary extends Component {
             {String(this.state.error?.message || this.state.error)}
           </pre>
           <button
+            onClick={() => this.setState({ error: null })}
+            style={{ padding: '10px 18px', marginRight: 8, borderRadius: 10, border: '1px solid #0e5c49', background: 'transparent', color: '#0e5c49', fontWeight: 700 }}
+          >
+            Riprova
+          </button>
+          <button
             onClick={() => window.location.reload()}
             style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: '#0e5c49', color: '#fff', fontWeight: 700 }}
           >

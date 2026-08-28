@@ -189,6 +189,28 @@ export default function App() {
     return () => window.removeEventListener(EVENT, onChange)
   }, [])
 
+  useEffect(() => {
+    if (!session) return undefined
+    let active = true
+    const validate = async () => {
+      if (!navigator.onLine) return
+      try {
+        const { validateSupabaseSession } = await import('../auth-data.js')
+        const result = await validateSupabaseSession()
+        if (active && !result.valid) {
+          clearSession()
+          setPending(null)
+          setSession(null)
+        }
+      } catch (error) {
+        console.warn('Controllo sessione rimandato', error)
+      }
+    }
+    validate()
+    window.addEventListener('online', validate)
+    return () => { active = false; window.removeEventListener('online', validate) }
+  }, [session?.hotelId, session?.userId])
+
   const onAuthenticated = ({ user, userId, allowedHotels, workedHotel }) => {
     if (allowedHotels.length <= 1) {
       saveSession({ hotelId: allowedHotels[0] || workedHotel, userId, createdAt: Date.now() })

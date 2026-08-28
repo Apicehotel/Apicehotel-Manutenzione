@@ -3,6 +3,8 @@ import { insertPlanned } from '../planned-data.js'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { fetchDirectory } from '../users-data.js'
 import { Button, Field, Icon, Sheet, TextInput } from './ui.jsx'
+import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
+import { operationFailed } from '../operation-feedback.js'
 
 const CATEGORIES = [
   ['Idraulico', 'droplet'], ['Elettrico', 'zap'], ['Climatizzazione', 'wind'],
@@ -60,16 +62,24 @@ function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, er
 export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel?.id]
   const [directory, setDirectory] = useState([])
-  const [mode, setMode] = useState('camera')
-  const [location, setLocation] = useState('')
-  const [category, setCategory] = useState('Varie')
-  const [notes, setNotes] = useState('')
-  const [scheduledAt, setScheduledAt] = useState('')
-  const [scheduledUntil, setScheduledUntil] = useState('')
-  const [assignees, setAssignees] = useState([])
-  const [selectedFloorIds, setSelectedFloorIds] = useState([])
+  const draftOwner = user?.auth_user_id || user?.legacy_id || user?.id || user?.name || 'anonymous'
+  const restoredDraft = useMemo(() => loadDraft('planned-work', hotel?.id, draftOwner), [hotel?.id, draftOwner])
+  const [mode, setMode] = useState(restoredDraft?.mode || 'camera')
+  const [location, setLocation] = useState(restoredDraft?.location || '')
+  const [category, setCategory] = useState(restoredDraft?.category || 'Varie')
+  const [notes, setNotes] = useState(restoredDraft?.notes || '')
+  const [scheduledAt, setScheduledAt] = useState(restoredDraft?.scheduledAt || '')
+  const [scheduledUntil, setScheduledUntil] = useState(restoredDraft?.scheduledUntil || '')
+  const [assignees, setAssignees] = useState(restoredDraft?.assignees || [])
+  const [selectedFloorIds, setSelectedFloorIds] = useState(restoredDraft?.selectedFloorIds || [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open || !hotel?.id) return undefined
+    const timer = window.setTimeout(() => saveDraft('planned-work', hotel.id, draftOwner, { mode, location, category, notes, scheduledAt, scheduledUntil, assignees, selectedFloorIds }), 250)
+    return () => window.clearTimeout(timer)
+  }, [open, hotel?.id, draftOwner, mode, location, category, notes, scheduledAt, scheduledUntil, assignees, selectedFloorIds])
 
   useEffect(() => {
     if (!open || !hotel?.id) return
@@ -122,7 +132,7 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
     setMode('camera'); setLocation(''); setCategory('Varie'); setNotes(''); setScheduledAt(''); setScheduledUntil('')
     setAssignees([]); setSelectedFloorIds([]); setError('')
   }
-  const close = () => { reset(); onClose?.() }
+  const close = () => { onClose?.() }
   const chooseCategory = (next) => {
     setCategory(next); setSelectedFloorIds([])
     if (['Pulizia filtri', 'Idromassaggio', 'Extra Piani'].includes(next)) setLocation('')
@@ -145,8 +155,8 @@ export default function PlannedCreateSheet({ open, onClose, hotel, user, onSaved
         rooms: (isChecklist || isExtraFloors) ? checklistRooms : null, roomsDone: {}, roomGroupIds: selectedFloorIds,
         status: 'pending', createdBy: user?.name || '',
       })
-      reset(); onSaved?.(); onClose?.()
-    } catch (err) { setError(err?.message || 'Salvataggio non riuscito, riprova') }
+      clearDraft('planned-work', hotel.id, draftOwner); reset(); onSaved?.(); onClose?.()
+    } catch (err) { setError('Salvataggio non riuscito. La bozza resta sul dispositivo: riprova.'); operationFailed(err, 'Intervento non pianificato') }
     finally { setSaving(false) }
   }
 

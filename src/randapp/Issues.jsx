@@ -5,6 +5,8 @@ import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssu
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 import { canUser } from '../permissions.js'
+import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
+import { operationFailed } from '../operation-feedback.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -49,14 +51,24 @@ function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, er
 const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel.id]
   const photoInputRef = useRef(null)
-  const [mode, setMode] = useState('camera')
-  const [draft, setDraft] = useState({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null })
+  const draftOwner = user?.auth_user_id || user?.legacy_id || user?.id || user?.name || 'anonymous'
+  const restoredDraft = useMemo(() => loadDraft('issue', hotel.id, draftOwner), [hotel.id, draftOwner])
+  const [mode, setMode] = useState(restoredDraft?.mode || 'camera')
+  const [draft, setDraft] = useState(() => ({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null, ...(restoredDraft?.draft || {}) }))
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [roomStatusSuggested, setRoomStatusSuggested] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => saveDraft('issue', hotel.id, draftOwner, { mode, draft }), 250)
+    return () => window.clearTimeout(timer)
+  }, [hotel.id, draftOwner, mode, draft])
   const validLocation = mode === 'camera'
     ? catalog.roomGroups.some((g) => g.rooms.includes(draft.location.trim()))
     : catalog.zones.some((z) => z.name === draft.location.trim())
-  const pickPhoto = async (file) => { const photoData = await compressPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })) }
+  const pickPhoto = async (file) => {
+    try { const photoData = await compressPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })); setSaveError('') }
+    catch (error) { setSaveError('Impossibile preparare la foto. Riprova o invia senza foto.'); operationFailed(error, 'Foto non disponibile') }
+  }
 
   // Suggerimento automatico dello Stato camera in base all'housekeeping di oggi
   // (tabella camere_giorno / Slope): non forza nulla, resta sempre modificabile a mano.
@@ -93,8 +105,17 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
       photoData: draft.photoData,
       roomStatus: mode === 'camera' ? draft.roomStatus : null,
     }
-    try { await insertIssue(issue); onSaved() }
-    catch (err) { console.warn(err); setSaving(false) }
+    try {
+      await insertIssue(issue)
+      clearDraft('issue', hotel.id, draftOwner)
+      setSaveError('')
+      onSaved()
+    } catch (err) {
+      console.warn(err)
+      setSaveError(navigator.onLine ? 'Invio non riuscito. La bozza resta salvata: puoi riprovare.' : 'Sei offline. La bozza resta salvata sul dispositivo: puoi riprovare quando torna la rete.')
+      operationFailed(err, 'Segnalazione non inviata')
+      setSaving(false)
+    }
   }
 
   return (
@@ -151,6 +172,8 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
           <button type="button" className="rs-photo-remove" aria-label="Rimuovi foto" onClick={() => setDraft((c) => ({ ...c, photoData: null, photoName: '' }))}><Icon name="close" /></button>
         </div>
       )}
+      {saveError && <p className="rs-error" role="alert" data-testid="issue-save-error">{saveError}</p>}
+      {restoredDraft && !saveError && <small className="rs-field__hint">Bozza precedente ripristinata automaticamente.</small>}
       <div className="rs-form-actions">
         <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
         <Button variant="primary" icon="plus" disabled={!validLocation || !draft.title.trim() || saving} data-testid="submit-issue">{saving ? 'Invio…' : 'Invia segnalazione'}</Button>
