@@ -1,0 +1,69 @@
+/* Presence: compact, cross-platform status control.
+   Visual dot stays small; hit target stays >=44px for iOS/Android accessibility. */
+.rs-presence-dot-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  display: inline-grid;
+  place-items: center;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color .16s ease, transform .12s ease, opacity .16s ease;
+}
+
+.rs-presence-dot-button:hover { background: color-mix(in srgb, var(--rs-accent) 8%, transparent); }
+.rs-presence-dot-button:active { transform: scale(.94); }
+.rs-presence-dot-button:focus-visible { outline: 2px solid var(--rs-accent); outline-offset: 2px; }
+.rs-presence-dot-button:disabled { cursor: wait; opacity: .55; }
+
+.rs-presence-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,.12);
+  transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.rs-presence-dot-button[data-presence='in'] .rs-presence-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+}
+
+.rs-presence-dot-button:disabled .rs-presence-dot { transform: scale(.82); }
+
+.rs-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0,0,0,0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Keep dot visually close to the hotel selector without crowding the bell. */
+.rs-header > div:has(.rs-presence-dot-button) { gap: 4px !important; }
+
+@media (max-width: 430px) {
+  .rs-presence-dot-button {
+    width: 40px;
+    height: 44px;
+    min-width: 40px;
+  }
+  .rs-presence-dot { width: 11px; height: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-presence-dot-button,
+  .rs-presence-dot { transition: none; }
+}
