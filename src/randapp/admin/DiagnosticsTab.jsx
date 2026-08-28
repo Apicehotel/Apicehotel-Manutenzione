@@ -11,7 +11,7 @@ const fmtBytes = (value = 0) => {
   const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1)
   return `${(n / (1024 ** i)).toFixed(i ? 1 : 0)} ${units[i]}`
 }
-const statusTone = (ok) => ok ? 'success' : 'danger'
+const statusTone = (ok) => ok ? 'done' : 'high'
 const statusText = (ok) => ok ? 'OK' : 'Problema'
 const checkOk = (check) => Boolean(check?.ok)
 
@@ -116,7 +116,7 @@ export default function DiagnosticsTab() {
       <div className="rs-diag-section-head"><h3>Eventi recenti</h3><small>{events.length} registrati</small></div>
       {!events.length ? <EmptyState icon="check" title="Nessun errore registrato">Non risultano errori recenti accessibili per questa struttura.</EmptyState> : events.map((event) => (
         <Card key={event.id} className="rs-diag-event">
-          <div className="rs-diag-event__top"><Badge tone={event.severity === 'fatal' || event.severity === 'error' ? 'danger' : 'warning'}>{event.severity}</Badge><small>{eventLabel(event)}</small></div>
+          <div className="rs-diag-event__top"><Badge tone={event.severity === 'fatal' || event.severity === 'error' ? 'high' : 'waiting'}>{event.severity}</Badge><small>{eventLabel(event)}</small></div>
           <strong>{event.message}</strong>
           <p>{event.kind} · {event.route || '—'} · build {event.app_build || '—'}</p>
           {event.detail && <details><summary>Dettagli tecnici</summary><pre>{event.detail}</pre></details>}
