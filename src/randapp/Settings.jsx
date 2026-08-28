@@ -22,10 +22,13 @@ export default function Settings({initialTab='users',onExit}){
   return <div className="rs-root"><div className="rs-app">
     <header className="rs-settings-head">
       <div className="rs-settings-head__brand"><Icon name="gear"/><div><b>Impostazioni</b><small>RandApp Manutenzione</small></div></div>
-      <IconButton icon="wrench" label="Diagnostica" onClick={()=>setTab('diagnostics')} />
-      <Button variant="ghost" size="sm" icon="logout" onClick={onExit}>Esci</Button>
+      <IconButton icon="wrench" label="Diagnostica" onClick={()=>setTab('diagnostics')} aria-pressed={tab==='diagnostics'} />
+      <Button type="button" variant="ghost" size="sm" icon="logout" onClick={onExit}>Esci</Button>
     </header>
-    <main className="rs-content"><ActiveTab/></main>
-    <nav className="rs-settings-nav">{TABS.map(t=><button key={t.id} className={`rs-navbtn ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}><Icon name={t.icon}/><small>{t.label}</small></button>)}<button className="rs-navbtn" onClick={onExit}><Icon name="home"/><small>RandApp</small></button></nav>
+    <main className="rs-content" id="settings-panel"><ActiveTab/></main>
+    <nav className="rs-settings-nav" aria-label="Sezioni impostazioni">
+      {TABS.map(t=><button type="button" key={t.id} className={`rs-navbtn ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)} aria-current={tab===t.id?'page':undefined} aria-controls="settings-panel"><Icon name={t.icon}/><small>{t.label}</small></button>)}
+      <button type="button" className="rs-navbtn" onClick={onExit}><Icon name="home"/><small>RandApp</small></button>
+    </nav>
   </div></div>
 }
