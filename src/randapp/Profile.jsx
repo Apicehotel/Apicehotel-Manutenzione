@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { changeOwnPin, updateOwnProfile } from '../auth-data.js'
+import { changeOwnPin, getOwnNotificationCode, saveOwnNotificationCode, updateOwnProfile } from '../auth-data.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { hotelById, logoFor } from './helpers.js'
+import { buildNotificationAlias, normalizeNotificationCode } from './notification-alias.js'
 import NtfySetup from './ntfy/NtfySetup.jsx'
 
 function Row({ label, value }) {
@@ -20,8 +21,22 @@ export default function Profile({ user, hotel }) {
   const [pinBusy,setPinBusy]=useState(false)
   const [pinMessage,setPinMessage]=useState('')
   const [pinError,setPinError]=useState('')
+  const [notificationCode,setNotificationCode]=useState('')
+  const [savedNotificationCode,setSavedNotificationCode]=useState('')
+  const [notificationBusy,setNotificationBusy]=useState(true)
+  const [notificationMessage,setNotificationMessage]=useState('')
+  const [notificationError,setNotificationError]=useState('')
 
   useEffect(()=>{ setEmail(user?.email||''); setPhone(user?.phone||'') },[user])
+  useEffect(()=>{
+    let live=true
+    setNotificationBusy(true); setNotificationError('')
+    getOwnNotificationCode()
+      .then((code)=>{ if(!live)return; setNotificationCode(code); setSavedNotificationCode(code) })
+      .catch((err)=>{ if(live)setNotificationError(err?.message||'Codice notifiche non disponibile') })
+      .finally(()=>{ if(live)setNotificationBusy(false) })
+    return()=>{ live=false }
+  },[user?.auth_user_id,user?.id])
 
   const accessibleHotelNames = Array.from(new Set([hotel?.id, ...(user?.hotels || [])]))
     .filter(Boolean)
@@ -46,6 +61,18 @@ export default function Profile({ user, hotel }) {
       setCurrentPin(''); setNewPin(''); setConfirmPin(''); setPinMessage('PIN aggiornato correttamente.')
     } catch(err){ setPinError(err?.message||'Cambio PIN non riuscito') }
     finally { setPinBusy(false) }
+  }
+
+  const saveNotificationCode=async(e)=>{
+    e.preventDefault(); setNotificationMessage(''); setNotificationError('')
+    if(notificationCode.length!==6){ setNotificationError('Scegli esattamente 6 cifre.'); return }
+    setNotificationBusy(true)
+    try {
+      const code=await saveOwnNotificationCode(notificationCode)
+      setNotificationCode(code); setSavedNotificationCode(code)
+      setNotificationMessage('Codice notifiche salvato ✓ Vale per tutte le tue strutture.')
+    } catch(err){ setNotificationError(err?.message||'Salvataggio codice non riuscito') }
+    finally { setNotificationBusy(false) }
   }
 
   return <div data-testid="profile-view">
@@ -98,6 +125,22 @@ export default function Profile({ user, hotel }) {
       </Card>
     </section>
 
-    <NtfySetup hotelId={hotel?.id} />
+    <section className="rs-section" data-testid="notification-code">
+      <div className="rs-section__head"><h2>Codice notifiche</h2>{savedNotificationCode&&<span className="rs-badge rs-badge--accent">Configurato ✓</span>}</div>
+      <Card className="rs-card--pad">
+        <p className="rs-ntfy-intro">Scegli 6 cifre personali. Sono solo un identificativo leggibile: non sono il PIN e non vengono usate come chiave di sicurezza. Lo stesso codice vale per Giò, Choco e Brigantino.</p>
+        <form className="rs-migrated-form" onSubmit={saveNotificationCode}>
+          <Field label="Le tue 6 cifre"><TextInput icon="bell" value={notificationCode} inputMode="numeric" autoComplete="off" placeholder="Es. 482710" onChange={e=>setNotificationCode(normalizeNotificationCode(e.target.value))} /></Field>
+          {notificationCode.length===6&&hotel?.id&&<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {['urgent','reminders','assignments'].map((id)=><code key={id} className="rs-badge">{buildNotificationAlias(hotel.id,id,notificationCode)}</code>)}
+          </div>}
+          <small>Formato: HOTEL-TIPO-CODICE · AV avvisi · PR promemoria · IP interventi personali.</small>
+          {notificationError&&<p className="rs-error" role="alert">{notificationError}</p>}{notificationMessage&&<p className="rs-success" role="status">{notificationMessage}</p>}
+          <Button type="submit" disabled={notificationBusy||notificationCode.length!==6||notificationCode===savedNotificationCode}>{notificationBusy?'Salvo…':savedNotificationCode?'Aggiorna codice':'Salva codice'}</Button>
+        </form>
+      </Card>
+    </section>
+
+    <NtfySetup hotelId={hotel?.id} notificationCode={savedNotificationCode} />
   </div>
 }

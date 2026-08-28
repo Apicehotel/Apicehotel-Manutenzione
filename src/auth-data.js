@@ -18,6 +18,23 @@ export async function loginWithPin({ hotelId, userId, pin }) { if (!supabase) th
 export async function loginAdmin(pin) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-gate', { body: { pin } }); if (error) throw error; return setReturnedSession(data) }
 export async function changeOwnPin({ currentPin, newPin }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { current_pin: currentPin, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function updateOwnProfile({ email, phone, phoneCountryCode }) { if (!supabase) throw new Error('Supabase non configurato'); const body = {}; if (email !== undefined) body.email = email; if (phone !== undefined) body.phone = phone; if (phoneCountryCode !== undefined) body.phone_country_code = phoneCountryCode; const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'update_profile', ...body } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
+export async function getOwnNotificationCode() {
+  if (!supabase) throw new Error('Supabase non configurato')
+  const { data, error } = await supabase.from('user_notification_codes').select('code').maybeSingle()
+  if (error) throw error
+  return data?.code || ''
+}
+export async function saveOwnNotificationCode(code) {
+  if (!supabase) throw new Error('Supabase non configurato')
+  const normalized = String(code || '').replace(/\D/g, '').slice(0, 6)
+  if (!/^\d{6}$/.test(normalized)) throw new Error('Il codice notifiche deve contenere esattamente 6 cifre.')
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData?.user?.id) throw userError || new Error('Sessione non valida')
+  const { data, error } = await supabase.from('user_notification_codes').upsert({ auth_user_id: userData.user.id, code: normalized, updated_at: new Date().toISOString() }, { onConflict: 'auth_user_id' }).select('code').single()
+  if (error?.code === '23505') throw new Error('Questo codice è già stato scelto da un altro operatore. Scegline un altro.')
+  if (error) throw error
+  return data?.code || normalized
+}
 export async function setOwnPresence(present) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'set_presence', present: Boolean(present) } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }

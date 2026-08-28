@@ -19,6 +19,7 @@ const critical = [
   'test/intervention-assignment-notifications.test.js',
   'test/push-multihotel.test.js',
   'test/ntfy-profile.test.js',
+  'test/notification-alias.test.js',
   'test/pwa.test.js',
   'test/weather-data.test.js',
 ]

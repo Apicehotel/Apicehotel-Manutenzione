@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Icon } from '../ui.jsx'
+import { buildNotificationAlias } from '../notification-alias.js'
 import { ENABLE_PREFIX, VERIFIED_PREFIX, friendlyNtfyError, getStore, invokeNtfy, setStore } from './ntfy-client.js'
 
 const channelIcon = (id) => id === 'urgent' ? 'warning' : id === 'housekeeping' ? 'housekeeping' : id === 'assignments' ? 'wrench' : 'bell'
 
-export default function NtfySetup({ hotelId }) {
+export default function NtfySetup({ hotelId, notificationCode='' }) {
   const enabledKey = useMemo(() => `${ENABLE_PREFIX}${hotelId}`, [hotelId])
   const verifiedKey = useMemo(() => `${VERIFIED_PREFIX}${hotelId}`, [hotelId])
   const [enabled, setEnabled] = useState(() => getStore(enabledKey) === '1')
@@ -22,10 +23,10 @@ export default function NtfySetup({ hotelId }) {
     setConfig(null)
     setStatus('')
     setError('')
-  }, [enabledKey, verifiedKey])
+  }, [enabledKey, verifiedKey, notificationCode])
 
   useEffect(() => {
-    if (!enabled || !hotelId || config) return
+    if (!enabled || !hotelId || !notificationCode || config) return
     let live = true
     setBusy(true)
     setError('')
@@ -44,11 +45,11 @@ export default function NtfySetup({ hotelId }) {
       })
       .finally(() => live && setBusy(false))
     return () => { live = false }
-  }, [enabled, hotelId, config, reloadKey])
+  }, [enabled, hotelId, notificationCode, config, reloadKey])
 
   const channels = useMemo(() => Array.isArray(config?.channels) && config.channels.length
     ? config.channels
-    : (config?.topic ? [{ id: config.channel || 'urgent', label: config.channel === 'reminders' ? 'Promemoria' : config.channel === 'housekeeping' ? 'Housekeeping' : 'Avvisi urgenti', topic: config.topic, priority: 5 }] : []), [config])
+    : (config?.topic ? [{ id: config.channel || 'urgent', label: config.channel === 'reminders' ? 'Promemoria' : config.channel === 'housekeeping' ? 'Housekeeping' : 'Avvisi urgenti', topic: config.topic, alias: '', priority: 5 }] : []), [config])
 
   const activate = () => { setStore(enabledKey, '1'); setEnabled(true); setError('') }
   const disable = () => { setStore(enabledKey, null); setEnabled(false); setConfig(null); setStatus(''); setError('') }
@@ -56,15 +57,15 @@ export default function NtfySetup({ hotelId }) {
   const copy = async (channel) => {
     try {
       await navigator.clipboard.writeText(channel.topic)
-      setStatus(`${channel.label}: topic copiato ✓`)
+      setStatus(`${channel.label}: configurazione copiata ✓`)
     } catch {
-      setError('Copia automatica non riuscita: tieni premuto sul topic e copialo.')
+      setError('Copia automatica non riuscita. Riprova dal pulsante Copia oppure usa Apri su Android.')
     }
   }
   const deepLink = (channel) => {
     try {
       const server = new URL(config?.server || 'https://ntfy.sh')
-      return `ntfy://${server.host}/${encodeURIComponent(channel.topic)}?display=${encodeURIComponent(channel.label)}`
+      return `ntfy://${server.host}/${encodeURIComponent(channel.topic)}?display=${encodeURIComponent(channel.alias || buildNotificationAlias(hotelId, channel.id, notificationCode) || channel.label)}`
     } catch { return null }
   }
   const testAll = async () => {
@@ -88,14 +89,15 @@ export default function NtfySetup({ hotelId }) {
   return <section className="rs-section" data-testid="ntfy-setup">
     <div className="rs-section__head"><h2>Notifiche ntfy</h2>{verified && <span className="rs-badge rs-badge--accent">Testato ✓</span>}</div>
     <Card className="rs-card--pad">
-      <p className="rs-ntfy-intro">Canale esterno indipendente da RandApp. Gli avvisi urgenti usano il canale della struttura, i promemoria quello del ruolo e gli interventi un canale personale privato per il singolo operatore.</p>
-      {!enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Configura ntfy</Button></div> : <>
+      <p className="rs-ntfy-intro">Canale esterno indipendente da RandApp. Nell'app mostriamo solo alias leggibili; i topic ntfy reali restano tecnici e vengono copiati/aperti senza essere esposti a schermo.</p>
+      {!notificationCode ? <p>Prima scegli il tuo <b>Codice notifiche di 6 cifre</b> qui sopra.</p> : !enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Configura ntfy</Button></div> : <>
         {config && <>
-          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi i canali qui sotto</b><b>3. Prova le notifiche</b></div>
+          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi i canali</b><b>3. Prova le notifiche</b></div>
           {config.apps && <div className="rs-op-card__actions">{config.apps.ios && <a className="rs-button rs-button--outline" href={config.apps.ios} target="_blank" rel="noreferrer">iPhone / iPad</a>}{config.apps.android && <a className="rs-button rs-button--outline" href={config.apps.android} target="_blank" rel="noreferrer">Android</a>}{config.apps.web && <a className="rs-button rs-button--outline" href={config.apps.web} target="_blank" rel="noreferrer">PC / Web</a>}</div>}
           <div style={{display:'grid',gap:10,marginTop:12}}>{channels.map((channel) => {
             const link=deepLink(channel)
-            return <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità {channel.priority || 5} · non condividere</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{channel.topic}</code></span><span style={{display:'flex',gap:6}}>{android&&link&&<a className="rs-button rs-button--outline rs-button--sm" href={link}>Apri</a>}<Button type="button" variant="outline" size="sm" onClick={() => copy(channel)}>Copia</Button></span></div>
+            const alias=channel.alias||buildNotificationAlias(hotelId,channel.id,notificationCode)||'Canale protetto'
+            return <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità {channel.priority || 5} · alias RandApp</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{alias}</code></span><span style={{display:'flex',gap:6}}>{android&&link&&<a className="rs-button rs-button--outline rs-button--sm" href={link}>Apri</a>}<Button type="button" variant="outline" size="sm" onClick={() => copy(channel)}>Copia</Button></span></div>
           })}</div>
           <div className="rs-op-card__actions" style={{marginTop:14}}><Button type="button" onClick={testAll} disabled={busy}>{verified?'Ripeti test notifiche':'Prova notifiche'}</Button><Button type="button" variant="ghost" onClick={disable} disabled={busy}>Nascondi configurazione</Button></div>
         </>}
