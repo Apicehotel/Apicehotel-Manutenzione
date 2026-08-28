@@ -39,7 +39,7 @@ test('onboarding is initialized for the authenticated RandApp shell',()=>{
   assert.match(main,/initNotificationOnboarding\(\)/)
 })
 
-test('ntfy uses authenticated RandApp short links instead of exposing deep topics in profile',()=>{
+test('ntfy uses authenticated RandApp short links and hands the native app a resolved subscription',()=>{
   assert.match(ntfy,/interventi un canale personale privato/)
   assert.match(ntfy,/id === 'assignments' \? 'wrench'/)
   assert.match(ntfy,/buildNotificationShortUrl/)
@@ -47,7 +47,8 @@ test('ntfy uses authenticated RandApp short links instead of exposing deep topic
   assert.match(ntfy,/Copia link/)
   assert.match(ntfy,/Priorità \{channel\.priority \|\| 5\}/)
   assert.match(shortLink,/resolveNtfyShortLink/)
-  assert.match(shortLink,/Apri ntfy/)
+  assert.match(shortLink,/Configura in ntfy/)
+  assert.match(shortLink,/subscription_link/)
   assert.match(shortLink,/Configurazione manuale/)
 })
 
