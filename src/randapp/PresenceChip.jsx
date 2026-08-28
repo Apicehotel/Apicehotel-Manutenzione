@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { setOwnPresence } from '../auth-data.js'
 import { supabase } from '../supabase.js'
+import { Sheet } from './ui.jsx'
 
 const ELIGIBLE_ROLES = new Set(['manutentore', 'Portiere Notturno', 'admin'])
 
@@ -17,6 +18,7 @@ export default function PresenceChip({ user }) {
   const [eligible, setEligible] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [open, setOpen] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!user || !navigator.onLine) return
@@ -45,15 +47,18 @@ export default function PresenceChip({ user }) {
 
   if (!user || !eligible) return null
 
-  const toggle = async () => {
-    if (busy) return
+  const choose = async (next) => {
+    if (busy || next === present) {
+      setOpen(false)
+      return
+    }
     setBusy(true)
     setError('')
     try {
-      const next = !present
       const result = await setOwnPresence(next)
       const actual = Boolean(result?.in_struttura ?? next)
       setPresent(actual)
+      setOpen(false)
       window.dispatchEvent(new CustomEvent('apice-presence-changed', { detail: { present: actual, role: user.role, eligible: true } }))
     } catch (err) {
       setError(err?.message || 'Cambio presenza non riuscito')
@@ -63,34 +68,35 @@ export default function PresenceChip({ user }) {
     }
   }
 
-  return (
+  return <>
     <button
       type="button"
-      onClick={toggle}
+      className="rs-presence-trigger"
+      onClick={() => setOpen(true)}
       disabled={busy}
       aria-pressed={present}
-      aria-label={present ? 'Sono in struttura. Premi per segnarti fuori struttura' : 'Fuori struttura. Premi per segnarti in struttura'}
-      title={error || (present ? 'Premi per segnarti fuori struttura' : 'Premi per segnarti in struttura')}
+      aria-label={present ? 'In struttura. Tocca per cambiare stato' : 'Fuori struttura. Tocca per cambiare stato'}
+      title={error || 'Cambia stato presenza'}
       data-testid="presence-chip"
-      style={{
-        minHeight: 38,
-        borderRadius: 999,
-        border: `1px solid ${present ? 'rgba(34,197,94,.45)' : 'var(--rs-border, rgba(148,163,184,.28))'}`,
-        background: present ? 'rgba(34,197,94,.12)' : 'var(--rs-surface-2, rgba(255,255,255,.04))',
-        color: present ? '#4ade80' : 'var(--rs-text-2, #94a3b8)',
-        padding: '0 11px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        font: 'inherit',
-        fontWeight: 700,
-        whiteSpace: 'nowrap',
-        cursor: busy ? 'wait' : 'pointer',
-        opacity: busy ? .65 : 1,
-      }}
+      data-presence={present ? 'in' : 'out'}
     >
-      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: 'currentColor', boxShadow: present ? '0 0 10px currentColor' : 'none' }} />
+      <span className="rs-presence-trigger__dot" aria-hidden="true" />
       <span>{busy ? 'Aggiorno…' : present ? 'In struttura' : 'Fuori struttura'}</span>
     </button>
-  )
+
+    <Sheet open={open} onClose={() => !busy && setOpen(false)} title="Il tuo stato">
+      <p style={{ margin: '-4px 0 14px', color: 'var(--rs-text-2)' }}>Scegli il tuo stato operativo.</p>
+      <button type="button" className={`rs-presence-choice rs-presence-choice--in ${present ? 'selected' : ''}`} onClick={() => choose(true)} disabled={busy} data-testid="presence-in">
+        <span className="rs-presence-choice__dot" aria-hidden="true" />
+        <span><strong>In struttura</strong><small>Sei presente in hotel. Scade automaticamente dopo 7h20.</small></span>
+        <span className="rs-presence-choice__check" aria-hidden="true">✓</span>
+      </button>
+      <button type="button" className={`rs-presence-choice ${!present ? 'selected' : ''}`} onClick={() => choose(false)} disabled={busy} data-testid="presence-out">
+        <span className="rs-presence-choice__dot" aria-hidden="true" />
+        <span><strong>Fuori struttura</strong><small>Non risulti presente operativamente in hotel.</small></span>
+        <span className="rs-presence-choice__check" aria-hidden="true">✓</span>
+      </button>
+      {error && <p className="rs-error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
+    </Sheet>
+  </>
 }
