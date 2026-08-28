@@ -6,6 +6,8 @@ const planned=fs.readFileSync(new URL('../src/planned-data.js',import.meta.url),
 const dispatcher=fs.readFileSync(new URL('../supabase/functions/assignment-notify/index.ts',import.meta.url),'utf8')
 const ntfyConfig=fs.readFileSync(new URL('../supabase/functions/ntfy-config/index.ts',import.meta.url),'utf8')
 const ntfyAlert=fs.readFileSync(new URL('../supabase/functions/ntfy-alert/index.ts',import.meta.url),'utf8')
+const inboxData=fs.readFileSync(new URL('../src/randapp/notifications/notification-data.js',import.meta.url),'utf8')
+const inboxUi=fs.readFileSync(new URL('../src/randapp/notifications/NotificationInbox.jsx',import.meta.url),'utf8')
 
 test('interventions notify only newly added assignees',()=>{
   assert.match(planned,/notifyNewAssignees/)
@@ -29,6 +31,16 @@ test('assignment dispatcher targets selected users and requires assign permissio
   assert.match(dispatcher,/event_type:"assignment"/)
   assert.match(dispatcher,/intervention_id:interventionId/)
   assert.match(dispatcher,/requested\.filter\(id=>assigned\.includes\(id\)\)/)
+})
+
+test('assigned intervention also appears in the personal RandApp inbox',()=>{
+  assert.match(inboxData,/\.contains\('assegnatari', \[\{ id: authUserId \}\]\)/)
+  assert.match(inboxData,/keyOf\('assignment', row\.id\)/)
+  assert.match(inboxData,/title: 'Intervento assegnato'/)
+  assert.match(inboxData,/table: 'interventi'/)
+  assert.match(inboxUi,/filter === 'assignment'/)
+  assert.match(inboxUi,/>Interventi<\/button>/)
+  assert.match(inboxUi,/type === 'assignment' \? 'wrench'/)
 })
 
 test('ntfy exposes and tests one private assignment channel per user',()=>{
