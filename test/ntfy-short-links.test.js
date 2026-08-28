@@ -11,7 +11,7 @@ test('short notification URLs are first-class RandApp routes',()=>{
   assert.match(main,/NtfyShortLink/)
   assert.match(main,/ntfy_short/)
   assert.match(view,/parseNotificationAlias/)
-  assert.match(view,/window\.location\.href=result\.deep_link/)
+  assert.match(view,/result\.subscription_link \|\| result\.deep_link/)
 })
 
 test('short-link resolver is authenticated, owner-bound and hotel-scoped',()=>{
@@ -25,11 +25,15 @@ test('short-link resolver is authenticated, owner-bound and hotel-scoped',()=>{
   assert.match(edge,/topic_not_configured/)
 })
 
-test('real ntfy topic is resolved only after an explicit authorized action',()=>{
+test('authorized short link hands ntfy a native subscription URI, never the RandApp HTTPS URL',()=>{
   const setup=read('src/randapp/ntfy/NtfySetup.jsx')
   const view=read('src/randapp/ntfy/NtfyShortLink.jsx')
+  const edge=read('supabase/functions/ntfy-resolve/index.ts')
   assert.doesNotMatch(setup,/clipboard\.writeText\(channel\.topic\)/)
   assert.match(view,/resolve\('open'\)/)
   assert.match(view,/resolve\('copy'\)/)
-  assert.match(view,/Copia configurazione ntfy/)
+  assert.match(view,/Copia topic ntfy/)
+  assert.match(edge,/const subscriptionLink=`ntfy:\/\//)
+  assert.match(edge,/subscription_link:subscriptionLink/)
+  assert.doesNotMatch(edge,/apicehotel\.vercel\.app\/n\/\$\{alias\}/)
 })
