@@ -56,20 +56,23 @@ export default function NotificationInbox({ hotel, user, onUnreadChange, canOpen
     onUnreadChange?.(0)
   }
 
+  const iconFor = (type) => type === 'urgent' ? 'warning' : type === 'assignment' ? 'wrench' : 'bell'
+
   if (loading) return <Spinner label="Carico notifiche…" />
 
   return <div className="rs-inbox" data-testid="notification-inbox">
     <div className="rs-inbox__top">
       <div className="rs-inbox__tabs">
         <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Tutte</button>
+        <button className={filter === 'assignment' ? 'active' : ''} onClick={() => setFilter('assignment')}>Interventi</button>
         <button className={filter === 'urgent' ? 'active' : ''} onClick={() => setFilter('urgent')}>Urgenti</button>
         <button className={filter === 'reminder' ? 'active' : ''} onClick={() => setFilter('reminder')}>Promemoria</button>
       </div>
       {unread > 0 && <Button type="button" size="sm" variant="ghost" onClick={readAll}>Segna lette</Button>}
     </div>
     {error && <p className="rs-error">{error}</p>}
-    {!shown.length ? <div className="rs-inbox__empty"><Icon name="bell" /><strong>Nessuna notifica</strong><small>Qui compariranno avvisi e promemoria destinati al tuo ruolo.</small></div> : <div className="rs-inbox__list">{shown.map((item) => <article key={item.key} className={`rs-inbox__item ${item.read ? '' : 'unread'}`} onClick={() => openItem(item)}>
-      <div className={`rs-inbox__icon rs-inbox__icon--${item.type}`}><Icon name={item.type === 'urgent' ? 'warning' : 'bell'} /></div>
+    {!shown.length ? <div className="rs-inbox__empty"><Icon name="bell" /><strong>Nessuna notifica</strong><small>Qui compariranno interventi assegnati, avvisi e promemoria destinati a te.</small></div> : <div className="rs-inbox__list">{shown.map((item) => <article key={item.key} className={`rs-inbox__item ${item.read ? '' : 'unread'}`} onClick={() => openItem(item)}>
+      <div className={`rs-inbox__icon rs-inbox__icon--${item.type}`}><Icon name={iconFor(item.type)} /></div>
       <div className="rs-inbox__body">
         <div className="rs-inbox__title"><strong>{item.title}</strong><time>{fmt(item.at)}</time></div>
         <p>{item.message}</p>
