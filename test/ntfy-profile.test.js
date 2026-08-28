@@ -30,19 +30,23 @@ test('ntfy setup keeps transport isolated and guides iOS Android and desktop', a
   assert.match(setup, /Android/)
   assert.match(setup, /PC \/ Web/)
   assert.match(setup, /navigator\.clipboard\.writeText/)
-  assert.match(setup, /alias RandApp/)
+  assert.match(setup, /short link RandApp/)
+  assert.match(setup, /buildNotificationShortUrl/)
   assert.doesNotMatch(setup, />\{channel\.topic\}</)
+  assert.doesNotMatch(setup, /clipboard\.writeText\(channel\.topic\)/)
   assert.match(client, /functions\/v1/)
+  assert.match(client, /resolveNtfyShortLink/)
   assert.match(client, /X-RandApp-Request/)
   assert.doesNotMatch(setup + client, /randapp-[A-Za-z0-9_-]{20,}/)
 })
 
 test('ntfy edge functions require an authenticated active hotel membership', async () => {
-  const [config, alert] = await Promise.all([
+  const [config, alert, resolve] = await Promise.all([
     read('../supabase/functions/ntfy-config/index.ts'),
     read('../supabase/functions/ntfy-alert/index.ts'),
+    read('../supabase/functions/ntfy-resolve/index.ts'),
   ])
-  for (const src of [config, alert]) {
+  for (const src of [config, alert, resolve]) {
     assert.match(src, /client\.auth\.getUser\(\)/)
     assert.match(src, /hotel_memberships/)
     assert.match(src, /membership\?\.active/)
@@ -51,4 +55,6 @@ test('ntfy edge functions require an authenticated active hotel membership', asy
   }
   assert.match(config, /user_notification_codes/)
   assert.match(config, /notification_code/)
+  assert.match(resolve, /user_notification_codes/)
+  assert.match(resolve, /alias_not_owned/)
 })
