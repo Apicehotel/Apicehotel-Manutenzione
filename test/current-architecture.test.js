@@ -70,6 +70,31 @@ test('Planning Sale is decomposed into focused components', async () => {
   ])
 })
 
+test('reminders notifications and ntfy are independent modules', async () => {
+  const [shell, profile, reminders, reminderData, inbox, notificationData, ntfySetup, ntfyClient] = await Promise.all([
+    source('src/randapp/Shell.jsx'),
+    source('src/randapp/Profile.jsx'),
+    source('src/randapp/reminders/RemindersView.jsx'),
+    source('src/randapp/reminders/reminder-data.js'),
+    source('src/randapp/notifications/NotificationInbox.jsx'),
+    source('src/randapp/notifications/notification-data.js'),
+    source('src/randapp/ntfy/NtfySetup.jsx'),
+    source('src/randapp/ntfy/ntfy-client.js'),
+  ])
+  assert.match(shell, /reminders\/RemindersView\.jsx/)
+  assert.match(shell, /notifications\/NotificationInbox\.jsx/)
+  assert.match(profile, /ntfy\/NtfySetup\.jsx/)
+  assert.match(reminders, /\.\/reminder-data\.js/)
+  assert.match(inbox, /\.\/notification-data\.js/)
+  assert.match(ntfySetup, /\.\/ntfy-client\.js/)
+  assert.match(reminderData, /canUser\(user, 'reminders'/)
+  assert.match(notificationData, /notification_reads/)
+  assert.match(ntfyClient, /functions\/v1/)
+  assert.doesNotMatch(reminders, /notification_reads|ntfy-config|ntfy-alert/)
+  assert.doesNotMatch(inbox, /createReminder|updateReminder|deleteReminder/)
+  assert.doesNotMatch(ntfyClient, /promemoria|richieste_urgenti|notification_reads/)
+})
+
 test('active CSS is explicit at the runtime entry and legacy global stacks are gone', async () => {
   const main = await source('src/main.jsx')
   assert.match(main, /randapp\/shell\.css/)
