@@ -1,16 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { sanitizeDraft } from '../src/draft-store.js'
+import { draftKey, sanitizeDraft } from '../src/draft-store.js'
 
 const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('point 6: drafts never persist large photo payloads', () => {
+test('point 6: drafts never persist large photo payloads and stay isolated by hotel/user', () => {
   const clean = sanitizeDraft({ title: 'rubinetto', photoData: 'data:image/jpeg;base64,AAA', completionPhotoData: 'AAA', draft: { title: 'x', photoData: 'BIG' } })
   assert.equal(clean.title, 'rubinetto')
   assert.equal(clean.photoData, undefined)
   assert.equal(clean.completionPhotoData, undefined)
   assert.equal(clean.draft.photoData, undefined)
+  assert.notEqual(draftKey('issue', 'hotelgio', 'u1'), draftKey('issue', 'chocohotel', 'u1'))
+  assert.notEqual(draftKey('issue', 'hotelgio', 'u1'), draftKey('issue', 'hotelgio', 'u2'))
 })
 
 test('point 6: issue and planned-work forms keep recoverable drafts and surface errors', async () => {
