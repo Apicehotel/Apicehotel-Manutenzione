@@ -29,10 +29,12 @@ import './randapp/theme-audit-fix.css'
 import './randapp/single-insert-entry.css'
 import './randapp/presence-dot.css'
 import './randapp/large-header-balance.css'
+import './randapp/notification-onboarding.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { registerPwa } from './pwa.js'
 import { repairPushSubscription } from './push.js'
+import { initNotificationOnboarding } from './notification-onboarding.js'
 import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
@@ -60,6 +62,7 @@ if (!technicianMatch) {
   registerPwa()
   initPresenceStatusSync()
   initUrgentOwnershipGuard()
+  initNotificationOnboarding()
   import('./diagnostics-client.js').then(({ installDiagnosticsCapture }) => installDiagnosticsCapture()).catch(() => {})
   import('./external-telemetry.js').then(({ initExternalTelemetry }) => initExternalTelemetry()).catch(() => {})
 
