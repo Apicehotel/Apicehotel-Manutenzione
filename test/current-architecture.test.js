@@ -33,12 +33,13 @@ test('admin is split into focused tabs and Settings only orchestrates them', asy
 })
 
 test('permissions are module/action based and central', async () => {
-  const [permissions, nav, helpers, shell, home] = await Promise.all([
+  const [permissions, nav, helpers, shell, home, issues] = await Promise.all([
     source('src/permissions.js'),
     source('src/randapp/nav.js'),
     source('src/randapp/helpers.js'),
     source('src/randapp/Shell.jsx'),
     source('src/randapp/Home.jsx'),
+    source('src/randapp/Issues.jsx'),
   ])
   assert.match(permissions, /PERMISSION_ACTIONS/)
   assert.match(permissions, /PERMISSION_MODULES/)
@@ -46,9 +47,13 @@ test('permissions are module/action based and central', async () => {
   assert.match(nav, /canUser/)
   assert.match(shell, /canUser\(user, 'issues', 'create'\)/)
   assert.match(home, /canUser\(user, 'issues', 'create'\)/)
+  assert.match(issues, /canUser\(user, 'issues', 'create'\)/)
+  assert.match(issues, /canUser\(user, 'issues', 'complete'\)/)
+  assert.match(issues, /canUser\(user, 'issues', 'delete'\)/)
   assert.doesNotMatch(nav, /ROLE_PERMISSIONS/)
   assert.doesNotMatch(helpers, /ROLE_PERMISSIONS|permsFor|export const can =/)
   assert.doesNotMatch(home, /\bcan\(user,/)
+  assert.doesNotMatch(issues, /\bcan\(user,/)
 })
 
 test('Planning Sale is decomposed into focused components', async () => {
