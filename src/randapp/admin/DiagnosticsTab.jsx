@@ -131,6 +131,13 @@ export default function DiagnosticsTab() {
   const telemetry = snapshot?.telemetry || {}
   const overall = deriveDiagnosticStatus({ snapshot, operational })
   const failedUrgent = operational?.urgent_jobs?.failed || []
+  const readinessChecks = [
+    { label: 'Backend operativo', ready: overall.status !== 'problem' },
+    { label: 'Coda offline senza blocchi', ready: Number(offlineValue.blocked || 0) === 0 },
+    { label: 'PWA e service worker', ready: Boolean(swValue.registered) },
+    { label: 'Telemetria esterna predisposta', ready: Boolean(telemetry.sentry?.installed && telemetry.opentelemetry?.installed) },
+  ]
+  const readinessReady = readinessChecks.filter((item) => item.ready).length
 
   return <div className="rs-diag">
     <header className="rs-diag-head">
@@ -181,6 +188,13 @@ export default function DiagnosticsTab() {
       <div className="rs-diag-grid">
         <HealthRow label="Sentry" status={telemetry.sentry?.enabled ? 'ok' : 'warning'} detail={telemetry.sentry?.enabled ? 'attivo' : telemetry.sentry?.configured ? 'configurato ma disattivato' : 'SDK predisposto · manca DSN'} />
         <HealthRow label="OpenTelemetry" status={telemetry.opentelemetry?.enabled ? 'ok' : 'warning'} detail={telemetry.opentelemetry?.enabled ? 'attivo' : telemetry.opentelemetry?.configured ? 'configurato ma disattivato' : 'SDK predisposto · manca collector OTLP'} />
+      </div>
+    </Card>
+
+    <Card className="rs-diag-readiness">
+      <div className="rs-diag-section-head"><h3>Preparazione RandApp 3.0</h3><small>{readinessReady}/{readinessChecks.length} controlli pronti</small></div>
+      <div className="rs-diag-grid">
+        {readinessChecks.map((item) => <HealthRow key={item.label} label={item.label} status={item.ready ? 'ok' : 'warning'} detail={item.ready ? 'pronto' : 'da verificare'} />)}
       </div>
     </Card>
 
