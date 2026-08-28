@@ -103,6 +103,7 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
       status: 'todo',
       createdAt: Date.now(),
       createdByName: user?.name || 'App',
+      createdByUserId: user?.auth_user_id || user?.id || undefined,
       department: user?.department || user?.role || null,
       category: draft.category,
       origin: 'App',
@@ -233,7 +234,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [editDraft, setEditDraft] = useState(() => ({ room: issue.room || '', title: issue.title || '', urgency: issue.urgency || 'media', category: issue.category || 'Varie' }))
   const canComplete = canUser(user, 'issues', 'complete') || canUser(user, 'issues', 'take_charge')
   const canDelete = canUser(user, 'issues', 'delete')
-  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByName) && issue.createdByName === user?.name
+  const currentAuthUserId = user?.auth_user_id || user?.id || null
+  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByUserId) && issue.createdByUserId === currentAuthUserId
   const canEditDetails = canUser(user, 'issues', 'edit') || isOwnSupremoIssue
   const technicians = (users || []).filter((p) => p.role === 'Tecnico esterno')
   const meta = ISSUE_STATUS_META[issue.status] || {}
