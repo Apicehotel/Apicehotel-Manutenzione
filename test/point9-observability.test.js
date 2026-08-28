@@ -9,6 +9,7 @@ const sensorAliasFix = read('supabase/migrations/20260828084500_fix_hotelgio_sen
 const completion = read('supabase/migrations/20260828090000_point9_completion_hardening.sql')
 const diagnostics = read('src/diagnostics-client.js')
 const telemetry = read('src/external-telemetry.js')
+const errorBoundary = read('src/error-boundary.jsx')
 const panel = read('src/randapp/admin/DiagnosticsTab.jsx')
 const main = read('src/main.jsx')
 const pkg = JSON.parse(read('package.json'))
@@ -106,4 +107,13 @@ test('point 9 completion: external telemetry redacts sensitive context and attri
   assert.match(telemetry, /event\.extra = sanitizeTelemetryValue/)
   assert.match(telemetry, /captureException\(error, \{ extra: sanitizeTelemetryValue\(context\) \}\)/)
   assert.match(telemetry, /span\.setAttribute\(key, safeValue\)/)
+})
+
+test('point 9 completion: stale lazy-module loads recover once without reload loops', () => {
+  assert.match(errorBoundary, /isRecoverableModuleError/)
+  assert.match(errorBoundary, /not a valid javascript mime type/i)
+  assert.match(errorBoundary, /failed to fetch dynamically imported module/i)
+  assert.match(errorBoundary, /randapp-module-recovery:/)
+  assert.match(errorBoundary, /sessionStorage\.getItem\(moduleRecoveryKey\) !== '1'/)
+  assert.match(errorBoundary, /window\.location\.reload\(\)/)
 })
