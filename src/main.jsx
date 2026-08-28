@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import PublicIssueView from './public-issue-view.jsx'
+import NtfyShortLink from './randapp/ntfy/NtfyShortLink.jsx'
 import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
@@ -40,6 +41,8 @@ import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
+const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
+const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 
 initUiSize()
 initTheme()
@@ -53,12 +56,19 @@ createRoot(document.getElementById('root')).render(
     <AppErrorBoundary>
       {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
         : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
+        : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
         : <App />}
     </AppErrorBoundary>
   </React.StrictMode>,
 )
 
-if (!technicianMatch) {
+if (pendingNtfyShort && !ntfyShortMatch) {
+  window.addEventListener('apice-session-changed', () => {
+    window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`)
+  }, { once: true })
+}
+
+if (!technicianMatch && !ntfyShortMatch) {
   registerPwa()
   initPresenceStatusSync()
   initUrgentOwnershipGuard()

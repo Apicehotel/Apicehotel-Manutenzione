@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const onboarding=fs.readFileSync(new URL('../src/notification-onboarding.js',import.meta.url),'utf8')
 const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8')
 const ntfy=fs.readFileSync(new URL('../src/randapp/ntfy/NtfySetup.jsx',import.meta.url),'utf8')
+const shortLink=fs.readFileSync(new URL('../src/randapp/ntfy/NtfyShortLink.jsx',import.meta.url),'utf8')
 const css=fs.readFileSync(new URL('../src/randapp/notification-onboarding.css',import.meta.url),'utf8')
 
 test('global onboarding repairs existing push and asks only on user action',()=>{
@@ -38,13 +39,16 @@ test('onboarding is initialized for the authenticated RandApp shell',()=>{
   assert.match(main,/initNotificationOnboarding\(\)/)
 })
 
-test('ntfy assignment channel is explicit and Android supports one-tap deep link',()=>{
+test('ntfy uses authenticated RandApp short links instead of exposing deep topics in profile',()=>{
   assert.match(ntfy,/interventi un canale personale privato/)
   assert.match(ntfy,/id === 'assignments' \? 'wrench'/)
-  assert.match(ntfy,/ntfy:\/\//)
-  assert.match(ntfy,/\?display=/)
+  assert.match(ntfy,/buildNotificationShortUrl/)
   assert.match(ntfy,/>Apri<\/a>/)
+  assert.match(ntfy,/Copia link/)
   assert.match(ntfy,/Priorità \{channel\.priority \|\| 5\}/)
+  assert.match(shortLink,/resolveNtfyShortLink/)
+  assert.match(shortLink,/Apri ntfy/)
+  assert.match(shortLink,/Configurazione manuale/)
 })
 
 test('notification banner remains compact and mobile safe',()=>{

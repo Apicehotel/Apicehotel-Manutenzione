@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Icon } from '../ui.jsx'
-import { buildNotificationAlias } from '../notification-alias.js'
+import { buildNotificationAlias, buildNotificationShortUrl } from '../notification-alias.js'
 import { ENABLE_PREFIX, VERIFIED_PREFIX, friendlyNtfyError, getStore, invokeNtfy, setStore } from './ntfy-client.js'
 
 const channelIcon = (id) => id === 'urgent' ? 'warning' : id === 'housekeeping' ? 'housekeeping' : id === 'assignments' ? 'wrench' : 'bell'
@@ -15,7 +15,6 @@ export default function NtfySetup({ hotelId, notificationCode='' }) {
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
-  const android = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '')
 
   useEffect(() => {
     setEnabled(getStore(enabledKey) === '1')
@@ -54,19 +53,16 @@ export default function NtfySetup({ hotelId, notificationCode='' }) {
   const activate = () => { setStore(enabledKey, '1'); setEnabled(true); setError('') }
   const disable = () => { setStore(enabledKey, null); setEnabled(false); setConfig(null); setStatus(''); setError('') }
   const retry = () => { setConfig(null); setError(''); setStatus(''); setReloadKey((value) => value + 1) }
-  const copy = async (channel) => {
+  const copyShortLink = async (channel) => {
+    const alias=channel.alias||buildNotificationAlias(hotelId,channel.id,notificationCode)
+    const shortUrl=buildNotificationShortUrl(alias)
+    if(!shortUrl) return
     try {
-      await navigator.clipboard.writeText(channel.topic)
-      setStatus(`${channel.label}: configurazione copiata ✓`)
+      await navigator.clipboard.writeText(shortUrl)
+      setStatus(`${channel.label}: link breve copiato ✓`)
     } catch {
-      setError('Copia automatica non riuscita. Riprova dal pulsante Copia per ntfy oppure usa Apri su Android.')
+      setError('Copia automatica non riuscita. Riprova dal pulsante Copia link.')
     }
-  }
-  const deepLink = (channel) => {
-    try {
-      const server = new URL(config?.server || 'https://ntfy.sh')
-      return `ntfy://${server.host}/${encodeURIComponent(channel.topic)}?display=${encodeURIComponent(channel.alias || buildNotificationAlias(hotelId, channel.id, notificationCode) || channel.label)}`
-    } catch { return null }
   }
   const testAll = async () => {
     if (!channels.length) return
@@ -89,15 +85,15 @@ export default function NtfySetup({ hotelId, notificationCode='' }) {
   return <section className="rs-section" data-testid="ntfy-setup">
     <div className="rs-section__head"><h2>Notifiche ntfy</h2>{verified && <span className="rs-badge rs-badge--accent">Testato ✓</span>}</div>
     <Card className="rs-card--pad">
-      <p className="rs-ntfy-intro">Canale esterno indipendente da RandApp. Gli avvisi urgenti usano il canale della struttura, i promemoria quello del ruolo e gli interventi un canale personale privato. Nell'app mostriamo solo alias leggibili; i topic ntfy reali restano tecnici e vengono copiati/aperti senza essere esposti a schermo.</p>
-      {!notificationCode ? <p>Prima scegli il tuo <b>Codice notifiche di 6 cifre</b> qui sopra.</p> : !enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Configura ntfy</Button></div> : <>
+      <p className="rs-ntfy-intro">RandApp usa link brevi personali: per gli interventi un canale personale privato. Il topic ntfy reale non viene mostrato né copiato dalla schermata Profilo.</p>
+      {!notificationCode ? <p>Il tuo codice notifiche verrà assegnato automaticamente.</p> : !enabled ? <div className="rs-op-card__actions"><Button type="button" onClick={activate}>Configura ntfy</Button></div> : <>
         {config && <>
-          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Aggiungi i canali</b><b>3. Prova le notifiche</b></div>
+          <div className="rs-ntfy-steps"><b>1. Installa ntfy</b><b>2. Apri il link RandApp</b><b>3. Prova le notifiche</b></div>
           {config.apps && <div className="rs-op-card__actions">{config.apps.ios && <a className="rs-button rs-button--outline" href={config.apps.ios} target="_blank" rel="noreferrer">iPhone / iPad</a>}{config.apps.android && <a className="rs-button rs-button--outline" href={config.apps.android} target="_blank" rel="noreferrer">Android</a>}{config.apps.web && <a className="rs-button rs-button--outline" href={config.apps.web} target="_blank" rel="noreferrer">PC / Web</a>}</div>}
           <div style={{display:'grid',gap:10,marginTop:12}}>{channels.map((channel) => {
-            const link=deepLink(channel)
             const alias=channel.alias||buildNotificationAlias(hotelId,channel.id,notificationCode)||'Canale protetto'
-            return <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità {channel.priority || 5} · alias RandApp</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{alias}</code></span><span style={{display:'flex',gap:6}}>{android&&link&&<a className="rs-button rs-button--outline rs-button--sm" href={link}>Apri</a>}<Button type="button" variant="outline" size="sm" onClick={() => copy(channel)}>Copia per ntfy</Button></span></div>
+            const shortUrl=buildNotificationShortUrl(alias)
+            return <div key={channel.id} className="rs-ntfy-topic" style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr) auto',alignItems:'center',gap:10}}><span style={{width:34,height:34,borderRadius:10,display:'grid',placeItems:'center',background:'var(--rs-surface-2)',color:'var(--rs-cyan)'}}><Icon name={channelIcon(channel.id)}/></span><span style={{minWidth:0}}><strong style={{display:'block'}}>{channel.label}</strong><small style={{display:'block',color:'var(--rs-text-3)'}}>Priorità {channel.priority || 5} · short link RandApp</small><code style={{display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4}}>{alias}</code></span><span style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>{shortUrl&&<a className="rs-button rs-button--outline rs-button--sm" href={shortUrl}>Apri</a>}<Button type="button" variant="outline" size="sm" onClick={() => copyShortLink(channel)}>Copia link</Button></span></div>
           })}</div>
           <div className="rs-op-card__actions" style={{marginTop:14}}><Button type="button" onClick={testAll} disabled={busy}>{verified?'Ripeti test notifiche':'Prova notifiche'}</Button><Button type="button" variant="ghost" onClick={disable} disabled={busy}>Nascondi configurazione</Button></div>
         </>}
