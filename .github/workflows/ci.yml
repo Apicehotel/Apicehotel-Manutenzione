@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-test-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,6 +68,11 @@ jobs:
         env:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:e2e
+
+      - name: Device acceptance gate
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+        run: npm run test:device
 
       - name: Upload E2E screenshots
         if: always()
