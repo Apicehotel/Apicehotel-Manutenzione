@@ -7,9 +7,9 @@ const client=fs.readFileSync('src/randai/auth/randai-auth.js','utf8')
 const gate=fs.readFileSync('src/randai/auth/RandAIProtectedRoute.jsx','utf8')
 
 test('RandAI passwords are alphanumeric 6 to 12 only',()=>{
-  assert.match(edge,/\^\[A-Za-z0-9\]\{6,12\}\$/)
-  assert.match(client,/\^\[A-Za-z0-9\]\{6,12\}\$/)
-  assert.match(gate,/replace\(\/\[\^A-Za-z0-9\]\\/g,''\)\.slice\(0,12\)/)
+  assert.ok(edge.includes('/^[A-Za-z0-9]{6,12}$/'))
+  assert.ok(client.includes('/^[A-Za-z0-9]{6,12}$/'))
+  assert.ok(gate.includes("replace(/[^A-Za-z0-9]/g,'').slice(0,12)"))
 })
 
 test('RandAI login uses separate edge function and Supabase session',()=>{
