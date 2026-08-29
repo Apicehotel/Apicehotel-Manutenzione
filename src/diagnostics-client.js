@@ -118,14 +118,15 @@ export function installDiagnosticsCapture() {
 
 async function timed(check, timeoutMs = 5000) {
   const start = performance.now()
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(new Error('Timeout')), timeoutMs)
   try {
-    const value = await Promise.race([
-      Promise.resolve().then(check),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs)),
-    ])
+    const value = await check(controller.signal)
     return { ok: true, ms: Math.round(performance.now() - start), value }
   } catch (error) {
-    return { ok: false, ms: Math.round(performance.now() - start), error: crop(redactDiagnosticText(error?.message || error), 300) }
+    return { ok: false, ms: Math.round(performance.now() - start), error: crop(redactDiagnosticText(controller.signal.aborted ? 'Timeout' : (error?.message || error)), 300) }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -140,8 +141,8 @@ async function pushHealth() {
   const subscription = registration?.pushManager ? await registration.pushManager.getSubscription() : null
   return { supported: true, permission: Notification.permission, subscribed: Boolean(subscription) }
 }
-async function supabaseHealth() {
-  const response = await fetch(`${supabaseUrl}/auth/v1/health`, { headers: { apikey: supabaseAnonKey } })
+async function supabaseHealth(signal) {
+  const response = await fetch(`${supabaseUrl}/auth/v1/health`, { headers: { apikey: supabaseAnonKey }, signal })
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   return response.status
 }
