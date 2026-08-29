@@ -100,7 +100,7 @@ export default function RandAIAssistant() {
       )}
 
       <button type="button" className="randai__fab" onClick={() => setOpen((value) => !value)} aria-label="Apri RandAI" data-testid="randai-fab">
-        <span>AI</span>
+        <img src="/icons/randai-cat.webp" alt="" aria-hidden="true" />
       </button>
     </div>
   )
