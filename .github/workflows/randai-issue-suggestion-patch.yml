@@ -1,0 +1,49 @@
+name: RandAI issue suggestion patch
+
+on:
+  push:
+    branches:
+      - feature/randai-issue-suggestions
+    paths:
+      - .github/workflows/randai-issue-suggestion-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/randai-issue-suggestions
+          fetch-depth: 0
+      - name: Patch Issues.jsx
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/randapp/Issues.jsx')
+          text = path.read_text()
+          import_anchor = "import { operationFailed } from '../operation-feedback.js'\n"
+          import_line = "import RandAISuggestion from './RandAISuggestion.jsx'\n"
+          if import_line not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Import anchor not found')
+              text = text.replace(import_anchor, import_anchor + import_line, 1)
+          render_anchor = "          {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt=\"Foto segnalazione\" />}\n"
+          render_line = "          <RandAISuggestion issue={issue} hotelId={issue.hotelId} />\n"
+          if render_line not in text:
+              if render_anchor not in text:
+                  raise SystemExit('Render anchor not found')
+              text = text.replace(render_anchor, render_anchor + render_line, 1)
+          path.write_text(text)
+          PY
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/randai-issue-suggestion-patch.yml
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Issues.jsx .github/workflows/randai-issue-suggestion-patch.yml
+          git commit -m "feat(randai): collega suggerimenti alle segnalazioni"
+          git push origin HEAD:feature/randai-issue-suggestions
