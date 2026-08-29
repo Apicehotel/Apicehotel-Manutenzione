@@ -35,6 +35,9 @@ jobs:
       - name: Dependency security audit
         run: npm audit --audit-level=high
 
+      - name: Dependency usage audit
+        run: npm run test:dependencies
+
       - name: Quality matrix
         run: npm run test:matrix
 
