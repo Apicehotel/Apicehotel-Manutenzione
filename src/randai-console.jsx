@@ -1,147 +1,66 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from './config.js'
 import { fetchIssues, subscribeIssues, updateIssueRow } from './issues-data.js'
+import { fetchPlanned, subscribePlanned } from './planned-data.js'
+import { fetchUsers } from './users-data.js'
 
-const STATUS_LABELS = {
-  nuova: 'Nuova',
-  new: 'Nuova',
-  assegnata: 'Assegnata',
-  assigned: 'Assegnata',
-  in_corso: 'In corso',
-  progress: 'In corso',
-  tecnico: 'Tecnico',
-  done: 'Risolta',
-}
-
-const PRIORITY_ORDER = { urgente: 0, alta: 1, media: 2, bassa: 3 }
+const NAV = [
+  ['dashboard','Dashboard'],['issues','Segnalazioni'],['drafts','Bozze'],['approvals','Approvazioni'],['archive','Archivio'],
+  ['assets','Impianti'],['maintenance','Manutenzioni'],['deadlines','Scadenze'],['media','Media & Drive'],['team','Team & ruoli'],['audit','Audit log'],
+]
+const STATUS_LABELS = { nuova:'Nuova',new:'Nuova',assegnata:'Assegnata',assigned:'Assegnata',in_corso:'In corso',progress:'In corso',tecnico:'Tecnico',done:'Risolta',draft:'Bozza',approval:'Da approvare' }
+const PRIORITY_ORDER = { urgente:0,alta:1,media:2,bassa:3 }
 const normalize = (value) => String(value || '').trim().toLowerCase()
 const statusLabel = (status) => STATUS_LABELS[status] || status || '—'
+const hotelName = (hotelId, short = false) => { const hotel = HOTELS.find((item) => item.id === hotelId); return hotel ? (short ? hotel.short : hotel.name) : hotelId || '—' }
+const fmtDate = (time) => time ? new Date(time).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'
 
-function StatCard({ label, value, hint }) {
-  return <article className="randai-stat"><span>{label}</span><strong>{value}</strong>{hint && <small>{hint}</small>}</article>
-}
+function StatCard({ label, value, hint }) { return <article className="randai-stat"><span>{label}</span><strong>{value}</strong>{hint&&<small>{hint}</small>}</article> }
+function Empty({ children }) { return <div className="randai-empty">{children}</div> }
+function Panel({ title, meta, children }) { return <section className="randai-panel-card"><div className="randai-panel-head"><strong>{title}</strong>{meta&&<span>{meta}</span>}</div><div className="randai-panel-body">{children}</div></section> }
 
 function IssueDrawer({ issue, onClose, onUpdate }) {
   if (!issue) return null
-  const hotel = HOTELS.find((item) => item.id === issue.hotelId)
-  return <aside className="randai-drawer" aria-label="Dettaglio segnalazione">
-    <div className="randai-drawer-head"><div><small>{hotel?.name || issue.hotelId}</small><h2>{issue.title || 'Segnalazione'}</h2></div><button onClick={onClose} aria-label="Chiudi">×</button></div>
-    <div className="randai-drawer-grid">
-      <div><span>Camera / zona</span><strong>{issue.room || '—'}</strong></div>
-      <div><span>Priorità</span><strong>{issue.urgency || '—'}</strong></div>
-      <div><span>Categoria</span><strong>{issue.category || '—'}</strong></div>
-      <div><span>Stato</span><strong>{statusLabel(issue.status)}</strong></div>
-      <div><span>Creato da</span><strong>{issue.createdByName || '—'}</strong></div>
-      <div><span>Data</span><strong>{issue.date || '—'}</strong></div>
-    </div>
-    {issue.photoData && <img className="randai-photo" src={issue.photoData} alt="Foto segnalazione" />}
-    {issue.completionPhotoData && <img className="randai-photo" src={issue.completionPhotoData} alt="Foto completamento" />}
-    <div className="randai-drawer-actions">
-      <button onClick={() => onUpdate(issue.id, { status: 'in_corso' })}>In corso</button>
-      <button onClick={() => onUpdate(issue.id, { status: 'tecnico' })}>Tecnico</button>
-      <button className="primary" onClick={() => onUpdate(issue.id, { status: 'done', completedAt: Date.now() })}>Risolta</button>
-    </div>
-  </aside>
+  return <aside className="randai-drawer" aria-label="Dettaglio segnalazione"><div className="randai-drawer-head"><div><small>{hotelName(issue.hotelId)}</small><h2>{issue.title||'Segnalazione'}</h2></div><button onClick={onClose} aria-label="Chiudi">×</button></div><div className="randai-drawer-grid"><div><span>Camera / zona</span><strong>{issue.room||'—'}</strong></div><div><span>Priorità</span><strong>{issue.urgency||'—'}</strong></div><div><span>Categoria</span><strong>{issue.category||'—'}</strong></div><div><span>Stato</span><strong>{statusLabel(issue.status)}</strong></div><div><span>Creato da</span><strong>{issue.createdByName||'—'}</strong></div><div><span>Data</span><strong>{issue.date||fmtDate(issue.createdAt)}</strong></div></div>{issue.photoData&&<img className="randai-photo" src={issue.photoData} alt="Foto segnalazione"/>}{issue.completionPhotoData&&<img className="randai-photo" src={issue.completionPhotoData} alt="Foto completamento"/>}<div className="randai-drawer-actions"><button onClick={()=>onUpdate(issue.id,{status:'in_corso'})}>In corso</button><button onClick={()=>onUpdate(issue.id,{status:'tecnico'})}>Tecnico</button><button className="primary" onClick={()=>onUpdate(issue.id,{status:'done',completedAt:Date.now()})}>Risolta</button></div></aside>
+}
+
+function IssuesTable({ rows, loading, onSelect, title='Segnalazioni' }) {
+  return <section className="randai-table-card"><div className="randai-table-head"><strong>{title}</strong><span>{rows.length} risultati</span></div>{loading?<Empty>Caricamento…</Empty>:rows.length===0?<Empty>Nessun elemento trovato.</Empty>:<div className="randai-table-wrap"><table><thead><tr><th>Struttura</th><th>Camera / zona</th><th>Problema</th><th>Priorità</th><th>Stato</th><th>Reparto</th><th>Data</th></tr></thead><tbody>{rows.map((issue)=><tr key={issue.id} onClick={()=>onSelect(issue)}><td>{hotelName(issue.hotelId,true)}</td><td>{issue.room||'—'}</td><td><strong>{issue.title||'Segnalazione'}</strong><small>{issue.category||'—'}</small></td><td><span className={`randai-badge priority-${normalize(issue.urgency)}`}>{issue.urgency||'—'}</span></td><td><span className={`randai-badge status-${normalize(issue.status)}`}>{statusLabel(issue.status)}</span></td><td>{issue.department||'—'}</td><td>{issue.date||fmtDate(issue.createdAt)}</td></tr>)}</tbody></table></div>}</section>
 }
 
 export function RandAIConsole({ user, onExit }) {
-  const [issues, setIssues] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [hotelId, setHotelId] = useState('all')
-  const [status, setStatus] = useState('all')
-  const [priority, setPriority] = useState('all')
-  const [selected, setSelected] = useState(null)
-  const [sortBy, setSortBy] = useState('recent')
-  const [message, setMessage] = useState('')
+  const [section,setSection]=useState('dashboard'),[issues,setIssues]=useState([]),[planned,setPlanned]=useState([]),[users,setUsers]=useState([])
+  const [loading,setLoading]=useState(true),[search,setSearch]=useState(''),[hotelId,setHotelId]=useState('all'),[status,setStatus]=useState('all'),[priority,setPriority]=useState('all'),[selected,setSelected]=useState(null),[sortBy,setSortBy]=useState('recent'),[message,setMessage]=useState('')
 
-  const load = async () => {
-    setLoading(true)
-    const results = await Promise.all(HOTELS.map(async (hotel) => {
-      const result = await fetchIssues(hotel.id)
-      return result.issues || []
-    }))
-    setIssues(results.flat())
-    setLoading(false)
-  }
+  const load=useCallback(async()=>{setLoading(true);const [issueSets,plannedSets,userResult]=await Promise.all([Promise.all(HOTELS.map(async hotel=>(await fetchIssues(hotel.id)).issues||[])),Promise.all(HOTELS.map(async hotel=>(await fetchPlanned(hotel.id)).items||[])),fetchUsers(HOTELS.map(h=>h.id)).catch(()=>({users:[]}))]);setIssues(issueSets.flat());setPlanned(plannedSets.flat());setUsers(userResult.users||[]);setLoading(false)},[])
+  useEffect(()=>{load();const cleanups=[...HOTELS.map(h=>subscribeIssues(h.id,load)),...HOTELS.map(h=>subscribePlanned(h.id,load))];return()=>cleanups.forEach(fn=>fn?.())},[load])
 
-  useEffect(() => {
-    load()
-    const cleanups = HOTELS.map((hotel) => subscribeIssues(hotel.id, load))
-    return () => cleanups.forEach((cleanup) => cleanup())
-  }, [])
+  const filtered=useMemo(()=>{const query=normalize(search);return issues.filter(issue=>{if(hotelId!=='all'&&issue.hotelId!==hotelId)return false;if(status!=='all'&&normalize(issue.status)!==status)return false;if(priority!=='all'&&normalize(issue.urgency)!==priority)return false;if(!query)return true;return[issue.title,issue.room,issue.category,issue.department,issue.createdByName,issue.origin,hotelName(issue.hotelId)].some(v=>normalize(v).includes(query))}).sort((a,b)=>sortBy==='priority'?(PRIORITY_ORDER[normalize(a.urgency)]??9)-(PRIORITY_ORDER[normalize(b.urgency)]??9):(b.createdAt||0)-(a.createdAt||0))},[issues,hotelId,status,priority,search,sortBy])
+  const totals=useMemo(()=>({all:issues.length,open:issues.filter(i=>normalize(i.status)!=='done').length,urgent:issues.filter(i=>['urgente','alta'].includes(normalize(i.urgency))).length,done:issues.filter(i=>normalize(i.status)==='done').length,planned:planned.filter(i=>normalize(i.status)!=='done').length}),[issues,planned])
+  const drafts=filtered.filter(i=>['draft','bozza'].includes(normalize(i.status)))
+  const approvals=filtered.filter(i=>['approval','da_approvare','approvazione'].includes(normalize(i.status)))
+  const archive=filtered.filter(i=>normalize(i.status)==='done')
+  const media=issues.filter(i=>i.photoData||i.completionPhotoData)
+  const assets=useMemo(()=>{const map=new Map();issues.forEach(i=>{const key=i.category||'Non classificato';if(!map.has(key))map.set(key,{name:key,total:0,open:0,hotels:new Set()});const x=map.get(key);x.total++;if(normalize(i.status)!=='done')x.open++;x.hotels.add(i.hotelId)});return [...map.values()].sort((a,b)=>b.total-a.total)},[issues])
+  const upcoming=useMemo(()=>planned.filter(i=>i.scheduledAt&&normalize(i.status)!=='done').sort((a,b)=>a.scheduledAt-b.scheduledAt),[planned])
+  const audit=useMemo(()=>issues.flatMap(i=>[{id:`open-${i.id}`,time:i.createdAt,text:`Segnalazione creata · ${i.title||i.category||i.id}`,who:i.createdByName,hotelId:i.hotelId},...(i.completedAt?[{id:`done-${i.id}`,time:i.completedAt,text:`Segnalazione risolta · ${i.title||i.category||i.id}`,who:i.completedBy,hotelId:i.hotelId}]:[])]).sort((a,b)=>(b.time||0)-(a.time||0)).slice(0,100),[issues])
 
-  const filtered = useMemo(() => {
-    const query = normalize(search)
-    const rows = issues.filter((issue) => {
-      if (hotelId !== 'all' && issue.hotelId !== hotelId) return false
-      if (status !== 'all' && normalize(issue.status) !== status) return false
-      if (priority !== 'all' && normalize(issue.urgency) !== priority) return false
-      if (!query) return true
-      return [issue.title, issue.room, issue.category, issue.department, issue.createdByName, issue.origin]
-        .some((value) => normalize(value).includes(query))
-    })
-    return [...rows].sort((a, b) => {
-      if (sortBy === 'priority') return (PRIORITY_ORDER[normalize(a.urgency)] ?? 9) - (PRIORITY_ORDER[normalize(b.urgency)] ?? 9)
-      return (b.createdAt || 0) - (a.createdAt || 0)
-    })
-  }, [issues, hotelId, status, priority, search, sortBy])
+  const updateIssue=async(id,changes)=>{const updated=await updateIssueRow(id,changes);if(!updated)return setMessage('Aggiornamento non riuscito');setIssues(current=>current.map(item=>item.id===id?{...item,...updated}:item));setSelected(current=>current?.id===id?{...current,...updated}:current);setMessage('Segnalazione aggiornata')}
+  const resetFilters=()=>{setSearch('');setHotelId('all');setStatus('all');setPriority('all');setSortBy('recent')}
 
-  const totals = useMemo(() => ({
-    all: issues.length,
-    open: issues.filter((item) => normalize(item.status) !== 'done').length,
-    urgent: issues.filter((item) => ['urgente','alta'].includes(normalize(item.urgency))).length,
-    done: issues.filter((item) => normalize(item.status) === 'done').length,
-  }), [issues])
+  const toolbar=<section className="randai-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca segnalazioni, camere, reparti…"/><select value={hotelId} onChange={e=>setHotelId(e.target.value)}><option value="all">Tutte le strutture</option>{HOTELS.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">Tutti gli stati</option><option value="nuova">Nuova</option><option value="in_corso">In corso</option><option value="tecnico">Tecnico</option><option value="done">Risolta</option></select><select value={priority} onChange={e=>setPriority(e.target.value)}><option value="all">Tutte le priorità</option><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="media">Media</option><option value="bassa">Bassa</option></select><select value={sortBy} onChange={e=>setSortBy(e.target.value)}><option value="recent">Più recenti</option><option value="priority">Priorità</option></select><button onClick={resetFilters}>Azzera</button></section>
 
-  const updateIssue = async (id, changes) => {
-    const updated = await updateIssueRow(id, changes)
-    if (!updated) return setMessage('Aggiornamento non riuscito')
-    setIssues((current) => current.map((item) => item.id === id ? { ...item, ...updated } : item))
-    setSelected((current) => current?.id === id ? { ...current, ...updated } : current)
-    setMessage('Segnalazione aggiornata')
-  }
+  const dashboard=<><section className="randai-stats"><StatCard label="Segnalazioni" value={totals.all} hint="totali"/><StatCard label="Aperte" value={totals.open} hint="da gestire"/><StatCard label="Priorità alte" value={totals.urgent} hint="urgenti / alte"/><StatCard label="Risolte" value={totals.done} hint="completate"/></section>{toolbar}<div className="randai-section-grid"><Panel title="Carico per struttura">{HOTELS.map(h=><div className="randai-list" key={h.id}><article><strong>{h.name}</strong><small>{issues.filter(i=>i.hotelId===h.id&&normalize(i.status)!=='done').length} aperte · {issues.filter(i=>i.hotelId===h.id&&['urgente','alta'].includes(normalize(i.urgency))&&normalize(i.status)!=='done').length} priorità alte</small></article></div>)}</Panel><Panel title="Manutenzioni" meta={`${totals.planned} attive`}><div className="randai-list">{upcoming.slice(0,5).map(i=><article key={i.id}><strong>{i.category||i.notes||'Intervento'}</strong><small>{hotelName(i.hotelId)} · {fmtDate(i.scheduledAt)}</small></article>)}{!upcoming.length&&<p>Nessun intervento programmato attivo.</p>}</div></Panel><Panel title="Attività recente"><div className="randai-list">{audit.slice(0,5).map(a=><article key={a.id}><strong>{a.text}</strong><small>{hotelName(a.hotelId)} · {fmtDate(a.time)}</small></article>)}</div></Panel></div><div style={{height:14}}/><IssuesTable rows={filtered.slice(0,12)} loading={loading} onSelect={setSelected} title="Ultime segnalazioni"/></>
+  const simpleIssueSection=(title,rows)=><>{toolbar}<IssuesTable rows={rows} loading={loading} onSelect={setSelected} title={title}/></>
+  const maintenance=<div className="randai-section-grid">{HOTELS.map(h=><Panel key={h.id} title={h.name} meta={`${planned.filter(i=>i.hotelId===h.id).length} interventi`}><div className="randai-list">{planned.filter(i=>i.hotelId===h.id).slice(0,12).map(i=><article key={i.id}><strong>{i.category||'Intervento'} · {i.location||'Zona'}</strong><small>{statusLabel(i.status)} · {fmtDate(i.scheduledAt)}{i.assignees?.length?` · ${i.assignees.join(', ')}`:''}</small><p>{i.notes||''}</p></article>)}{!planned.some(i=>i.hotelId===h.id)&&<p>Nessun intervento.</p>}</div></Panel>)}</div>
+  const assetsPanel=<div className="randai-section-grid">{assets.map(a=><Panel key={a.name} title={a.name} meta={`${a.total} segnalazioni`}><strong>{a.open} aperte</strong><p>{[...a.hotels].map(id=>hotelName(id)).join(' · ')}</p></Panel>)}</div>
+  const deadlines=<Panel title="Agenda manutenzioni" meta={`${upcoming.length} scadenze`}><div className="randai-list">{upcoming.map(i=><article key={i.id}><strong>{i.category||i.notes||'Intervento'} · {i.location||'—'}</strong><small>{hotelName(i.hotelId)} · {fmtDate(i.scheduledAt)}{i.scheduledUntil?` → ${fmtDate(i.scheduledUntil)}`:''}</small></article>)}{!upcoming.length&&<p>Nessuna scadenza attiva.</p>}</div></Panel>
+  const mediaPanel=<div className="randai-section-grid">{media.map(i=><Panel key={i.id} title={i.title||i.category||'Segnalazione'} meta={`${hotelName(i.hotelId)} · ${i.room||'—'}`}>{i.photoData&&<img className="randai-photo" src={i.photoData} alt="Prima"/>}{i.completionPhotoData&&<img className="randai-photo" src={i.completionPhotoData} alt="Dopo"/>}</Panel>)}{!media.length&&<Empty>Nessun media collegato alle segnalazioni.</Empty>}</div>
+  const team=<Panel title="Team e accessi" meta={`${users.length} utenti`}><div className="randai-table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th><th>Strutture</th><th>Stato</th></tr></thead><tbody>{users.map(u=><tr key={u.id||u.auth_user_id}><td><strong>{u.name}</strong><small>{u.email||u.phone||''}</small></td><td>{u.role||'—'}</td><td>{u.department||'—'}</td><td>{(u.hotels||[]).map(id=>hotelName(id,true)).join(' · ')||'—'}</td><td><span className="randai-badge">{u.active===false?'Disattivato':'Attivo'}</span></td></tr>)}</tbody></table></div></Panel>
+  const auditPanel=<Panel title="Audit operativo" meta={`${audit.length} eventi recenti`}><div className="randai-list">{audit.map(a=><article key={a.id}><strong>{a.text}</strong><small>{hotelName(a.hotelId)} · {a.who||'Sistema'} · {fmtDate(a.time)}</small></article>)}</div></Panel>
 
-  return <div className="randai-shell">
-    <aside className="randai-sidebar">
-      <div className="randai-brand"><strong>RandAI</strong><span>Control Center</span></div>
-      <nav>
-        <button className="active">Dashboard</button><button>Segnalazioni</button><button>Bozze</button><button>Approvazioni</button><button>Archivio</button><button>Impianti</button><button>Manutenzioni</button><button>Scadenze</button><button>Media & Drive</button><button>Team & ruoli</button><button>Audit log</button>
-      </nav>
-      <button className="randai-exit" onClick={onExit}>Torna a RandApp</button>
-    </aside>
+  const content={dashboard,issues:simpleIssueSection('Tutte le segnalazioni',filtered),drafts:simpleIssueSection('Bozze',drafts),approvals:simpleIssueSection('Da approvare',approvals),archive:simpleIssueSection('Archivio risolte',archive),assets:assetsPanel,maintenance,deadlines,media:mediaPanel,team,audit:auditPanel}[section]||dashboard
+  const currentLabel=NAV.find(([key])=>key===section)?.[1]||'Dashboard'
 
-    <main className="randai-main">
-      <header className="randai-topbar">
-        <div><h1>Console amministrativa</h1><p>Controllo operativo multi-hotel in tempo reale</p></div>
-        <div className="randai-user"><span>{user?.name || 'Admin'}</span><small>{user?.role || 'RandAI'}</small></div>
-      </header>
-
-      <section className="randai-stats">
-        <StatCard label="Segnalazioni" value={totals.all} hint="totali" />
-        <StatCard label="Aperte" value={totals.open} hint="da gestire" />
-        <StatCard label="Priorità alte" value={totals.urgent} hint="urgenti / alte" />
-        <StatCard label="Risolte" value={totals.done} hint="completate" />
-      </section>
-
-      <section className="randai-toolbar">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cerca segnalazioni, camere, reparti…" />
-        <select value={hotelId} onChange={(e) => setHotelId(e.target.value)}><option value="all">Tutte le strutture</option>{HOTELS.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}</select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">Tutti gli stati</option><option value="nuova">Nuova</option><option value="in_corso">In corso</option><option value="tecnico">Tecnico</option><option value="done">Risolta</option></select>
-        <select value={priority} onChange={(e) => setPriority(e.target.value)}><option value="all">Tutte le priorità</option><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="media">Media</option><option value="bassa">Bassa</option></select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="recent">Più recenti</option><option value="priority">Priorità</option></select>
-        <button onClick={load}>Aggiorna</button>
-      </section>
-
-      {message && <p className="randai-message" role="status">{message}</p>}
-      <section className="randai-table-card">
-        <div className="randai-table-head"><strong>Segnalazioni</strong><span>{filtered.length} risultati</span></div>
-        {loading ? <div className="randai-empty">Caricamento…</div> : filtered.length === 0 ? <div className="randai-empty">Nessuna segnalazione trovata.</div> : <div className="randai-table-wrap"><table><thead><tr><th>Struttura</th><th>Camera / zona</th><th>Problema</th><th>Priorità</th><th>Stato</th><th>Reparto</th><th>Data</th></tr></thead><tbody>{filtered.map((issue) => {
-          const hotel = HOTELS.find((item) => item.id === issue.hotelId)
-          return <tr key={issue.id} onClick={() => setSelected(issue)}><td>{hotel?.short || issue.hotelId}</td><td>{issue.room || '—'}</td><td><strong>{issue.title || 'Segnalazione'}</strong><small>{issue.category || '—'}</small></td><td><span className={`randai-badge priority-${normalize(issue.urgency)}`}>{issue.urgency || '—'}</span></td><td><span className={`randai-badge status-${normalize(issue.status)}`}>{statusLabel(issue.status)}</span></td><td>{issue.department || '—'}</td><td>{issue.date || '—'}</td></tr>
-        })}</tbody></table></div>}
-      </section>
-    </main>
-    <IssueDrawer issue={selected} onClose={() => setSelected(null)} onUpdate={updateIssue} />
-  </div>
+  return <div className="randai-shell"><aside className="randai-sidebar"><div className="randai-brand"><strong>RandAI</strong><span>Control Center</span></div><nav>{NAV.map(([key,label])=><button key={key} className={section===key?'active':''} onClick={()=>setSection(key)}>{label}</button>)}</nav><button className="randai-exit" onClick={onExit}>Torna a RandApp</button></aside><main className="randai-main"><header className="randai-topbar"><div><h1>{currentLabel}</h1><p>Controllo operativo multi-hotel in tempo reale</p></div><div className="randai-user"><span>{user?.name||'Admin'}</span><small>{user?.role||'RandAI'}</small></div></header>{message&&<p className="randai-message" role="status">{message}</p>}{content}</main><IssueDrawer issue={selected} onClose={()=>setSelected(null)} onUpdate={updateIssue}/></div>
 }
