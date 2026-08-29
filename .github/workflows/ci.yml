@@ -80,6 +80,24 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:e2e
 
+      - name: Start offline chaos harness server
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4174 > /tmp/apice-chaos-vite.log 2>&1 &
+          echo $! > /tmp/apice-chaos-vite.pid
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4174 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/apice-chaos-vite.log
+          exit 1
+
+      - name: Offline & chaos resilience gate
+        env:
+          CHAOS_BASE_URL: http://127.0.0.1:4174
+        run: npm run test:chaos
+
       - name: Authenticated functional E2E gate
         env:
           E2E_BASE_URL: http://127.0.0.1:4173
@@ -107,4 +125,6 @@ jobs:
 
       - name: Preview server log on failure
         if: failure()
-        run: cat /tmp/apice-vite.log || true
+        run: |
+          cat /tmp/apice-vite.log || true
+          cat /tmp/apice-chaos-vite.log || true

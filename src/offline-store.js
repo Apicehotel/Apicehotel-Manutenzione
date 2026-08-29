@@ -30,6 +30,8 @@ const now = () => Date.now()
 const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
 const BACKOFF_STEPS = [5000, 15000, 30000, 60000, 120000, 300000]
 const OFFLINE_BLOB_PREFIX = 'offline-blob:'
+const DRAIN_OWNER = uuid()
+const DRAIN_LEASE_MS = 120000
 
 const errorText = (error) => String(error?.message || error || '')
 export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection|temporarily|gateway|502|503|504/i.test(errorText(error))
@@ -59,6 +61,7 @@ function mergeQueuedPayload(previous = {}, next = {}) {
   if (previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt) merged._syncBaseUpdatedAt = previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt
   return merged
 }
+const nextRevision = (row) => Number(row?.revision || 1) + 1
 
 const dispatchStatus = async () => {
   if (typeof window === 'undefined' || !storageAvailable()) return
@@ -134,7 +137,7 @@ async function compactMutation(op) {
         const mergedPayload = mergeQueuedPayload(createOp.payload || {}, op.payload || {})
         const mergedCache = { ...(createOp.cachePayload || createOp.payload || {}), ...(op.cachePayload || op.payload || {}) }
         await cleanupPayloadBlobs(createOp.payload, mergedPayload)
-        await db.outbox.update(createOp.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
+        await db.outbox.update(createOp.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null, revision: nextRevision(createOp) })
         return { compacted: true }
       }
     }
@@ -145,7 +148,7 @@ async function compactMutation(op) {
       const mergedPayload = mergeQueuedPayload(latest.payload || {}, op.payload || {})
       const mergedCache = { ...(latest.cachePayload || latest.payload || {}), ...(op.cachePayload || op.payload || {}) }
       await cleanupPayloadBlobs(latest.payload, mergedPayload)
-      await db.outbox.update(latest.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
+      await db.outbox.update(latest.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null, revision: nextRevision(latest) })
       return { compacted: true }
     }
   }
@@ -168,7 +171,7 @@ export async function enqueueMutation({ entity, hotelId, action, payload = null,
   if (!hotelId) throw new Error(`hotelId mancante per coda offline ${entity}:${action}`)
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
   const nextPayload = action === 'create' ? { ...(payload || {}), clientMutationId: payload?.clientMutationId || makeClientMutationId() } : payload
-  const op = { entity, hotelId, action, payload: nextPayload, cachePayload, targetId, tempId, createdAt: now(), attempts: 0, nextAttemptAt: 0, lastError: null }
+  const op = { entity, hotelId, action, payload: nextPayload, cachePayload, targetId, tempId, createdAt: now(), attempts: 0, nextAttemptAt: 0, lastError: null, revision: 1, leaseOwner: null, leaseUntil: 0 }
   const compacted = await compactMutation(op)
   const current = await getCachedCollection(entity, hotelId)
   const visualPayload = cachePayload || nextPayload
@@ -188,9 +191,38 @@ export function registerOfflineHandler(entity, handler) {
   handlers.set(entity, handler)
   if (storageAvailable() && onlineNow() && typeof queueMicrotask === 'function') queueMicrotask(() => drainOfflineQueue())
 }
+async function claimOutboxOperation(id) {
+  return db.transaction('rw', db.outbox, async () => {
+    const current = await db.outbox.get(id)
+    if (!current) return null
+    const leaseUntil = Number(current.leaseUntil || 0)
+    if (leaseUntil > now() && current.leaseOwner && current.leaseOwner !== DRAIN_OWNER) return null
+    const lease = { leaseOwner: DRAIN_OWNER, leaseUntil: now() + DRAIN_LEASE_MS }
+    await db.outbox.update(id, lease)
+    return { ...current, ...lease, revision: Number(current.revision || 1) }
+  })
+}
+async function releaseClaim(id, extra = {}) {
+  await db.outbox.update(id, { ...extra, leaseOwner: null, leaseUntil: 0 })
+}
 async function moveToFailures(op, error) {
-  await db.failures.add({ ...op, sourceOutboxId: op.id, failedAt: now(), error: errorText(error), errorCode: error?.code || null, conflictFields: error?.conflictFields || null })
-  await db.outbox.delete(op.id)
+  await db.transaction('rw', db.outbox, db.failures, async () => {
+    const current = await db.outbox.get(op.id)
+    if (!current || current.leaseOwner !== DRAIN_OWNER || Number(current.revision || 1) !== Number(op.revision || 1)) return
+    await db.failures.add({ ...current, leaseOwner: null, leaseUntil: 0, sourceOutboxId: op.id, failedAt: now(), error: errorText(error), errorCode: error?.code || null, conflictFields: error?.conflictFields || null })
+    await db.outbox.delete(op.id)
+  })
+}
+async function handleConcurrentMutation(op, result) {
+  const current = await db.outbox.get(op.id)
+  if (!current || Number(current.revision || 1) === Number(op.revision || 1)) return false
+  if (op.action === 'create' && op.tempId && result?.id != null) {
+    const { clientMutationId: _mutation, ...updatePayload } = current.payload || {}
+    await releaseClaim(op.id, { action: 'update', targetId: result.id, tempId: null, payload: updatePayload, attempts: 0, nextAttemptAt: 0, lastError: null })
+  } else {
+    await releaseClaim(op.id, { attempts: 0, nextAttemptAt: 0, lastError: null })
+  }
+  return true
 }
 export async function drainOfflineQueue() {
   if (!storageAvailable() || draining || !onlineNow()) return
@@ -199,15 +231,17 @@ export async function drainOfflineQueue() {
   let nextWake = null
   try {
     const operations = await db.outbox.orderBy('id').toArray()
-    for (const op of operations) {
-      const handler = handlers.get(op.entity)
+    for (const snapshot of operations) {
+      const handler = handlers.get(snapshot.entity)
       if (!handler) continue
-      const wait = Number(op.nextAttemptAt || 0) - now()
+      const wait = Number(snapshot.nextAttemptAt || 0) - now()
       if (wait > 0) { nextWake = nextWake == null ? wait : Math.min(nextWake, wait); continue }
+      const op = await claimOutboxOperation(snapshot.id)
+      if (!op) continue
       let targetId = op.targetId
       if (targetId && String(targetId).startsWith('offline-')) {
         const mapped = await db.idmap.get(targetId)
-        if (!mapped?.realId) continue
+        if (!mapped?.realId) { await releaseClaim(op.id); continue }
         targetId = mapped.realId
       }
       try {
@@ -217,9 +251,20 @@ export async function drainOfflineQueue() {
           const cached = await getCachedCollection(op.entity, op.hotelId)
           await setCachedCollection(op.entity, op.hotelId, cached.map((item) => item.id === op.tempId ? { ...item, ...result, id: result.id, _offline: false } : item))
         }
+        if (await handleConcurrentMutation(op, result)) {
+          dispatchDataChange(op.entity, op.hotelId)
+          scheduleDrain(0)
+          continue
+        }
         await db.outbox.delete(op.id)
         dispatchDataChange(op.entity, op.hotelId)
       } catch (error) {
+        const current = await db.outbox.get(op.id)
+        if (current && Number(current.revision || 1) !== Number(op.revision || 1)) {
+          await releaseClaim(op.id, { attempts: 0, nextAttemptAt: 0, lastError: null })
+          scheduleDrain(0)
+          continue
+        }
         if (isPermanentError(error)) {
           console.error('offline sync blocked permanently', op.entity, op.action, error)
           await moveToFailures(op, error)
@@ -228,7 +273,7 @@ export async function drainOfflineQueue() {
         }
         const attempts = Number(op.attempts || 0) + 1
         const delay = nextDelay(attempts - 1)
-        await db.outbox.update(op.id, { attempts, nextAttemptAt: now() + delay, lastError: errorText(error) })
+        await releaseClaim(op.id, { attempts, nextAttemptAt: now() + delay, lastError: errorText(error) })
         if (!isTransientNetworkError(error)) console.error('offline sync retry', op.entity, op.action, error)
         nextWake = nextWake == null ? delay : Math.min(nextWake, delay)
       }
@@ -251,10 +296,10 @@ export async function retryOfflineFailure(id, { force = false } = {}) {
   if (!storageAvailable()) return false
   const failed = await db.failures.get(id)
   if (!failed) return false
-  const { id: _id, sourceOutboxId: _source, failedAt: _failedAt, error: _error, errorCode: _code, conflictFields: _fields, ...op } = failed
+  const { id: _id, sourceOutboxId: _source, failedAt: _failedAt, error: _error, errorCode: _code, conflictFields: _fields, leaseOwner: _leaseOwner, leaseUntil: _leaseUntil, ...op } = failed
   const payload = { ...(op.payload || {}) }
   if (force) { delete payload._syncBaseUpdatedAt; delete payload._syncBaseValues }
-  await db.outbox.add({ ...op, payload, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now() })
+  await db.outbox.add({ ...op, payload, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now(), revision: nextRevision(op), leaseOwner: null, leaseUntil: 0 })
   await db.failures.delete(id)
   dispatchDataChange(failed.entity, failed.hotelId)
   await dispatchStatus(); scheduleDrain(0)
