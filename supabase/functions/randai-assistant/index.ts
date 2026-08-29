@@ -51,9 +51,12 @@ Deno.serve(async (req: Request) => {
     const { data: membership } = await admin.from("hotel_memberships").select("active").eq("auth_user_id", userData.user.id).eq("hotel_id", hotelId).maybeSingle();
     if (!membership?.active) return json({ ok: false, error: "forbidden" }, 403);
 
-    // Memory first: a verified real-world solution is more valuable and cheaper than invoking an AI model.
-    const memoryResult = await admin.rpc("randai_search_memory", { p_hotel_id: hotelId, p_query: query, p_limit: 3 });
+    const [memoryResult, sensorResult] = await Promise.all([
+      admin.rpc("randai_search_memory", { p_hotel_id: hotelId, p_query: query, p_limit: 3 }),
+      admin.rpc("randai_sensor_context", { p_hotel_id: hotelId, p_query: query }),
+    ]);
     if (memoryResult.error) throw memoryResult.error;
+    const sensors = sensorResult.error ? [] : (sensorResult.data || []);
     const memory = memoryResult.data || [];
     if (memory.length > 0) {
       return json({
@@ -76,9 +79,11 @@ Deno.serve(async (req: Request) => {
           sourceLabel: item.source_label,
           lastConfirmedAt: item.last_confirmed_at,
         })),
+        sensors,
         procedure: null,
         equipment: [],
         history: [],
+        documents: [],
       });
     }
 
@@ -95,7 +100,7 @@ Deno.serve(async (req: Request) => {
     const ranked = (proceduresResult.data || []).map((procedure: any) => ({ procedure, score: scoreProcedure(procedure, query) })).filter((entry: any) => entry.score > 0).sort((a: any, b: any) => b.score - a.score);
     const procedure = ranked[0]?.procedure;
     const documents = documentsResult.error ? [] : (documentsResult.data || []);
-    if (!procedure && documents.length === 0) return json({ ok: true, found: false, reason: "no_approved_knowledge" });
+    if (!procedure && documents.length === 0 && sensors.length === 0) return json({ ok: true, found: false, reason: "no_approved_knowledge" });
 
     const queryText = normalize(query);
     const equipment = (equipmentResult.data || []).filter((item: any) => {
@@ -119,16 +124,8 @@ Deno.serve(async (req: Request) => {
       date: item.completed_at || item.completato_il || item.updated_at || null,
     }));
 
-    return json({
-      ok: true,
-      found: true,
-      source: procedure ? "approved_internal_knowledge" : "approved_documentation",
-      procedure: procedure ? { ...procedure, hotelId: procedure.hotel_id, sourceType: "procedura_interna", sourceLabel: procedure.source_label } : null,
-      equipment,
-      history,
-      documents,
-      memory: [],
-    });
+    const source = procedure ? "approved_internal_knowledge" : documents.length > 0 ? "approved_documentation" : "live_sensor_context";
+    return json({ ok: true, found: true, source, procedure: procedure ? { ...procedure, hotelId: procedure.hotel_id, sourceType: "procedura_interna", sourceLabel: procedure.source_label } : null, equipment, history, documents, memory: [], sensors });
   } catch (error) {
     console.error("randai-assistant", error instanceof Error ? error.message : "unknown");
     return json({ ok: false, error: "randai_unavailable" }, 500);

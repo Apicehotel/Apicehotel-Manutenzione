@@ -25,19 +25,13 @@ export default function RandAIAssistant() {
     setBusy(false)
   }, [session?.hotelId, session?.userId])
 
-  const hotelLabel = useMemo(() => ({
-    hotelgio: 'Hotel Giò',
-    chocohotel: 'Chocohotel',
-    brigantino: 'Il Brigantino',
-  }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
-
+  const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
 
   const submit = async (event) => {
     event.preventDefault()
     const clean = query.trim()
     if (!clean || busy) return
-
     setMessages((current) => [...current, { role: 'user', text: clean }])
     setQuery('')
     setBusy(true)
@@ -45,28 +39,13 @@ export default function RandAIAssistant() {
     try {
       const guidance = await retrieveRandAIGuidance({ hotelId: session.hotelId, query: clean })
       if (!guidance) {
-        setMessages((current) => [...current, {
-          role: 'assistant',
-          kind: 'missing',
-          text: 'Non trovo ancora una procedura interna approvata per questo problema in questa struttura. Posso aiutarti a raccogliere temperatura, zona, impianto coinvolto e sintomi per preparare la diagnosi senza inventare una procedura.',
-        }])
+        setMessages((current) => [...current, { role: 'assistant', kind: 'missing', text: 'Non trovo ancora conoscenza approvata o dati live sufficienti per questo problema. Non improvviso: raccogliamo zona, impianto e sintomi e poi decidiamo il controllo successivo.' }])
         return
       }
-
-      setMessages((current) => [...current, {
-        role: 'assistant',
-        kind: 'procedure',
-        procedure: guidance.procedure,
-        equipment: guidance.equipment || [],
-        history: guidance.history || [],
-      }])
+      setMessages((current) => [...current, { role: 'assistant', kind: 'guidance', ...guidance }])
     } catch (error) {
       console.error('RandAI knowledge retrieval failed', error)
-      setMessages((current) => [...current, {
-        role: 'assistant',
-        kind: 'error',
-        text: 'Non riesco a leggere la base tecnica in questo momento. Non improvviso: riprova tra poco oppure segui la procedura manuale già nota alla squadra.',
-      }])
+      setMessages((current) => [...current, { role: 'assistant', kind: 'error', text: 'Non riesco a leggere la base tecnica in questo momento. Non improvviso: riprova tra poco oppure segui la procedura manuale già nota alla squadra.' }])
     } finally {
       setBusy(false)
     }
@@ -85,34 +64,56 @@ export default function RandAIAssistant() {
             {messages.length === 0 && (
               <div className="randai__welcome">
                 <b>Come posso aiutarti?</b>
-                <p>Descrivi il problema. Cerco prima nelle procedure interne approvate, negli impianti e nello storico visibile della struttura.</p>
-                {session.hotelId === 'hotelgio' && (
-                  <button type="button" onClick={() => setQuery('Al Jazz i condizionatori non freddano, cosa faccio?')}>
-                    Prova: condizionatori Jazz
-                  </button>
-                )}
+                <p>Descrivi il problema. Controllo prima memoria verificata, dati live, procedure, impianti, manuali e storico della struttura.</p>
+                {session.hotelId === 'hotelgio' && <button type="button" onClick={() => setQuery('Al Jazz i condizionatori non freddano, cosa faccio?')}>Prova: condizionatori Jazz</button>}
               </div>
             )}
 
             {messages.map((message, index) => message.role === 'user' ? (
               <div className="randai__bubble randai__bubble--user" key={`${index}-${message.text}`}>{message.text}</div>
-            ) : message.kind === 'procedure' ? (
-              <article className="randai__bubble randai__bubble--assistant" key={`${index}-${message.procedure.id}`}>
-                <span className="randai__source">Procedura interna · v{message.procedure.version || 1}</span>
-                <h3>{message.procedure.title}</h3>
-                <p>{message.procedure.summary}</p>
-                <ol>{message.procedure.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+            ) : message.kind === 'guidance' ? (
+              <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
+                {message.sensors?.length > 0 && (
+                  <div className="randai__equipment">
+                    <b>Dati live impianto</b>
+                    {message.sensors.map((sensor) => (
+                      <div key={sensor.device_id} className="randai__equipment-item">
+                        <strong>{sensor.semantic_label}</strong>
+                        <span>{sensor.online ? 'Online' : 'Offline'}{sensor.stale ? ' · dato non recente' : ''}</span>
+                        {sensor.temperature != null && <small>{sensor.temperature} {sensor.unit || '°C'} · {sensor.zone}</small>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.memory?.length > 0 && (
+                  <div className="randai__equipment">
+                    <b>Memoria RandAI verificata</b>
+                    {message.memory.map((item) => (
+                      <div key={item.id} className="randai__equipment-item">
+                        <strong>{item.symptom}</strong>
+                        {item.cause && <span>Causa confermata: {item.cause}</span>}
+                        <small>Soluzione: {item.solution}</small>
+                        <small>{item.confirmationCount || 1} conferma/e · {item.sourceLabel}</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.procedure && (
+                  <>
+                    <span className="randai__source">Procedura interna · v{message.procedure.version || 1}</span>
+                    <h3>{message.procedure.title}</h3>
+                    <p>{message.procedure.summary}</p>
+                    <ol>{(message.procedure.steps || []).map((step) => <li key={step}>{step}</li>)}</ol>
+                  </>
+                )}
                 {message.equipment?.length > 0 && (
                   <div className="randai__equipment">
                     <b>Impianto collegato</b>
                     {message.equipment.map((item) => (
                       <div key={item.id} className="randai__equipment-item">
-                        <strong>{item.name}</strong>
-                        <span>{item.location}</span>
+                        <strong>{item.name}</strong><span>{item.location}</span>
                         {item.description && <small>{item.description}</small>}
-                        {item.randai_equipment_serves?.length > 0 && (
-                          <small>Serve: {item.randai_equipment_serves.map((area) => area.served_area).join(', ')}</small>
-                        )}
+                        {item.randai_equipment_serves?.length > 0 && <small>Serve: {item.randai_equipment_serves.map((area) => area.served_area).join(', ')}</small>}
                       </div>
                     ))}
                   </div>
@@ -129,28 +130,27 @@ export default function RandAIAssistant() {
                     ))}
                   </div>
                 )}
-                <small>{message.procedure.sourceLabel}</small>
-                {message.procedure.caution && <div className="randai__caution">{message.procedure.caution}</div>}
+                {message.documents?.length > 0 && <small>Documentazione tecnica approvata trovata: {message.documents.length} riferimento/i.</small>}
+                {message.procedure?.sourceLabel && <small>{message.procedure.sourceLabel}</small>}
+                {message.procedure?.caution && <div className="randai__caution">{message.procedure.caution}</div>}
               </article>
             ) : (
               <div className="randai__bubble randai__bubble--assistant" key={`${index}-${message.text}`}>
-                <span className="randai__source">{message.kind === 'error' ? 'Base tecnica non disponibile' : 'Nessuna procedura trovata'}</span>
+                <span className="randai__source">{message.kind === 'error' ? 'Base tecnica non disponibile' : 'Conoscenza insufficiente'}</span>
                 <p>{message.text}</p>
               </div>
             ))}
-            {busy && <div className="randai__bubble randai__bubble--assistant"><span className="randai__source">Consulto base tecnica…</span></div>}
+            {busy && <div className="randai__bubble randai__bubble--assistant"><span className="randai__source">Controllo memoria e stato impianto…</span></div>}
           </div>
 
           <form className="randai__composer" onSubmit={submit}>
             <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Al 1° Jazz non freddano i condizionatori…" aria-label="Domanda a RandAI" disabled={busy} />
-            <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Cerco…' : 'Chiedi'}</button>
+            <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Controllo…' : 'Chiedi'}</button>
           </form>
         </section>
       )}
 
-      <button type="button" className="randai__fab" onClick={() => setOpen((value) => !value)} aria-label="Apri RandAI" data-testid="randai-fab">
-        <img src="/icons/randai-cat.webp" alt="" aria-hidden="true" />
-      </button>
+      <button type="button" className="randai__fab" onClick={() => setOpen((value) => !value)} aria-label="Apri RandAI" data-testid="randai-fab"><img src="/icons/randai-cat.webp" alt="" aria-hidden="true" /></button>
     </div>
   )
 }
