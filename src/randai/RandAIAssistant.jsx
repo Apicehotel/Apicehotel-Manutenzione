@@ -1,26 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadSession } from '../session.js'
-import { findInternalProcedure } from './knowledge.js'
+import { retrieveRandAIGuidance } from './randai-data.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
-
-function answerFor(hotelId, query) {
-  const procedure = findInternalProcedure({ hotelId, query })
-  if (!procedure) {
-    return {
-      kind: 'missing',
-      text: 'Non trovo ancora una procedura interna approvata per questo problema. Posso aiutarti a raccogliere i dati, ma non inventerò una procedura tecnica.',
-    }
-  }
-  return { kind: 'procedure', procedure }
-}
 
 export default function RandAIAssistant() {
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState([])
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const refresh = () => setSession(loadSession())
@@ -32,6 +22,7 @@ export default function RandAIAssistant() {
     setOpen(false)
     setMessages([])
     setQuery('')
+    setBusy(false)
   }, [session?.hotelId, session?.userId])
 
   const hotelLabel = useMemo(() => ({
@@ -42,13 +33,42 @@ export default function RandAIAssistant() {
 
   if (!session?.hotelId) return null
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
     const clean = query.trim()
-    if (!clean) return
-    const reply = answerFor(session.hotelId, clean)
-    setMessages((current) => [...current, { role: 'user', text: clean }, { role: 'assistant', ...reply }])
+    if (!clean || busy) return
+
+    setMessages((current) => [...current, { role: 'user', text: clean }])
     setQuery('')
+    setBusy(true)
+
+    try {
+      const guidance = await retrieveRandAIGuidance({ hotelId: session.hotelId, query: clean })
+      if (!guidance) {
+        setMessages((current) => [...current, {
+          role: 'assistant',
+          kind: 'missing',
+          text: 'Non trovo ancora una procedura interna approvata per questo problema in questa struttura. Posso aiutarti a raccogliere temperatura, zona, impianto coinvolto e sintomi per preparare la diagnosi senza inventare una procedura.',
+        }])
+        return
+      }
+
+      setMessages((current) => [...current, {
+        role: 'assistant',
+        kind: 'procedure',
+        procedure: guidance.procedure,
+        equipment: guidance.equipment || [],
+      }])
+    } catch (error) {
+      console.error('RandAI knowledge retrieval failed', error)
+      setMessages((current) => [...current, {
+        role: 'assistant',
+        kind: 'error',
+        text: 'Non riesco a leggere la base tecnica in questo momento. Non improvviso: riprova tra poco oppure segui la procedura manuale già nota alla squadra.',
+      }])
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -64,7 +84,7 @@ export default function RandAIAssistant() {
             {messages.length === 0 && (
               <div className="randai__welcome">
                 <b>Come posso aiutarti?</b>
-                <p>Descrivi il problema. Ti guiderò prima con le procedure interne approvate della struttura.</p>
+                <p>Descrivi il problema. Cerco prima nelle procedure interne approvate e negli impianti della struttura.</p>
                 {session.hotelId === 'hotelgio' && (
                   <button type="button" onClick={() => setQuery('Al Jazz i condizionatori non freddano, cosa faccio?')}>
                     Prova: condizionatori Jazz
@@ -77,24 +97,40 @@ export default function RandAIAssistant() {
               <div className="randai__bubble randai__bubble--user" key={`${index}-${message.text}`}>{message.text}</div>
             ) : message.kind === 'procedure' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`${index}-${message.procedure.id}`}>
-                <span className="randai__source">Procedura interna</span>
+                <span className="randai__source">Procedura interna · v{message.procedure.version || 1}</span>
                 <h3>{message.procedure.title}</h3>
                 <p>{message.procedure.summary}</p>
                 <ol>{message.procedure.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+                {message.equipment?.length > 0 && (
+                  <div className="randai__equipment">
+                    <b>Impianto collegato</b>
+                    {message.equipment.map((item) => (
+                      <div key={item.id} className="randai__equipment-item">
+                        <strong>{item.name}</strong>
+                        <span>{item.location}</span>
+                        {item.description && <small>{item.description}</small>}
+                        {item.randai_equipment_serves?.length > 0 && (
+                          <small>Serve: {item.randai_equipment_serves.map((area) => area.served_area).join(', ')}</small>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <small>{message.procedure.sourceLabel}</small>
-                <div className="randai__caution">{message.procedure.caution}</div>
+                {message.procedure.caution && <div className="randai__caution">{message.procedure.caution}</div>}
               </article>
             ) : (
               <div className="randai__bubble randai__bubble--assistant" key={`${index}-${message.text}`}>
-                <span className="randai__source">Nessuna procedura trovata</span>
+                <span className="randai__source">{message.kind === 'error' ? 'Base tecnica non disponibile' : 'Nessuna procedura trovata'}</span>
                 <p>{message.text}</p>
               </div>
             ))}
+            {busy && <div className="randai__bubble randai__bubble--assistant"><span className="randai__source">Consulto base tecnica…</span></div>}
           </div>
 
           <form className="randai__composer" onSubmit={submit}>
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Al 1° Jazz non freddano i condizionatori…" aria-label="Domanda a RandAI" />
-            <button type="submit" disabled={!query.trim()}>Chiedi</button>
+            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Al 1° Jazz non freddano i condizionatori…" aria-label="Domanda a RandAI" disabled={busy} />
+            <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Cerco…' : 'Chiedi'}</button>
           </form>
         </section>
       )}
