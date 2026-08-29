@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "catalog": "https://github.com/VoltAgent/awesome-agent-skills",
+  "projectSkill": ".agents/skills/randapp-quality-gate/SKILL.md",
+  "core": [
+    {"id":"supabase/postgres-best-practices","stage":[20,21,25],"source":"https://github.com/supabase/agent-skills","official":"https://officialskills.sh/supabase/skills/postgres-best-practices"},
+    {"id":"openai/security-threat-model","stage":[21],"source":"https://github.com/openai/skills","official":"https://officialskills.sh/openai/skills/security-threat-model"},
+    {"id":"openai/security-best-practices","stage":[21,24,25],"source":"https://github.com/openai/skills","official":"https://officialskills.sh/openai/skills/security-best-practices"},
+    {"id":"openai/playwright","stage":[22,25,28],"source":"https://github.com/openai/skills","official":"https://officialskills.sh/openai/skills/playwright"},
+    {"id":"openai/gh-fix-ci","stage":[27],"source":"https://github.com/openai/skills","official":"https://officialskills.sh/openai/skills/gh-fix-ci"},
+    {"id":"trailofbits/audit-context-building","stage":[19,21],"official":"https://officialskills.sh/trailofbits/skills/audit-context-building"},
+    {"id":"trailofbits/differential-review","stage":[21,24,25,27],"official":"https://officialskills.sh/trailofbits/skills/differential-review"},
+    {"id":"trailofbits/insecure-defaults","stage":[21],"official":"https://officialskills.sh/trailofbits/skills/insecure-defaults"},
+    {"id":"trailofbits/sharp-edges","stage":[21],"official":"https://officialskills.sh/trailofbits/skills/sharp-edges"},
+    {"id":"trailofbits/static-analysis","stage":[19,21,27],"official":"https://officialskills.sh/trailofbits/skills/static-analysis"},
+    {"id":"addyosmani/web-quality-audit","stage":[26],"official":"https://officialskills.sh/addyosmani/skills/web-quality-audit"},
+    {"id":"addyosmani/core-web-vitals","stage":[26],"official":"https://officialskills.sh/addyosmani/skills/core-web-vitals"},
+    {"id":"addyosmani/accessibility","stage":[26],"official":"https://officialskills.sh/addyosmani/skills/accessibility"}
+  ],
+  "optional": [
+    {"id":"openai/vercel-deploy","stage":[28],"official":"https://officialskills.sh/openai/skills/vercel-deploy"},
+    {"id":"testmu-ai/appium-skill","stage":[22],"source":"https://github.com/LambdaTest/agent-skills/tree/main/appium-skill"},
+    {"id":"testmu-ai/smartui-skill","stage":[22]},
+    {"id":"garrytan/canary","stage":[28]}
+  ],
+  "runtimeAlreadyPresent": ["playwright", "@sentry/react"],
+  "policy": {
+    "installAll": false,
+    "officialSourcesOnly": true,
+    "activateByStage": true,
+    "noRuntimeDuplication": true
+  }
+}
