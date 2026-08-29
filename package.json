@@ -12,6 +12,7 @@
     "test:matrix": "node scripts/check-quality-matrix.mjs",
     "test:critical": "node scripts/run-critical-tests.mjs",
     "test:agent-toolchain": "node scripts/check-agent-toolchain.mjs",
+    "skills:install": "node scripts/install-agent-skills.mjs",
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",
     "test:quality": "npm run test:matrix && npm run test:agent-toolchain && npm run test:critical && npm test"
