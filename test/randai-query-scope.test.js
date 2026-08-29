@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { detectRandAIIntent, detectRandAISection, filterSensorsBySection, scopeGuidanceForQuery } from '../supabase/functions/_shared/randai-query-scope.js'
+import { detectRandAIIntent, detectRandAISection, filterSensorsBySection, isRandAIFollowUp, resolveRandAIQuery, scopeGuidanceForQuery } from '../supabase/functions/_shared/randai-query-scope.js'
 
 const sensors = [
   { device_id: 'j1', zone: '1° Jazz', semantic_label: 'Circuito/sonda tecnica climatizzazione Jazz P1' },
@@ -24,19 +24,45 @@ test('domande di ubicazione sono riconosciute in forme diverse', () => {
   assert.equal(detectRandAIIntent('Qual è l’ubicazione del motore Jazz?'), 'location')
   assert.equal(detectRandAIIntent('Posizione motore climatizzazione Jazz'), 'location')
   assert.equal(detectRandAIIntent('Come è localizzato il motore Jazz?'), 'location')
+  assert.equal(detectRandAIIntent('Come ci arrivo al motore Wine?'), 'location')
+})
+
+test('follow-up breve eredita il contesto Wine dello screenshot', () => {
+  assert.equal(isRandAIFollowUp('Dove?'), true)
+  const resolved = resolveRandAIQuery('Dove?', 'Motore condizionata wine')
+  assert.equal(detectRandAISection(resolved), 'wine')
+  assert.equal(detectRandAIIntent(resolved), 'location')
+  assert.match(resolved, /Motore condizionata wine/)
+  assert.match(resolved, /Dove\?/)
+})
+
+test('follow-up successivi mantengono il tema originario', () => {
+  const first = resolveRandAIQuery('Dove?', 'Motore condizionata wine')
+  const second = resolveRandAIQuery('E la temperatura?', first)
+  const third = resolveRandAIQuery('Cosa controllo prima?', second)
+  assert.equal(detectRandAISection(second), 'wine')
+  assert.equal(detectRandAIIntent(second), 'location')
+  assert.match(second, /temperatura/i)
+  assert.equal(detectRandAISection(third), 'wine')
+})
+
+test('una nuova domanda esplicita non eredita la sezione precedente', () => {
+  assert.equal(isRandAIFollowUp('Temperatura Jazz P3'), false)
+  assert.equal(resolveRandAIQuery('Temperatura Jazz P3', 'Motore condizionata wine'), 'Temperatura Jazz P3')
 })
 
 test('intento ubicazione non mostra temperature o diagnosi', () => {
   const scoped = scopeGuidanceForQuery({
-    query: 'Dove si trova il motore aria condizionata jazz?',
+    query: 'Dove?',
+    contextQuery: 'Motore condizionata wine',
     sensors,
-    hvacDiagnostic: { section: 'jazz', temperatures: [{ temperature: 15.9 }] },
+    hvacDiagnostic: { section: 'wine', temperatures: [{ temperature: 17 }] },
     memory: [{ solution: 'x' }],
-    procedure: { title: 'Jazz non raffredda' },
+    procedure: { title: 'Wine non raffredda' },
     history: [{ id: 1 }],
   })
   assert.equal(scoped.intent, 'location')
-  assert.equal(scoped.section, 'jazz')
+  assert.equal(scoped.section, 'wine')
   assert.deepEqual(scoped.sensors, [])
   assert.equal(scoped.hvacDiagnostic, null)
   assert.equal(scoped.procedure, null)
