@@ -7,6 +7,7 @@ import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META
 import { canUser } from '../permissions.js'
 import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
 import { operationFailed } from '../operation-feedback.js'
+import RandAISuggestion from './RandAISuggestion.jsx'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -301,6 +302,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
           </dl>
           {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
+          <RandAISuggestion issue={issue} hotelId={issue.hotelId} />
         </>
       )}
 
