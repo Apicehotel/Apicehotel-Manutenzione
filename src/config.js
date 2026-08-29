@@ -8,10 +8,12 @@ export const HOTELS = [
 // i ruoli specializzati Multi Hotel restano separati. "Responsabile" è rimosso.
 // "Capo Governante" ha gli stessi permessi operativi di Governante e in più
 // riceve le notifiche Housekeeping della propria struttura.
-export const ROLES = ['admin', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'Governante', 'Capo Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine/Jazz', 'Colazione Jazz']
+// "RandAI" abilita gli utenti destinati al Control Center /randai.
+export const ROLES = ['admin', 'RandAI', 'Supremo', 'Direzione', 'Direttore Centro Congressi', 'Portiere Notturno', 'manutentore', 'Tecnico esterno', 'Governante', 'Capo Governante', 'Reception', 'Isola dei Golosi', 'Ristorante Wine/Jazz', 'Colazione Jazz']
 
 export const ROLE_PERMISSIONS = {
   admin: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'planning_sale'],
+  RandAI: ['manage_users', 'manage_all_hotels', 'create', 'assign', 'complete', 'take_charge', 'read_all_departments', 'planning_sale', 'randai_access'],
   Supremo: ['create', 'read_all_departments', 'read_own_hotel'],
   Direzione: ['create', 'assign', 'complete', 'read_all_departments'],
   manutentore: ['create', 'take_charge', 'complete', 'read_all_departments'],
