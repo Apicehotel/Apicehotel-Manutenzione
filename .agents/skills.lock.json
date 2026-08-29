@@ -10,9 +10,9 @@
     {"id":"openai/gh-fix-ci","installSkill":"gh-fix-ci","stage":[27],"source":"https://github.com/openai/skills"},
     {"id":"trailofbits/audit-context-building","installSkill":"audit-context-building","stage":[19,21],"source":"https://github.com/trailofbits/skills"},
     {"id":"trailofbits/differential-review","installSkill":"differential-review","stage":[21,24,25,27],"source":"https://github.com/trailofbits/skills"},
-    {"id":"trailofbits/insecure-defaults","installSkill":"insecure-defaults","stage":[21],"source":"https://github.com/trailofbits/skills"},
     {"id":"trailofbits/sharp-edges","installSkill":"sharp-edges","stage":[21],"source":"https://github.com/trailofbits/skills"},
-    {"id":"trailofbits/static-analysis","installSkill":"static-analysis","stage":[19,21,27],"source":"https://github.com/trailofbits/skills"},
+    {"id":"trailofbits/semgrep","installSkill":"semgrep","stage":[19,21,27],"source":"https://github.com/trailofbits/skills"},
+    {"id":"trailofbits/codeql","installSkill":"codeql","stage":[19,21,27],"source":"https://github.com/trailofbits/skills"},
     {"id":"addyosmani/web-quality-audit","installSkill":"web-quality-audit","stage":[26],"source":"https://github.com/addyosmani/web-quality-skills"},
     {"id":"addyosmani/core-web-vitals","installSkill":"core-web-vitals","stage":[26],"source":"https://github.com/addyosmani/web-quality-skills"},
     {"id":"addyosmani/accessibility","installSkill":"accessibility","stage":[26],"source":"https://github.com/addyosmani/web-quality-skills"}
