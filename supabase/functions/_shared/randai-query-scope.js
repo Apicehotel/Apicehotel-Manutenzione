@@ -25,37 +25,42 @@ export function isRandAIFollowUp(query) {
   )
 }
 
+export function extractRandAITopic(contextQuery) {
+  return String(contextQuery || '').split(/\.\s*Follow-up:/i)[0].trim().slice(0, 1200)
+}
+
 export function resolveRandAIQuery(query, contextQuery = '') {
   const clean = String(query || '').trim().slice(0, 1500)
-  const context = String(contextQuery || '').trim().slice(0, 1500)
+  const context = extractRandAITopic(contextQuery)
   if (!clean || !context || !isRandAIFollowUp(clean)) return clean
   return `${context}. Follow-up: ${clean}`.slice(0, 1500)
 }
 
 export function detectRandAIIntent(query) {
   const text = normalizeRandAIQuery(query)
+  const followUp = text.split(/follow-up:/).pop()?.trim() || text
   if (
-    text.includes('dove') ||
-    text.includes('si trova') ||
-    text.includes('ubicaz') ||
-    text.includes('posizion') ||
-    text.includes('localizz') ||
-    text.includes('collocat') ||
-    text.includes('come ci arrivo') ||
-    text.includes('come arriv') ||
-    text.includes('come raggiung')
+    followUp.includes('dove') ||
+    followUp.includes('si trova') ||
+    followUp.includes('ubicaz') ||
+    followUp.includes('posizion') ||
+    followUp.includes('localizz') ||
+    followUp.includes('collocat') ||
+    followUp.includes('come ci arrivo') ||
+    followUp.includes('come arriv') ||
+    followUp.includes('come raggiung')
   ) return 'location'
-  if (text.includes('temperatur') || text.includes('gradi') || /quanto.*grad/.test(text)) return 'temperature'
+  if (followUp.includes('temperatur') || followUp.includes('gradi') || /quanto.*grad/.test(followUp)) return 'temperature'
   if (
-    text.includes('non fredd') ||
-    text.includes('non raffresc') ||
-    text.includes('non cald') ||
-    text.includes('non riscald') ||
-    text.includes('guast') ||
-    text.includes('problema') ||
-    text.includes('non funzion') ||
-    text.includes('errore') ||
-    text.includes('allarme')
+    followUp.includes('non fredd') ||
+    followUp.includes('non raffresc') ||
+    followUp.includes('non cald') ||
+    followUp.includes('non riscald') ||
+    followUp.includes('guast') ||
+    followUp.includes('problema') ||
+    followUp.includes('non funzion') ||
+    followUp.includes('errore') ||
+    followUp.includes('allarme')
   ) return 'diagnostic'
   return 'general'
 }
