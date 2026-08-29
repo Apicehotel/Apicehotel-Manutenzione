@@ -19,8 +19,11 @@ test('richiesta Wine esclude completamente i sensori Jazz', () => {
   assert.deepEqual(filterSensorsBySection(sensors, 'wine').map((item) => item.device_id), ['w1', 'w2'])
 })
 
-test('domanda dove si trova viene classificata come ubicazione', () => {
+test('domande di ubicazione sono riconosciute in forme diverse', () => {
   assert.equal(detectRandAIIntent('Dove si trova il motore aria condizionata jazz?'), 'location')
+  assert.equal(detectRandAIIntent('Qual è l’ubicazione del motore Jazz?'), 'location')
+  assert.equal(detectRandAIIntent('Posizione motore climatizzazione Jazz'), 'location')
+  assert.equal(detectRandAIIntent('Come è localizzato il motore Jazz?'), 'location')
 })
 
 test('intento ubicazione non mostra temperature o diagnosi', () => {
