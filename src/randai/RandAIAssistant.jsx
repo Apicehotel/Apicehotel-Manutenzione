@@ -58,6 +58,7 @@ export default function RandAIAssistant() {
         kind: 'procedure',
         procedure: guidance.procedure,
         equipment: guidance.equipment || [],
+        history: guidance.history || [],
       }])
     } catch (error) {
       console.error('RandAI knowledge retrieval failed', error)
@@ -84,7 +85,7 @@ export default function RandAIAssistant() {
             {messages.length === 0 && (
               <div className="randai__welcome">
                 <b>Come posso aiutarti?</b>
-                <p>Descrivi il problema. Cerco prima nelle procedure interne approvate e negli impianti della struttura.</p>
+                <p>Descrivi il problema. Cerco prima nelle procedure interne approvate, negli impianti e nello storico visibile della struttura.</p>
                 {session.hotelId === 'hotelgio' && (
                   <button type="button" onClick={() => setQuery('Al Jazz i condizionatori non freddano, cosa faccio?')}>
                     Prova: condizionatori Jazz
@@ -112,6 +113,18 @@ export default function RandAIAssistant() {
                         {item.randai_equipment_serves?.length > 0 && (
                           <small>Serve: {item.randai_equipment_serves.map((area) => area.served_area).join(', ')}</small>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {message.history?.length > 0 && (
+                  <div className="randai__equipment">
+                    <b>Storico RandApp correlato</b>
+                    {message.history.map((item) => (
+                      <div key={`${item.kind}-${item.id}`} className="randai__equipment-item">
+                        <strong>{item.kind === 'intervento' ? 'Intervento' : 'Segnalazione'}{item.location ? ` · ${item.location}` : ''}</strong>
+                        {item.category && <span>{item.category}{item.status ? ` · ${item.status}` : ''}</span>}
+                        {item.text && <small>{item.text}</small>}
                       </div>
                     ))}
                   </div>
