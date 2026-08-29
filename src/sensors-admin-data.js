@@ -1,9 +1,8 @@
 import { supabase } from './supabase.js'
 
-// Gestione visibilità sensori (pannello admin). Ogni sensore fisico ha 3 flag:
+// Gestione visibilità dispositivi eWeLink. Ogni dispositivo fisico ha 3 flag:
 // mostra_hotelgio / mostra_chocohotel / mostra_brigantino.
 
-// Tutti i sensori dell'account, ordinati per nome (per il pannello admin).
 export async function fetchAllSensors() {
   if (!supabase) return { sensors: [], ok: false }
   try {
@@ -13,7 +12,6 @@ export async function fetchAllSensors() {
   } catch { return { sensors: [], ok: false } }
 }
 
-// Aggiorna i 3 flag di visibilità di un sensore.
 export async function updateSensorVisibility(deviceId, flags) {
   if (!supabase || !deviceId) return false
   try {
@@ -26,11 +24,8 @@ export async function updateSensorVisibility(deviceId, flags) {
   } catch { return false }
 }
 
-// Sincronizza i sensori da eWeLink (chiama la edge function), poi ritorna la
-// lista aggiornata. Usato dal pulsante "Sincronizza da eWeLink" nel pannello.
-export async function syncSensorsFromEwelink(supabaseUrl) {
-  try {
-    await fetch(`${supabaseUrl}/functions/v1/sync-sensori-temperatura`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-  } catch { /* se non raggiungibile, mostriamo comunque ciò che c'è nel DB */ }
+// La sincronizzazione eWeLink usa credenziali e un segreto server-side e viene
+// eseguita dal worker/cron. Dal browser ricarichiamo soltanto i dati già sincronizzati.
+export async function refreshSensors() {
   return fetchAllSensors()
 }
