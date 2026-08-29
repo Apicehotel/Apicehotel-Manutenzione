@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
 import RandAIAssistant from './randai/RandAIAssistant.jsx'
+import RandAIConsole from './randai/console/RandAIConsole.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import PublicIssueView from './public-issue-view.jsx'
 import NtfyShortLink from './randapp/ntfy/NtfyShortLink.jsx'
@@ -43,46 +44,30 @@ import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
+const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
 const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 
 initUiSize()
 initTheme()
-
-if (technicianMatch || publicIssueMatch) {
-  import('./styles.css')
-}
+if (technicianMatch || publicIssueMatch) import('./styles.css')
 
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <AppErrorBoundary>
-      {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
-        : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
-        : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
-        : <><App /><RandAIAssistant /></>}
-    </AppErrorBoundary>
-  </React.StrictMode>,
+  <React.StrictMode><AppErrorBoundary>
+    {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
+      : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
+      : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
+      : randaiConsoleMatch ? <RandAIConsole />
+      : <><App /><RandAIAssistant /></>}
+  </AppErrorBoundary></React.StrictMode>,
 )
 
-if (pendingNtfyShort && !ntfyShortMatch) {
-  window.addEventListener('apice-session-changed', () => {
-    window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`)
-  }, { once: true })
-}
+if (pendingNtfyShort && !ntfyShortMatch) window.addEventListener('apice-session-changed',()=>window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`),{once:true})
 
-if (!technicianMatch && !ntfyShortMatch) {
-  registerPwa()
-  initPresenceStatusSync()
-  initUrgentOwnershipGuard()
-  initNotificationOnboarding()
-  import('./diagnostics-client.js').then(({ installDiagnosticsCapture }) => installDiagnosticsCapture()).catch(() => {})
-  import('./external-telemetry.js').then(({ initExternalTelemetry }) => initExternalTelemetry()).catch(() => {})
-
-  const repair = (hotelId) => repairPushSubscription(hotelId).catch((error) => {
-    if (navigator.onLine) console.warn('Ripristino notifiche non riuscito', error)
-  })
-  window.addEventListener('apice-session-changed', (event) => {
-    const hotelId = event.detail?.hotelId
-    if (hotelId) setTimeout(() => repair(hotelId), 250)
-  })
-  window.addEventListener('load', () => setTimeout(() => repair(), 1500), { once: true })
+if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
+  registerPwa(); initPresenceStatusSync(); initUrgentOwnershipGuard(); initNotificationOnboarding()
+  import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{})
+  import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{})
+  const repair=(hotelId)=>repairPushSubscription(hotelId).catch((error)=>{if(navigator.onLine)console.warn('Ripristino notifiche non riuscito',error)})
+  window.addEventListener('apice-session-changed',(event)=>{const hotelId=event.detail?.hotelId;if(hotelId)setTimeout(()=>repair(hotelId),250)})
+  window.addEventListener('load',()=>setTimeout(()=>repair(),1500),{once:true})
 }
