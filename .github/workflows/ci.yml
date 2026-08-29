@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/base-multihotel
+      - feature/randai-console
   pull_request:
     branches:
       - feature/base-multihotel
