@@ -20,7 +20,7 @@ const packs = [
 ]
 
 for (const pack of packs) {
-  const args = ['--yes', 'skills', 'add', pack.repo, '-y']
+  const args = ['--yes', 'skills', 'add', pack.repo, '--agent', 'codex', '--yes']
   for (const skill of pack.skills) args.push('--skill', skill)
 
   console.log(`\n==> ${pack.repo}: ${pack.skills.join(', ')}`)
@@ -29,4 +29,4 @@ for (const pack of packs) {
   if (result.status !== 0) process.exit(result.status ?? 1)
 }
 
-console.log('\nRandApp agent skills installate dalla selezione curata. Eseguire npm run test:agent-toolchain prima di usarle come gate.')
+console.log('\nRandApp agent skills installate localmente per Codex dalla selezione curata. Eseguire npm run test:agent-toolchain prima di usarle come gate.')
