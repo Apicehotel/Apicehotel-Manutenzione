@@ -38,6 +38,9 @@ jobs:
       - name: Dependency usage audit
         run: npm run test:dependencies
 
+      - name: Source health audit
+        run: npm run test:code-health
+
       - name: Quality matrix
         run: npm run test:matrix
 
