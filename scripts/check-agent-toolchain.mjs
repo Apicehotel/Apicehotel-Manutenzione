@@ -31,7 +31,9 @@ const required = [
   'openai/playwright',
   'trailofbits/audit-context-building',
   'trailofbits/differential-review',
-  'trailofbits/static-analysis',
+  'trailofbits/sharp-edges',
+  'trailofbits/semgrep',
+  'trailofbits/codeql',
   'addyosmani/web-quality-audit',
   'addyosmani/accessibility',
   'openai/gh-fix-ci',
@@ -66,4 +68,9 @@ for (const marker of ['Multi-hotel isolation', 'Offline / chaos', 'Production ga
   if (!skill.includes(marker)) throw new Error(`Agent toolchain: quality gate incompleto, manca ${marker}`)
 }
 
-console.log(`Agent toolchain OK: ${manifest.core.length} skill core, ${manifest.optional?.length || 0} opzionali, fonti approvate e quality gate RandApp presenti`)
+for (const item of manifest.core) {
+  const installedPath = path.join(root, '.agents', 'skills', item.installSkill, 'SKILL.md')
+  if (!fs.existsSync(installedPath)) throw new Error(`Agent toolchain: skill core non installata ${item.installSkill}`)
+}
+
+console.log(`Agent toolchain OK: ${manifest.core.length} skill core installate, ${manifest.optional?.length || 0} opzionali, fonti approvate e quality gate RandApp presenti`)
