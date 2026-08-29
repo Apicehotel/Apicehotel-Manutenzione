@@ -45,12 +45,17 @@ test('RandAI is read-only outside dedicated knowledge tables', () => {
   assert.match(migration, /module in \('home','issues','planning_work','sensors','temperature','users'\)/)
 })
 
-test('PIN recovery has source+email throttling', () => {
+test('PIN recovery has atomic source+email throttling', () => {
   const source = read('supabase/functions/pin-recovery/index.ts')
-  assert.match(source, /MAX_ATTEMPTS=3/)
-  assert.match(source, /WINDOW_MS=30\*60\*1000/)
-  assert.match(source, /pin_recovery_rate_limits/)
+  const migration = read('supabase/migrations/20260829222950_roadmap21_atomic_pin_recovery_rate_limit.sql')
+  assert.match(source, /consume_pin_recovery_rate_limit/)
+  assert.match(source, /p_max_attempts:3/)
+  assert.match(source, /p_window_seconds:1800/)
+  assert.match(source, /address.*email/)
   assert.match(source, /250-/)
+  assert.match(migration, /for update/i)
+  assert.match(migration, /revoke all on function public\.consume_pin_recovery_rate_limit.*authenticated/i)
+  assert.match(migration, /grant execute on function public\.consume_pin_recovery_rate_limit.*service_role/i)
 })
 
 test('RandAI UI ships without prefilled default credentials', () => {
