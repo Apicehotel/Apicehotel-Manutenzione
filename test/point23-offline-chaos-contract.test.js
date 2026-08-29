@@ -6,9 +6,18 @@ const source = readFileSync(new URL('../src/offline-store.js', import.meta.url),
 const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
-test('point23: outbox uses a cross-tab Dexie lease, not only module-local draining', () => {
+test('point23: outbox uses a persistent cross-tab Dexie drain lease', () => {
+  assert.match(source, /db\.version\(4\)\.stores/)
+  assert.match(source, /leases:\s*'&key,owner,expiresAt'/)
   assert.match(source, /DRAIN_OWNER\s*=\s*uuid\(\)/)
+  assert.match(source, /DRAIN_LEASE_KEY\s*=\s*'outbox-drain'/)
   assert.match(source, /DRAIN_LEASE_MS\s*=\s*120000/)
+  assert.match(source, /acquireDrainLease/)
+  assert.match(source, /db\.leases\.add/)
+  assert.match(source, /releaseDrainLease/)
+})
+
+test('point23: per-operation leases remain as crash and replay defense', () => {
   assert.match(source, /db\.transaction\('rw',\s*db\.outbox/)
   assert.match(source, /leaseOwner/)
   assert.match(source, /leaseUntil/)

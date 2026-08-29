@@ -19,6 +19,14 @@ db.version(3).stores({
   blobs: '&id,createdAt',
   failures: '++id,entity,hotelId,action,tempId,targetId,failedAt',
 })
+db.version(4).stores({
+  cache: '&key,entity,hotelId,updatedAt',
+  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
+  idmap: '&tempId,realId',
+  blobs: '&id,createdAt',
+  failures: '++id,entity,hotelId,action,tempId,targetId,failedAt',
+  leases: '&key,owner,expiresAt',
+})
 
 const handlers = new Map()
 let draining = false
@@ -31,6 +39,7 @@ const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.ra
 const BACKOFF_STEPS = [5000, 15000, 30000, 60000, 120000, 300000]
 const OFFLINE_BLOB_PREFIX = 'offline-blob:'
 const DRAIN_OWNER = uuid()
+const DRAIN_LEASE_KEY = 'outbox-drain'
 const DRAIN_LEASE_MS = 120000
 
 const errorText = (error) => String(error?.message || error || '')
@@ -191,6 +200,26 @@ export function registerOfflineHandler(entity, handler) {
   handlers.set(entity, handler)
   if (storageAvailable() && onlineNow() && typeof queueMicrotask === 'function') queueMicrotask(() => drainOfflineQueue())
 }
+async function acquireDrainLease() {
+  try {
+    return await db.transaction('rw', db.leases, async () => {
+      const current = await db.leases.get(DRAIN_LEASE_KEY)
+      if (current && Number(current.expiresAt || 0) > now() && current.owner !== DRAIN_OWNER) return false
+      if (current) await db.leases.delete(DRAIN_LEASE_KEY)
+      await db.leases.add({ key: DRAIN_LEASE_KEY, owner: DRAIN_OWNER, expiresAt: now() + DRAIN_LEASE_MS })
+      return true
+    })
+  } catch (error) {
+    if (error?.name === 'ConstraintError') return false
+    throw error
+  }
+}
+async function releaseDrainLease() {
+  await db.transaction('rw', db.leases, async () => {
+    const current = await db.leases.get(DRAIN_LEASE_KEY)
+    if (current?.owner === DRAIN_OWNER) await db.leases.delete(DRAIN_LEASE_KEY)
+  })
+}
 async function claimOutboxOperation(id) {
   return db.transaction('rw', db.outbox, async () => {
     const current = await db.outbox.get(id)
@@ -226,6 +255,8 @@ async function handleConcurrentMutation(op, result) {
 }
 export async function drainOfflineQueue() {
   if (!storageAvailable() || draining || !onlineNow()) return
+  const hasLease = await acquireDrainLease()
+  if (!hasLease) return
   draining = true
   await dispatchStatus()
   let nextWake = null
@@ -280,6 +311,7 @@ export async function drainOfflineQueue() {
     }
   } finally {
     draining = false
+    await releaseDrainLease().catch(() => {})
     await dispatchStatus()
     if (onlineNow() && nextWake != null) scheduleDrain(nextWake)
   }
