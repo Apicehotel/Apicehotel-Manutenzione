@@ -23,7 +23,7 @@ function scoreProcedure(item: any, query: string) {
 function scoreHistory(item: any, query: string, procedure: any) {
   const words = normalize(query).split(/\s+/).filter((word) => word.length > 3);
   const haystack = normalize([item.location, item.camera, item.category, item.categoria, item.description, item.note, item.completion_note, item.pezzo_nome, item.pezzo_sostituito, item.sezione].join(" "));
-  let score = words.reduce((total, word) => total + (haystack.includes(word) ? 1 : 0), 0;
+  let score = words.reduce((total, word) => total + (haystack.includes(word) ? 1 : 0), 0);
   if (procedure?.category && haystack.includes(normalize(procedure.category))) score += 3;
   if (procedure?.area && haystack.includes(normalize(procedure.area))) score += 2;
   return score;
