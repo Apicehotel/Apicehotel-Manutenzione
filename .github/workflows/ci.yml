@@ -85,6 +85,12 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:device
 
+      - name: Visual baseline candidate
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+          VISUAL_UPDATE: '1'
+        run: npm run test:visual
+
       - name: Upload E2E screenshots
         if: always()
         uses: actions/upload-artifact@v4
