@@ -11,7 +11,7 @@ const packs = [
   },
   {
     repo: 'trailofbits/skills',
-    skills: ['audit-context-building', 'differential-review', 'insecure-defaults', 'sharp-edges', 'static-analysis'],
+    skills: ['audit-context-building', 'differential-review', 'sharp-edges', 'semgrep', 'codeql'],
   },
   {
     repo: 'addyosmani/web-quality-skills',
