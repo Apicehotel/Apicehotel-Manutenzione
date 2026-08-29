@@ -46,7 +46,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'admin', label: 'Amministrazione', items: [
         { id: 'admin-users', icon: 'users', label: 'Utenti', show: canUser(user, 'users', 'manage') },
         { id: 'admin-navigation', icon: 'sliders', label: 'Ruoli e permessi', show: canUser(user, 'role_permissions', 'manage') },
-        { id: 'admin-sensors', icon: 'sensor', label: 'Sensori', show: canUser(user, 'sensors', 'manage') },
+        { id: 'admin-sensors', icon: 'sensor', label: 'Configura sensori', show: canUser(user, 'sensors', 'manage') },
         { id: 'admin-usage', icon: 'activity', label: 'Consumi', show: canUser(user, 'usage', 'view') },
       ],
     },
@@ -61,7 +61,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
 
 export const NAV_TARGET = {
   'new-issue': { view: 'issues', create: true },
-  'plants': { settings: 'sensors' },
+  'plants': { view: 'plants' },
   'admin-users': { settings: 'users' },
   'admin-navigation': { settings: 'navigation' },
   'admin-sensors': { settings: 'sensors' },
@@ -78,6 +78,7 @@ export const VIEW_GUARDS = {
   'planning-sale': (u, hotel) => hotel?.id === 'hotelgio' && canUser(u, 'planning_sale', 'view'),
   housekeeping: view('housekeeping'),
   temperature: view('temperature'),
+  plants: view('temperature'),
   technicians: view('technicians'),
   'feedback-received': (u) => canUser(u, 'app_settings', 'manage'),
 }
