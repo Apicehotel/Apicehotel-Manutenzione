@@ -6,7 +6,7 @@ export async function retrieveRandAIGuidance({ hotelId, query }) {
 
   if (!supabase) {
     const fallback = findInternalProcedure({ hotelId, query })
-    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], source: 'local-fallback' } : null
+    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, source: 'local-fallback' } : null
   }
 
   const { data, error } = await supabase.functions.invoke('randai-assistant', {
@@ -29,6 +29,7 @@ export async function retrieveRandAIGuidance({ hotelId, query }) {
     documents: Array.isArray(data.documents) ? data.documents : [],
     memory: Array.isArray(data.memory) ? data.memory : [],
     sensors: Array.isArray(data.sensors) ? data.sensors : [],
+    hvacDiagnostic: data.hvacDiagnostic || null,
     source: data.source || 'approved_internal_knowledge',
   }
 }

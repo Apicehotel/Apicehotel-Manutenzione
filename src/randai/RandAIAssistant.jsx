@@ -5,6 +5,61 @@ import './randai.css'
 
 const EVENT = 'apice-session-changed'
 
+function hvacConclusionLabel(diagnostic) {
+  const labels = {
+    'check-upstream-data': 'Prima controllo i dati a monte: almeno una temperatura Wine è assente, offline o non recente.',
+    'circuit-off': 'Il circuito della zona risulta SPENTO. È il primo controllo da risolvere prima di cercare un guasto nella camera.',
+    'circuit-on-check-downstream': 'Il circuito risulta ATTIVO. Senza soglie termiche definite non dichiaro le temperature “corrette”; se il problema persiste, il controllo successivo è a valle verso camera/ramo.',
+    'check-circuit-state': 'Le temperature di riferimento sono disponibili, ma lo stato del circuito non è affidabile: va verificato prima di proseguire.',
+    'check-floor-temperature-data': 'Prima controllo il sensore C/F del piano Jazz: il dato è assente, offline o non recente.',
+    'floor-temperature-available-switch-unmapped': 'Il sensore C/F del piano Jazz è disponibile. L’interruttore del piano non è ancora mappato, quindi RandAI non inventa uno stato ON/OFF.',
+    'floor-circuit-off': 'Il circuito del piano Jazz risulta SPENTO.',
+    'floor-circuit-on-check-downstream': 'Il circuito del piano Jazz risulta ATTIVO; se il problema persiste, il controllo successivo è a valle.',
+    'insufficient-data': 'I dati disponibili non bastano ancora per restringere la diagnosi.',
+  }
+  return labels[diagnostic?.conclusion] || labels['insufficient-data']
+}
+
+function HvacDiagnostic({ diagnostic }) {
+  if (!diagnostic) return null
+  const modeLabel = diagnostic.mode === 'cooling' ? 'Aria fredda' : diagnostic.mode === 'heating' ? 'Aria calda' : 'Caldo/Freddo'
+  return (
+    <div className="randai__equipment randai__hvac">
+      <b>Diagnosi HVAC · {modeLabel}</b>
+      <div className="randai__equipment-item">
+        <strong>{diagnostic.zone_label}</strong>
+        <span>
+          {diagnostic.room ? `Camera ${diagnostic.room} · ` : ''}
+          {diagnostic.section === 'wine' ? `Wine${diagnostic.circuit ? ` · ${diagnostic.circuit}` : ''}` : `Jazz · Piano ${diagnostic.floor}`}
+        </span>
+      </div>
+      {diagnostic.temperatures?.map((sensor) => (
+        <div key={sensor.device_id} className="randai__equipment-item">
+          <strong>{sensor.name}</strong>
+          <span>{sensor.online ? 'Online' : 'Offline'}{sensor.stale ? ' · dato non recente' : ''}</span>
+          <small>{sensor.temperature != null ? `${sensor.temperature} °C` : 'Temperatura non disponibile'}{sensor.alert ? ' · ALLERTA' : ''}</small>
+        </div>
+      ))}
+      {diagnostic.switch && (
+        <div className="randai__equipment-item">
+          <strong>Interruttore zona</strong>
+          <span>{diagnostic.switch.status_label}{diagnostic.switch.stale ? ' · dato non recente' : ''}</span>
+          <small>{diagnostic.switch.online ? 'Dispositivo online' : 'Dispositivo offline'}</small>
+        </div>
+      )}
+      {!diagnostic.switch && diagnostic.section === 'jazz' && (
+        <div className="randai__equipment-item">
+          <strong>Interruttore piano Jazz</strong>
+          <span>NON ANCORA MAPPATO</span>
+          <small>La struttura è pronta per collegarlo appena viene identificato il device eWeLink corretto.</small>
+        </div>
+      )}
+      <div className="randai__caution">{hvacConclusionLabel(diagnostic)}</div>
+      {!diagnostic.thresholds_defined && <small>Soglie caldo/freddo non ancora definite: RandAI mostra i valori reali ma non li classifica arbitrariamente come normali o anomali.</small>}
+    </div>
+  )
+}
+
 export default function RandAIAssistant() {
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(false)
@@ -65,7 +120,7 @@ export default function RandAIAssistant() {
               <div className="randai__welcome">
                 <b>Come posso aiutarti?</b>
                 <p>Descrivi il problema. Controllo prima memoria verificata, dati live, procedure, impianti, manuali e storico della struttura.</p>
-                {session.hotelId === 'hotelgio' && <button type="button" onClick={() => setQuery('Al Jazz i condizionatori non freddano, cosa faccio?')}>Prova: condizionatori Jazz</button>}
+                {session.hotelId === 'hotelgio' && <button type="button" onClick={() => setQuery('Camera 125 non fredda')}>Prova: camera 125 non fredda</button>}
               </div>
             )}
 
@@ -73,6 +128,7 @@ export default function RandAIAssistant() {
               <div className="randai__bubble randai__bubble--user" key={`${index}-${message.text}`}>{message.text}</div>
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
+                <HvacDiagnostic diagnostic={message.hvacDiagnostic} />
                 {message.sensors?.length > 0 && (
                   <div className="randai__equipment">
                     <b>Dati live impianto</b>
@@ -144,7 +200,7 @@ export default function RandAIAssistant() {
           </div>
 
           <form className="randai__composer" onSubmit={submit}>
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Al 1° Jazz non freddano i condizionatori…" aria-label="Domanda a RandAI" disabled={busy} />
+            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Camera 125 non fredda…" aria-label="Domanda a RandAI" disabled={busy} />
             <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Controllo…' : 'Chiedi'}</button>
           </form>
         </section>
