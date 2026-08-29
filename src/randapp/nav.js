@@ -29,7 +29,8 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
         { id: 'reminders', icon: 'bell', label: 'Promemoria', show: canUser(user, 'reminders', 'view') },
         { id: 'planning-work', icon: 'calendar', label: 'Planning', show: canUser(user, 'planning_work', 'view') || canUser(user, 'planning_sale', 'view') },
         { id: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping', show: canUser(user, 'housekeeping', 'view') },
-        { id: 'temperature', icon: 'thermometer', label: 'Impianti', show: canUser(user, 'temperature', 'view') },
+        { id: 'temperature', icon: 'thermometer', label: 'Sensori', show: canUser(user, 'temperature', 'view') },
+        { id: 'plants', icon: 'wrench', label: 'Impianti', show: canUser(user, 'temperature', 'view') },
         { id: 'technicians', icon: 'phone', label: 'Rubrica tecnici', show: canUser(user, 'technicians', 'view') },
         { id: 'feedback-received', icon: 'message', label: 'Feedback ricevuti', show: canUser(user, 'app_settings', 'manage') },
       ],
@@ -60,6 +61,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
 
 export const NAV_TARGET = {
   'new-issue': { view: 'issues', create: true },
+  'plants': { settings: 'sensors' },
   'admin-users': { settings: 'users' },
   'admin-navigation': { settings: 'navigation' },
   'admin-sensors': { settings: 'sensors' },
