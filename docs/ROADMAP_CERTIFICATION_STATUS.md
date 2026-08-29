@@ -26,28 +26,38 @@ Progetto verificato: `Apice MultiHotel` (`ooqlfldcrnkudhgjnied`).
 - 54/54 tabelle `public` con RLS abilitato; 0 con RLS disabilitato.
 - 0 tabelle `public` con DML diretto concesso ad `anon`.
 - 42 tabelle client-facing hanno policy RLS.
-- 12 tabelle senza policy sono intenzionalmente interne e, dopo hardening, risultano accessibili solo a `service_role`.
+- le tabelle senza policy sono intenzionalmente interne e risultano senza grant browser diretti.
 - le policy operative principali sono hotel-scoped tramite `has_app_permission`, `is_hotel_member` o `can_admin_hotel`.
 - Storage `maintenance-photos` usa il primo segmento del path come `hotel_id` e applica membership/ownership.
 
 ### Prove RLS reali
-Sono stati impersonati utenti autenticati monohotel tramite claim JWT in transazioni rollback-only:
-- Hotel Giò: membership Giò=true, Choco/Brigantino=false; camere Giò visibili, altre strutture=0.
-- Chocohotel: membership Choco=true, Giò/Brigantino=false; segnalazioni delle altre strutture=0.
-- Brigantino: membership Brigantino=true, Giò/Choco=false.
-- Storage con utente Giò: oggetti Giò visibili, Choco/Brigantino=0.
+Sono stati impersonati utenti autenticati monohotel tramite claim JWT:
+- Hotel Giò: membership Giò=true, Choco/Brigantino=false.
+- Brigantino: membership Brigantino=true, Giò/Choco=false; sulle righe operative presenti sono risultate visibili 2 righe Brigantino e 0 Giò/Choco.
+- i controlli sono stati eseguiti con il ruolo `authenticated`, quindi attraverso le policy RLS effettive e non come service role.
 
 ### Hardening applicato
 Migrazione Supabase `20260829213501_roadmap20_rls_privilege_and_fk_hardening`:
-- revocati i privilegi client diretti da `randai_credentials` e `randai_hvac_zones`; entrambe restano service-only;
-- aggiunti indici FK su `equipment_id` per `randai_documents`, `randai_memory`, `randai_sensor_bindings`.
-- migrazione sincronizzata in `supabase/migrations/20260829213501_roadmap20_rls_privilege_and_fk_hardening.sql`.
+- revocati i privilegi client diretti da `randai_credentials` e `randai_hvac_zones`;
+- aggiunti gli indici iniziali sulle FK RandAI.
+
+Migrazione Supabase `20260829215548_roadmap20_rls_performance_followup`:
+- le policy admin di `utenti` usano `(select auth.uid())`, eliminando la rivalutazione per-riga segnalata dall'advisor;
+- eliminate le doppie policy permissive SELECT RandAI;
+- sostituite con una sola policy SELECT per tabella e policy INSERT/UPDATE/DELETE separate, mantenendo accesso manager e lettura operativa dei membri.
+- dopo la migrazione sono scomparsi gli advisor WARN `auth_rls_initplan` e `multiple_permissive_policies`.
+
+Migrazione Supabase `20260829215654_roadmap20_randai_relational_isolation`:
+- prima del cambio sono stati verificati 0 riferimenti cross-hotel esistenti;
+- introdotte chiavi/indici compositi `(id, hotel_id)` e FK composite per documenti, procedure, memoria, binding ed estratti documentali RandAI;
+- un record RandAI non può più riferirsi a un parent di un altro hotel anche se il frontend viene bypassato.
 
 ### Advisor classificati, non ignorati
-- `RLS enabled no policy`: intenzionale sulle 12 tabelle service-only; verificato che non abbiano grant `anon`/`authenticated`.
-- `SECURITY DEFINER executable by authenticated`: le funzioni client esposte verificate usano `auth.uid()` e controlli hotel/permesso e hanno `search_path` fissato. L'eventuale riduzione ulteriore della superficie RPC viene riesaminata al punto 21 con threat model Auth/Ruoli.
+- `RLS enabled no policy`: intenzionale per tabelle service-only senza grant `anon`/`authenticated`.
+- `SECURITY DEFINER executable by authenticated`: le RPC/helper client esposte hanno `search_path` fissato e controlli hotel/permesso; la riduzione ulteriore della superficie RPC viene trattata nel punto 21.
 - `Leaked Password Protection Disabled`: setting Auth da affrontare nel punto 21.
-- `Multiple permissive policies` RandAI e indici storicamente non usati: ottimizzazione da trattare senza rimozioni cieche nel punto 26/performance.
+- gli `unused_index` restano INFO: non vengono rimossi sulla sola base di statistiche di utilizzo ancora giovani.
+- `sensori_temperatura` non espone attualmente `hotel_id`: il legame `randai_sensor_bindings.device_id` non può ancora diventare una FK composita; resta un limite architetturale da verificare nel punto 21/25.
 
 ## Prossimo
 Punto 21 — Auth, Ruoli & Threat Model.
