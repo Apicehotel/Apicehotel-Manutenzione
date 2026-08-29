@@ -1,0 +1,49 @@
+name: Vendor Agent Skills
+
+on:
+  push:
+    branches:
+      - chore/randapp-agent-toolchain
+    paths:
+      - scripts/install-agent-skills.mjs
+      - .github/workflows/vendor-agent-skills.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor-skills:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/randapp-agent-toolchain
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install curated Codex skills
+        run: node scripts/install-agent-skills.mjs
+
+      - name: Validate RandApp agent toolchain
+        run: npm run test:agent-toolchain
+
+      - name: Commit vendored skills when changed
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .agents/skills
+          if git diff --cached --quiet; then
+            echo "No skill changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(agent): vendor curated Codex skills"
+          git push origin HEAD:chore/randapp-agent-toolchain
