@@ -51,24 +51,57 @@ Deno.serve(async (req: Request) => {
     const { data: membership } = await admin.from("hotel_memberships").select("active").eq("auth_user_id", userData.user.id).eq("hotel_id", hotelId).maybeSingle();
     if (!membership?.active) return json({ ok: false, error: "forbidden" }, 403);
 
-    const [proceduresResult, equipmentResult, issuesResult, interventionsResult] = await Promise.all([
+    // Memory first: a verified real-world solution is more valuable and cheaper than invoking an AI model.
+    const memoryResult = await admin.rpc("randai_search_memory", { p_hotel_id: hotelId, p_query: query, p_limit: 3 });
+    if (memoryResult.error) throw memoryResult.error;
+    const memory = memoryResult.data || [];
+    if (memory.length > 0) {
+      return json({
+        ok: true,
+        found: true,
+        source: "verified_memory",
+        memory: memory.map((item: any) => ({
+          id: item.id,
+          hotelId: item.hotel_id,
+          equipmentId: item.equipment_id,
+          area: item.area,
+          category: item.category,
+          symptom: item.symptom,
+          errorCode: item.error_code,
+          cause: item.cause,
+          solution: item.solution,
+          confidence: item.confidence,
+          confirmationCount: item.confirmation_count,
+          failureCount: item.failure_count,
+          sourceLabel: item.source_label,
+          lastConfirmedAt: item.last_confirmed_at,
+        })),
+        procedure: null,
+        equipment: [],
+        history: [],
+      });
+    }
+
+    const [proceduresResult, equipmentResult, issuesResult, interventionsResult, documentsResult] = await Promise.all([
       admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
       admin.from("randai_equipment").select("id,name,category,location,description,randai_equipment_serves(served_area,note)").eq("hotel_id", hotelId).eq("active", true),
       admin.from("maintenance_issues").select("id,location,category,description,status,completion_note,completed_at,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending: false }).limit(20),
       admin.from("interventi").select("id,camera,categoria,note,stato,sezione,pezzo_nome,pezzo_sostituito,completato_il,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending: false }).limit(20),
+      admin.rpc("randai_search_document_chunks", { p_hotel_id: hotelId, p_query: query, p_limit: 5 }),
     ]);
     if (proceduresResult.error) throw proceduresResult.error;
     if (equipmentResult.error) throw equipmentResult.error;
 
     const ranked = (proceduresResult.data || []).map((procedure: any) => ({ procedure, score: scoreProcedure(procedure, query) })).filter((entry: any) => entry.score > 0).sort((a: any, b: any) => b.score - a.score);
     const procedure = ranked[0]?.procedure;
-    if (!procedure) return json({ ok: true, found: false, reason: "no_approved_procedure" });
+    const documents = documentsResult.error ? [] : (documentsResult.data || []);
+    if (!procedure && documents.length === 0) return json({ ok: true, found: false, reason: "no_approved_knowledge" });
 
     const queryText = normalize(query);
     const equipment = (equipmentResult.data || []).filter((item: any) => {
       const haystack = normalize([item.name, item.category, item.location, item.description].join(" "));
-      return normalize(item.category) === normalize(procedure.category)
-        || (procedure.area && haystack.includes(normalize(procedure.area)))
+      return (procedure?.category && normalize(item.category) === normalize(procedure.category))
+        || (procedure?.area && haystack.includes(normalize(procedure.area)))
         || queryText.split(/\s+/).some((word) => word.length > 3 && haystack.includes(word));
     });
 
@@ -86,7 +119,16 @@ Deno.serve(async (req: Request) => {
       date: item.completed_at || item.completato_il || item.updated_at || null,
     }));
 
-    return json({ ok: true, found: true, source: "approved_internal_knowledge", procedure: { ...procedure, hotelId: procedure.hotel_id, sourceType: "procedura_interna", sourceLabel: procedure.source_label }, equipment, history });
+    return json({
+      ok: true,
+      found: true,
+      source: procedure ? "approved_internal_knowledge" : "approved_documentation",
+      procedure: procedure ? { ...procedure, hotelId: procedure.hotel_id, sourceType: "procedura_interna", sourceLabel: procedure.source_label } : null,
+      equipment,
+      history,
+      documents,
+      memory: [],
+    });
   } catch (error) {
     console.error("randai-assistant", error instanceof Error ? error.message : "unknown");
     return json({ ok: false, error: "randai_unavailable" }, 500);
