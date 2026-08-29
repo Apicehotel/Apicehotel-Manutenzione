@@ -1,8 +1,7 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
 import RandAIAssistant from './randai/RandAIAssistant.jsx'
-import RandAIControlCenter from './randai/control/RandAIControlCenter.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import PublicIssueView from './public-issue-view.jsx'
 import NtfyShortLink from './randapp/ntfy/NtfyShortLink.jsx'
@@ -41,6 +40,7 @@ import { initNotificationOnboarding } from './notification-onboarding.js'
 import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
 
+const RandAIControlCenter = lazy(() => import('./randai/control/RandAIControlCenter.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
@@ -56,7 +56,7 @@ createRoot(document.getElementById('root')).render(
     {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
       : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
       : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
-      : randaiConsoleMatch ? <RandAIControlCenter />
+      : randaiConsoleMatch ? <Suspense fallback={<div style={{minHeight:'100dvh',display:'grid',placeItems:'center',background:'#090d15',color:'#f7f9fc',fontFamily:'system-ui'}}>Caricamento RandAI…</div>}><RandAIControlCenter /></Suspense>
       : <><App /><RandAIAssistant /></>}
   </AppErrorBoundary></React.StrictMode>,
 )
