@@ -12,7 +12,19 @@ const used = new Map()
 const scanned = []
 
 function packageName(specifier) {
-  if (!specifier || specifier.startsWith('.') || specifier.startsWith('/') || specifier.startsWith('http:') || specifier.startsWith('https:') || builtins.has(specifier)) return null
+  if (!specifier) return null
+  if (specifier.includes('${')) return null
+  if (
+    specifier.startsWith('.') ||
+    specifier.startsWith('/') ||
+    specifier.startsWith('node:') ||
+    specifier.startsWith('npm:') ||
+    specifier.startsWith('jsr:') ||
+    specifier.startsWith('deno:') ||
+    specifier.startsWith('http:') ||
+    specifier.startsWith('https:') ||
+    builtins.has(specifier)
+  ) return null
   if (specifier.startsWith('@')) return specifier.split('/').slice(0, 2).join('/')
   return specifier.split('/')[0]
 }
@@ -31,9 +43,10 @@ function collectFiles(dir) {
 collectFiles(root)
 
 const patterns = [
-  /\b(?:import|export)\s+(?:[^'"`]*?\s+from\s+)?['"`]([^'"`]+)['"`]/g,
-  /\bimport\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-  /\brequire\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
+  /^\s*import\s+(?:[^'"`]*?\s+from\s+)?['"`]([^'"`]+)['"`]/gm,
+  /^\s*export\s+[^'"`]*?\s+from\s+['"`]([^'"`]+)['"`]/gm,
+  /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
 ]
 
 for (const file of scanned) {
@@ -66,4 +79,8 @@ if (missing.length) {
   console.error(`Dependency audit FAILED: ${missing.length} import(s) non dichiarati`)
   process.exit(1)
 }
-console.log(`Dependency audit OK: ${report.usedDeclared.length}/${declared.size} dipendenze dichiarate rilevate; ${unused.length} candidate inutilizzate`)
+if (unused.length) {
+  console.error(`Dependency audit FAILED: ${unused.length} dipendenze dichiarate senza utilizzo rilevato: ${unused.join(', ')}`)
+  process.exit(1)
+}
+console.log(`Dependency audit OK: ${report.usedDeclared.length}/${declared.size} dipendenze dichiarate rilevate; nessun import Node/Vite mancante`)
