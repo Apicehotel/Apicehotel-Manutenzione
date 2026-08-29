@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { retrieveRandAIGuidance } from '../randai/randai-data.js'
 import { buildIssueRandAISuggestion } from '../randai/issue-suggestion.js'
+import './randai-suggestion.css'
 
 function issueQuery(issue) {
   return [issue?.room, issue?.category, issue?.title].filter(Boolean).join(' · ')
