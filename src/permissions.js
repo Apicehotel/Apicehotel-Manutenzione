@@ -6,6 +6,7 @@ const CACHE_KEY='randapp-role-permissions-v1'
 const allow=(...actions)=>new Set(actions)
 const fallback={
   admin:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,allow(...PERMISSION_ACTIONS)])),
+  RandAI:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,allow(...PERMISSION_ACTIONS)])),
   Supremo:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,new Set()])), Direzione:{}, 'Direttore Centro Congressi':{}, 'Portiere Notturno':{}, manutentore:{}, 'Tecnico esterno':{}, Governante:{}, 'Capo Governante':{}, Reception:{}, 'Isola dei Golosi':{}, 'Ristorante Wine/Jazz':{}, 'Colazione Jazz':{},
 }
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Supremo[m]=allow('view','create')
@@ -55,8 +56,6 @@ export async function saveRolePermission(role,module,action,allowed){
 
 export function permissionLabels(){return{view:'Vedi',create:'Crea',edit:'Modifica',assign:'Assegna',take_charge:'Prendi in carico',complete:'Completa',delete:'Elimina',manage:'Gestisci'}}
 
-// Carica la matrice dal DB appena il bundle parte. La cache locale evita flash di permessi
-// tra un avvio e l'altro; Supabase resta la fonte autorevole e aggiorna la cache.
 if(supabase&&typeof window!=='undefined'){
   fetchRolePermissionRows().catch(()=>{})
   supabase.channel('role-permissions-live').on('postgres_changes',{event:'*',schema:'public',table:'role_permissions'},()=>{
