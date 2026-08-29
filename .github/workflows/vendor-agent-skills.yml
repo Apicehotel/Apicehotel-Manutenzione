@@ -6,6 +6,9 @@ on:
       - chore/randapp-agent-toolchain
     paths:
       - scripts/install-agent-skills.mjs
+      - scripts/check-agent-toolchain.mjs
+      - .agents/skills.lock.json
+      - .agents/skills/randapp-quality-gate/SKILL.md
       - .github/workflows/vendor-agent-skills.yml
   workflow_dispatch:
 
