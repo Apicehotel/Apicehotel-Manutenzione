@@ -4,7 +4,7 @@ export function normalizeText(value) {
 
 export function extractRoomNumber(query) {
   const text = normalizeText(query)
-  const match = text.match(/(?:camera|stanza|cam\.?)[\s:#-]*(\d{3})\b/) || text.match(/\b(\d{3})\b/)
+  const match = text.match(/(?:camera|stanza|cam\.?)[\s:#-]*(\d{3,4})\b/) || text.match(/\b(\d{3,4})\b/)
   return match ? Number(match[1]) : null
 }
 
@@ -16,9 +16,9 @@ export function extractJazzFloor(query) {
   if (/\b(secondo|2°)\b/.test(text)) return 2
   if (/\b(terzo|3°)\b/.test(text)) return 3
   if (/\b(quarto|4°)\b/.test(text)) return 4
-  if (text.includes('jazz')) {
-    const room = extractRoomNumber(text)
-    const floor = room ? Math.floor(room / 100) : null
+  const room = extractRoomNumber(text)
+  if (room >= 1000 && room <= 4999) {
+    const floor = Math.floor(room / 1000)
     if (floor >= 1 && floor <= 4) return floor
   }
   return null
@@ -39,17 +39,14 @@ export function selectHvacZone(zones, query) {
   const explicitlyJazz = text.includes('jazz')
   const explicitlyWine = text.includes('wine')
 
-  if (!explicitlyJazz && room) {
-    const wine = zones.find((zone) => zone.section === 'wine' && Array.isArray(zone.room_numbers) && zone.room_numbers.includes(room))
-    if (wine) return { zone: wine, room, resolution: 'room-map' }
+  if (room) {
+    const mapped = zones.find((zone) => Array.isArray(zone.room_numbers) && zone.room_numbers.includes(room))
+    if (mapped && (!explicitlyJazz || mapped.section === 'jazz') && (!explicitlyWine || mapped.section === 'wine')) {
+      return { zone: mapped, room, resolution: `${mapped.section}-room-map` }
+    }
   }
 
-  if (explicitlyWine && room) {
-    const wine = zones.find((zone) => zone.section === 'wine' && Array.isArray(zone.room_numbers) && zone.room_numbers.includes(room))
-    if (wine) return { zone: wine, room, resolution: 'room-map' }
-  }
-
-  if (explicitlyJazz) {
+  if (explicitlyJazz || (room && room >= 1000)) {
     const floor = extractJazzFloor(text)
     if (floor) {
       const jazz = zones.find((zone) => zone.section === 'jazz' && Number(zone.floor) === floor)

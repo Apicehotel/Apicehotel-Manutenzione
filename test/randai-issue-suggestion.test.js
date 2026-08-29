@@ -21,15 +21,27 @@ test('suggerisce controllo a valle quando il circuito Wine è attivo', () => {
   assert.match(result.caution, /soglie caldo\/freddo/i)
 })
 
-test('non inventa lo stato Jazz quando interruttore non è mappato', () => {
+test('mostra esplicitamente la temperatura Jazz del piano', () => {
   const result = buildIssueRandAISuggestion({
     hvacDiagnostic: {
       section: 'jazz', floor: 3, conclusion: 'floor-temperature-available-switch-unmapped', thresholds_defined: false,
-      temperatures: [{ name: 'Temp. C/F Jazz P3', temperature: 13.7 }],
+      temperatures: [{ name: 'Temp. C/F Jazz P3', temperature: 13.7, online: true, stale: false }],
     },
   })
   assert.match(result.text, /non è ancora mappato/i)
+  assert.match(result.detail, /Temperatura Jazz Piano 3: 13.7 °C/)
   assert.doesNotMatch(result.text, /risulta ATTIVO/)
+})
+
+test('se il dato Jazz è vecchio mostra comunque il valore e lo segnala', () => {
+  const result = buildIssueRandAISuggestion({
+    hvacDiagnostic: {
+      section: 'jazz', floor: 2, conclusion: 'check-floor-temperature-data', thresholds_defined: false,
+      temperatures: [{ name: 'Temp. C/F Jazz P2', temperature: 14.8, online: true, stale: true }],
+    },
+  })
+  assert.match(result.detail, /Temperatura Jazz Piano 2: 14.8 °C/)
+  assert.match(result.detail, /dato non recente/)
 })
 
 test('usa la memoria verificata prima di una procedura generica', () => {
