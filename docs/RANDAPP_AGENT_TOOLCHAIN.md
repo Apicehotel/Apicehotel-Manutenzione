@@ -8,29 +8,31 @@ Questa toolchain non modifica la logica applicativa. Serve a guidare audit, test
 
 Un punto non e completato quando il codice e scritto. E completato solo quando build, test pertinenti e controlli di regressione passano.
 
-## Skill core verificate
+## Skill core installate/verificate
 
 ### Backend / database
-- `supabase/postgres-best-practices` — schema, query, indici, migrazioni, RLS e isolamento tenant/hotel.
+- `supabase-postgres-best-practices` — schema, query, indici, migrazioni, RLS e isolamento tenant/hotel.
 
 ### Security
-- `openai/security-threat-model` — threat model repository-specific e trust boundaries.
-- `openai/security-best-practices` — revisione vulnerabilita applicative.
-- `trailofbits/audit-context-building` — comprensione architetturale profonda prima dell'audit.
-- `trailofbits/differential-review` — review di sicurezza delle modifiche e del diff.
-- `trailofbits/insecure-defaults` — default insicuri, credenziali, fail-open.
-- `trailofbits/sharp-edges` — API e configurazioni facili da usare in modo insicuro.
-- `trailofbits/static-analysis` — analisi statica con strumenti dedicati.
+- `security-threat-model` — threat model repository-specific e trust boundaries.
+- `security-best-practices` — revisione vulnerabilita applicative.
+- `audit-context-building` — comprensione architetturale profonda prima dell'audit.
+- `differential-review` — review di sicurezza delle modifiche e del diff.
+- `sharp-edges` — API e configurazioni facili da usare in modo insicuro.
+- `semgrep` — analisi statica pattern-based e security scanning.
+- `codeql` — analisi semantica/security query-driven.
+
+Nota: `insecure-defaults` e `static-analysis` sono oggi plugin Trail of Bits, non singole skill Codex installabili dal catalogo root. La toolchain usa quindi le skill installabili reali `semgrep` e `codeql`; la copertura dei default insicuri resta affidata a `security-best-practices` + `sharp-edges`.
 
 ### Browser / qualita
-- `openai/playwright` — browser automation ed E2E reali.
-- `addyosmani/web-quality-audit` — audit web complessivo.
-- `addyosmani/core-web-vitals` — performance e metriche UX.
-- `addyosmani/accessibility` — accessibilita.
+- `playwright` — browser automation ed E2E reali.
+- `web-quality-audit` — audit web complessivo.
+- `core-web-vitals` — performance e metriche UX.
+- `accessibility` — accessibilita.
 
 ### CI / deploy
-- `openai/gh-fix-ci` — diagnosi delle GitHub Actions fallite.
-- `openai/vercel-deploy` — supporto al deploy Vercel.
+- `gh-fix-ci` — diagnosi delle GitHub Actions fallite.
+- `openai/vercel-deploy` resta opzionale per il punto 28.
 
 ## Skill opzionali dopo il punto 22
 - `testmu-ai/appium-skill` — test Android/iOS nativi o device-level quando Playwright non basta.
@@ -67,9 +69,15 @@ Sentry non richiede una nuova dipendenza: `@sentry/react` e gia presente nel pro
 - Foto: tipo reale, dimensioni, staging offline e Storage.
 - Produzione: deploy verde non basta; serve smoke/canary sui flussi critici.
 
+## Installazione riproducibile
+
+Il sandbox locale puo avere DNS limitato. Per questo il branch contiene un workflow GitHub dedicato che usa la rete dei runner GitHub per eseguire l'installer Codex, validare tutte le skill core e vendorizzare il risultato in `.agents/skills`. Il gate fallisce se una skill dichiarata core non e realmente presente.
+
 ## Fonti
 Catalogo: https://github.com/VoltAgent/awesome-agent-skills
 OpenAI: https://github.com/openai/skills
 Supabase: https://github.com/supabase/agent-skills
+Trail of Bits: https://github.com/trailofbits/skills
+Web Quality: https://github.com/addyosmani/web-quality-skills
 
-Le skill esterne vanno installate solo da fonte ufficiale e dopo verifica del loro `SKILL.md`, script e dipendenze. Non usare un `install all`.
+Le skill esterne vanno installate solo da fonte approvata e dopo verifica del loro `SKILL.md`, script e dipendenze. Non usare un `install all`.
