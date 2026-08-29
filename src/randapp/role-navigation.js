@@ -30,6 +30,7 @@ export const VIEW_TO_NAV_KEY = {
   'planning-sale': 'planning_work',
   housekeeping: 'housekeeping',
   temperature: 'temperature',
+  plants: 'temperature',
   urgent: 'urgent',
   reminders: 'reminders',
   technicians: 'technicians',
