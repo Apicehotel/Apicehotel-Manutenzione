@@ -13,9 +13,24 @@ export function detectRandAISection(query) {
 
 export function detectRandAIIntent(query) {
   const text = normalizeRandAIQuery(query)
-  if (/\b(dove|ubicaz|posizion|localizz|collocat|si trova|trova il|trova la)\b/.test(text)) return 'location'
-  if (/\b(temperatur|quanto.*grad|gradi)\b/.test(text)) return 'temperature'
-  if (/\b(non fredd|non raffresc|non cald|non riscald|guast|problema|non funzion)\b/.test(text)) return 'diagnostic'
+  if (
+    text.includes('dove') ||
+    text.includes('si trova') ||
+    text.includes('ubicaz') ||
+    text.includes('posizion') ||
+    text.includes('localizz') ||
+    text.includes('collocat')
+  ) return 'location'
+  if (text.includes('temperatur') || text.includes('gradi') || /quanto.*grad/.test(text)) return 'temperature'
+  if (
+    text.includes('non fredd') ||
+    text.includes('non raffresc') ||
+    text.includes('non cald') ||
+    text.includes('non riscald') ||
+    text.includes('guast') ||
+    text.includes('problema') ||
+    text.includes('non funzion')
+  ) return 'diagnostic'
   return 'general'
 }
 
