@@ -13,6 +13,7 @@ const critical = [
   'test/point17-database-security.test.js',
   'test/point18-final-cleanup.test.js',
   'test/point20-supabase-rls-audit.test.js',
+  'test/point21-auth-threat-model.test.js',
   'test/offline-resilience-v2.test.js',
   'test/offline-retry.test.js',
   'test/photo-pipeline-hardening.test.js',
