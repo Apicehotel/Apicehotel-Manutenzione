@@ -44,9 +44,11 @@ import { installDeploymentRecovery } from './deployment-recovery.js'
 installDeploymentRecovery()
 
 const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
+const HomeAssistantPreview = lazy(() => import('./randai/homeassistant/HomeAssistantPreview.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
+const homeAssistantPreviewMatch = /^\/randai\/home-assistant\/?$/.test(window.location.pathname)
 const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
 const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 
@@ -54,19 +56,22 @@ initUiSize()
 initTheme()
 if (technicianMatch || publicIssueMatch) import('./styles.css')
 
+const randaiFallback=<div style={{minHeight:'100dvh',display:'grid',placeItems:'center',background:'#090d15',color:'#f7f9fc',fontFamily:'system-ui'}}>Caricamento RandAI…</div>
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode><AppErrorBoundary>
     {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
       : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
       : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
-      : randaiConsoleMatch ? <Suspense fallback={<div style={{minHeight:'100dvh',display:'grid',placeItems:'center',background:'#090d15',color:'#f7f9fc',fontFamily:'system-ui'}}>Caricamento RandAI…</div>}><RandAIProtectedRoute /></Suspense>
+      : homeAssistantPreviewMatch ? <Suspense fallback={randaiFallback}><HomeAssistantPreview /></Suspense>
+      : randaiConsoleMatch ? <Suspense fallback={randaiFallback}><RandAIProtectedRoute /></Suspense>
       : <><App /><RandAIAssistant /></>}
   </AppErrorBoundary></React.StrictMode>,
 )
 
 if (pendingNtfyShort && !ntfyShortMatch) window.addEventListener('apice-session-changed',()=>window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`),{once:true})
 
-if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
+if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch && !homeAssistantPreviewMatch) {
   registerPwa(); initPresenceStatusSync(); initUrgentOwnershipGuard(); initNotificationOnboarding()
   import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{})
   import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{})
