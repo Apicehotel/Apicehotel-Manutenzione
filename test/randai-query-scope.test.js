@@ -36,14 +36,16 @@ test('follow-up breve eredita il contesto Wine dello screenshot', () => {
   assert.match(resolved, /Dove\?/)
 })
 
-test('follow-up successivi mantengono il tema originario', () => {
-  const first = resolveRandAIQuery('Dove?', 'Motore condizionata wine')
-  const second = resolveRandAIQuery('E la temperatura?', first)
-  const third = resolveRandAIQuery('Cosa controllo prima?', second)
-  assert.equal(detectRandAISection(second), 'wine')
-  assert.equal(detectRandAIIntent(second), 'location')
-  assert.match(second, /temperatura/i)
-  assert.equal(detectRandAISection(third), 'wine')
+test('ogni follow-up usa il tema originario ma il proprio intento', () => {
+  const location = resolveRandAIQuery('Dove?', 'Motore condizionata wine')
+  const temperature = resolveRandAIQuery('E la temperatura?', location)
+  const checks = resolveRandAIQuery('Cosa controllo prima?', temperature)
+  assert.equal(detectRandAISection(temperature), 'wine')
+  assert.equal(detectRandAIIntent(temperature), 'temperature')
+  assert.equal(temperature, 'Motore condizionata wine. Follow-up: E la temperatura?')
+  assert.equal(detectRandAISection(checks), 'wine')
+  assert.equal(detectRandAIIntent(checks), 'general')
+  assert.equal(checks, 'Motore condizionata wine. Follow-up: Cosa controllo prima?')
 })
 
 test('una nuova domanda esplicita non eredita la sezione precedente', () => {
