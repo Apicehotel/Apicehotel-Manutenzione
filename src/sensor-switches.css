@@ -1,0 +1,121 @@
+.plant-page {
+  display: grid;
+  gap: 18px;
+}
+
+.plant-section {
+  display: grid;
+  gap: 12px;
+}
+
+.plant-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.plant-section__head h2,
+.plant-subgroup h3 {
+  margin: 0;
+}
+
+.plant-section__head h2 {
+  font-size: 1.05rem;
+}
+
+.plant-subgroup {
+  display: grid;
+  gap: 8px;
+}
+
+.plant-subgroup h3 {
+  color: var(--text-muted, #8b94a7);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.plant-state-list {
+  display: grid;
+  gap: 8px;
+}
+
+.plant-state-card {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, rgba(148,163,184,.22));
+  border-radius: 14px;
+  background: var(--surface, rgba(255,255,255,.04));
+}
+
+.plant-state-card strong {
+  display: block;
+  line-height: 1.25;
+}
+
+.plant-state-card small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted, #8b94a7);
+}
+
+.plant-status {
+  flex: 0 0 auto;
+  min-width: 116px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .035em;
+  text-align: center;
+}
+
+.plant-status--on {
+  background: rgba(34,197,94,.14);
+  color: #22c55e;
+}
+
+.plant-status--off {
+  background: rgba(148,163,184,.13);
+  color: var(--text-muted, #94a3b8);
+}
+
+.plant-status--mixed {
+  background: rgba(245,158,11,.14);
+  color: #f59e0b;
+}
+
+.plant-status--unavailable {
+  background: rgba(239,68,68,.12);
+  color: #ef4444;
+}
+
+.plant-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border, rgba(148,163,184,.18));
+}
+
+@media (min-width: 760px) {
+  .plant-state-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .plant-state-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plant-status {
+    min-width: 0;
+  }
+}
