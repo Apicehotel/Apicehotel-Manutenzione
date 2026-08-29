@@ -29,6 +29,9 @@ const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
+const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus }) => ({
+  default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
+})))
 const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
   default: ({ hotel, user }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
 })))
@@ -143,7 +146,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'reminders', 'temperature', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -254,6 +257,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
     if (view === 'reminders') return <RemindersView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
+    if (view === 'plants') return <PlantView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
     if (view === 'technicians') return <TechnicianDirectoryView users={users} hotel={hotel} />
     if (view === 'feedback-received') return <FeedbackView user={user} hotel={hotel} received />
