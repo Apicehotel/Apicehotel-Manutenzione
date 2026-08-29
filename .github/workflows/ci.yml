@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/randai-console-v2
+      - chore/randapp-agent-toolchain
   pull_request:
     branches:
       - main
@@ -36,6 +37,9 @@ jobs:
 
       - name: Quality matrix
         run: npm run test:matrix
+
+      - name: Agent toolchain gate
+        run: npm run test:agent-toolchain
 
       - name: Critical operational gate
         run: npm run test:critical
