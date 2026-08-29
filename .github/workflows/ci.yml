@@ -80,6 +80,11 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:e2e
 
+      - name: Authenticated functional E2E gate
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+        run: npm run test:functional-e2e
+
       - name: Device acceptance gate
         env:
           E2E_BASE_URL: http://127.0.0.1:4173
