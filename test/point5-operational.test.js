@@ -17,9 +17,16 @@ test('production hotel matrix is explicit, unique and stable', () => {
 })
 
 test('all configured operational roles are unique and covered', () => {
-  assert.equal(ROLES.length, 13)
+  assert.equal(ROLES.length, 14)
   assert.equal(new Set(ROLES).size, ROLES.length)
+  assert.ok(ROLES.includes('RandAI'))
   for (const role of ROLES) assert.equal(typeof role, 'string')
+})
+
+test('RandAI fallback keeps full control-center permissions when live matrix is unavailable', () => {
+  for (const module of [...operationalModules, ...adminModules, 'sensors', 'usage', 'diagnostics']) {
+    for (const action of PERMISSION_ACTIONS) assert.equal(canRole('RandAI', module, action), true, `${module}: ${action}`)
+  }
 })
 
 test('Supremo remains view/create-only outside administration', () => {
