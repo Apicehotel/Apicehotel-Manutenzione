@@ -87,12 +87,15 @@ export default function RandAIAssistant() {
     event.preventDefault()
     const clean = query.trim()
     if (!clean || busy) return
+    const previousGuidance = [...messages].reverse().find((message) => message.role === 'assistant' && message.kind === 'guidance' && message.resolvedQuery)
+    const previousUser = [...messages].reverse().find((message) => message.role === 'user')
+    const contextQuery = previousGuidance?.resolvedQuery || previousUser?.text || ''
     setMessages((current) => [...current, { role: 'user', text: clean }])
     setQuery('')
     setBusy(true)
 
     try {
-      const guidance = await retrieveRandAIGuidance({ hotelId: session.hotelId, query: clean })
+      const guidance = await retrieveRandAIGuidance({ hotelId: session.hotelId, query: clean, contextQuery })
       if (!guidance) {
         setMessages((current) => [...current, { role: 'assistant', kind: 'missing', text: 'Non trovo ancora conoscenza approvata o dati live sufficienti per questo problema. Non improvviso: raccogliamo zona, impianto e sintomi e poi decidiamo il controllo successivo.' }])
         return

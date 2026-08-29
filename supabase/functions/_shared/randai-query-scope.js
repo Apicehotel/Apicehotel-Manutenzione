@@ -11,25 +11,56 @@ export function detectRandAISection(query) {
   return null
 }
 
+export function isRandAIFollowUp(query) {
+  const text = normalizeRandAIQuery(query).trim().replace(/[?!.,;:]+$/g, '')
+  if (!text) return false
+  if (detectRandAISection(text) || /\b\d{3,4}\b/.test(text)) return false
+  const words = text.split(/\s+/).filter(Boolean)
+  if (words.length > 8) return false
+  return (
+    /^(dove|come|quale|quali|quanto|quanta|quanti|quante|perche|cosa|che cosa)\b/.test(text) ||
+    /^(e|ed)\s+(il|lo|la|i|gli|le|l'|se|poi|prima|dopo|invece)\b/.test(text) ||
+    /^(prima|dopo|poi|li|la|lo|quello|quella|questo|questa)\b/.test(text) ||
+    /^(temperatura|temperature|ingresso|uscita|errore|errori|display)\b/.test(text)
+  )
+}
+
+export function extractRandAITopic(contextQuery) {
+  return String(contextQuery || '').split(/\.\s*Follow-up:/i)[0].trim().slice(0, 1200)
+}
+
+export function resolveRandAIQuery(query, contextQuery = '') {
+  const clean = String(query || '').trim().slice(0, 1500)
+  const context = extractRandAITopic(contextQuery)
+  if (!clean || !context || !isRandAIFollowUp(clean)) return clean
+  return `${context}. Follow-up: ${clean}`.slice(0, 1500)
+}
+
 export function detectRandAIIntent(query) {
   const text = normalizeRandAIQuery(query)
+  const followUp = text.split(/follow-up:/).pop()?.trim() || text
   if (
-    text.includes('dove') ||
-    text.includes('si trova') ||
-    text.includes('ubicaz') ||
-    text.includes('posizion') ||
-    text.includes('localizz') ||
-    text.includes('collocat')
+    followUp.includes('dove') ||
+    followUp.includes('si trova') ||
+    followUp.includes('ubicaz') ||
+    followUp.includes('posizion') ||
+    followUp.includes('localizz') ||
+    followUp.includes('collocat') ||
+    followUp.includes('come ci arrivo') ||
+    followUp.includes('come arriv') ||
+    followUp.includes('come raggiung')
   ) return 'location'
-  if (text.includes('temperatur') || text.includes('gradi') || /quanto.*grad/.test(text)) return 'temperature'
+  if (followUp.includes('temperatur') || followUp.includes('gradi') || /quanto.*grad/.test(followUp)) return 'temperature'
   if (
-    text.includes('non fredd') ||
-    text.includes('non raffresc') ||
-    text.includes('non cald') ||
-    text.includes('non riscald') ||
-    text.includes('guast') ||
-    text.includes('problema') ||
-    text.includes('non funzion')
+    followUp.includes('non fredd') ||
+    followUp.includes('non raffresc') ||
+    followUp.includes('non cald') ||
+    followUp.includes('non riscald') ||
+    followUp.includes('guast') ||
+    followUp.includes('problema') ||
+    followUp.includes('non funzion') ||
+    followUp.includes('errore') ||
+    followUp.includes('allarme')
   ) return 'diagnostic'
   return 'general'
 }
@@ -45,13 +76,15 @@ export function filterSensorsBySection(sensors, section) {
   })
 }
 
-export function scopeGuidanceForQuery({ query, sensors = [], hvacDiagnostic = null, memory = [], procedure = null, history = [] }) {
-  const section = detectRandAISection(query)
-  const intent = detectRandAIIntent(query)
+export function scopeGuidanceForQuery({ query, contextQuery = '', sensors = [], hvacDiagnostic = null, memory = [], procedure = null, history = [] }) {
+  const resolvedQuery = resolveRandAIQuery(query, contextQuery)
+  const section = detectRandAISection(resolvedQuery)
+  const intent = detectRandAIIntent(resolvedQuery)
   const scopedSensors = filterSensorsBySection(sensors, section)
 
   if (intent === 'location') {
     return {
+      resolvedQuery,
       section,
       intent,
       sensors: [],
@@ -63,6 +96,7 @@ export function scopeGuidanceForQuery({ query, sensors = [], hvacDiagnostic = nu
   }
 
   return {
+    resolvedQuery,
     section,
     intent,
     sensors: scopedSensors,
