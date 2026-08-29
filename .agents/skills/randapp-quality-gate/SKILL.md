@@ -32,7 +32,7 @@ For security-sensitive work:
 3. verify auth/session and role transitions;
 4. verify RLS and cross-hotel denial;
 5. review changed code and migration diff;
-6. run static/security checks;
+6. run static/security checks with Semgrep and CodeQL guidance where applicable;
 7. run regression tests.
 
 Frontend guards are never sufficient proof of authorization.
@@ -65,18 +65,18 @@ A successful deployment is not sufficient. Verify critical smoke paths after dep
 
 ## External specialist skills
 When available, combine this project skill with:
-- `supabase/postgres-best-practices`
-- `openai/security-threat-model`
-- `openai/security-best-practices`
-- `trailofbits/audit-context-building`
-- `trailofbits/differential-review`
-- `trailofbits/insecure-defaults`
-- `trailofbits/sharp-edges`
-- `trailofbits/static-analysis`
-- `openai/playwright`
-- `addyosmani/web-quality-audit`
-- `addyosmani/core-web-vitals`
-- `addyosmani/accessibility`
-- `openai/gh-fix-ci`
+- `supabase-postgres-best-practices`
+- `security-threat-model`
+- `security-best-practices`
+- `audit-context-building`
+- `differential-review`
+- `sharp-edges`
+- `semgrep`
+- `codeql`
+- `playwright`
+- `web-quality-audit`
+- `core-web-vitals`
+- `accessibility`
+- `gh-fix-ci`
 
 Do not install overlapping skills merely to increase tool count.
