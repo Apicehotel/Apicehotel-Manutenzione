@@ -9,10 +9,13 @@ function circuitLabel(diagnostic) {
 }
 
 function temperatureText(diagnostic) {
-  const values = (diagnostic?.temperatures || [])
-    .filter((item) => item?.temperature != null)
-    .map((item) => `${item.name || item.device_id}: ${item.temperature} °C`)
-  return values.join(' · ')
+  const values = (diagnostic?.temperatures || []).filter((item) => item?.temperature != null)
+  if (diagnostic?.section === 'jazz' && values.length) {
+    const item = values[0]
+    const status = !item.online ? ' · offline' : item.stale ? ' · dato non recente' : ''
+    return `Temperatura Jazz Piano ${diagnostic.floor}: ${item.temperature} °C${status}`
+  }
+  return values.map((item) => `${item.name || item.device_id}: ${item.temperature} °C`).join(' · ')
 }
 
 export function buildIssueRandAISuggestion(guidance) {
@@ -38,7 +41,7 @@ export function buildIssueRandAISuggestion(guidance) {
         text = `${zone}: prima di valutare l'interruttore, controlla i dati a monte perché una o più letture risultano mancanti, offline o non recenti.`
         break
       case 'check-floor-temperature-data':
-        text = `${zone}: la diagnosi richiede prima una lettura affidabile della temperatura del piano.`
+        text = `${zone}: la temperatura del piano è disponibile ma il dato non è abbastanza recente o affidabile per concludere. Mostro comunque la lettura rilevata.`
         break
       case 'floor-temperature-available-switch-unmapped':
         text = `${zone}: la temperatura del piano è disponibile, ma l'interruttore del piano non è ancora mappato in RandAI. Non deduco lo stato del circuito.`
@@ -53,7 +56,7 @@ export function buildIssueRandAISuggestion(guidance) {
     return {
       title: 'Suggerimento RandAI',
       text,
-      detail: [relay ? `Stato: ${relay}` : null, temperatures || null].filter(Boolean).join(' · '),
+      detail: [temperatures || null, relay ? `Stato: ${relay}` : null].filter(Boolean).join(' · '),
       source: 'Dati live impianto',
       caution: diagnostic.thresholds_defined === false ? 'Le soglie caldo/freddo non sono ancora definite: le temperature vengono mostrate come dati, non come conferma automatica di funzionamento.' : null,
     }
