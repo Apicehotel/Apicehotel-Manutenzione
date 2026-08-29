@@ -39,6 +39,9 @@ import { repairPushSubscription } from './push.js'
 import { initNotificationOnboarding } from './notification-onboarding.js'
 import { initPresenceStatusSync } from './presence-status.js'
 import { initUrgentOwnershipGuard } from './urgent-ownership-guard.js'
+import { installDeploymentRecovery } from './deployment-recovery.js'
+
+installDeploymentRecovery()
 
 const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
