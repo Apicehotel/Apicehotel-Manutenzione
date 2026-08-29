@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './randapp/App.jsx'
+import RandAIAssistant from './randai/RandAIAssistant.jsx'
 import TechnicianPortal from './technician-portal.jsx'
 import PublicIssueView from './public-issue-view.jsx'
 import NtfyShortLink from './randapp/ntfy/NtfyShortLink.jsx'
@@ -57,7 +58,7 @@ createRoot(document.getElementById('root')).render(
       {technicianMatch ? <TechnicianPortal token={technicianMatch[1]} />
         : publicIssueMatch ? <PublicIssueView id={publicIssueMatch[1]} />
         : ntfyShortMatch ? <NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} />
-        : <App />}
+        : <><App /><RandAIAssistant /></>}
     </AppErrorBoundary>
   </React.StrictMode>,
 )
