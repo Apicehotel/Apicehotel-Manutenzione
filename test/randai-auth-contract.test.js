@@ -17,7 +17,8 @@ test('RandAI login uses separate edge function and Supabase session',()=>{
   assert.match(client,/supabase\.auth\.setSession/)
   assert.match(edge,/action==="login"/)
   assert.match(edge,/randai_credentials/)
-  assert.match(edge,/role!=="RandAI"/)
+  assert.ok(edge.includes('legacy.ruolo!=="RandAI"'))
+  assert.ok(edge.includes('r.role==="RandAI"&&r.can_access_admin'))
 })
 
 test('RandAI access management supports creation and password change',()=>{
