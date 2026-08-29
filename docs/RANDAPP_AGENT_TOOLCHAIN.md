@@ -73,6 +73,8 @@ Sentry non richiede una nuova dipendenza: `@sentry/react` e gia presente nel pro
 
 Il sandbox locale puo avere DNS limitato. Per questo il branch contiene un workflow GitHub dedicato che usa la rete dei runner GitHub per eseguire l'installer Codex, validare tutte le skill core e vendorizzare il risultato in `.agents/skills`. Il gate fallisce se una skill dichiarata core non e realmente presente.
 
+Installazione verificata su GitHub Actions il 29 agosto 2026: tutte le 13 skill core sono state copiate per Codex e il gate `test:agent-toolchain` e passato. Il commit di vendoring risultante e `decca416e3b6b94c3ac73078e501590abb35c68a`.
+
 ## Fonti
 Catalogo: https://github.com/VoltAgent/awesome-agent-skills
 OpenAI: https://github.com/openai/skills
