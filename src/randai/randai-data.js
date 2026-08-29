@@ -20,6 +20,18 @@ function scoreProcedure(item, query) {
   return score
 }
 
+function scoreHistory(item, query, procedure) {
+  const words = normalize(query).split(/\s+/).filter((word) => word.length > 3)
+  const haystack = normalize([
+    item.location, item.camera, item.category, item.categoria, item.description, item.note,
+    item.completion_note, item.pezzo_nome, item.pezzo_sostituito, item.sezione,
+  ].join(' '))
+  let score = words.reduce((total, word) => total + (haystack.includes(word) ? 1 : 0), 0)
+  if (procedure?.category && haystack.includes(normalize(procedure.category))) score += 3
+  if (procedure?.area && haystack.includes(normalize(procedure.area))) score += 2
+  return score
+}
+
 function mapProcedure(row) {
   return {
     id: row.id,
@@ -38,15 +50,30 @@ function mapProcedure(row) {
   }
 }
 
+function mapHistory(items) {
+  return items.slice(0, 3).map((entry) => {
+    const item = entry.item
+    return {
+      id: item.id,
+      kind: item.__kind,
+      location: item.location || item.camera || item.sezione || '',
+      category: item.category || item.categoria || '',
+      text: item.completion_note || item.note || item.description || '',
+      status: item.status || item.stato || '',
+      date: item.completed_at || item.completato_il || item.updated_at || item.creato_il || item.created_at || null,
+    }
+  })
+}
+
 export async function retrieveRandAIGuidance({ hotelId, query }) {
   if (!hotelId || !query?.trim()) return null
 
   if (!supabase) {
     const fallback = findInternalProcedure({ hotelId, query })
-    return fallback ? { procedure: fallback, equipment: [], source: 'local-fallback' } : null
+    return fallback ? { procedure: fallback, equipment: [], history: [], source: 'local-fallback' } : null
   }
 
-  const [proceduresResult, equipmentResult] = await Promise.all([
+  const [proceduresResult, equipmentResult, issuesResult, interventionsResult] = await Promise.all([
     supabase
       .from('randai_procedures')
       .select('id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version')
@@ -57,6 +84,18 @@ export async function retrieveRandAIGuidance({ hotelId, query }) {
       .select('id,name,category,location,description,randai_equipment_serves(served_area,note)')
       .eq('hotel_id', hotelId)
       .eq('active', true),
+    supabase
+      .from('maintenance_issues')
+      .select('id,location,category,description,status,completion_note,completed_at,updated_at')
+      .eq('hotel_id', hotelId)
+      .order('updated_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('interventi')
+      .select('id,camera,categoria,note,stato,sezione,pezzo_nome,pezzo_sostituito,completato_il,updated_at')
+      .eq('hotel_id', hotelId)
+      .order('updated_at', { ascending: false })
+      .limit(20),
   ])
 
   if (proceduresResult.error) throw proceduresResult.error
@@ -80,5 +119,14 @@ export async function retrieveRandAIGuidance({ hotelId, query }) {
       || procedureContext.includes(normalize(item.category))
   })
 
-  return { procedure, equipment, source: 'supabase' }
+  const historyPool = [
+    ...((issuesResult.error ? [] : issuesResult.data) || []).map((item) => ({ ...item, __kind: 'segnalazione' })),
+    ...((interventionsResult.error ? [] : interventionsResult.data) || []).map((item) => ({ ...item, __kind: 'intervento' })),
+  ]
+  const history = mapHistory(historyPool
+    .map((item) => ({ item, score: scoreHistory(item, query, procedure) }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score))
+
+  return { procedure, equipment, history, source: 'supabase' }
 }
