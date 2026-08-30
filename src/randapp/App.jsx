@@ -217,11 +217,11 @@ export default function App() {
       try {
         const { validateSupabaseSession, signOutSupabase } = await import('../auth-data.js')
         const result = await validateSupabaseSession()
-        if (!active) return
-        if (!result.valid) {
+        if (active && !result.valid) {
           await resetSession(signOutSupabase)
           return
         }
+        if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
         const directory = await fetchDirectory(session.hotelId)
         if (!active) return
