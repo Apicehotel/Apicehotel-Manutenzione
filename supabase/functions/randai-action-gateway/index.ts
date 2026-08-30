@@ -87,7 +87,7 @@ async function allowed(role: string, module: string, action: string) {
 async function readIssue(hotelId: string, resourceId: string) {
   const { data, error } = await admin
     .from("segnalazioni")
-    .select("id,hotel_id,camera,urgenza,categoria,stato,note,pezzo_nome,nota_completamento,updated_at")
+    .select("id,hotel_id,camera,urgenza,categoria,stato,note,pezzo_nome,nota_completamento,completato_da,completato_il,updated_at")
     .eq("hotel_id", hotelId)
     .eq("id", resourceId)
     .maybeSingle();
@@ -115,14 +115,48 @@ async function findExistingApproval(idempotencyKey: string) {
   return data || null;
 }
 
+function approvalPayload(action: any, preview: any) {
+  return {
+    action: { type: action.type, resourceId: action.resourceId, input: action.input },
+    risk: action.definition.risk,
+    permission: action.definition.permission,
+    before: preview.before,
+    requested: preview.after,
+    summary: summarizeAction(action),
+  };
+}
+
 async function createApproval({ hotelId, actor, action, preview, idempotencyKey }: any) {
   const existing = await findExistingApproval(idempotencyKey);
-  if (existing && existing.expires_at && new Date(existing.expires_at).getTime() > Date.now()) return existing;
-
-  const id = `APR-${crypto.randomUUID()}`;
   const requestedAt = nowIso();
+  const expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+  const payload = approvalPayload(action, preview);
+
+  if (existing) {
+    const stillPending = existing.status === "PENDING" && existing.expires_at && new Date(existing.expires_at).getTime() > Date.now();
+    if (stillPending) return existing;
+    if (existing.status === "APPROVED" && existing.payload?.execution?.status === "EXECUTED") return existing;
+
+    const { data, error } = await admin.from("randai_action_approvals").update({
+      status: "PENDING",
+      requested_at: requestedAt,
+      decided_at: null,
+      expires_at: expiresAt,
+      decided_by: null,
+      reason: "ACTION_GATEWAY_CONFIRMATION_REQUIRED",
+      payload,
+      hotel_id: hotelId,
+      requested_by_auth_user_id: actor.userId,
+      action_type: action.type,
+      resource_type: action.definition.resourceType,
+      resource_id: action.resourceId,
+    }).eq("id", existing.id).select("*").single();
+    if (error) throw error;
+    return data;
+  }
+
   const row = {
-    id,
+    id: `APR-${crypto.randomUUID()}`,
     identity: idempotencyKey,
     tool_id: action.type,
     task_id: null,
@@ -130,17 +164,10 @@ async function createApproval({ hotelId, actor, action, preview, idempotencyKey 
     status: "PENDING",
     requested_at: requestedAt,
     decided_at: null,
-    expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+    expires_at: expiresAt,
     decided_by: null,
     reason: "ACTION_GATEWAY_CONFIRMATION_REQUIRED",
-    payload: {
-      action: { type: action.type, resourceId: action.resourceId, input: action.input },
-      risk: action.definition.risk,
-      permission: action.definition.permission,
-      before: preview.before,
-      requested: preview.after,
-      summary: summarizeAction(action),
-    },
+    payload,
     hotel_id: hotelId,
     requested_by_auth_user_id: actor.userId,
     action_type: action.type,
@@ -156,7 +183,11 @@ async function createApproval({ hotelId, actor, action, preview, idempotencyKey 
 
 async function writeAudit(entry: any) {
   const { error } = await admin.from("randai_action_audit").insert(entry);
-  if (error) console.error("randai_action_audit", error.message);
+  if (error) {
+    console.error("randai_action_audit", error.message);
+    return false;
+  }
+  return true;
 }
 
 async function prepare(req: Request, body: any) {
@@ -230,11 +261,16 @@ async function execute(req: Request, body: any) {
   if (approvalError) throw approvalError;
   if (!approval || approval.hotel_id !== hotelId) return json({ ok: false, error: "approval_not_found" }, 404);
   if (approval.requested_by_auth_user_id !== (actor as any).userId) return json({ ok: false, error: "approval_actor_mismatch" }, 403);
+
+  if (approval.status === "APPROVED" && approval.payload?.execution?.status === "EXECUTED") {
+    return json({ ok: true, operation: "executed", replayed: true, verified: true, result: approval.payload.execution.after });
+  }
   if (approval.expires_at && new Date(approval.expires_at).getTime() <= Date.now()) {
     await admin.from("randai_action_approvals").update({ status: "EXPIRED", decided_at: nowIso(), decided_by: (actor as any).userId }).eq("id", approval.id);
     return json({ ok: false, error: "approval_expired" }, 409);
   }
   if (approval.status === "REJECTED") return json({ ok: false, error: "approval_rejected" }, 409);
+  if (approval.status !== "PENDING") return json({ ok: false, error: "approval_not_pending" }, 409);
 
   const action = sanitizeActionRequest({
     type: approval.payload?.action?.type || approval.action_type,
@@ -254,7 +290,7 @@ async function execute(req: Request, body: any) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (priorExecution) return json({ ok: true, operation: "executed", replayed: true, result: priorExecution.after_state });
+  if (priorExecution) return json({ ok: true, operation: "executed", replayed: true, verified: true, result: priorExecution.after_state });
 
   const issue = await readIssue(hotelId, action.resourceId);
   if (!issue) return json({ ok: false, error: "resource_not_found" }, 404);
@@ -339,14 +375,23 @@ async function execute(req: Request, body: any) {
   }
 
   const executedAt = nowIso();
-  await admin.from("randai_action_approvals").update({
+  const executionPayload = {
+    ...approval.payload,
+    execution: { status: "EXECUTED", after: verified, executedAt },
+  };
+  const { error: approvalUpdateError } = await admin.from("randai_action_approvals").update({
     status: "APPROVED",
     decided_at: executedAt,
     decided_by: (actor as any).userId,
     reason: "USER_CONFIRMED_AND_EXECUTED",
+    payload: executionPayload,
   }).eq("id", approval.id);
+  if (approvalUpdateError) {
+    console.error("randai_action_approval_finalize", approvalUpdateError.message);
+    return json({ ok: false, error: "approval_finalize_failed", action_applied: true, verified: true }, 500);
+  }
 
-  await writeAudit({
+  const auditRecorded = await writeAudit({
     hotel_id: hotelId,
     actor_auth_user_id: (actor as any).userId,
     actor_role: (actor as any).role,
@@ -365,7 +410,7 @@ async function execute(req: Request, body: any) {
     executed_at: executedAt,
   });
 
-  return json({ ok: true, operation: "executed", replayed: false, verified: true, result: verified });
+  return json({ ok: true, operation: "executed", replayed: false, verified: true, audit_recorded: auditRecorded, result: verified });
 }
 
 async function reject(req: Request, body: any) {
