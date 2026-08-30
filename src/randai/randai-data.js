@@ -1,19 +1,34 @@
 import { supabase } from '../supabase.js'
 import { findInternalProcedure } from './knowledge.js'
+import { buildOperationalContext, contextQueryHint } from './context/operational-context.js'
 
-export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '' }) {
+export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '', operationalContext = null }) {
   if (!hotelId || !query?.trim()) return null
+
+  const context = operationalContext ? buildOperationalContext(operationalContext) : null
+  const scopedContext = context?.hotelId === hotelId ? context : null
+  const effectiveContextQuery = String(contextQuery || '').trim() || contextQueryHint(scopedContext)
 
   if (!supabase) {
     const fallback = findInternalProcedure({ hotelId, query })
-    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, source: 'local-fallback', resolvedQuery: query.trim() } : null
+    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, source: 'local-fallback', resolvedQuery: query.trim(), operationalContext: scopedContext } : null
   }
 
   const { data, error } = await supabase.functions.invoke('randai-assistant', {
     body: {
       hotel_id: hotelId,
       query: query.trim(),
-      context_query: String(contextQuery || '').trim(),
+      context_query: effectiveContextQuery,
+      operational_context: scopedContext ? {
+        version: scopedContext.version,
+        hotel_id: scopedContext.hotelId,
+        view: scopedContext.view,
+        source: scopedContext.source,
+        resource: scopedContext.resource ? {
+          type: scopedContext.resource.type,
+          id: scopedContext.resource.id,
+        } : null,
+      } : null,
     },
   })
 
@@ -38,5 +53,6 @@ export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = ''
     intent: data.intent || 'general',
     section: data.section || null,
     resolvedQuery: data.resolvedQuery || query.trim(),
+    operationalContext: data.operationalContext || scopedContext,
   }
 }
