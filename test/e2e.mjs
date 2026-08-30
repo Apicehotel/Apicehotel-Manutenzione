@@ -33,21 +33,52 @@ async function assertNoFatalRuntimeErrors(pageErrors, consoleErrors, label) {
   if (fatalConsole.length) throw new Error(`${label}: Console runtime errors: ${fatalConsole.join(' | ')}`)
 }
 
+async function assertAdminKeyboardLayout(page, label) {
+  const originalViewport = page.viewportSize()
+  if (!originalViewport || originalViewport.width > 480) return
+  const pin = page.getByTestId('admin-pin-input')
+  const submit = page.getByTestId('admin-gate-submit')
+  await pin.focus()
+  const keyboardViewport = {
+    width: originalViewport.width,
+    height: Math.max(360, Math.min(520, originalViewport.height - 260)),
+  }
+  await page.setViewportSize(keyboardViewport)
+  await page.waitForTimeout(100)
+  await pin.scrollIntoViewIfNeeded()
+  await submit.scrollIntoViewIfNeeded()
+  const pinBox = await pin.boundingBox()
+  const submitBox = await submit.boundingBox()
+  assert.ok(pinBox && pinBox.height >= 44, `PIN admin non utilizzabile con tastiera su ${label}`)
+  assert.ok(submitBox && submitBox.height >= 44, `ENTRA admin non utilizzabile con tastiera su ${label}`)
+  assert.ok(submitBox.y >= 0 && submitBox.y + submitBox.height <= keyboardViewport.height + 1, `ENTRA admin fuori viewport con tastiera su ${label}`)
+  await assertNoHorizontalOverflow(page, `${label}-admin-keyboard`)
+  await page.screenshot({ path: fileURLToPath(new URL(`${label}-admin-keyboard.png`, artifacts)), fullPage: false })
+  await pin.blur()
+  await page.waitForTimeout(50)
+  const activeTestId = await page.evaluate(() => document.activeElement?.getAttribute?.('data-testid') || '')
+  assert.notEqual(activeTestId, 'admin-pin-input', `PIN admin ancora focalizzato dopo chiusura tastiera su ${label}`)
+  await page.setViewportSize(originalViewport)
+  await page.waitForTimeout(50)
+}
+
 async function checkLoginShell(browser, label, contextOptions, theme = 'dark', uiSize = 'normal', expectedResolvedTheme = theme) {
   const context = await browser.newContext(contextOptions)
   const page = await context.newPage()
   const pageErrors = []
   const consoleErrors = []
+  let stage = 'bootstrap'
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()) })
 
   try {
+    stage = 'initial-login'
     await page.addInitScript(({ selectedTheme, selectedSize }) => {
       localStorage.setItem('apicehotel.theme.v1', selectedTheme)
       localStorage.setItem('apicehotel.ui-size.v1', selectedSize)
     }, { selectedTheme: theme, selectedSize: uiSize })
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
-    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
+    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible', timeout: 10000 })
 
     assert.equal(await page.getByRole('heading', { name: 'RandApp' }).isVisible(), true, `Brand RandApp non visibile su ${label}`)
     assert.equal(await page.getByTestId('login-user-input').isVisible(), true, `Campo Utente non visibile su ${label}`)
@@ -72,25 +103,41 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
 
     await page.screenshot({ path: fileURLToPath(new URL(`${label}-${theme}-${uiSize}.png`, artifacts)), fullPage: true })
 
+    stage = 'admin-gate'
     await page.getByTestId('open-settings-link').click()
-    await page.getByRole('heading', { name: 'Impostazioni' }).waitFor({ state: 'visible' })
+    await page.getByRole('heading', { name: 'Impostazioni' }).waitFor({ state: 'visible', timeout: 5000 })
     assert.equal(await page.getByTestId('admin-pin-input').isVisible(), true, `PIN amministratore non visibile su ${label}`)
     assert.equal(await page.getByTestId('admin-gate-submit').isVisible(), true, `ENTRA admin non visibile su ${label}`)
     await assertNoHorizontalOverflow(page, `${label}-${theme}-${uiSize}-settings`)
 
-    await page.getByRole('button', { name: /RandApp/ }).click()
-    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
+    stage = 'admin-keyboard'
+    await assertAdminKeyboardLayout(page, `${label}-${theme}-${uiSize}`)
+
+    stage = 'return-from-settings'
+    await page.getByTestId('admin-back').click()
+    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible', timeout: 5000 })
     assert.equal(await page.getByText('Seleziona una struttura', { exact: true }).count(), 0, `Vecchia home struttura riapparsa su ${label}`)
 
+    stage = 'offline-transition'
     await context.setOffline(true)
     await page.waitForTimeout(150)
     assert.equal(await page.getByRole('heading', { name: 'Bentornato' }).isVisible(), true, `Login instabile offline su ${label}`)
     await assertNoHorizontalOverflow(page, `${label}-${theme}-${uiSize}-offline`)
     await context.setOffline(false)
 
+    stage = 'runtime-errors'
     await assertNoFatalRuntimeErrors(pageErrors, consoleErrors, `${label}-${theme}-${uiSize}`)
   } catch (error) {
-    failures.push(`${label}-${theme}-${uiSize}: ${error.message}`)
+    const failureLabel = `${label}-${theme}-${uiSize}`
+    await page.screenshot({ path: fileURLToPath(new URL(`${failureLabel}-FAIL-${stage}.png`, artifacts)), fullPage: true }).catch(() => {})
+    const state = await page.evaluate(() => ({
+      href: location.href,
+      heading: document.querySelector('h1')?.textContent || '',
+      hasLogin: Boolean(document.querySelector('[data-testid="login-submit"]')),
+      hasAdmin: Boolean(document.querySelector('[data-testid="admin-gate-submit"]')),
+      activeTestId: document.activeElement?.getAttribute?.('data-testid') || '',
+    })).catch(() => ({}))
+    failures.push(`${failureLabel} [${stage}]: ${error.message} | state=${JSON.stringify(state)}`)
   } finally {
     await context.close()
   }
@@ -127,5 +174,5 @@ if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1
 } else {
-  console.log('E2E OK: Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
+  console.log('E2E OK: Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, admin keyboard viewport, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
 }
