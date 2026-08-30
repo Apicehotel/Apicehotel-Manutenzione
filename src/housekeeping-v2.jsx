@@ -4,6 +4,7 @@ import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 import { exportHousekeepingYearXlsx, parseSlopePrivacyRows } from './housekeeping-report.js'
 import { parseBrigantinoBookingRows } from './housekeeping-brigantino.js'
+import { validateSpreadsheetFile } from './file-hardening.js'
 import './housekeeping-v2.css'
 
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
@@ -15,6 +16,7 @@ function cacheForHotel(hotelId) {
   if (caches.has(hotelId)) return caches.get(hotelId)
   const db = new Dexie(`randappHousekeepingV2-${hotelId}`)
   db.version(1).stores({ giorno:'camera', lavoro:'camera', outbox:'&key,camera,kind', failures:'&key,camera,kind' })
+  db.version(2).stores({ giorno:'camera', lavoro:'camera', outbox:'&key,camera,kind', failures:'&key,camera,kind', imports:'&sha256,importedAt,kind' })
   caches.set(hotelId, db)
   return db
 }
@@ -69,17 +71,20 @@ function parseRevenueReport(rows) {
   return {kind:'revenue',hotelId:reportHotelId(structureName),structureName,headers,rows:body}
 }
 async function parseWorkbook(file, hotelId) {
+  const verified = await validateSpreadsheetFile(file)
   const XLSX = await import('xlsx')
-  const workbook = XLSX.read(await file.arrayBuffer(), { type:'array', cellDates:true })
+  const workbook = XLSX.read(verified.bytes, { type:'array', cellDates:true })
+  if (!workbook.SheetNames?.length || !workbook.Sheets?.[workbook.SheetNames[0]]) throw new Error('Il file Excel non contiene fogli leggibili')
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header:1, raw:true, defval:'' })
+  if (!rows.length) throw new Error('Il file Excel non contiene righe leggibili')
   const brigantino = parseBrigantinoBookingRows(rows)
   if (brigantino) {
-    if (hotelId !== 'brigantino') return { ...brigantino, wrongHotel:true }
-    return brigantino
+    const report = hotelId !== 'brigantino' ? { ...brigantino, wrongHotel:true } : brigantino
+    return { ...report, sourceSha256:verified.sha256, sourceType:verified.type }
   }
   const revenue = parseRevenueReport(rows)
-  if (revenue) return revenue
-  return { kind:'housekeeping', rooms:parseSlopePrivacyRows(rows, roomMetaForHotel(hotelId)) }
+  if (revenue) return { ...revenue, sourceSha256:verified.sha256, sourceType:verified.type }
+  return { kind:'housekeeping', rooms:parseSlopePrivacyRows(rows, roomMetaForHotel(hotelId)), sourceSha256:verified.sha256, sourceType:verified.type }
 }
 
 async function notifyHeadHousekeeper(hotelId, camera, changes, userName) {
@@ -206,20 +211,30 @@ export function Housekeeping({ user, hotel }) {
     setUploading(true);setMessage('');setLocalReport(null)
     try{
       const parsed=await parseWorkbook(file,hotel.id)
+      const duplicate=await cache.imports.get(parsed.sourceSha256)
+      if(duplicate){
+        const when=new Date(duplicate.importedAt).toLocaleString('it-IT')
+        setMessage(`File già elaborato su questo dispositivo (${when}). Importazione duplicata bloccata.`)
+        return
+      }
       if(parsed.kind==='brigantino-report') {
         if(parsed.wrongHotel){setMessage('Questo è un file del Brigantino. Seleziona Hotel Il Brigantino prima di caricarlo.');return}
         setLocalReport(parsed)
+        await cache.imports.put({sha256:parsed.sourceSha256,importedAt:Date.now(),kind:parsed.kind})
         setMessage(`Brigantino: ${parsed.rows.length} gruppi letti. “*” = letto fisso; suffissi numerici ignorati. Il file resta locale perché è un report prenotazioni, non uno stato camere.`)
         return
       }
       if(parsed.kind==='revenue') {
         if(parsed.hotelId&&parsed.hotelId!==hotel.id){setMessage(`Il report appartiene a ${parsed.structureName}. Seleziona la struttura corretta.`);return}
-        setLocalReport(parsed);setMessage(`Report ${parsed.structureName}: ${parsed.rows.length} giorni letti localmente.`);return
+        setLocalReport(parsed)
+        await cache.imports.put({sha256:parsed.sourceSha256,importedAt:Date.now(),kind:parsed.kind})
+        setMessage(`Report ${parsed.structureName}: ${parsed.rows.length} giorni letti localmente.`);return
       }
       if(!parsed.rooms?.length)throw new Error('Nessuna camera riconosciuta nel file')
       const {error}=await hotelGioClient.rpc('carica_camere_giorno',{p_hotel_id:hotel.id,p_caricato_da:user?.name||'Utente',p_camere:parsed.rooms})
       if(error)throw error
-      setMessage(`Caricate ${parsed.rooms.length} camere. Dati ospite esclusi dal trasferimento.`);await refresh()
+      await cache.imports.put({sha256:parsed.sourceSha256,importedAt:Date.now(),kind:parsed.kind})
+      setMessage(`Caricate ${parsed.rooms.length} camere. SHA-256 verificato; dati ospite esclusi dal trasferimento.`);await refresh()
     }catch(error){setMessage(`File non leggibile: ${error?.message||'formato non riconosciuto'}`)}finally{setUploading(false)}
   }
 
@@ -265,7 +280,7 @@ export function Housekeeping({ user, hotel }) {
 function RoomSheet({room,workAllowed,manageAllowed,onClose,onState,onSave}) {
   const [fields,setFields]=useState({stato_slope:room.stato_slope||'libera',letti:room.letti||'',operational_note:room.operational_note||''})
   const stateEntries=Object.entries(workLabels).filter(([key])=>key!=='nondist'||room.stato_slope==='fermata')
-  return <div className="hk2-backdrop" onClick={onClose}><section className="hk2-sheet" role="dialog" aria-modal="true" aria-labelledby="hk2-title" onClick={(e)=>e.stopPropagation()}><header><div><small>Camera</small><h2 id="hk2-title">{room.camera}</h2></div><button type="button" className="hk2-close" onClick={onClose} aria-label="Chiudi">×</button></header><div className="hk2-detail"><strong>{room.tipologia||'Camera'}</strong><span>{slopeLabels[room.stato_slope]||room.stato_slope}{room.arrivo?` · arrivo ${dateOnly(room.arrivo)}`:''}{room.partenza?` · partenza ${dateOnly(room.partenza)}`:''}</span>{room.letti&&<span>Letti: {room.letti}</span>}{room.operational_note&&<p><b>Nota operativa:</b> {room.operational_note}</p>}</div>{workAllowed&&<div className="hk2-actions">{stateEntries.map(([key,label])=><button type="button" className={room.lavoro===key?'active':''} key={key} onClick={()=>onState(room.camera,key)}>{label}</button>)}</div>}{workAllowed&&<form className="hk2-form" onSubmit={(e)=>{e.preventDefault();onSave(room.camera,fields)}}>{manageAllowed&&<><label>Stato soggiorno<select value={fields.stato_slope} onChange={(e)=>setFields({...fields,stato_slope:e.target.value})}>{Object.entries(slopeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label><label>Configurazione letti<input value={fields.letti} onChange={(e)=>setFields({...fields,letti:e.target.value})}/></label></>}<label>Note operative RandApp<textarea rows="3" value={fields.operational_note} onChange={(e)=>setFields({...fields,operational_note:e.target.value})} placeholder="Solo informazioni operative, nessun dato ospite"/></label><button type="submit" className="hk2-primary">Salva modifica</button></form>}</section></div>
+  return <div className="hk2-backdrop" onClick={onClose}><section className="hk2-sheet" role="dialog" aria-modal="true" aria-labelledby="hk2-title" onClick={(e)=>e.stopPropagation()}><header><div><small>Camera</small><h2 id="hk2-title">{room.camera}</h2></div><button type="button" className="hk2-close" onClick={onClose} aria-label="Chiudi">×</button></header><div className="hk2-detail"><strong>{room.tipologia||'Camera'}</strong><span>{slopeLabels[room.stato_slope]||room.stato_slope}{room.arrivo?` · arrivo ${dateOnly(room.arrivo)}`:''}{room.partenza?` · partenza ${dateOnly(room.partenza)}`:''}</span>{room.letti&&<span>Letti: {room.letti}</span>}{room.operational_note&&<p><b>Nota operativa:</b> {room.operational_note}</p>}</div>{workAllowed&&<div className="hk2-actions">{stateEntries.map(([key,label])=><button type="button" className={room.lavoro===key?'active':''} key={key} onClick={()=>onState(room.camera,key)}>{label}</button>)}</div>}{workAllowed&&<form className="hk2-form" onSubmit={(e)=>{e.preventDefault();onSave(room.camera,fields)}}>{manageAllowed&&<><label>Stato soggiorno<select value={fields.stato_slope} onChange={(e)=>setFields({...fields,stato_slope:e.target.value})}>{Object.entries(slopeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label><label>Configurazione letti<input value={fields.letti} onChange={(e)=>setFields({...fields,letti:e.target.value})}/></label></>}<label>Note operative RandApp<textarea rows="3" value={fields.operational_note} onChange={(e)=>setFields({...fields,operational_note:e.target.value)} placeholder="Solo informazioni operative, nessun dato ospite"/></label><button type="submit" className="hk2-primary">Salva modifica</button></form>}</section></div>
 }
 
 function LocalReport({report,onClose}) {
