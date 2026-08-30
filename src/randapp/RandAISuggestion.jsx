@@ -4,6 +4,8 @@ import { buildIssueRandAISuggestion } from '../randai/issue-suggestion.js'
 import { clearRandAIContextResource, createIssueContextEnvelope, publishRandAIContext } from '../randai/context/envelope.js'
 import { executeRandAIAction, prepareRandAIAction, rejectRandAIAction } from '../randai/action-gateway.js'
 import { canUser } from '../permissions.js'
+import { loadSession } from '../session.js'
+import { fetchDirectory } from '../users-data.js'
 import './randai-suggestion.css'
 
 function issueQuery(issue) {
@@ -22,19 +24,34 @@ function gatewayErrorLabel(error) {
 export default function RandAISuggestion({ issue, hotelId, user = null, onActionExecuted = null }) {
   const [state, setState] = useState({ loading: true, suggestion: null, unavailable: false })
   const [actionState, setActionState] = useState({ busy: false, plan: null, error: '', success: '' })
+  const [actor, setActor] = useState(user)
   const query = useMemo(() => issueQuery(issue), [issue?.room, issue?.category, issue?.title])
+
+  useEffect(() => {
+    if (user) { setActor(user); return undefined }
+    let active = true
+    const session = loadSession()
+    if (!session?.userId || session.hotelId !== hotelId) { setActor(null); return undefined }
+    fetchDirectory(hotelId).then(({ users }) => {
+      if (!active) return
+      const match = (users || []).find((item) => item.auth_user_id === session.userId || item.id === session.userId || item.legacy_id === session.userId) || null
+      setActor(match)
+    }).catch(() => { if (active) setActor(null) })
+    return () => { active = false }
+  }, [user, hotelId])
+
   const context = useMemo(() => createIssueContextEnvelope({
     hotelId,
     issue,
-    actor: user ? {
-      userId: user.auth_user_id || user.id,
-      legacyId: user.legacy_id,
-      role: user.role,
-      department: user.department,
+    actor: actor ? {
+      userId: actor.auth_user_id || actor.id,
+      legacyId: actor.legacy_id,
+      role: actor.role,
+      department: actor.department,
     } : null,
-  }), [hotelId, issue, user])
-  const canEdit = Boolean(user && canUser(user, 'issues', 'edit'))
-  const canComplete = Boolean(user && canUser(user, 'issues', 'complete'))
+  }), [hotelId, issue, actor])
+  const canEdit = Boolean(actor && canUser(actor, 'issues', 'edit'))
+  const canComplete = Boolean(actor && canUser(actor, 'issues', 'complete'))
 
   useEffect(() => {
     if (!context) return undefined
