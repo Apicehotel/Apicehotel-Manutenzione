@@ -2,7 +2,9 @@ import { RuntimeTaskStatus, RuntimeStepStatus, CheckpointKind } from './contract
 
 let runtimeSequence = 0
 const nowIso = () => new Date().toISOString()
-const nextId = () => `RND-RUN-${String(++runtimeSequence).padStart(6, '0')}`
+const nextId = () => globalThis.crypto?.randomUUID
+  ? `RND-RUN-${globalThis.crypto.randomUUID()}`
+  : `RND-RUN-${Date.now()}-${String(++runtimeSequence).padStart(6, '0')}`
 
 function stepState(step) {
   return { id: step.id, status: RuntimeStepStatus.PENDING, attempts: 0, strategyIndex: 0, result: null, verification: null, startedAt: null, completedAt: null }
@@ -87,10 +89,20 @@ export class DurableTaskRunner {
     while (state.strategyIndex < strategies.length) {
       const strategy = strategies[state.strategyIndex]
       state.attempts += 1
-      const result = await this.registry.execute(strategy.toolId, strategy.input || {}, { task, step, strategy })
+      let result
+      try {
+        result = await this.registry.execute(strategy.toolId, strategy.input || {}, { task, step, strategy })
+      } catch (error) {
+        result = { status: 'FAILED', data: null, error: { code: error?.code || 'EXECUTION_ERROR', message: error?.message || String(error) } }
+      }
       state.result = result
       state.status = RuntimeStepStatus.VERIFYING
-      const verification = await this.verifier.verify({ task, step, result, strategy })
+      let verification
+      try {
+        verification = await this.verifier.verify({ task, step, result, strategy })
+      } catch (error) {
+        verification = { ok: false, reason: error?.message || 'verifier_error' }
+      }
       state.verification = verification
 
       if (verification.ok) {
@@ -104,7 +116,7 @@ export class DurableTaskRunner {
       if (state.strategyIndex + 1 < strategies.length) {
         const previous = state.strategyIndex
         state.strategyIndex += 1
-        task.decisions.push({ at: nowIso(), type: 'STRATEGY_CHANGE', stepId: step.id, from: previous, to: state.strategyIndex, reason: verification.reason || result?.status || 'failed' })
+        task.decisions.push({ at: nowIso(), type: 'STRATEGY_CHANGE', stepId: step.id, from: previous, to: state.strategyIndex, reason: verification.reason || result?.error?.code || result?.status || 'failed' })
         continue
       }
       state.status = RuntimeStepStatus.FAILED
