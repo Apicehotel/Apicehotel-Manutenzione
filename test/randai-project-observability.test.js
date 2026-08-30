@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ProjectGraph, ProjectNodeType, ProjectEdgeType } from '../src/randai/projects/index.js'
+import { ProjectGraph, ProjectGraphStore, ProjectIntelligenceEngine, ProjectNodeType, ProjectEdgeType } from '../src/randai/projects/index.js'
 import { ObservabilityEngine, TraceStore, TraceStatus, SpanStatus } from '../src/randai/observability/index.js'
 import { AgentRegistry, MultiAgentRuntime } from '../src/randai/agents/index.js'
 
@@ -36,6 +36,22 @@ test('project graph diff is deterministic and detects topology changes', () => {
   const diff = first.diff(next)
   assert.deepEqual(diff.addedNodes, ['trace'])
   assert.deepEqual(diff.addedEdges, ['decision|EMITS|trace'])
+})
+
+test('project intelligence merges scanner evidence and persists an updateable graph', async () => {
+  const store = new ProjectGraphStore()
+  const engine = new ProjectIntelligenceEngine({
+    store,
+    scanners: [
+      { id: 'github', scan: async () => ({ nodes: [{ id: 'assistant', type: ProjectNodeType.FILE, path: 'src/randai/RandAIAssistant.jsx' }, { id: 'decision', type: ProjectNodeType.MODULE }], edges: [{ from: 'assistant', to: 'decision', type: ProjectEdgeType.IMPORTS }], metadata: { ref: 'main' } }) },
+      { id: 'supabase', scan: async () => ({ nodes: [{ id: 'decision', type: ProjectNodeType.MODULE }, { id: 'procedures', type: ProjectNodeType.TABLE }], edges: [{ from: 'decision', to: 'procedures', type: ProjectEdgeType.READS }], metadata: { schema: 'public' } }) },
+    ],
+  })
+  const first = await engine.scan({ projectId: 'randai' })
+  assert.deepEqual(first.graph.nodes.find((node) => node.id === 'decision').sources.sort(), ['github', 'supabase'])
+  assert.equal(first.graph.sources.length, 2)
+  const persistedImpact = await engine.impact('randai', 'assistant')
+  assert.deepEqual(persistedImpact.affected.map((node) => node.id), ['decision', 'procedures'])
 })
 
 test('observability trace records spans events and weighted progress from real completed work', async () => {
