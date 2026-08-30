@@ -59,6 +59,10 @@ async function assertAdminKeyboardLayout(page, label) {
   await assertNoHorizontalOverflow(page, `${label}-admin-keyboard`)
 
   await page.screenshot({ path: fileURLToPath(new URL(`${label}-admin-keyboard.png`, artifacts)), fullPage: false })
+  await pin.blur()
+  await page.waitForTimeout(50)
+  const activeTestId = await page.evaluate(() => document.activeElement?.getAttribute?.('data-testid') || '')
+  assert.notEqual(activeTestId, 'admin-pin-input', `PIN admin ancora focalizzato dopo chiusura tastiera su ${label}`)
   await page.setViewportSize(originalViewport)
   await page.waitForTimeout(50)
 }
@@ -115,7 +119,7 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
     await assertAdminKeyboardLayout(page, `${label}-${theme}-${uiSize}`)
 
     stage = 'return-from-settings'
-    await page.locator('.rs-textback').click()
+    await page.getByTestId('admin-back').click()
     await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible', timeout: 5000 })
     assert.equal(await page.getByText('Seleziona una struttura', { exact: true }).count(), 0, `Vecchia home struttura riapparsa su ${label}`)
 
