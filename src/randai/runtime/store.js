@@ -55,6 +55,7 @@ export class SupabaseTaskStore {
   constructor({ supabase }) {
     if (!supabase) throw new TypeError('supabase client is required')
     this.supabase = supabase
+    this.leaseTokens = new Map()
   }
   async save(task) {
     const expected = Number(task.revision || 0)
@@ -72,7 +73,10 @@ export class SupabaseTaskStore {
       const response = await this.supabase.from('randai_tasks').insert(row).select('revision').single()
       data = response.data; error = response.error
     } else {
-      const response = await this.supabase.from('randai_tasks').update(row).eq('id', task.id).eq('revision', expected).select('revision').maybeSingle()
+      let query = this.supabase.from('randai_tasks').update(row).eq('id', task.id).eq('revision', expected)
+      const leaseToken = this.leaseTokens.get(task.id)
+      if (leaseToken) query = query.eq('lease_token', leaseToken)
+      const response = await query.select('revision').maybeSingle()
       data = response.data; error = response.error
     }
     if (error) throw error
@@ -95,6 +99,7 @@ export class SupabaseTaskStore {
     if (error) throw error
     const row = Array.isArray(data) ? data[0] : data
     if (!row?.lease_token) return null
+    this.leaseTokens.set(taskId, row.lease_token)
     return { token: row.lease_token, owner, expiresAt: new Date(row.lease_expires_at).getTime(), revision: Number(row.revision || 0) }
   }
   async renew(taskId, token, { leaseSeconds = 120 } = {}) {
@@ -105,7 +110,8 @@ export class SupabaseTaskStore {
     })
     if (error) throw error
     const row = Array.isArray(data) ? data[0] : data
-    if (!row?.lease_token) return null
+    if (!row?.lease_token) { this.leaseTokens.delete(taskId); return null }
+    this.leaseTokens.set(taskId, row.lease_token)
     return { token: row.lease_token, expiresAt: new Date(row.lease_expires_at).getTime() }
   }
   async release(taskId, token) {
@@ -113,6 +119,7 @@ export class SupabaseTaskStore {
       p_task_id: taskId,
       p_lease_token: token,
     })
+    this.leaseTokens.delete(taskId)
     if (error) throw error
     return Boolean(data)
   }
