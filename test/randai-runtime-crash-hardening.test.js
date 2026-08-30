@@ -43,7 +43,7 @@ test('two simultaneous resumes in one runtime execute the effect once', async ()
   assert.equal(calls, 1)
 })
 
-test('interrupted RUNNING step fails closed and is not re-executed automatically', async () => {
+test('interrupted RUNNING step fails closed and stays blocked until reconciliation', async () => {
   let calls = 0
   const { store, runner } = makeRunner({ execute: async () => { calls += 1; return { status: 'SUCCESS' } } })
   const task = await runner.create({ objective: 'recover crash', proposedPlan: plan })
@@ -61,6 +61,11 @@ test('interrupted RUNNING step fails closed and is not re-executed automatically
   const error = blocked.errors.find((item) => item.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION')
   assert.equal(error.stepId, 'write')
   assert.equal(error.previousStatus, RuntimeStepStatus.RUNNING)
+
+  const stillBlocked = await runner.resume(task.id)
+  assert.equal(stillBlocked.status, RuntimeTaskStatus.BLOCKED)
+  assert.equal(stillBlocked.steps.write.status, RuntimeStepStatus.BLOCKED)
+  assert.equal(calls, 0)
 })
 
 test('human reconciliation can mark interrupted effect succeeded without replay', async () => {
