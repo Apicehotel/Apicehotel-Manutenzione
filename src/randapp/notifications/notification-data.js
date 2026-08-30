@@ -20,10 +20,13 @@ export async function fetchNotificationInbox(hotelId, user) {
   const assignmentQuery = ownIds.size
     ? supabase.from('interventi').select('id,camera,categoria,note,stato,assegnatari,programmato_dal,creato_il,updated_at').eq('hotel_id', hotelId).eq('sezione', 'intervento').gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(120)
     : Promise.resolve({ data: [], error: null })
+  const readsQuery = authUserId
+    ? supabase.from('notification_reads').select('source_type,source_id,read_at').eq('hotel_id', hotelId).eq('user_id', authUserId)
+    : Promise.resolve({ data: [], error: null })
   const [{ data: urgents, error: urgentError }, { data: sends, error: sendError }, { data: reads, error: readError }, { data: assignments, error: assignmentError }] = await Promise.all([
     supabase.from('richieste_urgenti').select('id,nota,stato,gravita,posizione,reparto,foto,creato_da,creato_il,updated_at').eq('hotel_id', hotelId).gte('creato_il', sinceIso()).order('creato_il', { ascending: false }).limit(60),
     supabase.from('promemoria_invio').select('id,promemoria_id,scheduled_for,sent_at,status').eq('hotel_id', hotelId).eq('status', 'sent').gte('sent_at', sinceIso()).order('sent_at', { ascending: false }).limit(80),
-    supabase.from('notification_reads').select('source_type,source_id,read_at').eq('hotel_id', hotelId),
+    readsQuery,
     assignmentQuery,
   ])
   if (urgentError) throw urgentError
