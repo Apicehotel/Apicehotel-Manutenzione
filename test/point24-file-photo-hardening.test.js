@@ -6,6 +6,8 @@ import { sha256Hex, sniffImageType, sniffSpreadsheetType, validatePhotoBinary, v
 const photoStorage = fs.readFileSync('src/photo-storage.js','utf8')
 const housekeeping = fs.readFileSync('src/housekeeping-v2.jsx','utf8')
 const helpers = fs.readFileSync('src/randapp/helpers.js','utf8')
+const issues = fs.readFileSync('src/issues-data.js','utf8')
+const planned = fs.readFileSync('src/planned-data.js','utf8')
 
 function namedBlob(bytes, name, type = '') {
   const blob = new Blob([Uint8Array.from(bytes)], { type })
@@ -26,11 +28,12 @@ test('SHA-256 fingerprints content independently from filename', async () => {
   assert.match(await sha256Hex(a), /^[0-9a-f]{64}$/)
 })
 
-test('spreadsheet intake checks binary magic and extension coherence', async () => {
+test('spreadsheet intake checks binary magic, size and extension coherence', async () => {
   assert.equal(sniffSpreadsheetType(Uint8Array.from(xlsMagic)), 'xls')
   assert.equal(sniffSpreadsheetType(Uint8Array.from(zipMagic)), 'xlsx')
   const valid = await validateSpreadsheetFile(namedBlob(xlsMagic, 'housekeeping.xls'))
   assert.equal(valid.type, 'xls')
+  await assert.rejects(() => validateSpreadsheetFile(namedBlob(xlsMagic, 'large.xls'), { maxBytes:4 }), /File troppo grande/)
   await assert.rejects(() => validateSpreadsheetFile(namedBlob([1,2,3,4], 'fake.xls')), /vero file XLS\/XLSX/)
   await assert.rejects(() => validateSpreadsheetFile(namedBlob(xlsMagic, 'fake.xlsx')), /non coerente/)
 })
@@ -41,6 +44,7 @@ test('photo intake trusts binary content, not declared MIME or extension', async
   assert.equal(sniffImageType(Uint8Array.from(webp)).mime, 'image/webp')
   const valid = await validatePhotoBinary(namedBlob(jpeg, 'camera.jpg', 'image/jpeg'))
   assert.equal(valid.extension, 'jpg')
+  await assert.rejects(() => validatePhotoBinary(namedBlob(jpeg, 'large.jpg', 'image/jpeg'), { maxBytes:4 }), /Foto troppo grande/)
   await assert.rejects(() => validatePhotoBinary(namedBlob(jpeg, 'camera.png', 'image/jpeg')), /Estensione/)
   await assert.rejects(() => validatePhotoBinary(namedBlob(jpeg, 'camera.jpg', 'image/png')), /Tipo dichiarato/)
   await assert.rejects(() => validatePhotoBinary(namedBlob([1,2,3,4], 'camera.jpg', 'image/jpeg')), /Formato foto non riconosciuto/)
@@ -58,11 +62,16 @@ test('storage paths are canonical and cross-hotel staged photos are rejected', (
   assert.match(photoStorage, /materialized\.meta\?\.hotelId && materialized\.meta\.hotelId !== safeHotelId/)
   assert.match(photoStorage, /contentType: materialized\.verified\.mime/)
   assert.match(photoStorage, /sanitizeStorageSegment\(hotelId, 'hotelId'\)/)
+  assert.match(issues, /stagePhotoOffline\(item\.photoData,\{hotelId:item\.hotelId/)
+  assert.match(issues, /uploadPhotoValue\(item\.photoData,\{hotelId:item\.hotelId/)
+  assert.match(planned, /stagePhotoOffline\(item\.photoAfter,\{hotelId:item\.hotelId/)
+  assert.match(planned, /uploadPhotoValue\(item\.photoAfter,\{hotelId:item\.hotelId/)
 })
 
 test('housekeeping validates before SheetJS parse and keeps a per-hotel SHA-256 registry', () => {
   assert.match(housekeeping, /validateSpreadsheetFile\(file\)/)
   assert.match(housekeeping, /XLSX\.read\(verified\.bytes/)
+  assert.match(housekeeping, /workbook\.SheetNames\?\.length/)
   assert.match(housekeeping, /imports:'&sha256,importedAt,kind'/)
   assert.match(housekeeping, /cache\.imports\.get\(parsed\.sourceSha256\)/)
   assert.match(housekeeping, /Importazione duplicata bloccata/)
