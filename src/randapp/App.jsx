@@ -52,13 +52,18 @@ function AdminGate({ onBack, onExit }) {
     catch { setError('PIN amministratore non valido') }
     finally { setBusy(false) }
   }
+  const goBack = () => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+    onBack?.()
+  }
   if (ok) return <Suspense fallback={<Spinner label="Carico impostazioni…" />}><Settings onExit={onExit || onBack} /></Suspense>
   return (
     <main className="rs-auth">
       <div className="rs-auth__inner">
         <BrandMark tagline={false} />
         <section className="rs-card rs-authcard">
-          <button className="rs-textback" onClick={onBack}><Icon name="chevronLeft" /> RandApp</button>
+          <button type="button" className="rs-textback" data-testid="admin-back" onClick={goBack}><Icon name="chevronLeft" /> RandApp</button>
           <header><h1>Impostazioni</h1><p>Accesso protetto amministratore</p></header>
           <form className="rs-authform" onSubmit={submit}>
             <Field label="PIN amministratore">
