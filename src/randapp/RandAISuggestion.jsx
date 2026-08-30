@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { retrieveRandAIGuidance } from '../randai/randai-data.js'
 import { buildIssueRandAISuggestion } from '../randai/issue-suggestion.js'
+import { clearRandAIContextResource, createIssueContextEnvelope, publishRandAIContext } from '../randai/context/envelope.js'
 import './randai-suggestion.css'
 
 function issueQuery(issue) {
@@ -10,12 +11,19 @@ function issueQuery(issue) {
 export default function RandAISuggestion({ issue, hotelId }) {
   const [state, setState] = useState({ loading: true, suggestion: null, unavailable: false })
   const query = useMemo(() => issueQuery(issue), [issue?.room, issue?.category, issue?.title])
+  const context = useMemo(() => createIssueContextEnvelope({ hotelId, issue }), [hotelId, issue])
+
+  useEffect(() => {
+    if (!context) return undefined
+    publishRandAIContext(context)
+    return () => { clearRandAIContextResource({ hotelId, resourceId: issue?.id }) }
+  }, [context, hotelId, issue?.id])
 
   useEffect(() => {
     let cancelled = false
     setState({ loading: true, suggestion: null, unavailable: false })
 
-    retrieveRandAIGuidance({ hotelId, query })
+    retrieveRandAIGuidance({ hotelId, query, operationalContext: context })
       .then((guidance) => {
         if (cancelled) return
         setState({ loading: false, suggestion: buildIssueRandAISuggestion(guidance), unavailable: false })
@@ -26,7 +34,7 @@ export default function RandAISuggestion({ issue, hotelId }) {
       })
 
     return () => { cancelled = true }
-  }, [hotelId, query])
+  }, [hotelId, query, context])
 
   return (
     <section className="rs-randai-suggestion" aria-label="Suggerimento RandAI" data-testid="randai-issue-suggestion">
