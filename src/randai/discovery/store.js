@@ -1,9 +1,10 @@
 const clone = (value) => structuredClone(value)
+const keyOf = (projectId, id) => `${projectId}::${id}`
 
 export class DiscoveryStore {
   constructor() { this.items = new Map() }
-  async save(item) { this.items.set(item.id, clone(item)); return clone(item) }
-  async get(id) { const item = this.items.get(id); return item ? clone(item) : null }
+  async save(item) { this.items.set(keyOf(item.projectId, item.id), clone(item)); return clone(item) }
+  async get(id, projectId = 'randai') { const item = this.items.get(keyOf(projectId, id)); return item ? clone(item) : null }
   async list(filters = {}) {
     return [...this.items.values()]
       .filter((item) => !filters.projectId || item.projectId === filters.projectId)
@@ -17,11 +18,15 @@ export class SupabaseDiscoveryStore {
   constructor({ supabase } = {}) { if (!supabase?.from) throw new TypeError('SupabaseDiscoveryStore requires Supabase client'); this.supabase = supabase }
   async save(item) {
     const payload = { id: item.id, project_id: item.projectId, kind: item.kind, status: item.status, source_id: item.source.id, source_ref: item.source.ref, risk: item.risk, score: item.score, candidate: clone(item), updated_at: item.updatedAt }
-    const { error } = await this.supabase.from('randai_discovery_candidates').upsert(payload, { onConflict: 'id' })
+    const { error } = await this.supabase.from('randai_discovery_candidates').upsert(payload, { onConflict: 'project_id,id' })
     if (error) throw error
     return clone(item)
   }
-  async get(id) { const { data, error } = await this.supabase.from('randai_discovery_candidates').select('candidate').eq('id', id).maybeSingle(); if (error) throw error; return data?.candidate ? clone(data.candidate) : null }
+  async get(id, projectId = 'randai') {
+    const { data, error } = await this.supabase.from('randai_discovery_candidates').select('candidate').eq('project_id', projectId).eq('id', id).maybeSingle()
+    if (error) throw error
+    return data?.candidate ? clone(data.candidate) : null
+  }
   async list(filters = {}) {
     let query = this.supabase.from('randai_discovery_candidates').select('candidate')
     if (filters.projectId) query = query.eq('project_id', filters.projectId)
