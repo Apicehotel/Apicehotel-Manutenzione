@@ -1,21 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
 import { retrieveRandAIGuidance } from '../randai/randai-data.js'
 import { buildIssueRandAISuggestion } from '../randai/issue-suggestion.js'
+import { clearOperationalContext, publishOperationalContext } from '../randai/context/operational-context.js'
 import './randai-suggestion.css'
 
 function issueQuery(issue) {
   return [issue?.room, issue?.category, issue?.title].filter(Boolean).join(' · ')
 }
 
+function issueContext(issue, hotelId) {
+  return {
+    hotelId,
+    view: 'issues',
+    source: 'issue-detail',
+    resource: {
+      type: 'maintenance_issue',
+      id: issue?.id,
+      location: issue?.room,
+      category: issue?.category,
+      status: issue?.status,
+      summary: issue?.title,
+    },
+    queryHint: issueQuery(issue),
+  }
+}
+
 export default function RandAISuggestion({ issue, hotelId }) {
   const [state, setState] = useState({ loading: true, suggestion: null, unavailable: false })
   const query = useMemo(() => issueQuery(issue), [issue?.room, issue?.category, issue?.title])
+  const operationalContext = useMemo(() => issueContext(issue, hotelId), [hotelId, issue?.id, issue?.room, issue?.category, issue?.status, issue?.title])
+
+  useEffect(() => {
+    const published = publishOperationalContext(operationalContext)
+    return () => clearOperationalContext({ hotelId, resourceType: 'maintenance_issue', resourceId: published?.resource?.id })
+  }, [hotelId, operationalContext])
 
   useEffect(() => {
     let cancelled = false
     setState({ loading: true, suggestion: null, unavailable: false })
 
-    retrieveRandAIGuidance({ hotelId, query })
+    retrieveRandAIGuidance({ hotelId, query, operationalContext })
       .then((guidance) => {
         if (cancelled) return
         setState({ loading: false, suggestion: buildIssueRandAISuggestion(guidance), unavailable: false })
@@ -26,7 +50,7 @@ export default function RandAISuggestion({ issue, hotelId }) {
       })
 
     return () => { cancelled = true }
-  }, [hotelId, query])
+  }, [hotelId, query, operationalContext])
 
   return (
     <section className="rs-randai-suggestion" aria-label="Suggerimento RandAI" data-testid="randai-issue-suggestion">
