@@ -42,7 +42,8 @@ export class KnowledgeGapEngine {
   }
 
   async captureUnknown(result, input = {}) {
-    if (result?.found !== false && result?.trust !== 'unknown') return { captured: false, reason: 'KNOWLEDGE_AVAILABLE' }
+    const trust = normalize(result?.trust)
+    if (result?.found !== false && trust !== 'unknown') return { captured: false, reason: 'KNOWLEDGE_AVAILABLE' }
     const opened = await this.open({
       scope: input.scope || GapScope.MAINTENANCE,
       hotelId: input.hotelId || result?.hotelId || null,
