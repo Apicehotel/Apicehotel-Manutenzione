@@ -2,24 +2,25 @@ import { supabase } from './supabase.js'
 import { getCachedCollection, setCachedCollection } from './offline-store.js'
 
 function rowsFrom(data) { if (Array.isArray(data)) return data; if (Array.isArray(data?.users)) return data.users; if (Array.isArray(data?.data)) return data.data; return [] }
+function loginEligibleUsers(data) { return rowsFrom(data).filter((user) => user && user.active !== false && String(user.role || '').trim() !== 'RandAI') }
 async function invokeAdmin(body) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-users', { body }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function fetchDirectory(hotelId) {
   if (!hotelId) return { users: [] }
-  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: await getCachedCollection('directory', hotelId), offline: true }
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: loginEligibleUsers(await getCachedCollection('directory', hotelId)), offline: true }
   try {
     const { data, error } = await supabase.functions.invoke('pin-auth', { body: { action: 'directory', hotel_id: hotelId } })
     if (error) throw error
     if (data?.error) throw new Error(data.error)
-    const users = rowsFrom(data)
+    const users = loginEligibleUsers(data)
     await setCachedCollection('directory', hotelId, users)
     return { users }
   } catch (error) {
-    const cached = await getCachedCollection('directory', hotelId)
+    const cached = loginEligibleUsers(await getCachedCollection('directory', hotelId))
     if (cached.length) return { users: cached, offline: true }
     throw error
   }
 }
-export async function fetchUsers(hotels) { const body = { action: 'list' }; if (Array.isArray(hotels) && hotels.length) body.hotels = hotels; const data = await invokeAdmin(body); return { users: rowsFrom(data) } }
+export async function fetchUsers(hotels) { const body = { action = 'list' }; if (Array.isArray(hotels) && hotels.length) body.hotels = hotels; const data = await invokeAdmin(body); return { users: rowsFrom(data) } }
 export async function insertUser(user) { const body = { action:'create', name:user.name, role:user.role, department:user.department||null, email:user.email||null, phone:user.phone||null, phone_country_code:user.phone_country_code||user.phoneCountryCode||null, pin:user.pin, hotels:Array.isArray(user.hotels)?user.hotels:[], can_access_admin:Boolean(user.can_access_admin??user.canAdmin??user.can_admin) }; const data=await invokeAdmin(body); return data?.user||data?.data||data }
 export async function updateUserRow(authUserId, changes) { const body={action:'update',auth_user_id:authUserId}; for(const key of ['name','role','department','email','phone','hotels']) if(key in changes) body[key]=changes[key]; if('phone_country_code'in changes)body.phone_country_code=changes.phone_country_code;if('phoneCountryCode'in changes)body.phone_country_code=changes.phoneCountryCode;if('can_access_admin'in changes)body.can_access_admin=Boolean(changes.can_access_admin);if('canAdmin'in changes)body.can_access_admin=Boolean(changes.canAdmin);if('can_admin'in changes)body.can_access_admin=Boolean(changes.can_admin);const data=await invokeAdmin(body);return data?.user||data?.data||data }
 export async function updateUserPin(authUserId,pin){const data=await invokeAdmin({action:'set_pin',auth_user_id:authUserId,pin});return data?.user||data?.data||data}
