@@ -80,3 +80,16 @@ test('human reconciliation can mark interrupted effect succeeded without replay'
   assert.equal(done.status, RuntimeTaskStatus.SUCCEEDED)
   assert.equal(calls, 0)
 })
+
+test('task store rejects stale concurrent saves instead of silently overwriting state', async () => {
+  const { store, runner } = makeRunner()
+  const task = await runner.create({ objective: 'concurrency guard', proposedPlan: plan })
+  const first = await store.load(task.id)
+  const stale = await store.load(task.id)
+  first.metadata.writer = 'first'
+  await store.save(first)
+  stale.metadata.writer = 'stale'
+  await assert.rejects(() => store.save(stale), (error) => error?.code === 'TASK_REVISION_CONFLICT')
+  const persisted = await store.load(task.id)
+  assert.equal(persisted.metadata.writer, 'first')
+})
