@@ -1,11 +1,12 @@
 import { supabase } from '../supabase.js'
 import { findInternalProcedure } from './knowledge.js'
-import { buildOperationalContext, contextQueryHint } from './context/operational-context.js'
+import { buildOperationalContext, contextQueryHint, getOperationalContext } from './context/operational-context.js'
 
 export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '', operationalContext = null }) {
   if (!hotelId || !query?.trim()) return null
 
-  const context = operationalContext ? buildOperationalContext(operationalContext) : null
+  const candidateContext = operationalContext || getOperationalContext({ hotelId })
+  const context = candidateContext ? buildOperationalContext(candidateContext) : null
   const scopedContext = context?.hotelId === hotelId ? context : null
   const effectiveContextQuery = String(contextQuery || '').trim() || contextQueryHint(scopedContext)
 
