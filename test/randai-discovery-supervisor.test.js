@@ -42,9 +42,10 @@ test('discovery store isolates projects', async () => {
   assert.deepEqual((await store.list({ projectId: 'one' })).map((item) => item.id), ['a'])
 })
 
-test('supervisor chooses single or multi-agent and enforces preflight agent budget', () => {
+test('supervisor chooses multi-agent only for explicitly decomposed work and enforces preflight agent budget', () => {
   const supervisor = new RandAISupervisor({ defaultBudget: { maxAgents: 2 } })
   assert.equal(supervisor.plan({ objective: 'small fix', agentTasks: [{ id: 'one' }] }).mode, SupervisorMode.SINGLE_AGENT)
+  assert.equal(supervisor.plan({ objective: 'complex but not decomposed', complexity: 'HIGH' }).mode, SupervisorMode.SINGLE_AGENT)
   assert.equal(supervisor.plan({ objective: 'broad audit', complexity: 'HIGH', agentTasks: [{ id: 'a' }, { id: 'b' }] }).mode, SupervisorMode.MULTI_AGENT)
   const stopped = supervisor.plan({ objective: 'too broad', complexity: 'HIGH', agentTasks: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] })
   assert.equal(stopped.mode, SupervisorMode.STOPPED)
