@@ -38,32 +38,47 @@ alter table public.randai_memory_items enable row level security;
 drop policy if exists randai_memory_items_select on public.randai_memory_items;
 create policy randai_memory_items_select on public.randai_memory_items
 for select to authenticated using (
-  scope = 'global' or
-  (hotel_id is not null and public.is_hotel_member(hotel_id)) or
-  (hotel_id is not null and public.can_manage_randai_hotel(hotel_id)) or
-  (scope in ('project','task') and public.has_any_randapp_admin())
+  (scope = 'hotel' and hotel_id is not null and (
+    public.is_hotel_member(hotel_id) or public.can_manage_randai_hotel(hotel_id)
+  )) or
+  (scope in ('global','project','task') and exists (
+    select 1 from public.hotels h
+    where public.has_hotel_role(h.id, array['RandAI']::text[])
+  ))
 );
 
 drop policy if exists randai_memory_items_insert on public.randai_memory_items;
 create policy randai_memory_items_insert on public.randai_memory_items
 for insert to authenticated with check (
   (scope = 'hotel' and public.can_manage_randai_hotel(hotel_id)) or
-  (scope in ('global','project','task') and public.has_any_randapp_admin())
+  (scope in ('global','project','task') and exists (
+    select 1 from public.hotels h
+    where public.has_hotel_role(h.id, array['RandAI']::text[])
+  ))
 );
 
 drop policy if exists randai_memory_items_update on public.randai_memory_items;
 create policy randai_memory_items_update on public.randai_memory_items
 for update to authenticated using (
   (scope = 'hotel' and public.can_manage_randai_hotel(hotel_id)) or
-  (scope in ('global','project','task') and public.has_any_randapp_admin())
+  (scope in ('global','project','task') and exists (
+    select 1 from public.hotels h
+    where public.has_hotel_role(h.id, array['RandAI']::text[])
+  ))
 ) with check (
   (scope = 'hotel' and public.can_manage_randai_hotel(hotel_id)) or
-  (scope in ('global','project','task') and public.has_any_randapp_admin())
+  (scope in ('global','project','task') and exists (
+    select 1 from public.hotels h
+    where public.has_hotel_role(h.id, array['RandAI']::text[])
+  ))
 );
 
 drop policy if exists randai_memory_items_delete on public.randai_memory_items;
 create policy randai_memory_items_delete on public.randai_memory_items
 for delete to authenticated using (
   (scope = 'hotel' and public.can_manage_randai_hotel(hotel_id)) or
-  (scope in ('global','project','task') and public.has_any_randapp_admin())
+  (scope in ('global','project','task') and exists (
+    select 1 from public.hotels h
+    where public.has_hotel_role(h.id, array['RandAI']::text[])
+  ))
 );
