@@ -13,12 +13,12 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-test-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,8 +59,30 @@ jobs:
       - name: Full unit and contract suite
         run: npm test
 
-      - name: Install Playwright Chromium and WebKit
-        run: npx playwright install --with-deps chromium webkit
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium webkit
+
+      - name: Install Playwright Chromium
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install chromium && exit 0
+            echo "Chromium download attempt $attempt failed; retrying..."
+            sleep $((attempt * 5))
+          done
+          exit 1
+
+      - name: Install Playwright WebKit
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '120000'
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install webkit && exit 0
+            echo "WebKit download attempt $attempt failed; retrying..."
+            sleep $((attempt * 5))
+          done
+          exit 1
 
       - name: Start preview server
         run: |
