@@ -184,6 +184,7 @@ function HotelSelector({ pending, onPick }) {
 
 export default function App() {
   const [session, setSession] = useState(loadSession())
+  const [sessionReady, setSessionReady] = useState(() => !loadSession())
   const [pending, setPending] = useState(null)
   const [settingsFromLogin, setSettingsFromLogin] = useState(false)
 
@@ -194,20 +195,47 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!session) return undefined
+    if (!session) {
+      setSessionReady(true)
+      return undefined
+    }
     let active = true
+    setSessionReady(false)
+    const resetSession = async (signOutSupabase) => {
+      try { await signOutSupabase?.() } catch { /* local reset still proceeds */ }
+      clearSession()
+      if (!active) return
+      setPending(null)
+      setSession(null)
+      setSessionReady(true)
+    }
     const validate = async () => {
-      if (!navigator.onLine) return
+      if (!navigator.onLine) {
+        if (active) setSessionReady(true)
+        return
+      }
       try {
-        const { validateSupabaseSession } = await import('../auth-data.js')
+        const { validateSupabaseSession, signOutSupabase } = await import('../auth-data.js')
         const result = await validateSupabaseSession()
         if (active && !result.valid) {
-          clearSession()
-          setPending(null)
-          setSession(null)
+          await resetSession(signOutSupabase)
+          return
         }
+        if (!active) return
+        const { fetchDirectory } = await import('../users-data.js')
+        const directory = await fetchDirectory(session.hotelId)
+        if (!active) return
+        const rows = directory?.users || []
+        const authorized = rows.some((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId)
+        if (!authorized) {
+          console.warn('Sessione RandApp non più associata alla struttura: accesso ripristinato')
+          await resetSession(signOutSupabase)
+          return
+        }
+        setSessionReady(true)
       } catch (error) {
         console.warn('Controllo sessione rimandato', error)
+        if (active) setSessionReady(true)
       }
     }
     validate()
@@ -219,6 +247,7 @@ export default function App() {
     if (allowedHotels.length <= 1) {
       saveSession({ hotelId: allowedHotels[0] || workedHotel, userId, createdAt: Date.now() })
       setSession(loadSession())
+      setSessionReady(false)
     } else {
       setPending({ user, userId, allowedHotels })
     }
@@ -228,6 +257,7 @@ export default function App() {
     saveSession({ hotelId, userId: pending.userId, createdAt: Date.now() })
     setPending(null)
     setSession(loadSession())
+    setSessionReady(false)
   }
 
   const onLogout = async () => {
@@ -236,10 +266,12 @@ export default function App() {
     clearSession()
     setPending(null)
     setSession(null)
+    setSessionReady(true)
   }
 
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
-  if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()) }} /></Suspense>
+  if (session && !sessionReady) return <Spinner label="Verifico accesso…" />
+  if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
   if (pending) return <HotelSelector pending={pending} onPick={pickHotel} />
   return <Login onAuthenticated={onAuthenticated} onOpenSettings={() => setSettingsFromLogin(true)} />
 }
