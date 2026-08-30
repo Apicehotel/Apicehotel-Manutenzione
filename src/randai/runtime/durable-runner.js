@@ -8,6 +8,7 @@ const nextId = () => globalThis.crypto?.randomUUID
   ? `RND-RUN-${globalThis.crypto.randomUUID()}`
   : `RND-RUN-${Date.now()}-${String(++runtimeSequence).padStart(6, '0')}`
 const runnerId = () => globalThis.crypto?.randomUUID?.() || `runner-${Date.now()}-${Math.random().toString(36).slice(2)}`
+const TERMINAL_TASK_STATUSES = new Set([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED])
 
 function stepState(step) {
   return { id: step.id, status: RuntimeStepStatus.PENDING, attempts: 0, strategyIndex: 0, result: null, verification: null, startedAt: null, completedAt: null }
@@ -46,6 +47,9 @@ export class DurableTaskRunner {
   }
 
   async #resumeWithLease(taskId, options) {
+    const snapshot = await this.store.load(taskId)
+    if (!snapshot) throw new Error(`Task ${taskId} not found`)
+    if (TERMINAL_TASK_STATUSES.has(snapshot.status)) return snapshot
     const lease = this.store.claim ? await this.store.claim(taskId, { owner: this.runnerId, leaseSeconds: this.leaseSeconds }) : { token: null }
     if (!lease) throw leaseConflict(taskId)
     this.activeLeases.set(taskId, lease)
@@ -67,7 +71,7 @@ export class DurableTaskRunner {
   async #resumeUnlocked(taskId, { pauseAfterSteps = Infinity } = {}) {
     const task = await this.store.load(taskId)
     if (!task) throw new Error(`Task ${taskId} not found`)
-    if ([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED].includes(task.status)) return task
+    if (TERMINAL_TASK_STATUSES.has(task.status)) return task
 
     const awaitingReconciliation = task.errors?.find((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && task.steps?.[error.stepId]?.status === RuntimeStepStatus.BLOCKED)
     if (awaitingReconciliation) { task.status = RuntimeTaskStatus.BLOCKED; return task }
