@@ -1,4 +1,5 @@
 const clone = (value) => structuredClone(value)
+const TERMINAL_TASK_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED'])
 
 function conflict(taskId, expected, actual = null) {
   const error = new Error(`Task ${taskId} revision conflict: expected ${expected}${actual === null ? '' : `, actual ${actual}`}`)
@@ -28,7 +29,8 @@ export class MemoryTaskStore {
   async load(taskId) { const task = this.tasks.get(taskId); return task ? clone(task) : null }
   async list() { return [...this.tasks.values()].map(clone) }
   async claim(taskId, { owner, leaseSeconds = 120 } = {}) {
-    if (!this.tasks.has(taskId)) return null
+    const task = this.tasks.get(taskId)
+    if (!task || TERMINAL_TASK_STATUSES.has(task.status)) return null
     const current = this.leases.get(taskId)
     const now = Date.now()
     if (current && current.expiresAt > now && current.owner !== owner) return null
