@@ -57,8 +57,8 @@ test('observability trace records spans events and weighted progress from real c
 
 test('multi-agent runtime awaits observability event persistence and leaves complete trace', async () => {
   const registry = new AgentRegistry()
-  registry.register({ id: 'researcher', role: 'researcher', name: 'Researcher' })
-  registry.register({ id: 'builder', role: 'builder', name: 'Builder' })
+  registry.register({ id: 'researcher', role: 'researcher', name: 'Researcher', instructions: 'Research the assigned task and return evidence.' })
+  registry.register({ id: 'builder', role: 'builder', name: 'Builder', instructions: 'Build the assigned task from verified dependencies.' })
   const observability = new ObservabilityEngine({ store: new TraceStore() })
   const trace = await observability.startTrace({ name: 'multi-agent' })
   const runtime = new MultiAgentRuntime({
