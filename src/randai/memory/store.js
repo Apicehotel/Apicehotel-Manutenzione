@@ -6,7 +6,13 @@ export class MemoryStore {
   #items = new Map()
   async save(memory) { validateMemory(memory); this.#items.set(memory.id, clone(memory)); return clone(memory) }
   async get(id) { return this.#items.has(id) ? clone(this.#items.get(id)) : null }
-  async list() { return [...this.#items.values()].map(clone) }
+  async list({ hotelId, projectId, taskId } = {}) {
+    return [...this.#items.values()]
+      .filter((memory) => !hotelId || memory.hotelId === hotelId)
+      .filter((memory) => !projectId || memory.projectId === projectId)
+      .filter((memory) => !taskId || memory.taskId === taskId)
+      .map(clone)
+  }
   async remove(id) { return this.#items.delete(id) }
 }
 
