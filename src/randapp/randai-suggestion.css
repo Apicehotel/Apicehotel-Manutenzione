@@ -20,7 +20,25 @@
 .rs-randai-suggestion__source { display: block; margin-top: 8px; line-height: 1.4; }
 .rs-randai-suggestion__caution { padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, .10); color: var(--rs-text, #334155); }
 .rs-randai-suggestion__source { font-size: .76rem; }
+.rs-randai-actions,
+.rs-randai-approval { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--rs-accent, #8b5cf6) 24%, transparent); }
+.rs-randai-actions > small,
+.rs-randai-approval > small { color: var(--rs-text-muted, #64748b); line-height: 1.4; }
+.rs-randai-actions__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.rs-randai-actions button,
+.rs-randai-approval button { min-height: 38px; padding: 8px 11px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--rs-accent, #8b5cf6) 28%, transparent); background: var(--rs-surface, #fff); color: var(--rs-text, #334155); font: inherit; cursor: pointer; }
+.rs-randai-actions button:disabled,
+.rs-randai-approval button:disabled { opacity: .55; cursor: wait; }
+.rs-randai-actions .rs-randai-actions__primary,
+.rs-randai-approval .rs-randai-actions__primary { background: var(--rs-accent, #8b5cf6); color: #fff; border-color: transparent; font-weight: 700; }
+.rs-randai-approval { padding: 12px; border: 1px solid rgba(245, 158, 11, .28); border-radius: 12px; background: rgba(245, 158, 11, .08); }
+.rs-randai-approval > span { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--rs-text-muted, #64748b); }
+.rs-randai-action-error,
+.rs-randai-action-success { display: block; margin-top: 10px; padding: 8px 10px; border-radius: 10px; line-height: 1.4; }
+.rs-randai-action-error { background: rgba(220, 38, 38, .08); color: #b91c1c; }
+.rs-randai-action-success { background: rgba(22, 163, 74, .08); color: #15803d; }
 @media (max-width: 520px) {
   .rs-randai-suggestion { padding: 12px; border-radius: 14px; }
   .rs-randai-suggestion__head img { width: 34px; height: 34px; }
+  .rs-randai-actions__row > button { flex: 1 1 120px; }
 }
