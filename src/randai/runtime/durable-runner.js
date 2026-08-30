@@ -48,6 +48,12 @@ export class DurableTaskRunner {
     if (!task) throw new Error(`Task ${taskId} not found`)
     if ([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED].includes(task.status)) return task
 
+    const awaitingReconciliation = task.errors?.find((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && task.steps?.[error.stepId]?.status === RuntimeStepStatus.BLOCKED)
+    if (awaitingReconciliation) {
+      task.status = RuntimeTaskStatus.BLOCKED
+      return task
+    }
+
     const interrupted = task.plan.steps.find((step) => [RuntimeStepStatus.RUNNING, RuntimeStepStatus.VERIFYING].includes(task.steps[step.id]?.status))
     if (interrupted) {
       const state = task.steps[interrupted.id]
