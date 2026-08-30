@@ -34,6 +34,7 @@ export class DiscoveryEngine {
     for (const source of sources) this.registerSource(source)
     this.store = store; this.analyzer = analyzer; this.sandbox = sandbox; this.evaluator = evaluator
     this.allowedLicenses = new Set(allowedLicenses); this.maxRisk = maxRisk
+    this.lastSourceFailures = []
   }
 
   registerSource(source) { if (!source?.id || typeof source.search !== 'function') throw new TypeError('Discovery source requires id and search()'); this.sources.set(source.id, source); return source.id }
@@ -41,12 +42,23 @@ export class DiscoveryEngine {
   async discover({ query, projectId = 'randai', kind = null } = {}) {
     if (!String(query || '').trim()) throw new TypeError('query is required')
     const found = []
+    const failures = []
     for (const source of this.sources.values()) {
-      const results = await source.search({ query: query.trim(), kind, projectId })
+      let results
+      try {
+        results = await source.search({ query: query.trim(), kind, projectId })
+      } catch (error) {
+        failures.push({ sourceId: source.id, message: error?.message || String(error) })
+        continue
+      }
       for (const raw of results || []) {
         const item = normalize(raw, source, projectId)
         await this.store.save(item); found.push(item)
       }
+    }
+    this.lastSourceFailures = failures
+    if (!found.length && failures.length === this.sources.size && failures.length > 0) {
+      throw new AggregateError(failures.map((item) => new Error(`${item.sourceId}: ${item.message}`)), 'All discovery sources failed')
     }
     return found.sort((a, b) => b.reputation - a.reputation)
   }
