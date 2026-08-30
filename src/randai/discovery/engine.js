@@ -51,8 +51,8 @@ export class DiscoveryEngine {
     return found.sort((a, b) => b.reputation - a.reputation)
   }
 
-  async assess(id) {
-    const item = await this.#require(id)
+  async assess(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     const analysis = this.analyzer ? await this.analyzer(clone(item)) : {}
     item.analysis = clone(analysis || {})
     if (analysis?.risk) item.risk = analysis.risk
@@ -65,8 +65,8 @@ export class DiscoveryEngine {
     return { candidate: clone(item), decision: item.status === DiscoveryStatus.REJECTED ? DiscoveryDecision.REJECT : DiscoveryDecision.SANDBOX }
   }
 
-  async sandboxCandidate(id) {
-    const item = await this.#require(id)
+  async sandboxCandidate(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     if (item.status !== DiscoveryStatus.ANALYZED) throw new Error(`Candidate must be ANALYZED before sandbox: ${item.status}`)
     if (typeof this.sandbox !== 'function') throw new Error('Sandbox runner is not configured')
     item.sandbox = clone(await this.sandbox(clone(item)))
@@ -75,8 +75,8 @@ export class DiscoveryEngine {
     item.updatedAt = nowIso(); await this.store.save(item); return clone(item)
   }
 
-  async evaluateCandidate(id) {
-    const item = await this.#require(id)
+  async evaluateCandidate(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     if (item.status !== DiscoveryStatus.SANDBOXED) throw new Error(`Candidate must be SANDBOXED before evaluation: ${item.status}`)
     if (typeof this.evaluator !== 'function') throw new Error('Discovery evaluator is not configured')
     item.evaluation = clone(await this.evaluator(clone(item)))
@@ -89,5 +89,5 @@ export class DiscoveryEngine {
 
   async recommendations(filters = {}) { return (await this.store.list({ ...filters, status: DiscoveryStatus.RECOMMENDED })).sort((a, b) => b.score - a.score) }
 
-  async #require(id) { const item = await this.store.get(id); if (!item) throw new Error(`Unknown discovery candidate: ${id}`); return item }
+  async #require(id, projectId) { const item = await this.store.get(id, projectId); if (!item) throw new Error(`Unknown discovery candidate: ${projectId}/${id}`); return item }
 }
