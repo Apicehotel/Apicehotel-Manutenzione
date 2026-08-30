@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ProjectGraph, ProjectGraphStore, ProjectIntelligenceEngine, ProjectNodeType, ProjectEdgeType } from '../src/randai/projects/index.js'
 import { ObservabilityEngine, TraceStore, TraceStatus, SpanStatus } from '../src/randai/observability/index.js'
-import { AgentRegistry, MultiAgentRuntime } from '../src/randai/agents/index.js'
+import { AgentRegistry, MultiAgentRuntime, AgentRole } from '../src/randai/agents/index.js'
 
 function sampleGraph() {
   return new ProjectGraph({
@@ -73,8 +73,8 @@ test('observability trace records spans events and weighted progress from real c
 
 test('multi-agent runtime awaits observability event persistence and leaves complete trace', async () => {
   const registry = new AgentRegistry()
-  registry.register({ id: 'researcher', role: 'researcher', name: 'Researcher', instructions: 'Research the assigned task and return evidence.' })
-  registry.register({ id: 'builder', role: 'builder', name: 'Builder', instructions: 'Build the assigned task from verified dependencies.' })
+  registry.register({ id: 'researcher', role: AgentRole.RESEARCHER, name: 'Researcher', instructions: 'Research the assigned task and return evidence.' })
+  registry.register({ id: 'builder', role: AgentRole.BUILDER, name: 'Builder', instructions: 'Build the assigned task from verified dependencies.' })
   const observability = new ObservabilityEngine({ store: new TraceStore() })
   const trace = await observability.startTrace({ name: 'multi-agent' })
   const runtime = new MultiAgentRuntime({
@@ -86,8 +86,8 @@ test('multi-agent runtime awaits observability event persistence and leaves comp
   const result = await runtime.run({
     objective: 'research and build',
     tasks: [
-      { id: 'r', agentRole: 'researcher', input: {} },
-      { id: 'b', agentRole: 'builder', input: {}, dependsOn: ['r'] },
+      { id: 'r', objective: 'Research evidence', agentRole: AgentRole.RESEARCHER, input: {} },
+      { id: 'b', objective: 'Build from research', agentRole: AgentRole.BUILDER, input: {}, dependsOn: ['r'] },
     ],
   })
   assert.equal(result.ok, true)
