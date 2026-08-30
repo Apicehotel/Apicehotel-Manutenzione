@@ -17,6 +17,7 @@ export class DurableTaskRunner {
     if (!planner || !registry || !verifier || !store) throw new TypeError('planner, registry, verifier and store are required')
     this.planner = planner; this.registry = registry; this.verifier = verifier; this.store = store; this.logger = logger
     this.autonomyEngine = autonomyEngine; this.recoveryEngine = recoveryEngine
+    this.activeResumes = new Map()
   }
 
   async create({ objective, proposedPlan, metadata = {}, context = {} }) {
@@ -32,10 +33,39 @@ export class DurableTaskRunner {
     return task
   }
 
-  async resume(taskId, { pauseAfterSteps = Infinity } = {}) {
+  async resume(taskId, options = {}) {
+    const active = this.activeResumes.get(taskId)
+    if (active) return active
+    const execution = this.#resumeUnlocked(taskId, options).finally(() => {
+      if (this.activeResumes.get(taskId) === execution) this.activeResumes.delete(taskId)
+    })
+    this.activeResumes.set(taskId, execution)
+    return execution
+  }
+
+  async #resumeUnlocked(taskId, { pauseAfterSteps = Infinity } = {}) {
     const task = await this.store.load(taskId)
     if (!task) throw new Error(`Task ${taskId} not found`)
     if ([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED].includes(task.status)) return task
+
+    const awaitingReconciliation = task.errors?.find((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && task.steps?.[error.stepId]?.status === RuntimeStepStatus.BLOCKED)
+    if (awaitingReconciliation) {
+      task.status = RuntimeTaskStatus.BLOCKED
+      return task
+    }
+
+    const interrupted = task.plan.steps.find((step) => [RuntimeStepStatus.RUNNING, RuntimeStepStatus.VERIFYING].includes(task.steps[step.id]?.status))
+    if (interrupted) {
+      const state = task.steps[interrupted.id]
+      const previousStatus = state.status
+      state.status = RuntimeStepStatus.BLOCKED
+      task.status = RuntimeTaskStatus.BLOCKED
+      task.errors.push({ at: nowIso(), code: 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION', stepId: interrupted.id, previousStatus })
+      this.#checkpoint(task, CheckpointKind.PAUSED, { stepId: interrupted.id, reason: 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' })
+      await this.store.save(task)
+      return task
+    }
+
     task.status = RuntimeTaskStatus.RUNNING
     let completedThisRun = 0
 
@@ -89,9 +119,41 @@ export class DurableTaskRunner {
     return task
   }
 
+  async reconcileInterrupted(taskId, stepId, { resolution, result = null, verification = null } = {}) {
+    const task = await this.store.load(taskId)
+    if (!task) throw new Error(`Task ${taskId} not found`)
+    const state = task.steps?.[stepId]
+    if (!state) throw new Error(`Step ${stepId} not found`)
+    const interrupted = task.errors?.some((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && error.stepId === stepId)
+    if (!interrupted || state.status !== RuntimeStepStatus.BLOCKED) throw new Error('Step is not awaiting interruption reconciliation')
+    if (!['SUCCEEDED', 'RETRY', 'FAILED'].includes(resolution)) throw new TypeError('resolution must be SUCCEEDED, RETRY or FAILED')
+
+    state.result = result ?? state.result
+    state.verification = verification ?? state.verification
+    if (resolution === 'SUCCEEDED') {
+      state.status = RuntimeStepStatus.SUCCEEDED
+      state.completedAt = nowIso()
+      task.status = RuntimeTaskStatus.PAUSED
+      this.#checkpoint(task, CheckpointKind.STEP_COMPLETE, { stepId, reconciled: true })
+    } else if (resolution === 'RETRY') {
+      state.status = RuntimeStepStatus.PENDING
+      state.completedAt = null
+      task.status = RuntimeTaskStatus.PAUSED
+      task.decisions.push({ at: nowIso(), type: 'INTERRUPTED_STEP_RETRY_APPROVED', stepId })
+      this.#checkpoint(task, CheckpointKind.PAUSED, { stepId, reconciled: true, resolution })
+    } else {
+      state.status = RuntimeStepStatus.FAILED
+      state.completedAt = nowIso()
+      task.status = RuntimeTaskStatus.FAILED
+      task.completedAt = nowIso()
+      this.#checkpoint(task, CheckpointKind.STEP_FAILED, { stepId, reconciled: true })
+    }
+    await this.store.save(task)
+    return task
+  }
+
   async #runStep(task, step) {
     const state = task.steps[step.id]
-    state.status = RuntimeStepStatus.RUNNING
     state.startedAt ||= nowIso()
     const strategies = step.strategies || []
 
@@ -105,7 +167,11 @@ export class DurableTaskRunner {
         return { ok: false, blocked: true, authorization }
       }
 
+      state.status = RuntimeStepStatus.RUNNING
       state.attempts += 1
+      this.#checkpoint(task, CheckpointKind.STEP_STARTED, { stepId: step.id, strategyIndex: state.strategyIndex, toolId: strategy.toolId })
+      await this.store.save(task)
+
       let result
       try {
         result = await this.registry.execute(strategy.toolId, strategy.input || {}, { task, step, strategy })
@@ -114,6 +180,8 @@ export class DurableTaskRunner {
       }
       state.result = result
       state.status = RuntimeStepStatus.VERIFYING
+      await this.store.save(task)
+
       let verification
       try {
         verification = await this.verifier.verify({ task, step, result, strategy })
