@@ -255,12 +255,13 @@ async function handleConcurrentMutation(op, result) {
 }
 export async function drainOfflineQueue() {
   if (!storageAvailable() || draining || !onlineNow()) return
-  const hasLease = await acquireDrainLease()
-  if (!hasLease) return
   draining = true
-  await dispatchStatus()
+  let hasLease = false
   let nextWake = null
   try {
+    hasLease = await acquireDrainLease()
+    if (!hasLease) return
+    await dispatchStatus()
     const operations = await db.outbox.orderBy('id').toArray()
     for (const snapshot of operations) {
       const handler = handlers.get(snapshot.entity)
@@ -310,8 +311,8 @@ export async function drainOfflineQueue() {
       }
     }
   } finally {
+    if (hasLease) await releaseDrainLease().catch(() => {})
     draining = false
-    await releaseDrainLease().catch(() => {})
     await dispatchStatus()
     if (onlineNow() && nextWake != null) scheduleDrain(nextWake)
   }
