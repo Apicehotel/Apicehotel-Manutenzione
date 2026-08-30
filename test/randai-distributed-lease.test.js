@@ -55,3 +55,17 @@ test('released lease allows another runner to resume later', async () => {
   assert.equal(done.status, 'SUCCEEDED')
   assert.equal(calls.length, 2)
 })
+
+test('terminal task is returned without trying to claim a new lease', async () => {
+  const store = new MemoryTaskStore()
+  const calls = []
+  const first = runtime(store, calls)
+  const second = runtime(store, calls)
+  const task = await first.create({ objective: 'terminal', proposedPlan: { steps: [{ id: 'one', title: 'One', strategies: [{ toolId: 'lease.work' }] }] } })
+  const completed = await first.resume(task.id)
+  assert.equal(completed.status, 'SUCCEEDED')
+  const replay = await second.resume(task.id)
+  assert.equal(replay.status, 'SUCCEEDED')
+  assert.equal(calls.length, 1)
+  assert.equal(await store.claim(task.id, { owner: 'late-runner' }), null)
+})
