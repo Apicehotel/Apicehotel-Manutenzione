@@ -51,9 +51,10 @@ export class DurableTaskRunner {
     const interrupted = task.plan.steps.find((step) => [RuntimeStepStatus.RUNNING, RuntimeStepStatus.VERIFYING].includes(task.steps[step.id]?.status))
     if (interrupted) {
       const state = task.steps[interrupted.id]
+      const previousStatus = state.status
       state.status = RuntimeStepStatus.BLOCKED
       task.status = RuntimeTaskStatus.BLOCKED
-      task.errors.push({ at: nowIso(), code: 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION', stepId: interrupted.id, previousStatus: state.status })
+      task.errors.push({ at: nowIso(), code: 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION', stepId: interrupted.id, previousStatus })
       this.#checkpoint(task, CheckpointKind.PAUSED, { stepId: interrupted.id, reason: 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' })
       await this.store.save(task)
       return task
