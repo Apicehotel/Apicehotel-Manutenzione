@@ -187,6 +187,8 @@ for (const [name, browserType] of projects) {
     assert.equal(calls, 1)
   })
 
+  // Dependency replay is tested deterministically here. Reconnect scheduling is
+  // already covered above; this case must specifically prove temp-ID resolution.
   await withFreshContext(browserType, async context => {
     const page = await openHarness(context)
     await page.evaluate(async () => {
@@ -201,6 +203,7 @@ for (const [name, browserType] of projects) {
       })
     })
     await context.setOffline(false)
+    await page.evaluate(() => window.__offlineChaos.drainOfflineQueue())
     await waitForIdle(page, { pending: 0 })
     assert.equal(await page.evaluate(() => window.__resolvedTarget), 'real-parent-1')
   })
