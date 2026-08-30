@@ -20,7 +20,7 @@ export class LearningEngine {
       candidate = {
         id: makeId(), fingerprint, problemClass: normalized.problemClass, strategy: normalized.strategy,
         tools: normalized.tools, successCriteria: normalized.successCriteria, status: LearningCandidateStatus.OBSERVED,
-        evidence: [], skillRef: null, evaluationId: null, createdAt: nowIso(), updatedAt: nowIso(),
+        evidence: [], skillRef: null, evaluationId: null, evaluationError: null, createdAt: nowIso(), updatedAt: nowIso(),
       }
     }
     const evidenceKey = JSON.stringify([normalized.source?.kind || null, normalized.source?.id || null, normalized.metadata?.taskId || null])
@@ -51,9 +51,21 @@ export class LearningEngine {
     if (!candidate?.skillRef) throw new Error('Candidate skill must be proposed before evaluation')
     if (!evaluationEngine || !scenario || !skillRegistry) throw new TypeError('evaluationEngine, scenario and skillRegistry are required')
     candidate.status = LearningCandidateStatus.EVALUATING
+    candidate.evaluationError = null
     candidate.updatedAt = nowIso()
     await this.store.save(candidate)
-    const evaluation = await evaluationEngine.runScenario(scenario, { learningCandidate: clone(candidate), skill: skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version) })
+    let evaluation
+    try {
+      evaluation = await evaluationEngine.runScenario(scenario, { learningCandidate: clone(candidate), skill: skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version) })
+    } catch (error) {
+      const skill = skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version)
+      if (skill?.status === SkillStatus.CANDIDATE) skillRegistry.transition(candidate.skillRef.id, candidate.skillRef.version, SkillStatus.BLOCKED)
+      candidate.status = LearningCandidateStatus.REJECTED
+      candidate.evaluationError = { message: error?.message || String(error), at: nowIso() }
+      candidate.updatedAt = nowIso()
+      await this.store.save(candidate)
+      throw error
+    }
     candidate.evaluationId = evaluation.id
     if (evaluation.passed) {
       skillRegistry.transition(candidate.skillRef.id, candidate.skillRef.version, SkillStatus.TESTED)

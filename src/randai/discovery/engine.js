@@ -34,6 +34,7 @@ export class DiscoveryEngine {
     for (const source of sources) this.registerSource(source)
     this.store = store; this.analyzer = analyzer; this.sandbox = sandbox; this.evaluator = evaluator
     this.allowedLicenses = new Set(allowedLicenses); this.maxRisk = maxRisk
+    this.lastSourceFailures = []
   }
 
   registerSource(source) { if (!source?.id || typeof source.search !== 'function') throw new TypeError('Discovery source requires id and search()'); this.sources.set(source.id, source); return source.id }
@@ -41,18 +42,29 @@ export class DiscoveryEngine {
   async discover({ query, projectId = 'randai', kind = null } = {}) {
     if (!String(query || '').trim()) throw new TypeError('query is required')
     const found = []
+    const failures = []
     for (const source of this.sources.values()) {
-      const results = await source.search({ query: query.trim(), kind, projectId })
+      let results
+      try {
+        results = await source.search({ query: query.trim(), kind, projectId })
+      } catch (error) {
+        failures.push({ sourceId: source.id, message: error?.message || String(error) })
+        continue
+      }
       for (const raw of results || []) {
         const item = normalize(raw, source, projectId)
         await this.store.save(item); found.push(item)
       }
     }
+    this.lastSourceFailures = failures
+    if (!found.length && failures.length === this.sources.size && failures.length > 0) {
+      throw new AggregateError(failures.map((item) => new Error(`${item.sourceId}: ${item.message}`)), 'All discovery sources failed')
+    }
     return found.sort((a, b) => b.reputation - a.reputation)
   }
 
-  async assess(id) {
-    const item = await this.#require(id)
+  async assess(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     const analysis = this.analyzer ? await this.analyzer(clone(item)) : {}
     item.analysis = clone(analysis || {})
     if (analysis?.risk) item.risk = analysis.risk
@@ -65,8 +77,8 @@ export class DiscoveryEngine {
     return { candidate: clone(item), decision: item.status === DiscoveryStatus.REJECTED ? DiscoveryDecision.REJECT : DiscoveryDecision.SANDBOX }
   }
 
-  async sandboxCandidate(id) {
-    const item = await this.#require(id)
+  async sandboxCandidate(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     if (item.status !== DiscoveryStatus.ANALYZED) throw new Error(`Candidate must be ANALYZED before sandbox: ${item.status}`)
     if (typeof this.sandbox !== 'function') throw new Error('Sandbox runner is not configured')
     item.sandbox = clone(await this.sandbox(clone(item)))
@@ -75,8 +87,8 @@ export class DiscoveryEngine {
     item.updatedAt = nowIso(); await this.store.save(item); return clone(item)
   }
 
-  async evaluateCandidate(id) {
-    const item = await this.#require(id)
+  async evaluateCandidate(id, { projectId = 'randai' } = {}) {
+    const item = await this.#require(id, projectId)
     if (item.status !== DiscoveryStatus.SANDBOXED) throw new Error(`Candidate must be SANDBOXED before evaluation: ${item.status}`)
     if (typeof this.evaluator !== 'function') throw new Error('Discovery evaluator is not configured')
     item.evaluation = clone(await this.evaluator(clone(item)))
@@ -89,5 +101,5 @@ export class DiscoveryEngine {
 
   async recommendations(filters = {}) { return (await this.store.list({ ...filters, status: DiscoveryStatus.RECOMMENDED })).sort((a, b) => b.score - a.score) }
 
-  async #require(id) { const item = await this.store.get(id); if (!item) throw new Error(`Unknown discovery candidate: ${id}`); return item }
+  async #require(id, projectId) { const item = await this.store.get(id, projectId); if (!item) throw new Error(`Unknown discovery candidate: ${projectId}/${id}`); return item }
 }
