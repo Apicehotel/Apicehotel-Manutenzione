@@ -1,4 +1,6 @@
 import { RuntimeTaskStatus, RuntimeStepStatus, CheckpointKind } from './contracts.js'
+import { AutonomyDecision } from '../autonomy/contracts.js'
+import { RecoveryAction } from '../recovery/contracts.js'
 
 let runtimeSequence = 0
 const nowIso = () => new Date().toISOString()
@@ -11,9 +13,10 @@ function stepState(step) {
 }
 
 export class DurableTaskRunner {
-  constructor({ planner, registry, verifier, store, logger } = {}) {
+  constructor({ planner, registry, verifier, store, logger, autonomyEngine = null, recoveryEngine = null } = {}) {
     if (!planner || !registry || !verifier || !store) throw new TypeError('planner, registry, verifier and store are required')
     this.planner = planner; this.registry = registry; this.verifier = verifier; this.store = store; this.logger = logger
+    this.autonomyEngine = autonomyEngine; this.recoveryEngine = recoveryEngine
   }
 
   async create({ objective, proposedPlan, metadata = {}, context = {} }) {
@@ -21,7 +24,7 @@ export class DurableTaskRunner {
     const task = {
       id: nextId(), objective, metadata, plan, status: RuntimeTaskStatus.PENDING,
       steps: Object.fromEntries(plan.steps.map((s) => [s.id, stepState(s)])),
-      decisions: [], errors: [], artifacts: [], events: [], checkpoint: null,
+      decisions: [], errors: [], artifacts: [], events: [], recoveryHistory: [], checkpoint: null,
       createdAt: nowIso(), updatedAt: nowIso(), completedAt: null,
     }
     this.#checkpoint(task, CheckpointKind.PLAN_READY)
@@ -37,8 +40,9 @@ export class DurableTaskRunner {
     let completedThisRun = 0
 
     while (true) {
-      const pending = task.plan.steps.filter((s) => task.steps[s.id].status === RuntimeStepStatus.PENDING)
+      const pending = task.plan.steps.filter((s) => [RuntimeStepStatus.PENDING, RuntimeStepStatus.BLOCKED].includes(task.steps[s.id].status))
       if (!pending.length) break
+      for (const step of pending) if (task.steps[step.id].status === RuntimeStepStatus.BLOCKED) task.steps[step.id].status = RuntimeStepStatus.PENDING
       const ready = pending.filter((s) => (s.dependsOn || []).every((id) => task.steps[id]?.status === RuntimeStepStatus.SUCCEEDED))
       if (!ready.length) {
         task.status = RuntimeTaskStatus.BLOCKED
@@ -51,6 +55,11 @@ export class DurableTaskRunner {
         const outcome = await this.#runStep(task, step)
         await this.store.save(task)
         if (!outcome.ok) {
+          if (outcome.blocked) {
+            task.status = RuntimeTaskStatus.BLOCKED
+            await this.store.save(task)
+            return task
+          }
           task.status = RuntimeTaskStatus.FAILED
           task.completedAt = nowIso()
           await this.store.save(task)
@@ -88,6 +97,14 @@ export class DurableTaskRunner {
 
     while (state.strategyIndex < strategies.length) {
       const strategy = strategies[state.strategyIndex]
+      const authorization = await this.#authorize(task, step, strategy)
+      if (authorization && authorization.decision !== AutonomyDecision.ALLOW) {
+        state.status = RuntimeStepStatus.BLOCKED
+        task.decisions.push({ at: nowIso(), type: 'AUTONOMY_BLOCK', stepId: step.id, toolId: strategy.toolId, decision: authorization.decision, reason: authorization.reason, approvalId: authorization.approval?.id || null })
+        this.#checkpoint(task, CheckpointKind.PAUSED, { stepId: step.id, reason: authorization.reason, approvalId: authorization.approval?.id || null })
+        return { ok: false, blocked: true, authorization }
+      }
+
       state.attempts += 1
       let result
       try {
@@ -113,18 +130,57 @@ export class DurableTaskRunner {
       }
 
       task.errors.push({ at: nowIso(), stepId: step.id, strategyIndex: state.strategyIndex, resultStatus: result?.status, reason: verification.reason || 'verification_failed' })
-      if (state.strategyIndex + 1 < strategies.length) {
-        const previous = state.strategyIndex
-        state.strategyIndex += 1
-        task.decisions.push({ at: nowIso(), type: 'STRATEGY_CHANGE', stepId: step.id, from: previous, to: state.strategyIndex, reason: verification.reason || result?.error?.code || result?.status || 'failed' })
-        continue
+      if (!this.recoveryEngine) {
+        if (state.strategyIndex + 1 < strategies.length) {
+          const previous = state.strategyIndex
+          state.strategyIndex += 1
+          task.decisions.push({ at: nowIso(), type: 'STRATEGY_CHANGE', stepId: step.id, from: previous, to: state.strategyIndex, reason: verification.reason || result?.error?.code || result?.status || 'failed' })
+          continue
+        }
+        return this.#failStep(task, step, state)
       }
-      state.status = RuntimeStepStatus.FAILED
-      state.completedAt = nowIso()
-      this.#checkpoint(task, CheckpointKind.STEP_FAILED, { stepId: step.id })
-      return { ok: false }
+
+      const recovery = this.recoveryEngine.decide({ task, step, state, strategy, result, verification })
+      this.recoveryEngine.record(task, recovery, { stepId: step.id, strategyIndex: state.strategyIndex, toolId: strategy.toolId })
+      if (recovery.action === RecoveryAction.RETRY_SAME) continue
+      if (recovery.action === RecoveryAction.SWITCH_STRATEGY) { state.strategyIndex += 1; continue }
+      if (recovery.action === RecoveryAction.ASK_HUMAN) {
+        state.status = RuntimeStepStatus.BLOCKED
+        this.#checkpoint(task, CheckpointKind.PAUSED, { stepId: step.id, reason: recovery.reason, recoveryAction: recovery.action })
+        return { ok: false, blocked: true, recovery }
+      }
+      if (recovery.action === RecoveryAction.ROLLBACK) {
+        const rolledBack = await this.#rollback(task, step, recovery.rollback)
+        task.decisions.push({ at: nowIso(), type: 'ROLLBACK_RESULT', stepId: step.id, ok: rolledBack.ok, details: rolledBack })
+        if (rolledBack.blocked) {
+          state.status = RuntimeStepStatus.BLOCKED
+          return { ok: false, blocked: true, recovery, rollback: rolledBack }
+        }
+        return this.#failStep(task, step, state, { rollback: rolledBack })
+      }
+      return this.#failStep(task, step, state, { recovery })
     }
-    return { ok: false }
+    return this.#failStep(task, step, state)
+  }
+
+  async #authorize(task, step, strategy) {
+    if (!this.autonomyEngine) return null
+    return this.autonomyEngine.authorize({ toolId: strategy.toolId, input: strategy.input || {}, taskId: task.id, stepId: step.id })
+  }
+
+  async #rollback(task, step, rollback) {
+    if (!rollback?.toolId) return { ok: false, reason: 'INVALID_ROLLBACK' }
+    const authorization = this.autonomyEngine ? await this.autonomyEngine.authorize({ toolId: rollback.toolId, input: rollback.input || {}, taskId: task.id, stepId: `${step.id}:rollback` }) : null
+    if (authorization && authorization.decision !== AutonomyDecision.ALLOW) return { ok: false, blocked: true, authorization }
+    const result = await this.registry.execute(rollback.toolId, rollback.input || {}, { task, step, rollback: true })
+    return { ok: result?.status === 'SUCCESS', result }
+  }
+
+  #failStep(task, step, state, extra = {}) {
+    state.status = RuntimeStepStatus.FAILED
+    state.completedAt = nowIso()
+    this.#checkpoint(task, CheckpointKind.STEP_FAILED, { stepId: step.id, ...extra })
+    return { ok: false, ...extra }
   }
 
   #checkpoint(task, kind, details = {}) {
