@@ -1,5 +1,5 @@
 import { RandAIError, RandAIErrorCode, normalizeRandAIError } from '../core/errors.js'
-import { ToolRisk, ToolPermission, toolFailure } from './contracts.js'
+import { ToolRisk, ToolPermission, ToolStatus, toolFailure } from './contracts.js'
 
 const VALID_RISKS = new Set(Object.values(ToolRisk))
 const VALID_PERMISSIONS = new Set(Object.values(ToolPermission))
@@ -13,6 +13,8 @@ function validateDefinition(definition) {
   if (definition.permission && !VALID_PERMISSIONS.has(definition.permission)) throw new TypeError(`Invalid tool permission: ${definition.permission}`)
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export class ToolRegistry {
   #tools = new Map()
 
@@ -22,7 +24,8 @@ export class ToolRegistry {
     const normalized = Object.freeze({
       description: '', inputSchema: null, outputSchema: null,
       risk: ToolRisk.LOW, permission: ToolPermission.READ,
-      timeoutMs: 15000, retryPolicy: { maxAttempts: 1 }, healthCheck: null,
+      timeoutMs: 15000, retryPolicy: { maxAttempts: 1, delayMs: 0 }, healthCheck: null,
+      idempotent: false,
       ...definition,
     })
     this.#tools.set(normalized.id, normalized)
@@ -64,16 +67,43 @@ export class ToolRegistry {
     const health = tool.healthCheck ? await tool.healthCheck() : true
     if (health === false) throw new RandAIError(RandAIErrorCode.TOOL_UNAVAILABLE, `Tool unavailable: ${id}`, { retryable: true })
 
-    const started = Date.now()
-    try {
-      const value = await tool.execute(input, context)
-      return value?.status ? value : { status: 'SUCCESS', data: value, error: null, metadata: { durationMs: Date.now() - started, toolId: id } }
-    } catch (error) {
-      const normalized = normalizeRandAIError(error, RandAIErrorCode.TOOL_ERROR)
-      return toolFailure({ code: normalized.code, message: normalized.message, details: normalized.details }, {
-        retryable: normalized.retryable,
-        metadata: { durationMs: Date.now() - started, toolId: id },
-      })
+    const configuredAttempts = Math.max(1, Number(tool.retryPolicy?.maxAttempts || 1))
+    const retrySafe = tool.permission === ToolPermission.READ || tool.idempotent === true
+    const maxAttempts = retrySafe ? configuredAttempts : 1
+    const timeoutMs = Math.max(1, Number(tool.timeoutMs || 15000))
+    const delayMs = Math.max(0, Number(tool.retryPolicy?.delayMs || 0))
+    let lastFailure = null
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const started = Date.now()
+      const controller = new AbortController()
+      let timer
+      try {
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort(new RandAIError(RandAIErrorCode.TIMEOUT, `Tool timeout after ${timeoutMs}ms: ${id}`))
+            reject(new RandAIError(RandAIErrorCode.TIMEOUT, `Tool timeout after ${timeoutMs}ms: ${id}`, { retryable: retrySafe }))
+          }, timeoutMs)
+        })
+        const value = await Promise.race([
+          Promise.resolve(tool.execute(input, { ...context, signal: controller.signal, attempt, maxAttempts })),
+          timeout,
+        ])
+        clearTimeout(timer)
+        return value?.status ? value : { status: ToolStatus.SUCCESS, data: value, error: null, metadata: { durationMs: Date.now() - started, toolId: id, attempt } }
+      } catch (error) {
+        clearTimeout(timer)
+        const normalized = normalizeRandAIError(error, RandAIErrorCode.TOOL_ERROR)
+        const retryable = retrySafe && normalized.retryable === true
+        lastFailure = toolFailure({ code: normalized.code, message: normalized.message, details: normalized.details }, {
+          status: retryable ? ToolStatus.RETRYABLE : ToolStatus.FAILED,
+          retryable,
+          metadata: { durationMs: Date.now() - started, toolId: id, attempt, maxAttempts, outcomeUnknown: normalized.code === RandAIErrorCode.TIMEOUT && !retrySafe },
+        })
+        if (!retryable || attempt >= maxAttempts) return lastFailure
+        if (delayMs) await sleep(delayMs)
+      }
     }
+    return lastFailure
   }
 }
