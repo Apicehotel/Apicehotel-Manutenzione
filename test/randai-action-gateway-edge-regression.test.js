@@ -30,6 +30,14 @@ test('execution is approval gated, idempotent, version fenced and post-verified'
   assert.match(source, /status: "EXECUTED"/)
 })
 
+test('expired or rejected approvals are renewed, executed approvals replay durably', () => {
+  assert.match(source, /status: "PENDING"/)
+  assert.match(source, /existing\.status === "APPROVED"/)
+  assert.match(source, /payload\?\.execution\?\.status === "EXECUTED"/)
+  assert.match(source, /execution: \{ status: "EXECUTED", after: verified, executedAt \}/)
+  assert.match(source, /approval_not_pending/)
+})
+
 test('audit and kill switch tables are browser inaccessible', () => {
   assert.match(migration, /randai_action_gateway_settings enable row level security/)
   assert.match(migration, /randai_action_audit enable row level security/)
