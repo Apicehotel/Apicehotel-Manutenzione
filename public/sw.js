@@ -1,4 +1,5 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v13'
+const CACHE_NAME = 'apicehotel-manutenzione-v14'
+const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest?v=9',
@@ -22,6 +23,20 @@ const isValidDynamicAsset = (request, response) => {
   return true
 }
 
+const getValidCachedDynamicAsset = async (request) => {
+  const cached = await caches.match(request)
+  return isValidDynamicAsset(request, cached) ? cached : null
+}
+
+const missingDynamicAssetResponse = () => new Response('Deployment asset no longer available', {
+  status: 503,
+  statusText: 'Deployment Asset Stale',
+  headers: {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-store, max-age=0',
+  },
+})
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME)
@@ -42,9 +57,21 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME && key.startsWith(APP_CACHE_PREFIX)).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   )
+})
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+    return
+  }
+  if (event.data?.type === 'PURGE_RUNTIME_CACHES') {
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith(APP_CACHE_PREFIX)).map((key) => caches.delete(key)))),
+    )
+  }
 })
 
 self.addEventListener('fetch', (event) => {
@@ -70,18 +97,19 @@ self.addEventListener('fetch', (event) => {
 
   const dynamicAsset = ['script', 'style', 'worker'].includes(request.destination)
   if (dynamicAsset) {
-    event.respondWith(
-      fetch(request, { cache: 'no-store' })
-        .then((response) => {
-          if (!isValidDynamicAsset(request, response)) {
-            return caches.match(request).then((cached) => cached || response)
-          }
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request, { cache: 'no-store' })
+        if (isValidDynamicAsset(request, response)) {
           const copy = response.clone()
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
-        })
-        .catch(() => caches.match(request)),
-    )
+        }
+        return (await getValidCachedDynamicAsset(request)) || missingDynamicAssetResponse()
+      } catch {
+        return (await getValidCachedDynamicAsset(request)) || missingDynamicAssetResponse()
+      }
+    })())
     return
   }
 
