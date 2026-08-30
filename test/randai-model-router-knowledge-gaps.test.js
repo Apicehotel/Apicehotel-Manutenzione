@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ModelRouter, ModelCapability, PrivacyLevel, RoutingPriority } from '../src/randai/models/index.js'
 import { KnowledgeGapEngine, KnowledgeGapStore, GapScope, GapStatus } from '../src/randai/gaps/index.js'
-import { MaintenanceKnowledgeEngine } from '../src/randai/maintenance/index.js'
+import { MaintenanceKnowledgeEngine, KnowledgeTrust } from '../src/randai/maintenance/index.js'
 
 const models = [
   { id: 'fast', provider: 'demo', capabilities: [ModelCapability.FAST], privacy: PrivacyLevel.STANDARD, quality: 0.5, reliability: 0.95, cost: 0.1, latency: 0.1, contextWindow: 100000 },
@@ -41,7 +41,7 @@ test('unknown maintenance lookup creates one hotel-scoped knowledge gap without 
   const knowledge = new MaintenanceKnowledgeEngine()
   const result = knowledge.search({ hotelId: 'hotelgio', query: 'dove si trova valvola acqua piano 4 wine' })
   assert.equal(result.found, false)
-  assert.equal(result.trust, 'unknown')
+  assert.equal(result.trust, KnowledgeTrust.UNKNOWN)
 
   const gaps = new KnowledgeGapEngine({ store: new KnowledgeGapStore() })
   const first = await gaps.captureUnknown(result, { question: result.query, hotelId: 'hotelgio', entityType: 'valve', entityId: 'wine-floor-4-water' })
