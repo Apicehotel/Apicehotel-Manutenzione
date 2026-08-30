@@ -48,8 +48,8 @@ test('Hotel Gio room numbering invariant keeps Wine and Jazz distinct', () => {
 test('one issue reuses its active persistent RandAI task', async () => {
   const { coordinator } = makeCoordinator()
   const issue = { id: 'ISS-214', room: 'Camera · 214', title: 'Climatizzatore non raffredda', status: 'todo', urgency: 'media' }
-  const first = await coordinator.createOrReuseIssueTask({ hotelId: 'gio', issue, proposedPlan: oneStepPlan })
-  const second = await coordinator.createOrReuseIssueTask({ hotelId: 'gio', issue, proposedPlan: oneStepPlan })
+  const first = await coordinator.createOrReuseIssueTask({ hotelId: 'hotelgio', issue, proposedPlan: oneStepPlan })
+  const second = await coordinator.createOrReuseIssueTask({ hotelId: 'hotelgio', issue, proposedPlan: oneStepPlan })
 
   assert.equal(first.reused, false)
   assert.equal(second.reused, true)
@@ -58,18 +58,20 @@ test('one issue reuses its active persistent RandAI task', async () => {
   assert.equal(first.task.metadata.room, '214')
 })
 
-test('same issue id in another hotel does not cross hotel boundary', async () => {
+test('same issue id in another hotel does not cross hotel boundary or inherit Gio section', async () => {
   const { coordinator } = makeCoordinator()
   const issue = { id: '42', room: 'Camera · 214', title: 'Test' }
-  const gio = await coordinator.createOrReuseIssueTask({ hotelId: 'gio', issue, proposedPlan: oneStepPlan })
+  const gio = await coordinator.createOrReuseIssueTask({ hotelId: 'hotelgio', issue, proposedPlan: oneStepPlan })
   const brigantino = await coordinator.createOrReuseIssueTask({ hotelId: 'brigantino', issue, proposedPlan: oneStepPlan })
   assert.notEqual(gio.task.id, brigantino.task.id)
+  assert.equal(gio.task.metadata.section, 'Wine')
+  assert.equal(brigantino.task.metadata.section, null)
 })
 
 test('operational summary exposes progress, next step and checkpoint for RandApp UI', async () => {
   const { coordinator } = makeCoordinator()
   const issue = { id: 'ISS-1114', room: 'Camera · 1114', title: 'Verifica fan coil' }
-  const created = await coordinator.createOrReuseIssueTask({ hotelId: 'gio', issue, proposedPlan: {
+  const created = await coordinator.createOrReuseIssueTask({ hotelId: 'hotelgio', issue, proposedPlan: {
     steps: [
       { id: 'inspect', title: 'Ispeziona', strategies: [{ toolId: 'demo.inspect', input: { n: 1 } }] },
       { id: 'verify', title: 'Verifica risultato', dependsOn: ['inspect'], strategies: [{ toolId: 'demo.inspect', input: { n: 2 } }] },
@@ -81,7 +83,7 @@ test('operational summary exposes progress, next step and checkpoint for RandApp
   assert.equal(initial.completedSteps, 0)
   assert.equal(initial.nextStepTitle, 'Ispeziona')
 
-  const advanced = await coordinator.advanceIssueTask({ hotelId: 'gio', issueId: issue.id, pauseAfterSteps: 1 })
+  const advanced = await coordinator.advanceIssueTask({ hotelId: 'hotelgio', issueId: issue.id, pauseAfterSteps: 1 })
   assert.equal(advanced.summary.completedSteps, 1)
   assert.equal(advanced.summary.totalSteps, 2)
   assert.equal(advanced.summary.nextStepTitle, 'Verifica risultato')
@@ -100,8 +102,8 @@ test('Supervisor advances the durable task instead of creating a parallel execut
   }
   const { coordinator, calls } = makeCoordinator({ supervisor })
   const issue = { id: 'ISS-29', room: 'Camera · 201', title: 'Controllo operativo' }
-  const created = await coordinator.createOrReuseIssueTask({ hotelId: 'gio', issue, proposedPlan: oneStepPlan })
-  const advanced = await coordinator.advanceIssueTask({ hotelId: 'gio', issueId: issue.id })
+  const created = await coordinator.createOrReuseIssueTask({ hotelId: 'hotelgio', issue, proposedPlan: oneStepPlan })
+  const advanced = await coordinator.advanceIssueTask({ hotelId: 'hotelgio', issueId: issue.id })
 
   assert.equal(supervisorCalls.length, 1)
   assert.equal(supervisorCalls[0].taskId, created.task.id)
