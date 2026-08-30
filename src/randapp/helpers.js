@@ -1,5 +1,6 @@
 import { HOTELS } from '../config.js'
 import { canUser } from '../permissions.js'
+import { validatePhotoBinary, validatePhotoDimensions } from '../file-hardening.js'
 
 export const RANDAPP_LOGOS = {
   hotelgio: '/logos/randapp-hotelgio.webp',
@@ -61,43 +62,57 @@ export const readPhotoAsDataUrl = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file)
 })
 
-export const compressPhotoAsDataUrl = (file) => new Promise((resolve) => {
-  if (!file || !file.size) return resolve(null)
-  const objectUrl = URL.createObjectURL(file)
-  const img = new Image()
-  const fallback = () => { URL.revokeObjectURL(objectUrl); readPhotoAsDataUrl(file).then(resolve) }
-  img.onload = () => {
-    try {
-      const max = 1000
-      let w = img.naturalWidth || img.width
-      let h = img.naturalHeight || img.height
-      if (w > h && w > max) { h = Math.round((h * max) / w); w = max }
-      else if (h > max) { w = Math.round((w * max) / h); h = max }
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, w, h)
-      const cols = 6
-      const rows = 6
-      let allBlack = true
-      outer:
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x = Math.min(w - 1, Math.round((c + 0.5) * (w / cols)))
-          const y = Math.min(h - 1, Math.round((r + 0.5) * (h / rows)))
-          const [red, green, blue] = ctx.getImageData(x, y, 1, 1).data
-          if (red > 8 || green > 8 || blue > 8) { allBlack = false; break outer }
-        }
-      }
-      URL.revokeObjectURL(objectUrl)
-      if (allBlack) return readPhotoAsDataUrl(file).then(resolve)
-      resolve(canvas.toDataURL('image/jpeg', 0.6))
-    } catch { fallback() }
+export const compressPhotoAsDataUrl = async (file) => {
+  if (!file || !file.size) return null
+  try {
+    await validatePhotoBinary(file, { fileName: file.name, declaredMime: file.type })
+  } catch (error) {
+    console.warn('Foto rifiutata', error)
+    return null
   }
-  img.onerror = fallback
-  img.src = objectUrl
-})
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    const fallback = () => { URL.revokeObjectURL(objectUrl); readPhotoAsDataUrl(file).then(resolve) }
+    img.onload = () => {
+      try {
+        validatePhotoDimensions(img.naturalWidth || img.width, img.naturalHeight || img.height)
+        const max = 1000
+        let w = img.naturalWidth || img.width
+        let h = img.naturalHeight || img.height
+        if (w > h && w > max) { h = Math.round((h * max) / w); w = max }
+        else if (h > max) { w = Math.round((w * max) / h); h = max }
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) throw new Error('Canvas non disponibile')
+        ctx.drawImage(img, 0, 0, w, h)
+        const cols = 6
+        const rows = 6
+        let allBlack = true
+        outer:
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const x = Math.min(w - 1, Math.round((c + 0.5) * (w / cols)))
+            const y = Math.min(h - 1, Math.round((r + 0.5) * (h / rows)))
+            const [red, green, blue] = ctx.getImageData(x, y, 1, 1).data
+            if (red > 8 || green > 8 || blue > 8) { allBlack = false; break outer }
+          }
+        }
+        URL.revokeObjectURL(objectUrl)
+        if (allBlack) return readPhotoAsDataUrl(file).then(resolve)
+        resolve(canvas.toDataURL('image/jpeg', 0.6))
+      } catch (error) {
+        URL.revokeObjectURL(objectUrl)
+        console.warn('Compressione foto rifiutata', error)
+        resolve(null)
+      }
+    }
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(null) }
+    img.src = objectUrl
+  })
+}
 
 export function csvCell(value = '') { return `"${String(value).replaceAll('"', '""')}"` }
 export function exportIssuesCsv(issues, hotel) {
