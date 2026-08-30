@@ -1,4 +1,6 @@
-export const RANDAI_KNOWLEDGE_VERSION = 1
+import { KnowledgeTrust, MaintenanceKnowledgeEngine } from './maintenance/index.js'
+
+export const RANDAI_KNOWLEDGE_VERSION = 2
 
 export const INTERNAL_PROCEDURES = [
   {
@@ -7,8 +9,11 @@ export const INTERNAL_PROCEDURES = [
     title: 'Jazz - aria condizionata non raffredda',
     category: 'climatizzazione',
     area: 'Jazz',
+    symptom: 'non raffredda',
     sourceType: 'procedura_interna',
     sourceLabel: 'Procedura interna Hotel Giò',
+    trust: KnowledgeTrust.APPROVED,
+    version: 1,
     keywords: ['condizionatore', 'condizionatori', 'clima', 'aria condizionata', 'fredda', 'freddano', 'raffredda', 'raffreddano', 'jazz', 'temperatura'],
     summary: 'Prima verificare la temperatura della zona. Se è anomala, controllare il motore esterno al 1° Jazz che gestisce l’aria condizionata dei quattro piani Jazz.',
     steps: [
@@ -22,23 +27,17 @@ export const INTERNAL_PROCEDURES = [
   },
 ]
 
-const normalize = (value) => String(value || '')
-  .toLowerCase()
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
+const localEngine = new MaintenanceKnowledgeEngine({ procedures: INTERNAL_PROCEDURES })
 
 export function findInternalProcedure({ hotelId, query }) {
-  const text = normalize(query)
-  if (!hotelId || !text.trim()) return null
+  const result = localEngine.search({ hotelId, query, allowedTrust: [KnowledgeTrust.APPROVED] })
+  if (!result.found) return null
+  return {
+    ...result.procedure,
+    sourceType: result.procedure.sourceType || 'procedura_interna',
+  }
+}
 
-  const candidates = INTERNAL_PROCEDURES
-    .filter((item) => item.hotelId === hotelId)
-    .map((item) => ({
-      item,
-      score: item.keywords.reduce((score, keyword) => score + (text.includes(normalize(keyword)) ? 1 : 0), 0),
-    }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-
-  return candidates[0]?.item || null
+export function findInternalKnowledge({ hotelId, query }) {
+  return localEngine.search({ hotelId, query, allowedTrust: [KnowledgeTrust.APPROVED] })
 }
