@@ -1,5 +1,4 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { HOTELS } from '../config.js'
 import { fetchDirectory } from '../users-data.js'
 import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
@@ -13,7 +12,6 @@ import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
-
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
@@ -84,6 +82,7 @@ function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) 
 export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
+  const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
@@ -98,18 +97,33 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
   const [navigationConfig, setNavigationConfig] = useState({})
-  const hotel = hotelById(session.hotelId) || HOTELS[0]
+  const hotel = hotelById(session.hotelId)
 
   useEffect(() => {
     let active = true
+    setUsers([])
+    setUser(null)
+    if (!hotel) {
+      setDirectoryState('invalid-hotel')
+      return () => { active = false }
+    }
+    setDirectoryState('loading')
     fetchDirectory(session.hotelId).then(({ users: list }) => {
       if (!active) return
       const rows = list || []
+      const matchedUser = rows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || null
       setUsers(rows)
-      setUser(rows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || rows[0] || null)
-    }).catch(() => {})
+      setUser(matchedUser)
+      setDirectoryState(matchedUser ? 'ready' : 'unauthorized')
+    }).catch((error) => {
+      if (!active) return
+      console.error('Directory struttura non disponibile', error)
+      setUsers([])
+      setUser(null)
+      setDirectoryState('error')
+    })
     return () => { active = false }
-  }, [session.hotelId, session.userId])
+  }, [session.hotelId, session.userId, hotel])
 
   useEffect(() => {
     let active = true
@@ -121,29 +135,29 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   useEffect(() => {
     const onSaleCreated = (event) => {
       if (planningCreateRequest?.kind !== 'sale') return
-      if (event.detail?.hotelId && event.detail.hotelId !== hotel.id) return
+      if (event.detail?.hotelId && event.detail.hotelId !== hotel?.id) return
       const returnView = planningCreateRequest.returnView || 'planning-work'
       setPlanningCreateRequest(null)
       setView(returnView)
     }
     window.addEventListener('randapp-sale-booking-created', onSaleCreated)
     return () => window.removeEventListener('randapp-sale-booking-created', onSaleCreated)
-  }, [planningCreateRequest, hotel.id])
+  }, [planningCreateRequest, hotel?.id])
 
   const allowedHotels = useMemo(() => {
     const set = new Set([session.hotelId, ...(user?.hotels || [])])
-    return Array.from(set).filter(Boolean)
+    return Array.from(set).filter((id) => Boolean(hotelById(id)))
   }, [session.hotelId, user])
 
   const placement = useCallback((key) => placementFor(navigationConfig, user?.role, key), [navigationConfig, user?.role])
 
   const viewAllowed = useCallback((targetView) => {
-    if (!user) return true
+    if (directoryState !== 'ready' || !user || !hotel) return false
     const guard = VIEW_GUARDS[targetView]
     if (guard && !guard(user, hotel)) return false
     const key = VIEW_TO_NAV_KEY[targetView]
     return !key || placement(key) !== 'off'
-  }, [user, hotel, placement])
+  }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
     const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
@@ -244,6 +258,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     'planning-sale': Boolean(user && viewAllowed('planning-sale')),
   }), [user, viewAllowed])
 
+  if (directoryState === 'loading') return <Spinner label="Verifico accesso alla struttura…" />
+  if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
+  if (directoryState === 'error') return <main className="rs-content"><EmptyState icon="warning" title="Accesso non verificabile">Non riesco a verificare i permessi della struttura. Riprova con connessione disponibile.</EmptyState></main>
+  if (directoryState === 'unauthorized' || !user || !hotel) return <main className="rs-content"><EmptyState icon="lock" title="Accesso non consentito">L’utente della sessione non è abilitato per questa struttura.</EmptyState></main>
   if (settings !== null) return <Suspense fallback={<ViewFallback />}><Settings initialTab={settings} onExit={() => setSettings(null)} /></Suspense>
 
   const renderView = () => {
