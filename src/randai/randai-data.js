@@ -1,19 +1,21 @@
 import { supabase } from '../supabase.js'
 import { findInternalProcedure } from './knowledge.js'
 
-export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '' }) {
+export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '', operationalContext = null }) {
   if (!hotelId || !query?.trim()) return null
 
   if (!supabase) {
     const fallback = findInternalProcedure({ hotelId, query })
-    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, source: 'local-fallback', resolvedQuery: query.trim() } : null
+    return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, operationalContext: null, source: 'local-fallback', resolvedQuery: query.trim() } : null
   }
 
+  const context = operationalContext?.hotelId === hotelId ? operationalContext : null
   const { data, error } = await supabase.functions.invoke('randai-assistant', {
     body: {
       hotel_id: hotelId,
       query: query.trim(),
       context_query: String(contextQuery || '').trim(),
+      context,
     },
   })
 
@@ -34,6 +36,7 @@ export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = ''
     memory: Array.isArray(data.memory) ? data.memory : [],
     sensors: Array.isArray(data.sensors) ? data.sensors : [],
     hvacDiagnostic: data.hvacDiagnostic || null,
+    operationalContext: data.operationalContext || null,
     source: data.source || 'approved_internal_knowledge',
     intent: data.intent || 'general',
     section: data.section || null,
