@@ -2,19 +2,20 @@ import { supabase } from './supabase.js'
 import { getCachedCollection, setCachedCollection } from './offline-store.js'
 
 function rowsFrom(data) { if (Array.isArray(data)) return data; if (Array.isArray(data?.users)) return data.users; if (Array.isArray(data?.data)) return data.data; return [] }
+function loginEligibleUsers(data) { return rowsFrom(data).filter((user) => user && user.active !== false && String(user.role || '').trim() !== 'RandAI') }
 async function invokeAdmin(body) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-users', { body }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function fetchDirectory(hotelId) {
   if (!hotelId) return { users: [] }
-  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: await getCachedCollection('directory', hotelId), offline: true }
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: loginEligibleUsers(await getCachedCollection('directory', hotelId)), offline: true }
   try {
     const { data, error } = await supabase.functions.invoke('pin-auth', { body: { action: 'directory', hotel_id: hotelId } })
     if (error) throw error
     if (data?.error) throw new Error(data.error)
-    const users = rowsFrom(data)
+    const users = loginEligibleUsers(data)
     await setCachedCollection('directory', hotelId, users)
     return { users }
   } catch (error) {
-    const cached = await getCachedCollection('directory', hotelId)
+    const cached = loginEligibleUsers(await getCachedCollection('directory', hotelId))
     if (cached.length) return { users: cached, offline: true }
     throw error
   }
