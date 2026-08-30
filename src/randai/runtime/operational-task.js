@@ -104,7 +104,7 @@ export class OperationalTaskCoordinator {
         sourceType: OperationalSourceType.ISSUE,
         sourceId: String(issue.id),
         room,
-        section: classifyGioRoomSection(room),
+        section: hotelId === 'hotelgio' ? classifyGioRoomSection(room) : null,
         issueStatus: issue.status || null,
         issueUrgency: issue.urgency || null,
         issueCategory: issue.category || null,
