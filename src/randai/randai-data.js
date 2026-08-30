@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js'
 import { findInternalProcedure } from './knowledge.js'
+import { createRandAIContextEnvelope, getRandAIContext } from './context/envelope.js'
 
 export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = '', operationalContext = null }) {
   if (!hotelId || !query?.trim()) return null
@@ -9,7 +10,8 @@ export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = ''
     return fallback ? { procedure: fallback, equipment: [], history: [], documents: [], memory: [], sensors: [], hvacDiagnostic: null, operationalContext: null, source: 'local-fallback', resolvedQuery: query.trim() } : null
   }
 
-  const context = operationalContext?.hotelId === hotelId ? operationalContext : null
+  const activeContext = operationalContext || getRandAIContext() || createRandAIContextEnvelope({ hotelId })
+  const context = activeContext?.hotelId === hotelId ? activeContext : createRandAIContextEnvelope({ hotelId })
   const { data, error } = await supabase.functions.invoke('randai-assistant', {
     body: {
       hotel_id: hotelId,
