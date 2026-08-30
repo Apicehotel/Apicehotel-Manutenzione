@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildHvacDiagnostic, inferHvacMode, selectHvacZone } from "../_shared/hvac-routing.js";
 import { detectRandAIIntent, detectRandAISection, filterSensorsBySection, resolveRandAIQuery } from "../_shared/randai-query-scope.js";
+import { buildContextQuery, clientContextSummary, sanitizeOperationalContext } from "../_shared/randai-operational-context.js";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -71,6 +72,27 @@ async function resolveHvacDiagnostic(hotelId: string, query: string) {
   });
 }
 
+async function resolveVerifiedResource(hotelId: string, context: any) {
+  if (context?.resource?.type !== "issue" || !context.resource.id) return null;
+  const { data, error } = await admin.from("maintenance_issues")
+    .select("id,location,category,priority,status,description,room_status")
+    .eq("hotel_id", hotelId)
+    .eq("id", context.resource.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    type: "issue",
+    id: data.id,
+    location: data.location || null,
+    category: data.category || null,
+    urgency: data.priority || null,
+    status: data.status || null,
+    description: data.description || null,
+    roomStatus: data.room_status || null,
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -87,7 +109,16 @@ Deno.serve(async (req: Request) => {
     if (!membership?.active) return json({ ok: false, error: "forbidden" }, 403);
     if (body?.diagnostic === "openai_connection") return json({ ok: true, openai: await verifyOpenAI() });
 
-    const effectiveQuery = resolveRandAIQuery(query, contextQuery);
+    let clientContext = null;
+    try { clientContext = sanitizeOperationalContext(body?.context, hotelId); }
+    catch (error) {
+      if ((error as any)?.code === "CONTEXT_HOTEL_MISMATCH") return json({ ok: false, error: "context_hotel_mismatch" }, 400);
+      throw error;
+    }
+    const verifiedResource = await resolveVerifiedResource(hotelId, clientContext);
+    const operationalContext = clientContextSummary(clientContext, verifiedResource);
+    const conversationalQuery = resolveRandAIQuery(query, contextQuery);
+    const effectiveQuery = buildContextQuery(conversationalQuery, verifiedResource);
     const intent = detectRandAIIntent(effectiveQuery);
     const section = detectRandAISection(effectiveQuery);
     const [memoryResult, sensorResult, rawHvacDiagnostic] = await Promise.all([
@@ -100,7 +131,7 @@ Deno.serve(async (req: Request) => {
     const sensors = intent === "location" ? [] : filterSensorsBySection(rawSensors, section);
     const hvacDiagnostic = rawHvacDiagnostic && (!section || rawHvacDiagnostic.section === section) ? rawHvacDiagnostic : null;
     const memory = intent === "location" ? [] : (memoryResult.data || []);
-    if (memory.length > 0) return json({ ok: true, found: true, source: "verified_memory", intent, section, resolvedQuery: effectiveQuery, memory: memory.map((item: any) => ({ id:item.id, hotelId:item.hotel_id, equipmentId:item.equipment_id, area:item.area, category:item.category, symptom:item.symptom, errorCode:item.error_code, cause:item.cause, solution:item.solution, confidence:item.confidence, confirmationCount:item.confirmation_count, failureCount:item.failure_count, sourceLabel:item.source_label, lastConfirmedAt:item.last_confirmed_at })), sensors, hvacDiagnostic, procedure:null, equipment:[], history:[], documents:[] });
+    if (memory.length > 0) return json({ ok: true, found: true, source: "verified_memory", intent, section, resolvedQuery: effectiveQuery, operationalContext, memory: memory.map((item: any) => ({ id:item.id, hotelId:item.hotel_id, equipmentId:item.equipment_id, area:item.area, category:item.category, symptom:item.symptom, errorCode:item.error_code, cause:item.cause, solution:item.solution, confidence:item.confidence, confirmationCount:item.confirmation_count, failureCount:item.failure_count, sourceLabel:item.source_label, lastConfirmedAt:item.last_confirmed_at })), sensors, hvacDiagnostic, procedure:null, equipment:[], history:[], documents:[] });
 
     const [proceduresResult, equipmentResult, issuesResult, interventionsResult, documentsResult] = await Promise.all([
       admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
@@ -120,11 +151,11 @@ Deno.serve(async (req: Request) => {
       if (intent === "location" && section) return haystack.includes(section) && (haystack.includes("climat") || haystack.includes("condizion") || queryText.includes("motore"));
       return (procedure?.category && normalize(item.category)===normalize(procedure.category)) || (procedure?.area && haystack.includes(normalize(procedure.area))) || queryText.split(/\s+/).some((word)=>word.length>3 && haystack.includes(word));
     });
-    if (!procedure && documents.length === 0 && sensors.length === 0 && !hvacDiagnostic && equipment.length === 0) return json({ ok:true, found:false, reason:"no_approved_knowledge", intent, section, resolvedQuery: effectiveQuery });
+    if (!procedure && documents.length === 0 && sensors.length === 0 && !hvacDiagnostic && equipment.length === 0) return json({ ok:true, found:false, reason:"no_approved_knowledge", intent, section, resolvedQuery: effectiveQuery, operationalContext });
 
     const historyPool=[...((issuesResult.error?[]:issuesResult.data)||[]).map((item:any)=>({...item,__kind:"segnalazione"})),...((interventionsResult.error?[]:interventionsResult.data)||[]).map((item:any)=>({...item,__kind:"intervento"}))];
     const history=intent === "location" ? [] : historyPool.map((item:any)=>({item,score:scoreHistory(item,effectiveQuery,procedure)})).filter((entry:any)=>entry.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3).map(({item}:any)=>({id:item.id,kind:item.__kind,location:item.location||item.camera||item.sezione||"",category:item.category||item.categoria||"",text:item.completion_note||item.note||item.description||"",status:item.status||item.stato||"",date:item.completed_at||item.completato_il||item.updated_at||null}));
     const source=intent === "location" && equipment.length ? "equipment_location" : hvacDiagnostic?"live_hvac_diagnostic":procedure?"approved_internal_knowledge":documents.length>0?"approved_documentation":"live_sensor_context";
-    return json({ok:true,found:true,source,intent,section,resolvedQuery:effectiveQuery,procedure:procedure?{...procedure,hotelId:procedure.hotel_id,sourceType:"procedura_interna",sourceLabel:procedure.source_label}:null,equipment,history,documents,memory:[],sensors,hvacDiagnostic});
+    return json({ok:true,found:true,source,intent,section,resolvedQuery:effectiveQuery,operationalContext,procedure:procedure?{...procedure,hotelId:procedure.hotel_id,sourceType:"procedura_interna",sourceLabel:procedure.source_label}:null,equipment,history,documents,memory:[],sensors,hvacDiagnostic});
   } catch (error) { console.error("randai-assistant", error instanceof Error ? error.message : "unknown"); return json({ok:false,error:"randai_unavailable"},500); }
 });
