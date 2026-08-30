@@ -1,4 +1,5 @@
-import { ProjectGraph, ProjectGraphStore } from './index.js'
+import { ProjectGraph } from './graph.js'
+import { ProjectGraphStore } from './store.js'
 import { validateProjectGraph } from './contracts.js'
 
 const clone = (value) => structuredClone(value)
