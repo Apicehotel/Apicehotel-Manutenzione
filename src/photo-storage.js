@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js'
 import { deleteOfflineBlob, getOfflineBlob, putOfflineBlob } from './offline-store.js'
+import { sanitizeStorageSegment, validatePhotoBinary } from './file-hardening.js'
 
 const BUCKET = 'maintenance-photos'
 const TOKEN_PREFIX = 'offline-blob:'
@@ -21,28 +22,32 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime })
 }
 
-function extensionFor(blob) {
-  const mime = blob?.type || ''
-  if (mime.includes('png')) return 'png'
-  if (mime.includes('webp')) return 'webp'
-  if (mime.includes('heic') || mime.includes('heif')) return 'heic'
-  return 'jpg'
+async function verifiedPhotoBlob(blob) {
+  const verified = await validatePhotoBinary(blob, { declaredMime: blob?.type })
+  return { blob: new Blob([verified.bytes], { type: verified.mime }), verified }
 }
 
 export async function stagePhotoOffline(value, meta = {}) {
   if (!isDataUrl(value)) return value
-  const blob = dataUrlToBlob(value)
-  const id = await putOfflineBlob(blob, meta)
+  const raw = dataUrlToBlob(value)
+  const { blob, verified } = await verifiedPhotoBlob(raw)
+  const hotelId = meta.hotelId ? sanitizeStorageSegment(meta.hotelId, 'hotelId') : null
+  const id = await putOfflineBlob(blob, { ...meta, hotelId, sha256: verified.sha256, mime: verified.mime })
   return `${TOKEN_PREFIX}${id}`
 }
 
 async function materializePhoto(value) {
-  if (isDataUrl(value)) return { blob: dataUrlToBlob(value), cleanupId: null }
+  if (isDataUrl(value)) {
+    const raw = dataUrlToBlob(value)
+    const { blob, verified } = await verifiedPhotoBlob(raw)
+    return { blob, verified, cleanupId: null }
+  }
   if (isOfflineToken(value)) {
     const id = tokenId(value)
     const row = await getOfflineBlob(id)
     if (!row?.blob || row.blob.size <= 0) throw new Error('Foto offline non più disponibile o vuota sul dispositivo')
-    return { blob: row.blob, cleanupId: id }
+    const { blob, verified } = await verifiedPhotoBlob(row.blob)
+    return { blob, verified, cleanupId: id, meta: row }
   }
   return null
 }
@@ -54,15 +59,19 @@ export async function cleanupStagedPhoto(value) {
 export async function uploadPhotoValue(value, { hotelId, entity = 'issues', kind = 'photo' } = {}) {
   if (!value || (!isDataUrl(value) && !isOfflineToken(value))) return value || null
   if (!supabase) throw new Error('Supabase non configurato')
-  if (!hotelId) throw new Error('hotelId mancante per upload foto')
+  const safeHotelId = sanitizeStorageSegment(hotelId, 'hotelId')
+  const safeEntity = sanitizeStorageSegment(entity, 'entity')
+  const safeKind = sanitizeStorageSegment(kind, 'kind')
   const materialized = await materializePhoto(value)
   if (!materialized?.blob || materialized.blob.size <= 0) throw new Error('Foto vuota: caricamento annullato')
-  const ext = extensionFor(materialized.blob)
-  const objectId = materialized.cleanupId || uuid()
-  const path = `${hotelId}/${entity}/${objectId}/${kind}.${ext}`
+  if (materialized.meta?.hotelId && materialized.meta.hotelId !== safeHotelId) {
+    throw new Error('Foto offline associata a una struttura diversa')
+  }
+  const objectId = sanitizeStorageSegment(materialized.cleanupId || uuid(), 'objectId')
+  const path = `${safeHotelId}/${safeEntity}/${objectId}/${safeKind}.${materialized.verified.extension}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, materialized.blob, {
     cacheControl: '3600',
-    contentType: materialized.blob.type || 'image/jpeg',
+    contentType: materialized.verified.mime,
     upsert: Boolean(materialized.cleanupId),
   })
   if (error) throw error
