@@ -18,9 +18,11 @@ export class RandAISupervisor {
     if (!String(objective || '').trim()) throw new TypeError('objective is required')
     const effectiveBudget = { ...this.defaultBudget, ...budget }; validateSupervisorBudget(effectiveBudget)
     if (capabilityGaps.length) return { mode: SupervisorMode.DISCOVERY_REQUIRED, objective, capabilityGaps: [...capabilityGaps], budget: effectiveBudget, reason: SupervisorStopReason.CAPABILITY_GAP }
-    const wantsMulti = complexity === 'HIGH' || agentTasks.length > 1
+    // Complexity describes the work, not the number of agents. Multi-agent execution
+    // requires an explicitly decomposed plan with more than one agent task.
+    const wantsMulti = agentTasks.length > 1
     if (agentTasks.length > effectiveBudget.maxAgents) return { mode: SupervisorMode.STOPPED, objective, budget: effectiveBudget, reason: SupervisorStopReason.BUDGET_EXCEEDED }
-    return { mode: wantsMulti ? SupervisorMode.MULTI_AGENT : SupervisorMode.SINGLE_AGENT, objective, agentTasks: clone(agentTasks), budget: effectiveBudget }
+    return { mode: wantsMulti ? SupervisorMode.MULTI_AGENT : SupervisorMode.SINGLE_AGENT, objective, complexity, agentTasks: clone(agentTasks), budget: effectiveBudget }
   }
 
   async run({ objective, projectId = 'randai', taskId = null, complexity = 'LOW', capabilityGaps = [], agentTasks = [], budget = {}, executeSingle = null, context = {} } = {}) {
