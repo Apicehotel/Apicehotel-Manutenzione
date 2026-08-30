@@ -22,7 +22,7 @@ create table if not exists public.randai_action_audit (
   resource_id text not null,
   risk text not null check (risk in ('LOW','MEDIUM','HIGH','CRITICAL')),
   approval_id text,
-  idempotency_key text not null unique,
+  idempotency_key text not null,
   status text not null check (status in ('EXECUTED','FAILED','REJECTED')),
   before_state jsonb,
   requested_state jsonb,
@@ -39,6 +39,8 @@ create index if not exists randai_action_audit_resource_idx
   on public.randai_action_audit (resource_type, resource_id, created_at desc);
 create index if not exists randai_action_audit_actor_idx
   on public.randai_action_audit (actor_auth_user_id, created_at desc);
+create index if not exists randai_action_audit_idempotency_idx
+  on public.randai_action_audit (idempotency_key, created_at desc);
 
 alter table public.randai_action_approvals
   add column if not exists hotel_id text,
