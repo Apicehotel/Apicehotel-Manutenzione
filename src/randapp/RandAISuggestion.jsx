@@ -109,7 +109,7 @@ export default function RandAISuggestion({ issue, hotelId, user = null, onAction
     }
   }
 
-  const hasActions = issue?.status !== 'done' && (canEdit || canComplete)
+  const hasActions = !actionState.success && issue?.status !== 'done' && (canEdit || canComplete)
 
   return (
     <section className="rs-randai-suggestion" aria-label="Suggerimento RandAI" data-testid="randai-issue-suggestion">
