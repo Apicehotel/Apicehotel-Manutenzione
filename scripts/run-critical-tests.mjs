@@ -15,6 +15,7 @@ const critical = [
   'test/point20-supabase-rls-audit.test.js',
   'test/point21-auth-threat-model.test.js',
   'test/point23-offline-chaos-contract.test.js',
+  'test/point24-file-photo-hardening.test.js',
   'test/offline-resilience-v2.test.js',
   'test/offline-retry.test.js',
   'test/photo-pipeline-hardening.test.js',
