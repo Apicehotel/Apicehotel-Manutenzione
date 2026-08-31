@@ -490,7 +490,7 @@ export default function Issues({ user, hotel, users, createSignal }) {
                   <Badge tone={ISSUE_STATUS_META[issue.status]?.tone}>{ISSUE_STATUS_META[issue.status]?.label || issue.status}</Badge>
                 </span>
                 <span className="rs-issue__title">{issue.title}</span>
-                <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}</span>
+                <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}{issue.status === 'done' && issue.completedBy && <span>· Risolta da <strong>{issue.completedBy}</strong></span>}</span>
               </span>
               {issue.photoData && <img className="rs-issue__photo" src={issue.photoData} alt="" />}
             </Card>
