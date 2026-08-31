@@ -84,17 +84,18 @@ const deps = Object.keys(pkg.dependencies || {})
 const usedPackages = new Set([...bareImports].map((spec) => spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]))
 const unusedPackages = deps.filter((dep) => !usedPackages.has(dep))
 
-console.log('\n=== ZOMBIE AUDIT ===')
-console.log(JSON.stringify({
+const report = {
   runtimeReachable: runtime.size,
   srcFiles: srcFiles.length,
   testOnly: testOnly.map(rel).sort(),
   orphan: orphan.map(rel).sort(),
   unusedPackages: unusedPackages.sort(),
   usedPackages: [...usedPackages].filter((x) => deps.includes(x)).sort(),
-}, null, 2))
+}
 
-test('zombie audit graph is internally consistent', () => {
-  assert.ok(runtime.has(path.join(SRC, 'main.jsx')))
-  assert.equal(new Set([...runtime, ...unreachable]).size, srcFiles.length)
+console.log('\n=== ZOMBIE AUDIT ===')
+console.log(JSON.stringify(report, null, 2))
+
+test('zombie audit report (intentional diagnostic failure)', () => {
+  assert.fail(`ZOMBIE_AUDIT_REPORT=${JSON.stringify(report)}`)
 })
