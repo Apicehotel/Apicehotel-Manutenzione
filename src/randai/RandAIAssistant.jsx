@@ -4,6 +4,7 @@ import { retrieveRandAIGuidance } from './randai-data.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
+const OPEN_EVENT = 'randai-toggle'
 
 function hvacConclusionLabel(diagnostic) {
   const labels = {
@@ -79,6 +80,12 @@ export default function RandAIAssistant() {
     setQuery('')
     setBusy(false)
   }, [session?.hotelId, session?.userId])
+
+  useEffect(() => {
+    const toggle = () => setOpen((value) => !value)
+    window.addEventListener(OPEN_EVENT, toggle)
+    return () => window.removeEventListener(OPEN_EVENT, toggle)
+  }, [])
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
@@ -208,8 +215,6 @@ export default function RandAIAssistant() {
           </form>
         </section>
       )}
-
-      <button type="button" className="randai__fab" onClick={() => setOpen((value) => !value)} aria-label="Apri RandAI" data-testid="randai-fab"><img src="/icons/randai-cat.webp" alt="" aria-hidden="true" /></button>
     </div>
   )
 }
