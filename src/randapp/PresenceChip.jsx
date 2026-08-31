@@ -5,6 +5,11 @@ import { supabase } from '../supabase.js'
 import { hotelById } from './helpers.js'
 
 const ELIGIBLE_ROLES = new Set(['manutentore', 'Portiere Notturno', 'admin'])
+const HOTEL_SHORT_LABELS = {
+  hotelgio: 'GIO',
+  chocohotel: 'CHO',
+  brigantino: 'BRI',
+}
 
 async function fetchPresence() {
   if (!supabase) return null
@@ -15,8 +20,8 @@ async function fetchPresence() {
 }
 
 function compactHotelName(hotelId) {
-  const name = hotelById(hotelId)?.name || hotelId || ''
-  return name.replace(/^Hotel\s+/i, '').replace(/^ChocoHotel$/i, 'Choco')
+  if (!hotelId) return ''
+  return HOTEL_SHORT_LABELS[String(hotelId).toLowerCase()] || String(hotelId).toUpperCase()
 }
 
 export default function PresenceChip({ user, hotel }) {
