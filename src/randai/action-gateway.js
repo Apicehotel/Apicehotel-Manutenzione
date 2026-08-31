@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js'
 import { assertSensitiveActionOnline } from '../session-policy.js'
+import { assertContextScope } from '../reliability/context-scope-guard.js'
 import { getRandAIContext } from './context/envelope.js'
 
 async function invoke(body) {
@@ -18,11 +19,17 @@ async function invoke(body) {
 
 export async function prepareRandAIAction({ hotelId, type, resourceId, input = {}, context = null } = {}) {
   if (!hotelId || !type || !resourceId) throw new TypeError('hotelId, type e resourceId sono obbligatori')
+  const resolvedContext = context || getRandAIContext() || null
+  assertContextScope({
+    expected: { hotelId, module: 'issues', recordType: 'issue', recordId: resourceId },
+    context: resolvedContext,
+    requireResource: true,
+  })
   return invoke({
     operation: 'prepare',
     hotel_id: hotelId,
     action: { type, resource_id: resourceId, input },
-    context: context || getRandAIContext() || null,
+    context: resolvedContext,
   })
 }
 
