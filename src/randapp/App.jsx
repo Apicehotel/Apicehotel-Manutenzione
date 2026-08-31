@@ -12,19 +12,19 @@ const Settings = lazy(() => import('./Settings.jsx'))
 const EVENT = 'apice-session-changed'
 
 async function loadDirectoryAll() {
-  const { fetchDirectory } = await import('../users-data.js')
+  const { fetchLoginDirectory } = await import('../users-data.js')
   const rows = await Promise.all(HOTELS.map(async (hotel) => {
     try {
-      const result = await fetchDirectory(hotel.id)
+      const result = await fetchLoginDirectory(hotel.id)
       return { hotelId: hotel.id, users: result?.users || [] }
     } catch { return { hotelId: hotel.id, users: [] } }
   }))
   const map = new Map()
   rows.forEach(({ hotelId, users }) => users.forEach((u) => {
-    const key = u.auth_user_id || u.legacy_id || u.id || normalize(u.name)
+    const key = u.legacy_id || u.id || normalize(u.name)
     if (!key) return
     const current = map.get(key) || { ...u, hotels: [] }
-    current.hotels = Array.from(new Set([...(current.hotels || []), hotelId, ...(Array.isArray(u.hotels) ? u.hotels : [])]))
+    current.hotels = Array.from(new Set([...(current.hotels || []), hotelId]))
     map.set(key, current)
   }))
   return Array.from(map.values()).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'it'))
@@ -101,7 +101,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     const user = selectedUser
     if (!user) return setError('Seleziona un utente valido dalla lista')
     if (pin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
-    const hotels = Array.from(new Set([...(user.hotels || []), ...(Array.isArray(user.hotels) ? user.hotels : [])])).filter(Boolean)
+    const hotels = Array.from(new Set(user.hotels || [])).filter(Boolean)
     if (!hotels.length) return setError('Nessuna struttura abilitata per questo utente')
     setBusy(true)
     let lastError = null
@@ -138,7 +138,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
                   <div className="rs-suggest" data-testid="login-suggestions">
                     {suggestions.map((u) => (
                       <button type="button" key={u.id || u.name} onMouseDown={(ev) => { ev.preventDefault(); setMatched(u); setQuery(u.name); setOpen(false) }}>
-                        <b>{u.name}</b><small>{u.role || ''}</small>
+                        <b>{u.name}</b>
                       </button>
                     ))}
                   </div>
