@@ -82,6 +82,24 @@ Il contratto di autenticazione è intenzionalmente distinto:
 
 Il trasporto email del recupero usa `pin-recovery` e richiede un provider realmente configurato. Per il sender Resend servono i secret Edge Function `RESEND_API_KEY`, `PIN_RECOVERY_FROM_EMAIL` e facoltativamente `PIN_RECOVERY_APP_URL` (default produzione Vercel). L'integrazione deve risultare abilitata in `integration_settings` e la funzione continua a dichiararsi non disponibile se sender o secret mancano.
 
+## Prestazioni e caricamento — Consolidamento 4
+
+Il bootstrap frontend è organizzato per caricare immediatamente solo ciò che serve alla route corrente e alla prima interazione, senza rinunciare ai meccanismi di sicurezza e recovery.
+
+Contratto di caricamento:
+
+- `src/main.jsx` non importa più staticamente RandApp, RandAI Assistant, portale tecnico, vista segnalazione pubblica o short-link ntfy: ogni route ha un proprio boundary `React.lazy`;
+- RandAI Assistant viene richiesto soltanto quando esiste una sessione RandApp locale e segue gli eventi `apice-session-changed` per login/logout;
+- registrazione PWA, diagnostica e telemetria partono dopo il caricamento pagina, con fallback compatibile quando `requestIdleCallback` non è disponibile;
+- push repair, onboarding notifiche, presenza e ownership degli urgenti non entrano nel bootstrap anonimo: i moduli vengono importati solo dopo una sessione valida e una sola volta per runtime;
+- il repair push viene rieseguito quando cambia la struttura della sessione, senza reinizializzare gli altri servizi;
+- deployment recovery, dimensionamento UI e tema restano immediati perché proteggono avvio e coerenza visiva;
+- `xlsx` resta separato dal percorso JavaScript iniziale e viene caricato soltanto dal flusso di import che lo richiede;
+- i CSS globali del design system restano nell'entry per evitare flash di stile e variazioni di cascade tra iOS, Android e Windows: l'ottimizzazione del Punto 4 riguarda i confini JavaScript misurati, non spostamenti CSS ad alto rischio;
+- `scripts/check-bundle.mjs` protegge il percorso statico iniziale in CI e i test di `test/performance-loading-boundaries.test.js` impediscono regressioni dei confini lazy/deferred.
+
+Le prestazioni vengono accettate solo insieme ai gate di build, bundle budget, suite completa, Chromium/WebKit e device acceptance. I valori di bundle pubblicati devono provenire dalla build CI del commit, non da stime manuali.
+
 ## Avvio locale
 
 ```bash
