@@ -1,4 +1,6 @@
 import { supabase } from './supabase.js'
+import { assertValid } from './reliability/validation-engine.js'
+import { validatePlanningWorkCreate, validatePlanningWorkStatus } from './reliability/domain-validation.js'
 
 const mapDay = (row, job) => ({
   id: row.id,
@@ -33,19 +35,23 @@ export async function fetchPlanningWork(hotelId) {
 }
 
 export async function createPlanningWork({ hotelId, description, dates, createdBy, createdByUserId = null }) {
+  assertValid(validatePlanningWorkCreate({ hotelId, description, dates }), 'Planning lavoro non valido')
+  const normalizedDescription = String(description).trim()
+  const normalizedDates = [...new Set(dates.map((date) => String(date).trim()))].sort()
   const { data: job, error: jobError } = await supabase
     .from('planning_lavori')
-    .insert({ hotel_id: hotelId, descrizione: description, creato_da: createdBy || null, created_by_user_id: createdByUserId || null })
+    .insert({ hotel_id: hotelId, descrizione: normalizedDescription, creato_da: createdBy || null, created_by_user_id: createdByUserId || null })
     .select()
     .single()
   if (jobError) throw jobError
-  const rows = dates.map((date) => ({ lavoro_id: job.id, data: date, fatto: false, stato: 'pending' }))
+  const rows = normalizedDates.map((date) => ({ lavoro_id: job.id, data: date, fatto: false, stato: 'pending' }))
   const { error: daysError } = await supabase.from('planning_lavori_giorni').insert(rows)
   if (daysError) throw daysError
   return job
 }
 
 export async function setPlanningWorkStatus(id, status, userName) {
+  assertValid(validatePlanningWorkStatus(status), 'Stato planning lavoro non valido')
   const now = new Date().toISOString()
   const patch = status === 'done'
     ? { stato: 'done', fatto: true, fatto_da: userName || null, fatto_il: now }
@@ -57,16 +63,13 @@ export async function setPlanningWorkStatus(id, status, userName) {
 }
 
 export async function deletePlanningWorkDay(id) {
+  if (!id) throw new TypeError('id è obbligatorio')
   const { error } = await supabase.from('planning_lavori_giorni').delete().eq('id', id)
   if (error) throw error
 }
 
 export function subscribePlanningWork(hotelId, onChange) {
   if (!supabase) return () => {}
-
-  // React StrictMode può montare/smontare/rimontare rapidamente il componente.
-  // Supabase non permette di aggiungere nuovi postgres_changes a un canale già
-  // sottoscritto con lo stesso topic, quindi ogni sottoscrizione usa un topic unico.
   const suffix = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -83,9 +86,7 @@ export function subscribePlanningWork(hotelId, onChange) {
       schema: 'public',
       table: 'planning_lavori_giorni',
     }, onChange)
-
   channel.subscribe()
-
   return () => {
     supabase.removeChannel(channel).catch(() => undefined)
   }
