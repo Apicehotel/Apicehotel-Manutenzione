@@ -424,11 +424,40 @@ const FILTERS = [
   ['all', 'Tutte'],
 ]
 
+const ISSUE_SORT_OPTIONS = [
+  ['room', 'Camera / zona'],
+  ['urgency', 'Urgenza'],
+  ['status', 'Stato'],
+  ['category', 'Categoria'],
+  ['date', 'Data'],
+]
+const URGENCY_SORT = { alta: 3, media: 2, bassa: 1 }
+const STATUS_SORT = { todo: 1, tecnico: 2, waiting: 3, done: 4 }
+function issueRoomSortValue(room) {
+  const label = String(room || '').trim()
+  const match = label.match(/(?:Camera\s*·\s*)?(\d{1,4})/i)
+  if (match) return { type: 0, number: Number(match[1]), text: label.toLocaleLowerCase('it') }
+  return { type: 1, number: 0, text: label.toLocaleLowerCase('it') }
+}
+function compareIssueRooms(a, b) {
+  const left = issueRoomSortValue(a.room)
+  const right = issueRoomSortValue(b.room)
+  if (left.type !== right.type) return left.type - right.type
+  if (left.type === 0 && left.number !== right.number) return left.number - right.number
+  return left.text.localeCompare(right.text, 'it', { numeric: true, sensitivity: 'base' })
+}
+
 export default function Issues({ user, hotel, users, createSignal }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
   const [filter, setFilter] = useState('todo')
   const [search, setSearch] = useState('')
+  const [sortOpen, setSortOpen] = useState(false)
+  const [sortBy, setSortBy] = useState('date')
+  const [sortDir, setSortDir] = useState('desc')
+  const [urgencyFilter, setUrgencyFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState(null)
 
@@ -446,11 +475,26 @@ export default function Issues({ user, hotel, users, createSignal }) {
 
   const counts = useMemo(() => issues.reduce((acc, i) => ({ ...acc, [i.status]: (acc[i.status] || 0) + 1 }), {}), [issues])
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return issues
-      .filter((i) => filter === 'all' || i.status === filter)
-      .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
-  }, [issues, filter, search])
+  const q = search.trim().toLowerCase()
+  const direction = sortDir === 'asc' ? 1 : -1
+  return issues
+    .filter((i) => filter === 'all' || i.status === filter)
+    .filter((i) => urgencyFilter === 'all' || i.urgency === urgencyFilter)
+    .filter((i) => categoryFilter === 'all' || i.category === categoryFilter)
+    .filter((i) => locationFilter === 'all' || (locationFilter === 'camera' ? /^Camera\s*·/i.test(i.room || '') : !/^Camera\s*·/i.test(i.room || '')))
+    .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
+    .sort((a, b) => {
+      if (sortBy === 'room') return compareIssueRooms(a, b) * direction
+      if (sortBy === 'urgency') return ((URGENCY_SORT[a.urgency] || 0) - (URGENCY_SORT[b.urgency] || 0)) * direction
+      if (sortBy === 'status') return ((STATUS_SORT[a.status] || 99) - (STATUS_SORT[b.status] || 99)) * direction
+      if (sortBy === 'category') return String(a.category || '').localeCompare(String(b.category || ''), 'it', { sensitivity: 'base' }) * direction
+      return ((Number(a.createdAt) || 0) - (Number(b.createdAt) || 0)) * direction
+    })
+}, [issues, filter, search, sortBy, sortDir, urgencyFilter, categoryFilter, locationFilter])
+const extraFilterCount = (urgencyFilter !== 'all' ? 1 : 0) + (categoryFilter !== 'all' ? 1 : 0) + (locationFilter !== 'all' ? 1 : 0)
+const resetExtraFilters = () => {
+  setUrgencyFilter('all'); setCategoryFilter('all'); setLocationFilter('all'); setSortBy('date'); setSortDir('desc')
+}
 
   const doUpdate = async (id, changes) => {
     setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i)))
@@ -467,9 +511,11 @@ export default function Issues({ user, hotel, users, createSignal }) {
         {canUser(user, 'issues', 'create') && <Button variant="primary" icon="plus" onClick={() => setCreating(true)} data-testid="open-new-issue">Nuova</Button>}
       </div>
       <div className="rs-toolbar">
-        <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search"
-          onChange={(e) => setSearch(e.target.value)} />
-        <div className="rs-issue-filter-scroll" data-testid="issue-filters">
+  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
+    <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search" onChange={(e) => setSearch(e.target.value)} />
+    <Button variant={extraFilterCount ? 'primary' : 'ghost'} icon="filter" onClick={() => setSortOpen(true)} data-testid="issue-sort-filter">Filtra{extraFilterCount ? ` · ${extraFilterCount}` : ''}</Button>
+  </div>
+  <div className="rs-issue-filter-scroll" data-testid="issue-filters">
           <Segmented value={filter} onChange={setFilter}
             options={FILTERS.map(([k, l]) => [k, l, k === 'all' ? issues.length : (counts[k] || 0)])} />
         </div>
@@ -497,6 +543,17 @@ export default function Issues({ user, hotel, users, createSignal }) {
           ))}
         </div>
       )}
+
+      <Sheet open={sortOpen} onClose={() => setSortOpen(false)} title="Filtra e ordina" className="rs-issue-filter-sheet">
+  <div className="rs-actions-stack" data-testid="issue-sort-filter-sheet">
+    <Field label="Ordina per"><select className="rs-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>{ISSUE_SORT_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
+    <fieldset className="rs-fieldset"><legend>Direzione</legend><div className="rs-chips"><button type="button" className={`rs-chip ${sortDir === 'asc' ? 'active' : ''}`} onClick={() => setSortDir('asc')}>↑ Crescente</button><button type="button" className={`rs-chip ${sortDir === 'desc' ? 'active' : ''}`} onClick={() => setSortDir('desc')}>↓ Decrescente</button></div></fieldset>
+    <fieldset className="rs-fieldset"><legend>Camera / zona</legend><div className="rs-chips">{[['all','Tutte'],['camera','Camere'],['zona','Zone']].map(([key,label]) => <button type="button" key={key} className={`rs-chip ${locationFilter === key ? 'active' : ''}`} onClick={() => setLocationFilter(key)}>{label}</button>)}</div></fieldset>
+    <fieldset className="rs-fieldset"><legend>Urgenza</legend><div className="rs-chips">{[['all','Tutte'],['alta','Alta'],['media','Media'],['bassa','Bassa']].map(([key,label]) => <button type="button" key={key} className={`rs-chip ${urgencyFilter === key ? 'active' : ''}`} onClick={() => setUrgencyFilter(key)}>{label}</button>)}</div></fieldset>
+    <Field label="Categoria"><select className="rs-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}><option value="all">Tutte le categorie</option>{ISSUE_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
+    <div className="rs-form-actions"><Button variant="ghost" onClick={resetExtraFilters}>Ripristina</Button><Button variant="primary" onClick={() => setSortOpen(false)}>Applica · {filtered.length}</Button></div>
+  </div>
+</Sheet>
 
       {selected && <IssueDetail issue={selected} user={user} users={users} onClose={() => setSelected(null)} onUpdate={doUpdate} onDelete={doDelete} />}
     </div>
