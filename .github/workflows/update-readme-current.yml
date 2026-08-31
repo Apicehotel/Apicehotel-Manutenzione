@@ -1,0 +1,33 @@
+name: Update current README
+on:
+  push:
+    paths: ['.github/workflows/update-readme-current.yml']
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('README.md'); s=p.read_text()
+          s=s.replace('- segnalazioni manutentive con foto e ciclo di lavorazione;', '- segnalazioni manutentive con foto, ciclo di lavorazione e filtri/ordinamenti avanzati;')
+          s=s.replace('- meteo operativo;', '- meteo operativo;\n- magazzino multi-hotel con giacenze, scorte minime, carico/scarico atomico, storico movimenti e foto di riferimento articolo;')
+          marker='''## Avvio locale'''
+          section='''## Contratti operativi recenti\n\n### Segnalazioni — filtri e ordinamento\n\nLa vista Segnalazioni combina ricerca, stato e filtri avanzati. È possibile ordinare per camera/zona, urgenza, stato, categoria e data in senso crescente o decrescente. Le camere vengono ordinate numericamente, non lessicograficamente. I filtri restano combinabili e non alterano l'isolamento per `hotel_id`.\n\n### Magazzino\n\nIl Magazzino è una funzione multi-hotel permission-driven: ogni articolo appartiene a una sola struttura e contiene nome, categoria, unità di misura, posizione, codice/SKU, giacenza, soglia minima, note e foto di riferimento facoltativa. Carichi e scarichi sono registrati come movimenti con quantità prima/dopo; la RPC di variazione scorta impedisce giacenze negative e rende l'operazione atomica.\n\nLa foto serve a riconoscere il materiale reale (scatola, etichetta o ricambio). È salvata nel bucket privato delle foto e mostrata tramite URL firmato. L'inserimento **non deve forzare la fotocamera**: il controllo file usa il selettore nativo del sistema, così iOS, Android e Windows possono offrire Libreria foto, Fotocamera/Scatta foto e File secondo le capacità del dispositivo. Le immagini sono limitate a 10 MB.\n\n### Presenza personale e UI size\n\nLo stato “Sono in struttura” è personale e identifica una sola struttura fisica alla volta; non è un booleano indipendente per ogni hotel. Nell'header il controllo usa le sigle compatte `GIO`, `CHO`, `BRI`. Tutti i nuovi controlli visuali devono rispettare le tre modalità **Piccolo / Normale / Grande** e mantenere coerenza su iOS, Android e Windows.\n\n'''
+          if section.strip() not in s:
+              s=s.replace(marker, section+marker)
+          old='''- ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati.'''
+          new='''- **ogni modifica funzionale, aggiunta, rimozione o cambio di comportamento deve aggiornare il README nello stesso commit/PR quando cambia il contratto documentato**; se una funzione viene rimossa, va rimossa anche dalla documentazione, senza lasciare descrizioni obsolete;\n- ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati.'''
+          s=s.replace(old,new)
+          p.write_text(s)
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: document inventory filters presence and README rule"
+          git push origin main
