@@ -62,6 +62,23 @@ Nel dominio Planning:
 
 Regola architetturale: estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma; non creare wrapper generici senza un beneficio operativo/testabile.
 
+## Sicurezza accesso e recupero PIN
+
+Il contratto di autenticazione è intenzionalmente distinto:
+
+- PIN utente operativo: **4 cifre**;
+- PIN amministratore: **6 cifre**, separato visivamente e funzionalmente dal login operativo;
+- la directory pre-login espone solo i dati minimi necessari alla selezione account (identificativi, nome, ruolo e hotel), senza email, telefono o permessi dettagliati;
+- email e telefono vengono restituiti solo dopo autenticazione PIN valida;
+- una sessione già validata può continuare offline per un massimo di **24 ore dall'ultima validazione server**;
+- al ritorno online la sessione viene rivalidata e una revoca utente/hotel comporta logout locale;
+- il recupero PIN è self-service: il browser invia solo `user_id + hotel_id`, l'email viene risolta server-side e non viene mostrata nel login;
+- i link di recupero scadono dopo 15 minuti, sono monouso, memorizzati solo come hash e protetti da rate limit;
+- gli account di sistema protetti non possono usare il recupero PIN utente;
+- il nuovo PIN viene hashato con bcrypt e azzera lockout/tentativi falliti.
+
+Il trasporto email del recupero usa `pin-recovery` e richiede un provider realmente configurato. Per il sender Resend servono i secret Edge Function `RESEND_API_KEY`, `PIN_RECOVERY_FROM_EMAIL` e facoltativamente `PIN_RECOVERY_APP_URL` (default produzione Vercel). L'integrazione non deve dichiararsi attiva se sender o secret mancano.
+
 ## Avvio locale
 
 ```bash
@@ -89,6 +106,7 @@ npm run test:device
 - componenti Planning focalizzati: `src/randapp/planning/`;
 - motore RandAI: `src/randai/`;
 - client Supabase: `src/supabase.js`;
+- session policy: `src/session-policy.js`;
 - offline: `src/offline-store.js`;
 - diagnostica: `src/diagnostics-client.js`, `src/diagnostic-taxonomy.js`, `src/error-boundary.jsx`;
 - telemetria opzionale: `src/external-telemetry.js`;

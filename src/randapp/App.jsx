@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { loadSession, saveSession, clearSession } from '../session.js'
+import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
 import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
+import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
 
 const Shell = lazy(() => import('./Shell.jsx'))
 const Settings = lazy(() => import('./Settings.jsx'))
@@ -84,8 +86,10 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
+  const [recovering, setRecovering] = useState(false)
   useEffect(() => { loadDirectoryAll().then(setDirectory).catch(() => setDirectory([])) }, [])
   const q = normalize(query)
+  const selectedUser = matched || directory.find((u) => normalize(u.name) === q) || null
   const suggestions = useMemo(() => (
     q && !matched
       ? directory.filter((u) => normalize(u.name).startsWith(q)).slice(0, 6)
@@ -94,7 +98,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
 
   const submit = async (e) => {
     e.preventDefault(); setError('')
-    const user = matched || directory.find((u) => normalize(u.name) === q)
+    const user = selectedUser
     if (!user) return setError('Seleziona un utente valido dalla lista')
     if (pin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
     const hotels = Array.from(new Set([...(user.hotels || []), ...(Array.isArray(user.hotels) ? user.hotels : [])])).filter(Boolean)
@@ -114,6 +118,8 @@ function Login({ onAuthenticated, onOpenSettings }) {
     setError('Utente o PIN non validi')
     setBusy(false)
   }
+
+  if (recovering && selectedUser) return <PinRecoveryRequest user={selectedUser} onBack={() => setRecovering(false)} />
 
   return (
     <main className="rs-auth">
@@ -143,6 +149,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
               <TextInput icon="lock" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••" data-testid="login-pin-input"
                 onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} />
             </Field>
+            {selectedUser && <button type="button" className="rs-textback" onClick={() => setRecovering(true)} data-testid="pin-forgot-link">PIN dimenticato?</button>}
             {error && <p className="rs-error" role="alert" data-testid="login-error">{error}</p>}
             <Button variant="primary" size="lg" className="rs-btn--block" disabled={busy} data-testid="login-submit" iconRight="arrowRight">
               {busy ? 'ACCESSO…' : 'ACCEDI'}
@@ -187,6 +194,8 @@ export default function App() {
   const [sessionReady, setSessionReady] = useState(() => !loadSession())
   const [pending, setPending] = useState(null)
   const [settingsFromLogin, setSettingsFromLogin] = useState(false)
+  const recoveryToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('pinRecovery') : null
+  const [recoveryDone, setRecoveryDone] = useState(false)
 
   useEffect(() => {
     const onChange = () => setSession(loadSession())
@@ -211,6 +220,11 @@ export default function App() {
     }
     const validate = async () => {
       if (!navigator.onLine) {
+        if (!isOfflineSessionFresh(session)) {
+          console.warn('Sessione offline scaduta: nuovo accesso richiesto')
+          await resetSession()
+          return
+        }
         if (active) setSessionReady(true)
         return
       }
@@ -232,10 +246,16 @@ export default function App() {
           await resetSession(signOutSupabase)
           return
         }
-        setSessionReady(true)
+        const validatedSession = markSessionValidated(session)
+        saveSession(validatedSession)
+        if (active) setSessionReady(true)
       } catch (error) {
         console.warn('Controllo sessione rimandato', error)
-        if (active) setSessionReady(true)
+        if (isOfflineSessionFresh(session)) {
+          if (active) setSessionReady(true)
+        } else {
+          await resetSession()
+        }
       }
     }
     validate()
@@ -244,17 +264,19 @@ export default function App() {
   }, [session?.hotelId, session?.userId])
 
   const onAuthenticated = ({ user, userId, allowedHotels, workedHotel }) => {
+    const now = Date.now()
     if (allowedHotels.length <= 1) {
-      saveSession({ hotelId: allowedHotels[0] || workedHotel, userId, createdAt: Date.now() })
+      saveSession({ hotelId: allowedHotels[0] || workedHotel, userId, createdAt: now, lastValidatedAt: now })
       setSession(loadSession())
       setSessionReady(false)
     } else {
-      setPending({ user, userId, allowedHotels })
+      setPending({ user, userId, allowedHotels, validatedAt: now })
     }
   }
 
   const pickHotel = (hotelId) => {
-    saveSession({ hotelId, userId: pending.userId, createdAt: Date.now() })
+    const now = Date.now()
+    saveSession({ hotelId, userId: pending.userId, createdAt: now, lastValidatedAt: pending.validatedAt || now })
     setPending(null)
     setSession(loadSession())
     setSessionReady(false)
@@ -269,6 +291,7 @@ export default function App() {
     setSessionReady(true)
   }
 
+  if (recoveryToken && !recoveryDone) return <PinRecoveryComplete token={recoveryToken} onDone={() => { setRecoveryDone(true); try { window.history.replaceState({}, '', window.location.pathname) } catch { /* noop */ } }} />
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
   if (session && !sessionReady) return <Spinner label="Verifico accesso…" />
   if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
