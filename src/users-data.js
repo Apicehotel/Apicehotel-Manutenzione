@@ -2,20 +2,34 @@ import { supabase } from './supabase.js'
 import { getCachedCollection, setCachedCollection } from './offline-store.js'
 
 function rowsFrom(data) { if (Array.isArray(data)) return data; if (Array.isArray(data?.users)) return data.users; if (Array.isArray(data?.data)) return data.data; return [] }
-function loginEligibleUsers(data) { return rowsFrom(data).filter((user) => user && user.active !== false && String(user.role || '').trim() !== 'RandAI') }
+function loginEligibleUsers(data, hotelId) {
+  return rowsFrom(data)
+    .filter((user) => user && user.active !== false && String(user.role || '').trim() !== 'RandAI')
+    .map((user) => {
+      const legacyId = user.legacy_id || user.id
+      return {
+        id: legacyId,
+        legacy_id: legacyId,
+        name: String(user.name || '').trim(),
+        hotel_id: hotelId || user.hotel_id || null,
+        active: true,
+      }
+    })
+    .filter((user) => user.id && user.name)
+}
 async function invokeAdmin(body) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-users', { body }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function fetchDirectory(hotelId) {
   if (!hotelId) return { users: [] }
-  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: loginEligibleUsers(await getCachedCollection('directory', hotelId)), offline: true }
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: loginEligibleUsers(await getCachedCollection('directory', hotelId), hotelId), offline: true }
   try {
     const { data, error } = await supabase.functions.invoke('pin-auth', { body: { action: 'directory', hotel_id: hotelId } })
     if (error) throw error
     if (data?.error) throw new Error(data.error)
-    const users = loginEligibleUsers(data)
+    const users = loginEligibleUsers(data, hotelId)
     await setCachedCollection('directory', hotelId, users)
     return { users }
   } catch (error) {
-    const cached = loginEligibleUsers(await getCachedCollection('directory', hotelId))
+    const cached = loginEligibleUsers(await getCachedCollection('directory', hotelId), hotelId)
     if (cached.length) return { users: cached, offline: true }
     throw error
   }
