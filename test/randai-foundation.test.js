@@ -15,8 +15,11 @@ test('RandAI never reuses Hotel Giò knowledge in another hotel', () => {
   assert.equal(findInternalProcedure({ hotelId: 'brigantino', query: 'condizionatori Jazz non freddano' }), null)
 })
 
-test('RandAI is mounted only in the normal RandApp runtime branch', async () => {
+test('RandAI is lazy and mounted only for an authenticated normal RandApp runtime', async () => {
   const source = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
-  assert.match(source, /import RandAIAssistant from '\.\/randai\/RandAIAssistant\.jsx'/)
-  assert.match(source, /<><App \/><RandAIAssistant \/><\/>/)
+  assert.match(source, /const RandAIAssistant = lazy\(\(\) => import\('\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(source, /function AuthenticatedRandAI\(\)/)
+  assert.match(source, /useState\(\(\) => Boolean\(loadSession\(\)\)\)/)
+  assert.match(source, /if \(!active\) return null/)
+  assert.match(source, /<App \/><AuthenticatedRandAI \/>/)
 })
