@@ -23,16 +23,17 @@ test('RandAI assistant is loaded only for an authenticated RandApp session', asy
   assert.match(main, /if \(!active\) return null/)
 })
 
-test('operational services are deferred until a valid local session exists', async () => {
+test('PWA registration remains immediate while authenticated operational services stay deferred', async () => {
   const main = await source('src/main.jsx')
   for (const module of ['push.js', 'notification-onboarding.js', 'presence-status.js', 'urgent-ownership-guard.js']) {
     assert.match(main, new RegExp(`import\\('\\./${module.replace('.', '\\.')}'\\)`))
   }
+  assert.match(main, /import \{ registerPwa \} from '\.\/pwa\.js'/)
+  assert.match(main, /registerPwa\(\)/)
+  assert.doesNotMatch(main, /afterPageLoad\(\(\) => import\('\.\/pwa\.js'\)/)
   assert.match(main, /const session = loadSession\(\)/)
   assert.match(main, /if \(!session\) return/)
   assert.match(main, /if \(loadSession\(\)\) afterPageLoad\(startOperationalRuntime\)/)
-  assert.doesNotMatch(main, /import \{ registerPwa \} from '\.\/pwa\.js'/)
-  assert.match(main, /afterPageLoad\(\(\) => import\('\.\/pwa\.js'\)/)
 })
 
 test('deployment recovery and visual initialization remain immediate', async () => {
