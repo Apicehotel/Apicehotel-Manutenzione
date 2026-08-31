@@ -1,43 +1,70 @@
-/* Presence: compact, cross-platform status control.
-   Visual dot stays small; hit target stays >=44px for iOS/Android accessibility. */
-.rs-presence-dot-button {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  display: inline-grid;
-  place-items: center;
-  color: inherit;
+/* Presence control: explicit personal location, compact enough for mobile header. */
+.rs-presence-chip {
+  min-height: 40px;
+  max-width: 132px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--rs-border, #cbd5e1) 82%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rs-surface, #fff) 92%, transparent);
+  color: var(--rs-text, inherit);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: background-color .16s ease, transform .12s ease, opacity .16s ease;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06);
+  transition: transform .12s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, opacity .16s ease;
 }
 
-.rs-presence-dot-button:hover { background: color-mix(in srgb, var(--rs-accent) 8%, transparent); }
-.rs-presence-dot-button:active { transform: scale(.94); }
-.rs-presence-dot-button:focus-visible { outline: 2px solid var(--rs-accent); outline-offset: 2px; }
-.rs-presence-dot-button:disabled { cursor: wait; opacity: .55; }
+.rs-presence-chip:hover {
+  background: color-mix(in srgb, var(--rs-accent) 7%, var(--rs-surface, #fff));
+  border-color: color-mix(in srgb, var(--rs-accent) 26%, var(--rs-border, #cbd5e1));
+}
+.rs-presence-chip:active { transform: scale(.97); }
+.rs-presence-chip:focus-visible { outline: 2px solid var(--rs-accent); outline-offset: 2px; }
+.rs-presence-chip:disabled { cursor: wait; opacity: .62; }
 
-.rs-presence-dot {
-  width: 12px;
-  height: 12px;
+.rs-presence-chip__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239,68,68,.12);
-  transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148,163,184,.13);
 }
 
-.rs-presence-dot-button[data-presence='in'] .rs-presence-dot {
+.rs-presence-chip[data-presence='in'] {
+  border-color: rgba(34,197,94,.34);
+  background: rgba(34,197,94,.09);
+}
+.rs-presence-chip[data-presence='in'] .rs-presence-chip__dot {
   background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.14);
 }
 
-.rs-presence-dot-button:disabled .rs-presence-dot { transform: scale(.82); }
+/* If the user is physically in another hotel, make that distinction visible. */
+.rs-presence-chip[data-presence='in'][data-here='false'] {
+  border-color: rgba(245,158,11,.38);
+  background: rgba(245,158,11,.10);
+}
+.rs-presence-chip[data-presence='in'][data-here='false'] .rs-presence-chip__dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245,158,11,.14);
+}
+
+.rs-presence-chip__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .rs-sr-only {
   position: absolute !important;
@@ -51,19 +78,26 @@
   border: 0 !important;
 }
 
-/* Keep dot visually close to the hotel selector without crowding the bell. */
-.rs-header > div:has(.rs-presence-dot-button) { gap: 4px !important; }
+.rs-header > div:has(.rs-presence-chip) { gap: 6px !important; }
 
 @media (max-width: 430px) {
-  .rs-presence-dot-button {
-    width: 40px;
-    height: 44px;
-    min-width: 40px;
+  .rs-presence-chip {
+    min-height: 38px;
+    max-width: 88px;
+    padding: 0 9px;
+    gap: 6px;
+    font-size: .76rem;
   }
-  .rs-presence-dot { width: 11px; height: 11px; }
+  .rs-presence-chip__dot { width: 8px; height: 8px; }
+}
+
+@media (max-width: 360px) {
+  .rs-presence-chip {
+    max-width: 74px;
+    padding-inline: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rs-presence-dot-button,
-  .rs-presence-dot { transition: none; }
+  .rs-presence-chip { transition: none; }
 }
