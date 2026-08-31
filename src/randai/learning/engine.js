@@ -15,10 +15,10 @@ export class LearningEngine {
   async observe(experience) {
     const normalized = normalizeExperience(experience)
     const fingerprint = experienceFingerprint(experience)
-    let candidate = await this.store.findByFingerprint(fingerprint)
+    let candidate = await this.store.findByFingerprint(fingerprint, normalized.hotelId)
     if (!candidate) {
       candidate = {
-        id: makeId(), fingerprint, problemClass: normalized.problemClass, strategy: normalized.strategy,
+        id: makeId(), hotelId: normalized.hotelId, fingerprint, problemClass: normalized.problemClass, strategy: normalized.strategy,
         tools: normalized.tools, successCriteria: normalized.successCriteria, status: LearningCandidateStatus.OBSERVED,
         evidence: [], skillRef: null, evaluationId: null, evaluationError: null, createdAt: nowIso(), updatedAt: nowIso(),
       }
@@ -38,7 +38,7 @@ export class LearningEngine {
     if (!candidate) throw new Error(`Unknown learning candidate: ${candidateId}`)
     if (candidate.status !== LearningCandidateStatus.CANDIDATE) throw new Error('Candidate needs sufficient verified evidence before skill proposal')
     if (!skillRegistry || !id || !name || !description) throw new TypeError('skillRegistry, id, name and description are required')
-    skillRegistry.register({ id, version, name, description, risk, status: SkillStatus.DRAFT, requiredTools: candidate.tools, instructions: [candidate.strategy], successCriteria: candidate.successCriteria, metadata: { learningCandidateId: candidate.id, evidenceCount: candidate.evidence.length } })
+    skillRegistry.register({ id, version, name, description, risk, status: SkillStatus.DRAFT, requiredTools: candidate.tools, instructions: [candidate.strategy], successCriteria: candidate.successCriteria, metadata: { learningCandidateId: candidate.id, hotelId: candidate.hotelId || null, evidenceCount: candidate.evidence.length } })
     skillRegistry.transition(id, version, SkillStatus.CANDIDATE)
     candidate.skillRef = { id, version }
     candidate.updatedAt = nowIso()
