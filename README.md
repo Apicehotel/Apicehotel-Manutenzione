@@ -8,7 +8,7 @@ RandApp usa un unico progetto Supabase multi-hotel. I dati operativi sono separa
 
 Funzioni principali consolidate:
 
-- segnalazioni manutentive con foto e ciclo di lavorazione;
+- segnalazioni manutentive con foto, ciclo di lavorazione e filtri/ordinamenti avanzati;
 - avvisi urgenti con presa in carico, completamento e reminder;
 - interventi e planning lavori;
 - planning sale;
@@ -16,6 +16,7 @@ Funzioni principali consolidate:
 - promemoria e inbox notifiche;
 - push + ntfy per struttura;
 - meteo operativo;
+- magazzino multi-hotel con giacenze, scorte minime, carico/scarico atomico, storico movimenti e foto di riferimento articolo;
 - modalità offline con coda di sincronizzazione;
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
@@ -122,6 +123,22 @@ Regole consolidate:
 
 Le eccezioni legittime devono rappresentare una caratteristica reale della struttura (camere, reparti, sale, sensori presenti, recapiti o procedure locali), non una scorciatoia nel codice. In particolare le regole di numerazione e organizzazione camere di Hotel Giò restano specifiche di Giò e non vengono propagate a Choco o Brigantino.
 
+## Contratti operativi recenti
+
+### Segnalazioni — filtri e ordinamento
+
+La vista Segnalazioni combina ricerca, stato e filtri avanzati. È possibile ordinare per camera/zona, urgenza, stato, categoria e data in senso crescente o decrescente. Le camere vengono ordinate numericamente, non lessicograficamente. I filtri restano combinabili e non alterano l'isolamento per `hotel_id`.
+
+### Magazzino
+
+Il Magazzino è una funzione multi-hotel permission-driven: ogni articolo appartiene a una sola struttura e contiene nome, categoria, unità di misura, posizione, codice/SKU, giacenza, soglia minima, note e foto di riferimento facoltativa. Carichi e scarichi sono registrati come movimenti con quantità prima/dopo; la RPC di variazione scorta impedisce giacenze negative e rende l'operazione atomica.
+
+La foto serve a riconoscere il materiale reale (scatola, etichetta o ricambio). È salvata nel bucket privato delle foto e mostrata tramite URL firmato. L'inserimento **non deve forzare la fotocamera**: il controllo file usa il selettore nativo del sistema, così iOS, Android e Windows possono offrire Libreria foto, Fotocamera/Scatta foto e File secondo le capacità del dispositivo. Le immagini sono limitate a 10 MB.
+
+### Presenza personale e UI size
+
+Lo stato “Sono in struttura” è personale e identifica una sola struttura fisica alla volta; non è un booleano indipendente per ogni hotel. Nell'header il controllo usa le sigle compatte `GIO`, `CHO`, `BRI`. Tutti i nuovi controlli visuali devono rispettare le tre modalità **Piccolo / Normale / Grande** e mantenere coerenza su iOS, Android e Windows.
+
 ## Avvio locale
 
 ```bash
@@ -191,4 +208,5 @@ Il progetto Vercel attivo è `apicehotel-manutenzionr`. Non esiste più codice a
 - non modificare migrazioni già applicate: aggiungere una nuova migrazione;
 - non rimuovere indici solo perché momentaneamente segnalati come `unused`;
 - ogni modifica critica deve mantenere verdi Quality Matrix, Critical Gate e test multipiattaforma;
+- **ogni modifica funzionale, aggiunta, rimozione o cambio di comportamento deve aggiornare il README nello stesso commit/PR quando cambia il contratto documentato**; se una funzione viene rimossa, va rimossa anche dalla documentazione, senza lasciare descrizioni obsolete;
 - ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati.
