@@ -47,6 +47,21 @@ Struttura CSS consolidata:
 
 I vecchi layer autonomi `planning-sale-fix.css`, `mobile-bottom-anchor.css`, `home-center-nav.css`, `large-header-balance.css`, `auth-theme-fix.css` e `theme-audit-fix.css` sono stati rimossi/assorbiti nei moduli proprietari. Le regole legacy del vecchio Planning Sale non più raggiungibili non vengono mantenute.
 
+## Struttura React consolidata
+
+Il frontend evita componenti universali troppo astratti: le estrazioni vengono fatte solo quando esiste una responsabilità stabile e condivisa.
+
+Nel dominio Planning:
+
+- `src/randapp/planning/date-utils.js` contiene le utility data comuni a Planning Sale e Planning Lavori;
+- `src/randapp/planning/PlanningDateNavigator.jsx` è il navigatore periodo condiviso;
+- `src/randapp/planning/NewWorkSheet.jsx` possiede esclusivamente il flusso di creazione di un lavoro pianificato;
+- `src/randapp/planning/WorkRow.jsx` possiede esclusivamente stato/azioni della singola riga lavoro;
+- `PlanningWorkSimple.jsx` resta un orchestratore della settimana invece di contenere sheet, righe, utility e navigazione nello stesso file;
+- `PlanningSaleSimple.jsx` riusa lo stesso contratto di navigazione senza perdere logica specifica delle sale.
+
+Regola architetturale: estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma; non creare wrapper generici senza un beneficio operativo/testabile.
+
 ## Avvio locale
 
 ```bash
@@ -71,6 +86,7 @@ npm run test:device
 
 - entry: `src/main.jsx`;
 - shell/UI: `src/randapp/`;
+- componenti Planning focalizzati: `src/randapp/planning/`;
 - motore RandAI: `src/randai/`;
 - client Supabase: `src/supabase.js`;
 - offline: `src/offline-store.js`;

@@ -1,13 +1,14 @@
 import { canUser } from '../../permissions.js'
+import { WEEKDAYS, addDays, iso } from './date-utils.js'
+
+export { addDays, iso } from './date-utils.js'
 
 export const SHIFTS={mattina:'Mattina',pomeriggio:'Pomeriggio',tutto_giorno:'Giornata intera'}
-export const WD=['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
+export const WD=WEEKDAYS
 export const GROUPS=['trumpet','sax','auditorium']
 export const norm=(v='')=>String(v).trim().toLocaleLowerCase('it')
 export const canManageSalePlanning=(user)=>canUser(user,'planning_sale','manage')||canUser(user,'planning_sale','edit')||canUser(user,'planning_sale','delete')
 export const canOperateSalePlanning=(user)=>canUser(user,'planning_sale','view')
-export const iso=(value=new Date())=>{const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-export const addDays=(value,n)=>{const d=new Date(value);d.setDate(d.getDate()+n);return d}
 export const parseIso=(value)=>new Date(`${value}T12:00:00`)
 export const dayLabel=(value)=>`${WD[value.getDay()]} ${String(value.getDate()).padStart(2,'0')}/${String(value.getMonth()+1).padStart(2,'0')}`
 const overlaps=(aFrom,aTo,bFrom,bTo)=>aFrom<=bTo&&aTo>=bFrom
