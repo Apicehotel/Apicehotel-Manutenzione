@@ -1,199 +1,31 @@
-name: Integrate RandAI header
-'on':
+name: Align RandAI header docs
+on:
   push:
-    paths:
-      - '.github/workflows/integrate-randai-header.yml'
+    paths: ['.github/workflows/integrate-randai-header.yml']
 permissions:
   contents: write
 jobs:
-  integrate:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - name: Integrate RandAI into operational header
-        shell: bash
-        run: |
+      - run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          shell = Path('src/randapp/Shell.jsx')
-          s = shell.read_text()
-          old = '''        <header className="rs-header">
-          <button className="rs-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
-            <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <span className="rs-hotelchip__text"><b>{hotel.name}</b><small>{user ? `${firstName(user.name)} · ${user.role || ''}` : 'Caricamento…'}</small></span>
-            {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
-          </button>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><PresenceChip user={user} /><span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span></div>
-        </header>'''
-          new = '''        <header className="rs-header rs-header--operational">
-          <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
-            <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{{ hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
-            {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
-          </button>
-          <div className="rs-header__actions">
-            <button type="button" className="rs-header__randai" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><img src="/icons/randai-cat.webp" alt="" aria-hidden="true" /></button>
-            <PresenceChip user={user} />
-            <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-          </div>
-        </header>'''
+          p = Path('README.md')
+          s = p.read_text()
+          old = "Nelle viste operative mobile il selettore struttura è compatto e non mostra più la seconda riga con utente/ruolo. RandAI viene richiamata nella zona centrale dell'header invece che con un pulsante flottante sopra i contenuti; il pannello si apre sotto l'intestazione. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows."
+          new = "Nelle viste operative il selettore struttura è compatto e dedicato al solo contesto hotel. RandAI è una vera azione della toolbar dell'header, nello stesso gruppo di presenza e notifiche: non usa più un FAB né un launcher riposizionato con `position: fixed`. Il pannello RandAI resta separato e si apre sotto l'intestazione su mobile. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows."
           if old not in s:
-              raise SystemExit('Shell header anchor not found')
-          shell.write_text(s.replace(old, new, 1))
-
-          assistant = Path('src/randai/RandAIAssistant.jsx')
-          s = assistant.read_text()
-          if "const OPEN_EVENT = 'randai-toggle'" not in s:
-              s = s.replace("const EVENT = 'apice-session-changed'", "const EVENT = 'apice-session-changed'\nconst OPEN_EVENT = 'randai-toggle'", 1)
-          reset_effect = '''  useEffect(() => {
-    setOpen(false)
-    setMessages([])
-    setQuery('')
-    setBusy(false)
-  }, [session?.hotelId, session?.userId])'''
-          listener = '''  useEffect(() => {
-    const toggle = () => setOpen((value) => !value)
-    window.addEventListener(OPEN_EVENT, toggle)
-    return () => window.removeEventListener(OPEN_EVENT, toggle)
-  }, [])'''
-          if listener not in s:
-              if reset_effect not in s:
-                  raise SystemExit('RandAI reset effect anchor not found')
-              s = s.replace(reset_effect, reset_effect + '\n\n' + listener, 1)
-          fab = '''\n      <button type="button" className="randai__fab" onClick={() => setOpen((value) => !value)} aria-label="Apri RandAI" data-testid="randai-fab"><img src="/icons/randai-cat.webp" alt="" aria-hidden="true" /></button>'''
-          if fab in s:
-              s = s.replace(fab, '', 1)
-          assistant.write_text(s)
-
-          css = Path('src/randai/randai.css')
-          s = css.read_text()
-          marker = '/* Trial layout: keep the existing RandAI component and interaction, but place'
-          if marker in s:
-              s = s[:s.index(marker)].rstrip() + '\n'
-          first = s.find('.randai{')
-          end = s.find('}.randai__fab', first)
-          if first == -1 or end == -1:
-              raise SystemExit('RandAI root CSS anchor not found')
-          end += 1
-          s = s[:first] + '.randai{position:fixed;inset:0;z-index:45;font-family:inherit;pointer-events:none}.randai--open{pointer-events:none}' + s[end:]
-          # launcher no longer exists; neutralize legacy launcher rules without affecting panel
-          import re
-          s = re.sub(r'\.randai__fab\{[^}]*\}', '', s)
-          s = re.sub(r'\.randai__fab img\{[^}]*\}', '', s)
-          s = re.sub(r'\.randai__fab:active\{[^}]*\}', '', s)
-          s = re.sub(r'\.randai__fab:focus-visible\{[^}]*\}', '', s)
-          s = s.replace('.randai__panel{position:absolute;left:0;right:auto;bottom:calc(var(--rs-fab-h,58px) + 10px);', '.randai__panel{position:fixed;left:24px;right:auto;bottom:24px;pointer-events:auto;')
-          s = re.sub(r'@media\(max-width:899px\)\{\.randai\{[^}]*\}\.randai__panel\{position:fixed;left:10px;right:10px;bottom:[^;]+;', '@media(max-width:899px){.randai__panel{position:fixed;left:10px;right:10px;top:calc(var(--rs-safe-top,env(safe-area-inset-top,0px)) + var(--rs-header-h,62px) + 10px);bottom:auto;', s)
-          s = re.sub(r'@media\(min-width:900px\)\{\.randai\{[^}]*\}\.randai__panel\{left:0;right:auto;bottom:[^}]+\}\}', '@media(min-width:900px){.randai__panel{left:24px;right:auto;bottom:24px}}', s)
-          css.write_text(s)
-
-          header = Path('src/randapp/header-mobile.css')
-          s = header.read_text()
-          addition = r'''
-
-/* Operational header is one toolbar: hotel context + RandAI + presence + notifications. */
-.rs-header--operational {
-  display: flex;
-  align-items: center;
-}
-.rs-header__actions {
-  margin-left: auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: calc(8px * var(--rs-scale));
-}
-.rs-header__randai {
-  flex: none;
-  width: calc(44px * var(--rs-scale));
-  height: calc(44px * var(--rs-scale));
-  display: grid;
-  place-items: center;
-  padding: calc(4px * var(--rs-scale));
-  border: 1px solid var(--rs-line);
-  border-radius: calc(14px * var(--rs-scale));
-  background: var(--rs-surface-2);
-  color: var(--rs-text);
-  cursor: pointer;
-  box-shadow: none;
-}
-.rs-header__randai:hover { border-color: var(--rs-line-strong); }
-.rs-header__randai:active { transform: scale(.94); }
-.rs-header__randai:focus-visible { outline: 3px solid color-mix(in srgb,var(--rs-cyan) 35%,transparent); outline-offset: 2px; }
-.rs-header__randai img {
-  width: calc(30px * var(--rs-scale));
-  height: calc(30px * var(--rs-scale));
-  border-radius: calc(9px * var(--rs-scale));
-  object-fit: cover;
-}
-.rs-hotelchip__name-mobile { display: none; }
-.rs-hotelchip__name-desktop { display: inline; }
-
-@media (max-width: 899px) {
-  .rs-header--operational { gap: calc(6px * var(--rs-scale)); }
-  .rs-header--operational .rs-hotelchip--operational {
-    flex: 0 1 auto;
-    width: auto;
-    max-width: clamp(96px, calc(118px * var(--rs-scale)), 138px);
-  }
-  .rs-header__actions { gap: calc(5px * var(--rs-scale)); }
-  .rs-header__randai {
-    width: var(--rs-header-action-size);
-    height: var(--rs-header-action-size);
-    border-radius: calc(14px * var(--rs-scale));
-  }
-  .rs-header__randai img {
-    width: calc(var(--rs-header-action-size) - 10px);
-    height: calc(var(--rs-header-action-size) - 10px);
-  }
-  .rs-hotelchip__name-mobile { display: inline; }
-  .rs-hotelchip__name-desktop { display: none; }
-}
-
-@media (max-width: 430px) {
-  .rs-header--operational { gap: calc(5px * var(--rs-scale)); }
-  .rs-header--operational .rs-hotelchip--operational {
-    max-width: clamp(90px, calc(108px * var(--rs-scale)), 124px);
-  }
-  .rs-header__actions { gap: calc(4px * var(--rs-scale)); }
-  .rs-header__randai { border-radius: calc(13px * var(--rs-scale)); }
-}
-'''
-          if 'Operational header is one toolbar' not in s:
-              s += addition
-          header.write_text(s)
-
-          readme = Path('README.md')
-          s = readme.read_text()
-          old_note = "RandAI e richiamata dall'header accanto a presenza e notifiche e non usa piu un pulsante flottante sopra i contenuti."
-          new_note = "RandAI e un'azione nativa della toolbar operativa, nello stesso gruppo di presenza e notifiche: non usa un launcher flottante o riposizionato via CSS sopra i contenuti."
-          if old_note in s:
-              s = s.replace(old_note, new_note)
-          elif new_note not in s:
-              anchor = '### Header operativo compatto e RandAI\n'
-              if anchor in s:
-                  pos = s.index(anchor) + len(anchor)
-                  s = s[:pos] + "\nRandAI e un'azione nativa della toolbar operativa, nello stesso gruppo di presenza e notifiche: non usa un launcher flottante o riposizionato via CSS sopra i contenuti.\n" + s[pos:]
-          readme.write_text(s)
+              raise SystemExit('README header contract anchor missing')
+          p.write_text(s.replace(old, new, 1))
           PY
-      - name: Verify
-        run: |
-          npm ci
-          npm run build
-          npm test
-          git diff --check
-      - name: Commit
-        run: |
+      - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/randapp/Shell.jsx src/randapp/header-mobile.css src/randai/RandAIAssistant.jsx src/randai/randai.css README.md
-          git commit -m 'fix(ui): integrate RandAI into header toolbar'
+          git add README.md
+          git rm -f .github/workflows/integrate-randai-header.yml
+          git commit -m 'docs(ui): document native RandAI header action'
           git push origin HEAD:main
