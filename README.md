@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability Foundation condivisa RandApp/RandAI fino al **Blocco 33**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 34**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -47,7 +47,25 @@ Contratto consolidato:
 - i task RandAI collegati a una segnalazione ricevono lo stesso `operationId`, propagato anche al Supervisor e al riepilogo operativo;
 - `test/reliability-operation-envelope.test.js` rende permanente il contratto di validazione, immutabilità, correlazione e integrazione con i task segnalazione.
 
-Il Blocco 33 è una fondazione: i blocchi successivi estenderanno lo stesso envelope a validation, safe write, audit, offline/retry e failure intelligence. Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
+### Reliability — Blocco 34 Context & Scope Guard
+
+Il **Context & Scope Guard** aggiunge un preflight applicativo deterministico prima delle operazioni sensibili. Non sostituisce Supabase/RLS o l'Action Gateway: intercetta prima della rete contesti incompleti o incoerenti e lascia al backend l'autorizzazione definitiva.
+
+Contratto consolidato:
+
+- policy **deny by default** quando mancano hotel/modulo o il contesto operativo richiesto;
+- confronto hotel tra operazione, context corrente e record caricato;
+- confronto attore, modulo/schermata, tipo record e `recordId` quando richiesti;
+- supporto a risultato permessi esplicito e regole ownership con bypass privilegiato esplicito;
+- errori stabili `MISSING_CONTEXT`, `HOTEL_MISMATCH`, `ACTOR_MISMATCH`, `RESOURCE_MISMATCH`, `PERMISSION_DENIED`, `OWNERSHIP_MISMATCH`, `MODULE_MISMATCH`;
+- `prepareRandAIAction` richiede ora context coerente con hotel, modulo Segnalazioni e issue corrente prima di chiamare l'Edge Function;
+- membership, ruolo/permesso, filtro `hotel_id`, transizione e optimistic concurrency restano verificati server-side;
+- `test/reliability-context-scope-guard.test.js` copre allow, contesto mancante, cross-hotel, resource errata, actor mismatch, permission denied e ownership;
+- dettagli architetturali in `docs/architecture/RELIABILITY_SAFETY.md`.
+
+Il benchmark ha confermato di **non** introdurre ora un secondo policy engine esterno (OPA/Casbin): l'attuale combinazione Guard applicativo + permessi centralizzati + Action Gateway + Supabase/RLS è più semplice da mantenere e riduce il rischio di divergenza tra policy duplicate.
+
+Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
 ## UI e design system
 
@@ -196,7 +214,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md` e `docs/architecture/RELIABILITY_SAFETY.md`.
 
 ## Sicurezza
 
