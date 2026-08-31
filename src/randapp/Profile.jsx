@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { changeOwnPin, getOwnNotificationCode, saveOwnNotificationCode, updateOwnProfile } from '../auth-data.js'
+import { getPushSubscriptionState, getPushSupportInfo, subscribeToPush, unsubscribeFromPush } from '../push.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { hotelById, logoFor } from './helpers.js'
 import { buildNotificationAlias, normalizeNotificationCode } from './notification-alias.js'
@@ -7,6 +8,14 @@ import NtfySetup from './ntfy/NtfySetup.jsx'
 
 function Row({ label, value }) {
   return <div className="rs-profile-row"><span>{label}</span><b>{value || '—'}</b></div>
+}
+
+const PUSH_LABELS = {
+  subscribed: 'Attive su questo dispositivo',
+  'not-subscribed': 'Disattivate su questo dispositivo',
+  denied: 'Bloccate nelle impostazioni del dispositivo',
+  unsupported: 'Non disponibili su questo dispositivo',
+  loading: 'Controllo in corso…',
 }
 
 export default function Profile({ user, hotel }) {
@@ -26,6 +35,11 @@ export default function Profile({ user, hotel }) {
   const [notificationBusy,setNotificationBusy]=useState(true)
   const [notificationMessage,setNotificationMessage]=useState('')
   const [notificationError,setNotificationError]=useState('')
+  const [pushState,setPushState]=useState('loading')
+  const [pushBusy,setPushBusy]=useState(false)
+  const [pushMessage,setPushMessage]=useState('')
+  const [pushError,setPushError]=useState('')
+  const [pushInfo,setPushInfo]=useState(()=>getPushSupportInfo())
 
   useEffect(()=>{ setEmail(user?.email||''); setPhone(user?.phone||'') },[user])
   useEffect(()=>{
@@ -37,6 +51,19 @@ export default function Profile({ user, hotel }) {
       .finally(()=>{ if(live)setNotificationBusy(false) })
     return()=>{ live=false }
   },[user?.auth_user_id,user?.id])
+
+  useEffect(()=>{
+    let live=true
+    setPushInfo(getPushSupportInfo())
+    setPushState('loading')
+    setPushMessage('')
+    setPushError('')
+    if(!hotel?.id){ setPushState('unsupported'); return()=>{ live=false } }
+    getPushSubscriptionState(hotel.id)
+      .then((state)=>{ if(live)setPushState(state) })
+      .catch(()=>{ if(live)setPushState('not-subscribed') })
+    return()=>{ live=false }
+  },[hotel?.id,user?.auth_user_id,user?.id])
 
   const accessibleHotelNames = Array.from(new Set([hotel?.id, ...(user?.hotels || [])]))
     .filter(Boolean)
@@ -76,6 +103,41 @@ export default function Profile({ user, hotel }) {
     finally { setNotificationBusy(false) }
   }
 
+  const enablePush=async()=>{
+    if(!hotel?.id)return
+    setPushBusy(true); setPushMessage(''); setPushError('')
+    try {
+      await subscribeToPush(hotel.id)
+      setPushInfo(getPushSupportInfo())
+      setPushState(await getPushSubscriptionState(hotel.id))
+      setPushMessage(`Notifiche push RandApp attivate su questo dispositivo per ${hotel.name}.`)
+    } catch(err){
+      setPushInfo(getPushSupportInfo())
+      const state=await getPushSubscriptionState(hotel.id).catch(()=>null)
+      if(state)setPushState(state)
+      setPushError(err?.message||'Attivazione notifiche push non riuscita')
+    } finally { setPushBusy(false) }
+  }
+
+  const disablePush=async()=>{
+    if(!hotel?.id)return
+    setPushBusy(true); setPushMessage(''); setPushError('')
+    try {
+      await unsubscribeFromPush(hotel.id)
+      setPushState(await getPushSubscriptionState(hotel.id))
+      setPushMessage(`Notifiche push RandApp disattivate su questo dispositivo per ${hotel.name}.`)
+    } catch(err){ setPushError(err?.message||'Disattivazione notifiche push non riuscita') }
+    finally { setPushBusy(false) }
+  }
+
+  const pushHint = pushInfo.requiresHomeScreen
+    ? 'Su iPhone/iPad installa RandApp nella schermata Home e aprila da lì per usare le notifiche push.'
+    : pushState==='denied'
+      ? 'Il permesso è bloccato dal sistema. Riattiva le notifiche nelle impostazioni del browser o del dispositivo, poi torna qui.'
+      : pushState==='subscribed'
+        ? 'Ricevi gli avvisi RandApp direttamente da questo dispositivo. ntfy resta un canale separato.'
+        : 'Attiva gli avvisi nativi RandApp su questo dispositivo. ntfy resta un canale separato.'
+
   return <div data-testid="profile-view">
     <div className="rs-page-title"><div><h1>Il mio profilo</h1><p>{hotel?.name}</p></div></div>
 
@@ -91,6 +153,22 @@ export default function Profile({ user, hotel }) {
     <section className="rs-section" data-testid="profile-pin"><div className="rs-section__head"><h2>Sicurezza</h2></div><Card className="rs-card--pad"><form className="rs-migrated-form" onSubmit={savePin}><Field label="PIN attuale"><TextInput icon="lock" {...pinProps(currentPin,setCurrentPin)} /></Field><Field label="Nuovo PIN"><TextInput icon="lock" {...pinProps(newPin,setNewPin)} /></Field><Field label="Ripeti nuovo PIN"><TextInput icon="lock" {...pinProps(confirmPin,setConfirmPin)} /></Field>{pinError&&<p className="rs-error">{pinError}</p>}{pinMessage&&<p className="rs-success">{pinMessage}</p>}<Button type="submit" disabled={pinBusy||currentPin.length!==4||newPin.length!==4||confirmPin.length!==4}>{pinBusy?'Salvo…':'Cambia PIN'}</Button></form></Card></section>
 
     <section className="rs-section" data-testid="profile-preferences"><div className="rs-section__head"><h2>Preferenze</h2></div><Card className="rs-card--pad rs-pref-block"><div className="rs-pref"><div className="rs-pref__label"><Icon name="sparkles" /><div><b>Tema</b><small>Sistema segue il tuo dispositivo</small></div></div><ThemeControl /></div><div className="rs-pref"><div className="rs-pref__label"><Icon name="sliders" /><div><b>Dimensione interfaccia</b><small>Più contenuto o più leggibilità</small></div></div><UiSizeControl /></div></Card></section>
+
+    <section className="rs-section" data-testid="profile-push-notifications">
+      <div className="rs-section__head"><h2>Notifiche push RandApp</h2><span className="rs-badge rs-badge--accent">{PUSH_LABELS[pushState]||PUSH_LABELS.loading}</span></div>
+      <Card className="rs-card--pad">
+        <div className="rs-pref">
+          <div className="rs-pref__label"><Icon name="bell" /><div><b>Push su questo dispositivo</b><small>{pushHint}</small></div></div>
+        </div>
+        {pushError&&<p className="rs-error" role="alert">{pushError}</p>}
+        {pushMessage&&<p className="rs-success" role="status">{pushMessage}</p>}
+        <div className="rs-op-card__actions" style={{marginTop:12}}>
+          {pushState==='subscribed'
+            ? <Button type="button" variant="secondary" disabled={pushBusy} onClick={disablePush}>{pushBusy?'Disattivo…':'Disattiva notifiche push'}</Button>
+            : <Button type="button" disabled={pushBusy||pushState==='loading'||pushState==='denied'||pushInfo.requiresHomeScreen||!pushInfo.supported} onClick={enablePush}>{pushBusy?'Attivo…':'Attiva notifiche push'}</Button>}
+        </div>
+      </Card>
+    </section>
 
     <section className="rs-section" data-testid="notification-code">
       <div className="rs-section__head"><h2>Codice notifiche</h2>{savedNotificationCode&&<span className="rs-badge rs-badge--accent">Definitivo ✓</span>}</div>
