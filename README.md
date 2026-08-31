@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 35**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 36**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -82,7 +82,28 @@ Contratto consolidato:
 - `test/reliability-unified-validation.test.js` copre error contract, allowlist, transizioni, date, pax, magazzino e wiring dei data layer;
 - dettagli e matrice KEEP/UPGRADE/ADD/DEFER in `docs/architecture/VALIDATION_LAYER.md`.
 
-Il Blocco 36 centralizzerà i write online/offline nel **Safe Write Engine**, riusando questi contratti invece di duplicarli in ogni modulo: preflight → idempotenza/versione attesa → write → read-back → verifica.
+### Reliability — Blocco 36 Safe Write Engine
+
+Il **Safe Write Engine** introduce un contratto comune per le scritture operative critiche: `preflight → idempotenza/precondizione → write → read-back → verifica`. Una risposta di trasporto positiva non basta più a considerare conclusa l'operazione.
+
+Contratto consolidato:
+
+- `src/reliability/safe-write-engine.js` coordina le fasi senza diventare un secondo workflow engine e senza dipendenze nuove;
+- errori stabili: `SAFE_WRITE_INVALID_CONTRACT`, `SAFE_WRITE_NOT_CONFIRMED`, `SAFE_WRITE_VERIFY_FAILED`, `SAFE_WRITE_CONFLICT`;
+- nessun retry nascosto: il retry resta al chiamante/outbox solo per operazioni dimostrate idempotenti;
+- l'outbox IndexedDB esistente e le RPC atomiche di Magazzino/Urgenti restano **KEEP**;
+- la create Planning Lavori non esegue più parent e giorni come write client separate: `create_planning_work_safe(...)` li crea nella stessa transazione PostgreSQL;
+- `planning_lavori.mutation_id` rende la create idempotente e rifiuta il riuso della stessa chiave con payload differente;
+- la RPC è `SECURITY INVOKER`: RLS e permessi del chiamante restano autoritativi;
+- ogni giorno Planning riceve `hotel_id` dal server e `created_by_user_id` deriva dalla sessione autenticata;
+- `planning_lavori_giorni.updated_at` è il version token per compare-and-swap; viene mantenuto come timestamp PostgreSQL originale senza perdita di precisione;
+- update e delete Planning filtrano per `id + hotel_id + updated_at` quando la versione è disponibile, poi verificano il risultato con read-back;
+- la create rilegge parent e giorni e verifica hotel, descrizione, mutation id, date e relazione parent/child;
+- Storage + database non vengono presentati come una falsa transazione unica: i flussi foto mantengono cleanup/compensazione;
+- `test/reliability-safe-write-engine.test.js` protegge ordine delle fasi, assenza di retry impliciti, idempotenza, read-back, verifica, delete-by-absence e wiring Planning;
+- dettagli e matrice KEEP/UPGRADE/REPLACE/ADD in `docs/architecture/SAFE_WRITE_ENGINE.md`.
+
+Il Blocco 39 resta il punto dedicato alla convergenza globale offline/concurrency: il 36 non duplica né sostituisce prematuramente `offline-store.js`.
 
 Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
@@ -233,7 +254,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md` e `docs/architecture/VALIDATION_LAYER.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md` e `docs/architecture/SAFE_WRITE_ENGINE.md`.
 
 ## Sicurezza
 
