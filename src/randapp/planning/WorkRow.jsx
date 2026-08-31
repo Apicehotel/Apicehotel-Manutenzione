@@ -4,14 +4,15 @@ import { Icon } from '../ui.jsx'
 export default function WorkRow({ item, user, onChanged }) {
   const done = item.status === 'done'
   const finish = item.status === 'da_finire'
+  const safeWriteContext = { hotelId: item.hotelId, expectedUpdatedAt: item.updatedAt }
 
   const act = async (status) => {
-    await setPlanningWorkStatus(item.id, status, user?.name || '')
+    await setPlanningWorkStatus(item.id, status, user?.name || '', safeWriteContext)
     onChanged?.()
   }
 
   const remove = async () => {
-    await deletePlanningWorkDay(item.id)
+    await deletePlanningWorkDay(item.id, safeWriteContext)
     onChanged?.()
   }
 
