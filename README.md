@@ -137,7 +137,7 @@ La foto serve a riconoscere il materiale reale (scatola, etichetta o ricambio). 
 
 ### Header operativo compatto e RandAI
 
-Nelle viste operative il selettore struttura è compatto e dedicato al solo contesto hotel. RandAI è una vera azione della toolbar dell'header, nello stesso gruppo di presenza e notifiche: non usa più un FAB né un launcher riposizionato con `position: fixed`. Il pannello RandAI resta separato e si apre sotto l'intestazione su mobile. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows.
+Nelle viste operative il selettore struttura è compatto e dedicato al solo contesto hotel. RandAI è una vera azione della toolbar dell'header, nello stesso gruppo di presenza e notifiche: non usa più un FAB né un launcher riposizionato con `position: fixed`. La sua identità visiva nell'header è **Cyber Cat Orb**, resa come SVG vettoriale con anello cyan→viola, volto cyber minimale e circuito centrale, così resta nitida anche nei controlli compatti. Il pannello RandAI resta separato e si apre sotto l'intestazione su mobile. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows.
 
 ### Presenza personale e UI size
 

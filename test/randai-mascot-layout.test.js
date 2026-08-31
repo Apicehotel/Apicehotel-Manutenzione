@@ -18,7 +18,9 @@ test('RandAI is a native header action and no longer a floating launcher', () =>
   assert.match(shell, /data-testid="header-randai"/)
   assert.match(shell, /className="rs-header__actions"/)
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
-  assert.match(shell, /\/icons\/randai-cat\.webp/)
+  assert.match(shell, /CyberCatOrb/)
+  assert.match(shell, /className="rs-cyber-cat-orb"/)
+  assert.doesNotMatch(shell, /randai-cat\.webp/)
 
   assert.match(assistant, /const OPEN_EVENT = 'randai-toggle'/)
   assert.match(assistant, /window\.addEventListener\(OPEN_EVENT, toggle\)/)

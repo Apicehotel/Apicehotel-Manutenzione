@@ -19,27 +19,27 @@
   height: calc(44px * var(--rs-scale));
   display: grid;
   place-items: center;
-  padding: calc(4px * var(--rs-scale));
-  border: 1px solid var(--rs-line);
-  border-radius: calc(14px * var(--rs-scale));
-  background: var(--rs-surface-2);
+  padding: calc(2px * var(--rs-scale));
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--rs-text);
   cursor: pointer;
   box-shadow: none;
-  transition: border-color .2s, transform .12s, background .2s;
+  transition: transform .12s, filter .2s;
 }
 
-.rs-header__randai:hover { border-color: var(--rs-line-strong); }
-.rs-header__randai:active { transform: scale(.94); }
+.rs-header__randai:hover { filter: brightness(1.08); }
+.rs-header__randai:active { transform: scale(.92); }
 .rs-header__randai:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--rs-cyan) 35%, transparent);
   outline-offset: 2px;
 }
-.rs-header__randai img {
-  width: calc(30px * var(--rs-scale));
-  height: calc(30px * var(--rs-scale));
-  border-radius: calc(9px * var(--rs-scale));
-  object-fit: cover;
+.rs-header__randai .rs-cyber-cat-orb {
+  width: calc(40px * var(--rs-scale));
+  height: calc(40px * var(--rs-scale));
+  display: block;
+  overflow: visible;
 }
 
 .rs-hotelchip__name-mobile { display: none; }
@@ -86,9 +86,9 @@
     border-radius: calc(14px * var(--rs-scale));
   }
 
-  .rs-header__randai img {
-    width: calc(var(--rs-header-action-size) - 10px);
-    height: calc(var(--rs-header-action-size) - 10px);
+  .rs-header__randai .rs-cyber-cat-orb {
+    width: calc(var(--rs-header-action-size) - 2px);
+    height: calc(var(--rs-header-action-size) - 2px);
   }
 
   .rs-header [data-testid='presence-chip'] {
