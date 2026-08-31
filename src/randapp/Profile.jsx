@@ -58,12 +58,11 @@ export default function Profile({ user, hotel }) {
     setPushState('loading')
     setPushMessage('')
     setPushError('')
-    if(!hotel?.id){ setPushState('unsupported'); return()=>{ live=false } }
-    getPushSubscriptionState(hotel.id)
+    getPushSubscriptionState()
       .then((state)=>{ if(live)setPushState(state) })
       .catch(()=>{ if(live)setPushState('not-subscribed') })
     return()=>{ live=false }
-  },[hotel?.id,user?.auth_user_id,user?.id])
+  },[user?.auth_user_id,user?.id])
 
   const accessibleHotelNames = Array.from(new Set([hotel?.id, ...(user?.hotels || [])]))
     .filter(Boolean)
@@ -104,28 +103,26 @@ export default function Profile({ user, hotel }) {
   }
 
   const enablePush=async()=>{
-    if(!hotel?.id)return
     setPushBusy(true); setPushMessage(''); setPushError('')
     try {
-      await subscribeToPush(hotel.id)
+      await subscribeToPush()
       setPushInfo(getPushSupportInfo())
-      setPushState(await getPushSubscriptionState(hotel.id))
-      setPushMessage(`Notifiche push RandApp attivate su questo dispositivo per ${hotel.name}.`)
+      setPushState(await getPushSubscriptionState())
+      setPushMessage('Notifiche push RandApp attivate per il tuo profilo su questo dispositivo.')
     } catch(err){
       setPushInfo(getPushSupportInfo())
-      const state=await getPushSubscriptionState(hotel.id).catch(()=>null)
+      const state=await getPushSubscriptionState().catch(()=>null)
       if(state)setPushState(state)
       setPushError(err?.message||'Attivazione notifiche push non riuscita')
     } finally { setPushBusy(false) }
   }
 
   const disablePush=async()=>{
-    if(!hotel?.id)return
     setPushBusy(true); setPushMessage(''); setPushError('')
     try {
-      await unsubscribeFromPush(hotel.id)
-      setPushState(await getPushSubscriptionState(hotel.id))
-      setPushMessage(`Notifiche push RandApp disattivate su questo dispositivo per ${hotel.name}.`)
+      await unsubscribeFromPush()
+      setPushState(await getPushSubscriptionState())
+      setPushMessage('Notifiche push RandApp disattivate per il tuo profilo su questo dispositivo.')
     } catch(err){ setPushError(err?.message||'Disattivazione notifiche push non riuscita') }
     finally { setPushBusy(false) }
   }
@@ -135,8 +132,8 @@ export default function Profile({ user, hotel }) {
     : pushState==='denied'
       ? 'Il permesso è bloccato dal sistema. Riattiva le notifiche nelle impostazioni del browser o del dispositivo, poi torna qui.'
       : pushState==='subscribed'
-        ? 'Ricevi gli avvisi RandApp direttamente da questo dispositivo. ntfy resta un canale separato.'
-        : 'Attiva gli avvisi nativi RandApp su questo dispositivo. ntfy resta un canale separato.'
+        ? 'Questo dispositivo riceve le notifiche destinate al tuo profilo, in base alle strutture e ai permessi che ti sono assegnati. ntfy resta un canale separato.'
+        : 'Attiva una sola volta le notifiche su questo dispositivo: RandApp gestirà automaticamente le strutture e i permessi del tuo profilo. ntfy resta un canale separato.'
 
   return <div data-testid="profile-view">
     <div className="rs-page-title"><div><h1>Il mio profilo</h1><p>{hotel?.name}</p></div></div>
@@ -158,7 +155,7 @@ export default function Profile({ user, hotel }) {
       <div className="rs-section__head"><h2>Notifiche push RandApp</h2><span className="rs-badge rs-badge--accent">{PUSH_LABELS[pushState]||PUSH_LABELS.loading}</span></div>
       <Card className="rs-card--pad">
         <div className="rs-pref">
-          <div className="rs-pref__label"><Icon name="bell" /><div><b>Push su questo dispositivo</b><small>{pushHint}</small></div></div>
+          <div className="rs-pref__label"><Icon name="bell" /><div><b>Push personali su questo dispositivo</b><small>{pushHint}</small></div></div>
         </div>
         {pushError&&<p className="rs-error" role="alert">{pushError}</p>}
         {pushMessage&&<p className="rs-success" role="status">{pushMessage}</p>}
