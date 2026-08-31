@@ -7,7 +7,8 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8'
 test('runtime uses the modular RandApp entry, not the legacy root App', async () => {
   const main = await source('src/main.jsx')
   const app = await source('src/App.jsx')
-  assert.match(main, /import App from '\.\/randapp\/App\.jsx'/)
+  assert.match(main, /lazy\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
+  assert.doesNotMatch(main, /import App from '\.\/App\.jsx'/)
   assert.match(app, /export \{ default \} from '\.\/randapp\/App\.jsx'/)
   assert.ok(app.length < 500, 'root App must remain a thin compatibility entry')
 })
