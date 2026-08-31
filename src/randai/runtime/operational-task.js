@@ -1,4 +1,5 @@
 import { RuntimeTaskStatus, RuntimeStepStatus } from './contracts.js'
+import { OperationSource, createOperationEnvelope } from '../../reliability/operation-envelope.js'
 
 const TERMINAL = new Set([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED])
 const ACTIVE_STEP = new Set([RuntimeStepStatus.PENDING, RuntimeStepStatus.RUNNING, RuntimeStepStatus.VERIFYING, RuntimeStepStatus.BLOCKED])
@@ -49,6 +50,7 @@ export function summarizeOperationalTask(task) {
   const blockedError = [...(task.errors || [])].reverse().find((item) => item?.stepId === current?.step?.id || item?.code)
   return {
     id: task.id,
+    operationId: task.metadata?.operation?.operationId || null,
     sourceType: task.metadata?.sourceType || null,
     sourceId: task.metadata?.sourceId || null,
     hotelId: task.metadata?.hotelId || null,
@@ -95,12 +97,26 @@ export class OperationalTaskCoordinator {
     if (existing) return { task: existing, reused: true }
 
     const room = extractRoomNumber(issue.room || issue.location)
+    const operation = createOperationEnvelope({
+      hotelId,
+      userId: context.userId,
+      role: context.role,
+      correlationId: context.correlationId,
+      traceId: context.traceId,
+      module: 'issues',
+      action: 'randai_task_create',
+      recordType: 'issue',
+      recordId: String(issue.id),
+      source: OperationSource.RANDAI,
+      metadata: { room },
+    })
     const task = await this.runner.create({
       objective: objective || issueObjective(issue),
       proposedPlan,
-      context,
+      context: { ...context, operationId: operation.operationId },
       metadata: {
         hotelId,
+        operation,
         sourceType: OperationalSourceType.ISSUE,
         sourceId: String(issue.id),
         room,
@@ -127,7 +143,7 @@ export class OperationalTaskCoordinator {
       projectId: 'randapp-maintenance',
       taskId: task.id,
       complexity: task.plan?.steps?.length > 3 ? 'HIGH' : 'LOW',
-      context: { ...clone(supervisorContext), taskId: task.id, sourceType: OperationalSourceType.ISSUE, sourceId: String(issueId), hotelId },
+      context: { ...clone(supervisorContext), taskId: task.id, operationId: task.metadata?.operation?.operationId || null, sourceType: OperationalSourceType.ISSUE, sourceId: String(issueId), hotelId },
       executeSingle: async () => {
         const advanced = await this.runner.resume(task.id, { pauseAfterSteps })
         return {
