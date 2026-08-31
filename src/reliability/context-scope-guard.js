@@ -58,12 +58,16 @@ export function evaluateContextScope({
     add(reasons, ScopeReason.MODULE_MISMATCH, `${contextView} != ${expectedModule}`)
   }
 
-  if (requireResource && !context?.resource?.id) add(reasons, ScopeReason.MISSING_CONTEXT, 'resource is required')
-  if (expectedRecordId && context?.resource?.id && text(context.resource.id) !== expectedRecordId) {
-    add(reasons, ScopeReason.RESOURCE_MISMATCH, `${context.resource.id} != ${expectedRecordId}`)
+  const contextResourceId = text(context?.resource?.id)
+  const contextResourceType = text(context?.resource?.type)
+  if (requireResource && (!contextResourceId || (expectedRecordType && !contextResourceType))) {
+    add(reasons, ScopeReason.MISSING_CONTEXT, 'resource type/id are required')
   }
-  if (expectedRecordType && context?.resource?.type && text(context.resource.type) !== expectedRecordType) {
-    add(reasons, ScopeReason.RESOURCE_MISMATCH, `${context.resource.type} != ${expectedRecordType}`)
+  if (expectedRecordId && contextResourceId && contextResourceId !== expectedRecordId) {
+    add(reasons, ScopeReason.RESOURCE_MISMATCH, `${contextResourceId} != ${expectedRecordId}`)
+  }
+  if (expectedRecordType && contextResourceType && contextResourceType !== expectedRecordType) {
+    add(reasons, ScopeReason.RESOURCE_MISMATCH, `${contextResourceType} != ${expectedRecordType}`)
   }
 
   const recordId = text(record?.id)
