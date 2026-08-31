@@ -13,7 +13,7 @@ async function visit(key) {
   for (const dep of item.imports || []) await visit(dep)
 }
 await visit(entryKey)
-const limit = 600 * 1024
+const limit = 400 * 1024
 console.log(`Initial JS: ${(total/1024).toFixed(1)} KiB across ${visited.size} static chunk(s); budget ${limit/1024} KiB`)
 if (total > limit) throw new Error(`Initial JS bundle oltre budget: ${total} > ${limit}`)
 for (const file of visited) { const size = (await stat(path.join('dist', file))).size; if (size > 500 * 1024) throw new Error(`Chunk iniziale oltre 500 KiB: ${file} = ${size}`) }
