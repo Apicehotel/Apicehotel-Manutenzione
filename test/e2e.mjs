@@ -129,3 +129,7 @@ if (failures.length) {
 } else {
   console.log('E2E OK: Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
 }
+
+if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_HEAD_REF === 'docs/automated-video-tutorials') {
+  await import('./tutorial-video.mjs')
+}
