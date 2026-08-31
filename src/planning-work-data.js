@@ -12,7 +12,7 @@ const mapDay = (row, job) => ({
   done: Boolean(row.fatto),
   doneBy: row.fatto_da || null,
   doneAt: row.fatto_il ? new Date(row.fatto_il).getTime() : null,
-  updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : null,
+  updatedAt: row.updated_at || null,
   note: row.note || '',
   description: job?.descrizione || '',
   createdBy: job?.creato_da || '',
@@ -129,7 +129,7 @@ export async function setPlanningWorkStatus(id, status, userName, { hotelId, exp
         .update(patch)
         .eq('id', id)
         .eq('hotel_id', hotelId)
-      if (expectedUpdatedAt) query = query.eq('updated_at', new Date(expectedUpdatedAt).toISOString())
+      if (expectedUpdatedAt) query = query.eq('updated_at', expectedUpdatedAt)
       const { data, error } = await query.select('*').maybeSingle()
       if (error) throw error
       if (!data && expectedUpdatedAt) throw safeWriteConflict('Il lavoro è stato modificato da un altro dispositivo', { id, hotelId })
@@ -155,7 +155,7 @@ export async function deletePlanningWorkDay(id, { hotelId, expectedUpdatedAt = n
         .delete()
         .eq('id', id)
         .eq('hotel_id', hotelId)
-      if (expectedUpdatedAt) query = query.eq('updated_at', new Date(expectedUpdatedAt).toISOString())
+      if (expectedUpdatedAt) query = query.eq('updated_at', expectedUpdatedAt)
       const { data, error } = await query.select('id').maybeSingle()
       if (error) throw error
       if (!data && expectedUpdatedAt) {
