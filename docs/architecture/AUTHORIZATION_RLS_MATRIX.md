@@ -21,6 +21,7 @@ Il frontend decide cosa mostrare e blocca presto gli errori evidenti; non è aut
 
 - tutte le policy `public` nello schema `public` vengono ristrette a `authenticated`, senza cambiare `USING` o `WITH CHECK`;
 - `anon` e `authenticated` perdono `TRUNCATE`, `TRIGGER`, `REFERENCES` sulle tabelle `public` perché RandApp non ne ha bisogno;
+- RPC mutative `SECURITY DEFINER` sensibili devono avere grant di esecuzione espliciti: `inventory_adjust_stock(uuid,numeric,text)` è revocata a `PUBLIC/anon` e concessa solo a `authenticated`;
 - una funzione di assertion server-side verifica il baseline e fa fallire la migrazione se il contratto non è rispettato.
 
 ### NO ADD / DEFER
@@ -44,7 +45,11 @@ Per queste tabelle il baseline richiede RLS attivo e policy `authenticated` per 
 - `import_camere`
 - `tecnici`
 
-La funzione `public.assert_randapp_authorization_baseline()` verifica inoltre che nessuna policy nello schema `public` sia rivolta a `PUBLIC` e che `anon/authenticated` non abbiano privilegi `TRUNCATE`, `TRIGGER`, `REFERENCES`. L'esecuzione è revocata a `PUBLIC` ed esposta solo a `service_role`.
+La funzione `public.assert_randapp_authorization_baseline()` verifica inoltre che nessuna policy nello schema `public` sia rivolta a `PUBLIC`, che `anon/authenticated` non abbiano privilegi `TRUNCATE`, `TRIGGER`, `REFERENCES` e che l'RPC mutativa di Magazzino non sia eseguibile da `anon` ma resti eseguibile da `authenticated`. L'esecuzione dell'assertion è revocata a `PUBLIC` ed esposta solo a `service_role`.
+
+## Security advisor
+
+Dopo l'applicazione della prima migrazione del Blocco 37 viene eseguito il security advisor Supabase. Gli avvisi `RLS Enabled No Policy` sulle tabelle service-only rappresentano deny-all intenzionale e non richiedono policy browser. Gli helper `SECURITY DEFINER` eseguiti da `authenticated` sono mantenuti quando servono alle policy/RPC e devono continuare a verificare hotel/permessi internamente. Un warning su `inventory_adjust_stock` eseguibile da `anon` è stato invece classificato come vulnerabilità reale e corretto con la migrazione follow-up `20260901015200_block37_inventory_rpc_execute_hardening.sql`.
 
 ## Ownership e multi-hotel
 
@@ -54,8 +59,10 @@ Il Blocco 37 non appiattisce ownership e ruoli in una tabella generica. Le polic
 
 Il blocco è completato solo quando:
 
-1. migrazione e test sono nel repository;
-2. la migrazione fallisce chiusa se il baseline non è valido;
-3. CI completa, multi-hotel e device gate sono verdi;
-4. README e documento architetturale sono allineati;
-5. la migrazione risulta applicabile allo schema Supabase reale senza introdurre un secondo permission engine.
+1. migrazioni e test sono nel repository;
+2. il baseline fallisce chiuso se il contratto non è valido;
+3. le RPC mutative `SECURITY DEFINER` sensibili non sono eseguibili anonimamente;
+4. CI completa, multi-hotel e device gate sono verdi;
+5. README e documento architetturale sono allineati;
+6. le migrazioni risultano applicabili allo schema Supabase reale senza introdurre un secondo permission engine;
+7. il security advisor post-deploy non segnala più l'RPC Magazzino come anon-executable.
