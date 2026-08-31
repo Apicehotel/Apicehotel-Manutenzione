@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { setOwnPresence } from '../auth-data.js'
+import { loadSession } from '../session.js'
 import { supabase } from '../supabase.js'
 import { hotelById } from './helpers.js'
 
@@ -19,6 +20,7 @@ function compactHotelName(hotelId) {
 }
 
 export default function PresenceChip({ user, hotel }) {
+  const activeHotel = hotel || hotelById(loadSession()?.hotelId)
   const [present, setPresent] = useState(false)
   const [presenceHotelId, setPresenceHotelId] = useState(null)
   const [eligible, setEligible] = useState(false)
@@ -44,17 +46,19 @@ export default function PresenceChip({ user, hotel }) {
     window.addEventListener('focus', onRefresh)
     window.addEventListener('online', onRefresh)
     window.addEventListener('apice-presence-changed', onRefresh)
+    window.addEventListener('apice-session-changed', onRefresh)
     return () => {
       window.removeEventListener('focus', onRefresh)
       window.removeEventListener('online', onRefresh)
       window.removeEventListener('apice-presence-changed', onRefresh)
+      window.removeEventListener('apice-session-changed', onRefresh)
     }
   }, [refresh])
 
-  const presentHere = Boolean(present && hotel?.id && presenceHotelId === hotel.id)
+  const presentHere = Boolean(present && activeHotel?.id && presenceHotelId === activeHotel.id)
   const currentLabel = useMemo(() => compactHotelName(presenceHotelId), [presenceHotelId])
 
-  if (!user || !hotel || !eligible) return null
+  if (!user || !activeHotel || !eligible) return null
 
   const toggle = async () => {
     if (busy) return
@@ -62,9 +66,9 @@ export default function PresenceChip({ user, hotel }) {
     setError('')
     try {
       const next = !presentHere
-      const result = await setOwnPresence(next, next ? hotel.id : null)
+      const result = await setOwnPresence(next, next ? activeHotel.id : null)
       const actual = Boolean(result?.in_struttura ?? next)
-      const actualHotelId = actual ? (result?.in_struttura_hotel_id || hotel.id) : null
+      const actualHotelId = actual ? (result?.in_struttura_hotel_id || activeHotel.id) : null
       setPresent(actual)
       setPresenceHotelId(actualHotelId)
       window.dispatchEvent(new CustomEvent('apice-presence-changed', {
@@ -80,15 +84,15 @@ export default function PresenceChip({ user, hotel }) {
 
   const visibleLabel = present ? currentLabel : 'Fuori'
   const fullLabel = presentHere
-    ? `In struttura · ${hotel.name}`
+    ? `In struttura · ${activeHotel.name}`
     : present
       ? `In struttura · ${hotelById(presenceHotelId)?.name || currentLabel}`
       : 'Fuori struttura'
   const actionLabel = presentHere
     ? 'Tocca per segnarti fuori struttura'
     : present
-      ? `Tocca per spostare la presenza a ${hotel.name}`
-      : `Tocca per segnarti in ${hotel.name}`
+      ? `Tocca per spostare la presenza a ${activeHotel.name}`
+      : `Tocca per segnarti in ${activeHotel.name}`
 
   return (
     <button
