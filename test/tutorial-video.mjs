@@ -12,7 +12,7 @@ const context = await browser.newContext({
   viewport: { width: 412, height: 915 },
   recordVideo: {
     dir: fileURLToPath(artifacts),
-    size: { width: 412, height: 915 },
+    size: { width: 412, height: 914 },
   },
 })
 
@@ -78,11 +78,7 @@ try {
   await page.waitForTimeout(1800)
 
   await page.getByTestId('admin-pin-input').tap()
-  await page.waitForTimeout(900)
-  await page.getByTestId('admin-pin-input').fill('••••••')
-  await page.waitForTimeout(1000)
-  await page.getByTestId('admin-pin-input').fill('')
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(1200)
 
   await page.getByRole('button', { name: /RandApp/ }).tap()
   await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
