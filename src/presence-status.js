@@ -27,14 +27,15 @@ function setUrgentPresence(names) {
 function applyPresenceButton(state) {
   const button = document.querySelector('.ops-header .presence')
   if (!button || !state?.eligible) return
-  const active = Boolean(state.present)
-  button.classList.toggle('on', active)
-  button.setAttribute('aria-pressed', active ? 'true' : 'false')
-  button.setAttribute('aria-label', active
-    ? 'Sono in struttura. Premi per segnarti fuori struttura'
-    : 'Fuori struttura. Premi per segnarti in struttura')
-  button.dataset.presence = active ? 'in' : 'out'
-  button.title = active ? 'Premi per segnarti fuori struttura' : 'Premi per segnarti in struttura'
+  const hotelId = currentHotelId()
+  const activeHere = Boolean(state.present && state.hotel_id === hotelId)
+  button.classList.toggle('on', activeHere)
+  button.setAttribute('aria-pressed', activeHere ? 'true' : 'false')
+  button.setAttribute('aria-label', activeHere
+    ? 'Sono in questa struttura. Premi per segnarti fuori struttura'
+    : 'Fuori da questa struttura. Premi per segnarti qui')
+  button.dataset.presence = activeHere ? 'in' : 'out'
+  button.title = activeHere ? 'Premi per segnarti fuori struttura' : 'Premi per segnarti in questa struttura'
 }
 
 function scheduleLocalExpiry(state) {
@@ -69,8 +70,8 @@ async function refreshPresence() {
     const [{ data, error }, current] = await Promise.all([
       supabase
         .from('utenti')
-        .select('nome,ruolo,in_struttura,in_struttura_dal,active,hotels')
-        .contains('hotels', [hotelId])
+        .select('nome,ruolo,in_struttura,in_struttura_dal,in_struttura_hotel_id,active')
+        .eq('in_struttura_hotel_id', hotelId)
         .eq('active', true)
         .eq('in_struttura', true),
       fetchCurrentPresence(),
@@ -107,9 +108,6 @@ async function onPresenceButtonClick(event) {
   const button = event.target?.closest?.('.ops-header .presence')
   if (!button) return
 
-  // Questo controllo è l'unico proprietario del toggle per tutti i ruoli che
-  // vedono il pulsante. Blocchiamo il vecchio handler React, che calcolava lo
-  // stato solo per il ruolo manutentore e poteva inviare il valore sbagliato.
   event.preventDefault()
   event.stopPropagation()
   event.stopImmediatePropagation?.()
@@ -120,14 +118,17 @@ async function onPresenceButtonClick(event) {
   button.setAttribute('aria-busy', 'true')
 
   try {
+    const hotelId = currentHotelId()
     const current = await fetchCurrentPresence()
-    if (!current?.eligible || !rolesWithPresenceButton.has(current.role)) return
+    if (!hotelId || !current?.eligible || !rolesWithPresenceButton.has(current.role)) return
 
-    const next = !Boolean(current.present)
-    const result = await setOwnPresence(next)
+    const activeHere = Boolean(current.present && current.hotel_id === hotelId)
+    const next = !activeHere
+    const result = await setOwnPresence(next, next ? hotelId : null)
     const updated = {
       ...current,
       present: Boolean(result?.in_struttura ?? next),
+      hotel_id: result?.in_struttura_hotel_id ?? (next ? hotelId : null),
       since: result?.in_struttura_dal ?? (next ? new Date().toISOString() : null),
       expires_at: next
         ? new Date(new Date(result?.in_struttura_dal || Date.now()).getTime() + PRESENCE_MAX_MS).toISOString()
