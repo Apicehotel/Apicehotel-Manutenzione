@@ -42,6 +42,6 @@ test('vendor chunking is explicit without hiding the total bundle budget', async
   const [vite, budget] = await Promise.all([source('vite.config.js'), source('scripts/check-bundle.mjs')])
   assert.match(vite, /supabase-vendor/)
   assert.match(vite, /react-vendor/)
-  assert.match(budget, /600 \* 1024/)
+  assert.match(budget, /400 \* 1024/)
   assert.match(budget, /500 \* 1024/)
 })
