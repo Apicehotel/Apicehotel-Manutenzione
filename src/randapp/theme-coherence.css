@@ -1,0 +1,15 @@
+/* RandApp theme coherence — cross-cutting rules that are not owned by one feature. */
+
+html[data-theme='light'] .rs-usage-overall__time,
+html[data-theme='light'] .rs-usage-mini__icon {
+  background: color-mix(in srgb, var(--rs-surface-2) 86%, transparent);
+}
+
+/* Native controls follow the resolved application theme instead of browser defaults. */
+html[data-theme='light'] .rs-root select,
+html[data-theme='light'] .rs-root input,
+html[data-theme='light'] .rs-root textarea { color-scheme: light; }
+
+html[data-theme='dark'] .rs-root select,
+html[data-theme='dark'] .rs-root input,
+html[data-theme='dark'] .rs-root textarea { color-scheme: dark; }
