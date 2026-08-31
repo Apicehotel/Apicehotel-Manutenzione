@@ -135,6 +135,10 @@ Il Magazzino è una funzione multi-hotel permission-driven: ogni articolo appart
 
 La foto serve a riconoscere il materiale reale (scatola, etichetta o ricambio). È salvata nel bucket privato delle foto e mostrata tramite URL firmato. L'inserimento **non deve forzare la fotocamera**: il controllo file usa il selettore nativo del sistema, così iOS, Android e Windows possono offrire Libreria foto, Fotocamera/Scatta foto e File secondo le capacità del dispositivo. Le immagini sono limitate a 10 MB.
 
+### Header operativo compatto e RandAI
+
+Nelle viste operative mobile il selettore struttura è compatto e non mostra più la seconda riga con utente/ruolo. RandAI viene richiamata nella zona centrale dell'header invece che con un pulsante flottante sopra i contenuti; il pannello si apre sotto l'intestazione. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows.
+
 ### Presenza personale e UI size
 
 Lo stato “Sono in struttura” è personale e identifica una sola struttura fisica alla volta; non è un booleano indipendente per ogni hotel. Nell'header il controllo usa le sigle compatte `GIO`, `CHO`, `BRI`. Tutti i nuovi controlli visuali devono rispettare le tre modalità **Piccolo / Normale / Grande** e mantenere coerenza su iOS, Android e Windows.
