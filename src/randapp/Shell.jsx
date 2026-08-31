@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchDirectory } from '../users-data.js'
 import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
-import { canCreatePlanned, canSendUrgent, logoFor, hotelById, firstName } from './helpers.js'
+import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
@@ -40,6 +40,7 @@ const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((mo
 const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
+const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
 
 const NAV_BUTTONS = [
   { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
@@ -326,13 +327,17 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
         </aside>
 
-        <header className="rs-header">
-          <button className="rs-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
+        <header className="rs-header rs-header--operational">
+          <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
             <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <span className="rs-hotelchip__text"><b>{hotel.name}</b><small>{user ? `${firstName(user.name)} · ${user.role || ''}` : 'Caricamento…'}</small></span>
+            <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
             {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><PresenceChip user={user} /><span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span></div>
+          <div className="rs-header__actions">
+            <button type="button" className="rs-header__randai" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><img src="/icons/randai-cat.webp" alt="" aria-hidden="true" /></button>
+            <PresenceChip user={user} />
+            <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
+          </div>
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
