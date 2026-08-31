@@ -20,7 +20,7 @@ async function activeMember(req:Request,hotelId:string){
 }
 
 async function listLoginDirectory(hotelId:string){
-  const {data,error}=await admin.from("utenti").select("id,nome,active,is_system_protected,hotels").eq("active",true).or('is_system_protected.eq.false,nome.eq.Randagio').contains("hotels",[hotelId]).order("nome");
+  const {data,error}=await admin.from("utenti").select("id,nome,active,is_system_protected,hotels").eq("active",true).neq("ruolo","RandAI").or('is_system_protected.eq.false,nome.eq.Randagio').contains("hotels",[hotelId]).order("nome");
   if(error)throw error;
   return(data||[]).map((u:any)=>({id:u.id,legacy_id:u.id,name:u.nome,hotel_id:hotelId,active:true}));
 }
