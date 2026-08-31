@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import {
   ScopeDecision,
   ScopeReason,
@@ -89,4 +90,13 @@ test('assert helper throws a stable guard error', () => {
     () => assertContextScope({ expected: { hotelId: 'hotelgio', module: 'issues', recordId: '42' }, context: null }),
     (error) => error?.code === 'SCOPE_GUARD_BLOCKED' && Array.isArray(error.reasons),
   )
+})
+
+test('RandAI Action Gateway prepare path keeps the scope preflight wired', () => {
+  const source = readFileSync(new URL('../src/randai/action-gateway.js', import.meta.url), 'utf8')
+  assert.match(source, /assertContextScope/)
+  assert.match(source, /module: 'issues'/)
+  assert.match(source, /recordType: 'issue'/)
+  assert.match(source, /requireResource: true/)
+  assert.ok(source.indexOf('assertContextScope') < source.indexOf("operation: 'prepare'"))
 })
