@@ -94,7 +94,7 @@ if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
 
   let operationalModulesPromise = null
   let operationalInitialized = false
-  let lastRepairHotelId = null
+  let lastRepairUserId = null
   const loadOperationalModules = () => {
     if (!operationalModulesPromise) {
       operationalModulesPromise = Promise.all([
@@ -117,10 +117,10 @@ if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
         onboarding.initNotificationOnboarding()
         operationalInitialized = true
       }
-      const hotelId = session.hotelId || null
-      if (hotelId && hotelId !== lastRepairHotelId) {
-        lastRepairHotelId = hotelId
-        push.repairPushSubscription(hotelId).catch((error)=>{if(navigator.onLine)console.warn('Ripristino notifiche non riuscito',error)})
+      const userId = session.authUserId || session.user?.auth_user_id || session.user?.id || null
+      if (userId && userId !== lastRepairUserId) {
+        lastRepairUserId = userId
+        push.repairPushSubscription().catch((error)=>{if(navigator.onLine)console.warn('Ripristino notifiche non riuscito',error)})
       }
     } catch (error) {
       if (navigator.onLine) console.warn('Avvio servizi operativi rimandato', error)
