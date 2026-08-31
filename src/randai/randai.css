@@ -1,79 +1,74 @@
-.randai{position:fixed;left:max(18px,env(safe-area-inset-left));right:auto;bottom:calc(var(--rs-nav-h,68px) + var(--rs-safe-bottom,env(safe-area-inset-bottom)) + 16px);z-index:45;font-family:inherit}.randai__fab{width:var(--rs-fab-h,58px);height:var(--rs-fab-h,58px);border:0;border-radius:20px;background:var(--rs-grad-primary,linear-gradient(135deg,#34e3e8 0%,#3b82f6 100%));padding:4px;display:grid;place-items:center;cursor:pointer;box-shadow:0 14px 34px -10px rgba(34,211,238,.6),0 0 0 1px rgba(255,255,255,.14) inset;transition:transform .16s}.randai__fab img{width:calc(var(--rs-fab-h,58px) - 8px);height:calc(var(--rs-fab-h,58px) - 8px);display:block;border-radius:16px;object-fit:cover;box-shadow:none}.randai__fab:active{transform:scale(.9)}.randai__fab:focus-visible{outline:3px solid color-mix(in srgb,var(--rs-cyan,#22d3ee) 45%,transparent);outline-offset:2px}.randai__panel{position:absolute;left:0;right:auto;bottom:calc(var(--rs-fab-h,58px) + 10px);width:min(390px,calc(100vw - 24px));max-height:min(70vh,640px);display:flex;flex-direction:column;background:var(--rs-card,#fff);color:var(--rs-text,#111827);border:1px solid var(--rs-border,rgba(15,23,42,.12));border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.26);overflow:hidden}.randai__header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rs-border,rgba(15,23,42,.1))}.randai__header div{display:flex;flex-direction:column;min-width:0}.randai__header strong{font-size:17px}.randai__header small{opacity:.68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.randai__close{margin-left:auto;width:44px;height:44px;border:0;border-radius:14px;background:transparent;color:inherit;font-size:28px;cursor:pointer}.randai__messages{padding:14px;overflow:auto;display:flex;flex-direction:column;gap:12px}.randai__welcome{padding:14px;border-radius:16px;background:color-mix(in srgb,var(--rs-accent,#315efb) 8%,transparent)}.randai__welcome p{margin:.45rem 0 .8rem;line-height:1.45}.randai__welcome button{border:1px solid var(--rs-border,rgba(15,23,42,.14));background:var(--rs-card,#fff);color:inherit;border-radius:12px;padding:10px 12px;cursor:pointer}.randai__bubble{max-width:94%;padding:12px 14px;border-radius:16px;line-height:1.45}.randai__bubble--user{align-self:flex-end;background:var(--rs-accent,#315efb);color:#fff;border-bottom-right-radius:6px}.randai__bubble--assistant{align-self:flex-start;background:color-mix(in srgb,var(--rs-text,#111827) 6%,transparent);border-bottom-left-radius:6px}.randai__bubble h3{margin:.3rem 0 .4rem;font-size:15px}.randai__bubble p{margin:.35rem 0}.randai__bubble ol{margin:.6rem 0 .7rem;padding-left:1.2rem}.randai__bubble li+li{margin-top:.45rem}.randai__source{display:inline-flex;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 7px;border-radius:999px;background:color-mix(in srgb,var(--rs-accent,#315efb) 14%,transparent)}.randai__equipment{display:grid;gap:7px;margin:.75rem 0;padding:10px;border:1px solid var(--rs-border,rgba(15,23,42,.12));border-radius:12px;background:color-mix(in srgb,var(--rs-accent,#315efb) 5%,transparent)}.randai__equipment>b{font-size:12px;text-transform:uppercase;letter-spacing:.03em}.randai__equipment-item{display:grid;gap:2px}.randai__equipment-item strong{font-size:13px}.randai__equipment-item span,.randai__equipment-item small{font-size:12px;opacity:.78}.randai__caution{margin-top:10px;padding:9px 10px;border-radius:10px;background:rgba(245,158,11,.12);font-size:12px}.randai__composer{display:flex;gap:8px;align-items:flex-end;padding:12px;border-top:1px solid var(--rs-border,rgba(15,23,42,.1));background:var(--rs-card,#fff)}.randai__composer textarea{flex:1;min-height:44px;max-height:120px;resize:vertical;border:1px solid var(--rs-border,rgba(15,23,42,.16));background:transparent;color:inherit;border-radius:14px;padding:10px 12px;font:inherit}.randai__composer button{min-width:72px;height:44px;border:0;border-radius:14px;background:var(--rs-accent,#315efb);color:#fff;font-weight:800}.randai__composer button:disabled{opacity:.45}@media(max-width:899px){.randai{left:max(18px,env(safe-area-inset-left));right:auto;bottom:calc(58px + max(6px,min(env(safe-area-inset-bottom,0px),18px)) + 12px)}.randai__panel{position:fixed;left:10px;right:10px;bottom:calc(58px + max(6px,min(env(safe-area-inset-bottom,0px),18px)) + 12px + var(--rs-fab-h,58px) + 10px);width:auto;max-height:72vh;border-radius:20px}}@media(min-width:900px){.randai{left:24px;right:auto;bottom:24px}.randai__panel{left:0;right:auto;bottom:calc(var(--rs-fab-h,58px) + 10px)}}
+.randai {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  font-family: inherit;
+  pointer-events: none;
+}
 
-/* Trial layout: keep the existing RandAI component and interaction, but place
-   its launcher in the operational header instead of over the content. */
+.randai__panel {
+  position: fixed;
+  left: 24px;
+  right: auto;
+  bottom: 24px;
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(70vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--rs-card, #fff);
+  color: var(--rs-text, #111827);
+  border: 1px solid var(--rs-border, rgba(15, 23, 42, .12));
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .26);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.randai__header { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--rs-border,rgba(15,23,42,.1)); }
+.randai__header div { display:flex; flex-direction:column; min-width:0; }
+.randai__header strong { font-size:17px; }
+.randai__header small { opacity:.68; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.randai__close { margin-left:auto; width:44px; height:44px; border:0; border-radius:14px; background:transparent; color:inherit; font-size:28px; cursor:pointer; }
+.randai__messages { padding:14px; overflow:auto; display:flex; flex-direction:column; gap:12px; }
+.randai__welcome { padding:14px; border-radius:16px; background:color-mix(in srgb,var(--rs-accent,#315efb) 8%,transparent); }
+.randai__welcome p { margin:.45rem 0 .8rem; line-height:1.45; }
+.randai__welcome button { border:1px solid var(--rs-border,rgba(15,23,42,.14)); background:var(--rs-card,#fff); color:inherit; border-radius:12px; padding:10px 12px; cursor:pointer; }
+.randai__bubble { max-width:94%; padding:12px 14px; border-radius:16px; line-height:1.45; }
+.randai__bubble--user { align-self:flex-end; background:var(--rs-accent,#315efb); color:#fff; border-bottom-right-radius:6px; }
+.randai__bubble--assistant { align-self:flex-start; background:color-mix(in srgb,var(--rs-text,#111827) 6%,transparent); border-bottom-left-radius:6px; }
+.randai__bubble h3 { margin:.3rem 0 .4rem; font-size:15px; }
+.randai__bubble p { margin:.35rem 0; }
+.randai__bubble ol { margin:.6rem 0 .7rem; padding-left:1.2rem; }
+.randai__bubble li + li { margin-top:.45rem; }
+.randai__source { display:inline-flex; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:4px 7px; border-radius:999px; background:color-mix(in srgb,var(--rs-accent,#315efb) 14%,transparent); }
+.randai__equipment { display:grid; gap:7px; margin:.75rem 0; padding:10px; border:1px solid var(--rs-border,rgba(15,23,42,.12)); border-radius:12px; background:color-mix(in srgb,var(--rs-accent,#315efb) 5%,transparent); }
+.randai__equipment > b { font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+.randai__equipment-item { display:grid; gap:2px; }
+.randai__equipment-item strong { font-size:13px; }
+.randai__equipment-item span,
+.randai__equipment-item small { font-size:12px; opacity:.78; }
+.randai__caution { margin-top:10px; padding:9px 10px; border-radius:10px; background:rgba(245,158,11,.12); font-size:12px; }
+.randai__composer { display:flex; gap:8px; align-items:flex-end; padding:12px; border-top:1px solid var(--rs-border,rgba(15,23,42,.1)); background:var(--rs-card,#fff); }
+.randai__composer textarea { flex:1; min-height:44px; max-height:120px; resize:vertical; border:1px solid var(--rs-border,rgba(15,23,42,.16)); background:transparent; color:inherit; border-radius:14px; padding:10px 12px; font:inherit; }
+.randai__composer button { min-width:72px; height:44px; border:0; border-radius:14px; background:var(--rs-accent,#315efb); color:#fff; font-weight:800; }
+.randai__composer button:disabled { opacity:.45; }
+
 @media (max-width: 899px) {
-  .randai {
-    left: 50%;
-    right: auto;
-    top: calc(var(--rs-safe-top, env(safe-area-inset-top, 0px)) + 8px);
-    bottom: auto;
-    transform: translateX(-50%);
-    z-index: 46;
-  }
-
-  .randai__fab {
-    width: var(--rs-header-action-size, clamp(40px, calc(42px * var(--rs-scale)), 50px));
-    height: var(--rs-header-action-size, clamp(40px, calc(42px * var(--rs-scale)), 50px));
-    border-radius: calc(14px * var(--rs-scale));
-    padding: 3px;
-    box-shadow: 0 8px 24px -16px rgba(34,211,238,.7),0 0 0 1px rgba(255,255,255,.14) inset;
-  }
-
-  .randai__fab img {
-    width: calc(var(--rs-header-action-size, 42px) - 6px);
-    height: calc(var(--rs-header-action-size, 42px) - 6px);
-    border-radius: calc(11px * var(--rs-scale));
-  }
-
   .randai__panel {
-    position: fixed;
     left: 10px;
     right: 10px;
-    top: calc(var(--rs-safe-top, env(safe-area-inset-top, 0px)) + var(--rs-header-h, 62px) + 12px);
+    top: calc(var(--rs-safe-top, env(safe-area-inset-top, 0px)) + var(--rs-header-h, 62px) + 10px);
     bottom: auto;
     width: auto;
     max-height: min(72vh, calc(100dvh - var(--rs-header-h, 62px) - var(--rs-safe-top, 0px) - 28px));
-  }
-}
-
-@media (max-width: 430px) {
-  .randai__fab {
-    width: var(--rs-header-action-size, clamp(38px, calc(40px * var(--rs-scale)), 46px));
-    height: var(--rs-header-action-size, clamp(38px, calc(40px * var(--rs-scale)), 46px));
-    border-radius: calc(13px * var(--rs-scale));
+    border-radius: 20px;
   }
 }
 
 @media (min-width: 900px) {
-  .randai {
-    left: 50%;
-    right: auto;
-    top: calc(var(--rs-safe-top, 0px) + 10px);
-    bottom: auto;
-    transform: translateX(-50%);
-    z-index: 46;
-  }
-
-  .randai__fab {
-    width: calc(44px * var(--rs-scale));
-    height: calc(44px * var(--rs-scale));
-    border-radius: calc(14px * var(--rs-scale));
-    padding: 3px;
-  }
-
-  .randai__fab img {
-    width: calc(36px * var(--rs-scale));
-    height: calc(36px * var(--rs-scale));
-    border-radius: calc(11px * var(--rs-scale));
-  }
-
   .randai__panel {
-    position: fixed;
-    left: 50%;
+    left: 24px;
     right: auto;
-    top: calc(var(--rs-safe-top, 0px) + var(--rs-header-h, 62px) + 14px);
-    bottom: auto;
-    transform: translateX(-50%);
+    bottom: 24px;
   }
 }
