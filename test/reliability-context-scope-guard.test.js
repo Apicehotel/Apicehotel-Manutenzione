@@ -56,6 +56,15 @@ test('blocks a different resource even inside the same hotel', () => {
   assert.ok(reasonCodes(result).includes(ScopeReason.RESOURCE_MISMATCH))
 })
 
+test('requires resource type as well as id for typed operations', () => {
+  const result = evaluateContextScope({
+    expected: { hotelId: 'hotelgio', module: 'issues', recordType: 'issue', recordId: '42' },
+    context: { ...context, resource: { id: '42' } },
+    requireResource: true,
+  })
+  assert.ok(reasonCodes(result).includes(ScopeReason.MISSING_CONTEXT))
+})
+
 test('blocks actor mismatch and denied permission', () => {
   const result = evaluateContextScope({
     expected: { hotelId: 'hotelgio', userId: 'user-2', module: 'issues' },
@@ -94,9 +103,11 @@ test('assert helper throws a stable guard error', () => {
 
 test('RandAI Action Gateway prepare path keeps the scope preflight wired', () => {
   const source = readFileSync(new URL('../src/randai/action-gateway.js', import.meta.url), 'utf8')
-  assert.match(source, /assertContextScope/)
   assert.match(source, /module: 'issues'/)
   assert.match(source, /recordType: 'issue'/)
   assert.match(source, /requireResource: true/)
-  assert.ok(source.indexOf('assertContextScope') < source.indexOf("operation: 'prepare'"))
+  const guardCall = source.lastIndexOf('assertContextScope({')
+  const gatewayCall = source.indexOf('return invoke({', guardCall)
+  assert.ok(guardCall > -1)
+  assert.ok(gatewayCall > guardCall)
 })
