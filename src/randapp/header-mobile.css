@@ -1,7 +1,8 @@
 /* Mobile header: keep the bottom Menu as the only navigation menu and use the top-right action for notifications. */
 @media (max-width: 899px) {
   .rs-header {
-    gap: 8px;
+    --rs-header-action-size: clamp(40px, calc(42px * var(--rs-scale)), 50px);
+    gap: calc(8px * var(--rs-scale));
   }
 
   .rs-header .rs-hotelchip {
@@ -10,21 +11,21 @@
   }
 
   .rs-header > div:has([data-testid='presence-chip']) {
-    min-height: 40px;
+    min-height: var(--rs-header-action-size);
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 6px !important;
+    gap: calc(6px * var(--rs-scale)) !important;
   }
 
   .rs-header [data-testid='presence-chip'] {
-    min-height: 40px !important;
-    height: 40px;
-    min-width: 68px;
-    max-width: 96px;
-    padding: 0 11px !important;
-    gap: 6px !important;
-    border-radius: 14px;
+    min-height: var(--rs-header-action-size) !important;
+    height: var(--rs-header-action-size);
+    min-width: clamp(64px, calc(72px * var(--rs-scale)), 88px);
+    max-width: clamp(82px, calc(96px * var(--rs-scale)), 112px);
+    padding: 0 calc(11px * var(--rs-scale)) !important;
+    gap: calc(6px * var(--rs-scale)) !important;
+    border-radius: calc(14px * var(--rs-scale));
     font-size: .78rem !important;
     font-weight: 750 !important;
     line-height: 1 !important;
@@ -32,8 +33,8 @@
   }
 
   .rs-header [data-testid='presence-chip'] > span:first-child {
-    width: 8px !important;
-    height: 8px !important;
+    width: clamp(7px, calc(8px * var(--rs-scale)), 10px) !important;
+    height: clamp(7px, calc(8px * var(--rs-scale)), 10px) !important;
   }
 
   .rs-header [data-testid='presence-chip'] > span:last-child {
@@ -44,45 +45,46 @@
   }
 
   .rs-header [data-testid='header-notifications'] {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    border-radius: 14px;
+    width: var(--rs-header-action-size);
+    min-width: var(--rs-header-action-size);
+    height: var(--rs-header-action-size);
+    min-height: var(--rs-header-action-size);
+    border-radius: calc(14px * var(--rs-scale));
   }
 
   .rs-header [data-testid='header-notifications'] .rs-icon {
-    width: 21px;
-    height: 21px;
+    width: calc(21px * var(--rs-scale));
+    height: calc(21px * var(--rs-scale));
   }
 }
 
 @media (max-width: 430px) {
   .rs-header {
-    gap: 6px;
+    --rs-header-action-size: clamp(38px, calc(40px * var(--rs-scale)), 46px);
+    gap: calc(6px * var(--rs-scale));
   }
 
   .rs-header > div:has([data-testid='presence-chip']) {
-    min-height: 38px;
-    gap: 5px !important;
+    min-height: var(--rs-header-action-size);
+    gap: calc(5px * var(--rs-scale)) !important;
   }
 
   .rs-header [data-testid='presence-chip'] {
-    min-height: 38px !important;
-    height: 38px;
-    min-width: 64px;
-    max-width: 82px;
-    padding-inline: 9px !important;
-    border-radius: 13px;
+    min-height: var(--rs-header-action-size) !important;
+    height: var(--rs-header-action-size);
+    min-width: clamp(60px, calc(64px * var(--rs-scale)), 76px);
+    max-width: clamp(74px, calc(82px * var(--rs-scale)), 96px);
+    padding-inline: calc(9px * var(--rs-scale)) !important;
+    border-radius: calc(13px * var(--rs-scale));
     font-size: .74rem !important;
   }
 
   .rs-header [data-testid='header-notifications'] {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
-    min-height: 38px;
-    border-radius: 13px;
+    width: var(--rs-header-action-size);
+    min-width: var(--rs-header-action-size);
+    height: var(--rs-header-action-size);
+    min-height: var(--rs-header-action-size);
+    border-radius: calc(13px * var(--rs-scale));
   }
 }
 
