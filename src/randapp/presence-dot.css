@@ -1,8 +1,8 @@
 /* Presence control: explicit personal location, compact enough for mobile header. */
 .rs-presence-chip {
-  min-height: 40px;
-  max-width: 132px;
-  padding: 0 12px;
+  min-height: calc(40px * var(--rs-scale));
+  max-width: calc(132px * var(--rs-scale));
+  padding: 0 calc(12px * var(--rs-scale));
   border: 1px solid color-mix(in srgb, var(--rs-border, #cbd5e1) 82%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--rs-surface, #fff) 92%, transparent);
@@ -10,7 +10,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: calc(7px * var(--rs-scale));
   font: inherit;
   font-size: .82rem;
   font-weight: 800;
@@ -34,11 +34,11 @@
 
 .rs-presence-chip__dot {
   flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
+  width: calc(9px * var(--rs-scale));
+  height: calc(9px * var(--rs-scale));
   border-radius: 50%;
   background: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(148,163,184,.13);
+  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(148,163,184,.13);
 }
 
 .rs-presence-chip[data-presence='in'] {
@@ -47,7 +47,7 @@
 }
 .rs-presence-chip[data-presence='in'] .rs-presence-chip__dot {
   background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34,197,94,.14);
+  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(34,197,94,.14);
 }
 
 /* If the user is physically in another hotel, make that distinction visible. */
@@ -57,7 +57,7 @@
 }
 .rs-presence-chip[data-presence='in'][data-here='false'] .rs-presence-chip__dot {
   background: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245,158,11,.14);
+  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(245,158,11,.14);
 }
 
 .rs-presence-chip__text {
@@ -78,23 +78,26 @@
   border: 0 !important;
 }
 
-.rs-header > div:has(.rs-presence-chip) { gap: 6px !important; }
+.rs-header > div:has(.rs-presence-chip) { gap: calc(6px * var(--rs-scale)) !important; }
 
 @media (max-width: 430px) {
   .rs-presence-chip {
-    min-height: 38px;
-    max-width: 88px;
-    padding: 0 9px;
-    gap: 6px;
+    min-height: calc(38px * var(--rs-scale));
+    max-width: calc(88px * var(--rs-scale));
+    padding: 0 calc(9px * var(--rs-scale));
+    gap: calc(6px * var(--rs-scale));
     font-size: .76rem;
   }
-  .rs-presence-chip__dot { width: 8px; height: 8px; }
+  .rs-presence-chip__dot {
+    width: calc(8px * var(--rs-scale));
+    height: calc(8px * var(--rs-scale));
+  }
 }
 
 @media (max-width: 360px) {
   .rs-presence-chip {
-    max-width: 74px;
-    padding-inline: 8px;
+    max-width: calc(74px * var(--rs-scale));
+    padding-inline: calc(8px * var(--rs-scale));
   }
 }
 
