@@ -9,16 +9,36 @@ const ROLE_VALUES=new Set(["admin","Supremo","Direzione","Direttore Centro Congr
 const canonicalRole=(v:unknown)=>{const r=String(v||"Reception").trim();return ROLE_VALUES.has(r)?r:"Reception"};
 const PRESENCE_MAX_MS=(7*60+20)*60*1000;
 
-async function listDirectory(hotelId:string){
+async function activeMember(req:Request,hotelId:string){
+  const header=req.headers.get("authorization")||"";
+  const token=header.replace(/^Bearer\s+/i,"").trim();
+  if(!token)return null;
+  const {data,error}=await admin.auth.getUser(token);
+  if(error||!data?.user?.id)return null;
+  const {data:membership}=await admin.from("hotel_memberships").select("active").eq("auth_user_id",data.user.id).eq("hotel_id",hotelId).maybeSingle();
+  return membership?.active?data.user.id:null;
+}
+
+async function listLoginDirectory(hotelId:string){
+  const {data,error}=await admin.from("utenti").select("id,nome,active,is_system_protected,hotels").eq("active",true).neq("ruolo","RandAI").or('is_system_protected.eq.false,nome.eq.Randagio').contains("hotels",[hotelId]).order("nome");
+  if(error)throw error;
+  return(data||[]).map((u:any)=>({id:u.id,legacy_id:u.id,name:u.nome,hotel_id:hotelId,active:true}));
+}
+
+async function listOperationalDirectory(hotelId:string){
   const {data,error}=await admin.from("utenti").select("id,nome,ruolo,department,hotels,active,is_system_protected,in_struttura,in_struttura_dal,telefono,phone_country_code").eq("active",true).or('is_system_protected.eq.false,nome.eq.Randagio').contains("hotels",[hotelId]).order("nome");
   if(error)throw error;
   const legacyIds=(data||[]).map((u:any)=>u.id);
-  const {data:profiles}=legacyIds.length?await admin.from("profiles").select("auth_user_id,legacy_user_id").in("legacy_user_id",legacyIds):{data:[] as any[]};
-  const authIdByLegacy=new Map((profiles||[]).map((p:any)=>[p.legacy_user_id,p.auth_user_id]));
+  const {data:profiles}=legacyIds.length?await admin.from("profiles").select("auth_user_id,legacy_user_id,email").in("legacy_user_id",legacyIds):{data:[] as any[]};
+  const profileByLegacy=new Map((profiles||[]).map((p:any)=>[p.legacy_user_id,p]));
   const authIds=(profiles||[]).map((p:any)=>p.auth_user_id);
   const {data:memberships}=authIds.length?await admin.from("hotel_memberships").select("auth_user_id,role,active,can_access_admin").eq("hotel_id",hotelId).in("auth_user_id",authIds):{data:[] as any[]};
   const membershipByAuth=new Map((memberships||[]).map((m:any)=>[m.auth_user_id,m]));
-  return(data||[]).map((u:any)=>{const authId=authIdByLegacy.get(u.id)||null,m:any=authId?membershipByAuth.get(authId):null,since=u.in_struttura_dal?new Date(u.in_struttura_dal).getTime():null,expired=since!==null&&Date.now()-since>PRESENCE_MAX_MS,role=canonicalRole(m?.role||u.ruolo);return{id:authId||u.id,legacy_id:u.id,auth_user_id:authId,name:u.nome,role,department:u.department||null,hotels:u.hotels||[hotelId],hotel_id:hotelId,active:m?Boolean(m.active):true,can_admin:Boolean(m?.can_access_admin)||role==="admin",in_struttura:Boolean(u.in_struttura)&&!expired,in_struttura_dal:u.in_struttura_dal||null,phone:u.telefono||null,phone_country_code:u.phone_country_code||"+39"}});
+  return(data||[]).map((u:any)=>{const p:any=profileByLegacy.get(u.id)||null,authId=p?.auth_user_id||null,m:any=authId?membershipByAuth.get(authId):null,since=u.in_struttura_dal?new Date(u.in_struttura_dal).getTime():null,expired=since!==null&&Date.now()-since>PRESENCE_MAX_MS,role=canonicalRole(m?.role||u.ruolo);return{id:authId||u.id,legacy_id:u.id,auth_user_id:authId,name:u.nome,role,department:u.department||null,hotels:u.hotels||[hotelId],hotel_id:hotelId,active:m?Boolean(m.active):true,can_admin:Boolean(m?.can_access_admin)||role==="admin",in_struttura:Boolean(u.in_struttura)&&!expired,in_struttura_dal:u.in_struttura_dal||null,email:p?.email||null,phone:u.telefono||null,phone_country_code:u.phone_country_code||"+39"}});
+}
+
+async function listDirectory(req:Request,hotelId:string){
+  return await activeMember(req,hotelId)?listOperationalDirectory(hotelId):listLoginDirectory(hotelId);
 }
 
 async function resolveLegacyUserId(userId:string){const {data,error}=await admin.from("profiles").select("legacy_user_id").eq("auth_user_id",userId).maybeSingle();if(error)throw error;return data?.legacy_user_id?String(data.legacy_user_id):userId}
@@ -42,10 +62,10 @@ async function ensureIdentity(legacy:any,pin:string){
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   try{
-    if(req.method==="GET"){const hotelId=new URL(req.url).searchParams.get("hotel_id")?.trim();if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);return json({ok:true,users:await listDirectory(hotelId)})}
+    if(req.method==="GET"){const hotelId=new URL(req.url).searchParams.get("hotel_id")?.trim();if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);return json({ok:true,users:await listDirectory(req,hotelId)})}
     if(req.method!=="POST")return json({ok:false,error:"Metodo non consentito"},405);
     const body=await req.json().catch(()=>null),action=String(body?.action||"login"),hotelId=String(body?.hotel_id||"").trim();
-    if(action==="directory"){if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);return json({ok:true,users:await listDirectory(hotelId)})}
+    if(action==="directory"){if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);return json({ok:true,users:await listDirectory(req,hotelId)})}
     const userId=String(body?.user_id||"").trim(),pin=String(body?.pin||"").trim();
     if(!hotelId||!userId||!/^\d{4}$/.test(pin))return json({ok:false,error:"Dati login non validi"},400);
     const legacyUserId=await resolveLegacyUserId(userId);

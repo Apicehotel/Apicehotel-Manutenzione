@@ -62,22 +62,25 @@ Nel dominio Planning:
 
 Regola architetturale: estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma; non creare wrapper generici senza un beneficio operativo/testabile.
 
-## Sicurezza accesso e recupero PIN
+## Sicurezza accesso e recupero PIN — Consolidamento 3
 
 Il contratto di autenticazione è intenzionalmente distinto:
 
 - PIN utente operativo: **4 cifre**;
 - PIN amministratore: **6 cifre**, separato visivamente e funzionalmente dal login operativo;
-- la directory pre-login espone solo i dati minimi necessari alla selezione account (identificativi, nome, ruolo e hotel), senza email, telefono o permessi dettagliati;
-- email e telefono vengono restituiti solo dopo autenticazione PIN valida;
+- la directory pre-login espone soltanto `legacy_id`, nome, struttura e stato minimo necessario al login; **ruolo, reparto, telefono, presenza, auth user id e permessi admin non vengono più inviati prima dell'autenticazione**;
+- anche le vecchie directory conservate offline vengono normalizzate al nuovo payload minimo prima di essere riutilizzate;
+- email, telefono, ruolo, presenza e permessi operativi vengono restituiti solo dopo autenticazione PIN valida;
 - una sessione già validata può continuare offline per un massimo di **24 ore dall'ultima validazione server**;
 - al ritorno online la sessione viene rivalidata e una revoca utente/hotel comporta logout locale;
+- le operazioni sensibili non vengono accodate offline: accesso amministratore, cambio/reset PIN, modifica profilo, salvataggio codice notifiche e Action Gateway RandAI richiedono connessione e verifica server, con errore stabile `ONLINE_REQUIRED`;
 - il recupero PIN è self-service: il browser invia solo `user_id + hotel_id`, l'email viene risolta server-side e non viene mostrata nel login;
+- per il recupero PIN viene considerata l'email salvata nel profilo anche quando `email_verified=false`; il flag di verifica non viene reinterpretato globalmente né usato come requisito del recovery;
 - i link di recupero scadono dopo 15 minuti, sono monouso, memorizzati solo come hash e protetti da rate limit;
 - gli account di sistema protetti non possono usare il recupero PIN utente;
 - il nuovo PIN viene hashato con bcrypt e azzera lockout/tentativi falliti.
 
-Il trasporto email del recupero usa `pin-recovery` e richiede un provider realmente configurato. Per il sender Resend servono i secret Edge Function `RESEND_API_KEY`, `PIN_RECOVERY_FROM_EMAIL` e facoltativamente `PIN_RECOVERY_APP_URL` (default produzione Vercel). L'integrazione non deve dichiararsi attiva se sender o secret mancano.
+Il trasporto email del recupero usa `pin-recovery` e richiede un provider realmente configurato. Per il sender Resend servono i secret Edge Function `RESEND_API_KEY`, `PIN_RECOVERY_FROM_EMAIL` e facoltativamente `PIN_RECOVERY_APP_URL` (default produzione Vercel). L'integrazione deve risultare abilitata in `integration_settings` e la funzione continua a dichiararsi non disponibile se sender o secret mancano.
 
 ## Avvio locale
 

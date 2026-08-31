@@ -12,3 +12,11 @@ export function isOfflineSessionFresh(session, now = Date.now()) {
 export function markSessionValidated(session, now = Date.now()) {
   return { ...session, lastValidatedAt: now }
 }
+
+export function assertSensitiveActionOnline(label = 'Questa operazione') {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    const error = new Error(`${label} richiede una connessione internet per verificare permessi e sessione.`)
+    error.code = 'ONLINE_REQUIRED'
+    throw error
+  }
+}

@@ -1,7 +1,9 @@
 import { supabase } from '../supabase.js'
+import { assertSensitiveActionOnline } from '../session-policy.js'
 import { getRandAIContext } from './context/envelope.js'
 
 async function invoke(body) {
+  assertSensitiveActionOnline('Le azioni operative RandAI')
   if (!supabase) throw new Error('Supabase non disponibile')
   const { data, error } = await supabase.functions.invoke('randai-action-gateway', { body })
   if (error) throw error
