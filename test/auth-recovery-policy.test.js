@@ -35,11 +35,12 @@ test('login keeps 4-digit user PIN and 6-digit admin PIN while exposing self-ser
 test('pre-login directory is deliberately minimal and old cached payloads are sanitized', async () => {
   const edge = await source('supabase/functions/pin-auth/index.ts')
   const client = await source('src/users-data.js')
+  const sanitizer = client.match(/function loginEligibleUsers[\s\S]*?\n}\nasync function invokeAdmin/)?.[0] || ''
   assert.match(edge, /select\("id,nome,active,is_system_protected,hotels"\)/)
   assert.match(edge, /\{id:u\.id,legacy_id:u\.id,name:u\.nome,hotel_id:hotelId,active:true\}/)
   assert.doesNotMatch(edge, /async function listDirectory[\s\S]*?telefono,phone_country_code/)
-  assert.match(client, /legacyId = user\.legacy_id \|\| user\.id/)
-  assert.doesNotMatch(client, /return \{[\s\S]*?phone:/)
+  assert.match(sanitizer, /legacyId = user\.legacy_id \|\| user\.id/)
+  assert.doesNotMatch(sanitizer, /phone|department|role|can_admin|in_struttura/)
 })
 
 test('recovery client never needs the user email', async () => {
