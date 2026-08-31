@@ -104,6 +104,23 @@ La build Point 4 prima del ripristino PWA misurava **311,5 KiB in 2 chunk static
 
 Le prestazioni vengono accettate solo insieme ai gate di build, bundle budget, suite completa, Chromium/WebKit e device acceptance su profili iOS, Android e Windows.
 
+## Parità e isolamento multi-hotel — Consolidamento 5
+
+Il contratto multi-hotel distingue **parità funzionale** da **configurazione specifica della struttura**. Hotel Giò, Chocohotel e Hotel Il Brigantino condividono la stessa shell applicativa e le stesse funzioni generali; una funzione non può essere nascosta solo perché l'hotel non è Giò.
+
+Regole consolidate:
+
+- Segnalazioni, Interventi, Planning lavori, Planning sale, Housekeeping, Urgenti, Promemoria, notifiche, sensori/impianti, rubrica tecnici e RandAI sono permission-driven e non dipendono da un hard-code del singolo hotel;
+- Planning Sale è disponibile a tutte e tre le strutture quando il ruolo possiede `planning_sale`; sale, clienti, layout e prenotazioni restano separati tramite `hotel_id`;
+- Choco e Brigantino possono partire con una configurazione sale vuota e popolarla dalla UI autorizzata: non vengono inventati nomi o sale inesistenti;
+- Housekeeping usa cache IndexedDB distinta per hotel e query/realtime filtrati per `hotel_id`; le differenze di camere e sezioni restano nel catalogo specifico di ciascuna struttura;
+- cache/offline e outbox mantengono il contesto hotel immutabile; i test relazionali precedenti continuano a vietare child row cross-hotel;
+- il backend è verificato con RLS attiva sulle principali tabelle operative multi-hotel, inclusi planning, housekeeping, sale, urgenti, manutenzioni, push e domini RandAI;
+- ntfy dichiara topic per tutte e tre le strutture; WhatsApp/Twilio può avere configurazioni diverse per hotel, ma ogni struttura deve essere dichiarata esplicitamente e nessun numero viene inventato quando non configurato;
+- `test/consolidation-point5-multihotel-parity.test.js` rende permanente il contratto di parità frontend e richiama i gate già esistenti per isolamento relazionale, RandAI e offline.
+
+Le eccezioni legittime devono rappresentare una caratteristica reale della struttura (camere, reparti, sale, sensori presenti, recapiti o procedure locali), non una scorciatoia nel codice. In particolare le regole di numerazione e organizzazione camere di Hotel Giò restano specifiche di Giò e non vengono propagate a Choco o Brigantino.
+
 ## Avvio locale
 
 ```bash

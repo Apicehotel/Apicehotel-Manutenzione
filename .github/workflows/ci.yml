@@ -40,6 +40,9 @@ jobs:
       - name: Critical operational gate
         run: npm run test:critical
 
+      - name: Multi-hotel parity gate
+        run: npm run test:multihotel
+
       - name: Build
         run: npm run build
 
