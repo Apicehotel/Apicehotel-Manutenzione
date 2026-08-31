@@ -47,6 +47,7 @@ export async function fetchInventoryItems(hotelId) {
 
 export async function createInventoryItem(hotelId, draft) {
   if (!supabase) throw new Error('Supabase non disponibile')
+  const initialQuantity = Number(draft.quantity || 0)
   const payload = {
     hotel_id: hotelId,
     name: draft.name.trim(),
@@ -54,12 +55,13 @@ export async function createInventoryItem(hotelId, draft) {
     unit: draft.unit.trim() || 'pz',
     location: draft.location.trim() || null,
     sku: draft.sku.trim() || null,
-    quantity: Number(draft.quantity || 0),
+    quantity: 0,
     min_quantity: Number(draft.minQuantity || 0),
     notes: draft.notes.trim() || null,
   }
   const { data, error } = await supabase.from('inventory_items').insert(payload).select('*').single()
   if (error) throw error
+  if (initialQuantity > 0) return adjustInventoryStock(data.id, initialQuantity, 'Giacenza iniziale')
   return normalizeItem(data)
 }
 
