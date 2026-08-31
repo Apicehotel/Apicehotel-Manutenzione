@@ -234,9 +234,10 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState(() => ({ room: issue.room || '', title: issue.title || '', urgency: issue.urgency || 'media', category: issue.category || 'Varie' }))
   const canComplete = canUser(user, 'issues', 'complete') || canUser(user, 'issues', 'take_charge')
-  const canDelete = canUser(user, 'issues', 'delete')
   const currentAuthUserId = user?.auth_user_id || user?.id || null
-  const isOwnSupremoIssue = user?.role === 'Supremo' && Boolean(issue.createdByUserId) && issue.createdByUserId === currentAuthUserId
+  const isOwnIssue = Boolean(issue.createdByUserId) && issue.createdByUserId === currentAuthUserId
+  const canDelete = canUser(user, 'issues', 'delete') || isOwnIssue
+  const isOwnSupremoIssue = user?.role === 'Supremo' && isOwnIssue
   const canEditDetails = canUser(user, 'issues', 'edit') || isOwnSupremoIssue
   const technicians = (users || []).filter((p) => p.role === 'Tecnico esterno')
   const meta = ISSUE_STATUS_META[issue.status] || {}
