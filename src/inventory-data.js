@@ -3,6 +3,7 @@ import { assertValid } from './reliability/validation-engine.js'
 import { validateInventoryItem, validateStockAdjustment } from './reliability/domain-validation.js'
 
 const PHOTO_BUCKET = 'maintenance-photos'
+const clean = (value) => String(value ?? '').trim()
 
 function normalizeItem(row) {
   return {
@@ -64,11 +65,11 @@ export async function getInventoryPhotoUrl(photoPath) {
   return data?.signedUrl || ''
 }
 
-export async function createInventoryItem(hotelId, draft) {
+export async function createInventoryItem(hotelId, draft = {}) {
   if (!supabase) throw new Error('Supabase non disponibile')
   assertValid(validateInventoryItem(hotelId, draft), 'Articolo magazzino non valido')
   const initialQuantity = Number(draft.quantity || 0)
-  const payload = { hotel_id: hotelId, name: draft.name.trim(), category: draft.category.trim() || 'Varie', unit: draft.unit.trim() || 'pz', location: draft.location.trim() || null, sku: draft.sku.trim() || null, quantity: 0, min_quantity: Number(draft.minQuantity || 0), notes: draft.notes.trim() || null }
+  const payload = { hotel_id: hotelId, name: clean(draft.name), category: clean(draft.category) || 'Varie', unit: clean(draft.unit) || 'pz', location: clean(draft.location) || null, sku: clean(draft.sku) || null, quantity: 0, min_quantity: Number(draft.minQuantity || 0), notes: clean(draft.notes) || null }
   const { data, error } = await supabase.from('inventory_items').insert(payload).select('*').single()
   if (error) throw error
   try {
@@ -86,18 +87,18 @@ export async function createInventoryItem(hotelId, draft) {
   }
 }
 
-export async function updateInventoryItem(id, hotelId, changes) {
+export async function updateInventoryItem(id, hotelId, changes = {}) {
   if (!supabase) throw new Error('Supabase non disponibile')
   if (!id) throw new TypeError('id è obbligatorio')
   assertValid(validateInventoryItem(hotelId, changes, { partial: true }), 'Aggiornamento articolo non valido')
   const payload = {}
-  if ('name' in changes) payload.name = changes.name.trim()
-  if ('category' in changes) payload.category = changes.category.trim() || 'Varie'
-  if ('unit' in changes) payload.unit = changes.unit.trim() || 'pz'
-  if ('location' in changes) payload.location = changes.location.trim() || null
-  if ('sku' in changes) payload.sku = changes.sku.trim() || null
+  if ('name' in changes) payload.name = clean(changes.name)
+  if ('category' in changes) payload.category = clean(changes.category) || 'Varie'
+  if ('unit' in changes) payload.unit = clean(changes.unit) || 'pz'
+  if ('location' in changes) payload.location = clean(changes.location) || null
+  if ('sku' in changes) payload.sku = clean(changes.sku) || null
   if ('minQuantity' in changes) payload.min_quantity = Number(changes.minQuantity || 0)
-  if ('notes' in changes) payload.notes = changes.notes.trim() || null
+  if ('notes' in changes) payload.notes = clean(changes.notes) || null
   if ('active' in changes) payload.active = Boolean(changes.active)
   payload.updated_at = new Date().toISOString()
   const { data, error } = await supabase.from('inventory_items').update(payload).eq('id', id).eq('hotel_id', hotelId).select('*').single()
@@ -108,8 +109,8 @@ export async function updateInventoryItem(id, hotelId, changes) {
 export async function adjustInventoryStock(itemId, delta, note = '') {
   if (!supabase) throw new Error('Supabase non disponibile')
   if (!itemId) throw new TypeError('itemId è obbligatorio')
-  assertValid(validateStockAdjustment(delta, note), 'Movimento magazzino non valido')
-  const { data, error } = await supabase.rpc('inventory_adjust_stock', { p_item_id: itemId, p_delta: Number(delta), p_note: note || null })
+  assertValid(validateStockAdjustment(delta), 'Movimento magazzino non valido')
+  const { data, error } = await supabase.rpc('inventory_adjust_stock', { p_item_id: itemId, p_delta: Number(delta), p_note: clean(note) || null })
   if (error) throw error
   return normalizeItem(data)
 }
