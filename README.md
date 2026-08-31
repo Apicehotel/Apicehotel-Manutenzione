@@ -21,7 +21,8 @@ Funzioni principali consolidate:
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
-- RandAI integrata nel flusso operativo fino al **Blocco 32**.
+- RandAI integrata nel flusso operativo fino al **Blocco 32**;
+- Reliability Foundation condivisa RandApp/RandAI fino al **Blocco 33**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -31,6 +32,22 @@ Funzioni principali consolidate:
 - **30 — RandAI nelle Segnalazioni:** Analizza, Guidami, Procedura, Casi simili e conclusione tramite Gateway;
 - **31 — Operational Learning:** memoria riutilizzabile solo da interventi realmente verificati, con evidenza e promozione a procedura solo come bozza da approvare;
 - **32 — Operational Prioritization & Dispatch:** ranking spiegabile delle segnalazioni, distinzione priorità/azionabilità, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
+
+### Reliability — Blocco 33
+
+Il **Reliability Foundation** introduce un envelope operativo comune e versionato per correlare azioni RandApp/RandAI senza duplicare task ID, checkpoint o idempotency già presenti nei runtime esistenti.
+
+Contratto consolidato:
+
+- `operationId` nello spazio `RND-OP-*` identifica stabilmente l'operazione;
+- `correlationId` e `traceId` permettono correlazione con diagnostica e telemetria quando disponibili;
+- ogni envelope porta `hotelId`, attore, ruolo, modulo, azione, record, sorgente e timestamp;
+- l'envelope è validato e immutabile dopo la creazione;
+- il contesto destinato ai log esclude volutamente PIN, token, email e altri dati personali non necessari;
+- i task RandAI collegati a una segnalazione ricevono lo stesso `operationId`, propagato anche al Supervisor e al riepilogo operativo;
+- `test/reliability-operation-envelope.test.js` rende permanente il contratto di validazione, immutabilità, correlazione e integrazione con i task segnalazione.
+
+Il Blocco 33 è una fondazione: i blocchi successivi estenderanno lo stesso envelope a validation, safe write, audit, offline/retry e failure intelligence. Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
 ## UI e design system
 
@@ -169,6 +186,7 @@ npm run test:device
 - shell/UI: `src/randapp/`;
 - componenti Planning focalizzati: `src/randapp/planning/`;
 - motore RandAI: `src/randai/`;
+- reliability condivisa: `src/reliability/`;
 - client Supabase: `src/supabase.js`;
 - session policy: `src/session-policy.js`;
 - offline: `src/offline-store.js`;
@@ -213,4 +231,5 @@ Il progetto Vercel attivo è `apicehotel-manutenzionr`. Non esiste più codice a
 - non rimuovere indici solo perché momentaneamente segnalati come `unused`;
 - ogni modifica critica deve mantenere verdi Quality Matrix, Critical Gate e test multipiattaforma;
 - **ogni modifica funzionale, aggiunta, rimozione o cambio di comportamento deve aggiornare il README nello stesso commit/PR quando cambia il contratto documentato**; se una funzione viene rimossa, va rimossa anche dalla documentazione, senza lasciare descrizioni obsolete;
-- ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati.
+- ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati;
+- un blocco Reliability/RandAI non è `DONE` finché codice, test e README non sono coerenti nello stesso PR e i gate richiesti non risultano verdi.
