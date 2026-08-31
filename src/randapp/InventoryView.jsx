@@ -44,7 +44,7 @@ function NewItemSheet({ open, onClose, onSave }) {
           <Field label="Scorta minima"><TextInput type="number" min="0" step="0.001" inputMode="decimal" value={draft.minQuantity} onChange={(e) => setDraft({ ...draft, minQuantity: e.target.value })} /></Field>
         </div>
         <Field label="Codice / SKU (facoltativo)"><TextInput value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} /></Field>
-        <Field label="Foto articolo (facoltativa)"><label className="rs-inventory-photo-picker"><input type="file" accept="image/*" capture="environment" onChange={(e) => setDraft({ ...draft, photo: e.target.files?.[0] || null })} /><Icon name="camera" /><span><strong>{draft.photo ? draft.photo.name : 'Scatta o scegli una foto'}</strong><small>Fotografa la scatola, l'etichetta o il ricambio per riconoscerlo subito.</small></span></label></Field>
+        <Field label="Foto articolo (facoltativa)"><label className="rs-inventory-photo-picker"><input type="file" accept="image/*" onChange={(e) => setDraft({ ...draft, photo: e.target.files?.[0] || null })} /><Icon name="camera" /><span><strong>{draft.photo ? draft.photo.name : 'Aggiungi foto'}</strong><small>Usa il selettore nativo: Libreria foto, Scatta foto oppure File, secondo il dispositivo.</small></span></label></Field>
         <Field label="Note"><textarea className="rs-textarea" rows="3" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} /></Field>
         {error && <p className="rs-error" role="alert">{error}</p>}
         <div className="rs-form-actions"><Button variant="ghost" onClick={onClose}>Annulla</Button><Button variant="primary" disabled={!draft.name.trim() || busy} onClick={save}>{busy ? 'Salvo…' : 'Aggiungi'}</Button></div>
