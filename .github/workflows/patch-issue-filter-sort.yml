@@ -1,0 +1,236 @@
+name: Patch issue filters and sorting
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-issue-filter-sort.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch Issues UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/randapp/Issues.jsx')
+          s = p.read_text()
+
+          old = """const FILTERS = [
+  ['todo', 'Da fare'],
+  ['tecnico', 'Tecnico'],
+  ['waiting', 'Attesa pezzo'],
+  ['done', 'Completate'],
+  ['all', 'Tutte'],
+]
+"""
+          new = old + """
+const ISSUE_SORT_OPTIONS = [
+  ['room', 'Camera / zona'],
+  ['urgency', 'Urgenza'],
+  ['status', 'Stato'],
+  ['category', 'Categoria'],
+  ['date', 'Data'],
+]
+
+const URGENCY_SORT = { alta: 3, media: 2, bassa: 1 }
+const STATUS_SORT = { todo: 1, tecnico: 2, waiting: 3, done: 4 }
+
+function issueRoomSortValue(room) {
+  const label = String(room || '').trim()
+  const match = label.match(/(?:Camera\\s*·\\s*)?(\\d{1,4})/i)
+  if (match) return { type: 0, number: Number(match[1]), text: label.toLocaleLowerCase('it') }
+  return { type: 1, number: 0, text: label.toLocaleLowerCase('it') }
+}
+
+function compareIssueRooms(a, b) {
+  const left = issueRoomSortValue(a.room)
+  const right = issueRoomSortValue(b.room)
+  if (left.type !== right.type) return left.type - right.type
+  if (left.type === 0 && left.number !== right.number) return left.number - right.number
+  return left.text.localeCompare(right.text, 'it', { numeric: true, sensitivity: 'base' })
+}
+"""
+          if old not in s:
+              raise SystemExit('FILTERS anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """  const [filter, setFilter] = useState('todo')
+  const [search, setSearch] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [selected, setSelected] = useState(null)
+"""
+          new = """  const [filter, setFilter] = useState('todo')
+  const [search, setSearch] = useState('')
+  const [sortOpen, setSortOpen] = useState(false)
+  const [sortBy, setSortBy] = useState('date')
+  const [sortDir, setSortDir] = useState('desc')
+  const [urgencyFilter, setUrgencyFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
+  const [creating, setCreating] = useState(false)
+  const [selected, setSelected] = useState(null)
+"""
+          if old not in s:
+              raise SystemExit('state anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return issues
+      .filter((i) => filter === 'all' || i.status === filter)
+      .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
+  }, [issues, filter, search])
+"""
+          new = """  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const direction = sortDir === 'asc' ? 1 : -1
+    return issues
+      .filter((i) => filter === 'all' || i.status === filter)
+      .filter((i) => urgencyFilter === 'all' || i.urgency === urgencyFilter)
+      .filter((i) => categoryFilter === 'all' || i.category === categoryFilter)
+      .filter((i) => locationFilter === 'all' || (locationFilter === 'camera' ? /^Camera\\s*·/i.test(i.room || '') : !/^Camera\\s*·/i.test(i.room || '')))
+      .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (sortBy === 'room') return compareIssueRooms(a, b) * direction
+        if (sortBy === 'urgency') return ((URGENCY_SORT[a.urgency] || 0) - (URGENCY_SORT[b.urgency] || 0)) * direction
+        if (sortBy === 'status') return ((STATUS_SORT[a.status] || 99) - (STATUS_SORT[b.status] || 99)) * direction
+        if (sortBy === 'category') return String(a.category || '').localeCompare(String(b.category || ''), 'it', { sensitivity: 'base' }) * direction
+        return ((Number(a.createdAt) || 0) - (Number(b.createdAt) || 0)) * direction
+      })
+  }, [issues, filter, search, sortBy, sortDir, urgencyFilter, categoryFilter, locationFilter])
+
+  const extraFilterCount = (urgencyFilter !== 'all' ? 1 : 0) + (categoryFilter !== 'all' ? 1 : 0) + (locationFilter !== 'all' ? 1 : 0)
+  const resetExtraFilters = () => {
+    setUrgencyFilter('all')
+    setCategoryFilter('all')
+    setLocationFilter('all')
+    setSortBy('date')
+    setSortDir('desc')
+  }
+"""
+          if old not in s:
+              raise SystemExit('filtered anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """      <div className=\"rs-toolbar\">
+        <TextInput icon=\"search\" value={search} placeholder=\"Cerca camera, problema, categoria…\" data-testid=\"issue-search\"
+          onChange={(e) => setSearch(e.target.value)} />
+        <div className=\"rs-issue-filter-scroll\" data-testid=\"issue-filters\">
+"""
+          new = """      <div className=\"rs-toolbar\">
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
+          <TextInput icon=\"search\" value={search} placeholder=\"Cerca camera, problema, categoria…\" data-testid=\"issue-search\"
+            onChange={(e) => setSearch(e.target.value)} />
+          <Button variant={extraFilterCount ? 'primary' : 'ghost'} icon=\"filter\" onClick={() => setSortOpen(true)} data-testid=\"issue-sort-filter\">
+            Filtra{extraFilterCount ? ` · ${extraFilterCount}` : ''}
+          </Button>
+        </div>
+        <div className=\"rs-issue-filter-scroll\" data-testid=\"issue-filters\">
+"""
+          if old not in s:
+              raise SystemExit('toolbar anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """      {selected && <IssueDetail issue={selected} user={user} users={users} onClose={() => setSelected(null)} onUpdate={doUpdate} onDelete={doDelete} />}
+    </div>
+  )
+}
+"""
+          new = """      <Sheet open={sortOpen} onClose={() => setSortOpen(false)} title=\"Filtra e ordina\" className=\"rs-issue-filter-sheet\">
+        <div className=\"rs-actions-stack\" data-testid=\"issue-sort-filter-sheet\">
+          <Field label=\"Ordina per\">
+            <select className=\"rs-select\" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              {ISSUE_SORT_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </Field>
+          <fieldset className=\"rs-fieldset\">
+            <legend>Direzione</legend>
+            <div className=\"rs-chips\">
+              <button type=\"button\" className={`rs-chip ${sortDir === 'asc' ? 'active' : ''}`} onClick={() => setSortDir('asc')}>↑ Crescente</button>
+              <button type=\"button\" className={`rs-chip ${sortDir === 'desc' ? 'active' : ''}`} onClick={() => setSortDir('desc')}>↓ Decrescente</button>
+            </div>
+          </fieldset>
+          <fieldset className=\"rs-fieldset\">
+            <legend>Camera / zona</legend>
+            <div className=\"rs-chips\">
+              {[['all', 'Tutte'], ['camera', 'Camere'], ['zona', 'Zone']].map(([key, label]) => (
+                <button type=\"button\" key={key} className={`rs-chip ${locationFilter === key ? 'active' : ''}`} onClick={() => setLocationFilter(key)}>{label}</button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className=\"rs-fieldset\">
+            <legend>Urgenza</legend>
+            <div className=\"rs-chips\">
+              {[['all', 'Tutte'], ['alta', 'Alta'], ['media', 'Media'], ['bassa', 'Bassa']].map(([key, label]) => (
+                <button type=\"button\" key={key} className={`rs-chip ${urgencyFilter === key ? 'active' : ''}`} onClick={() => setUrgencyFilter(key)}>{label}</button>
+              ))}
+            </div>
+          </fieldset>
+          <Field label=\"Categoria\">
+            <select className=\"rs-select\" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value=\"all\">Tutte le categorie</option>
+              {ISSUE_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </Field>
+          <div className=\"rs-form-actions\">
+            <Button variant=\"ghost\" onClick={resetExtraFilters}>Ripristina</Button>
+            <Button variant=\"primary\" onClick={() => setSortOpen(false)}>Applica · {filtered.length}</Button>
+          </div>
+        </div>
+      </Sheet>
+
+      {selected && <IssueDetail issue={selected} user={user} users={users} onClose={() => setSelected(null)} onUpdate={doUpdate} onDelete={doDelete} />}
+    </div>
+  )
+}
+"""
+          if old not in s:
+              raise SystemExit('sheet anchor not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Add contract test
+        run: |
+          cat > test/issues-filter-sort.test.js <<'EOF'
+          import test from 'node:test'
+          import assert from 'node:assert/strict'
+          import fs from 'node:fs'
+
+          const source = fs.readFileSync(new URL('../src/randapp/Issues.jsx', import.meta.url), 'utf8')
+
+          test('issues exposes filter and sorting controls', () => {
+            assert.match(source, /Filtra e ordina/)
+            assert.match(source, /Camera \/ zona/)
+            assert.match(source, /Urgenza/)
+            assert.match(source, /Categoria/)
+            assert.match(source, /↑ Crescente/)
+            assert.match(source, /↓ Decrescente/)
+          })
+
+          test('room ordering is numeric before text zones', () => {
+            assert.match(source, /Number\(match\[1\]\)/)
+            assert.match(source, /compareIssueRooms/)
+            assert.match(source, /localeCompare/)
+          })
+          EOF
+
+      - name: Verify build and tests
+        run: |
+          npm ci
+          npm run build
+          npm test
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/randapp/Issues.jsx test/issues-filter-sort.test.js
+          git commit -m "feat(issues): restore advanced filters and sorting"
+          git push origin main
