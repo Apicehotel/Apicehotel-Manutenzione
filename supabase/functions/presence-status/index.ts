@@ -37,20 +37,22 @@ Deno.serve(async (req: Request) => {
 
     const { data: row, error: rowError } = await admin
       .from("utenti")
-      .select("id,nome,ruolo,in_struttura,in_struttura_dal,in_struttura_via")
+      .select("id,nome,ruolo,in_struttura,in_struttura_dal,in_struttura_via,in_struttura_hotel_id")
       .eq("id", profile.legacy_user_id)
       .maybeSingle();
     if (rowError || !row) return json({ ok: false, error: "Presenza non disponibile" }, 404);
 
     let present = Boolean(row.in_struttura);
     let since = row.in_struttura_dal as string | null;
+    let hotelId = row.in_struttura_hotel_id as string | null;
     if (present) {
       const sinceMs = since ? new Date(since).getTime() : 0;
-      const expired = !sinceMs || Date.now() - sinceMs >= MAX_MS;
+      const expired = !sinceMs || !hotelId || Date.now() - sinceMs >= MAX_MS;
       if (expired) {
-        await admin.from("utenti").update({ in_struttura: false, in_struttura_dal: null, in_struttura_via: null }).eq("id", row.id);
+        await admin.from("utenti").update({ in_struttura: false, in_struttura_dal: null, in_struttura_via: null, in_struttura_hotel_id: null }).eq("id", row.id);
         present = false;
         since = null;
+        hotelId = null;
       }
     }
 
@@ -60,6 +62,7 @@ Deno.serve(async (req: Request) => {
       role: row.ruolo,
       name: row.nome,
       present,
+      hotel_id: present ? hotelId : null,
       since,
       expires_at: present && since ? new Date(new Date(since).getTime() + MAX_MS).toISOString() : null,
     });
