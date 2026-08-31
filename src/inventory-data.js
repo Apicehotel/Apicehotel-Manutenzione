@@ -1,4 +1,6 @@
 import { supabase } from './supabase.js'
+import { assertValid } from './reliability/validation-engine.js'
+import { validateInventoryItem, validateStockAdjustment } from './reliability/domain-validation.js'
 
 const PHOTO_BUCKET = 'maintenance-photos'
 
@@ -44,6 +46,7 @@ export async function fetchInventoryItems(hotelId) {
 
 export async function uploadInventoryPhoto(hotelId, itemId, file) {
   if (!supabase || !file) return ''
+  if (!hotelId || !itemId) throw new TypeError('hotelId e itemId sono obbligatori')
   const type = file.type || 'image/jpeg'
   if (!type.startsWith('image/')) throw new Error('Seleziona un file immagine')
   if (file.size > 10 * 1024 * 1024) throw new Error('La foto supera 10 MB')
@@ -63,6 +66,7 @@ export async function getInventoryPhotoUrl(photoPath) {
 
 export async function createInventoryItem(hotelId, draft) {
   if (!supabase) throw new Error('Supabase non disponibile')
+  assertValid(validateInventoryItem(hotelId, draft), 'Articolo magazzino non valido')
   const initialQuantity = Number(draft.quantity || 0)
   const payload = { hotel_id: hotelId, name: draft.name.trim(), category: draft.category.trim() || 'Varie', unit: draft.unit.trim() || 'pz', location: draft.location.trim() || null, sku: draft.sku.trim() || null, quantity: 0, min_quantity: Number(draft.minQuantity || 0), notes: draft.notes.trim() || null }
   const { data, error } = await supabase.from('inventory_items').insert(payload).select('*').single()
@@ -84,6 +88,8 @@ export async function createInventoryItem(hotelId, draft) {
 
 export async function updateInventoryItem(id, hotelId, changes) {
   if (!supabase) throw new Error('Supabase non disponibile')
+  if (!id) throw new TypeError('id è obbligatorio')
+  assertValid(validateInventoryItem(hotelId, changes, { partial: true }), 'Aggiornamento articolo non valido')
   const payload = {}
   if ('name' in changes) payload.name = changes.name.trim()
   if ('category' in changes) payload.category = changes.category.trim() || 'Varie'
@@ -101,6 +107,8 @@ export async function updateInventoryItem(id, hotelId, changes) {
 
 export async function adjustInventoryStock(itemId, delta, note = '') {
   if (!supabase) throw new Error('Supabase non disponibile')
+  if (!itemId) throw new TypeError('itemId è obbligatorio')
+  assertValid(validateStockAdjustment(delta, note), 'Movimento magazzino non valido')
   const { data, error } = await supabase.rpc('inventory_adjust_stock', { p_item_id: itemId, p_delta: Number(delta), p_note: note || null })
   if (error) throw error
   return normalizeItem(data)
