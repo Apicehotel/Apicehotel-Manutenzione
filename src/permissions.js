@@ -12,6 +12,8 @@ const fallback={
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Supremo[m]=allow('view','create')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Direzione[m]=allow('view','create','edit','assign','take_charge','complete')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','reminders','notifications','temperature','technicians'])fallback['Direttore Centro Congressi'][m]=allow('view','create','edit','assign','take_charge','complete')
+fallback.Direzione.issues=allow('view','create','edit','assign','take_charge','complete','delete')
+fallback['Direttore Centro Congressi'].issues=allow('view','create','edit','assign','take_charge','complete','delete')
 fallback['Direttore Centro Congressi'].planning_sale=allow(...PERMISSION_ACTIONS)
 for(const m of ['home','issues','interventions','planning_work','urgent','notifications','housekeeping'])fallback['Portiere Notturno'][m]=allow('view')
 fallback['Portiere Notturno'].issues=allow('view','create','assign','take_charge','complete');fallback['Portiere Notturno'].interventions=allow('view','assign','take_charge','complete')
