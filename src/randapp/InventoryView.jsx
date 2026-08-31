@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
-import { adjustInventoryStock, createInventoryItem, fetchInventoryItems, fetchInventoryMovements, subscribeInventory } from '../inventory-data.js'
+import { adjustInventoryStock, createInventoryItem, fetchInventoryItems, fetchInventoryMovements, getInventoryPhotoUrl, subscribeInventory } from '../inventory-data.js'
 import { canUser } from '../permissions.js'
 import { Badge, Button, Card, EmptyState, Field, Icon, Sheet, Spinner, TextInput } from './ui.jsx'
 import './inventory.css'
 
-const EMPTY = { name: '', category: 'Ricambi', unit: 'pz', location: '', sku: '', quantity: '0', minQuantity: '0', notes: '' }
+const EMPTY = { name: '', category: 'Ricambi', unit: 'pz', location: '', sku: '', quantity: '0', minQuantity: '0', notes: '', photo: null }
 
 function fmt(value) {
   const n = Number(value || 0)
   return Number.isInteger(n) ? String(n) : n.toLocaleString('it-IT', { maximumFractionDigits: 3 })
+}
+
+
+function InventoryPhoto({ path, className = '' }) {
+  const [url, setUrl] = useState('')
+  useEffect(() => { let alive = true; setUrl(''); if (path) getInventoryPhotoUrl(path).then((v) => { if (alive) setUrl(v) }).catch(() => {}); return () => { alive = false } }, [path])
+  return url ? <img className={className} src={url} alt="Foto articolo" loading="lazy" /> : <span className={`rs-inventory-photo-placeholder ${className}`}><Icon name="package" /></span>
 }
 
 function NewItemSheet({ open, onClose, onSave }) {
@@ -37,6 +44,7 @@ function NewItemSheet({ open, onClose, onSave }) {
           <Field label="Scorta minima"><TextInput type="number" min="0" step="0.001" inputMode="decimal" value={draft.minQuantity} onChange={(e) => setDraft({ ...draft, minQuantity: e.target.value })} /></Field>
         </div>
         <Field label="Codice / SKU (facoltativo)"><TextInput value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} /></Field>
+        <Field label="Foto articolo (facoltativa)"><label className="rs-inventory-photo-picker"><input type="file" accept="image/*" capture="environment" onChange={(e) => setDraft({ ...draft, photo: e.target.files?.[0] || null })} /><Icon name="camera" /><span><strong>{draft.photo ? draft.photo.name : 'Scatta o scegli una foto'}</strong><small>Fotografa la scatola, l'etichetta o il ricambio per riconoscerlo subito.</small></span></label></Field>
         <Field label="Note"><textarea className="rs-textarea" rows="3" value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} /></Field>
         {error && <p className="rs-error" role="alert">{error}</p>}
         <div className="rs-form-actions"><Button variant="ghost" onClick={onClose}>Annulla</Button><Button variant="primary" disabled={!draft.name.trim() || busy} onClick={save}>{busy ? 'Salvo…' : 'Aggiungi'}</Button></div>
@@ -73,6 +81,7 @@ function StockSheet({ item, open, onClose, onAdjusted }) {
   }
   return (
     <Sheet open={open} onClose={onClose} title={item.name} className="rs-inventory-sheet">
+      {item.photoPath && <InventoryPhoto path={item.photoPath} className="rs-inventory-photo-large" />}
       <div className="rs-inventory-balance"><small>Giacenza</small><strong>{fmt(item.quantity)} <span>{item.unit}</span></strong>{item.minQuantity > 0 && <em>Minimo {fmt(item.minQuantity)} {item.unit}</em>}</div>
       <div className="rs-segmented rs-inventory-movement-tabs">
         <button type="button" className={mode === 'out' ? 'active' : ''} onClick={() => setMode('out')}>Scarico</button>
@@ -157,7 +166,7 @@ export default function InventoryView({ user, hotel }) {
             const low = item.minQuantity > 0 && item.quantity <= item.minQuantity
             return (
               <Card as="button" className={`rs-inventory-item ${low ? 'is-low' : ''}`} key={item.id} onClick={() => canEdit && setSelectedId(item.id)}>
-                <span className="rs-inventory-item__icon"><Icon name="package" /></span>
+                <InventoryPhoto path={item.photoPath} className="rs-inventory-item__photo" />
                 <span className="rs-inventory-item__main"><span className="rs-inventory-item__top"><strong>{item.name}</strong>{low && <Badge tone="high">Scorta bassa</Badge>}</span><small>{item.category}{item.location ? ` · ${item.location}` : ''}</small></span>
                 <span className="rs-inventory-item__qty"><strong>{fmt(item.quantity)}</strong><small>{item.unit}</small></span>
                 {canEdit && <Icon name="chevronRight" />}
