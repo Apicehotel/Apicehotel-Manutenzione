@@ -13,6 +13,24 @@ test('push client verifies subscription per hotel and repairs on hotel change', 
   assert.match(main, /repairPushSubscription/)
 })
 
+test('profile exposes native RandApp push activation independently from ntfy', async () => {
+  const profile = await readFile(new URL('../src/randapp/Profile.jsx', import.meta.url), 'utf8')
+  assert.match(profile, /data-testid="profile-push-notifications"/)
+  assert.match(profile, /Notifiche push RandApp/)
+  assert.match(profile, /subscribeToPush\(hotel\.id\)/)
+  assert.match(profile, /unsubscribeFromPush\(hotel\.id\)/)
+  assert.match(profile, /Attiva notifiche push/)
+  assert.match(profile, /Disattiva notifiche push/)
+  assert.match(profile, /ntfy resta un canale separato/i)
+})
+
+test('push unsubscribe is scoped to current user, hotel and endpoint', async () => {
+  const fn = await readFile(new URL('../supabase/functions/push-subscribe/index.ts', import.meta.url), 'utf8')
+  assert.match(fn, /action === "unsubscribe"/)
+  assert.match(fn, /\.eq\("hotel_id", hotel\)\.eq\("utente", userData\.user\.id\)\.eq\("endpoint", subscription\.endpoint\)/)
+  assert.match(fn, /unsubscribe_browser/)
+})
+
 test('service worker preserves notification destination on existing PC/mobile window', async () => {
   const sw = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8')
   assert.match(sw, /const CACHE_NAME = 'apicehotel-manutenzione-v\d+'/)
