@@ -4,17 +4,12 @@ import { supabase } from './supabase.js'
 // client (serve al browser per generare l'abbonamento push), a differenza
 // della chiave privata che resta solo lato server (edge function send-push).
 const VAPID_PUBLIC_KEY = 'BJXvALpVtVoEJ4Kuc0AydxwS27BiC43JrMNY0eycS3Ih-75GPbVUfL5B5hs7jCRlWDaAkidMOndZUiZ0Norjxlk'
-const SESSION_KEY = 'apicehotel.session.v1'
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const raw = atob(base64)
   return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)))
-}
-
-function currentHotelId() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')?.hotelId || null } catch { return null }
 }
 
 export function getPushSupportInfo() {
@@ -47,7 +42,7 @@ async function invokePushSubscribe(body) {
   return data || {}
 }
 
-export async function getPushSubscriptionState(hotelId = currentHotelId()) {
+export async function getPushSubscriptionState() {
   const info = getPushSupportInfo()
   if (!info.supported || info.requiresHomeScreen) return 'unsupported'
   if (Notification.permission === 'denied') return 'denied'
@@ -56,13 +51,10 @@ export async function getPushSubscriptionState(hotelId = currentHotelId()) {
     const registration = await ensureRegistration()
     const existing = await registration.pushManager.getSubscription()
     if (!existing) return 'not-subscribed'
-    if (!hotelId || !supabase) return 'subscribed'
-    const data = await invokePushSubscribe({ hotel_id: hotelId, action: 'status', subscription: existing.toJSON() })
+    if (!supabase) return 'subscribed'
+    const data = await invokePushSubscribe({ action: 'status', subscription: existing.toJSON() })
     return data.subscribed ? 'subscribed' : 'not-subscribed'
   } catch {
-    // Se la rete non è disponibile ma il browser conserva una subscription
-    // valida, non mostriamo falsamente 'disattivata'. Il server verrà
-    // riallineato alla prossima attivazione/repair.
     try {
       const registration = await navigator.serviceWorker.getRegistration('/')
       return await registration?.pushManager.getSubscription() ? 'subscribed' : 'not-subscribed'
@@ -70,11 +62,10 @@ export async function getPushSubscriptionState(hotelId = currentHotelId()) {
   }
 }
 
-export async function subscribeToPush(hotelId) {
+export async function subscribeToPush() {
   const info = getPushSupportInfo()
   if (!info.supported) throw new Error('Le notifiche push non sono supportate su questo dispositivo/browser')
   if (info.requiresHomeScreen) throw new Error('Su iPhone/iPad aggiungi prima RandApp alla schermata Home, poi aprila da lì per attivare le notifiche')
-  if (!hotelId) throw new Error('Struttura non selezionata')
   if (!supabase) throw new Error('Supabase non configurato')
 
   const permission = await Notification.requestPermission()
@@ -87,32 +78,28 @@ export async function subscribeToPush(hotelId) {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     })
   }
-  await invokePushSubscribe({ hotel_id: hotelId, subscription: subscription.toJSON() })
+  await invokePushSubscribe({ subscription: subscription.toJSON() })
   return true
 }
 
-// Riregistra sul server la subscription già presente nel browser. Utile dopo
-// cambio struttura, reinstallazione PWA o recupero da una cache vecchia.
-export async function repairPushSubscription(hotelId = currentHotelId()) {
-  if (!hotelId || !isPushSupported() || Notification.permission !== 'granted') return false
+// Riallinea il dispositivo dell'utente con tutte le strutture per cui possiede
+// una membership attiva. L'utente non deve riattivare le push cambiando hotel.
+export async function repairPushSubscription() {
+  if (!isPushSupported() || Notification.permission !== 'granted') return false
   const registration = await ensureRegistration()
   const subscription = await registration.pushManager.getSubscription()
   if (!subscription) return false
-  await invokePushSubscribe({ hotel_id: hotelId, subscription: subscription.toJSON() })
+  await invokePushSubscribe({ subscription: subscription.toJSON() })
   return true
 }
 
-export async function unsubscribeFromPush(hotelId) {
-  if (!isPushSupported() || !supabase || !hotelId) return false
+export async function unsubscribeFromPush() {
+  if (!isPushSupported() || !supabase) return false
   const registration = await ensureRegistration()
   const subscription = await registration.pushManager.getSubscription()
   if (!subscription) return true
 
-  const data = await invokePushSubscribe({ hotel_id: hotelId, action: 'unsubscribe', subscription: subscription.toJSON() })
-  // La stessa subscription può essere registrata per più hotel dello stesso
-  // utente. Disattivare le notifiche di una struttura non deve spegnere anche
-  // le altre: cancelliamo la subscription browser solo quando il server
-  // conferma che non è più associata a nessun hotel.
-  if (data.unsubscribe_browser !== false) await subscription.unsubscribe()
+  await invokePushSubscribe({ action: 'unsubscribe', subscription: subscription.toJSON() })
+  await subscription.unsubscribe()
   return true
 }
