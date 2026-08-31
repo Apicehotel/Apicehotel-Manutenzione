@@ -96,9 +96,10 @@ Contratto di caricamento:
 - deployment recovery, dimensionamento UI e tema restano immediati perché proteggono avvio e coerenza visiva;
 - `xlsx` resta separato dal percorso JavaScript iniziale e viene caricato soltanto dal flusso di import che lo richiede;
 - i CSS globali del design system restano nell'entry per evitare flash di stile e variazioni di cascade tra iOS, Android e Windows: l'ottimizzazione del Punto 4 riguarda i confini JavaScript misurati, non spostamenti CSS ad alto rischio;
-- `scripts/check-bundle.mjs` protegge il percorso statico iniziale in CI e i test di `test/performance-loading-boundaries.test.js` impediscono regressioni dei confini lazy/deferred.
+- `scripts/check-bundle.mjs` impone ora un budget CI di **400 KiB** sul percorso JavaScript statico iniziale; la build Point 4 misurata ha prodotto **311,5 KiB in 2 chunk statici**, lasciando margine senza permettere una regressione verso il precedente limite da 600 KiB;
+- i test di `test/performance-loading-boundaries.test.js` impediscono regressioni dei confini lazy/deferred.
 
-Le prestazioni vengono accettate solo insieme ai gate di build, bundle budget, suite completa, Chromium/WebKit e device acceptance. I valori di bundle pubblicati devono provenire dalla build CI del commit, non da stime manuali.
+Le prestazioni vengono accettate solo insieme ai gate di build, bundle budget, suite completa, Chromium/WebKit e device acceptance. Il valore **311,5 KiB** è quello riportato dalla build CI del Point 4, non una stima manuale.
 
 ## Avvio locale
 
