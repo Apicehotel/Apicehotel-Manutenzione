@@ -56,6 +56,35 @@
     width: calc(21px * var(--rs-scale));
     height: calc(21px * var(--rs-scale));
   }
+
+  /* Compact structure selector: keep hotel context visible without letting
+     account/role metadata consume the operational header. */
+  .rs-header .rs-hotelchip {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: clamp(112px, calc(128px * var(--rs-scale)), 150px);
+    padding: calc(6px * var(--rs-scale)) calc(9px * var(--rs-scale));
+    gap: calc(7px * var(--rs-scale));
+  }
+
+  .rs-header .rs-hotelchip img {
+    width: calc(32px * var(--rs-scale));
+    height: calc(32px * var(--rs-scale));
+    border-radius: calc(10px * var(--rs-scale));
+  }
+
+  .rs-header .rs-hotelchip__text small {
+    display: none;
+  }
+
+  .rs-header .rs-hotelchip__text b {
+    font-size: .84rem;
+  }
+
+  .rs-header .rs-hotelchip__caret .rs-icon {
+    width: calc(17px * var(--rs-scale));
+    height: calc(17px * var(--rs-scale));
+  }
 }
 
 @media (max-width: 430px) {
@@ -85,6 +114,20 @@
     height: var(--rs-header-action-size);
     min-height: var(--rs-header-action-size);
     border-radius: calc(13px * var(--rs-scale));
+  }
+
+  .rs-header .rs-hotelchip {
+    max-width: clamp(102px, calc(116px * var(--rs-scale)), 132px);
+    padding-inline: calc(7px * var(--rs-scale));
+  }
+
+  .rs-header .rs-hotelchip img {
+    width: calc(30px * var(--rs-scale));
+    height: calc(30px * var(--rs-scale));
+  }
+
+  .rs-header .rs-hotelchip__text b {
+    font-size: .78rem;
   }
 }
 
