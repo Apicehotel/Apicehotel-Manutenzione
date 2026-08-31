@@ -25,6 +25,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
     {
       id: 'operativita', label: 'Operatività', items: [
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },
+        { id: 'inventory', icon: 'package', label: 'Magazzino', show: canUser(user, 'inventory', 'view') },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canUser(user, 'urgent', 'view') },
         { id: 'reminders', icon: 'bell', label: 'Promemoria', show: canUser(user, 'reminders', 'view') },
         { id: 'planning-work', icon: 'calendar', label: 'Planning', show: canUser(user, 'planning_work', 'view') || canUser(user, 'planning_sale', 'view') },
@@ -72,6 +73,7 @@ export const VIEW_GUARDS = {
   home: view('home'),
   issues: view('issues'),
   interventions: view('interventions'),
+  inventory: view('inventory'),
   urgent: view('urgent'),
   reminders: view('reminders'),
   'planning-work': (u) => canUser(u, 'planning_work', 'view') || canUser(u, 'planning_sale', 'view'),

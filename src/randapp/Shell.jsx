@@ -15,6 +15,7 @@ import './header-mobile.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
+const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
 const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
 const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
@@ -43,6 +44,7 @@ const ViewFallback = () => <Spinner label="Carico sezione…" />
 const NAV_BUTTONS = [
   { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
   { id: 'interventions', key: 'interventions', icon: 'wrench', label: 'Interventi' },
+  { id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' },
   { id: 'home', key: 'home', icon: 'home', label: 'Home' },
   { id: 'planning-work', key: 'planning_work', icon: 'calendar', label: 'Planning' },
   { id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
@@ -160,7 +162,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'housekeeping', 'interventions', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'housekeeping', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -270,6 +272,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
+    if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
     if (view === 'my-work') return <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />

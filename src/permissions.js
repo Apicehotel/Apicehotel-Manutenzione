@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js'
 
 export const PERMISSION_ACTIONS = ['view','create','edit','assign','take_charge','complete','delete','manage']
-export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings','sensors','usage','diagnostics']
+export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings','sensors','usage','diagnostics','inventory']
 const CACHE_KEY='randapp-role-permissions-v1'
 const allow=(...actions)=>new Set(actions)
 const fallback={
@@ -9,15 +9,15 @@ const fallback={
   RandAI:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,allow(...PERMISSION_ACTIONS)])),
   Supremo:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,new Set()])), Direzione:{}, 'Direttore Centro Congressi':{}, 'Portiere Notturno':{}, manutentore:{}, 'Tecnico esterno':{}, Governante:{}, 'Capo Governante':{}, Reception:{}, 'Isola dei Golosi':{}, 'Ristorante Wine/Jazz':{}, 'Colazione Jazz':{},
 }
-for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Supremo[m]=allow('view','create')
-for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians'])fallback.Direzione[m]=allow('view','create','edit','assign','take_charge','complete')
-for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','reminders','notifications','temperature','technicians'])fallback['Direttore Centro Congressi'][m]=allow('view','create','edit','assign','take_charge','complete')
+for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','inventory'])fallback.Supremo[m]=allow('view','create')
+for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','inventory'])fallback.Direzione[m]=allow('view','create','edit','assign','take_charge','complete')
+for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','reminders','notifications','temperature','technicians','inventory'])fallback['Direttore Centro Congressi'][m]=allow('view','create','edit','assign','take_charge','complete')
 fallback.Direzione.issues=allow('view','create','edit','assign','take_charge','complete','delete')
 fallback['Direttore Centro Congressi'].issues=allow('view','create','edit','assign','take_charge','complete','delete')
 fallback['Direttore Centro Congressi'].planning_sale=allow(...PERMISSION_ACTIONS)
 for(const m of ['home','issues','interventions','planning_work','urgent','notifications','housekeeping'])fallback['Portiere Notturno'][m]=allow('view')
 fallback['Portiere Notturno'].issues=allow('view','create','assign','take_charge','complete');fallback['Portiere Notturno'].interventions=allow('view','assign','take_charge','complete')
-for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','notifications','temperature','technicians'])fallback.manutentore[m]=allow('view')
+for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','notifications','temperature','technicians','inventory'])fallback.manutentore[m]=allow('view')
 fallback.manutentore.issues=allow('view','create','edit','take_charge','complete');fallback.manutentore.interventions=allow('view','create','edit','take_charge','complete');fallback.manutentore.planning_work=allow('view','create','edit','take_charge','complete');fallback.manutentore.planning_sale=allow('view','take_charge','complete')
 for(const m of ['issues','interventions','planning_work','notifications'])fallback['Tecnico esterno'][m]=allow('view')
 fallback['Tecnico esterno'].issues=allow('view','take_charge','complete');fallback['Tecnico esterno'].interventions=allow('view','take_charge','complete')
