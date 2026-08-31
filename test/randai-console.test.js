@@ -20,8 +20,9 @@ test('dedicated /randai route lazy-loads protected RandAI entry without mounting
   assert.match(main,/const RandAIProtectedRoute = lazy\(\(\) => import\('\.\/randai\/auth\/RandAIProtectedRoute\.jsx'\)\)/)
   assert.match(main,/const randaiConsoleMatch = \/\^\\\/randai\\\/\?\$\/.test\(window\.location\.pathname\)/)
   assert.match(main,/randaiConsoleMatch \? <Suspense[\s\S]*?<RandAIProtectedRoute \/>[\s\S]*?<\/Suspense>/)
-  assert.match(main,/: <><App \/><RandAIAssistant \/><\/>/)
+  assert.match(main,/: <Suspense[\s\S]*?<App \/><AuthenticatedRandAI \/>[\s\S]*?<\/Suspense>/)
   assert.match(main,/!randaiConsoleMatch/)
+  assert.doesNotMatch(main,/randaiConsoleMatch \? [^:]*<App \/>/)
 })
 
 test('RandAI has its own role and username password credentials without changing PIN auth',()=>{
