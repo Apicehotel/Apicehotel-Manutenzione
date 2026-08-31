@@ -20,36 +20,42 @@ Deno.serve(async (req: Request) => {
 
   const body = await req.json().catch(() => null);
   const subscription = body?.subscription;
-  const hotel = String(body?.hotel_id || "").trim();
   const action = String(body?.action || "subscribe").trim();
-  if (!hotel || !subscription?.endpoint) return json({ ok: false, error: "invalid_payload" }, 400);
-
-  const { data: membership } = await admin.from("hotel_memberships").select("active").eq("auth_user_id", userData.user.id).eq("hotel_id", hotel).maybeSingle();
-  if (!membership?.active) return json({ ok: false, error: "forbidden" }, 403);
+  if (!subscription?.endpoint) return json({ ok: false, error: "invalid_payload" }, 400);
 
   if (action === "status") {
-    const { data: row } = await admin.from("push_subscriptions").select("id").eq("hotel_id", hotel).eq("utente", userData.user.id).eq("endpoint", subscription.endpoint).maybeSingle();
+    const { data: row } = await admin.from("push_subscriptions").select("id").eq("utente", userData.user.id).eq("endpoint", subscription.endpoint).limit(1).maybeSingle();
     return json({ ok: true, enabled: true, subscribed: Boolean(row) });
   }
 
   if (action === "unsubscribe") {
-    await admin.from("push_subscriptions").delete().eq("hotel_id", hotel).eq("utente", userData.user.id).eq("endpoint", subscription.endpoint);
-    const { count } = await admin.from("push_subscriptions").select("id", { count: "exact", head: true }).eq("endpoint", subscription.endpoint);
-    return json({ ok: true, removed: true, unsubscribe_browser: (count || 0) === 0 });
+    await admin.from("push_subscriptions").delete().eq("utente", userData.user.id).eq("endpoint", subscription.endpoint);
+    return json({ ok: true, removed: true, unsubscribe_browser: true });
   }
 
   if (!subscription?.keys?.p256dh || !subscription?.keys?.auth) return json({ ok: false, error: "invalid_payload" }, 400);
 
-  await admin.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint).neq("utente", userData.user.id);
+  const { data: memberships, error: membershipsError } = await admin
+    .from("hotel_memberships")
+    .select("hotel_id")
+    .eq("auth_user_id", userData.user.id)
+    .eq("active", true);
+  if (membershipsError) return json({ ok: false, error: "memberships_failed", detail: membershipsError.message }, 500);
+  const hotelIds = [...new Set((memberships || []).map((row: any) => String(row.hotel_id || "").trim()).filter(Boolean))];
+  if (!hotelIds.length) return json({ ok: false, error: "no_active_memberships" }, 403);
 
-  const { error } = await admin.from("push_subscriptions").upsert({
-    hotel_id: hotel,
+  // Un endpoint browser appartiene a una sola persona. Le righe per hotel sono
+  // solo indici di routing: l'utente attiva/disattiva il proprio dispositivo una volta.
+  await admin.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+  const rows = hotelIds.map((hotel_id) => ({
+    hotel_id,
     utente: userData.user.id,
     endpoint: subscription.endpoint,
     p256dh: subscription.keys.p256dh,
     auth: subscription.keys.auth,
     creato_il: new Date().toISOString(),
-  }, { onConflict: "hotel_id,utente,endpoint" });
+  }));
+  const { error } = await admin.from("push_subscriptions").insert(rows);
   if (error) return json({ ok: false, error: "subscribe_failed", detail: error.message }, 500);
-  return json({ ok: true, enabled: true, subscribed: true });
+  return json({ ok: true, enabled: true, subscribed: true, hotels: hotelIds });
 });
