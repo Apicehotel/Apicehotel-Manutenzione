@@ -38,3 +38,20 @@ test('presence control is a labeled pill rather than an unlabeled dot', async ()
   assert.match(css, /\.rs-presence-chip/)
   assert.match(css, /data-here='false'/)
 })
+
+test('presence and notification header actions scale together in Piccolo Normale and Grande', async () => {
+  const [size, presenceCss, headerCss] = await Promise.all([
+    read('../src/randapp/ui-size.js'),
+    read('../src/randapp/presence-dot.css'),
+    read('../src/randapp/header-mobile.css'),
+  ])
+  assert.match(size, /\['small', 'Piccolo'\]/)
+  assert.match(size, /\['normal', 'Normale'\]/)
+  assert.match(size, /\['large', 'Grande'\]/)
+  assert.match(presenceCss, /calc\(40px \* var\(--rs-scale\)\)/)
+  assert.match(presenceCss, /calc\(9px \* var\(--rs-scale\)\)/)
+  assert.match(headerCss, /--rs-header-action-size:/)
+  assert.match(headerCss, /height: var\(--rs-header-action-size\)/)
+  assert.match(headerCss, /width: var\(--rs-header-action-size\)/)
+  assert.match(headerCss, /calc\(21px \* var\(--rs-scale\)\)/)
+})
