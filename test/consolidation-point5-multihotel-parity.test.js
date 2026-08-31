@@ -26,10 +26,12 @@ test('hotel-specific integrations cannot silently omit a structure', () => {
 })
 
 test('multi-hotel isolation gates remain part of the suite', async () => {
-  const relational = await source('test/point11-multihotel.test.js')
-  const randai = await source('test/randai-query-scope.test.js')
-  const offline = await source('src/offline-store.js')
+  const [relational, randaiOperational, offline] = await Promise.all([
+    source('test/point11-multihotel.test.js'),
+    source('test/randai-operational-task.test.js'),
+    source('src/offline-store.js'),
+  ])
   assert.match(relational, /cross hotel boundaries/i)
-  assert.match(randai, /hotel_id/)
+  assert.match(randaiOperational, /another hotel does not cross hotel boundary/i)
   assert.match(offline, /cacheKey = \(entity, hotelId\)/)
 })
