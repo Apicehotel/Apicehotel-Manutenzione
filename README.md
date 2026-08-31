@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 34**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 35**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -58,12 +58,31 @@ Contratto consolidato:
 - confronto attore, modulo/schermata, tipo record e `recordId` quando richiesti;
 - supporto a risultato permessi esplicito e regole ownership con bypass privilegiato esplicito;
 - errori stabili `MISSING_CONTEXT`, `HOTEL_MISMATCH`, `ACTOR_MISMATCH`, `RESOURCE_MISMATCH`, `PERMISSION_DENIED`, `OWNERSHIP_MISMATCH`, `MODULE_MISMATCH`;
-- `prepareRandAIAction` richiede ora context coerente con hotel, modulo Segnalazioni e issue corrente prima di chiamare l'Edge Function;
+- `prepareRandAIAction` richiede context coerente con hotel, modulo Segnalazioni e issue corrente prima di chiamare l'Edge Function;
 - membership, ruolo/permesso, filtro `hotel_id`, transizione e optimistic concurrency restano verificati server-side;
 - `test/reliability-context-scope-guard.test.js` copre allow, contesto mancante, cross-hotel, resource errata, actor mismatch, permission denied e ownership;
 - dettagli architetturali in `docs/architecture/RELIABILITY_SAFETY.md`.
 
 Il benchmark ha confermato di **non** introdurre ora un secondo policy engine esterno (OPA/Casbin): l'attuale combinazione Guard applicativo + permessi centralizzati + Action Gateway + Supabase/RLS è più semplice da mantenere e riduce il rischio di divergenza tra policy duplicate.
+
+### Reliability — Blocco 35 Unified Validation & State Transition Layer
+
+Il **Unified Validation Layer** introduce primitive e contratti di dominio condivisi prima delle scritture. Il suo compito è distinto dal Blocco 34: il Context/Scope Guard verifica chi/dove/su quale record; il Blocco 35 verifica se il payload e, quando lo stato corrente è realmente disponibile, la transizione richiesta sono validi.
+
+Contratto consolidato:
+
+- `src/reliability/validation-engine.js` fornisce `required`, allowlist, numeri finiti/intervalli, date/intervalli cronologici, transizioni e `assertValid`;
+- gli errori applicativi hanno codice stabile `OPERATION_VALIDATION_FAILED` e una lista strutturata di issue `path/code/message/meta`;
+- `src/reliability/domain-validation.js` definisce contratti per segnalazioni, urgenti, planning lavori, planning sale e magazzino;
+- il primo wiring diretto nei data layer protegge `planning-work-data.js` e `inventory-data.js`, incluse date/stati, quantità non negative e movimenti stock non nulli;
+- le regole specialistiche già presenti, come `validateIssueTransition` nell'Action Gateway RandAI, restano **KEEP** e non vengono sostituite da una state machine generica;
+- non vengono introdotti limiti arbitrari non dichiarati dallo schema o dal dominio;
+- Zod è **DEFER**: verrà rivalutato se i contratti verranno migrati a TypeScript; XState è **NO ADD** perché sproporzionato rispetto alle transizioni operative attuali;
+- Supabase/RLS/RPC restano autorità server-side: la validazione client è preflight e non una barriera di sicurezza;
+- `test/reliability-unified-validation.test.js` copre error contract, allowlist, transizioni, date, pax, magazzino e wiring dei data layer;
+- dettagli e matrice KEEP/UPGRADE/ADD/DEFER in `docs/architecture/VALIDATION_LAYER.md`.
+
+Il Blocco 36 centralizzerà i write online/offline nel **Safe Write Engine**, riusando questi contratti invece di duplicarli in ogni modulo: preflight → idempotenza/versione attesa → write → read-back → verifica.
 
 Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
@@ -214,7 +233,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md` e `docs/architecture/RELIABILITY_SAFETY.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md` e `docs/architecture/VALIDATION_LAYER.md`.
 
 ## Sicurezza
 
