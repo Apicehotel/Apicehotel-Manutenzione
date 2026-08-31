@@ -75,7 +75,7 @@ export const VIEW_GUARDS = {
   urgent: view('urgent'),
   reminders: view('reminders'),
   'planning-work': (u) => canUser(u, 'planning_work', 'view') || canUser(u, 'planning_sale', 'view'),
-  'planning-sale': (u, hotel) => hotel?.id === 'hotelgio' && canUser(u, 'planning_sale', 'view'),
+  'planning-sale': view('planning_sale'),
   housekeeping: view('housekeeping'),
   temperature: view('temperature'),
   plants: view('temperature'),
