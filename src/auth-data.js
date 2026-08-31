@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { assertSensitiveActionOnline } from './session-policy.js'
 
 function sessionTokens(data) {
   const session = data?.session || data
@@ -15,11 +16,11 @@ async function setReturnedSession(data) {
   return result.session
 }
 export async function loginWithPin({ hotelId, userId, pin }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-auth', { body: { hotel_id: hotelId, user_id: userId, pin } }); if (error) throw error; const session = await setReturnedSession(data); return { ...session, user: data?.user || session.user } }
-export async function loginAdmin(pin) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-gate', { body: { pin } }); if (error) throw error; return setReturnedSession(data) }
-export async function changeOwnPin({ currentPin, newPin }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { current_pin: currentPin, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
-export async function requestPinRecovery({ hotelId, userId }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-recovery', { body: { action: 'request', hotel_id: hotelId, user_id: userId } }); if (error) throw error; if (data?.enabled === false) throw new Error('Recupero PIN via email non ancora configurato'); if (data?.error) throw new Error(data.error); return data }
-export async function completePinRecovery({ token, newPin }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-recovery', { body: { action: 'complete', token, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
-export async function updateOwnProfile({ email, phone, phoneCountryCode }) { if (!supabase) throw new Error('Supabase non configurato'); const body = {}; if (email !== undefined) body.email = email; if (phone !== undefined) body.phone = phone; if (phoneCountryCode !== undefined) body.phone_country_code = phoneCountryCode; const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'update_profile', ...body } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
+export async function loginAdmin(pin) { assertSensitiveActionOnline('L’accesso amministratore'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-gate', { body: { pin } }); if (error) throw error; return setReturnedSession(data) }
+export async function changeOwnPin({ currentPin, newPin }) { assertSensitiveActionOnline('Il cambio PIN'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { current_pin: currentPin, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
+export async function requestPinRecovery({ hotelId, userId }) { assertSensitiveActionOnline('Il recupero PIN'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-recovery', { body: { action: 'request', hotel_id: hotelId, user_id: userId } }); if (error) throw error; if (data?.enabled === false) throw new Error('Recupero PIN via email non ancora configurato'); if (data?.error) throw new Error(data.error); return data }
+export async function completePinRecovery({ token, newPin }) { assertSensitiveActionOnline('Il reset PIN'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-recovery', { body: { action: 'complete', token, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
+export async function updateOwnProfile({ email, phone, phoneCountryCode }) { assertSensitiveActionOnline('La modifica del profilo'); if (!supabase) throw new Error('Supabase non configurato'); const body = {}; if (email !== undefined) body.email = email; if (phone !== undefined) body.phone = phone; if (phoneCountryCode !== undefined) body.phone_country_code = phoneCountryCode; const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'update_profile', ...body } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function getOwnNotificationCode() {
   if (!supabase) throw new Error('Supabase non configurato')
   const { data, error } = await supabase.from('user_notification_codes').select('code').maybeSingle()
@@ -27,6 +28,7 @@ export async function getOwnNotificationCode() {
   return data?.code || ''
 }
 export async function saveOwnNotificationCode(code) {
+  assertSensitiveActionOnline('Il salvataggio del codice notifiche')
   if (!supabase) throw new Error('Supabase non configurato')
   const normalized = String(code || '').replace(/\D/g, '').slice(0, 6)
   if (!/^\d{6}$/.test(normalized)) throw new Error('Il codice notifiche deve contenere esattamente 6 cifre.')
@@ -39,7 +41,7 @@ export async function saveOwnNotificationCode(code) {
   if (error) throw error
   return data?.code || normalized
 }
-export async function setOwnPresence(present) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'set_presence', present: Boolean(present) } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
+export async function setOwnPresence(present) { assertSensitiveActionOnline('L’aggiornamento della presenza'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'set_presence', present: Boolean(present) } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }
   const { data: sessionData } = await supabase.auth.getSession()
