@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 36**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 37**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -104,6 +104,23 @@ Contratto consolidato:
 - dettagli e matrice KEEP/UPGRADE/REPLACE/ADD in `docs/architecture/SAFE_WRITE_ENGINE.md`.
 
 Il Blocco 39 resta il punto dedicato alla convergenza globale offline/concurrency: il 36 non duplica né sostituisce prematuramente `offline-store.js`.
+
+### Reliability — Blocco 37 Authorization & RLS Verification Matrix
+
+Il **Blocco 37** verifica e irrigidisce l'autorizzazione esistente senza introdurre un secondo motore permessi. `src/permissions.js`, `role_permissions`, gli helper PostgreSQL e Supabase RLS restano **KEEP**; il frontend continua a essere solo preflight/UX e il database resta autorità finale.
+
+Contratto consolidato:
+
+- policy `PUBLIC` nello schema applicativo vengono ristrette esplicitamente a `authenticated`, mantenendo invariati `USING` e `WITH CHECK` esistenti;
+- `anon` e `authenticated` non ricevono più `TRUNCATE`, `TRIGGER` o `REFERENCES` sulle tabelle `public`, privilegi non necessari al client RandApp;
+- `public.assert_randapp_authorization_baseline()` verifica deny-by-default, RLS attiva sulle tabelle operative critiche, policy CRUD presenti e assenza dei grant client troppo ampi;
+- la migrazione chiama l'assertion e fallisce chiusa se il baseline non è rispettato;
+- l'assertion non è invocabile dai client: `PUBLIC` è revocato e l'esecuzione è concessa solo a `service_role`;
+- la matrice critica copre Segnalazioni, maintenance issues, Interventi, Urgenti, Planning Lavori + giorni, Planning Sale, Magazzino, Housekeeping e Tecnici;
+- ownership e regole specifiche restano nelle policy di dominio: non vengono sostituite da una policy generica più debole;
+- OPA/Casbin restano **NO ADD**: aggiungerli ora duplicherebbe la sorgente di verità invece di migliorare RLS;
+- `test/reliability-authorization-rls-matrix.test.js` rende permanente il contratto di hardening;
+- dettagli e matrice in `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`.
 
 Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
@@ -254,7 +271,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md` e `docs/architecture/SAFE_WRITE_ENGINE.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md` e `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`.
 
 ## Sicurezza
 
