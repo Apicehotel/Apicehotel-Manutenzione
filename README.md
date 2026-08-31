@@ -40,7 +40,8 @@ Struttura CSS consolidata:
 - `src/randapp/shell.css`: token, superfici e componenti base `rs-*`;
 - `src/randapp/adaptive-layout.css`: responsive layout, safe-area, navigazione mobile, Home centrata e bilanciamento header in modalità Grande;
 - `src/randapp/ui-coherence.css`: accessibilità, focus, touch target e coerenza dei controlli;
-- `src/randapp/login-reference.css`: layout e tema di login/Admin Gate, incluso comportamento con tastiera mobile;
+- `src/randapp/login-reference.css`: layout e tema di login/Admin Gate;
+- `src/randapp/admin-keyboard-fix.css`: guardia mobile dedicata all'Admin Gate; mantiene il layout compatto e scrollabile quando la tastiera riduce il viewport senza introdurre cambi di geometria legati al focus dei pulsanti;
 - `src/randapp/hotel-selector-reference.css`: layout e tema del selettore struttura;
 - `src/randapp/theme-coherence.css`: sole regole tema trasversali non appartenenti a una singola feature;
 - CSS specifici di feature rimangono separati quando hanno responsabilità reale (Planning, nuova segnalazione, housekeeping, notifiche, RandAI).
