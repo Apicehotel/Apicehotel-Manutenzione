@@ -4,6 +4,7 @@ import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
 import { loadSession } from './session.js'
+import { registerPwa } from './pwa.js'
 import './randapp/shell.css'
 import './randapp/migrated.css'
 import './randapp/planning-sale-v2.css'
@@ -83,7 +84,9 @@ function afterPageLoad(task) {
 }
 
 if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
-  afterPageLoad(() => import('./pwa.js').then(({ registerPwa }) => registerPwa()).catch(() => {}))
+  // PWA registration is intentionally immediate: offline/installability is a bootstrap contract,
+  // unlike authenticated operational services that can remain deferred.
+  registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))
 
