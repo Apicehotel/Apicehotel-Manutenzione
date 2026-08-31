@@ -1,0 +1,57 @@
+name: Tutorial video prototype
+
+on:
+  push:
+    branches:
+      - docs/tutorial-video-prototype
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tutorial-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build RandApp
+        run: npm run build
+
+      - name: Start local preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/randapp-preview.log 2>&1 &
+          echo $! > /tmp/randapp-preview.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/randapp-preview.log
+          exit 1
+
+      - name: Record real RandApp tutorial
+        env:
+          E2E_BASE_URL: http://127.0.0.1:4173
+        run: npm run tutorial:video
+
+      - name: Upload tutorial video
+        uses: actions/upload-artifact@v4
+        with:
+          name: randapp-tutorial-00-navigation
+          path: test/tutorial-artifacts/RandApp-Tutorial-00-Navigazione.webm
+          if-no-files-found: error
+          retention-days: 30
