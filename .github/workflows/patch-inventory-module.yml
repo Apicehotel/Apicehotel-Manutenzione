@@ -1,0 +1,74 @@
+name: Wire inventory module
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-inventory-module.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch existing integration points
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new):
+              p=Path(path); s=p.read_text()
+              if old not in s: raise SystemExit(f'anchor not found in {path}: {old[:60]}')
+              p.write_text(s.replace(old,new,1))
+
+          # permissions
+          p=Path('src/permissions.js'); s=p.read_text()
+          s=s.replace("'diagnostics']", "'diagnostics','inventory']", 1)
+          s=s.replace("'temperature','technicians'])fallback.Supremo", "'temperature','technicians','inventory'])fallback.Supremo", 1)
+          s=s.replace("'temperature','technicians'])fallback.Direzione", "'temperature','technicians','inventory'])fallback.Direzione", 1)
+          s=s.replace("'temperature','technicians'])fallback['Direttore Centro Congressi']", "'temperature','technicians','inventory'])fallback['Direttore Centro Congressi']", 1)
+          s=s.replace("'temperature','technicians'])fallback.manutentore", "'temperature','technicians','inventory'])fallback.manutentore", 1)
+          p.write_text(s)
+
+          # nav
+          rep('src/randapp/nav.js', "        { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },", "        { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },\n        { id: 'inventory', icon: 'package', label: 'Magazzino', show: canUser(user, 'inventory', 'view') },")
+          rep('src/randapp/nav.js', "  interventions: view('interventions'),", "  interventions: view('interventions'),\n  inventory: view('inventory'),")
+
+          # role navigation
+          rep('src/randapp/role-navigation.js', "  ['interventions', 'Interventi'],", "  ['interventions', 'Interventi'],\n  ['inventory', 'Magazzino'],")
+          rep('src/randapp/role-navigation.js', "  interventions: 'interventions',", "  interventions: 'interventions',\n  inventory: 'inventory',")
+          rep('src/randapp/role-navigation.js', "  interventions: 'interventions',\n  urgent:", "  interventions: 'interventions',\n  inventory: 'inventory',\n  urgent:")
+          rep('src/randapp/role-navigation.js', "  interventions: 'side',", "  interventions: 'side',\n  inventory: 'side',")
+
+          # shell
+          rep('src/randapp/Shell.jsx', "const Issues = lazy(() => import('./Issues.jsx'))", "const Issues = lazy(() => import('./Issues.jsx'))\nconst InventoryView = lazy(() => import('./InventoryView.jsx'))")
+          rep('src/randapp/Shell.jsx', "  { id: 'interventions', key: 'interventions', icon: 'wrench', label: 'Interventi' },", "  { id: 'interventions', key: 'interventions', icon: 'wrench', label: 'Interventi' },\n  { id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' },")
+          rep('src/randapp/Shell.jsx', "const order = ['home', 'issues', 'housekeeping', 'interventions',", "const order = ['home', 'issues', 'housekeeping', 'interventions', 'inventory',")
+          rep('src/randapp/Shell.jsx', "    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />", "    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />\n    if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />")
+          PY
+      - name: Add contract tests
+        run: |
+          cat > test/inventory-module.test.js <<'EOF'
+          import test from 'node:test'
+          import assert from 'node:assert/strict'
+          import fs from 'node:fs'
+          const inventory = fs.readFileSync(new URL('../src/randapp/InventoryView.jsx', import.meta.url), 'utf8')
+          const shell = fs.readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
+          const nav = fs.readFileSync(new URL('../src/randapp/nav.js', import.meta.url), 'utf8')
+          const permissions = fs.readFileSync(new URL('../src/permissions.js', import.meta.url), 'utf8')
+          test('inventory is wired into RandApp',()=>{assert.match(shell,/InventoryView/);assert.match(nav,/Magazzino/);assert.match(permissions,/'inventory'/)})
+          test('inventory supports stock threshold and movements',()=>{assert.match(inventory,/Scorta minima/);assert.match(inventory,/Registra prelievo/);assert.match(inventory,/Registra carico/);assert.match(inventory,/Ultimi movimenti/)})
+          EOF
+      - name: Verify
+        run: |
+          npm ci
+          npm run build
+          npm test
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/permissions.js src/randapp/nav.js src/randapp/role-navigation.js src/randapp/Shell.jsx test/inventory-module.test.js
+          git commit -m "feat(inventory): integrate hotel warehouse"
+          git push origin main
