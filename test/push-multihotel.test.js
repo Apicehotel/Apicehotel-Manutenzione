@@ -2,33 +2,40 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test('push client verifies subscription per hotel and repairs on hotel change', async () => {
+test('push client verifies and repairs subscription for the signed-in person, not the open hotel', async () => {
   const push = await readFile(new URL('../src/push.js', import.meta.url), 'utf8')
   const main = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
   assert.match(push, /action: 'status'/)
-  assert.match(push, /unsubscribe_browser/)
-  assert.match(push, /export async function repairPushSubscription/)
+  assert.match(push, /export async function repairPushSubscription\(\)/)
   assert.match(push, /requiresHomeScreen: ios && !standalone/)
-  assert.match(main, /apice-session-changed/)
-  assert.match(main, /repairPushSubscription/)
+  assert.doesNotMatch(push, /hotel_id:/)
+  assert.doesNotMatch(push, /currentHotelId/)
+  assert.match(main, /lastRepairUserId/)
+  assert.match(main, /repairPushSubscription\(\)/)
+  assert.doesNotMatch(main, /lastRepairHotelId/)
 })
 
-test('profile exposes native RandApp push activation independently from ntfy', async () => {
+test('profile exposes personal native RandApp push activation independently from hotel and ntfy', async () => {
   const profile = await readFile(new URL('../src/randapp/Profile.jsx', import.meta.url), 'utf8')
   assert.match(profile, /data-testid="profile-push-notifications"/)
-  assert.match(profile, /Notifiche push RandApp/)
-  assert.match(profile, /subscribeToPush\(hotel\.id\)/)
-  assert.match(profile, /unsubscribeFromPush\(hotel\.id\)/)
-  assert.match(profile, /Attiva notifiche push/)
-  assert.match(profile, /Disattiva notifiche push/)
+  assert.match(profile, /Push personali su questo dispositivo/)
+  assert.match(profile, /subscribeToPush\(\)/)
+  assert.match(profile, /unsubscribeFromPush\(\)/)
+  assert.match(profile, /strutture e i permessi del tuo profilo/)
+  assert.doesNotMatch(profile, /subscribeToPush\(hotel\.id\)/)
+  assert.doesNotMatch(profile, /unsubscribeFromPush\(hotel\.id\)/)
   assert.match(profile, /ntfy resta un canale separato/i)
 })
 
-test('push unsubscribe is scoped to current user, hotel and endpoint', async () => {
+test('push subscription backend binds one device to the person and mirrors active memberships only for routing', async () => {
   const fn = await readFile(new URL('../supabase/functions/push-subscribe/index.ts', import.meta.url), 'utf8')
   assert.match(fn, /action === "unsubscribe"/)
-  assert.match(fn, /\.eq\("hotel_id", hotel\)\.eq\("utente", userData\.user\.id\)\.eq\("endpoint", subscription\.endpoint\)/)
-  assert.match(fn, /unsubscribe_browser/)
+  assert.match(fn, /\.delete\(\)\.eq\("utente", userData\.user\.id\)\.eq\("endpoint", subscription\.endpoint\)/)
+  assert.match(fn, /hotel_memberships/)
+  assert.match(fn, /\.eq\("auth_user_id", userData\.user\.id\)/)
+  assert.match(fn, /\.eq\("active", true\)/)
+  assert.match(fn, /const rows = hotelIds\.map/)
+  assert.match(fn, /l'utente attiva\/disattiva il proprio dispositivo una volta/)
 })
 
 test('service worker preserves notification destination on existing PC/mobile window', async () => {
