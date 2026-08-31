@@ -79,7 +79,18 @@ test('critical data layers wire the common validator before writes', () => {
   const planning = fs.readFileSync(new URL('../src/planning-work-data.js', import.meta.url), 'utf8')
   assert.match(inventory, /assertValid\(validateInventoryItem/)
   assert.match(inventory, /assertValid\(validateStockAdjustment/)
-  assert.match(planning, /assertValid\(validatePlanningWorkCreate/)
+
+  const safeWriteIndex = planning.indexOf('const result = await safeWrite({')
+  const preflightIndex = planning.indexOf('preflight:', safeWriteIndex)
+  const createValidationIndex = planning.indexOf('validatePlanningWorkCreate(', preflightIndex)
+  const writeIndex = planning.indexOf('write:', preflightIndex)
+  const rpcIndex = planning.indexOf("supabase.rpc('create_planning_work_safe'", writeIndex)
+
+  assert.ok(safeWriteIndex >= 0, 'Planning create must use Safe Write')
+  assert.ok(preflightIndex > safeWriteIndex, 'Planning validation must be declared as Safe Write preflight')
+  assert.ok(createValidationIndex > preflightIndex, 'Planning create validator must run inside preflight')
+  assert.ok(writeIndex > createValidationIndex, 'Planning create validation must occur before write')
+  assert.ok(rpcIndex > writeIndex, 'Atomic Planning RPC must execute only after preflight')
   assert.match(planning, /assertValid\(validatePlanningWorkStatus/)
 })
 
