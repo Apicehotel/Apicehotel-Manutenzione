@@ -51,14 +51,15 @@ jobs:
           elif '.rs-header__randai .rs-cyber-cat-orb' not in c:
               raise SystemExit('RandAI CSS anchor missing')
           c = c.replace("  .rs-header__randai img {\n    width: calc(var(--rs-header-action-size) - 10px);\n    height: calc(var(--rs-header-action-size) - 10px);\n  }", "  .rs-header__randai .rs-cyber-cat-orb {\n    width: calc(var(--rs-header-action-size) - 2px);\n    height: calc(var(--rs-header-action-size) - 2px);\n  }")
-          c = c.replace("    border-radius: calc(14px * var(--rs-scale));", "    border-radius: 50%;", 1)
-          c = c.replace("    border-radius: calc(13px * var(--rs-scale));", "    border-radius: 50%;", 1)
           css.write_text(c)
 
           test = Path('test/randai-mascot-layout.test.js')
           t = test.read_text()
           t = t.replace("  assert.match(shell, /\\/icons\\/randai-cat\\.webp/)\n", "  assert.match(shell, /CyberCatOrb/)\n  assert.match(shell, /className=\"rs-cyber-cat-orb\"/)\n  assert.doesNotMatch(shell, /randai-cat\\.webp/)\n")
-          t = t.replace("  assert.match(toolbarCss, /\\.rs-header__randai\\{[^}]*width:calc\\(44px\\*var\\(--rs-scale\\)\\);[^}]*height:calc\\(44px\\*var\\(--rs-scale\\)\\)/)\n", "  assert.match(toolbarCss, /\\.rs-header__randai\\{[^}]*width:calc\\(44px\\*var\\(--rs-scale\\)\\);[^}]*height:calc\\(44px\\*var\\(--rs-scale\\)\\)/)\n  assert.match(toolbarCss, /\\.rs-header__randai \\.rs-cyber-cat-orb\\{[^}]*width:calc\\(40px\\*var\\(--rs-scale\\)\\)/)\n")
+          anchor = "  assert.match(toolbarCss, /\\.rs-header__randai\\{[^}]*width:calc\\(44px\\*var\\(--rs-scale\\)\\);[^}]*height:calc\\(44px\\*var\\(--rs-scale\\)\\)/)\n"
+          replacement = anchor + "  assert.match(headerCss, /\\.rs-header__randai \\.rs-cyber-cat-orb\\s*\\{[\\s\\S]*?width:\\s*calc\\(40px \\* var\\(--rs-scale\\)\\)/)\n"
+          if 'rs-cyber-cat-orb' not in t:
+              t = t.replace(anchor, replacement)
           test.write_text(t)
 
           readme = Path('README.md')
@@ -93,6 +94,7 @@ jobs:
 
       - name: Remove temporary workflow
         run: |
+          git pull --rebase
           git rm .github/workflows/apply-cyber-cat-orb.yml
           git commit -m "chore: remove Cyber Cat Orb patch workflow"
           git push
