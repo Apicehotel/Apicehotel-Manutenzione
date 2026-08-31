@@ -1,0 +1,18 @@
+/* Keep the global Priority 5 alert in its own intrinsic-height row.
+   Shell visible flow is: header -> global urgent alert -> main content.
+   The previous 3-row template assigned the alert to the 1fr row, stretching it
+   to the remaining viewport height on iOS. */
+.rs-app {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.rs-global-urgent {
+  align-self: start;
+  min-height: 0;
+  height: auto;
+}
+
+.rs-content {
+  align-self: start;
+  min-height: 0;
+}
