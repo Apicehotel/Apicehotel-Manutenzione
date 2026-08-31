@@ -12,7 +12,7 @@
     "test:matrix": "node scripts/check-quality-matrix.mjs",
     "test:critical": "node scripts/run-critical-tests.mjs",
     "test:multihotel": "node --test test/multihotel-parity.test.js",
-    "test:e2e": "node test/e2e.mjs",
+    "test:e2e": "node test/e2e.mjs && node test/tutorial-video.mjs",
     "test:device": "node test/device-acceptance.mjs",
     "test:quality": "npm run test:matrix && npm run test:critical && npm run test:multihotel && npm test"
   },
