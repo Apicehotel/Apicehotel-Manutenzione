@@ -1,4 +1,4 @@
-/* RandApp adaptive layout layer — loaded last on purpose. */
+/* RandApp adaptive layout — single source for responsive geometry, mobile navigation and Grande-mode chrome. */
 :root {
   --rs-page-pad-x: clamp(12px, 2.1vw, 28px);
   --rs-page-pad-top: clamp(12px, 1.8vw, 24px);
@@ -79,12 +79,31 @@ body { overflow-x: hidden; }
   -webkit-overflow-scrolling: touch;
 }
 
+/* Grande mode: content remains enlarged while shared chrome stays proportional. */
+html[data-ui-size='large'] .rs-header {
+  gap: 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+html[data-ui-size='large'] .rs-hotelchip {
+  flex: 0 1 auto;
+  width: min(68vw, 430px);
+  min-height: 54px;
+  gap: 9px;
+  padding: 7px 10px;
+}
+html[data-ui-size='large'] .rs-hotelchip img { width: 34px; height: 34px; border-radius: 11px; }
+html[data-ui-size='large'] .rs-hotelchip__text b { font-size: .90rem; }
+html[data-ui-size='large'] .rs-hotelchip__text small { font-size: .70rem; }
+html[data-ui-size='large'] .rs-hotelchip__caret .rs-icon { width: 1rem; height: 1rem; }
+html[data-ui-size='large'] .rs-header > div:last-child { margin-left: auto !important; gap: 5px !important; }
+html[data-ui-size='large'] .rs-presence-dot { width: 44px; height: 44px; }
+html[data-ui-size='large'] .rs-presence-dot::before { width: 9px; height: 9px; }
+html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 46px; height: 46px; border-radius: 14px; }
+
 /* Desktop / Windows: use the available screen instead of a narrow phone-like column. */
 @media (min-width: 960px) {
-  .rs-app--with-side {
-    grid-template-columns: clamp(220px, 18vw, 286px) minmax(0, 1fr);
-  }
-
+  .rs-app--with-side { grid-template-columns: clamp(220px, 18vw, 286px) minmax(0, 1fr); }
   .rs-content {
     width: 100%;
     margin: 0;
@@ -93,20 +112,15 @@ body { overflow-x: hidden; }
     padding-right: clamp(22px, 2.4vw, 40px);
     padding-bottom: clamp(28px, 3vw, 48px);
   }
-
   .rs-header {
     padding-left: clamp(22px, 2.4vw, 40px);
     padding-right: clamp(22px, 2.4vw, 40px);
   }
-
   .rs-content > .rs-home,
   .rs-content > .rs-page,
   .rs-content > .rs-view,
   .rs-content > section,
-  .rs-content > form {
-    width: min(100%, var(--rs-content-max));
-  }
-
+  .rs-content > form { width: min(100%, var(--rs-content-max)); }
   .rs-bottomnav, .rs-navfab { display: none; }
 }
 
@@ -116,45 +130,68 @@ body { overflow-x: hidden; }
     padding-left: clamp(18px, 3vw, 28px);
     padding-right: clamp(18px, 3vw, 28px);
   }
-
   .rs-card--pad { padding: clamp(16px, 2.5vw, 22px); }
 }
 
-/* iOS / Android: fit the viewport, safe areas and compact spacing without crushing controls. */
+/* Mobile navigation contract shared by iOS and Android. */
+@media (max-width: 899px) {
+  .rs-bottomnav {
+    bottom: 0 !important;
+    padding-top: 4px !important;
+    padding-bottom: max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) !important;
+  }
+  .rs-navbtn {
+    min-height: 48px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .rs-navfab {
+    bottom: calc(58px + max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) + 12px) !important;
+  }
+  .rs-bottomnav .rs-navbtn[data-testid='nav-home'] { grid-row: 1; }
+  .rs-bottomnav[data-count='1'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
+  .rs-bottomnav[data-count='2'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
+  .rs-bottomnav[data-count='3'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
+  .rs-bottomnav[data-count='4'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
+  .rs-bottomnav[data-count='5'] .rs-navbtn[data-testid='nav-home'] { grid-column: 3; }
+}
+
+/* iOS / Android: fit viewport and safe areas without crushing controls. */
 @media (max-width: 639px) {
   :root {
     --rs-page-pad-x: clamp(10px, 3.5vw, 16px);
     --rs-page-pad-top: clamp(8px, 2.8vw, 14px);
     --rs-page-gap: 8px;
   }
-
   .rs-content {
     width: 100%;
     padding-left: max(var(--rs-page-pad-x), env(safe-area-inset-left, 0px));
     padding-right: max(var(--rs-page-pad-x), env(safe-area-inset-right, 0px));
     padding-bottom: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 18px);
   }
-
   .rs-header {
     padding-left: max(10px, env(safe-area-inset-left, 0px));
     padding-right: max(10px, env(safe-area-inset-right, 0px));
   }
-
   .rs-card { border-radius: clamp(14px, 4vw, 18px); }
   .rs-card--pad { padding: 12px; }
-
   .rs-btn, .rs-iconbtn, button, [role='button'] { touch-action: manipulation; }
   .rs-btn, .rs-iconbtn { min-height: 44px; }
-
   .rs-section__head h1, .rs-pagehead h1 { font-size: clamp(1.45rem, 7vw, 2rem); }
   .rs-section__head h2, .rs-pagehead h2 { font-size: clamp(1.1rem, 5vw, 1.45rem); }
-
   .rs-drawer { width: min(92vw, 380px); }
-
   .rs-bottomnav {
     padding-left: max(8px, env(safe-area-inset-left, 0px));
     padding-right: max(8px, env(safe-area-inset-right, 0px));
   }
+}
+
+@media (max-width: 430px) {
+  html[data-ui-size='large'] .rs-header { gap: 5px; padding-left: 10px; padding-right: 10px; }
+  html[data-ui-size='large'] .rs-hotelchip { width: min(66vw, 360px); min-height: 52px; padding: 6px 9px; }
+  html[data-ui-size='large'] .rs-hotelchip img { width: 32px; height: 32px; }
+  html[data-ui-size='large'] .rs-presence-dot { width: 40px; height: 40px; }
+  html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 44px; height: 44px; }
 }
 
 /* Very narrow phones: prevent controls from colliding. */

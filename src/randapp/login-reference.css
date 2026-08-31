@@ -26,7 +26,6 @@
   box-shadow: 0 18px 52px -24px rgba(34, 211, 238, .68);
 }
 
-/* Crop only the repository asset's outer canvas. Keep the full RandApp sign visible. */
 .rs-auth:has([data-testid='login-submit']) .rs-brand__logo img {
   width: 116%;
   height: 116%;
@@ -215,13 +214,92 @@
   box-shadow: 0 16px 34px -19px rgba(34,211,238,.82), inset 0 1px 0 rgba(255,255,255,.18);
 }
 
-/* iPhone-sized viewports: keep the complete card visible without making it oversized. */
+/* Theme variants belong to the auth component rather than a late fix layer. */
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard {
+  background: linear-gradient(155deg, rgba(255,255,255,.96), rgba(244,248,253,.96));
+  border-color: rgba(38, 86, 148, .18);
+  box-shadow: 0 24px 68px -38px rgba(28,60,120,.38), 0 1px 0 rgba(255,255,255,.9) inset;
+}
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header h1,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-textback { color: var(--rs-text); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header p,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header p,
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-field__label,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-field__label { color: var(--rs-text-2); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input {
+  background: rgba(255,255,255,.86);
+  border-color: rgba(38,86,148,.20);
+  color: var(--rs-text);
+  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset;
+}
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input input,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input input {
+  color: var(--rs-text);
+  -webkit-text-fill-color: var(--rs-text);
+}
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input input::placeholder,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input input::placeholder { color: var(--rs-text-3); opacity: 1; }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input > .rs-icon,
+html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input > .rs-icon { color: #60738f; }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-settings-link {
+  background: rgba(247,250,254,.9);
+  border-color: rgba(38,86,148,.20);
+  color: var(--rs-text);
+}
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-settings-link small { color: var(--rs-text-2); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider { color: var(--rs-text-3); }
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider::before,
+html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-divider::after { background: rgba(38,86,148,.18); }
+html[data-theme='light'] .rs-auth .rs-brand__logo {
+  background: rgba(255,255,255,.92);
+  border-color: rgba(11,184,212,.78);
+  box-shadow: 0 18px 52px -26px rgba(47,111,240,.34);
+}
+html[data-theme='dark'] .rs-auth:has([data-testid='login-submit']) .rs-authcard,
+html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard { color: var(--rs-text); }
+html[data-theme='dark'] .rs-auth:has([data-testid='login-submit']) .rs-authcard header h1,
+html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard header h1 { color: var(--rs-text); }
+
 @media (max-width: 480px) {
   .rs-auth:has([data-testid='login-submit']) .rs-auth__inner,
   .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { max-width: 420px; }
 }
 
-/* Short phones / landscape: compact progressively instead of clipping below the fold. */
+/* iOS/Android keyboard: compact progressively and keep active fields/suggestions visible. */
+@media (max-width: 600px) {
+  .rs-auth:has(input:focus) {
+    padding-top: max(calc(var(--rs-safe-top) + 8px), 12px) !important;
+    padding-bottom: max(calc(var(--rs-safe-bottom) + 12px), 16px) !important;
+  }
+  .rs-auth:has(input:focus) .rs-auth__inner { gap: 12px !important; }
+  .rs-auth:has(input:focus) .rs-brand {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    justify-content: center;
+    gap: 10px !important;
+  }
+  .rs-auth:has(input:focus) .rs-brand__logo { width: 64px !important; height: 64px !important; border-radius: 18px !important; }
+  .rs-auth:has(input:focus) .rs-brand > div:last-child { justify-items: start !important; text-align: left; }
+  .rs-auth:has(input:focus) .rs-brand__title { font-size: 1.65rem !important; }
+  .rs-auth:has(input:focus) .rs-brand__sub { font-size: .82rem !important; }
+  .rs-auth:has(input:focus) .rs-brand__tag { display: none !important; }
+  .rs-auth:has(input:focus) .rs-authcard { padding: 16px !important; gap: 10px !important; }
+  .rs-auth:has(input:focus) .rs-authcard header h1 { font-size: 1.45rem !important; }
+  .rs-auth:has(input:focus) .rs-authcard header p { margin-top: 3px !important; font-size: .86rem !important; }
+  .rs-auth:has(input:focus) .rs-authform { gap: 10px !important; }
+  .rs-auth:has(input:focus) .rs-input { min-height: 50px !important; }
+  .rs-auth:has(input:focus) .rs-suggest {
+    max-height: min(34dvh, 260px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 @media (max-height: 760px) {
   .rs-auth:has([data-testid='login-submit']),
   .rs-auth:has([data-testid='admin-gate-submit']) {
