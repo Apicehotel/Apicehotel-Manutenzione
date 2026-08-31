@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { setOwnPresence } from '../auth-data.js'
 import { supabase } from '../supabase.js'
+import { hotelById } from './helpers.js'
 
 const ELIGIBLE_ROLES = new Set(['manutentore', 'Portiere Notturno', 'admin'])
 
@@ -12,8 +13,14 @@ async function fetchPresence() {
   return data
 }
 
-export default function PresenceChip({ user }) {
+function compactHotelName(hotelId) {
+  const name = hotelById(hotelId)?.name || hotelId || ''
+  return name.replace(/^Hotel\s+/i, '').replace(/^ChocoHotel$/i, 'Choco')
+}
+
+export default function PresenceChip({ user, hotel }) {
   const [present, setPresent] = useState(false)
+  const [presenceHotelId, setPresenceHotelId] = useState(null)
   const [eligible, setEligible] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -24,6 +31,7 @@ export default function PresenceChip({ user }) {
       const state = await fetchPresence()
       setEligible(Boolean(state?.eligible) && ELIGIBLE_ROLES.has(state?.role || user.role))
       setPresent(Boolean(state?.present))
+      setPresenceHotelId(state?.hotel_id || null)
       setError('')
     } catch (err) {
       setError(err?.message || 'Presenza non disponibile')
@@ -43,19 +51,24 @@ export default function PresenceChip({ user }) {
     }
   }, [refresh])
 
-  if (!user || !eligible) return null
+  const presentHere = Boolean(present && hotel?.id && presenceHotelId === hotel.id)
+  const currentLabel = useMemo(() => compactHotelName(presenceHotelId), [presenceHotelId])
+
+  if (!user || !hotel || !eligible) return null
 
   const toggle = async () => {
     if (busy) return
     setBusy(true)
     setError('')
     try {
-      const next = !present
-      const result = await setOwnPresence(next)
+      const next = !presentHere
+      const result = await setOwnPresence(next, next ? hotel.id : null)
       const actual = Boolean(result?.in_struttura ?? next)
+      const actualHotelId = actual ? (result?.in_struttura_hotel_id || hotel.id) : null
       setPresent(actual)
+      setPresenceHotelId(actualHotelId)
       window.dispatchEvent(new CustomEvent('apice-presence-changed', {
-        detail: { present: actual, role: user.role, eligible: true },
+        detail: { present: actual, hotel_id: actualHotelId, role: user.role, eligible: true },
       }))
     } catch (err) {
       setError(err?.message || 'Cambio presenza non riuscito')
@@ -65,21 +78,33 @@ export default function PresenceChip({ user }) {
     }
   }
 
-  const stateLabel = present ? 'In struttura' : 'Fuori struttura'
+  const visibleLabel = present ? currentLabel : 'Fuori'
+  const fullLabel = presentHere
+    ? `In struttura · ${hotel.name}`
+    : present
+      ? `In struttura · ${hotelById(presenceHotelId)?.name || currentLabel}`
+      : 'Fuori struttura'
+  const actionLabel = presentHere
+    ? 'Tocca per segnarti fuori struttura'
+    : present
+      ? `Tocca per spostare la presenza a ${hotel.name}`
+      : `Tocca per segnarti in ${hotel.name}`
+
   return (
     <button
       type="button"
-      className="rs-presence-dot-button"
+      className="rs-presence-chip"
       onClick={toggle}
       disabled={busy}
-      aria-pressed={present}
-      aria-label={`${stateLabel}. Tocca per ${present ? 'segnarti fuori struttura' : 'segnarti in struttura'}`}
-      title={error || stateLabel}
+      aria-pressed={presentHere}
+      aria-label={`${fullLabel}. ${actionLabel}`}
+      title={error || `${fullLabel} · ${actionLabel}`}
       data-testid="presence-chip"
       data-presence={present ? 'in' : 'out'}
+      data-here={presentHere ? 'true' : 'false'}
     >
-      <span className="rs-presence-dot" aria-hidden="true" />
-      <span className="rs-sr-only">{busy ? 'Aggiornamento presenza' : stateLabel}</span>
+      <span className="rs-presence-chip__dot" aria-hidden="true" />
+      <span className="rs-presence-chip__text">{busy ? '…' : visibleLabel}</span>
     </button>
   )
 }
