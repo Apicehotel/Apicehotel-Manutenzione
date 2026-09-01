@@ -9,6 +9,7 @@ import {
   transition,
   validationIssue,
 } from './validation-engine.js'
+import { INVENTORY_ITEM_TYPES, INVENTORY_MOVEMENT_TYPES } from '../inventory-domain.js'
 
 export const ISSUE_STATUSES = Object.freeze(['todo', 'doing', 'waiting', 'tecnico', 'done'])
 export const ISSUE_URGENCIES = Object.freeze(['alta', 'media', 'bassa'])
@@ -110,9 +111,14 @@ export function validateInventoryItem(hotelId, draft = {}, { partial = false } =
   if (!partial || 'name' in draft) checks.push(required(draft.name, 'name'))
   if (!partial || 'quantity' in draft) checks.push(finiteNumber(draft.quantity ?? 0, 'quantity', { min: 0 }))
   if (!partial || 'minQuantity' in draft) checks.push(finiteNumber(draft.minQuantity ?? 0, 'minQuantity', { min: 0 }))
+  if (!partial || 'idealQuantity' in draft) checks.push(finiteNumber(draft.idealQuantity ?? 0, 'idealQuantity', { min: 0 }))
+  if (!partial || 'reorderQuantity' in draft) checks.push(finiteNumber(draft.reorderQuantity ?? 0, 'reorderQuantity', { min: 0 }))
+  if (!partial || 'itemType' in draft) checks.push(oneOf(draft.itemType || 'consumabile', INVENTORY_ITEM_TYPES, 'itemType'))
   return combineValidation(...checks)
 }
 
-export function validateStockAdjustment(delta) {
-  return combineValidation(finiteNumber(delta, 'delta', { nonZero: true }))
+export function validateStockAdjustment(delta, movementType = null) {
+  const checks = [finiteNumber(delta, 'delta', { nonZero: true })]
+  if (movementType) checks.push(oneOf(movementType, INVENTORY_MOVEMENT_TYPES, 'movementType'))
+  return combineValidation(...checks)
 }
