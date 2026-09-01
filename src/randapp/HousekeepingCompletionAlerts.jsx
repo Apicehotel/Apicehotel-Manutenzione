@@ -3,6 +3,7 @@ import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchDirectory } from '../users-data.js'
 import { loadSession } from '../session.js'
 import { hotelById } from './helpers.js'
+import SupplyRequestsPortal from './SupplyRequestsPortal.jsx'
 
 const SESSION_EVENT = 'apice-session-changed'
 const isReception = (user) => user?.role === 'Reception' || user?.department === 'Reception'
@@ -19,7 +20,7 @@ export default function HousekeepingCompletionAlerts() {
   const [openList, setOpenList] = useState(false)
   const seen = useRef(new Set())
   const hotel = hotelById(session?.hotelId)
-  const enabled = Boolean(session?.hotelId && isReception(user))
+  const completionEnabled = Boolean(session?.hotelId && isReception(user))
 
   useEffect(() => {
     const onSessionChange = () => setSession(loadSession())
@@ -43,7 +44,7 @@ export default function HousekeepingCompletionAlerts() {
     setQueue([])
     setOpenList(false)
     seen.current.clear()
-    if (!enabled) return undefined
+    if (!completionEnabled) return undefined
 
     const addRow = (row, version) => {
       const key = `${row.id || `${row.hotel_id}:${row.work_date}:${row.camera}`}:${version || row.updated_at || row.completed_at || ''}`
@@ -69,7 +70,7 @@ export default function HousekeepingCompletionAlerts() {
       .subscribe()
 
     return () => { hotelGioClient.removeChannel(channel) }
-  }, [enabled, session?.hotelId])
+  }, [completionEnabled, session?.hotelId])
 
   const latest = queue[queue.length - 1]
   const summary = useMemo(() => {
@@ -78,9 +79,7 @@ export default function HousekeepingCompletionAlerts() {
     return `${queue.length} camere completate`
   }, [queue, latest])
 
-  if (!enabled || !queue.length) return null
-
-  return (
+  const completionAlert = completionEnabled && queue.length > 0 ? (
     <aside className="rs-hk-alert" role="status" aria-live="polite" aria-label={`Aggiornamento Housekeeping ${hotel?.name || ''}`} data-testid="housekeeping-completion-alert">
       <div className="rs-hk-alert__body">
         <strong>{summary}</strong>
@@ -102,5 +101,12 @@ export default function HousekeepingCompletionAlerts() {
         </ul>
       )}
     </aside>
+  ) : null
+
+  return (
+    <>
+      {completionAlert}
+      {user && hotel && <SupplyRequestsPortal user={user} hotel={hotel} />}
+    </>
   )
 }
