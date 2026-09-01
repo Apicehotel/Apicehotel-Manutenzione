@@ -3,8 +3,10 @@ import {
   adjustInventoryStock,
   createInventoryCategory,
   createInventoryItem,
+  createInventoryLocation,
   fetchInventoryCategories,
   fetchInventoryItems,
+  fetchInventoryLocations,
   fetchInventoryMovements,
   getInventoryPhotoUrl,
   subscribeInventory,
@@ -13,8 +15,10 @@ import {
   flattenInventoryTree,
   INVENTORY_DEFAULT_ACTIONS,
   INVENTORY_ITEM_TYPES,
+  INVENTORY_LOCATION_KINDS,
   inventorySearchText,
   inventoryStockStatus,
+  mergeInventoryAttributeSchemas,
   suggestedInventoryReorder,
 } from '../inventory-domain.js'
 import { canUser } from '../permissions.js'
@@ -22,13 +26,14 @@ import { Badge, Button, Card, EmptyState, Field, Icon, Sheet, Spinner, TextInput
 import './inventory.css'
 
 const EMPTY = {
-  name: '', category: 'Da classificare', categoryId: '', itemType: 'consumabile', unit: 'pz', location: '', sku: '', barcode: '',
-  manufacturer: '', model: '', variantLabel: '', quantity: '0', minQuantity: '0', idealQuantity: '0', reorderQuantity: '0',
-  tags: '', synonyms: '', notes: '', photo: null,
+  name: '', category: 'Da classificare', categoryId: '', itemType: 'consumabile', unit: 'pz', location: '', defaultLocationId: '',
+  sku: '', barcode: '', manufacturer: '', model: '', variantLabel: '', attributes: {}, quantity: '0', minQuantity: '0', idealQuantity: '0',
+  reorderQuantity: '0', tags: '', synonyms: '', notes: '', photo: null,
 }
-
-const EMPTY_CATEGORY = { name: '', parentId: '', synonyms: '', faultTerms: '', defaultAction: '' }
+const EMPTY_CATEGORY = { name: '', parentId: '', synonyms: '', faultTerms: '', defaultAction: '', attributeFields: [] }
+const EMPTY_LOCATION = { name: '', parentId: '', kind: 'area', notes: '' }
 const splitList = (value) => String(value || '').split(',').map((v) => v.trim()).filter(Boolean)
+const keyFromLabel = (value) => String(value || '').trim().toLocaleLowerCase('it').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
 
 function fmt(value) {
   const n = Number(value || 0)
@@ -47,11 +52,17 @@ function CategorySheet({ open, categories, onClose, onSave }) {
   const [error, setError] = useState('')
   useEffect(() => { if (open) { setDraft(EMPTY_CATEGORY); setError('') } }, [open])
   const flattened = useMemo(() => flattenInventoryTree(categories), [categories])
+  const addField = () => setDraft((current) => ({ ...current, attributeFields: [...current.attributeFields, { label: '', type: 'text', unit: '', required: false }] }))
+  const updateField = (index, changes) => setDraft((current) => ({ ...current, attributeFields: current.attributeFields.map((field, i) => i === index ? { ...field, ...changes } : field) }))
+  const removeField = (index) => setDraft((current) => ({ ...current, attributeFields: current.attributeFields.filter((_, i) => i !== index) }))
   const save = async () => {
     if (!draft.name.trim() || busy) return
+    const attributeSchema = draft.attributeFields.map((field) => ({
+      key: keyFromLabel(field.label), label: field.label.trim(), type: field.type || 'text', ...(field.unit.trim() ? { unit: field.unit.trim() } : {}), required: Boolean(field.required),
+    })).filter((field) => field.key && field.label)
     setBusy(true); setError('')
     try {
-      await onSave({ ...draft, synonyms: splitList(draft.synonyms), faultTerms: splitList(draft.faultTerms) })
+      await onSave({ ...draft, synonyms: splitList(draft.synonyms), faultTerms: splitList(draft.faultTerms), attributeSchema })
       onClose()
     } catch (err) { setError(err?.message || 'Categoria non salvata') }
     finally { setBusy(false) }
@@ -74,7 +85,19 @@ function CategorySheet({ open, categories, onClose, onSave }) {
             {INVENTORY_DEFAULT_ACTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </Field>
-        <p className="rs-field__hint">Le parole di guasto appartengono al Magazzino: gli altri moduli potranno interrogarle, ma non modificano la giacenza.</p>
+        <div className="rs-inventory-category-fields">
+          <div className="rs-inventory-category-fields__head"><strong>Campi tecnici</strong><Button variant="ghost" icon="plus" onClick={addField}>Campo</Button></div>
+          {draft.attributeFields.length === 0 ? <p className="rs-field__hint">Facoltativi. I campi della categoria padre vengono ereditati automaticamente.</p> : draft.attributeFields.map((field, index) => (
+            <div className="rs-inventory-attribute-editor" key={index}>
+              <TextInput value={field.label} placeholder="Es. Diametro" onChange={(e) => updateField(index, { label: e.target.value })} />
+              <select className="rs-select" value={field.type} onChange={(e) => updateField(index, { type: e.target.value })}><option value="text">Testo</option><option value="number">Numero</option><option value="boolean">Sì / No</option></select>
+              <TextInput value={field.unit} placeholder="Unità, es. mm" onChange={(e) => updateField(index, { unit: e.target.value })} />
+              <label className="rs-inventory-required"><input type="checkbox" checked={field.required} onChange={(e) => updateField(index, { required: e.target.checked })} /> Obbligatorio</label>
+              <button type="button" className="rs-inventory-remove" aria-label="Rimuovi campo" onClick={() => removeField(index)}>×</button>
+            </div>
+          ))}
+        </div>
+        <p className="rs-field__hint">Sinonimi e parole di guasto appartengono al Magazzino: gli altri moduli possono interrogarli, ma non modificano la giacenza.</p>
         {error && <p className="rs-error" role="alert">{error}</p>}
         <div className="rs-form-actions"><Button variant="ghost" onClick={onClose}>Annulla</Button><Button variant="primary" disabled={!draft.name.trim() || busy} onClick={save}>{busy ? 'Salvo…' : 'Crea categoria'}</Button></div>
       </div>
@@ -82,7 +105,57 @@ function CategorySheet({ open, categories, onClose, onSave }) {
   )
 }
 
-function NewItemSheet({ open, categories, onClose, onSave, onNewCategory }) {
+function LocationSheet({ open, locations, onClose, onSave }) {
+  const [draft, setDraft] = useState(EMPTY_LOCATION)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  useEffect(() => { if (open) { setDraft(EMPTY_LOCATION); setError('') } }, [open])
+  const flattened = useMemo(() => flattenInventoryTree(locations), [locations])
+  const save = async () => {
+    if (!draft.name.trim() || busy) return
+    setBusy(true); setError('')
+    try { await onSave(draft); onClose() }
+    catch (err) { setError(err?.message || 'Ubicazione non salvata') }
+    finally { setBusy(false) }
+  }
+  return (
+    <Sheet open={open} onClose={onClose} title="Nuova ubicazione" className="rs-inventory-sheet">
+      <div className="rs-actions-stack">
+        <Field label="Nome"><TextInput value={draft.name} placeholder="Es. Scaffale elettrico" onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
+        <div className="rs-inventory-form-grid">
+          <Field label="Tipo"><select className="rs-select" value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{INVENTORY_LOCATION_KINDS.map((v) => <option key={v} value={v}>{v}</option>)}</select></Field>
+          <Field label="Dentro"><select className="rs-select" value={draft.parentId} onChange={(e) => setDraft({ ...draft, parentId: e.target.value })}><option value="">Radice</option>{flattened.map((l) => <option key={l.id} value={l.id}>{`${'— '.repeat(l.depth)}${l.name}`}</option>)}</select></Field>
+        </div>
+        <Field label="Note"><TextInput value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} /></Field>
+        <p className="rs-field__hint">Puoi costruire Magazzino → Zona → Scaffale → Ripiano/Cassetto senza mescolare strutture diverse.</p>
+        {error && <p className="rs-error" role="alert">{error}</p>}
+        <div className="rs-form-actions"><Button variant="ghost" onClick={onClose}>Annulla</Button><Button variant="primary" disabled={!draft.name.trim() || busy} onClick={save}>{busy ? 'Salvo…' : 'Crea ubicazione'}</Button></div>
+      </div>
+    </Sheet>
+  )
+}
+
+function DynamicAttributes({ fields, values, onChange }) {
+  if (!fields.length) return null
+  return (
+    <div className="rs-inventory-dynamic-fields">
+      <strong>Dati tecnici</strong>
+      <div className="rs-inventory-form-grid">
+        {fields.map((field) => (
+          <Field key={field.key} label={`${field.label}${field.unit ? ` (${field.unit})` : ''}${field.required ? ' *' : ''}`}>
+            {field.type === 'boolean' ? (
+              <select className="rs-select" value={values[field.key] ?? ''} onChange={(e) => onChange(field.key, e.target.value === '' ? '' : e.target.value === 'true')}>
+                <option value="">Non specificato</option><option value="true">Sì</option><option value="false">No</option>
+              </select>
+            ) : <TextInput type={field.type === 'number' ? 'number' : 'text'} inputMode={field.type === 'number' ? 'decimal' : undefined} value={values[field.key] ?? ''} onChange={(e) => onChange(field.key, field.type === 'number' && e.target.value !== '' ? Number(e.target.value) : e.target.value)} />}
+          </Field>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function NewItemSheet({ open, categories, locations, onClose, onSave, onNewCategory, onNewLocation }) {
   const [draft, setDraft] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -93,37 +166,36 @@ function NewItemSheet({ open, categories, onClose, onSave, onNewCategory }) {
     setError('')
   }, [open, categories])
   const flattened = useMemo(() => flattenInventoryTree(categories), [categories])
+  const locationOptions = useMemo(() => flattenInventoryTree(locations), [locations])
+  const attributeFields = useMemo(() => mergeInventoryAttributeSchemas(categories, draft.categoryId), [categories, draft.categoryId])
   const save = async () => {
     if (!draft.name.trim() || busy) return
+    const missingRequired = attributeFields.find((field) => field.required && (draft.attributes[field.key] === '' || draft.attributes[field.key] === undefined || draft.attributes[field.key] === null))
+    if (missingRequired) { setError(`Compila il campo tecnico obbligatorio: ${missingRequired.label}`); return }
     setBusy(true); setError('')
-    try {
-      await onSave({ ...draft, tags: splitList(draft.tags), synonyms: splitList(draft.synonyms) })
-      onClose()
-    } catch (err) { setError(err?.message || 'Articolo non salvato') }
+    try { await onSave({ ...draft, tags: splitList(draft.tags), synonyms: splitList(draft.synonyms) }); onClose() }
+    catch (err) { setError(err?.message || 'Articolo non salvato') }
     finally { setBusy(false) }
   }
   const selectCategory = (categoryId) => {
     const selected = categories.find((c) => c.id === categoryId)
-    setDraft({ ...draft, categoryId, category: selected?.name || 'Da classificare' })
+    setDraft({ ...draft, categoryId, category: selected?.name || 'Da classificare', attributes: {} })
   }
+  const selectLocation = (locationId) => {
+    const selected = locations.find((l) => l.id === locationId)
+    setDraft({ ...draft, defaultLocationId: locationId, location: selected?.name || '' })
+  }
+  const setAttribute = (key, value) => setDraft((current) => ({ ...current, attributes: { ...current.attributes, [key]: value } }))
   return (
     <Sheet open={open} onClose={onClose} title="Nuovo articolo" className="rs-inventory-sheet">
       <div className="rs-actions-stack">
         <Field label="Nome"><TextInput value={draft.name} placeholder="Es. Lampadina LED E27" onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
         <div className="rs-inventory-form-grid">
-          <Field label="Categoria">
-            <select className="rs-select" value={draft.categoryId} onChange={(e) => selectCategory(e.target.value)}>
-              <option value="">Da classificare</option>
-              {flattened.map((c) => <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth)}${c.name}`}</option>)}
-            </select>
-          </Field>
-          <Field label="Tipo">
-            <select className="rs-select" value={draft.itemType} onChange={(e) => setDraft({ ...draft, itemType: e.target.value })}>
-              {INVENTORY_ITEM_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </Field>
+          <Field label="Categoria"><select className="rs-select" value={draft.categoryId} onChange={(e) => selectCategory(e.target.value)}><option value="">Da classificare</option>{flattened.map((c) => <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth)}${c.name}`}</option>)}</select></Field>
+          <Field label="Tipo"><select className="rs-select" value={draft.itemType} onChange={(e) => setDraft({ ...draft, itemType: e.target.value })}>{INVENTORY_ITEM_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}</select></Field>
         </div>
         <Button variant="ghost" icon="plus" onClick={onNewCategory}>Aggiungi categoria</Button>
+        <DynamicAttributes fields={attributeFields} values={draft.attributes} onChange={setAttribute} />
         <div className="rs-inventory-form-grid">
           <Field label="Produttore"><TextInput value={draft.manufacturer} onChange={(e) => setDraft({ ...draft, manufacturer: e.target.value })} /></Field>
           <Field label="Modello"><TextInput value={draft.model} onChange={(e) => setDraft({ ...draft, model: e.target.value })} /></Field>
@@ -132,7 +204,8 @@ function NewItemSheet({ open, categories, onClose, onSave, onNewCategory }) {
           <Field label="Variante"><TextInput value={draft.variantLabel} placeholder="Es. E27 · 9W · 3000K" onChange={(e) => setDraft({ ...draft, variantLabel: e.target.value })} /></Field>
           <Field label="Unità"><TextInput value={draft.unit} placeholder="pz" onChange={(e) => setDraft({ ...draft, unit: e.target.value })} /></Field>
         </div>
-        <Field label="Posizione"><TextInput value={draft.location} placeholder="Es. Magazzino tecnico · scaffale B" onChange={(e) => setDraft({ ...draft, location: e.target.value })} /></Field>
+        <Field label="Ubicazione"><select className="rs-select" value={draft.defaultLocationId} onChange={(e) => selectLocation(e.target.value)}><option value="">Nessuna ubicazione</option>{locationOptions.map((l) => <option key={l.id} value={l.id}>{`${'— '.repeat(l.depth)}${l.name}`}</option>)}</select></Field>
+        <Button variant="ghost" icon="plus" onClick={onNewLocation}>Aggiungi ubicazione</Button>
         <div className="rs-inventory-form-grid">
           <Field label="Quantità iniziale"><TextInput type="number" min="0" step="0.001" inputMode="decimal" value={draft.quantity} onChange={(e) => setDraft({ ...draft, quantity: e.target.value })} /></Field>
           <Field label="Scorta minima"><TextInput type="number" min="0" step="0.001" inputMode="decimal" value={draft.minQuantity} onChange={(e) => setDraft({ ...draft, minQuantity: e.target.value })} /></Field>
@@ -186,10 +259,7 @@ function StockSheet({ item, open, onClose, onAdjusted }) {
     <Sheet open={open} onClose={onClose} title={item.name} className="rs-inventory-sheet">
       {item.photoPath && <InventoryPhoto path={item.photoPath} className="rs-inventory-photo-large" />}
       <div className="rs-inventory-balance"><small>Giacenza</small><strong>{fmt(item.quantity)} <span>{item.unit}</span></strong>{item.minQuantity > 0 && <em>Minimo {fmt(item.minQuantity)} {item.unit}{reorder > 0 ? ` · riordino suggerito ${fmt(reorder)}` : ''}</em>}</div>
-      <div className="rs-segmented rs-inventory-movement-tabs">
-        <button type="button" className={mode === 'out' ? 'active' : ''} onClick={() => setMode('out')}>Scarico</button>
-        <button type="button" className={mode === 'in' ? 'active' : ''} onClick={() => setMode('in')}>Carico</button>
-      </div>
+      <div className="rs-segmented rs-inventory-movement-tabs"><button type="button" className={mode === 'out' ? 'active' : ''} onClick={() => setMode('out')}>Scarico</button><button type="button" className={mode === 'in' ? 'active' : ''} onClick={() => setMode('in')}>Carico</button></div>
       <div className="rs-actions-stack">
         <Field label={`Quantità (${item.unit})`}><TextInput type="number" min="0.001" step="0.001" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} /></Field>
         <Field label="Nota (facoltativa)"><TextInput value={note} placeholder={mode === 'out' ? 'Es. prelievo tecnico' : 'Es. consegna fornitore'} onChange={(e) => setNote(e.target.value)} /></Field>
@@ -198,13 +268,7 @@ function StockSheet({ item, open, onClose, onAdjusted }) {
       </div>
       <div className="rs-inventory-history">
         <h3>Ultimi movimenti</h3>
-        {movements.length === 0 ? <p className="rs-field__hint">Nessun movimento registrato.</p> : movements.map((m) => (
-          <div className="rs-inventory-movement" key={m.id}>
-            <span className={m.delta > 0 ? 'in' : 'out'}>{m.delta > 0 ? '+' : ''}{fmt(m.delta)} {item.unit}</span>
-            <div><strong>{fmt(m.before)} → {fmt(m.after)}</strong><small>{m.movementType}{m.note ? ` · ${m.note}` : ''}</small></div>
-            <time>{new Date(m.createdAt).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</time>
-          </div>
-        ))}
+        {movements.length === 0 ? <p className="rs-field__hint">Nessun movimento registrato.</p> : movements.map((m) => <div className="rs-inventory-movement" key={m.id}><span className={m.delta > 0 ? 'in' : 'out'}>{m.delta > 0 ? '+' : ''}{fmt(m.delta)} {item.unit}</span><div><strong>{fmt(m.before)} → {fmt(m.after)}</strong><small>{m.movementType}{m.note ? ` · ${m.note}` : ''}</small></div><time>{new Date(m.createdAt).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</time></div>)}
       </div>
     </Sheet>
   )
@@ -213,20 +277,22 @@ function StockSheet({ item, open, onClose, onAdjusted }) {
 export default function InventoryView({ user, hotel }) {
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
+  const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [lowOnly, setLowOnly] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
+  const [locationOpen, setLocationOpen] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const canCreate = canUser(user, 'inventory', 'create')
   const canEdit = canUser(user, 'inventory', 'edit')
 
   const reload = async () => {
     try {
-      const [nextItems, nextCategories] = await Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id)])
-      setItems(nextItems); setCategories(nextCategories)
+      const [nextItems, nextCategories, nextLocations] = await Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)])
+      setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations)
     } finally { setLoading(false) }
   }
   useEffect(() => {
@@ -246,21 +312,13 @@ export default function InventoryView({ user, hotel }) {
 
   const create = async (draft) => { await createInventoryItem(hotel.id, draft); await reload() }
   const createCategory = async (draft) => { await createInventoryCategory(hotel.id, draft); await reload() }
+  const createLocation = async (draft) => { await createInventoryLocation(hotel.id, draft); await reload() }
   const adjust = async (id, delta, note, movementType) => { await adjustInventoryStock(id, delta, note, { movementType }); await reload() }
 
   return (
     <div className="rs-inventory" data-testid="inventory-view">
-      <div className="rs-page-title">
-        <div><h1>Magazzino</h1><p>{hotel.name}</p></div>
-        {canCreate && <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>Articolo</Button>}
-      </div>
-
-      <div className="rs-inventory-summary">
-        <Card><small>ARTICOLI</small><strong>{items.length}</strong></Card>
-        <Card><small>CATEGORIE</small><strong>{categories.length}</strong></Card>
-        <Card className={lowCount ? 'is-low' : ''}><small>DA RIORDINARE</small><strong>{lowCount}</strong></Card>
-      </div>
-
+      <div className="rs-page-title"><div><h1>Magazzino</h1><p>{hotel.name}</p></div>{canCreate && <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>Articolo</Button>}</div>
+      <div className="rs-inventory-summary"><Card><small>ARTICOLI</small><strong>{items.length}</strong></Card><Card><small>CATEGORIE</small><strong>{categories.length}</strong></Card><Card className={lowCount ? 'is-low' : ''}><small>DA RIORDINARE</small><strong>{lowCount}</strong></Card></div>
       <div className="rs-toolbar rs-inventory-toolbar">
         <TextInput icon="search" value={search} placeholder="Nome, codice, barcode, tag, modello…" onChange={(e) => setSearch(e.target.value)} />
         <div className="rs-inventory-toolbar-row">
@@ -269,25 +327,13 @@ export default function InventoryView({ user, hotel }) {
           {canCreate && <button type="button" className="rs-chip" onClick={() => setCategoryOpen(true)}><Icon name="plus" /> Categoria</button>}
         </div>
       </div>
-
-      {loading ? <Spinner label="Carico il magazzino…" /> : filtered.length === 0 ? <EmptyState icon="package" title="Magazzino vuoto">{items.length ? 'Nessun articolo corrisponde ai filtri.' : 'Aggiungi il primo articolo del magazzino.'}</EmptyState> : (
-        <div className="rs-inventory-list">
-          {filtered.map((item) => {
-            const status = inventoryStockStatus(item)
-            return (
-              <Card as="button" className={`rs-inventory-item ${status !== 'ok' ? 'is-low' : ''}`} key={item.id} onClick={() => canEdit && setSelectedId(item.id)}>
-                <InventoryPhoto path={item.photoPath} className="rs-inventory-item__photo" />
-                <span className="rs-inventory-item__main"><span className="rs-inventory-item__top"><strong>{item.name}</strong>{status !== 'ok' && <Badge tone="high">{status === 'esaurito' ? 'Esaurito' : 'Scorta bassa'}</Badge>}</span><small>{item.category}{item.variantLabel ? ` · ${item.variantLabel}` : ''}{item.location ? ` · ${item.location}` : ''}</small></span>
-                <span className="rs-inventory-item__qty"><strong>{fmt(item.quantity)}</strong><small>{item.unit}</small></span>
-                {canEdit && <Icon name="chevronRight" />}
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      <NewItemSheet open={newOpen} categories={categories} onClose={() => setNewOpen(false)} onSave={create} onNewCategory={() => setCategoryOpen(true)} />
+      {loading ? <Spinner label="Carico il magazzino…" /> : filtered.length === 0 ? <EmptyState icon="package" title="Magazzino vuoto">{items.length ? 'Nessun articolo corrisponde ai filtri.' : 'Aggiungi il primo articolo del magazzino.'}</EmptyState> : <div className="rs-inventory-list">{filtered.map((item) => {
+        const status = inventoryStockStatus(item)
+        return <Card as="button" className={`rs-inventory-item ${status !== 'ok' ? 'is-low' : ''}`} key={item.id} onClick={() => canEdit && setSelectedId(item.id)}><InventoryPhoto path={item.photoPath} className="rs-inventory-item__photo" /><span className="rs-inventory-item__main"><span className="rs-inventory-item__top"><strong>{item.name}</strong>{status !== 'ok' && <Badge tone="high">{status === 'esaurito' ? 'Esaurito' : 'Scorta bassa'}</Badge>}</span><small>{item.category}{item.variantLabel ? ` · ${item.variantLabel}` : ''}{item.location ? ` · ${item.location}` : ''}</small></span><span className="rs-inventory-item__qty"><strong>{fmt(item.quantity)}</strong><small>{item.unit}</small></span>{canEdit && <Icon name="chevronRight" />}</Card>
+      })}</div>}
+      <NewItemSheet open={newOpen} categories={categories} locations={locations} onClose={() => setNewOpen(false)} onSave={create} onNewCategory={() => setCategoryOpen(true)} onNewLocation={() => setLocationOpen(true)} />
       <CategorySheet open={categoryOpen} categories={categories} onClose={() => setCategoryOpen(false)} onSave={createCategory} />
+      <LocationSheet open={locationOpen} locations={locations} onClose={() => setLocationOpen(false)} onSave={createLocation} />
       <StockSheet item={selected} open={Boolean(selected)} onClose={() => setSelectedId(null)} onAdjusted={adjust} />
     </div>
   )
