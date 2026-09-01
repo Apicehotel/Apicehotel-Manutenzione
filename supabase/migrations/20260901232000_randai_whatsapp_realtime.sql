@@ -1,0 +1,2 @@
+alter publication supabase_realtime add table public.whatsapp_channel_settings;
+alter publication supabase_realtime add table public.whatsapp_inbound_messages;
