@@ -91,6 +91,99 @@
   border-radius: calc(18px * var(--rs-scale));
 }
 
+/* ============================================================
+   Integrated command crest — reversible visual prototype.
+   Inspired by restrained Liquid Glass / Konsta mobile chrome:
+   two direct actions visually belong to the bottom navigation rather
+   than floating as unrelated controls. No navigation logic changes.
+   ============================================================ */
+@media (max-width: 959px) {
+  :root {
+    --rs-command-size: calc(52px * var(--rs-scale));
+    --rs-command-gap: calc(8px * var(--rs-scale));
+    --rs-command-lift: calc(30px * var(--rs-scale));
+    --rs-command-center: 50vw;
+  }
+
+  /* Reserve enough room for the raised command crest without covering content. */
+  .rs-content {
+    padding-bottom: calc(var(--rs-content-bottom-clearance) + var(--rs-command-lift)) !important;
+  }
+
+  .rs-bottomnav {
+    overflow: visible !important;
+    isolation: isolate;
+  }
+
+  /* A subtle central bridge makes the two controls read as part of the nav shell. */
+  .rs-bottomnav::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: calc(-1 * var(--rs-command-lift));
+    width: calc(var(--rs-command-size) * 2 + var(--rs-command-gap) + 18px);
+    height: calc(var(--rs-command-size) + 18px);
+    transform: translateX(-50%);
+    border-radius: 26px 26px 18px 18px;
+    background: color-mix(in srgb, var(--rs-nav-bg, rgba(250,251,253,.86)) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rs-line, rgba(32,45,64,.10)) 72%, white);
+    box-shadow: 0 -14px 34px -30px rgba(20,31,48,.58), inset 0 1px 0 rgba(255,255,255,.52);
+    -webkit-backdrop-filter: blur(var(--rs-glass-blur, 18px)) saturate(var(--rs-glass-saturate, 125%));
+    backdrop-filter: blur(var(--rs-glass-blur, 18px)) saturate(var(--rs-glass-saturate, 125%));
+    pointer-events: none;
+  }
+
+  /* Existing + becomes the right lobe of the shared command crest. */
+  .rs-navfab {
+    z-index: 52 !important;
+    right: auto !important;
+    left: calc(var(--rs-command-center) + var(--rs-command-gap) / 2) !important;
+    bottom: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) - var(--rs-command-lift)) !important;
+    width: var(--rs-command-size) !important;
+    height: var(--rs-command-size) !important;
+    border-radius: 18px 22px 22px 18px !important;
+    transform: none;
+  }
+
+  /* Existing RandAI header action becomes the left lobe; DOM/handler remain unchanged. */
+  .rs-header__randai {
+    position: fixed !important;
+    z-index: 52 !important;
+    left: calc(var(--rs-command-center) - var(--rs-command-size) - var(--rs-command-gap) / 2) !important;
+    bottom: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) - var(--rs-command-lift)) !important;
+    width: var(--rs-command-size) !important;
+    height: var(--rs-command-size) !important;
+    min-width: var(--rs-command-size) !important;
+    min-height: var(--rs-command-size) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center;
+    border-radius: 22px 18px 18px 22px !important;
+    border: 1px solid color-mix(in srgb, var(--rs-accent) 26%, rgba(255,255,255,.72)) !important;
+    background: color-mix(in srgb, var(--rs-nav-bg, rgba(250,251,253,.86)) 82%, var(--rs-accent-soft, transparent)) !important;
+    box-shadow: 0 12px 28px -22px var(--rs-accent), inset 0 1px 0 rgba(255,255,255,.48) !important;
+    -webkit-backdrop-filter: blur(var(--rs-glass-blur, 18px)) saturate(var(--rs-glass-saturate, 125%));
+    backdrop-filter: blur(var(--rs-glass-blur, 18px)) saturate(var(--rs-glass-saturate, 125%));
+  }
+
+  .rs-header__randai .rs-cyber-cat-orb {
+    width: calc(38px * var(--rs-scale));
+    height: calc(38px * var(--rs-scale));
+  }
+
+  .rs-navfab:active,
+  .rs-header__randai:active {
+    transform: translateY(1px) scale(.96) !important;
+  }
+
+  /* With RandAI promoted to a direct command, hide only its duplicate entry in the + sheet. */
+  .rs-insert-shell [data-testid='insert-randai'] {
+    display: none;
+  }
+}
+
 /* Never cap a real system inset. Three-button Android navigation, gesture bars
    and future native WindowInsets are allowed to reserve all the space they need. */
 @media (max-width: 899px) {
@@ -99,12 +192,18 @@
   }
 
   .rs-content {
-    padding-bottom: var(--rs-content-bottom-clearance) !important;
+    padding-bottom: calc(var(--rs-content-bottom-clearance) + var(--rs-command-lift, 0px)) !important;
   }
 }
 
 /* Very narrow phones keep the same five-slot geometry instead of reordering Home. */
 @media (max-width: 380px) {
+  :root {
+    --rs-command-size: calc(48px * var(--rs-scale));
+    --rs-command-gap: calc(6px * var(--rs-scale));
+    --rs-command-lift: calc(27px * var(--rs-scale));
+  }
+
   .rs-bottomnav {
     padding-left: max(4px, var(--rs-safe-left)) !important;
     padding-right: max(4px, var(--rs-safe-right)) !important;
@@ -130,7 +229,25 @@ html[data-ui-size='large'] {
 
 @media (prefers-reduced-motion: reduce) {
   .rs-navbtn,
-  .rs-navfab {
+  .rs-navfab,
+  .rs-header__randai {
     transition: none !important;
+  }
+
+  .rs-navfab:active,
+  .rs-header__randai:active {
+    transform: none !important;
+  }
+}
+
+@media (prefers-contrast: more), (forced-colors: active) {
+  .rs-bottomnav::before,
+  .rs-header__randai {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .rs-bottomnav::before {
+    border-width: 2px;
   }
 }
