@@ -26,6 +26,20 @@ test('mobile dock uses real RandApp actions, Tabler geometry and Pointer Events'
   assert.doesNotMatch(dock, /Scarico da magazzino/)
 })
 
+test('dock structurally owns the real Shell bottom navigation instead of stacking a second capsule', async () => {
+  const [dock, dockCss] = await Promise.all([
+    source('src/randapp/prototype-liquid-dock.js'),
+    source('src/randapp/prototype-liquid-dock.css'),
+  ])
+  assert.match(dock, /data-dock-navslot/)
+  assert.match(dock, /appendChild\(nav\)/)
+  assert.match(dock, /restoreNav/)
+  assert.match(dockCss, /\.rs-liquid-dock \.rs-bottomnav/)
+  assert.match(dockCss, /\.rs-liquid-dock__surface/)
+  assert.match(dockCss, /\.rs-liquid-dock__bridge/)
+  assert.doesNotMatch(dockCss, /content:\s*['"]RandAI •['"]/)
+})
+
 test('Liquid Glass layer keeps accessibility and unsupported-browser fallbacks', async () => {
   const [vendor, dockCss] = await Promise.all([
     source('src/randapp/vendor/liquid-glass-ui.css'),
@@ -35,7 +49,7 @@ test('Liquid Glass layer keeps accessibility and unsupported-browser fallbacks',
   assert.match(vendor, /prefers-reduced-transparency/)
   assert.match(vendor, /forced-colors/)
   assert.match(vendor, /@supports not/)
-  assert.match(dockCss, /\.rs-bottomnav/)
+  assert.match(dockCss, /prefers-reduced-motion/)
+  assert.match(dockCss, /forced-colors/)
   assert.match(dockCss, /data-slot='3'/)
-  assert.match(dockCss, /RandAI •/)
 })
