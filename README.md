@@ -37,8 +37,9 @@ La shell gestisce safe-area browser e inset nativi opzionali. Un futuro wrapper 
 
 Contratto definitivo della shell:
 
-- bottom navigation mobile a cinque slot: `Segnalazioni · Interventi · Home · Planning · Menu`;
+- bottom navigation mobile a cinque slot: `Segnalazioni · Interventi · Home · Planning · Magazzino`;
 - Home sempre nello slot centrale 3;
+- Menu fuori dai cinque slot visibili e apribile tramite gesto orizzontale della shell, con fallback tecnico mantenuto;
 - permessi e visibilità non alterano la geometria della navbar;
 - il `+` è un'azione separata dalle destinazioni;
 - safe-area effettiva = massimo tra browser `env(safe-area-inset-*)` e inset nativi opzionali;
@@ -50,6 +51,7 @@ Contratto definitivo della shell:
 File principali:
 
 - `src/randapp/shell-navigation.js`
+- `src/randapp/swipe-navigation.js`
 - `src/randapp/system-insets.js`
 - `src/randapp/app-shell-foundation.css`
 - `docs/architecture/APP_SHELL_FOUNDATION.md`
@@ -62,7 +64,7 @@ Principi:
 
 - superfici Material-inspired sui componenti `rs-*` esistenti;
 - Liquid Glass limitato a chrome, Sheet e azioni dove migliora gerarchia e profondità;
-- niente secondo framework UI runtime: Konsta, 21st e librerie glass sono riferimenti di pattern, non dipendenze duplicate;
+- niente secondo framework UI runtime solo per duplicare componenti già presenti;
 - accento hotel separato dai colori semantici;
 - errore/urgenza, warning e successo restano semanticamente indipendenti dal tema hotel;
 - fallback senza `backdrop-filter`;
@@ -74,6 +76,21 @@ File principali:
 - `src/randapp/theme.js`
 - `src/randapp/theme-coherence.css`
 - `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
+
+### Prototipo UI eseguibile — PR #112
+
+Il test mobile corrente applica la regola **mockup = funzione implementabile**: nessun controllo viene mostrato come target definitivo se non può essere collegato a una funzione reale o a un fallback verificabile.
+
+Uso reale delle sorgenti esterne in questo slice:
+
+- `hwyuanzi/LiquidGlass-UI` (MIT) è vendorizzato in `src/randapp/vendor/liquid-glass-ui.css` per token glass, progressive fallback e accessibilità;
+- Tabler Icons (MIT) fornisce i path SVG reali usati dal dock per `plus`, `tool`, `calendar-event`, `package` e `sparkles`;
+- il dock usa Pointer Events per pull-up/pull-down, tap come fallback ed Escape/backdrop per la chiusura;
+- il pannello azioni richiama esclusivamente handler RandApp esistenti: Segnalazione, Intervento, Planning, Magazzino e RandAI contestuale;
+- il Liquid Glass ha fallback per Safari/WebKit, assenza di `backdrop-filter`, movimento ridotto, trasparenza ridotta e forced colors;
+- Konsta UI e Motion Primitives restano riferimenti di comportamento, non vengono dichiarati come dipendenze installate; Tremor verrà usato solo se serve realmente ai KPI e non nel dock.
+
+Dettaglio: `docs/architecture/EXECUTABLE_UI_PROTOTYPE.md`.
 
 ### Punto 3 — RandAI Contextual Integration
 
@@ -176,7 +193,7 @@ Il controllo file non forza la fotocamera: iOS, Android e Windows possono propor
 
 ### Header operativo e RandAI
 
-Il selettore struttura resta compatto. RandAI è una vera azione della toolbar tramite Cyber Cat Orb. Il pannello si apre sotto l'intestazione su mobile e usa il contesto operativo già pubblicato.
+Il selettore struttura resta compatto. RandAI è una vera azione della toolbar tramite Cyber Cat Orb. Sul prototipo mobile PR #112 l'ingresso RandAI è anche nel dock Liquid Glass sopra la navbar e apre lo stesso assistente contestuale.
 
 ### Presenza e UI size
 
@@ -186,8 +203,9 @@ Il selettore struttura resta compatto. RandAI è una vera azione della toolbar t
 
 - entry: `src/main.jsx`;
 - shell/UI: `src/randapp/`;
-- App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
+- App Shell: `src/randapp/shell-navigation.js`, `src/randapp/swipe-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
 - visual layer: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`;
+- prototipo UI eseguibile: `src/randapp/prototype-liquid-dock.js`, `src/randapp/prototype-liquid-dock.css`, `src/randapp/vendor/liquid-glass-ui.css`;
 - Planning: `src/randapp/planning/`;
 - RandAI: `src/randai/`;
 - RandAI context: `src/randai/context/`;
@@ -206,6 +224,7 @@ Documenti principali:
 - `FRONTEND_ARCHITECTURE.md`
 - `docs/architecture/APP_SHELL_FOUNDATION.md`
 - `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
+- `docs/architecture/EXECUTABLE_UI_PROTOTYPE.md`
 - `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`
 - `docs/architecture/RELIABILITY_SAFETY.md`
 - `docs/architecture/VALIDATION_LAYER.md`
