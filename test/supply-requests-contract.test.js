@@ -6,6 +6,10 @@ const migration = readFileSync(new URL('../supabase/migrations/20260901123549_su
 const data = readFileSync(new URL('../src/supply-data.js', import.meta.url), 'utf8')
 const portal = readFileSync(new URL('../src/randapp/SupplyRequestsPortal.jsx', import.meta.url), 'utf8')
 const host = readFileSync(new URL('../src/randapp/HousekeepingCompletionAlerts.jsx', import.meta.url), 'utf8')
+const permissions = readFileSync(new URL('../src/permissions.js', import.meta.url), 'utf8')
+const nav = readFileSync(new URL('../src/randapp/nav.js', import.meta.url), 'utf8')
+const roleNav = readFileSync(new URL('../src/randapp/role-navigation.js', import.meta.url), 'utf8')
+const shell = readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
 
 test('supply catalog is hotel scoped and limited to Minibar and Consumo', () => {
   assert.match(migration, /category in \('minibar','consumo'\)/)
@@ -31,6 +35,17 @@ test('governanti create requests and manutentori resolve them through controlled
   assert.match(migration, /revoke insert,update,delete on public\.supply_request_items from authenticated/)
   assert.match(data, /supply_create_request/)
   assert.match(data, /supply_resolve_item/)
+})
+
+test('Governante and Capo Governante have an actual Rifornimenti menu route', () => {
+  assert.match(permissions, /'inventory','supplies'/)
+  assert.match(permissions, /fallback\[r\]\.supplies=allow\('view','create'\)/)
+  assert.match(nav, /id: 'supplies'.*label: 'Rifornimenti'/s)
+  assert.match(nav, /supplies: view\('supplies'\)/)
+  assert.match(roleNav, /\['supplies', 'Rifornimenti'\]/)
+  assert.match(roleNav, /supplies: 'side'/)
+  assert.match(shell, /view === 'supplies'/)
+  assert.match(shell, /SupplyRequestsPortal user=\{user\} hotel=\{hotel\} standalone/)
 })
 
 test('request creation validates active products and item resolution accepts only delivered or missing', () => {
@@ -62,7 +77,7 @@ test('rifornimenti update through Supabase realtime rather than polling workers'
   assert.doesNotMatch(data, /setInterval|setTimeout/)
 })
 
-test('global housekeeping host exposes the portal without changing reception completion alerts', () => {
+test('global housekeeping host still exposes the quick portal without changing reception completion alerts', () => {
   assert.match(host, /SupplyRequestsPortal/)
   assert.match(host, /HousekeepingCompletionAlerts/)
   assert.match(host, /housekeeping-completion-alert/)
