@@ -10,6 +10,10 @@ const compatibilityMigration = fs.readFileSync(
   new URL('../supabase/migrations/20260901020800_block38_delete_compatibility.sql', import.meta.url),
   'utf8',
 )
+const correlationMigration = fs.readFileSync(
+  new URL('../supabase/migrations/20260901021000_block38_audit_operation_correlation_fix.sql', import.meta.url),
+  'utf8',
+)
 
 const reversibleTables = ['segnalazioni', 'interventi', 'planning_lavori', 'planning_lavori_giorni']
 
@@ -65,4 +69,10 @@ test('restore RPCs preserve the existing domain permission model', () => {
   assert.match(auditMigration, /create or replace function public\.restore_intervention/)
   assert.match(auditMigration, /public\.has_app_permission\(p_hotel_id,'interventions','delete'\)/)
   assert.match(auditMigration, /p_operation_id !~ '\^RND-OP-'/)
+})
+
+test('restore audit correlation prefers restore operation id over historic delete id', () => {
+  assert.match(correlationMigration, /when 'restore' then nullif\(v_new->>'restore_operation_id',''\)/)
+  assert.match(correlationMigration, /when 'soft_delete' then nullif\(v_new->>'delete_operation_id',''\)/)
+  assert.match(correlationMigration, /if tg_op = 'DELETE' then return old/)
 })
