@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { draftKey, sanitizeDraft } from '../src/draft-store.js'
+import { OFFLINE_BACKOFF_STEPS, retryDelay } from '../src/reliability/offline-concurrency.js'
 
 const source = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -38,9 +39,14 @@ test('point 6: stale sessions are revalidated on startup and reconnect without l
   assert.match(app, /Controllo sessione rimandato/)
 })
 
-test('point 6: offline queue has bounded backoff, permanent-failure quarantine and conflict protection', async () => {
+test('point 6: offline queue has bounded jittered backoff, leases, permanent-failure quarantine and conflict protection', async () => {
   const offline = await source('src/offline-store.js')
-  assert.match(offline, /BACKOFF_STEPS/)
+  assert.deepEqual([...OFFLINE_BACKOFF_STEPS], [5000, 15000, 30000, 60000, 120000, 300000])
+  assert.equal(retryDelay(99, () => 0.5), 300000)
+  assert.match(offline, /retryDelay/)
+  assert.match(offline, /claimOperation/)
+  assert.match(offline, /leaseOwner/)
+  assert.match(offline, /leaseUntil/)
   assert.match(offline, /moveToFailures/)
   assert.match(offline, /OFFLINE_CONFLICT/)
   assert.match(offline, /clientMutationId/)

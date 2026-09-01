@@ -1,26 +1,27 @@
 import Dexie from 'dexie'
+import { canClaimOfflineOperation, clearOfflineLeasePatch, createOfflineLeaseOwner, createOfflineOperationId, retryDelay, withOfflineLease } from './reliability/offline-concurrency.js'
 
 const db = new Dexie('apiceOffline')
-db.version(1).stores({
-  cache: '&key,entity,hotelId,updatedAt',
-  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
-  idmap: '&tempId,realId',
-})
-db.version(2).stores({
-  cache: '&key,entity,hotelId,updatedAt',
-  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
-  idmap: '&tempId,realId',
-  blobs: '&id,createdAt',
-})
-db.version(3).stores({
-  cache: '&key,entity,hotelId,updatedAt',
-  outbox: '++id,entity,hotelId,action,tempId,targetId,createdAt',
-  idmap: '&tempId,realId',
-  blobs: '&id,createdAt',
-  failures: '++id,entity,hotelId,action,tempId,targetId,failedAt',
+db.version(1).stores({ cache:'&key,entity,hotelId,updatedAt', outbox:'++id,entity,hotelId,action,tempId,targetId,createdAt', idmap:'&tempId,realId' })
+db.version(2).stores({ cache:'&key,entity,hotelId,updatedAt', outbox:'++id,entity,hotelId,action,tempId,targetId,createdAt', idmap:'&tempId,realId', blobs:'&id,createdAt' })
+db.version(3).stores({ cache:'&key,entity,hotelId,updatedAt', outbox:'++id,entity,hotelId,action,tempId,targetId,createdAt', idmap:'&tempId,realId', blobs:'&id,createdAt', failures:'++id,entity,hotelId,action,tempId,targetId,failedAt' })
+db.version(4).stores({
+  cache:'&key,entity,hotelId,updatedAt',
+  outbox:'++id,&operationId,entity,hotelId,action,tempId,targetId,createdAt,nextAttemptAt,leaseUntil',
+  idmap:'&tempId,realId',
+  blobs:'&id,createdAt',
+  failures:'++id,operationId,entity,hotelId,action,tempId,targetId,failedAt',
+}).upgrade(async (tx) => {
+  await tx.table('outbox').toCollection().modify((row) => {
+    row.operationId ||= createOfflineOperationId()
+    row.leaseOwner = null
+    row.leaseUntil = 0
+  })
+  await tx.table('failures').toCollection().modify((row) => { row.operationId ||= createOfflineOperationId() })
 })
 
 const handlers = new Map()
+const leaseOwner = createOfflineLeaseOwner()
 let draining = false
 let retryTimer = null
 const onlineNow = () => typeof navigator === 'undefined' || navigator.onLine
@@ -28,13 +29,11 @@ const storageAvailable = () => typeof indexedDB !== 'undefined'
 const cacheKey = (entity, hotelId) => `${entity}:${hotelId}`
 const now = () => Date.now()
 const uuid = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
-const BACKOFF_STEPS = [5000, 15000, 30000, 60000, 120000, 300000]
 const OFFLINE_BLOB_PREFIX = 'offline-blob:'
 
 const errorText = (error) => String(error?.message || error || '')
 export const isTransientNetworkError = (error) => !onlineNow() || /failed to fetch|network|load failed|timeout|connection|temporarily|gateway|502|503|504/i.test(errorText(error))
 const isPermanentError = (error) => error?.code === 'OFFLINE_CONFLICT' || /row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint|unsupported/i.test(errorText(error))
-const nextDelay = (attempts = 0) => BACKOFF_STEPS[Math.min(attempts, BACKOFF_STEPS.length - 1)]
 
 function collectOfflineBlobIds(value, out = new Set(), seen = new Set()) {
   if (typeof value === 'string' && value.startsWith(OFFLINE_BLOB_PREFIX)) { out.add(value.slice(OFFLINE_BLOB_PREFIX.length)); return out }
@@ -57,17 +56,16 @@ function mergeQueuedPayload(previous = {}, next = {}) {
   const nextBase = next?._syncBaseValues || null
   if (previousBase || nextBase) merged._syncBaseValues = { ...(nextBase || {}), ...(previousBase || {}) }
   if (previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt) merged._syncBaseUpdatedAt = previous?._syncBaseUpdatedAt || next?._syncBaseUpdatedAt
+  if (previous?._syncBaseVersion || next?._syncBaseVersion) merged._syncBaseVersion = previous?._syncBaseVersion || next?._syncBaseVersion
   return merged
 }
 
 const dispatchStatus = async () => {
   if (typeof window === 'undefined' || !storageAvailable()) return
   const [pending, blocked] = await Promise.all([db.outbox.count().catch(() => 0), db.failures.count().catch(() => 0)])
-  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail: { pending, blocked, online: onlineNow(), syncing: draining } }))
+  window.dispatchEvent(new CustomEvent('apice-offline-status', { detail:{ pending, blocked, online:onlineNow(), syncing:draining } }))
 }
-const dispatchDataChange = (entity, hotelId) => {
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('apice-offline-data-changed', { detail: { entity, hotelId } }))
-}
+const dispatchDataChange = (entity, hotelId) => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('apice-offline-data-changed', { detail:{ entity, hotelId } })) }
 const scheduleDrain = (delay = 0) => {
   if (typeof window === 'undefined' || !storageAvailable() || !onlineNow()) return
   if (retryTimer) clearTimeout(retryTimer)
@@ -76,21 +74,17 @@ const scheduleDrain = (delay = 0) => {
 
 export const makeOfflineId = (prefix = 'offline') => `${prefix}-${uuid()}`
 export const makeClientMutationId = () => uuid()
+export const makeOfflineOperationId = () => createOfflineOperationId()
 
 export async function putOfflineBlob(blob, meta = {}) {
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
   if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('Foto offline vuota o non valida')
   const id = makeOfflineId('offline-blob')
-  await db.blobs.put({ id, blob, meta, createdAt: now() })
+  await db.blobs.put({ id, blob, meta, createdAt:now() })
   return id
 }
-export async function getOfflineBlob(id) {
-  if (!storageAvailable() || !id) return null
-  return db.blobs.get(id)
-}
-export async function deleteOfflineBlob(id) {
-  if (storageAvailable() && id) await db.blobs.delete(id)
-}
+export async function getOfflineBlob(id) { return !storageAvailable() || !id ? null : db.blobs.get(id) }
+export async function deleteOfflineBlob(id) { if (storageAvailable() && id) await db.blobs.delete(id) }
 
 export async function getCachedCollection(entity, hotelId) {
   if (!storageAvailable()) return []
@@ -98,8 +92,7 @@ export async function getCachedCollection(entity, hotelId) {
   return Array.isArray(row?.items) ? row.items : []
 }
 export async function setCachedCollection(entity, hotelId, items) {
-  if (!storageAvailable()) return
-  await db.cache.put({ key: cacheKey(entity, hotelId), entity, hotelId, items, updatedAt: now() })
+  if (storageAvailable()) await db.cache.put({ key:cacheKey(entity, hotelId), entity, hotelId, items, updatedAt:now() })
 }
 export async function findCachedHotelId(entity, itemId) {
   if (!storageAvailable()) return null
@@ -112,9 +105,8 @@ async function replayPending(entity, hotelId, baseItems) {
   const pending = await db.outbox.where('entity').equals(entity).and((op) => op.hotelId === hotelId).sortBy('id')
   for (const op of pending) {
     const visualPayload = op.cachePayload || op.payload
-    if (op.action === 'create') {
-      if (!items.some((item) => item.id === op.tempId)) items.unshift({ ...visualPayload, id: op.tempId, _offline: true })
-    } else if (op.action === 'update') items = items.map((item) => item.id === op.targetId ? { ...item, ...visualPayload, _offline: true } : item)
+    if (op.action === 'create') { if (!items.some((item) => item.id === op.tempId)) items.unshift({ ...visualPayload, id:op.tempId, _offline:true }) }
+    else if (op.action === 'update') items = items.map((item) => item.id === op.targetId ? { ...item, ...visualPayload, _offline:true } : item)
     else if (op.action === 'delete') items = items.filter((item) => item.id !== op.targetId)
   }
   return items
@@ -134,19 +126,18 @@ async function compactMutation(op) {
         const mergedPayload = mergeQueuedPayload(createOp.payload || {}, op.payload || {})
         const mergedCache = { ...(createOp.cachePayload || createOp.payload || {}), ...(op.cachePayload || op.payload || {}) }
         await cleanupPayloadBlobs(createOp.payload, mergedPayload)
-        await db.outbox.update(createOp.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
-        return { compacted: true }
+        await db.outbox.update(createOp.id, { payload:mergedPayload, cachePayload:mergedCache, attempts:0, nextAttemptAt:0, lastError:null, ...clearOfflineLeasePatch() })
+        return { compacted:true, operationId:createOp.operationId }
       }
     }
-    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) { await cleanupPayloadBlobs(op.payload); return { compacted: true } }
-    const priorUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
-    const latest = priorUpdates.at(-1)
+    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) { await cleanupPayloadBlobs(op.payload); return { compacted:true } }
+    const latest = all.filter((row) => row.action === 'update' && row.targetId === op.targetId).at(-1)
     if (latest) {
       const mergedPayload = mergeQueuedPayload(latest.payload || {}, op.payload || {})
       const mergedCache = { ...(latest.cachePayload || latest.payload || {}), ...(op.cachePayload || op.payload || {}) }
       await cleanupPayloadBlobs(latest.payload, mergedPayload)
-      await db.outbox.update(latest.id, { payload: mergedPayload, cachePayload: mergedCache, attempts: 0, nextAttemptAt: 0, lastError: null })
-      return { compacted: true }
+      await db.outbox.update(latest.id, { payload:mergedPayload, cachePayload:mergedCache, attempts:0, nextAttemptAt:0, lastError:null, ...clearOfflineLeasePatch() })
+      return { compacted:true, operationId:latest.operationId }
     }
   }
   if (op.action === 'delete') {
@@ -154,30 +145,35 @@ async function compactMutation(op) {
       const related = all.filter((row) => row.tempId === op.targetId || row.targetId === op.targetId)
       for (const row of related) await cleanupPayloadBlobs(row.payload)
       if (related.length) await db.outbox.bulkDelete(related.map((row) => row.id))
-      return { compacted: true, cancelledCreate: true }
+      return { compacted:true, cancelledCreate:true }
     }
     const relatedUpdates = all.filter((row) => row.action === 'update' && row.targetId === op.targetId)
     for (const row of relatedUpdates) await cleanupPayloadBlobs(row.payload)
     if (relatedUpdates.length) await db.outbox.bulkDelete(relatedUpdates.map((row) => row.id))
-    if (all.some((row) => row.action === 'delete' && row.targetId === op.targetId)) return { compacted: true }
+    const existingDelete = all.find((row) => row.action === 'delete' && row.targetId === op.targetId)
+    if (existingDelete) return { compacted:true, operationId:existingDelete.operationId }
   }
-  return { compacted: false }
+  return { compacted:false }
 }
 
-export async function enqueueMutation({ entity, hotelId, action, payload = null, cachePayload = null, targetId = null, tempId = null }) {
+export async function enqueueMutation({ entity, hotelId, action, payload = null, cachePayload = null, targetId = null, tempId = null, operationId = null }) {
   if (!hotelId) throw new Error(`hotelId mancante per coda offline ${entity}:${action}`)
   if (!storageAvailable()) throw new Error('Archiviazione offline non disponibile su questo dispositivo')
-  const nextPayload = action === 'create' ? { ...(payload || {}), clientMutationId: payload?.clientMutationId || makeClientMutationId() } : payload
-  const op = { entity, hotelId, action, payload: nextPayload, cachePayload, targetId, tempId, createdAt: now(), attempts: 0, nextAttemptAt: 0, lastError: null }
-  const compacted = await compactMutation(op)
-  const current = await getCachedCollection(entity, hotelId)
-  const visualPayload = cachePayload || nextPayload
-  let next = current
-  if (action === 'create') next = [{ ...visualPayload, id: tempId, _offline: true }, ...current.filter((item) => item.id !== tempId)]
-  if (action === 'update') next = current.map((item) => item.id === targetId ? { ...item, ...visualPayload, _offline: true } : item)
-  if (action === 'delete') next = current.filter((item) => item.id !== targetId)
-  await setCachedCollection(entity, hotelId, next)
-  if (!compacted.compacted) await db.outbox.add(op)
+  const stableOperationId = operationId || createOfflineOperationId()
+  const nextPayload = action === 'create' ? { ...(payload || {}), clientMutationId:payload?.clientMutationId || makeClientMutationId() } : payload
+  let next
+  await db.transaction('rw', [db.outbox, db.cache, db.blobs], async () => {
+    const op = { operationId:stableOperationId, entity, hotelId, action, payload:nextPayload, cachePayload, targetId, tempId, createdAt:now(), attempts:0, nextAttemptAt:0, lastError:null, leaseOwner:null, leaseUntil:0 }
+    const compacted = await compactMutation(op)
+    const current = await getCachedCollection(entity, hotelId)
+    const visualPayload = cachePayload || nextPayload
+    next = current
+    if (action === 'create') next = [{ ...visualPayload, id:tempId, _offline:true }, ...current.filter((item) => item.id !== tempId)]
+    if (action === 'update') next = current.map((item) => item.id === targetId ? { ...item, ...visualPayload, _offline:true } : item)
+    if (action === 'delete') next = current.filter((item) => item.id !== targetId)
+    await setCachedCollection(entity, hotelId, next)
+    if (!compacted.compacted) await db.outbox.add(op)
+  })
   dispatchDataChange(entity, hotelId)
   await dispatchStatus()
   if (onlineNow()) scheduleDrain(0)
@@ -188,9 +184,31 @@ export function registerOfflineHandler(entity, handler) {
   handlers.set(entity, handler)
   if (storageAvailable() && onlineNow() && typeof queueMicrotask === 'function') queueMicrotask(() => drainOfflineQueue())
 }
+async function claimOperation(id) {
+  return db.transaction('rw', db.outbox, async () => {
+    const current = await db.outbox.get(id)
+    if (!canClaimOfflineOperation(current, { ownerId:leaseOwner, now:now() })) return null
+    const leased = withOfflineLease(current, leaseOwner, now())
+    if (!leased) return null
+    await db.outbox.update(id, { leaseOwner:leased.leaseOwner, leaseUntil:leased.leaseUntil })
+    return leased
+  })
+}
 async function moveToFailures(op, error) {
-  await db.failures.add({ ...op, sourceOutboxId: op.id, failedAt: now(), error: errorText(error), errorCode: error?.code || null, conflictFields: error?.conflictFields || null })
-  await db.outbox.delete(op.id)
+  await db.transaction('rw', [db.failures, db.outbox], async () => {
+    await db.failures.add({ ...op, ...clearOfflineLeasePatch(), sourceOutboxId:op.id, failedAt:now(), error:errorText(error), errorCode:error?.code || null, conflictFields:error?.conflictFields || null })
+    await db.outbox.delete(op.id)
+  })
+}
+async function completeOperation(op, result) {
+  await db.transaction('rw', [db.outbox, db.idmap, db.cache], async () => {
+    if (op.action === 'create' && op.tempId && result?.id != null) {
+      await db.idmap.put({ tempId:op.tempId, realId:result.id })
+      const cached = await getCachedCollection(op.entity, op.hotelId)
+      await setCachedCollection(op.entity, op.hotelId, cached.map((item) => item.id === op.tempId ? { ...item, ...result, id:result.id, _offline:false } : item))
+    }
+    await db.outbox.delete(op.id)
+  })
 }
 export async function drainOfflineQueue() {
   if (!storageAvailable() || draining || !onlineNow()) return
@@ -199,25 +217,22 @@ export async function drainOfflineQueue() {
   let nextWake = null
   try {
     const operations = await db.outbox.orderBy('id').toArray()
-    for (const op of operations) {
-      const handler = handlers.get(op.entity)
+    for (const snapshot of operations) {
+      const handler = handlers.get(snapshot.entity)
       if (!handler) continue
-      const wait = Number(op.nextAttemptAt || 0) - now()
+      const wait = Number(snapshot.nextAttemptAt || 0) - now()
       if (wait > 0) { nextWake = nextWake == null ? wait : Math.min(nextWake, wait); continue }
+      const op = await claimOperation(snapshot.id)
+      if (!op) continue
       let targetId = op.targetId
       if (targetId && String(targetId).startsWith('offline-')) {
         const mapped = await db.idmap.get(targetId)
-        if (!mapped?.realId) continue
+        if (!mapped?.realId) { await db.outbox.update(op.id, clearOfflineLeasePatch()); continue }
         targetId = mapped.realId
       }
       try {
         const result = await handler(op, targetId)
-        if (op.action === 'create' && op.tempId && result?.id != null) {
-          await db.idmap.put({ tempId: op.tempId, realId: result.id })
-          const cached = await getCachedCollection(op.entity, op.hotelId)
-          await setCachedCollection(op.entity, op.hotelId, cached.map((item) => item.id === op.tempId ? { ...item, ...result, id: result.id, _offline: false } : item))
-        }
-        await db.outbox.delete(op.id)
+        await completeOperation(op, result)
         dispatchDataChange(op.entity, op.hotelId)
       } catch (error) {
         if (isPermanentError(error)) {
@@ -227,8 +242,8 @@ export async function drainOfflineQueue() {
           continue
         }
         const attempts = Number(op.attempts || 0) + 1
-        const delay = nextDelay(attempts - 1)
-        await db.outbox.update(op.id, { attempts, nextAttemptAt: now() + delay, lastError: errorText(error) })
+        const delay = retryDelay(attempts - 1)
+        await db.outbox.update(op.id, { attempts, nextAttemptAt:now() + delay, lastError:errorText(error), ...clearOfflineLeasePatch() })
         if (!isTransientNetworkError(error)) console.error('offline sync retry', op.entity, op.action, error)
         nextWake = nextWake == null ? delay : Math.min(nextWake, delay)
       }
@@ -240,22 +255,22 @@ export async function drainOfflineQueue() {
   }
 }
 export async function getOfflineStatus() {
-  if (!storageAvailable()) return { pending: 0, blocked: 0, online: onlineNow(), syncing: false }
+  if (!storageAvailable()) return { pending:0, blocked:0, online:onlineNow(), syncing:false }
   const [pending, blocked] = await Promise.all([db.outbox.count(), db.failures.count()])
-  return { pending, blocked, online: onlineNow(), syncing: draining }
+  return { pending, blocked, online:onlineNow(), syncing:draining }
 }
-export async function getOfflineFailures() {
-  return storageAvailable() ? db.failures.orderBy('id').reverse().toArray() : []
-}
+export async function getOfflineFailures() { return storageAvailable() ? db.failures.orderBy('id').reverse().toArray() : [] }
 export async function retryOfflineFailure(id, { force = false } = {}) {
   if (!storageAvailable()) return false
   const failed = await db.failures.get(id)
   if (!failed) return false
-  const { id: _id, sourceOutboxId: _source, failedAt: _failedAt, error: _error, errorCode: _code, conflictFields: _fields, ...op } = failed
-  const payload = { ...(op.payload || {}) }
-  if (force) { delete payload._syncBaseUpdatedAt; delete payload._syncBaseValues }
-  await db.outbox.add({ ...op, payload, attempts: 0, nextAttemptAt: 0, lastError: null, createdAt: now() })
-  await db.failures.delete(id)
+  await db.transaction('rw', [db.failures, db.outbox], async () => {
+    const { id:_id, sourceOutboxId:_source, failedAt:_failedAt, error:_error, errorCode:_code, conflictFields:_fields, ...op } = failed
+    const payload = { ...(op.payload || {}) }
+    if (force) { delete payload._syncBaseUpdatedAt; delete payload._syncBaseValues; delete payload._syncBaseVersion }
+    await db.outbox.add({ ...op, operationId:op.operationId || createOfflineOperationId(), payload, attempts:0, nextAttemptAt:0, lastError:null, createdAt:now(), ...clearOfflineLeasePatch() })
+    await db.failures.delete(id)
+  })
   dispatchDataChange(failed.entity, failed.hotelId)
   await dispatchStatus(); scheduleDrain(0)
   return true
@@ -264,8 +279,7 @@ export async function discardOfflineFailure(id) {
   if (!storageAvailable()) return false
   const failed = await db.failures.get(id)
   if (!failed) return false
-  await cleanupPayloadBlobs(failed.payload)
-  await db.failures.delete(id)
+  await db.transaction('rw', [db.failures, db.blobs], async () => { await cleanupPayloadBlobs(failed.payload); await db.failures.delete(id) })
   dispatchDataChange(failed.entity, failed.hotelId)
   await dispatchStatus()
   return true

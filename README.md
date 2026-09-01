@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 38**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 39**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -103,8 +103,6 @@ Contratto consolidato:
 - `test/reliability-safe-write-engine.test.js` protegge ordine delle fasi, assenza di retry impliciti, idempotenza, read-back, verifica, delete-by-absence e wiring Planning;
 - dettagli e matrice KEEP/UPGRADE/REPLACE/ADD in `docs/architecture/SAFE_WRITE_ENGINE.md`.
 
-Il Blocco 39 resta il punto dedicato alla convergenza globale offline/concurrency: il 36 non duplica né sostituisce prematuramente `offline-store.js`.
-
 ### Reliability — Blocco 37 Authorization & RLS Verification Matrix
 
 Il **Blocco 37** verifica e irrigidisce l'autorizzazione esistente senza introdurre un secondo motore permessi. `src/permissions.js`, `role_permissions`, gli helper PostgreSQL e Supabase RLS restano **KEEP**; il frontend continua a essere solo preflight/UX e il database resta autorità finale.
@@ -140,6 +138,26 @@ Contratto consolidato:
 - pgAudit è **DEFER**, non perché inutile ma perché copre auditing SQL/sessione e non sostituisce `operationId`, before/after e restore di dominio; un'adozione futura dovrà essere mirata per evitare logging eccessivo;
 - `test/reliability-audit-reversible-operations.test.js` rende permanente il contratto;
 - dettagli in `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`.
+
+### Reliability — Blocco 39 Offline, Retry & Concurrency Hardening
+
+Il **Blocco 39** mantiene Dexie/IndexedDB ma rende l'outbox resistente a più tab/PWA, riconnessioni e modifiche concorrenti. Non promette exactly-once: combina identità stabile, lease locale, idempotenza e compare-and-swap server-side.
+
+Contratto consolidato:
+
+- ogni mutazione accodata riceve un `operationId` persistente `RND-OP-*`, distinto dall'ID autoincrementale locale e conservato attraverso retry e failure queue;
+- Dexie passa allo schema v4 con `operationId`, `leaseOwner` e `leaseUntil` sull'outbox;
+- il vecchio `draining` in memoria resta un'ottimizzazione della singola istanza, mentre il claim reale della riga usa una transazione IndexedDB e un lease cross-tab recuperabile dopo crash;
+- enqueue+cache, replay create+id-map+cache, outbox→failure, failure→outbox e cleanup discard sono transazioni locali atomiche; le chiamate di rete restano fuori dalle transazioni Dexie;
+- il backoff esistente mantiene gli stessi gradini ma aggiunge jitter ±20% per evitare retry simultanei dopo una riconnessione;
+- la create Segnalazioni continua a usare `mutation_id` per idempotenza server-side;
+- `updatedAtToken` conserva il timestamp PostgreSQL esatto: update Segnalazioni online e replay offline applicano CAS con `id + hotel_id + updated_at` e trasformano un mismatch in `OFFLINE_CONFLICT`;
+- `soft_delete_issue_cas(...)` blocca la riga `FOR UPDATE`, verifica hotel/permesso/ownership e confronta lo stesso token prima del soft-delete, eliminando il precedente TOCTOU `SELECT → DELETE`;
+- la delete conserva lo stesso `operationId` dall'azione iniziale fino all'audit del Blocco 38;
+- i vecchi record cache privi del token esatto mantengono temporaneamente il fallback legacy finché vengono ricaricati dal server;
+- retry budget/circuit breaker restano al Blocco 47 e la matrice avversariale completa al Blocco 49;
+- `test/reliability-offline-concurrency.test.js` copre operation ID, lease, jitter, transazioni Dexie, CAS e RPC;
+- dettagli in `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
 
 Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
@@ -290,7 +308,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md` e `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
 
 ## Sicurezza
 
