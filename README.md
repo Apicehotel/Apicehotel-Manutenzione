@@ -22,7 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 37**.
+- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 38**.
 
 ### RandAI — blocchi operativi consolidati
 
@@ -121,6 +121,25 @@ Contratto consolidato:
 - OPA/Casbin restano **NO ADD**: aggiungerli ora duplicherebbe la sorgente di verità invece di migliorare RLS;
 - `test/reliability-authorization-rls-matrix.test.js` rende permanente il contratto di hardening;
 - dettagli e matrice in `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`.
+
+### Reliability — Blocco 38 Audit & Reversible Operations
+
+Il **Blocco 38** aggiunge un audit operativo append-only e rende reversibili le cancellazioni nei domini critici senza sostituire gli eventi funzionali già esistenti e senza introdurre un secondo motore permessi.
+
+Contratto consolidato:
+
+- `issue_events` e `randai_action_audit` restano **KEEP** per la storia di dominio Segnalazioni e l'Action Gateway RandAI;
+- `public.operational_audit_log` aggiunge la traccia trasversale `operationId → hotel → attore/ruolo → modulo/azione → record → before/after → outcome`;
+- i client possono leggere l'audit solo se `can_admin_hotel(hotel_id)` e non possono inserirlo, modificarlo o cancellarlo direttamente;
+- trigger DB registrano create/update/soft-delete/restore e mantengono un fallback `RND-AUD-*` quando un vecchio percorso non fornisce ancora un `RND-OP-*`;
+- gli snapshot audit applicano data minimization e rimuovono il telefono del tecnico;
+- Segnalazioni, Interventi, Planning Lavori e giorni Planning ricevono metadati di cancellazione/ripristino;
+- una DELETE già autorizzata dalle RLS viene intercettata da un trigger `BEFORE DELETE` e trasformata in soft-delete, preservando compatibilità con frontend, offline e outbox esistenti;
+- le normali SELECT e UPDATE vedono solo record `deleted_at IS NULL`;
+- il restore avviene tramite RPC server-side con `RND-OP-*` e riusa gli stessi permessi/ownership già esistenti: per Segnalazioni resta `issues.delete` oppure autore della propria segnalazione; Planning e Interventi richiedono il relativo permesso delete;
+- pgAudit è **DEFER**, non perché inutile ma perché copre auditing SQL/sessione e non sostituisce `operationId`, before/after e restore di dominio; un'adozione futura dovrà essere mirata per evitare logging eccessivo;
+- `test/reliability-audit-reversible-operations.test.js` rende permanente il contratto;
+- dettagli in `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`.
 
 Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
 
@@ -271,7 +290,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md` e `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md` e `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`.
 
 ## Sicurezza
 
