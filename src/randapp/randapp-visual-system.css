@@ -1,0 +1,159 @@
+/* RandApp Visual System v2 — Material semantics + controlled progressive glass.
+   Inspired by the accessibility/progressive-enhancement patterns evaluated from
+   Konsta UI, 21st.dev, Glass UI and LiquidGlass-UI. No runtime UI dependency:
+   RandApp keeps ownership of its operational components and degrades to solid surfaces. */
+
+:root {
+  --rs-font-body: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rs-font-display: 'Sora', var(--rs-font-body);
+  --rs-touch-min: 44px;
+  --rs-control-h: calc(46px * var(--rs-scale));
+  --rs-space-1: calc(4px * var(--rs-scale));
+  --rs-space-2: calc(8px * var(--rs-scale));
+  --rs-space-3: calc(12px * var(--rs-scale));
+  --rs-space-4: calc(16px * var(--rs-scale));
+  --rs-space-5: calc(20px * var(--rs-scale));
+  --rs-radius-control: calc(14px * var(--rs-scale));
+  --rs-radius-card: calc(20px * var(--rs-scale));
+  --rs-radius-sheet: calc(28px * var(--rs-scale));
+  --rs-focus: 0 0 0 3px color-mix(in srgb, var(--rs-accent) 24%, transparent);
+
+  /* semantic layer; hotel accent is supplied separately */
+  --rs-accent: #1976d2;
+  --rs-accent-strong: #0d5fae;
+  --rs-accent-soft: color-mix(in srgb, var(--rs-accent) 12%, transparent);
+  --rs-on-accent: #ffffff;
+  --rs-info: #1976d2;
+  --rs-success: #16855b;
+  --rs-warning: #a66300;
+  --rs-error: #ba1a1a;
+
+  /* progressive glass: restrained chrome, never content legibility */
+  --rs-glass-bg: color-mix(in srgb, var(--rs-surface) 82%, transparent);
+  --rs-glass-bg-strong: color-mix(in srgb, var(--rs-surface-2) 90%, transparent);
+  --rs-glass-line: color-mix(in srgb, var(--rs-text) 13%, transparent);
+  --rs-glass-highlight: inset 0 1px 0 color-mix(in srgb, #fff 24%, transparent);
+  --rs-glass-blur: 18px;
+}
+
+html[data-theme='light'] {
+  --rs-bg: #f4f7fb;
+  --rs-bg-2: #edf2f8;
+  --rs-surface: #ffffff;
+  --rs-surface-2: #f8fafc;
+  --rs-surface-3: #edf2f7;
+  --rs-line: rgba(27, 43, 65, .11);
+  --rs-line-strong: rgba(27, 43, 65, .22);
+  --rs-text: #172033;
+  --rs-text-2: #526176;
+  --rs-text-3: #748197;
+  --rs-cyan: var(--rs-accent);
+  --rs-blue: var(--rs-accent);
+  --rs-blue-deep: var(--rs-accent-strong);
+  --rs-grad-primary: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent) 88%, #fff), var(--rs-accent-strong));
+  --rs-danger: var(--rs-error);
+  --rs-warn: var(--rs-warning);
+  --rs-ok: var(--rs-success);
+  --rs-shadow: 0 16px 36px -24px rgba(29, 45, 70, .32);
+  --rs-header-bg: linear-gradient(180deg, rgba(244,247,251,.92), rgba(244,247,251,.76) 72%, transparent);
+  --rs-nav-bg: rgba(250,252,255,.88);
+  --rs-chrome-solid: rgba(250,252,255,.96);
+  --rs-overlay-bg: rgba(20, 28, 40, .34);
+}
+
+html[data-theme='dark'] {
+  --rs-accent: #55b8ff;
+  --rs-accent-strong: #2496e8;
+  --rs-on-accent: #06121e;
+}
+
+/* Hotel identity is an accent, never a separate layout. */
+.rs-root[data-hotel='hotelgio'] { --rs-accent: #b08a24; --rs-accent-strong: #8d6b0d; }
+.rs-root[data-hotel='chocohotel'] { --rs-accent: #9b5d36; --rs-accent-strong: #744025; }
+.rs-root[data-hotel='brigantino'] { --rs-accent: #2677b8; --rs-accent-strong: #14588f; }
+html[data-theme='dark'] .rs-root[data-hotel='hotelgio'] { --rs-accent: #e3bd57; --rs-accent-strong: #bd9228; }
+html[data-theme='dark'] .rs-root[data-hotel='chocohotel'] { --rs-accent: #d69a72; --rs-accent-strong: #ad6c44; }
+html[data-theme='dark'] .rs-root[data-hotel='brigantino'] { --rs-accent: #66b8f2; --rs-accent-strong: #3194d8; }
+
+html, body { font-family: var(--rs-font-body); }
+body { background: var(--rs-bg); }
+.rs-root { background: radial-gradient(70% 44% at 50% -8%, color-mix(in srgb, var(--rs-accent) 7%, transparent), transparent 70%), var(--rs-bg); }
+
+.rs-card {
+  border-radius: var(--rs-radius-card);
+  background: var(--rs-surface);
+  border-color: var(--rs-line);
+  box-shadow: var(--rs-shadow);
+}
+
+.rs-btn, .rs-iconbtn, .rs-navbtn, .rs-hotelchip, .rs-input, .rs-textarea, .rs-segmented button {
+  -webkit-tap-highlight-color: transparent;
+}
+.rs-btn { min-height: var(--rs-control-h); border-radius: var(--rs-radius-control); }
+.rs-btn--primary { background: var(--rs-accent); color: var(--rs-on-accent); box-shadow: 0 10px 24px -16px color-mix(in srgb, var(--rs-accent) 70%, transparent); }
+.rs-btn--outline { color: var(--rs-accent); border-color: color-mix(in srgb, var(--rs-accent) 38%, transparent); }
+.rs-btn--ghost, .rs-iconbtn { background: var(--rs-surface-2); border-color: var(--rs-line); }
+.rs-iconbtn { min-width: var(--rs-touch-min); min-height: var(--rs-touch-min); }
+.rs-input, .rs-textarea { background: var(--rs-surface); border-color: var(--rs-line); border-radius: var(--rs-radius-control); }
+.rs-input:focus-within, .rs-textarea:focus { border-color: var(--rs-accent); box-shadow: var(--rs-focus); }
+
+.rs-badge--accent, .rs-badge--todo { color: var(--rs-accent); border-color: color-mix(in srgb, var(--rs-accent) 28%, transparent); background: var(--rs-accent-soft); }
+.rs-segmented { background: var(--rs-surface-3); border-color: var(--rs-line); }
+.rs-segmented button.active { background: var(--rs-surface); color: var(--rs-text); box-shadow: 0 2px 8px rgba(20,35,55,.08); }
+
+/* Controlled glass belongs to transient/shared chrome only. */
+.rs-header, .rs-bottomnav, .rs-sheet, .rs-drawer {
+  background: var(--rs-glass-bg-strong);
+  border-color: var(--rs-glass-line);
+}
+.rs-header, .rs-bottomnav { box-shadow: var(--rs-glass-highlight); }
+.rs-sheet { border-radius: var(--rs-radius-sheet) var(--rs-radius-sheet) 0 0; }
+.rs-hotelchip { background: var(--rs-glass-bg); border-color: var(--rs-glass-line); }
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rs-header, .rs-bottomnav, .rs-sheet, .rs-drawer, .rs-hotelchip {
+    -webkit-backdrop-filter: saturate(1.12) blur(var(--rs-glass-blur));
+    backdrop-filter: saturate(1.12) blur(var(--rs-glass-blur));
+  }
+}
+
+.rs-navbtn { color: var(--rs-text-3); border-radius: 16px; }
+.rs-navbtn.active { color: var(--rs-accent); }
+.rs-navbtn.active::before { background: var(--rs-accent); box-shadow: none; height: 3px; }
+.rs-navfab {
+  background: var(--rs-accent);
+  color: var(--rs-on-accent);
+  box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--rs-accent) 72%, transparent), var(--rs-glass-highlight);
+}
+.rs-navfab:active { transform: scale(.94); }
+
+/* Operational content stays calm and solid; hierarchy comes from spacing/type. */
+.rs-section__head h1, .rs-pagehead h1, .rs-workhome__hero h1,
+.rs-section__head h2, .rs-pagehead h2, .rs-workhome__sectionhead h2 { font-family: var(--rs-font-display); letter-spacing: -.02em; }
+.rs-workhome__role, .rs-workhome__sectionhead span { color: var(--rs-accent) !important; }
+.rs-workhome__stat, .rs-workhome__task, .rs-workhome__quick button { background: var(--rs-surface) !important; box-shadow: none; }
+.rs-workhome__taskicon { color: var(--rs-accent) !important; background: var(--rs-accent-soft) !important; }
+.rs-workhome__task.tone-high .rs-workhome__taskicon { color: var(--rs-error) !important; background: color-mix(in srgb, var(--rs-error) 10%, transparent) !important; }
+
+:where(button, input, textarea, select, [role='button'], [role='tab']):focus-visible {
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rs-btn:hover:not(:disabled), .rs-iconbtn:hover:not(:disabled), .rs-navbtn:hover:not(:disabled) { filter: brightness(.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root { --rs-glass-bg: var(--rs-surface); --rs-glass-bg-strong: var(--rs-surface); }
+  .rs-header, .rs-bottomnav, .rs-sheet, .rs-drawer, .rs-hotelchip { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+@media (forced-colors: active) {
+  .rs-card, .rs-btn, .rs-iconbtn, .rs-input, .rs-textarea, .rs-bottomnav, .rs-sheet, .rs-drawer, .rs-hotelchip { border: 1px solid CanvasText; }
+  .rs-navbtn.active::before { background: Highlight; }
+}
