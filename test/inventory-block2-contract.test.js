@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const migration = readFileSync(new URL('../supabase/migrations/20260901105000_inventory_block2_traceability_stocktake_transfer.sql', import.meta.url), 'utf8')
+const cancelMigration = readFileSync(new URL('../supabase/migrations/20260901105500_inventory_block2_cancel_and_transfer_snapshot.sql', import.meta.url), 'utf8')
 const data = readFileSync(new URL('../src/inventory-block2-data.js', import.meta.url), 'utf8')
 const view = readFileSync(new URL('../src/randapp/InventoryBlock2Panel.jsx', import.meta.url), 'utf8')
 const qr = readFileSync(new URL('../supabase/functions/inventory-qr-label/index.ts', import.meta.url), 'utf8')
@@ -16,12 +17,20 @@ test('block 2 keeps one stock ledger and adds traceability layers', () => {
   assert.match(migration, /movement_type,note/)
 })
 
-test('cross-hotel transfer is dispatched and received through guarded RPCs', () => {
+test('cross-hotel transfer is two-phase, guarded and reversible before receipt', () => {
   assert.match(migration, /inventory_start_transfer/)
   assert.match(migration, /inventory_receive_transfer/)
   assert.match(migration, /catalog_key/)
   assert.match(migration, /has_app_permission\(v_t\.destination_hotel_id,'inventory','edit'\)/)
-  assert.match(migration, /revoke all on function/)
+  assert.match(cancelMigration, /inventory_cancel_transfer/)
+  assert.match(cancelMigration, /transfer_cancel/)
+  assert.match(cancelMigration, /item_snapshot/)
+})
+
+test('physical stocktake can finalize atomically or be explicitly cancelled', () => {
+  assert.match(migration, /Completa tutti i conteggi prima di chiudere/)
+  assert.match(cancelMigration, /inventory_cancel_stocktake/)
+  assert.match(data, /cancelStocktake/)
 })
 
 test('scanner and QR labels have device-safe fallbacks', () => {
@@ -30,5 +39,6 @@ test('scanner and QR labels have device-safe fallbacks', () => {
   assert.match(view, /Fotocamera di sistema/)
   assert.match(data, /inventoryCode/)
   assert.match(qr, /qrcode@1\.5\.4/)
-  assert.match(qr, /verify/i)
+  assert.match(qr, /QRCode\.toString/)
+  assert.match(qr, /cache-control/)
 })
