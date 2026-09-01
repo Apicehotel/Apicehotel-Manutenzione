@@ -1,0 +1,74 @@
+/*
+ * Vendored from hwyuanzi/LiquidGlass-UI, MIT License.
+ * Source: https://github.com/hwyuanzi/LiquidGlass-UI/blob/main/src/liquid-glass.css
+ * RandApp keeps this file close to upstream so the glass physics, progressive
+ * fallbacks and accessibility behavior remain auditable.
+ */
+:root {
+  --lg-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --lg-duration: 0.24s;
+  --lg-duration-fast: 0.18s;
+  --lg-radius: 24px;
+  --lg-radius-pill: 999px;
+  --lg-pad: 28px;
+  --lg-tint: 255, 255, 255;
+  --lg-tint-strength: 0.075;
+  --lg-blur: 18px;
+  --lg-saturate: 135%;
+  --lg-brightness: 104%;
+  --lg-fallback-opacity: 0.88;
+  --lg-fill: linear-gradient(155deg, rgba(var(--lg-tint), calc(var(--lg-tint-strength) + 0.025)) 0%, rgba(var(--lg-tint), var(--lg-tint-strength)) 55%, rgba(var(--lg-tint), calc(var(--lg-tint-strength) - 0.02)) 100%);
+  --lg-border: rgba(255,255,255,.2);
+  --lg-rim: rgba(255,255,255,.34);
+  --lg-rim-low: rgba(255,255,255,.035);
+  --lg-specular: inset 0 1px 1px rgba(255,255,255,.32);
+  --lg-occlusion: inset 0 -1px 1px rgba(0,0,0,.16);
+  --lg-focus-ring: rgba(255,255,255,.92);
+  --lg-shadow: 0 1px 3px rgba(0,0,0,.1), 0 10px 28px rgba(0,0,0,.16);
+  --lg-hover-tint-strength: .105;
+  --lg-hover-border: rgba(255,255,255,.34);
+  --lg-hover-lift: -2px;
+  --lg-hover-scale: 1.003;
+  --lg-hover-shadow: 0 2px 6px rgba(0,0,0,.12), 0 16px 38px rgba(0,0,0,.22);
+  --lg-sheen: .1;
+  --lg-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --lg-ink: #fff;
+  --lg-ink-soft: rgba(255,255,255,.76);
+}
+.lg-on-light {
+  --lg-tint: 248,250,255;
+  --lg-tint-strength: .34;
+  --lg-border: rgba(255,255,255,.58);
+  --lg-rim: rgba(255,255,255,.72);
+  --lg-specular: inset 0 1px 1px rgba(255,255,255,.65);
+  --lg-occlusion: inset 0 -1px 1px rgba(26,31,44,.08);
+  --lg-shadow: 0 1px 3px rgba(33,39,52,.08), 0 12px 30px rgba(33,39,52,.12);
+  --lg-ink: #17191f;
+  --lg-ink-soft: rgba(23,25,31,.68);
+  --lg-focus-ring: rgba(0,92,230,.9);
+}
+.lg-clear { --lg-tint-strength: .045; --lg-border: rgba(255,255,255,.16); --lg-sheen: .065; }
+.lg-tinted { --lg-tint: 225,231,242; --lg-tint-strength: .15; --lg-saturate: 120%; }
+.lg-surface {
+  background: var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-radius);
+  box-shadow: var(--lg-shadow), var(--lg-specular), var(--lg-occlusion);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-surface { background: rgba(var(--lg-tint), var(--lg-fallback-opacity)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --lg-duration: .001s; --lg-duration-fast: .001s; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --lg-blur: 0px; --lg-saturate: 100%; --lg-brightness: 100%; --lg-tint-strength: .88; --lg-fallback-opacity: .96; }
+}
+@media (prefers-contrast: more) {
+  :root { --lg-border: rgba(255,255,255,.58); --lg-ink-soft: rgba(255,255,255,.92); }
+}
+@media (forced-colors: active) {
+  .lg-surface { background: Canvas; border-color: CanvasText; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
