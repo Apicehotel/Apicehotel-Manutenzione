@@ -14,7 +14,7 @@ Funzioni consolidate:
 - Housekeeping con import `.xls`, storico giornaliero e idempotenza;
 - promemoria, inbox notifiche, push e ntfy per struttura;
 - meteo operativo, sensori e impianti;
-- Magazzino autonomo multi-hotel con categorie e ubicazioni gerarchiche, catalogo ricambi, attributi dinamici, giacenze, ledger dei movimenti e riordino;
+- Magazzino autonomo multi-hotel con catalogo tecnico, categorie/ubicazioni gerarchiche, ledger, QR/barcode, seriali, compatibilità, inventario fisico e trasferimenti tra strutture;
 - modalità offline con outbox IndexedDB, retry controllato e gestione conflitti;
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
@@ -31,151 +31,170 @@ Funzioni consolidate:
 
 La shell gestisce safe-area browser e inset nativi opzionali. Un futuro wrapper Android può alimentare `--rs-native-safe-*` tramite il bridge `randapp-system-insets`.
 
-## UI — percorso consolidato in 3 punti
+## UI — percorso consolidato
 
 ### Punto 1 — App Shell Foundation
-
-Contratto definitivo della shell:
 
 - bottom navigation mobile a cinque slot: `Segnalazioni · Interventi · Home · Planning · Menu`;
 - Home sempre nello slot centrale 3;
 - permessi e visibilità non alterano la geometria della navbar;
 - il `+` è un'azione separata dalle destinazioni;
 - safe-area effettiva = massimo tra browser `env(safe-area-inset-*)` e inset nativi opzionali;
-- nessun cap artificiale all'inset inferiore;
 - Android 3 tasti, gesture navigation e Home Indicator iOS possono riservare lo spazio reale necessario;
 - da 960px in su Windows/desktop usa la sidebar;
 - Piccolo/Normale/Grande condividono la stessa architettura e usano `--rs-scale`.
 
-File principali:
-
-- `src/randapp/shell-navigation.js`
-- `src/randapp/system-insets.js`
-- `src/randapp/app-shell-foundation.css`
-- `docs/architecture/APP_SHELL_FOUNDATION.md`
+File principali: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`, `docs/architecture/APP_SHELL_FOUNDATION.md`.
 
 ### Punto 2 — UI Components & Theme System
 
-Il design system è light-first e mantiene `Sistema`, `Chiaro`, `Scuro`.
+Il design system è light-first e mantiene `Sistema`, `Chiaro`, `Scuro`. Le superfici Material-inspired riusano i componenti `rs-*`; Liquid Glass resta limitato al chrome, Sheet e azioni dove migliora gerarchia e profondità. L'accento hotel è separato dai colori semantici e sono supportati reduced motion, contrasto aumentato e forced colors.
 
-Principi:
-
-- superfici Material-inspired sui componenti `rs-*` esistenti;
-- Liquid Glass limitato a chrome, Sheet e azioni dove migliora gerarchia e profondità;
-- niente secondo framework UI runtime: Konsta, 21st e librerie glass sono riferimenti di pattern, non dipendenze duplicate;
-- accento hotel separato dai colori semantici;
-- errore/urgenza, warning e successo restano semanticamente indipendenti dal tema hotel;
-- fallback senza `backdrop-filter`;
-- supporto a `prefers-reduced-motion`, contrasto aumentato e forced colors.
-
-File principali:
-
-- `src/randapp/ui-material-glass.css`
-- `src/randapp/theme.js`
-- `src/randapp/theme-coherence.css`
-- `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
+File principali: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`, `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`.
 
 ### Punto 3 — RandAI Contextual Integration
 
-RandAI è parte nativa della shell e non una chat separata che richiede di riscrivere informazioni già note a RandApp.
+RandAI è parte nativa della shell. `RandAIContextBridge` pubblica struttura, utente e schermata corrente; una risorsa operativa può sovrascrivere il contesto generico. Segnalazioni, analisi, percorso guidato e Action Gateway condividono hotel e risorsa. PIN, token e dati personali non necessari sono esclusi dal contesto. Le scritture operative non bypassano l'Action Gateway.
 
-Contratto finale:
-
-- `RandAIContextBridge` viene montato solo con sessione autenticata;
-- il contesto globale minimo contiene struttura, utente della sessione e schermata operativa corrente;
-- una feature può pubblicare un contesto più ricco; la risorsa attiva ha precedenza sul contesto generico;
-- nelle Segnalazioni il contesto include issue ID, camera/zona, categoria, stato, urgenza, riepilogo, stato camera e presenza foto;
-- `retrieveRandAIGuidance` usa `operationalContext` esplicito oppure il contesto corrente pubblicato;
-- il `+` globale contiene `Chiedi a RandAI`;
-- il Cyber Cat Orb nell'header e il `+` aprono lo stesso assistente e lo stesso runtime;
-- nessuna scrittura operativa viene eseguita dalla chat libera: modifiche e chiusure passano sempre dall'Action Gateway;
-- il contesto minimo esclude PIN, token, email e telefono;
-- nessun secondo agent framework o secondo context store è stato aggiunto.
-
-File principali:
-
-- `src/randai/context/RandAIContextBridge.jsx`
-- `src/randai/context/envelope.js`
-- `src/randai/randai-data.js`
-- `src/randapp/RandAISuggestion.jsx`
-- `src/randapp/InsertLauncher.jsx`
-- `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`
+File principali: `src/randai/context/RandAIContextBridge.jsx`, `src/randai/context/envelope.js`, `src/randai/randai-data.js`, `src/randapp/RandAISuggestion.jsx`, `src/randapp/InsertLauncher.jsx`, `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`.
 
 ## RandAI — blocchi operativi 27–32
 
 - **27 — Operational Context Layer:** hotel, utente, segnalazione, camera/area, apparecchiature, allegati, storico e procedure;
-- **28 — Action Gateway:** permessi, rischio, conferma, esecuzione, verifica e audit per ogni modifica operativa;
+- **28 — Action Gateway:** permessi, rischio, conferma, esecuzione, verifica e audit;
 - **29 — Persistent Task / Supervisor:** task persistenti e riprendibili collegati alla singola segnalazione;
 - **30 — RandAI nelle Segnalazioni:** Analizza, Guidami, Procedura, Casi simili e conclusione tramite Gateway;
 - **31 — Operational Learning:** memoria riutilizzabile solo da interventi verificati; nuove procedure restano bozze da approvare;
-- **32 — Operational Prioritization & Dispatch:** ranking spiegabile, priorità distinta da azionabilità, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
+- **32 — Operational Prioritization & Dispatch:** ranking spiegabile, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
 
 RandAI non deve inventare procedure operative mancanti, soglie tecniche non configurate o stati dispositivi non mappati.
 
 ## Reliability & Safety — blocchi 33–39
 
-### 33 — Reliability Foundation
+- **33 — Reliability Foundation:** envelope comune con operation/correlation/trace ID e contesto minimizzato;
+- **34 — Context & Scope Guard:** preflight deny-by-default per hotel, attore, modulo, risorsa, ownership e permessi;
+- **35 — Unified Validation & State Transition Layer:** primitive comuni e contratti di dominio;
+- **36 — Safe Write Engine:** `preflight → idempotenza/precondizione → write → read-back → verifica`, senza retry nascosti;
+- **37 — Authorization & RLS Verification Matrix:** RLS e privilegi browser irrigiditi; il database resta autorità definitiva;
+- **38 — Audit & Reversible Operations:** audit append-only e soft-delete/restore dove previsto dal dominio;
+- **39 — Offline, Retry & Concurrency Hardening:** outbox IndexedDB, lease cross-tab, jitter, idempotenza e gestione conflitti.
 
-Envelope operativo comune con `operationId` `RND-OP-*`, `correlationId`, `traceId`, hotel, attore, modulo, azione, record, sorgente e timestamp. Il contesto destinato ai log minimizza i dati e non include segreti o dati personali non necessari.
+## Magazzino — principi
 
-### 34 — Context & Scope Guard
+Il Magazzino è un dominio autonomo di RandApp. Manutenzioni, RandAI e altri moduli possono interrogarlo o allegare riferimenti, ma non possiedono né modificano direttamente la giacenza.
 
-Preflight deny-by-default per hotel, attore, modulo, risorsa, ownership e permessi. Errori stabili includono `MISSING_CONTEXT`, `HOTEL_MISMATCH`, `ACTOR_MISMATCH`, `RESOURCE_MISMATCH`, `PERMISSION_DENIED`, `OWNERSHIP_MISMATCH`, `MODULE_MISMATCH`.
+`quantity` è un saldo materializzato per lettura veloce. La fonte storica resta il ledger append-only `inventory_movements`: ogni variazione registra quantità prima/dopo, tipo, causale, ubicazione, riferimento, metadata e attore. I client autenticati non possono impostare direttamente il saldo.
 
-Il backend Supabase/RLS resta l'autorità definitiva.
-
-### 35 — Unified Validation & State Transition Layer
-
-Primitive comuni per required, allowlist, numeri/intervalli, date, transizioni e contratti di dominio. Le regole specialistiche esistenti restano la fonte corretta quando più precise di una state machine generica.
-
-### 36 — Safe Write Engine
-
-Contratto comune `preflight → idempotenza/precondizione → write → read-back → verifica` per scritture critiche. Nessun retry nascosto. Planning Lavori usa RPC atomiche e compare-and-swap quando applicabile.
-
-### 37 — Authorization & RLS Verification Matrix
-
-RLS e privilegi browser irrigiditi. Le tabelle operative critiche mantengono policy CRUD esplicite e i client non ricevono privilegi SQL superflui. OPA/Casbin non vengono aggiunti per evitare una seconda sorgente di verità dei permessi.
-
-### 38 — Audit & Reversible Operations
-
-Audit append-only trasversale con `operationId`, hotel, attore, modulo/azione, record, before/after e outcome. Segnalazioni, Interventi e Planning critici usano soft-delete/restore quando previsto dal dominio.
-
-### 39 — Offline, Retry & Concurrency Hardening
-
-Outbox Dexie/IndexedDB con `operationId`, lease cross-tab, jitter retry, transazioni locali atomiche e compare-and-swap server-side. Le Segnalazioni mantengono idempotenza tramite `mutation_id`; i conflitti di versione diventano `OFFLINE_CONFLICT` invece di sovrascrivere dati più recenti.
-
-## Magazzino — Blocco 1
-
-Il Magazzino è un dominio autonomo di RandApp. Manutenzioni, RandAI e altri moduli possono interrogarlo o allegare un riferimento a un movimento, ma non possiedono né modificano direttamente la sua giacenza.
+### Blocco 1 — Catalogo e ledger
 
 Fondazioni consolidate:
 
-- categorie gerarchiche per hotel, con sottocategorie, sinonimi, parole di guasto, azione tipica e schema di attributi tecnici ereditabile;
-- ubicazioni gerarchiche `Magazzino → Zona → Scaffale → Ripiano/Cassetto`, protette da vincoli compositi che impediscono collegamenti cross-hotel;
-- catalogo con tipi `consumabile`, `ricambio`, `attrezzatura`, `DPI`, `materiale`, più produttore, modello, variante, SKU, barcode, tag, sinonimi, foto e attributi dinamici;
-- template tecnici: una categoria può aggiungere campi `testo`, `numero` o `sì/no`, facoltativi o obbligatori; i figli ereditano e possono specializzare i campi dei genitori;
-- vocabolario guasti mantenuto nel dominio Magazzino. Esempio seed: `Elettrico → Illuminazione → Lampadine` associa `fulminata`, `bruciata`, `non si accende`, `lampeggia` all'azione tipica `sostituzione`;
-- `quantity` è un saldo materializzato per lettura veloce, ma non è scrivibile direttamente dal browser autenticato;
-- ogni variazione passa da RPC atomica e genera un movimento append-only con quantità prima/dopo, tipo, causale, ubicazione, riferimento opzionale, correlazione e metadata;
-- il ledger usa FK `RESTRICT`: eliminare un articolo non può cancellare la sua storia movimenti;
-- movimenti supportati: `carico`, `scarico`, `consumo`, `trasferimento`, `rettifica`, `reso`, `inventario`;
-- scorta minima, scorta ideale e quantità di riordino, con vista `inventory_reorder_status` per `ok`, `sotto_scorta`, `esaurito` e quantità suggerita;
-- vista `inventory_ledger_reconciliation` per rilevare qualsiasi deriva tra saldo materializzato e ledger;
-- il vecchio RPC `inventory_adjust_stock` resta come wrapper compatibile sul nuovo `inventory_adjust_stock_v2`;
-- RLS e permessi restano hotel-scoped; l'RPC privilegiato verifica sessione e permesso server-side;
-- ricerca catalogo su nome, categoria, SKU, barcode, produttore, modello, variante, tag, sinonimi e valori tecnici.
+- categorie gerarchiche per hotel con sottocategorie, sinonimi, parole di guasto, azione tipica e schema di attributi tecnici ereditabile;
+- ubicazioni gerarchiche `Magazzino → Zona → Scaffale → Ripiano/Cassetto`, con vincoli compositi anti cross-hotel;
+- tipi articolo `consumabile`, `ricambio`, `attrezzatura`, `DPI`, `materiale`;
+- produttore, modello, variante, SKU, barcode, tag, sinonimi, foto e attributi dinamici;
+- campi tecnici `testo`, `numero`, `sì/no`, facoltativi o obbligatori, ereditati dalle categorie genitore;
+- vocabolario guasti nel dominio Magazzino;
+- movimenti `carico`, `scarico`, `consumo`, `trasferimento`, `rettifica`, `reso`, `inventario`;
+- FK del ledger `RESTRICT`, quindi la storia non scompare eliminando un articolo;
+- scorta minima, ideale e quantità di riordino con vista `inventory_reorder_status`;
+- vista `inventory_ledger_reconciliation` per rilevare derive tra saldo e ledger;
+- vecchio RPC `inventory_adjust_stock` mantenuto come wrapper compatibile sul nuovo `inventory_adjust_stock_v2`;
+- RLS e permessi hotel-scoped; le RPC privilegiate verificano sessione e permesso server-side.
 
-Il seed iniziale crea una tassonomia manutentiva compatta per ogni hotel e lascia `Da classificare` come contenitore sicuro per import o inserimenti rapidi. Le categorie non vengono moltiplicate inutilmente: tag, sinonimi e attributi coprono le classificazioni trasversali.
+Il seed iniziale crea una tassonomia manutentiva compatta per ogni hotel e lascia `Da classificare` come contenitore sicuro per inserimenti rapidi.
 
-File principali:
+### Blocco 2 — Identificazione, tracciabilità e inventario fisico
+
+Il Blocco 2 estende il Magazzino senza creare un secondo sistema di stock.
+
+#### QR, barcode e scanner
+
+- ogni articolo riceve un `scan_code` RandApp stabile; anche le ubicazioni possono essere identificate con un proprio `scan_code`;
+- il barcode del produttore/fornitore resta distinto dal codice interno RandApp;
+- un QR RandApp contiene un deep-link alla PWA con `inventoryCode`, non credenziali o segreti;
+- il QR può essere aperto direttamente dalla Fotocamera di sistema su iPhone;
+- lo scanner interno usa `BarcodeDetector` quando il browser lo supporta;
+- lettori USB/Bluetooth funzionano come tastiera e l'inserimento manuale resta sempre disponibile;
+- la generazione SVG del QR avviene nella Edge Function autenticata `inventory-qr-label` usando `qrcode` server-side: nessuna libreria scanner pesante o CDN runtime viene caricata nel bundle React.
+
+#### Attrezzature serializzate
+
+`inventory_serial_units` traccia il singolo pezzo tramite:
+
+- serial number;
+- asset tag RandApp generato automaticamente;
+- barcode facoltativo;
+- ubicazione;
+- stato `available`, `in_use`, `maintenance`, `retired`, `lost`;
+- condizione `ok`, `attention`, `damaged`;
+- note e storico temporale di creazione/aggiornamento.
+
+La tabella seriali non possiede una quantità indipendente: la giacenza dell'articolo continua ad avere una sola fonte di verità.
+
+#### Compatibilità
+
+`inventory_compatibility` permette relazioni esplicite tra articoli dello stesso hotel:
+
+- `compatible`;
+- `equivalent`;
+- `replaces`;
+- `accessory`;
+- `incompatible`.
+
+Questo evita di codificare compatibilità in note libere e prepara il catalogo per suggerimenti futuri senza permettere a RandAI di inventare equivalenze.
+
+#### Inventario fisico
+
+Il conteggio segue un ciclo esplicito:
+
+1. **Apri inventario** per intera struttura o ubicazione;
+2. viene salvato uno snapshot della giacenza attesa;
+3. ogni riga riceve il conteggio reale;
+4. tutte le righe devono essere completate prima della chiusura;
+5. **Chiudi e riconcilia** applica tutte le differenze in una singola transazione e genera movimenti `inventario` nel ledger;
+6. un inventario aperto per errore può essere annullato esplicitamente senza modificare le giacenze.
+
+Lo snapshot impedisce che il conteggio fisico venga confuso con una semplice modifica manuale del saldo.
+
+#### Trasferimenti tra strutture
+
+I trasferimenti sono volutamente in due fasi:
+
+1. **Spedisci:** il magazzino sorgente viene scalato e il trasferimento passa a `in_transit`;
+2. **Ricevi:** solo un utente autorizzato sul magazzino destinazione può confermare l'arrivo; solo allora la giacenza viene caricata a destinazione.
+
+Ogni trasferimento conserva uno snapshot leggibile dell'articolo e un `catalog_key` comune. Se a destinazione lo stesso articolo esiste già, viene riconosciuto tramite `catalog_key`; se manca, viene creato automaticamente preservando il legame di catalogo e, quando possibile, mappando la categoria per codice.
+
+Un trasferimento ancora `in_transit` può essere annullato dal magazzino sorgente: la quantità viene restituita atomicamente e viene scritto un movimento `transfer_cancel`. Un trasferimento già ricevuto non viene riscritto retroattivamente.
+
+Questo modello mantiene una catena di custodia chiara e impedisce trasferimenti “silenziosi” che modificano due hotel senza conferma di ricezione.
+
+#### Sicurezza Blocco 2
+
+- tabelle nuove con RLS;
+- riferimenti articolo/ubicazione vincolati allo stesso hotel;
+- RPC di inventario e trasferimento `SECURITY DEFINER` non eseguibili da `anon`;
+- ogni RPC verifica `auth.uid()` e il permesso `inventory/edit` sull'hotel pertinente;
+- il mittente autorizza la spedizione/annullamento, il destinatario autorizza la ricezione;
+- QR e asset tag non contengono segreti;
+- il saldo continua a essere modificabile solo attraverso percorsi server-side controllati.
+
+File principali Magazzino:
 
 - `src/inventory-domain.js`
 - `src/inventory-data.js`
+- `src/inventory-block2-data.js`
 - `src/randapp/InventoryView.jsx`
+- `src/randapp/InventoryBlock2Panel.jsx`
 - `src/randapp/inventory.css`
-- `test/inventory-domain.test.js`
+- `supabase/functions/inventory-qr-label/index.ts`
 - `supabase/migrations/20260901082438_inventory_block1_foundation.sql`
 - `supabase/migrations/20260901082525_inventory_block1_updated_at.sql`
+- `supabase/migrations/20260901105000_inventory_block2_traceability_stocktake_transfer.sql`
+- `supabase/migrations/20260901105500_inventory_block2_cancel_and_transfer_snapshot.sql`
+- `test/inventory-domain.test.js`
+- `test/inventory-block2-contract.test.js`
 
 ## Parità e isolamento multi-hotel
 
@@ -189,7 +208,7 @@ Regole:
 - Planning Sale è disponibile a ogni struttura autorizzata e usa configurazioni sale proprie;
 - Housekeeping ha cache distinta per hotel;
 - ntfy dichiara configurazioni per le tre strutture;
-- differenze reali di camere, sale, impianti, sensori, contatti e procedure restano specifiche della struttura.
+- differenze reali di camere, sale, impianti, sensori, contatti, magazzini e procedure restano specifiche della struttura.
 
 Le regole camere di Hotel Giò sono specifiche di Giò e non vanno propagate alle altre strutture.
 
@@ -197,21 +216,15 @@ Le regole camere di Hotel Giò sono specifiche di Giò e non vanno propagate all
 
 ### Segnalazioni
 
-Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: camera/zona, urgenza, stato, categoria e data. Le camere vengono ordinate numericamente.
-
-Una Segnalazione aperta pubblica il proprio Operational Context a RandAI. Analisi, percorso guidato e Action Gateway condividono la stessa risorsa e lo stesso hotel.
+Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: camera/zona, urgenza, stato, categoria e data. Le camere vengono ordinate numericamente. Una Segnalazione aperta pubblica il proprio Operational Context a RandAI.
 
 ### Magazzino
 
 Ogni articolo appartiene a una sola struttura. Categorie, parentela articolo e ubicazioni usano riferimenti vincolati allo stesso `hotel_id`; i campi testuali legacy restano solo per compatibilità progressiva.
 
-La giacenza non viene impostata direttamente: carichi, scarichi, consumi, inventari e rettifiche passano dal ledger atomico. I client possono modificare i metadati autorizzati, ma non il saldo né lo storico dei movimenti.
+Carichi, scarichi, consumi, inventari, rettifiche e trasferimenti passano dal ledger/RPC. Seriali e compatibilità arricchiscono la tracciabilità, ma non possono creare una seconda giacenza.
 
-Il controllo file non forza la fotocamera: iOS, Android e Windows possono proporre Fotocamera, Libreria o File secondo le capacità del dispositivo.
-
-### Header operativo e RandAI
-
-Il selettore struttura resta compatto. RandAI è una vera azione della toolbar tramite Cyber Cat Orb. Il pannello si apre sotto l'intestazione su mobile e usa il contesto operativo già pubblicato.
+Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows possono proporre Fotocamera, Libreria o File secondo le capacità del dispositivo.
 
 ### Presenza e UI size
 
@@ -226,7 +239,7 @@ Il selettore struttura resta compatto. RandAI è una vera azione della toolbar t
 - Planning: `src/randapp/planning/`;
 - RandAI: `src/randai/`;
 - RandAI context: `src/randai/context/`;
-- Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/randapp/InventoryView.jsx`;
+- Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`;
 - reliability: `src/reliability/`;
 - Supabase client: `src/supabase.js`;
 - session policy: `src/session-policy.js`;
@@ -284,18 +297,13 @@ npm run test:device
 
 ## Configurazione
 
-`src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e consente override tramite:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se configurati e abilitati.
+`src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e consente override tramite `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se configurati e abilitati.
 
 ## Deploy
 
 - **Vercel:** produzione ufficiale RandApp, collegata a `main`;
 - **DigitalOcean:** test/staging;
-- **Supabase:** backend, database, autenticazione e servizi RandAI.
+- **Supabase:** backend, database, autenticazione, servizi RandAI e generazione etichette QR.
 
 Il progetto Vercel attivo è `apicehotel-manutenzionr`.
 
@@ -306,5 +314,5 @@ Il progetto Vercel attivo è `apicehotel-manutenzionr`.
 - navigazione e autorizzazione restano separate;
 - estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma;
 - ogni modifica critica deve mantenere verdi Quality Matrix, Critical Gate e test multipiattaforma;
-- ogni modifica funzionale o architetturale che cambia il contratto documentato deve aggiornare questo README nello stesso PR;
-- un blocco RandAI/Reliability non è `DONE` finché codice, test e README non risultano coerenti e i gate richiesti non sono verdi.
+- ogni modifica funzionale o architetturale che cambia il contratto documentato deve aggiornare questo README;
+- un blocco RandAI/Reliability/Magazzino non è `DONE` finché codice, database, test, README e gate richiesti non risultano coerenti e verdi.
