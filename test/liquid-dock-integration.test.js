@@ -4,12 +4,14 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('executable dock loads the vendored LiquidGlass material before its overrides', async () => {
+test('executable dock loads LiquidGlass material, dock geometry and final layout in order', async () => {
   const main = await source('src/main.jsx')
   const vendorIndex = main.indexOf("./randapp/vendor/liquid-glass-ui.css")
   const dockIndex = main.indexOf("./randapp/prototype-liquid-dock.css")
+  const finalIndex = main.indexOf("./randapp/randapp-final-layout.css")
   assert.ok(vendorIndex >= 0, 'LiquidGlass UI vendor stylesheet must be loaded')
-  assert.ok(dockIndex > vendorIndex, 'RandApp dock overrides must load after LiquidGlass UI')
+  assert.ok(dockIndex > vendorIndex, 'Dock geometry must load after LiquidGlass material')
+  assert.ok(finalIndex > dockIndex, 'Final app layout must load last')
 })
 
 test('mobile dock uses real RandApp actions, Tabler geometry and Pointer Events', async () => {
@@ -27,29 +29,47 @@ test('mobile dock uses real RandApp actions, Tabler geometry and Pointer Events'
 })
 
 test('dock structurally owns the real Shell bottom navigation instead of stacking a second capsule', async () => {
-  const [dock, dockCss] = await Promise.all([
+  const [dock, dockCss, finalCss] = await Promise.all([
     source('src/randapp/prototype-liquid-dock.js'),
     source('src/randapp/prototype-liquid-dock.css'),
+    source('src/randapp/randapp-final-layout.css'),
   ])
   assert.match(dock, /data-dock-navslot/)
   assert.match(dock, /appendChild\(nav\)/)
   assert.match(dock, /restoreNav/)
   assert.match(dockCss, /\.rs-liquid-dock \.rs-bottomnav/)
-  assert.match(dockCss, /\.rs-liquid-dock__surface/)
-  assert.match(dockCss, /\.rs-liquid-dock__bridge/)
-  assert.doesNotMatch(dockCss, /content:\s*['"]RandAI •['"]/)
+  assert.match(finalCss, /\.rs-liquid-dock__surface/)
+  assert.match(finalCss, /\.rs-liquid-dock__bridge/)
+  assert.match(finalCss, /\.rs-liquid-dock__pull \{ display: none/)
+  assert.match(finalCss, /data-slot='3'\]\.active/)
+  assert.match(finalCss, /transform: none !important/)
+  assert.doesNotMatch(finalCss, /RandAI •/)
+})
+
+test('final layout covers phone, tablet, desktop and Grande mode', async () => {
+  const css = await source('src/randapp/randapp-final-layout.css')
+  assert.match(css, /max-width: 520px/)
+  assert.match(css, /min-width: 640px.*max-width: 959px/s)
+  assert.match(css, /min-width: 960px/)
+  assert.match(css, /min-width: 1500px/)
+  assert.match(css, /data-ui-size='large'/)
+  assert.match(css, /--rs-mobile-dock-clearance/)
+  assert.match(css, /\.rs-workhome__stats/)
+  assert.match(css, /\.rs-sidebar/)
+  assert.match(css, /\.rs-sheet/)
 })
 
 test('Liquid Glass layer keeps accessibility and unsupported-browser fallbacks', async () => {
-  const [vendor, dockCss] = await Promise.all([
+  const [vendor, dockCss, finalCss] = await Promise.all([
     source('src/randapp/vendor/liquid-glass-ui.css'),
     source('src/randapp/prototype-liquid-dock.css'),
+    source('src/randapp/randapp-final-layout.css'),
   ])
   assert.match(vendor, /prefers-reduced-motion/)
   assert.match(vendor, /prefers-reduced-transparency/)
   assert.match(vendor, /forced-colors/)
   assert.match(vendor, /@supports not/)
   assert.match(dockCss, /prefers-reduced-motion/)
-  assert.match(dockCss, /forced-colors/)
-  assert.match(dockCss, /data-slot='3'/)
+  assert.match(finalCss, /prefers-reduced-motion/)
+  assert.match(finalCss, /forced-colors/)
 })
