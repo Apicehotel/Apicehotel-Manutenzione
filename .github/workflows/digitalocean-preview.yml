@@ -27,6 +27,7 @@ jobs:
         uses: digitalocean/app_action/deploy@v2
         with:
           deploy_pr_preview: "true"
+          app_name: randapp
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Comment preview URL
