@@ -51,7 +51,7 @@ export default function RandAIContextBridge() {
 
     const root = document.getElementById('root')
     const observer = root ? new MutationObserver(() => schedule()) : null
-    observer?.observe(root, { subtree: true, attributes: true, attributeFilter: ['class', 'aria-current'] })
+    observer?.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'aria-current'] })
     schedule()
 
     return () => {
