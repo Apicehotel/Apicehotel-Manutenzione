@@ -1,13 +1,10 @@
-/*
- * RandApp mobile Liquid Dock.
- * Material tokens/fallbacks come from vendored hwyuanzi/LiquidGlass-UI.
- * The real bottom navigation is moved inside this surface at runtime: this is
- * one structural dock, not a second capsule visually placed above the nav.
+/* RandApp mobile Liquid Dock — final geometry.
+ * LiquidGlass material comes from vendor/liquid-glass-ui.css.
+ * The real Shell bottom navigation is moved inside this single surface.
  */
 @media (max-width: 959px) {
   :root {
-    --rs-liquid-inline: max(9px, env(safe-area-inset-left));
-    --rs-liquid-radius: 29px;
+    --rs-liquid-inline: max(10px, var(--rs-safe-left));
     --lg-blur: 24px;
     --lg-saturate: 145%;
     --lg-brightness: 105%;
@@ -26,7 +23,7 @@
     position: fixed;
     z-index: 82;
     left: var(--rs-liquid-inline);
-    right: var(--rs-liquid-inline);
+    right: max(10px, var(--rs-safe-right));
     bottom: max(8px, var(--rs-safe-bottom));
     pointer-events: none;
     color: var(--rs-text);
@@ -36,10 +33,10 @@
   .rs-liquid-dock__surface {
     pointer-events: auto;
     position: relative;
-    min-height: 106px;
-    padding: 33px 6px 6px;
+    min-height: 104px;
+    padding: 31px 7px 6px;
     border: 1px solid var(--lg-border);
-    border-radius: var(--rs-liquid-radius);
+    border-radius: 30px;
     background: var(--lg-fill);
     -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
     backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
@@ -47,14 +44,13 @@
     overflow: visible;
   }
 
-  /* A single central neck grows out of the nav surface. No second pill border. */
   .rs-liquid-dock__bridge {
     position: absolute;
     z-index: 0;
-    top: -27px;
+    top: -24px;
     left: 50%;
-    width: min(216px, calc(100% - 116px));
-    height: 61px;
+    width: min(204px, calc(100% - 124px));
+    height: 56px;
     transform: translateX(-50%);
     border: 1px solid var(--lg-border);
     border-bottom: 0;
@@ -62,7 +58,6 @@
     background: var(--lg-fill);
     -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
     backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
   }
 
   .rs-liquid-dock__bridge::after {
@@ -70,28 +65,27 @@
     position: absolute;
     left: -1px;
     right: -1px;
-    bottom: -2px;
-    height: 8px;
+    bottom: -4px;
+    height: 12px;
     background: var(--lg-fill);
   }
 
   .rs-liquid-dock__quickbar {
     position: absolute;
     z-index: 2;
-    top: -22px;
+    top: -19px;
     left: 50%;
-    width: min(200px, calc(100% - 132px));
-    min-height: 52px;
+    width: min(188px, calc(100% - 138px));
+    min-height: 48px;
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: 1fr 26px 1fr;
+    grid-template-columns: 1fr 1fr;
     align-items: center;
-    gap: 3px;
-    padding: 3px;
+    gap: 6px;
+    padding: 2px;
   }
 
   .rs-liquid-dock__quick,
-  .rs-liquid-dock__pull,
   .rs-liquid-dock__handle,
   .rs-liquid-dock__actions button,
   .rs-liquid-dock__randai-card {
@@ -109,57 +103,23 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    color: var(--rs-text);
-    background: transparent;
     transition: transform .18s ease, background .18s ease;
   }
-
   .rs-liquid-dock__quick:active { transform: scale(.96); }
   .rs-liquid-dock__quick small { font-size: .68rem; line-height: 1; font-weight: 750; white-space: nowrap; }
+  .rs-liquid-dock__quick--create { color: var(--rs-on-accent); background: var(--rs-accent); box-shadow: 0 8px 18px -13px var(--rs-accent), inset 0 1px 0 rgba(255,255,255,.34); }
+  .rs-liquid-dock__quick--ai { color: var(--rs-accent-strong); background: color-mix(in srgb, var(--rs-surface) 76%, var(--rs-accent-soft)); box-shadow: inset 0 0 0 1px var(--rs-accent-line); }
 
-  .rs-liquid-dock__quick--create {
-    color: var(--rs-on-accent);
-    background: linear-gradient(145deg, color-mix(in srgb, var(--rs-accent) 86%, white), var(--rs-accent));
-    box-shadow: 0 8px 18px -13px color-mix(in srgb, var(--rs-accent) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.34);
-  }
-
-  .rs-liquid-dock__quick--ai {
-    color: var(--rs-accent-strong);
-    background: color-mix(in srgb, var(--rs-accent-soft) 64%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rs-accent-line) 64%, transparent);
-  }
-
-  .rs-liquid-dock__pull,
-  .rs-liquid-dock__handle {
-    border: 0;
-    background: transparent;
-    display: grid;
-    place-items: center;
-  }
-
-  .rs-liquid-dock__pull { min-width: 26px; min-height: 44px; }
-  .rs-liquid-dock__pull span,
-  .rs-liquid-dock__handle span {
-    width: 18px;
-    height: 3px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--rs-accent) 38%, var(--rs-text-3));
-  }
-
+  .rs-liquid-dock__pull { display: none; }
   .rs-liquid-dock__icon { width: 20px; height: 20px; display: block; flex: none; }
-
   .rs-liquid-dock__navslot { position: relative; z-index: 1; }
 
-  /* The actual Shell navigation is now a child of the Liquid Dock. */
   .rs-liquid-dock .rs-bottomnav {
     position: relative !important;
     inset: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
     width: 100% !important;
     min-height: 66px !important;
-    padding: 5px 2px 3px !important;
+    padding: 5px 1px 2px !important;
     border: 0 !important;
     border-radius: 22px !important;
     background: transparent !important;
@@ -168,33 +128,30 @@
     box-shadow: none !important;
     overflow: visible !important;
   }
-
   .rs-liquid-dock .rs-bottomnav::before { display: none !important; }
-
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn {
+  .rs-liquid-dock .rs-navbtn {
     min-width: 0 !important;
-    min-height: 54px !important;
-    border-radius: 17px !important;
-    transition: transform .18s ease, background .18s ease, color .18s ease !important;
+    min-height: 56px !important;
+    padding: 5px 2px !important;
+    gap: 4px !important;
+    border-radius: 16px !important;
+    color: var(--rs-text-3) !important;
+    transition: background .18s ease, color .18s ease !important;
   }
-
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn svg { width: 22px !important; height: 22px !important; }
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn small { font-size: .62rem !important; font-weight: 650 !important; letter-spacing: -.01em; }
-
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn.active {
+  .rs-liquid-dock .rs-navbtn svg { width: 22px !important; height: 22px !important; }
+  .rs-liquid-dock .rs-navbtn small { font-size: .61rem !important; font-weight: 650 !important; letter-spacing: -.01em; }
+  .rs-liquid-dock .rs-navbtn.active {
     color: var(--rs-accent-strong) !important;
-    background: color-mix(in srgb, var(--rs-accent-soft) 62%, transparent) !important;
+    background: var(--rs-accent-soft) !important;
   }
-
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn[data-slot='3'].active {
-    transform: translateY(-5px) !important;
-    color: var(--rs-on-accent) !important;
-    background: linear-gradient(150deg, color-mix(in srgb, var(--rs-accent) 78%, white), var(--rs-accent)) !important;
-    box-shadow: 0 10px 22px -15px var(--rs-accent), inset 0 1px 0 rgba(255,255,255,.45) !important;
+  .rs-liquid-dock .rs-navbtn[data-slot='3'].active {
+    transform: none !important;
+    color: var(--rs-accent-strong) !important;
+    background: var(--rs-accent-soft) !important;
+    box-shadow: inset 0 0 0 1px var(--rs-accent-line) !important;
   }
-
-  /* Home stays Home: RandAI has its own dedicated quick action above. */
-  .rs-liquid-dock .rs-bottomnav .rs-navbtn[data-slot='3'].active::after { display: none !important; content: none !important; }
+  .rs-liquid-dock .rs-navbtn.active::before,
+  .rs-liquid-dock .rs-navbtn[data-slot='3'].active::after { display: none !important; content: none !important; }
 
   .rs-liquid-dock__backdrop {
     pointer-events: none;
@@ -202,10 +159,9 @@
     inset: 0;
     z-index: -1;
     opacity: 0;
-    background: rgba(8,12,22,.14);
+    background: rgba(8,12,22,.16);
     transition: opacity .18s ease;
   }
-
   .rs-liquid-dock.is-open .rs-liquid-dock__backdrop { pointer-events: auto; opacity: 1; }
 
   .rs-liquid-dock__sheet {
@@ -213,16 +169,16 @@
     position: absolute;
     z-index: 4;
     left: 50%;
-    bottom: calc(100% - 15px);
+    bottom: calc(100% - 8px);
     width: min(400px, calc(100vw - 20px));
     max-height: min(70dvh, 540px);
     overflow: auto;
-    transform: translate(-50%, 32px) scale(.985);
+    transform: translate(-50%, 26px) scale(.985);
     transform-origin: 50% 100%;
     opacity: 0;
     visibility: hidden;
-    padding: 8px 12px 18px;
-    border-radius: 28px 28px 22px 22px;
+    padding: 8px 12px 16px;
+    border-radius: 28px;
     border: 1px solid var(--lg-border);
     background: var(--lg-fill);
     -webkit-backdrop-filter: blur(30px) saturate(150%) brightness(var(--lg-brightness));
@@ -231,14 +187,10 @@
     transition: transform .24s cubic-bezier(.2,.8,.2,1), opacity .18s ease, visibility .18s ease;
     overscroll-behavior: contain;
   }
+  .rs-liquid-dock.is-open .rs-liquid-dock__sheet { transform: translate(-50%, 0) scale(1); opacity: 1; visibility: visible; }
 
-  .rs-liquid-dock.is-open .rs-liquid-dock__sheet {
-    transform: translate(-50%, 0) scale(1);
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .rs-liquid-dock__handle { width: 100%; height: 27px; }
+  .rs-liquid-dock__handle { width: 100%; height: 27px; border: 0; background: transparent; display: grid; place-items: center; }
+  .rs-liquid-dock__handle span { width: 28px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--rs-text-3) 50%, transparent); }
   .rs-liquid-dock__title { display: grid; gap: 2px; padding: 0 4px 12px; }
   .rs-liquid-dock__title b { font-size: 1rem; }
   .rs-liquid-dock__title small { color: var(--rs-text-3); font-size: .72rem; }
@@ -256,21 +208,10 @@
     color: var(--rs-text);
     border-radius: 18px;
     border: 1px solid color-mix(in srgb, var(--lg-border) 75%, var(--rs-line));
-    background: color-mix(in srgb, var(--rs-surface) 62%, transparent);
+    background: color-mix(in srgb, var(--rs-surface) 72%, transparent);
   }
-
   .rs-liquid-dock__actions i,
-  .rs-liquid-dock__randai-card i {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    font-style: normal;
-    color: var(--rs-accent-strong);
-    background: var(--rs-accent-soft);
-  }
-
+  .rs-liquid-dock__randai-card i { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-style: normal; color: var(--rs-accent-strong); background: var(--rs-accent-soft); }
   .rs-liquid-dock__actions span,
   .rs-liquid-dock__randai-card span { min-width: 0; display: grid; gap: 3px; }
   .rs-liquid-dock__actions b { font-size: .78rem; line-height: 1.15; }
@@ -289,23 +230,20 @@
     color: var(--rs-text);
     border-radius: 18px;
     border: 1px solid var(--rs-accent-line);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent-soft) 72%, transparent), color-mix(in srgb, var(--rs-surface) 58%, transparent));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent-soft) 72%, transparent), color-mix(in srgb, var(--rs-surface) 70%, transparent));
   }
   .rs-liquid-dock__randai-card b { font-size: .8rem; }
   .rs-liquid-dock__randai-card small { color: var(--rs-text-3); font-size: .68rem; }
   .rs-liquid-dock__randai-card strong { color: var(--rs-accent-strong); font-size: 1.35rem; font-weight: 400; }
 
-  /* Existing handlers remain the source of truth; duplicate visual entry points do not. */
   .rs-navfab,
   .rs-header__randai { opacity: 0 !important; pointer-events: none !important; }
-
-  .rs-content { padding-bottom: calc(var(--rs-content-bottom-clearance) + 78px) !important; }
 }
 
 @media (max-width: 380px) {
-  .rs-liquid-dock__bridge { width: min(198px, calc(100% - 104px)); }
-  .rs-liquid-dock__quickbar { width: min(184px, calc(100% - 118px)); }
-  .rs-liquid-dock__quick small { display: none; }
+  .rs-liquid-dock__bridge { width: min(190px, calc(100% - 106px)); }
+  .rs-liquid-dock__quickbar { width: min(176px, calc(100% - 120px)); }
+  .rs-liquid-dock__quick small { font-size: .62rem; }
   .rs-liquid-dock__actions { gap: 7px; }
 }
 
