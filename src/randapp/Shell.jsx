@@ -20,6 +20,7 @@ import './app-shell-foundation.css'
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
 const InventoryView = lazy(() => import('./InventoryView.jsx'))
+const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
 const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
 const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
@@ -150,7 +151,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'housekeeping', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -254,6 +255,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
+    if (view === 'supplies') return <SupplyRequestsPortal user={user} hotel={hotel} standalone />
     if (view === 'my-work') return <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
     if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
