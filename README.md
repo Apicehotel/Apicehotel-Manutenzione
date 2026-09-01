@@ -14,7 +14,7 @@ Funzioni consolidate:
 - Housekeeping con import `.xls`, storico giornaliero e idempotenza;
 - promemoria, inbox notifiche, push e ntfy per struttura;
 - meteo operativo, sensori e impianti;
-- magazzino multi-hotel con giacenze, soglie, movimenti, foto e operazioni atomiche;
+- Magazzino autonomo multi-hotel con categorie e ubicazioni gerarchiche, catalogo ricambi, attributi dinamici, giacenze, ledger dei movimenti e riordino;
 - modalità offline con outbox IndexedDB, retry controllato e gestione conflitti;
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
@@ -144,6 +144,39 @@ Audit append-only trasversale con `operationId`, hotel, attore, modulo/azione, r
 
 Outbox Dexie/IndexedDB con `operationId`, lease cross-tab, jitter retry, transazioni locali atomiche e compare-and-swap server-side. Le Segnalazioni mantengono idempotenza tramite `mutation_id`; i conflitti di versione diventano `OFFLINE_CONFLICT` invece di sovrascrivere dati più recenti.
 
+## Magazzino — Blocco 1
+
+Il Magazzino è un dominio autonomo di RandApp. Manutenzioni, RandAI e altri moduli possono interrogarlo o allegare un riferimento a un movimento, ma non possiedono né modificano direttamente la sua giacenza.
+
+Fondazioni consolidate:
+
+- categorie gerarchiche per hotel, con sottocategorie, sinonimi, parole di guasto, azione tipica e schema di attributi tecnici ereditabile;
+- ubicazioni gerarchiche `Magazzino → Zona → Scaffale → Ripiano/Cassetto`, protette da vincoli compositi che impediscono collegamenti cross-hotel;
+- catalogo con tipi `consumabile`, `ricambio`, `attrezzatura`, `DPI`, `materiale`, più produttore, modello, variante, SKU, barcode, tag, sinonimi, foto e attributi dinamici;
+- template tecnici: una categoria può aggiungere campi `testo`, `numero` o `sì/no`, facoltativi o obbligatori; i figli ereditano e possono specializzare i campi dei genitori;
+- vocabolario guasti mantenuto nel dominio Magazzino. Esempio seed: `Elettrico → Illuminazione → Lampadine` associa `fulminata`, `bruciata`, `non si accende`, `lampeggia` all'azione tipica `sostituzione`;
+- `quantity` è un saldo materializzato per lettura veloce, ma non è scrivibile direttamente dal browser autenticato;
+- ogni variazione passa da RPC atomica e genera un movimento append-only con quantità prima/dopo, tipo, causale, ubicazione, riferimento opzionale, correlazione e metadata;
+- il ledger usa FK `RESTRICT`: eliminare un articolo non può cancellare la sua storia movimenti;
+- movimenti supportati: `carico`, `scarico`, `consumo`, `trasferimento`, `rettifica`, `reso`, `inventario`;
+- scorta minima, scorta ideale e quantità di riordino, con vista `inventory_reorder_status` per `ok`, `sotto_scorta`, `esaurito` e quantità suggerita;
+- vista `inventory_ledger_reconciliation` per rilevare qualsiasi deriva tra saldo materializzato e ledger;
+- il vecchio RPC `inventory_adjust_stock` resta come wrapper compatibile sul nuovo `inventory_adjust_stock_v2`;
+- RLS e permessi restano hotel-scoped; l'RPC privilegiato verifica sessione e permesso server-side;
+- ricerca catalogo su nome, categoria, SKU, barcode, produttore, modello, variante, tag, sinonimi e valori tecnici.
+
+Il seed iniziale crea una tassonomia manutentiva compatta per ogni hotel e lascia `Da classificare` come contenitore sicuro per import o inserimenti rapidi. Le categorie non vengono moltiplicate inutilmente: tag, sinonimi e attributi coprono le classificazioni trasversali.
+
+File principali:
+
+- `src/inventory-domain.js`
+- `src/inventory-data.js`
+- `src/randapp/InventoryView.jsx`
+- `src/randapp/inventory.css`
+- `test/inventory-domain.test.js`
+- `supabase/migrations/20260901082438_inventory_block1_foundation.sql`
+- `supabase/migrations/20260901082525_inventory_block1_updated_at.sql`
+
 ## Parità e isolamento multi-hotel
 
 Hotel Giò, Chocohotel e Hotel Il Brigantino condividono la stessa shell e le stesse funzioni generali. Una funzione non può essere nascosta solo perché l'hotel non è Giò.
@@ -170,7 +203,9 @@ Una Segnalazione aperta pubblica il proprio Operational Context a RandAI. Analis
 
 ### Magazzino
 
-Ogni articolo appartiene a una sola struttura e può contenere nome, categoria, unità, posizione, SKU/codice, giacenza, soglia minima, note e foto. I movimenti registrano quantità prima/dopo e non permettono giacenze negative.
+Ogni articolo appartiene a una sola struttura. Categorie, parentela articolo e ubicazioni usano riferimenti vincolati allo stesso `hotel_id`; i campi testuali legacy restano solo per compatibilità progressiva.
+
+La giacenza non viene impostata direttamente: carichi, scarichi, consumi, inventari e rettifiche passano dal ledger atomico. I client possono modificare i metadati autorizzati, ma non il saldo né lo storico dei movimenti.
 
 Il controllo file non forza la fotocamera: iOS, Android e Windows possono proporre Fotocamera, Libreria o File secondo le capacità del dispositivo.
 
@@ -191,6 +226,7 @@ Il selettore struttura resta compatto. RandAI è una vera azione della toolbar t
 - Planning: `src/randapp/planning/`;
 - RandAI: `src/randai/`;
 - RandAI context: `src/randai/context/`;
+- Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/randapp/InventoryView.jsx`;
 - reliability: `src/reliability/`;
 - Supabase client: `src/supabase.js`;
 - session policy: `src/session-policy.js`;
