@@ -4,311 +4,215 @@ PWA React/Vite per la gestione operativa e manutentiva multi-hotel di Hotel Giò
 
 ## Stato attuale
 
-RandApp usa un unico progetto Supabase multi-hotel. I dati operativi sono separati tramite `hotel_id`, membership, RLS, vincoli relazionali e test cross-hotel. Il frontend usa sessioni Supabase ottenute tramite autenticazione PIN server-side; il PIN non viene confrontato nel browser.
+RandApp usa un unico progetto Supabase multi-hotel. I dati operativi sono separati tramite `hotel_id`, membership, RLS, vincoli relazionali e test cross-hotel. L'autenticazione PIN è server-side: il PIN non viene confrontato nel browser.
 
-Funzioni principali consolidate:
+Funzioni consolidate:
 
-- segnalazioni manutentive con foto, ciclo di lavorazione e filtri/ordinamenti avanzati;
+- segnalazioni manutentive con foto, storico, filtri, ordinamenti e workflow operativo;
 - avvisi urgenti con presa in carico, completamento e reminder;
-- interventi e planning lavori;
-- planning sale;
-- housekeeping con import `.xls`, storico giornaliero e idempotenza;
-- promemoria e inbox notifiche;
-- push + ntfy per struttura;
-- meteo operativo;
-- magazzino multi-hotel con giacenze, scorte minime, carico/scarico atomico, storico movimenti e foto di riferimento articolo;
-- modalità offline con coda di sincronizzazione;
+- interventi, Planning Lavori e Planning Sale;
+- Housekeeping con import `.xls`, storico giornaliero e idempotenza;
+- promemoria, inbox notifiche, push e ntfy per struttura;
+- meteo operativo, sensori e impianti;
+- magazzino multi-hotel con giacenze, soglie, movimenti, foto e operazioni atomiche;
+- modalità offline con outbox IndexedDB, retry controllato e gestione conflitti;
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
-- **App Shell Foundation** con cinque slot mobile stabili, Home centrale, `+` separato dalla navigazione e safe-area pronta per futuri inset nativi Android;
-- **UI Components & Theme System** light-first con accenti separati per hotel, Material-inspired surfaces e Liquid Glass selettivo sulla chrome;
-- RandAI integrata nel flusso operativo fino al **Blocco 32**;
-- Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 39**.
+- App Shell Foundation, UI Components & Theme System e RandAI Contextual Integration completati;
+- RandAI operativo fino al Blocco 32;
+- Reliability & Safety condivisa RandApp/RandAI fino al Blocco 39.
 
-### RandAI — blocchi operativi consolidati
+## Strategia piattaforme
 
-- **27 — Operational Context Layer:** contesto automatico di hotel, utente, segnalazione, camera/area, apparecchiature, allegati, storico e procedure;
-- **28 — Action Gateway:** ogni modifica operativa proposta da RandAI passa da permessi, rischio, eventuale conferma, esecuzione, verifica e audit;
-- **29 — Persistent Task / Supervisor:** task RandAI persistenti, riprendibili e collegati alla singola segnalazione;
+- **iPhone/iPad:** PWA/Web App;
+- **Android:** PWA/Web App oggi, architettura predisposta per un futuro APK Capacitor senza rifare la UI;
+- **Windows:** PWA/Web App con layout desktop/sidebar.
+
+La shell gestisce safe-area browser e inset nativi opzionali. Un futuro wrapper Android può alimentare `--rs-native-safe-*` tramite il bridge `randapp-system-insets`.
+
+## UI — percorso consolidato in 3 punti
+
+### Punto 1 — App Shell Foundation
+
+Contratto definitivo della shell:
+
+- bottom navigation mobile a cinque slot: `Segnalazioni · Interventi · Home · Planning · Menu`;
+- Home sempre nello slot centrale 3;
+- permessi e visibilità non alterano la geometria della navbar;
+- il `+` è un'azione separata dalle destinazioni;
+- safe-area effettiva = massimo tra browser `env(safe-area-inset-*)` e inset nativi opzionali;
+- nessun cap artificiale all'inset inferiore;
+- Android 3 tasti, gesture navigation e Home Indicator iOS possono riservare lo spazio reale necessario;
+- da 960px in su Windows/desktop usa la sidebar;
+- Piccolo/Normale/Grande condividono la stessa architettura e usano `--rs-scale`.
+
+File principali:
+
+- `src/randapp/shell-navigation.js`
+- `src/randapp/system-insets.js`
+- `src/randapp/app-shell-foundation.css`
+- `docs/architecture/APP_SHELL_FOUNDATION.md`
+
+### Punto 2 — UI Components & Theme System
+
+Il design system è light-first e mantiene `Sistema`, `Chiaro`, `Scuro`.
+
+Principi:
+
+- superfici Material-inspired sui componenti `rs-*` esistenti;
+- Liquid Glass limitato a chrome, Sheet e azioni dove migliora gerarchia e profondità;
+- niente secondo framework UI runtime: Konsta, 21st e librerie glass sono riferimenti di pattern, non dipendenze duplicate;
+- accento hotel separato dai colori semantici;
+- errore/urgenza, warning e successo restano semanticamente indipendenti dal tema hotel;
+- fallback senza `backdrop-filter`;
+- supporto a `prefers-reduced-motion`, contrasto aumentato e forced colors.
+
+File principali:
+
+- `src/randapp/ui-material-glass.css`
+- `src/randapp/theme.js`
+- `src/randapp/theme-coherence.css`
+- `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
+
+### Punto 3 — RandAI Contextual Integration
+
+RandAI è parte nativa della shell e non una chat separata che richiede di riscrivere informazioni già note a RandApp.
+
+Contratto finale:
+
+- `RandAIContextBridge` viene montato solo con sessione autenticata;
+- il contesto globale minimo contiene struttura, utente della sessione e schermata operativa corrente;
+- una feature può pubblicare un contesto più ricco; la risorsa attiva ha precedenza sul contesto generico;
+- nelle Segnalazioni il contesto include issue ID, camera/zona, categoria, stato, urgenza, riepilogo, stato camera e presenza foto;
+- `retrieveRandAIGuidance` usa `operationalContext` esplicito oppure il contesto corrente pubblicato;
+- il `+` globale contiene `Chiedi a RandAI`;
+- il Cyber Cat Orb nell'header e il `+` aprono lo stesso assistente e lo stesso runtime;
+- nessuna scrittura operativa viene eseguita dalla chat libera: modifiche e chiusure passano sempre dall'Action Gateway;
+- il contesto minimo esclude PIN, token, email e telefono;
+- nessun secondo agent framework o secondo context store è stato aggiunto.
+
+File principali:
+
+- `src/randai/context/RandAIContextBridge.jsx`
+- `src/randai/context/envelope.js`
+- `src/randai/randai-data.js`
+- `src/randapp/RandAISuggestion.jsx`
+- `src/randapp/InsertLauncher.jsx`
+- `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`
+
+## RandAI — blocchi operativi 27–32
+
+- **27 — Operational Context Layer:** hotel, utente, segnalazione, camera/area, apparecchiature, allegati, storico e procedure;
+- **28 — Action Gateway:** permessi, rischio, conferma, esecuzione, verifica e audit per ogni modifica operativa;
+- **29 — Persistent Task / Supervisor:** task persistenti e riprendibili collegati alla singola segnalazione;
 - **30 — RandAI nelle Segnalazioni:** Analizza, Guidami, Procedura, Casi simili e conclusione tramite Gateway;
-- **31 — Operational Learning:** memoria riutilizzabile solo da interventi realmente verificati, con evidenza e promozione a procedura solo come bozza da approvare;
-- **32 — Operational Prioritization & Dispatch:** ranking spiegabile delle segnalazioni, distinzione priorità/azionabilità, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
-
-### Reliability — Blocco 33
-
-Il **Reliability Foundation** introduce un envelope operativo comune e versionato per correlare azioni RandApp/RandAI senza duplicare task ID, checkpoint o idempotency già presenti nei runtime esistenti.
-
-Contratto consolidato:
-
-- `operationId` nello spazio `RND-OP-*` identifica stabilmente l'operazione;
-- `correlationId` e `traceId` permettono correlazione con diagnostica e telemetria quando disponibili;
-- ogni envelope porta `hotelId`, attore, ruolo, modulo, azione, record, sorgente e timestamp;
-- l'envelope è validato e immutabile dopo la creazione;
-- il contesto destinato ai log esclude volutamente PIN, token, email e altri dati personali non necessari;
-- i task RandAI collegati a una segnalazione ricevono lo stesso `operationId`, propagato anche al Supervisor e al riepilogo operativo;
-- `test/reliability-operation-envelope.test.js` rende permanente il contratto di validazione, immutabilità, correlazione e integrazione con i task segnalazione.
+- **31 — Operational Learning:** memoria riutilizzabile solo da interventi verificati; nuove procedure restano bozze da approvare;
+- **32 — Operational Prioritization & Dispatch:** ranking spiegabile, priorità distinta da azionabilità, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
 
-### Reliability — Blocco 34 Context & Scope Guard
-
-Il **Context & Scope Guard** aggiunge un preflight applicativo deterministico prima delle operazioni sensibili. Non sostituisce Supabase/RLS o l'Action Gateway: intercetta prima della rete contesti incompleti o incoerenti e lascia al backend l'autorizzazione definitiva.
-
-Contratto consolidato:
-
-- policy **deny by default** quando mancano hotel/modulo o il contesto operativo richiesto;
-- confronto hotel tra operazione, context corrente e record caricato;
-- confronto attore, modulo/schermata, tipo record e `recordId` quando richiesti;
-- supporto a risultato permessi esplicito e regole ownership con bypass privilegiato esplicito;
-- errori stabili `MISSING_CONTEXT`, `HOTEL_MISMATCH`, `ACTOR_MISMATCH`, `RESOURCE_MISMATCH`, `PERMISSION_DENIED`, `OWNERSHIP_MISMATCH`, `MODULE_MISMATCH`;
-- `prepareRandAIAction` richiede context coerente con hotel, modulo Segnalazioni e issue corrente prima di chiamare l'Edge Function;
-- membership, ruolo/permesso, filtro `hotel_id`, transizione e optimistic concurrency restano verificati server-side;
-- `test/reliability-context-scope-guard.test.js` copre allow, contesto mancante, cross-hotel, resource errata, actor mismatch, permission denied e ownership;
-- dettagli architetturali in `docs/architecture/RELIABILITY_SAFETY.md`.
-
-Il benchmark ha confermato di **non** introdurre ora un secondo policy engine esterno (OPA/Casbin): l'attuale combinazione Guard applicativo + permessi centralizzati + Action Gateway + Supabase/RLS è più semplice da mantenere e riduce il rischio di divergenza tra policy duplicate.
-
-### Reliability — Blocco 35 Unified Validation & State Transition Layer
-
-Il **Unified Validation Layer** introduce primitive e contratti di dominio condivisi prima delle scritture. Il suo compito è distinto dal Blocco 34: il Context/Scope Guard verifica chi/dove/su quale record; il Blocco 35 verifica se il payload e, quando lo stato corrente è realmente disponibile, la transizione richiesta sono validi.
-
-Contratto consolidato:
-
-- `src/reliability/validation-engine.js` fornisce `required`, allowlist, numeri finiti/intervalli, date/intervalli cronologici, transizioni e `assertValid`;
-- gli errori applicativi hanno codice stabile `OPERATION_VALIDATION_FAILED` e una lista strutturata di issue `path/code/message/meta`;
-- `src/reliability/domain-validation.js` definisce contratti per segnalazioni, urgenti, planning lavori, planning sale e magazzino;
-- il primo wiring diretto nei data layer protegge `planning-work-data.js` e `inventory-data.js`, incluse date/stati, quantità non negative e movimenti stock non nulli;
-- le regole specialistiche già presenti, come `validateIssueTransition` nell'Action Gateway RandAI, restano **KEEP** e non vengono sostituite da una state machine generica;
-- non vengono introdotti limiti arbitrari non dichiarati dallo schema o dal dominio;
-- Zod è **DEFER**: verrà rivalutato se i contratti verranno migrati a TypeScript; XState è **NO ADD** perché sproporzionato rispetto alle transizioni operative attuali;
-- Supabase/RLS/RPC restano autorità server-side: la validazione client è preflight e non una barriera di sicurezza;
-- `test/reliability-unified-validation.test.js` copre error contract, allowlist, transizioni, date, pax, magazzino e wiring dei data layer;
-- dettagli e matrice KEEP/UPGRADE/ADD/DEFER in `docs/architecture/VALIDATION_LAYER.md`.
-
-### Reliability — Blocco 36 Safe Write Engine
-
-Il **Safe Write Engine** introduce un contratto comune per le scritture operative critiche: `preflight → idempotenza/precondizione → write → read-back → verifica`. Una risposta di trasporto positiva non basta più a considerare conclusa l'operazione.
-
-Contratto consolidato:
-
-- `src/reliability/safe-write-engine.js` coordina le fasi senza diventare un secondo workflow engine e senza dipendenze nuove;
-- errori stabili: `SAFE_WRITE_INVALID_CONTRACT`, `SAFE_WRITE_NOT_CONFIRMED`, `SAFE_WRITE_VERIFY_FAILED`, `SAFE_WRITE_CONFLICT`;
-- nessun retry nascosto: il retry resta al chiamante/outbox solo per operazioni dimostrate idempotenti;
-- l'outbox IndexedDB esistente e le RPC atomiche di Magazzino/Urgenti restano **KEEP**;
-- la create Planning Lavori non esegue più parent e giorni come write client separate: `create_planning_work_safe(...)` li crea nella stessa transazione PostgreSQL;
-- `planning_lavori.mutation_id` rende la create idempotente e rifiuta il riuso della stessa chiave con payload differente;
-- la RPC è `SECURITY INVOKER`: RLS e permessi del chiamante restano autoritativi;
-- ogni giorno Planning riceve `hotel_id` dal server e `created_by_user_id` deriva dalla sessione autenticata;
-- `planning_lavori_giorni.updated_at` è il version token per compare-and-swap; viene mantenuto come timestamp PostgreSQL originale senza perdita di precisione;
-- update e delete Planning filtrano per `id + hotel_id + updated_at` quando la versione è disponibile, poi verificano il risultato con read-back;
-- la create rilegge parent e giorni e verifica hotel, descrizione, mutation id, date e relazione parent/child;
-- Storage + database non vengono presentati come una falsa transazione unica: i flussi foto mantengono cleanup/compensazione;
-- `test/reliability-safe-write-engine.test.js` protegge ordine delle fasi, assenza di retry impliciti, idempotenza, read-back, verifica, delete-by-absence e wiring Planning;
-- dettagli e matrice KEEP/UPGRADE/REPLACE/ADD in `docs/architecture/SAFE_WRITE_ENGINE.md`.
-
-### Reliability — Blocco 37 Authorization & RLS Verification Matrix
-
-Il **Blocco 37** verifica e irrigidisce l'autorizzazione esistente senza introdurre un secondo motore permessi. `src/permissions.js`, `role_permissions`, gli helper PostgreSQL e Supabase RLS restano **KEEP**; il frontend continua a essere solo preflight/UX e il database resta autorità finale.
-
-Contratto consolidato:
-
-- policy `PUBLIC` nello schema applicativo vengono ristrette esplicitamente a `authenticated`, mantenendo invariati `USING` e `WITH CHECK` esistenti;
-- `anon` e `authenticated` non ricevono più `TRUNCATE`, `TRIGGER` o `REFERENCES` sulle tabelle `public`, privilegi non necessari al client RandApp;
-- `public.assert_randapp_authorization_baseline()` verifica deny-by-default, RLS attiva sulle tabelle operative critiche, policy CRUD presenti e assenza dei grant client troppo ampi;
-- la migrazione chiama l'assertion e fallisce chiusa se il baseline non è rispettato;
-- l'assertion non è invocabile dai client: `PUBLIC` è revocato e l'esecuzione è concessa solo a `service_role`;
-- la matrice critica copre Segnalazioni, maintenance issues, Interventi, Urgenti, Planning Lavori + giorni, Planning Sale, Magazzino, Housekeeping e Tecnici;
-- ownership e regole specifiche restano nelle policy di dominio: non vengono sostituite da una policy generica più debole;
-- OPA/Casbin restano **NO ADD**: aggiungerli ora duplicherebbe la sorgente di verità invece di migliorare RLS;
-- `test/reliability-authorization-rls-matrix.test.js` rende permanente il contratto di hardening;
-- dettagli e matrice in `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`.
-
-### Reliability — Blocco 38 Audit & Reversible Operations
-
-Il **Blocco 38** aggiunge un audit operativo append-only e rende reversibili le cancellazioni nei domini critici senza sostituire gli eventi funzionali già esistenti e senza introdurre un secondo motore permessi.
-
-Contratto consolidato:
-
-- `issue_events` e `randai_action_audit` restano **KEEP** per la storia di dominio Segnalazioni e l'Action Gateway RandAI;
-- `public.operational_audit_log` aggiunge la traccia trasversale `operationId → hotel → attore/ruolo → modulo/azione → record → before/after → outcome`;
-- i client possono leggere l'audit solo se `can_admin_hotel(hotel_id)` e non possono inserirlo, modificarlo o cancellarlo direttamente;
-- trigger DB registrano create/update/soft-delete/restore e mantengono un fallback `RND-AUD-*` quando un vecchio percorso non fornisce ancora un `RND-OP-*`;
-- gli snapshot audit applicano data minimization e rimuovono il telefono del tecnico;
-- Segnalazioni, Interventi, Planning Lavori e giorni Planning ricevono metadati di cancellazione/ripristino;
-- una DELETE già autorizzata dalle RLS viene intercettata da un trigger `BEFORE DELETE` e trasformata in soft-delete, preservando compatibilità con frontend, offline e outbox esistenti;
-- le normali SELECT e UPDATE vedono solo record `deleted_at IS NULL`;
-- il restore avviene tramite RPC server-side con `RND-OP-*` e riusa gli stessi permessi/ownership già esistenti: per Segnalazioni resta `issues.delete` oppure autore della propria segnalazione; Planning e Interventi richiedono il relativo permesso delete;
-- pgAudit è **DEFER**, non perché inutile ma perché copre auditing SQL/sessione e non sostituisce `operationId`, before/after e restore di dominio; un'adozione futura dovrà essere mirata per evitare logging eccessivo;
-- `test/reliability-audit-reversible-operations.test.js` rende permanente il contratto;
-- dettagli in `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`.
-
-### Reliability — Blocco 39 Offline, Retry & Concurrency Hardening
-
-Il **Blocco 39** mantiene Dexie/IndexedDB ma rende l'outbox resistente a più tab/PWA, riconnessioni e modifiche concorrenti. Non promette exactly-once: combina identità stabile, lease locale, idempotenza e compare-and-swap server-side.
-
-Contratto consolidato:
-
-- ogni mutazione accodata riceve un `operationId` persistente `RND-OP-*`, distinto dall'ID autoincrementale locale e conservato attraverso retry e failure queue;
-- Dexie passa allo schema v4 con `operationId`, `leaseOwner` e `leaseUntil` sull'outbox;
-- il vecchio `draining` in memoria resta un'ottimizzazione della singola istanza, mentre il claim reale della riga usa una transazione IndexedDB e un lease cross-tab recuperabile dopo crash;
-- enqueue+cache, replay create+id-map+cache, outbox→failure, failure→outbox e cleanup discard sono transazioni locali atomiche; le chiamate di rete restano fuori dalle transazioni Dexie;
-- il backoff esistente mantiene gli stessi gradini ma aggiunge jitter ±20% per evitare retry simultanei dopo una riconnessione;
-- la create Segnalazioni continua a usare `mutation_id` per idempotenza server-side;
-- `updatedAtToken` conserva il timestamp PostgreSQL esatto: update Segnalazioni online e replay offline applicano CAS con `id + hotel_id + updated_at` e trasformano un mismatch in `OFFLINE_CONFLICT`;
-- `soft_delete_issue_cas(...)` blocca la riga `FOR UPDATE`, verifica hotel/permesso/ownership e confronta lo stesso token prima del soft-delete, eliminando il precedente TOCTOU `SELECT → DELETE`;
-- la delete conserva lo stesso `operationId` dall'azione iniziale fino all'audit del Blocco 38;
-- i vecchi record cache privi del token esatto mantengono temporaneamente il fallback legacy finché vengono ricaricati dal server;
-- retry budget/circuit breaker restano al Blocco 47 e la matrice avversariale completa al Blocco 49;
-- `test/reliability-offline-concurrency.test.js` copre operation ID, lease, jitter, transazioni Dexie, CAS e RPC;
-- dettagli in `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
-
-Un blocco architetturale non è considerato completato finché codice, test e README non risultano coerenti nello stesso PR.
-
-## UI e design system
-
-Il design system RandApp è mobile-first e mantiene lo stesso contratto su iOS, Android e Windows, con tema chiaro/scuro, safe-area e modalità Piccolo/Normale/Grande.
-
-Struttura CSS e shell consolidata:
-
-- `src/randapp/shell.css`: token, superfici e componenti base `rs-*`;
-- `src/randapp/adaptive-layout.css`: responsive generale, layout tablet/desktop e regole di contenuto;
-- `src/randapp/app-shell-foundation.css`: **layer finale della chrome condivisa**, cinque slot mobile, effective safe-area, posizione del `+` e geometria Grande;
-- `src/randapp/shell-navigation.js`: contratto strutturale della bottom navigation;
-- `src/randapp/system-insets.js`: bridge opzionale tra safe-area web e futuri `WindowInsets` nativi Android;
-- `src/randapp/ui-material-glass.css`: layer visuale light-first, accenti hotel, superfici Material-like e glass selettivo;
-- `src/randapp/ui-coherence.css`: accessibilità, focus, touch target e coerenza dei controlli;
-- `src/randapp/login-reference.css`: layout e tema di login/Admin Gate;
-- `src/randapp/admin-keyboard-fix.css`: guardia mobile dedicata all'Admin Gate; mantiene il layout compatto e scrollabile quando la tastiera riduce il viewport senza introdurre cambi di geometria legati al focus dei pulsanti;
-- `src/randapp/hotel-selector-reference.css`: layout e tema del selettore struttura;
-- `src/randapp/theme-coherence.css`: carica il layer visuale Punto 2 e mantiene le regole tema trasversali;
-- CSS specifici di feature rimangono separati quando hanno responsabilità reale (Planning, nuova segnalazione, housekeeping, notifiche, RandAI).
-
-I vecchi layer autonomi `planning-sale-fix.css`, `mobile-bottom-anchor.css`, `home-center-nav.css`, `large-header-balance.css`, `auth-theme-fix.css` e `theme-audit-fix.css` sono stati rimossi/assorbiti nei moduli proprietari. Le regole legacy del vecchio Planning Sale non più raggiungibili non vengono mantenute.
-
-### App Shell Foundation — Punto 1
-
-Il Punto 1 separa definitivamente **destinazioni** e **azioni** nella chrome mobile:
-
-- i cinque slot strutturali sono `Segnalazioni · Interventi · Home · Planning · Menu`;
-- Home occupa sempre lo slot 3; un permesso può nascondere una destinazione ma non sposta gli altri slot;
-- il `+` continua a usare `InsertLauncher`, ma resta un'azione contestuale separata dalla navigazione e viene posizionato rispetto alla navbar, non rispetto al bordo fisico del dispositivo;
-- la safe-area effettiva usa il massimo tra `env(safe-area-inset-*)` del browser e gli opzionali `--rs-native-safe-*`;
-- l'inset inferiore **non viene più limitato** nel layer finale: Android a tre tasti, gesture navigation e Home Indicator iOS possono riservare lo spazio reale necessario;
-- un futuro APK Android può alimentare lo stesso contratto emettendo `randapp-system-insets`, senza riscrivere componenti o layout;
-- `viewport-fit=cover` resta obbligatorio;
-- da 960px in su Windows/desktop continua a usare la sidebar esistente;
-- Piccolo/Normale/Grande continuano a usare `--rs-scale`, senza alterare l'ordine della navigazione;
-- non sono state aggiunte dipendenze UI né Capacitor in questo punto: Konsta/Material/21st restano sorgenti di pattern per il Punto 2, mentre Capacitor potrà essere collegato in futuro al bridge inset già predisposto.
+RandAI non deve inventare procedure operative mancanti, soglie tecniche non configurate o stati dispositivi non mappati.
 
-Il contratto è protetto da `test/ui-shell-foundation.test.js`; dettagli in `docs/architecture/APP_SHELL_FOUNDATION.md`.
+## Reliability & Safety — blocchi 33–39
 
-### UI Components & Theme System — Punto 2
+### 33 — Reliability Foundation
 
-Il Punto 2 non introduce un secondo framework UI: evolve le primitive già usate da RandApp e mantiene un solo linguaggio visuale.
+Envelope operativo comune con `operationId` `RND-OP-*`, `correlationId`, `traceId`, hotel, attore, modulo, azione, record, sorgente e timestamp. Il contesto destinato ai log minimizza i dati e non include segreti o dati personali non necessari.
 
-- in assenza di una preferenza salvata, il tema di lavoro predefinito è **Chiaro**; `Sistema` e `Scuro` restano disponibili;
-- la struttura attiva viene esposta come `html[data-hotel]` e governa solo l'accento visivo: Giò, Choco e Brigantino possono avere identità diverse senza duplicare componenti;
-- rosso/ambra/verde restano esclusivamente semantici per errore/urgenza, warning/attesa e successo/completato;
-- Card, Button, IconButton, Input, Segment, Sheet e Modal mantengono le primitive React di `ui.jsx`, ma ricevono una gerarchia più vicina a un'app Material moderna;
-- Liquid Glass è limitato a header, bottom navigation, Sheet e `+`; card operative, liste, form e tabelle restano superfici solide e leggibili;
-- Safari/WebKit non dipende da effetti Chromium-only: se `backdrop-filter` non è disponibile viene usato un fallback opaco;
-- `prefers-reduced-motion`, `prefers-contrast` e `forced-colors` hanno priorità sull'estetica;
-- non sono state aggiunte dipendenze runtime UI: Konsta UI, 21st.dev e LiquidGlass-UI sono stati usati come benchmark/pattern, non come framework paralleli.
+### 34 — Context & Scope Guard
 
-Il contratto è protetto da `test/ui-components-theme-system.test.js`; dettagli in `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`.
+Preflight deny-by-default per hotel, attore, modulo, risorsa, ownership e permessi. Errori stabili includono `MISSING_CONTEXT`, `HOTEL_MISMATCH`, `ACTOR_MISMATCH`, `RESOURCE_MISMATCH`, `PERMISSION_DENIED`, `OWNERSHIP_MISMATCH`, `MODULE_MISMATCH`.
 
-## Struttura React consolidata
+Il backend Supabase/RLS resta l'autorità definitiva.
 
-Il frontend evita componenti universali troppo astratti: le estrazioni vengono fatte solo quando esiste una responsabilità stabile e condivisa.
+### 35 — Unified Validation & State Transition Layer
 
-Nel dominio Planning:
+Primitive comuni per required, allowlist, numeri/intervalli, date, transizioni e contratti di dominio. Le regole specialistiche esistenti restano la fonte corretta quando più precise di una state machine generica.
 
-- `src/randapp/planning/date-utils.js` contiene le utility data comuni a Planning Sale e Planning Lavori;
-- `src/randapp/planning/PlanningDateNavigator.jsx` è il navigatore periodo condiviso;
-- `src/randapp/planning/NewWorkSheet.jsx` possiede esclusivamente il flusso di creazione di un lavoro pianificato;
-- `src/randapp/planning/WorkRow.jsx` possiede esclusivamente stato/azioni della singola riga lavoro;
-- `PlanningWorkSimple.jsx` resta un orchestratore della settimana invece di contenere sheet, righe, utility e navigazione nello stesso file;
-- `PlanningSaleSimple.jsx` riusa lo stesso contratto di navigazione senza perdere logica specifica delle sale.
+### 36 — Safe Write Engine
 
-Regola architetturale: estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma; non creare wrapper generici senza un beneficio operativo/testabile.
+Contratto comune `preflight → idempotenza/precondizione → write → read-back → verifica` per scritture critiche. Nessun retry nascosto. Planning Lavori usa RPC atomiche e compare-and-swap quando applicabile.
 
-## Sicurezza accesso e recupero PIN — Consolidamento 3
+### 37 — Authorization & RLS Verification Matrix
 
-Il contratto di autenticazione è intenzionalmente distinto:
+RLS e privilegi browser irrigiditi. Le tabelle operative critiche mantengono policy CRUD esplicite e i client non ricevono privilegi SQL superflui. OPA/Casbin non vengono aggiunti per evitare una seconda sorgente di verità dei permessi.
 
-- PIN utente operativo: **4 cifre**;
-- PIN amministratore: **6 cifre**, separato visivamente e funzionalmente dal login operativo;
-- la directory pre-login espone soltanto `legacy_id`, nome, struttura e stato minimo necessario al login; **ruolo, reparto, telefono, presenza, auth user id e permessi admin non vengono più inviati prima dell'autenticazione**;
-- anche le vecchie directory conservate offline vengono normalizzate al nuovo payload minimo prima di essere riutilizzate;
-- email, telefono, ruolo, presenza e permessi operativi vengono restituiti solo dopo autenticazione PIN valida;
-- una sessione già validata può continuare offline per un massimo di **24 ore dall'ultima validazione server**;
-- al ritorno online la sessione viene rivalidata e una revoca utente/hotel comporta logout locale;
-- le operazioni sensibili non vengono accodate offline: accesso amministratore, cambio/reset PIN, modifica profilo, salvataggio codice notifiche e Action Gateway RandAI richiedono connessione e verifica server, con errore stabile `ONLINE_REQUIRED`;
-- il recupero PIN è self-service: il browser invia solo `user_id + hotel_id`, l'email viene risolta server-side e non viene mostrata nel login;
-- per il recupero PIN viene considerata l'email salvata nel profilo anche quando `email_verified=false`; il flag di verifica non viene reinterpretato globalmente né usato come requisito del recovery;
-- i link di recupero scadono dopo 15 minuti, sono monouso, memorizzati solo come hash e protetti da rate limit;
-- gli account di sistema protetti non possono usare il recupero PIN utente;
-- il nuovo PIN viene hashato con bcrypt e azzera lockout/tentativi falliti.
+### 38 — Audit & Reversible Operations
 
-Il trasporto email del recupero usa `pin-recovery` e richiede un provider realmente configurato. Per il sender Resend servono i secret Edge Function `RESEND_API_KEY`, `PIN_RECOVERY_FROM_EMAIL` e facoltativamente `PIN_RECOVERY_APP_URL` (default produzione Vercel). L'integrazione deve risultare abilitata in `integration_settings` e la funzione continua a dichiararsi non disponibile se sender o secret mancano.
+Audit append-only trasversale con `operationId`, hotel, attore, modulo/azione, record, before/after e outcome. Segnalazioni, Interventi e Planning critici usano soft-delete/restore quando previsto dal dominio.
 
-## Prestazioni e caricamento — Consolidamento 4
+### 39 — Offline, Retry & Concurrency Hardening
 
-Il bootstrap frontend è organizzato per caricare immediatamente solo ciò che serve alla route corrente e alla prima interazione, senza rinunciare a PWA, sicurezza e recovery.
+Outbox Dexie/IndexedDB con `operationId`, lease cross-tab, jitter retry, transazioni locali atomiche e compare-and-swap server-side. Le Segnalazioni mantengono idempotenza tramite `mutation_id`; i conflitti di versione diventano `OFFLINE_CONFLICT` invece di sovrascrivere dati più recenti.
 
-Contratto di caricamento:
+## Parità e isolamento multi-hotel
 
-- `src/main.jsx` non importa più staticamente RandApp, RandAI Assistant, portale tecnico, vista segnalazione pubblica o short-link ntfy: ogni route ha un proprio boundary `React.lazy`;
-- RandAI Assistant viene richiesto soltanto quando esiste una sessione RandApp locale e segue gli eventi `apice-session-changed` per login/logout;
-- **la registrazione PWA/Service Worker resta immediata nel bootstrap** sulle route RandApp compatibili, perché installabilità e disponibilità offline sono un contratto di avvio e non un servizio autenticato;
-- diagnostica e telemetria restano differite dopo il caricamento pagina, con fallback compatibile quando `requestIdleCallback` non è disponibile;
-- push repair, onboarding notifiche, presenza e ownership degli urgenti non entrano nel bootstrap anonimo: i moduli vengono importati solo dopo una sessione valida e una sola volta per runtime;
-- il repair push viene rieseguito quando cambia la struttura della sessione, senza reinizializzare gli altri servizi;
-- deployment recovery, dimensionamento UI e tema restano immediati perché proteggono avvio e coerenza visiva;
-- `xlsx` resta separato dal percorso JavaScript iniziale e viene caricato soltanto dal flusso di import che lo richiede;
-- i CSS globali del design system restano nell'entry per evitare flash di stile e variazioni di cascade tra iOS, Android e Windows: l'ottimizzazione del Punto 4 riguarda i confini JavaScript misurati, non spostamenti CSS ad alto rischio;
-- `scripts/check-bundle.mjs` impone un budget CI di **400 KiB** sul percorso JavaScript statico iniziale;
-- i test di `test/performance-loading-boundaries.test.js` impediscono regressioni dei confini lazy/deferred e proteggono esplicitamente la registrazione PWA immediata.
+Hotel Giò, Chocohotel e Hotel Il Brigantino condividono la stessa shell e le stesse funzioni generali. Una funzione non può essere nascosta solo perché l'hotel non è Giò.
 
-La build Point 4 prima del ripristino PWA misurava **311,5 KiB in 2 chunk statici**. Il valore finale viene accettato solo dalla CI del commit definitivo e deve restare sotto il budget di 400 KiB; non viene quindi presentato il valore intermedio come misura finale.
+Regole:
 
-Le prestazioni vengono accettate solo insieme ai gate di build, bundle budget, suite completa, Chromium/WebKit e device acceptance su profili iOS, Android e Windows.
+- funzioni permission-driven, non hotel-hardcoded;
+- dati separati tramite `hotel_id` e RLS;
+- cache/outbox mantengono il contesto hotel immutabile;
+- Planning Sale è disponibile a ogni struttura autorizzata e usa configurazioni sale proprie;
+- Housekeeping ha cache distinta per hotel;
+- ntfy dichiara configurazioni per le tre strutture;
+- differenze reali di camere, sale, impianti, sensori, contatti e procedure restano specifiche della struttura.
 
-## Parità e isolamento multi-hotel — Consolidamento 5
+Le regole camere di Hotel Giò sono specifiche di Giò e non vanno propagate alle altre strutture.
 
-Il contratto multi-hotel distingue **parità funzionale** da **configurazione specifica della struttura**. Hotel Giò, Chocohotel e Hotel Il Brigantino condividono la stessa shell applicativa e le stesse funzioni generali; una funzione non può essere nascosta solo perché l'hotel non è Giò.
+## Contratti operativi importanti
 
-Regole consolidate:
+### Segnalazioni
 
-- Segnalazioni, Interventi, Planning lavori, Planning sale, Housekeeping, Urgenti, Promemoria, notifiche, sensori/impianti, rubrica tecnici e RandAI sono permission-driven e non dipendono da un hard-code del singolo hotel;
-- Planning Sale è disponibile a tutte e tre le strutture quando il ruolo possiede `planning_sale`; sale, clienti, layout e prenotazioni restano separati tramite `hotel_id`;
-- Choco e Brigantino possono partire con una configurazione sale vuota e popolarla dalla UI autorizzata: non vengono inventati nomi o sale inesistenti;
-- Housekeeping usa cache IndexedDB distinta per hotel e query/realtime filtrati per `hotel_id`; le differenze di camere e sezioni restano nel catalogo specifico di ciascuna struttura;
-- cache/offline e outbox mantengono il contesto hotel immutabile; i test relazionali precedenti continuano a vietare child row cross-hotel;
-- il backend è verificato con RLS attiva sulle principali tabelle operative multi-hotel, inclusi planning, housekeeping, sale, urgenti, manutenzioni, push e domini RandAI;
-- ntfy dichiara topic per tutte e tre le strutture; WhatsApp/Twilio può avere configurazioni diverse per hotel, ma ogni struttura deve essere dichiarata esplicitamente e nessun numero viene inventato quando non configurato;
-- `test/consolidation-point5-multihotel-parity.test.js` rende permanente il contratto di parità frontend e richiama i gate già esistenti per isolamento relazionale, RandAI e offline.
+Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: camera/zona, urgenza, stato, categoria e data. Le camere vengono ordinate numericamente.
 
-Le eccezioni legittime devono rappresentare una caratteristica reale della struttura (camere, reparti, sale, sensori presenti, recapiti o procedure locali), non una scorciatoia nel codice. In particolare le regole di numerazione e organizzazione camere di Hotel Giò restano specifiche di Giò e non vengono propagate a Choco o Brigantino.
-
-## Contratti operativi recenti
-
-### Segnalazioni — filtri e ordinamento
-
-La vista Segnalazioni combina ricerca, stato e filtri avanzati. È possibile ordinare per camera/zona, urgenza, stato, categoria e data in senso crescente o decrescente. Le camere vengono ordinate numericamente, non lessicograficamente. I filtri restano combinabili e non alterano l'isolamento per `hotel_id`.
+Una Segnalazione aperta pubblica il proprio Operational Context a RandAI. Analisi, percorso guidato e Action Gateway condividono la stessa risorsa e lo stesso hotel.
 
 ### Magazzino
 
-Il Magazzino è una funzione multi-hotel permission-driven: ogni articolo appartiene a una sola struttura e contiene nome, categoria, unità di misura, posizione, codice/SKU, giacenza, soglia minima, note e foto di riferimento facoltativa. Carichi e scarichi sono registrati come movimenti con quantità prima/dopo; la RPC di variazione scorta impedisce giacenze negative e rende l'operazione atomica.
+Ogni articolo appartiene a una sola struttura e può contenere nome, categoria, unità, posizione, SKU/codice, giacenza, soglia minima, note e foto. I movimenti registrano quantità prima/dopo e non permettono giacenze negative.
 
-La foto serve a riconoscere il materiale reale (scatola, etichetta o ricambio). È salvata nel bucket privato delle foto e mostrata tramite URL firmato. L'inserimento **non deve forzare la fotocamera**: il controllo file usa il selettore nativo del sistema, così iOS, Android e Windows possono offrire Libreria foto, Fotocamera/Scatta foto e File secondo le capacità del dispositivo. Le immagini sono limitate a 10 MB.
+Il controllo file non forza la fotocamera: iOS, Android e Windows possono proporre Fotocamera, Libreria o File secondo le capacità del dispositivo.
 
-### Header operativo compatto e RandAI
+### Header operativo e RandAI
 
-Nelle viste operative il selettore struttura è compatto e dedicato al solo contesto hotel. RandAI è una vera azione della toolbar dell'header, nello stesso gruppo di presenza e notifiche: non usa più un FAB né un launcher riposizionato con `position: fixed`. La sua identità visiva nell'header è **Cyber Cat Orb**, resa come SVG vettoriale con anello cyan→viola, volto cyber minimale e circuito centrale, così resta nitida anche nei controlli compatti. Il pannello RandAI resta separato e si apre sotto l'intestazione su mobile. Il comportamento deve rimanere coerente nelle modalità **Piccolo / Normale / Grande** e su iOS, Android e Windows.
+Il selettore struttura resta compatto. RandAI è una vera azione della toolbar tramite Cyber Cat Orb. Il pannello si apre sotto l'intestazione su mobile e usa il contesto operativo già pubblicato.
 
-### Presenza personale e UI size
+### Presenza e UI size
 
-Lo stato “Sono in struttura” è personale e identifica una sola struttura fisica alla volta; non è un booleano indipendente per ogni hotel. Nell'header il controllo usa le sigle compatte `GIO`, `CHO`, `BRI`. Tutti i nuovi controlli visuali devono rispettare le tre modalità **Piccolo / Normale / Grande** e mantenere coerenza su iOS, Android e Windows.
+`Sono in struttura` identifica una sola struttura fisica alla volta. I controlli devono funzionare in Piccolo, Normale e Grande e mantenere coerenza su iOS, Android e Windows.
+
+## Architettura
+
+- entry: `src/main.jsx`;
+- shell/UI: `src/randapp/`;
+- App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
+- visual layer: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`;
+- Planning: `src/randapp/planning/`;
+- RandAI: `src/randai/`;
+- RandAI context: `src/randai/context/`;
+- reliability: `src/reliability/`;
+- Supabase client: `src/supabase.js`;
+- session policy: `src/session-policy.js`;
+- offline: `src/offline-store.js`;
+- diagnostica: `src/diagnostics-client.js`, `src/diagnostic-taxonomy.js`, `src/error-boundary.jsx`;
+- telemetria opzionale: `src/external-telemetry.js`;
+- migrazioni: `supabase/migrations/`;
+- Edge Functions: `supabase/functions/`;
+- test: `test/` + `scripts/`.
+
+Documenti principali:
+
+- `FRONTEND_ARCHITECTURE.md`
+- `docs/architecture/APP_SHELL_FOUNDATION.md`
+- `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
+- `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`
+- `docs/architecture/RELIABILITY_SAFETY.md`
+- `docs/architecture/VALIDATION_LAYER.md`
+- `docs/architecture/SAFE_WRITE_ENGINE.md`
+- `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`
+- `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md`
+- `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`
 
 ## Avvio locale
 
@@ -328,60 +232,43 @@ npm run test:e2e
 npm run test:device
 ```
 
-`npm run test:quality` esegue matrice, gate critico e suite Node. La CI aggiunge build, budget bundle, Playwright cross-platform e device acceptance.
-
-## Architettura
-
-- entry: `src/main.jsx`;
-- shell/UI: `src/randapp/`;
-- contratto App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
-- layer visuale Punto 2: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`;
-- componenti Planning focalizzati: `src/randapp/planning/`;
-- motore RandAI: `src/randai/`;
-- reliability condivisa: `src/reliability/`;
-- client Supabase: `src/supabase.js`;
-- session policy: `src/session-policy.js`;
-- offline: `src/offline-store.js`;
-- diagnostica: `src/diagnostics-client.js`, `src/diagnostic-taxonomy.js`, `src/error-boundary.jsx`;
-- telemetria opzionale: `src/external-telemetry.js`;
-- migrazioni: `supabase/migrations/`;
-- Edge Functions: `supabase/functions/`;
-- test: `test/` + `scripts/`.
-
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/APP_SHELL_FOUNDATION.md`, `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
+`npm run test:quality` esegue matrice, gate critico e suite Node. La CI aggiunge build, budget bundle, Playwright Chromium/WebKit e device acceptance.
 
 ## Sicurezza
 
-Le tabelle di servizio sensibili sono deny-by-grant per i ruoli browser. Le RPC privilegiate verificano sessione, hotel e permessi; le relazioni critiche includono il contesto hotel. Il bucket foto manutenzione è privato.
-
-La chiave Supabase pubblicabile può comparire nel client; service role, segreti Edge Function, token e credenziali private non devono mai essere inseriti nel repository.
-
-RandAI non deve effettuare scritture operative bypassando l'Action Gateway. L'apprendimento operativo deve distinguere evidenza verificata da soluzione riutilizzabile e non può auto-approvare procedure.
+- nessuna funzione operativa deve perdere `hotel_id`;
+- autorizzazione definitiva nel database, non nel frontend;
+- le tabelle di servizio sensibili sono deny-by-grant per i ruoli browser;
+- RPC privilegiate verificano sessione, hotel e permesso;
+- il bucket foto manutenzione è privato;
+- la chiave Supabase pubblicabile può stare nel client;
+- service role, token, secret Edge Function, PIN e credenziali private non devono entrare nel repository;
+- RandAI non esegue scritture bypassando l'Action Gateway;
+- apprendimento e procedure distinguono evidenza verificata da suggerimenti/bozze.
 
 ## Configurazione
 
-`src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e permette override tramite:
+`src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e consente override tramite:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
-Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se esplicitamente configurati/abilitati.
+Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se configurati e abilitati.
 
 ## Deploy
 
-- **Vercel = produzione ufficiale RandApp**, collegata a `main`;
-- **DigitalOcean = ambiente test/staging**;
-- **Supabase = backend, database, autenticazione e servizi RandAI**.
+- **Vercel:** produzione ufficiale RandApp, collegata a `main`;
+- **DigitalOcean:** test/staging;
+- **Supabase:** backend, database, autenticazione e servizi RandAI.
 
-Il progetto Vercel attivo è `apicehotel-manutenzionr`. Non esiste più codice applicativo del vecchio GitHub/Emergent bridge nel repository.
+Il progetto Vercel attivo è `apicehotel-manutenzionr`.
 
 ## Regole di manutenzione
 
-- nessuna funzione operativa deve perdere `hotel_id`;
-- navigazione e autorizzazione sono separate: l'autorizzazione definitiva resta nel database;
 - non modificare migrazioni già applicate: aggiungere una nuova migrazione;
-- non rimuovere indici solo perché momentaneamente segnalati come `unused`;
+- non rimuovere indici solo perché momentaneamente segnalati `unused`;
+- navigazione e autorizzazione restano separate;
+- estrarre componenti condivisi solo quando riducono duplicazione reale o separano una responsabilità autonoma;
 - ogni modifica critica deve mantenere verdi Quality Matrix, Critical Gate e test multipiattaforma;
-- **ogni modifica funzionale, aggiunta, rimozione o cambio di comportamento deve aggiornare il README nello stesso commit/PR quando cambia il contratto documentato**; se una funzione viene rimossa, va rimossa anche dalla documentazione, senza lasciare descrizioni obsolete;
-- ogni blocco o consolidamento architetturale importante deve aggiornare questo README nello stesso PR, così documentazione e codice restano allineati;
-- un blocco Reliability/RandAI non è `DONE` finché codice, test e README non sono coerenti nello stesso PR e i gate richiesti non risultano verdi.
+- ogni modifica funzionale o architetturale che cambia il contratto documentato deve aggiornare questo README nello stesso PR;
+- un blocco RandAI/Reliability non è `DONE` finché codice, test e README non risultano coerenti e i gate richiesti non sono verdi.
