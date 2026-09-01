@@ -1,0 +1,218 @@
+/* RandApp UI v2 — light-first Material-inspired surfaces with restrained Liquid Glass.
+   External references are used as design guidance only: no runtime UI dependency is added. */
+
+:root {
+  --rs-accent: #2563eb;
+  --rs-accent-strong: #1d4ed8;
+  --rs-accent-soft: rgba(37, 99, 235, .10);
+  --rs-accent-line: rgba(37, 99, 235, .24);
+  --rs-on-accent: #ffffff;
+  --rs-glass-blur: 18px;
+  --rs-glass-saturate: 125%;
+  --rs-glass-border: rgba(255,255,255,.72);
+  --rs-motion-fast: 140ms;
+  --rs-motion: 220ms;
+  --rs-ease-app: cubic-bezier(.2,.8,.2,1);
+}
+
+/* Hotel identity changes accents, never semantic error/warning/success colors. */
+html[data-hotel='hotelgio'] {
+  --rs-accent: #6d5bd0;
+  --rs-accent-strong: #5847bd;
+  --rs-accent-soft: rgba(109, 91, 208, .11);
+  --rs-accent-line: rgba(109, 91, 208, .25);
+}
+html[data-hotel='chocohotel'] {
+  --rs-accent: #9a6538;
+  --rs-accent-strong: #7d4f2d;
+  --rs-accent-soft: rgba(154, 101, 56, .11);
+  --rs-accent-line: rgba(154, 101, 56, .25);
+}
+html[data-hotel='brigantino'] {
+  --rs-accent: #176b87;
+  --rs-accent-strong: #10566e;
+  --rs-accent-soft: rgba(23, 107, 135, .11);
+  --rs-accent-line: rgba(23, 107, 135, .25);
+}
+
+/* Light is the working canvas. */
+html[data-theme='light'] {
+  --rs-bg: #f5f7fa;
+  --rs-bg-2: #eef2f6;
+  --rs-surface: #ffffff;
+  --rs-surface-2: #f8fafc;
+  --rs-surface-3: #eef2f7;
+  --rs-line: rgba(32, 45, 64, .10);
+  --rs-line-strong: rgba(32, 45, 64, .18);
+  --rs-text: #172033;
+  --rs-text-2: #596579;
+  --rs-text-3: #7b8798;
+  --rs-cyan: var(--rs-accent);
+  --rs-blue: var(--rs-accent);
+  --rs-blue-deep: var(--rs-accent-strong);
+  --rs-grad-primary: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent) 82%, white), var(--rs-accent-strong));
+  --rs-shadow: 0 12px 34px -24px rgba(28, 39, 56, .35);
+  --rs-glow: 0 0 0 1px var(--rs-line), 0 16px 36px -28px var(--rs-accent);
+  --rs-header-bg: rgba(247, 249, 252, .78);
+  --rs-nav-bg: rgba(250, 251, 253, .82);
+  --rs-chrome-solid: rgba(250, 251, 253, .88);
+  --rs-overlay-bg: rgba(31, 41, 55, .28);
+  color-scheme: light;
+}
+
+html[data-theme='light'] body {
+  background:
+    radial-gradient(80% 56% at 8% -10%, color-mix(in srgb, var(--rs-accent) 8%, transparent), transparent 62%),
+    radial-gradient(70% 48% at 104% 2%, rgba(122, 144, 170, .08), transparent 60%),
+    var(--rs-bg);
+}
+
+/* Dark keeps the same hierarchy rather than reverting to a separate visual system. */
+html[data-theme='dark'] {
+  --rs-cyan: color-mix(in srgb, var(--rs-accent) 68%, #9fe7ff);
+  --rs-blue: var(--rs-accent);
+  --rs-blue-deep: var(--rs-accent-strong);
+  --rs-grad-primary: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent) 62%, #9fe7ff), var(--rs-accent));
+}
+
+/* Shared Material-like component geometry. */
+.rs-card {
+  border-radius: 20px;
+  box-shadow: var(--rs-shadow);
+  transition: border-color var(--rs-motion) var(--rs-ease-app), box-shadow var(--rs-motion) var(--rs-ease-app), transform var(--rs-motion-fast) var(--rs-ease-app);
+}
+html[data-theme='light'] .rs-card { background: var(--rs-surface); }
+
+.rs-btn,
+.rs-iconbtn,
+.rs-hotelchip,
+.rs-navbtn,
+.rs-segmented button {
+  -webkit-tap-highlight-color: transparent;
+  transition-timing-function: var(--rs-ease-app);
+}
+
+html[data-theme='light'] .rs-btn--primary {
+  background: var(--rs-accent);
+  color: var(--rs-on-accent);
+  box-shadow: 0 8px 22px -14px var(--rs-accent);
+}
+html[data-theme='light'] .rs-btn--ghost,
+html[data-theme='light'] .rs-iconbtn {
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  border-color: var(--rs-line);
+}
+html[data-theme='light'] .rs-btn--outline {
+  color: var(--rs-accent-strong);
+  border-color: var(--rs-accent-line);
+  background: color-mix(in srgb, var(--rs-surface) 88%, transparent);
+}
+
+html[data-theme='light'] .rs-input,
+html[data-theme='light'] .rs-textarea,
+html[data-theme='light'] select {
+  background-color: var(--rs-surface);
+  border-color: var(--rs-line-strong);
+}
+html[data-theme='light'] .rs-input:focus-within,
+html[data-theme='light'] .rs-textarea:focus {
+  border-color: var(--rs-accent);
+  box-shadow: 0 0 0 3px var(--rs-accent-soft);
+}
+
+/* Active state: one semantic accent, never a decorative rainbow. */
+.rs-navbtn.active { color: var(--rs-accent); }
+.rs-navbtn.active::before { background: var(--rs-accent); box-shadow: none; }
+.rs-segmented button.active,
+.rs-segmented button[aria-selected='true'],
+.rs-segmented button[aria-pressed='true'] {
+  color: var(--rs-accent-strong);
+  background: var(--rs-accent-soft);
+}
+
+/* Restrained Liquid Glass: chrome, sheets and floating action only. */
+.rs-header,
+.rs-bottomnav,
+.rs-sheet,
+.rs-navfab {
+  -webkit-backdrop-filter: blur(var(--rs-glass-blur)) saturate(var(--rs-glass-saturate));
+  backdrop-filter: blur(var(--rs-glass-blur)) saturate(var(--rs-glass-saturate));
+}
+html[data-theme='light'] .rs-header {
+  background: linear-gradient(180deg, rgba(250,252,255,.90), rgba(247,249,252,.72));
+  border-bottom: 1px solid rgba(255,255,255,.60);
+}
+html[data-theme='light'] .rs-bottomnav {
+  background: linear-gradient(180deg, rgba(255,255,255,.70), rgba(248,250,253,.92));
+  border-top: 1px solid rgba(42, 55, 72, .10);
+  box-shadow: 0 -10px 34px -30px rgba(25, 35, 52, .55);
+}
+html[data-theme='light'] .rs-hotelchip {
+  background: rgba(255,255,255,.74);
+  border-color: var(--rs-glass-border);
+  box-shadow: 0 8px 24px -20px rgba(24, 36, 54, .48);
+}
+html[data-theme='light'] .rs-sheet {
+  background: rgba(252,253,255,.94);
+  border: 1px solid rgba(255,255,255,.76);
+  box-shadow: 0 -20px 50px -34px rgba(20, 31, 48, .55);
+}
+html[data-theme='light'] .rs-modal {
+  background: rgba(252,253,255,.98);
+  border-color: var(--rs-line);
+}
+html[data-theme='light'] .rs-overlay { background: var(--rs-overlay-bg); }
+
+.rs-navfab {
+  color: var(--rs-on-accent);
+  background: color-mix(in srgb, var(--rs-accent) 92%, white);
+  border: 1px solid color-mix(in srgb, var(--rs-accent) 76%, white);
+  box-shadow: 0 12px 28px -15px var(--rs-accent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.rs-navfab:active { transform: scale(.94); }
+
+/* Status colors remain semantic and hotel-independent. */
+.rs-badge--high,
+.rs-btn--danger { --rs-status-local: var(--rs-danger); }
+.rs-badge--waiting,
+.rs-badge--mid { --rs-status-local: var(--rs-warn); }
+.rs-badge--done { --rs-status-local: var(--rs-ok); }
+
+/* Desktop surfaces remain solid; glass is reserved for floating chrome. */
+@media (min-width: 960px) {
+  html[data-theme='light'] .rs-sidebar {
+    background: #f8fafc;
+    border-right-color: var(--rs-line);
+  }
+  html[data-theme='light'] .rs-header { background: rgba(248,250,252,.90); }
+}
+
+/* Accessibility fallbacks inspired by progressive glass implementations. */
+@media (prefers-reduced-motion: reduce) {
+  .rs-card, .rs-btn, .rs-iconbtn, .rs-hotelchip, .rs-navbtn, .rs-navfab, .rs-segmented button {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .rs-navfab:active { transform: none; }
+}
+
+@media (prefers-contrast: more), (forced-colors: active) {
+  .rs-header, .rs-bottomnav, .rs-sheet, .rs-navfab {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .rs-card, .rs-btn, .rs-iconbtn, .rs-input, .rs-textarea, .rs-hotelchip, .rs-sheet {
+    border-width: 2px;
+  }
+}
+
+/* Browser without backdrop-filter: clean opaque surfaces, never broken transparency. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  html[data-theme='light'] .rs-header,
+  html[data-theme='light'] .rs-bottomnav,
+  html[data-theme='light'] .rs-sheet { background: #f9fbfd; }
+  html[data-theme='dark'] .rs-header,
+  html[data-theme='dark'] .rs-bottomnav,
+  html[data-theme='dark'] .rs-sheet { background: #0b1320; }
+}
