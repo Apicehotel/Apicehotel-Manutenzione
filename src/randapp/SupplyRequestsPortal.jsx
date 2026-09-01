@@ -167,10 +167,8 @@ function RequestsList({ requests, canComplete, onResolve }) {
   )
 }
 
-export default function SupplyRequestsPortal({ user, hotel }) {
+export default function SupplyRequestsPortal({ user, hotel, standalone = false }) {
   const role = user?.role
-  // Il fallback ruolo rende il launcher subito disponibile mentre i permessi live vengono caricati;
-  // RLS e RPC restano comunque l'autorità definitiva sul server.
   const canView = canUser(user, 'supplies', 'view') || VIEW_ROLES.has(role)
   const canCreate = canUser(user, 'supplies', 'create') || CREATE_ROLES.has(role)
   const canComplete = canUser(user, 'supplies', 'complete') || COMPLETE_ROLES.has(role)
@@ -209,20 +207,24 @@ export default function SupplyRequestsPortal({ user, hotel }) {
 
   if (!canView || !hotel) return null
 
+  const content = (
+    <div className="rs-supply-sheet" data-testid="supply-portal">
+      <header className="rs-supply-sheet__head"><div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}</p></div><button type="button" onClick={refresh} disabled={loading}>Aggiorna</button></header>
+      {error && <p className="rs-supply-error">{error}</p>}
+      {canCreate && <RequestComposer hotel={hotel} products={products} onCreated={refresh} />}
+      <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
+      {canManage && <ProductManager hotel={hotel} products={products} onChanged={refresh} />}
+    </div>
+  )
+
+  if (standalone) return content
+
   return (
     <>
       <button type="button" className="rs-supply-launcher" onClick={() => setOpen(true)} data-testid="supply-launcher">
         <Icon name="package" /><span>Rifornimenti</span>{pendingCount > 0 && <b>{pendingCount}</b>}
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Rifornimenti">
-        <div className="rs-supply-sheet" data-testid="supply-portal">
-          <header className="rs-supply-sheet__head"><div><h2>Minibar e Consumo</h2><p>{hotel.name}</p></div><button type="button" onClick={refresh} disabled={loading}>Aggiorna</button></header>
-          {error && <p className="rs-supply-error">{error}</p>}
-          {canCreate && <RequestComposer hotel={hotel} products={products} onCreated={refresh} />}
-          <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
-          {canManage && <ProductManager hotel={hotel} products={products} onChanged={refresh} />}
-        </div>
-      </Sheet>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Rifornimenti">{content}</Sheet>
     </>
   )
 }
