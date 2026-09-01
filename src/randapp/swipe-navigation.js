@@ -23,7 +23,7 @@ export function classifyHorizontalSwipe(start, end, options = {}) {
 }
 
 export function isInteractiveGestureTarget(target) {
-  if (!(target instanceof Element)) return false
+  if (typeof Element === 'undefined' || !(target instanceof Element)) return false
   return Boolean(target.closest('input, textarea, select, button, a, [contenteditable="true"], [role="slider"], [data-swipe-lock]'))
 }
 
@@ -51,6 +51,30 @@ export function createSwipeTracker({ onSwipeLeft, onSwipeRight, options } = {}) 
       return direction
     },
     cancel() { start = null },
+  }
+}
+
+let installed = false
+export function installSwipeMenuGesture() {
+  if (installed || typeof window === 'undefined' || typeof document === 'undefined') return () => {}
+  installed = true
+  const tracker = createSwipeTracker({
+    onSwipeLeft: () => {
+      if (document.querySelector('.rs-overlay, [role="dialog"]')) return
+      document.querySelector('[data-testid="nav-menu"]')?.click()
+    },
+  })
+  const start = (event) => tracker.start(event)
+  const end = (event) => tracker.end(event)
+  const cancel = () => tracker.cancel()
+  document.addEventListener('touchstart', start, { passive: true })
+  document.addEventListener('touchend', end, { passive: true })
+  document.addEventListener('touchcancel', cancel, { passive: true })
+  return () => {
+    document.removeEventListener('touchstart', start)
+    document.removeEventListener('touchend', end)
+    document.removeEventListener('touchcancel', cancel)
+    installed = false
   }
 }
 
