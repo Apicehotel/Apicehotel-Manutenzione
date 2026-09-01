@@ -1,0 +1,282 @@
+/* RandApp final layout pass — one visual system across mobile, tablet and Windows. */
+:root {
+  --rs-layout-max: 1320px;
+  --rs-reading-max: 980px;
+  --rs-section-gap: clamp(14px, 1.8vw, 22px);
+  --rs-panel-radius: clamp(18px, 2vw, 24px);
+  --rs-control-radius: 14px;
+  --rs-mobile-dock-clearance: 138px;
+}
+
+html[data-theme='light'] body {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rs-accent) 3%, #f7f8fb) 0%, #f5f7fa 34%, #f4f6f9 100%);
+}
+
+.rs-root { min-height: 100dvh; }
+.rs-app { background: transparent; }
+.rs-content {
+  width: min(100%, var(--rs-layout-max));
+  max-width: var(--rs-layout-max);
+  margin-inline: auto;
+  padding-top: clamp(14px, 2vw, 24px);
+}
+
+/* Header: quiet operational chrome, never a second hero. */
+.rs-header.rs-header--operational {
+  min-height: 66px;
+  gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rs-line) 75%, transparent);
+}
+.rs-hotelchip--operational {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 10px;
+  gap: 9px;
+  border-radius: 18px;
+}
+.rs-hotelchip--operational img { width: 34px; height: 34px; border-radius: 10px; }
+.rs-header__actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.rs-header-notify .rs-iconbtn { border-radius: 15px; }
+
+/* Shared page rhythm. */
+.rs-content > section,
+.rs-content > form,
+.rs-content > .rs-page,
+.rs-content > .rs-view { width: 100%; }
+.rs-pagehead,
+.rs-section__head,
+.rs-toolbar { margin-bottom: var(--rs-section-gap); }
+.rs-card,
+.rs-issue,
+.rs-panel,
+.rs-empty,
+.rs-workhome__stat,
+.rs-workhome__task,
+.rs-workhome__weather {
+  border-radius: var(--rs-panel-radius);
+}
+.rs-card,
+.rs-workhome__stat,
+.rs-workhome__task {
+  box-shadow: 0 10px 30px -26px rgba(25, 35, 52, .55);
+}
+html[data-theme='light'] .rs-card,
+html[data-theme='light'] .rs-workhome__stat,
+html[data-theme='light'] .rs-workhome__task {
+  background: rgba(255,255,255,.94);
+}
+
+/* Inputs and action bars share the same visual language. */
+.rs-btn,
+.rs-input,
+.rs-textarea,
+.rs-segmented,
+.rs-chip,
+.rs-iconbtn { border-radius: var(--rs-control-radius); }
+.rs-btn--primary { box-shadow: 0 10px 24px -18px var(--rs-accent); }
+.rs-input,
+.rs-textarea { box-shadow: inset 0 1px 0 rgba(255,255,255,.28); }
+
+/* Home becomes the reference layout for the rest of the app. */
+.rs-workhome { gap: clamp(14px, 2vw, 20px) !important; }
+.rs-workhome__hero {
+  align-items: center !important;
+  padding: 2px 0 0 !important;
+}
+.rs-workhome__hero h1 {
+  letter-spacing: -.035em;
+  line-height: 1.08;
+}
+.rs-workhome__hero p { line-height: 1.35; }
+.rs-workhome__role,
+.rs-workhome__sectionhead span { color: var(--rs-accent-strong) !important; }
+.rs-workhome__stats {
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+  gap: 12px !important;
+}
+.rs-workhome__stat {
+  min-height: 108px !important;
+  padding: 15px !important;
+  border-color: var(--rs-line) !important;
+}
+.rs-workhome__stat strong { font-size: clamp(2rem, 6vw, 2.45rem) !important; letter-spacing: -.04em; }
+.rs-workhome__sectionhead { margin-top: 8px !important; }
+.rs-workhome__sectionhead h2 { font-size: clamp(1.15rem, 3.5vw, 1.35rem) !important; }
+.rs-workhome__task {
+  min-height: 82px !important;
+  padding: 11px 13px !important;
+  grid-template-columns: 28px 42px minmax(0,1fr) 20px !important;
+}
+.rs-workhome__taskicon { width: 42px !important; height: 42px !important; border-radius: 13px !important; }
+
+/* RandAI card remains operational content, not glass decoration. */
+.rs-workhome [class*='randai'],
+.rs-workhome [data-testid*='randai'] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Drawer / sheets / modals: one geometry. */
+.rs-sheet,
+.rs-modal,
+.rs-drawer {
+  border-radius: 24px 24px 0 0;
+  border-color: var(--rs-line);
+}
+.rs-drawer { border-radius: 24px 0 0 24px; }
+.rs-drawer__head { padding-top: max(14px, var(--rs-safe-top)); }
+.rs-drawer__item,
+.rs-sidebar__item { border-radius: 13px; }
+.rs-drawer__item.active,
+.rs-sidebar__item.active { background: var(--rs-accent-soft); color: var(--rs-accent-strong); }
+
+/* Mobile final shell. The dock owns the navbar and the two direct actions. */
+@media (max-width: 959px) {
+  .rs-content { padding-bottom: calc(var(--rs-safe-bottom) + var(--rs-mobile-dock-clearance)) !important; }
+
+  .rs-liquid-dock {
+    left: max(10px, var(--rs-safe-left)) !important;
+    right: max(10px, var(--rs-safe-right)) !important;
+    bottom: max(8px, var(--rs-safe-bottom)) !important;
+  }
+
+  .rs-liquid-dock__surface {
+    min-height: 104px !important;
+    padding: 31px 7px 6px !important;
+    border-radius: 30px !important;
+    overflow: visible !important;
+  }
+
+  /* One continuous crown. No separator/grip in the closed state. */
+  .rs-liquid-dock__bridge {
+    top: -24px !important;
+    width: min(204px, calc(100% - 124px)) !important;
+    height: 56px !important;
+    border-radius: 26px 26px 0 0 !important;
+  }
+  .rs-liquid-dock__bridge::after { height: 12px !important; bottom: -4px !important; }
+
+  .rs-liquid-dock__quickbar {
+    top: -19px !important;
+    width: min(188px, calc(100% - 138px)) !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    min-height: 48px !important;
+    padding: 2px !important;
+  }
+  .rs-liquid-dock__pull { display: none !important; }
+  .rs-liquid-dock__quick {
+    min-height: 44px !important;
+    border-radius: 15px !important;
+    gap: 5px !important;
+  }
+  .rs-liquid-dock__quick--create {
+    background: var(--rs-accent) !important;
+    color: var(--rs-on-accent) !important;
+  }
+  .rs-liquid-dock__quick--ai {
+    background: color-mix(in srgb, var(--rs-surface) 76%, var(--rs-accent-soft)) !important;
+    color: var(--rs-accent-strong) !important;
+    box-shadow: inset 0 0 0 1px var(--rs-accent-line) !important;
+  }
+
+  .rs-liquid-dock .rs-bottomnav {
+    min-height: 66px !important;
+    padding: 5px 1px 2px !important;
+  }
+  .rs-liquid-dock .rs-navbtn {
+    min-height: 56px !important;
+    gap: 4px !important;
+    border-radius: 16px !important;
+    color: var(--rs-text-3) !important;
+  }
+  .rs-liquid-dock .rs-navbtn.active {
+    color: var(--rs-accent-strong) !important;
+    background: var(--rs-accent-soft) !important;
+  }
+  .rs-liquid-dock .rs-navbtn[data-slot='3'].active {
+    transform: none !important;
+    color: var(--rs-accent-strong) !important;
+    background: var(--rs-accent-soft) !important;
+    box-shadow: inset 0 0 0 1px var(--rs-accent-line) !important;
+  }
+  .rs-liquid-dock .rs-navbtn.active::before { display: none !important; }
+  .rs-liquid-dock .rs-navbtn small { font-size: .61rem !important; }
+
+  .rs-liquid-dock__sheet {
+    bottom: calc(100% - 8px) !important;
+    border-radius: 28px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .rs-navfab,
+  .rs-header__randai { opacity: 0 !important; pointer-events: none !important; }
+}
+
+@media (max-width: 520px) {
+  .rs-content { padding-left: max(14px, var(--rs-safe-left)); padding-right: max(14px, var(--rs-safe-right)); }
+  .rs-header.rs-header--operational { padding-left: max(12px, var(--rs-safe-left)); padding-right: max(12px, var(--rs-safe-right)); }
+  .rs-workhome__stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .rs-workhome__stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .rs-workhome__hero .rs-btn { min-width: 88px; }
+}
+
+@media (max-width: 380px) {
+  .rs-liquid-dock__bridge { width: min(190px, calc(100% - 106px)) !important; }
+  .rs-liquid-dock__quickbar { width: min(176px, calc(100% - 120px)) !important; }
+  .rs-liquid-dock__quick small { font-size: .62rem !important; }
+  .rs-liquid-dock .rs-navbtn small { font-size: .56rem !important; }
+}
+
+/* Tablet: same mobile interaction model, more breathing room. */
+@media (min-width: 640px) and (max-width: 959px) {
+  .rs-content { padding-left: 24px; padding-right: 24px; }
+  .rs-workhome__stats { grid-template-columns: repeat(4, minmax(0,1fr)) !important; }
+}
+
+/* Windows / desktop: intentional app workspace, not a stretched phone page. */
+@media (min-width: 960px) {
+  .rs-app--with-side { grid-template-columns: 252px minmax(0,1fr); }
+  .rs-sidebar {
+    padding: 16px 12px;
+    border-right: 1px solid var(--rs-line);
+  }
+  .rs-sidebar__brand { padding: 6px 8px 16px; }
+  .rs-content {
+    margin: 0;
+    max-width: none;
+    padding: 26px clamp(28px, 3vw, 48px) 42px;
+  }
+  .rs-content > section,
+  .rs-content > form,
+  .rs-content > .rs-page,
+  .rs-content > .rs-view { max-width: var(--rs-layout-max); }
+  .rs-header.rs-header--operational { padding-left: clamp(28px, 3vw, 48px); padding-right: clamp(28px, 3vw, 48px); }
+  .rs-workhome__stats { grid-template-columns: repeat(4, minmax(0,1fr)) !important; }
+  .rs-workhome__queue { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px !important; }
+}
+
+@media (min-width: 1500px) {
+  .rs-app--with-side { grid-template-columns: 272px minmax(0,1fr); }
+  .rs-content { padding-left: 54px; padding-right: 54px; }
+}
+
+html[data-ui-size='large'] {
+  --rs-mobile-dock-clearance: 154px;
+}
+html[data-ui-size='large'] .rs-workhome__task { min-height: 94px !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-liquid-dock__sheet,
+  .rs-card,
+  .rs-navbtn { transition: none !important; }
+}
+
+@media (forced-colors: active) {
+  .rs-liquid-dock__surface,
+  .rs-card,
+  .rs-workhome__task,
+  .rs-workhome__stat { box-shadow: none !important; }
+}
