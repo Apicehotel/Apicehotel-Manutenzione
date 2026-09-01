@@ -10,6 +10,7 @@ const edge = read('supabase/functions/randai-whatsapp-inbound/index.ts')
 const ui = read('src/randai/control/WhatsAppConsole.jsx')
 const control = read('src/randai/control/RandAIControlCenter.jsx')
 const migration = read('supabase/migrations/20260901231000_randai_whatsapp_inbound_foundation.sql')
+const manual = read('supabase/migrations/20260901234500_randai_whatsapp_manual_actions.sql')
 
 test('Twilio inbound endpoint is configured for Giò and Choco', () => {
   assert.match(config, /\+390759978247/)
@@ -50,4 +51,18 @@ test('RandAI console exposes live inbox and protected ingestion toggle', () => {
   assert.match(ui, /RandApp IN PAUSA/)
   assert.match(ui, /Non inviato a RandApp/)
   assert.match(migration, /can_access_admin = true/)
+})
+
+test('paused messages require an explicit safe decision', () => {
+  assert.match(ui, /Crea segnalazione/)
+  assert.match(ui, /Collega a segnalazione esistente/)
+  assert.match(ui, />Ignora</)
+  assert.match(ui, /whatsapp_create_issue_from_inbound/)
+  assert.match(ui, /whatsapp_link_inbound/)
+  assert.match(ui, /whatsapp_ignore_inbound/)
+  assert.match(manual, /cross-hotel link denied/)
+  assert.match(manual, /location and problem are required/)
+  assert.match(manual, /processing_status='ignored'/)
+  assert.match(manual, /processing_status='linked'/)
+  assert.match(manual, /processing_status='created'/)
 })
