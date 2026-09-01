@@ -33,10 +33,16 @@ export const USERS = []
 export const WHATSAPP = Object.freeze({
   enabled: true,
   destinations: Object.freeze({
-    hotelgio: Object.freeze({ phone: '0759978247', receivesIssues: true }),
-    chocohotel: null,
+    hotelgio: Object.freeze({ phone: '+390759978247', receivesIssues: true }),
+    chocohotel: Object.freeze({ phone: '+390759970610', receivesIssues: true }),
     brigantino: null,
   }),
 })
 
-export const TWILIO = Object.freeze({ enabled: false, inboundWebhook: null, automaticMessages: false })
+// Ricezione Twilio attiva. La creazione automatica delle segnalazioni resta
+// controllata per singola struttura da whatsapp_channel_settings.ingestion_enabled.
+export const TWILIO = Object.freeze({
+  enabled: true,
+  inboundWebhook: '/api/whatsapp/incoming',
+  automaticMessages: false,
+})
