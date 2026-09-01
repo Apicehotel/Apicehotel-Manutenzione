@@ -12,6 +12,7 @@ Funzioni consolidate:
 - avvisi urgenti con presa in carico, completamento e reminder;
 - interventi, Planning Lavori e Planning Sale;
 - Housekeeping con import `.xls`, storico giornaliero e idempotenza;
+- rifornimenti interni Housekeeping → Manutenzione per Minibar e Consumo, con catalogo Admin, esiti `Consegnato`/`Manca` e aggiornamenti Realtime;
 - promemoria, inbox notifiche, push e ntfy per struttura;
 - meteo operativo, sensori e impianti;
 - Magazzino autonomo multi-hotel con catalogo tecnico, categorie/ubicazioni gerarchiche, ledger, QR/barcode, seriali, compatibilità, inventario fisico, trasferimenti tra strutture e ricambi collegati agli interventi con prenotazione/consumo tracciato;
@@ -78,6 +79,36 @@ RandAI non deve inventare procedure operative mancanti, soglie tecniche non conf
 - **37 — Authorization & RLS Verification Matrix:** RLS e privilegi browser irrigiditi; il database resta autorità definitiva;
 - **38 — Audit & Reversible Operations:** audit append-only e soft-delete/restore dove previsto dal dominio;
 - **39 — Offline, Retry & Concurrency Hardening:** outbox IndexedDB, lease cross-tab, jitter, idempotenza e gestione conflitti.
+
+## Rifornimenti interni
+
+Il modulo Rifornimenti è una bacheca operativa privata **Governanti → Manutentori**. Non è una chat e non confluisce nelle Segnalazioni di manutenzione.
+
+- il catalogo è vuoto all'avvio ed è amministrabile per singolo hotel;
+- le sole categorie sono `Minibar` e `Consumo`;
+- Governante e Capo Governante selezionano i prodotti necessari e inviano la richiesta;
+- non vengono gestite quantità: ogni prodotto è una singola voce richiesta;
+- ogni voce nasce `pending` / **In attesa** e non esiste un pulsante o stato “Niente”;
+- il Manutentore può scegliere esclusivamente **Consegnato** oppure **Manca**;
+- se non viene premuto nessun pulsante, la voce resta in attesa;
+- quando non rimangono voci in attesa, la richiesta si chiude automaticamente;
+- l'Admin può aggiungere, disattivare, riattivare o eliminare prodotti; i prodotti già presenti nello storico sono protetti e vanno disattivati;
+- gli aggiornamenti arrivano tramite Supabase Realtime, senza polling periodico o worker dedicati;
+- `Manca` non modifica il Magazzino e non equivale automaticamente a giacenza zero.
+
+Le tabelle `supply_products`, `supply_requests` e `supply_request_items` sono protette da RLS. Le scritture delle richieste e degli esiti passano dalle RPC `supply_create_request` e `supply_resolve_item`; `anon` non può eseguirle.
+
+Permessi iniziali: Governante/Capo Governante `view+create`, manutentore `view+complete`, Admin `view+create+complete+manage`.
+
+File principali Rifornimenti:
+
+- `src/supply-data.js`
+- `src/randapp/SupplyRequestsPortal.jsx`
+- `src/randapp/supply-requests.css`
+- `src/randapp/HousekeepingCompletionAlerts.jsx`
+- `supabase/migrations/20260901123549_supplies_housekeeping_requests.sql`
+- `test/supply-requests-contract.test.js`
+- `docs/architecture/RIFORNIMENTI_INTERNI.md`
 
 ## Magazzino — principi
 
@@ -278,6 +309,7 @@ Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows pos
 - App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
 - visual layer: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`;
 - Planning: `src/randapp/planning/`;
+- Rifornimenti: `src/supply-data.js`, `src/randapp/SupplyRequestsPortal.jsx`, `src/randapp/supply-requests.css`;
 - RandAI: `src/randai/`;
 - RandAI context: `src/randai/context/`;
 - Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/inventory-intervention-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`, `src/randapp/operations/InterventionsView.jsx`;
@@ -297,6 +329,7 @@ Documenti principali:
 - `docs/architecture/APP_SHELL_FOUNDATION.md`
 - `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`
 - `docs/architecture/RANDAI_CONTEXTUAL_INTEGRATION.md`
+- `docs/architecture/RIFORNIMENTI_INTERNI.md`
 - `docs/architecture/RELIABILITY_SAFETY.md`
 - `docs/architecture/VALIDATION_LAYER.md`
 - `docs/architecture/SAFE_WRITE_ENGINE.md`
