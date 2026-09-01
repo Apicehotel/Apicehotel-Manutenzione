@@ -2,6 +2,9 @@ import { getPushSubscriptionState, getPushSupportInfo, repairPushSubscription, s
 
 const SESSION_KEY='apicehotel.session.v1'
 const ID='randapp-notification-onboarding'
+// Notification onboarding is opt-in: RandApp never shows the activation banner automatically.
+// Push can still be enabled explicitly from the app settings/notification controls.
+const AUTO_PROMPT_ENABLED=false
 let hotelId=null
 let busy=false
 
@@ -38,7 +41,7 @@ function ensureBanner(){
 }
 
 async function refresh(nextHotelId=currentHotelId()){
-  if(isPreviewHost()){remove();return}
+  if(!AUTO_PROMPT_ENABLED||isPreviewHost()){remove();return}
   hotelId=nextHotelId||currentHotelId()
   if(!hotelId){remove();return}
   const info=getPushSupportInfo()
@@ -95,7 +98,7 @@ function routeAssignmentIntent(rawUrl=window.location.href,attempt=0){
 }
 
 export function initNotificationOnboarding(){
-  if(isPreviewHost()){remove();return}
+  remove()
   const run=(id)=>window.setTimeout(()=>refresh(id).catch(()=>{}),500)
   window.addEventListener('apice-session-changed',(event)=>{run(event.detail?.hotelId);window.setTimeout(()=>routeAssignmentIntent(),700)})
   window.addEventListener('focus',()=>run(currentHotelId()))
