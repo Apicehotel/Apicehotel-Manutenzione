@@ -14,14 +14,21 @@ test('runtime uses the modular RandApp entry, not the legacy root App', async ()
 })
 
 test('Shell imports operational views directly from focused modules', async () => {
-  const shell = await source('src/randapp/Shell.jsx')
+  const [shell, shellNavigation] = await Promise.all([
+    source('src/randapp/Shell.jsx'),
+    source('src/randapp/shell-navigation.js'),
+  ])
   assert.match(shell, /operations\/InterventionsView\.jsx/)
   assert.match(shell, /operations\/UrgentView\.jsx/)
   assert.match(shell, /operations\/MyWorkView\.jsx/)
   assert.match(shell, /operations\/UtilityLightViews\.jsx/)
   assert.doesNotMatch(shell, /operations\/UtilityViews\.jsx/)
   assert.doesNotMatch(shell, /MigratedViews/)
-  assert.match(shell, /if \(allowed\.length <= 5\) return allowed/)
+  assert.match(shell, /buildPrimaryBottomNav/)
+  assert.match(shell, /data-count="5"/)
+  assert.match(shellNavigation, /slot:\s*3,\s*id:\s*'home'/)
+  assert.match(shellNavigation, /slot:\s*5,\s*id:\s*'menu'/)
+  assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })
 
 test('admin is split into focused tabs and Settings only orchestrates them', async () => {
