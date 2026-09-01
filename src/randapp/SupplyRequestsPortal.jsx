@@ -14,6 +14,9 @@ import './supply-requests.css'
 
 const CATEGORY_LABEL = { minibar: 'Minibar', consumo: 'Consumo' }
 const STATUS_LABEL = { pending: 'In attesa', delivered: 'Consegnato', missing: 'Manca' }
+const VIEW_ROLES = new Set(['Governante', 'Capo Governante', 'manutentore', 'admin'])
+const CREATE_ROLES = new Set(['Governante', 'Capo Governante', 'admin'])
+const COMPLETE_ROLES = new Set(['manutentore', 'admin'])
 
 const formatTime = (value) => {
   const date = new Date(value)
@@ -165,10 +168,13 @@ function RequestsList({ requests, canComplete, onResolve }) {
 }
 
 export default function SupplyRequestsPortal({ user, hotel }) {
-  const canView = canUser(user, 'supplies', 'view')
-  const canCreate = canUser(user, 'supplies', 'create')
-  const canComplete = canUser(user, 'supplies', 'complete')
-  const canManage = canUser(user, 'supplies', 'manage')
+  const role = user?.role
+  // Il fallback ruolo rende il launcher subito disponibile mentre i permessi live vengono caricati;
+  // RLS e RPC restano comunque l'autorità definitiva sul server.
+  const canView = canUser(user, 'supplies', 'view') || VIEW_ROLES.has(role)
+  const canCreate = canUser(user, 'supplies', 'create') || CREATE_ROLES.has(role)
+  const canComplete = canUser(user, 'supplies', 'complete') || COMPLETE_ROLES.has(role)
+  const canManage = canUser(user, 'supplies', 'manage') || role === 'admin'
   const [open, setOpen] = useState(false)
   const [products, setProducts] = useState([])
   const [requests, setRequests] = useState([])
@@ -188,11 +194,11 @@ export default function SupplyRequestsPortal({ user, hotel }) {
     finally { setLoading(false) }
   }, [canView, canManage, hotel?.id])
 
-  useEffect(() => { if (open) refresh() }, [open, refresh])
+  useEffect(() => { if (canView) refresh() }, [canView, refresh])
   useEffect(() => {
     if (!canView || !hotel?.id) return undefined
-    return subscribeSupplyRequests(hotel.id, () => { if (open) refresh() })
-  }, [canView, hotel?.id, open, refresh])
+    return subscribeSupplyRequests(hotel.id, refresh)
+  }, [canView, hotel?.id, refresh])
 
   const pendingCount = useMemo(() => requests.reduce((total, request) => total + (request.supply_request_items || []).filter((item) => item.status === 'pending').length, 0), [requests])
   const resolve = async (itemId, status) => {
