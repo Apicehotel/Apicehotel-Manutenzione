@@ -12,10 +12,12 @@ import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
+import MobileCommandDock from './MobileCommandDock.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
 import './app-shell-foundation.css'
+import './mobile-command-dock.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
@@ -287,6 +289,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (viewAllowed(item.id)) setView(item.id)
   }
 
+  const openRandAI = () => window.dispatchEvent(new CustomEvent('randai-toggle', { detail: { mode: 'open', source: 'shell-dock' } }))
+
   return (
     <div className="rs-root">
       <div className="rs-app rs-app--with-side">
@@ -314,7 +318,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
           <div className="rs-header__actions">
-            <button type="button" className="rs-header__randai" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
+            <button type="button" className="rs-header__randai" onClick={openRandAI} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
           </div>
@@ -323,14 +327,18 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
-        <nav className="rs-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
-          {bottomNav.map((item) => (
-            <button key={item.id} data-slot={item.slot} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={view === item.id ? 'page' : undefined}>
-              <Icon name={item.icon} /><small>{item.label}</small>
-            </button>
-          ))}
-        </nav>
-        {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>}
+        <MobileCommandDock
+          navItems={bottomNav}
+          activeView={view}
+          onNavigate={handleBottom}
+          canCreate={Object.values(insertAllowed).some(Boolean)}
+          onCreate={() => setInsertOpen(true)}
+          onRandAI={openRandAI}
+          onQuickIssue={insertAllowed.issue ? () => pickInsert('issue') : undefined}
+          onQuickIntervention={insertAllowed.intervention ? () => pickInsert('intervention') : undefined}
+          onQuickPlanning={viewAllowed('planning-work') ? () => setView('planning-work') : undefined}
+          onQuickInventory={viewAllowed('inventory') ? () => setView('inventory') : undefined}
+        />
       </div>
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} /></Suspense>}
