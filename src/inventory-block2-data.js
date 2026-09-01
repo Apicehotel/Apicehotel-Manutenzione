@@ -2,45 +2,26 @@ import { supabase } from './supabase.js'
 
 const clean = (value) => String(value ?? '').trim()
 
-const normalizeSerial = (row) => ({
-  id: row.id, hotelId: row.hotel_id, itemId: row.item_id, serialNumber: row.serial_number,
-  assetTag: row.asset_tag, barcode: row.barcode || '', status: row.status, locationId: row.location_id || null,
-  condition: row.condition, notes: row.notes || '', active: row.active !== false, createdAt: row.created_at, updatedAt: row.updated_at,
-})
-const normalizeCompatibility = (row) => ({
-  id: row.id, hotelId: row.hotel_id, sourceItemId: row.source_item_id, targetItemId: row.target_item_id,
-  relation: row.relation, notes: row.notes || '', createdAt: row.created_at,
-})
-const normalizeStocktake = (row) => ({
-  id: row.id, hotelId: row.hotel_id, locationId: row.location_id || null, status: row.status,
-  notes: row.notes || '', openedAt: row.opened_at, finalizedAt: row.finalized_at || null,
-})
-const normalizeStocktakeLine = (row) => ({
-  id: row.id, stocktakeId: row.stocktake_id, hotelId: row.hotel_id, itemId: row.item_id,
-  expectedQuantity: Number(row.expected_quantity || 0), countedQuantity: row.counted_quantity == null ? null : Number(row.counted_quantity),
-  notes: row.notes || '', countedAt: row.counted_at || null,
-})
-const normalizeTransfer = (row) => ({
-  id: row.id, sourceHotelId: row.source_hotel_id, destinationHotelId: row.destination_hotel_id,
-  sourceItemId: row.source_item_id, destinationItemId: row.destination_item_id || null, quantity: Number(row.quantity || 0),
-  status: row.status, note: row.note || '', createdAt: row.created_at, receivedAt: row.received_at || null,
-})
+const normalizeSerial = (row) => ({ id: row.id, hotelId: row.hotel_id, itemId: row.item_id, serialNumber: row.serial_number, assetTag: row.asset_tag, barcode: row.barcode || '', status: row.status, locationId: row.location_id || null, condition: row.condition, notes: row.notes || '', active: row.active !== false, createdAt: row.created_at, updatedAt: row.updated_at })
+const normalizeCompatibility = (row) => ({ id: row.id, hotelId: row.hotel_id, sourceItemId: row.source_item_id, targetItemId: row.target_item_id, relation: row.relation, notes: row.notes || '', createdAt: row.created_at })
+const normalizeStocktake = (row) => ({ id: row.id, hotelId: row.hotel_id, locationId: row.location_id || null, status: row.status, notes: row.notes || '', openedAt: row.opened_at, finalizedAt: row.finalized_at || null })
+const normalizeStocktakeLine = (row) => ({ id: row.id, stocktakeId: row.stocktake_id, hotelId: row.hotel_id, itemId: row.item_id, expectedQuantity: Number(row.expected_quantity || 0), countedQuantity: row.counted_quantity == null ? null : Number(row.counted_quantity), notes: row.notes || '', countedAt: row.counted_at || null })
+const normalizeTransfer = (row) => ({ id: row.id, sourceHotelId: row.source_hotel_id, destinationHotelId: row.destination_hotel_id, sourceItemId: row.source_item_id, destinationItemId: row.destination_item_id || null, quantity: Number(row.quantity || 0), status: row.status, note: row.note || '', createdAt: row.created_at, receivedAt: row.received_at || null })
 
-export async function fetchInventoryHotels() {
-  if (!supabase) return []
-  const { data, error } = await supabase.from('hotels').select('id,name').eq('active', true).order('name')
+export async function fetchInventoryHotels() { if (!supabase) return []; const { data, error } = await supabase.from('hotels').select('id,name').eq('active', true).order('name'); if (error) throw error; return data || [] }
+
+export async function fetchInventoryScanIdentity(itemId, hotelId) {
+  if (!supabase || !itemId || !hotelId) return null
+  const { data, error } = await supabase.from('inventory_items').select('id,hotel_id,name,scan_code,barcode,sku').eq('id', itemId).eq('hotel_id', hotelId).single()
   if (error) throw error
-  return data || []
+  return { id: data.id, hotelId: data.hotel_id, name: data.name, scanCode: data.scan_code, barcode: data.barcode || '', sku: data.sku || '' }
 }
 
 export async function findInventoryByCode(hotelId, rawCode) {
   if (!supabase) return null
   let code = clean(rawCode)
   const deep = code.match(/^item:([^:]+):(.+)$/i)
-  if (deep) {
-    if (deep[1] !== hotelId) return { kind: 'hotel_mismatch', hotelId: deep[1], code: deep[2] }
-    code = deep[2]
-  }
+  if (deep) { if (deep[1] !== hotelId) return { kind: 'hotel_mismatch', hotelId: deep[1], code: deep[2] }; code = deep[2] }
   const { data: items, error: itemError } = await supabase.from('inventory_items').select('id,hotel_id,name,scan_code,barcode,sku').eq('hotel_id', hotelId).eq('active', true).or(`scan_code.eq.${code},barcode.eq.${code},sku.eq.${code}`).limit(1)
   if (itemError) throw itemError
   if (items?.[0]) return { kind: 'item', itemId: items[0].id, item: items[0] }
@@ -53,112 +34,18 @@ export async function findInventoryByCode(hotelId, rawCode) {
   return null
 }
 
-export function inventoryDeepLink(hotelId, scanCode) {
-  if (typeof window === 'undefined') return `item:${hotelId}:${scanCode}`
-  const url = new URL(window.location.href)
-  url.searchParams.set('inventoryCode', `item:${hotelId}:${scanCode}`)
-  return url.toString()
-}
-
-export async function getInventoryQrSvg(text) {
-  if (!supabase) return ''
-  const { data, error } = await supabase.functions.invoke('inventory-qr-label', { body: { text: clean(text) } })
-  if (error) throw error
-  return data?.svg || ''
-}
-
-export async function fetchSerialUnits(itemId) {
-  if (!supabase || !itemId) return []
-  const { data, error } = await supabase.from('inventory_serial_units').select('*').eq('item_id', itemId).eq('active', true).order('created_at')
-  if (error) throw error
-  return (data || []).map(normalizeSerial)
-}
-
-export async function registerSerialUnit(hotelId, itemId, draft = {}) {
-  if (!supabase) throw new Error('Supabase non disponibile')
-  const serialNumber = clean(draft.serialNumber)
-  if (!hotelId || !itemId || !serialNumber) throw new TypeError('Hotel, articolo e seriale sono obbligatori')
-  const { data, error } = await supabase.from('inventory_serial_units').insert({
-    hotel_id: hotelId, item_id: itemId, serial_number: serialNumber, barcode: clean(draft.barcode) || null,
-    location_id: draft.locationId || null, status: draft.status || 'available', condition: draft.condition || 'ok', notes: clean(draft.notes) || null,
-  }).select('*').single()
-  if (error) throw error
-  return normalizeSerial(data)
-}
-
-export async function updateSerialUnit(id, hotelId, changes = {}) {
-  const payload = {}
-  if ('status' in changes) payload.status = changes.status
-  if ('condition' in changes) payload.condition = changes.condition
-  if ('locationId' in changes) payload.location_id = changes.locationId || null
-  if ('barcode' in changes) payload.barcode = clean(changes.barcode) || null
-  if ('notes' in changes) payload.notes = clean(changes.notes) || null
-  payload.updated_at = new Date().toISOString()
-  const { data, error } = await supabase.from('inventory_serial_units').update(payload).eq('id', id).eq('hotel_id', hotelId).select('*').single()
-  if (error) throw error
-  return normalizeSerial(data)
-}
-
-export async function fetchCompatibility(itemId) {
-  if (!supabase || !itemId) return []
-  const { data, error } = await supabase.from('inventory_compatibility').select('*').or(`source_item_id.eq.${itemId},target_item_id.eq.${itemId}`).order('created_at')
-  if (error) throw error
-  return (data || []).map(normalizeCompatibility)
-}
-
-export async function addCompatibility(hotelId, sourceItemId, targetItemId, relation, notes = '') {
-  const { data, error } = await supabase.from('inventory_compatibility').insert({ hotel_id: hotelId, source_item_id: sourceItemId, target_item_id: targetItemId, relation, notes: clean(notes) || null }).select('*').single()
-  if (error) throw error
-  return normalizeCompatibility(data)
-}
-
-export async function fetchOpenStocktake(hotelId) {
-  if (!supabase) return null
-  const { data, error } = await supabase.from('inventory_stocktakes').select('*').eq('hotel_id', hotelId).eq('status', 'open').order('opened_at', { ascending: false }).limit(1)
-  if (error) throw error
-  return data?.[0] ? normalizeStocktake(data[0]) : null
-}
-
-export async function openStocktake(hotelId, locationId = null, notes = '') {
-  const { data, error } = await supabase.rpc('inventory_open_stocktake', { p_hotel_id: hotelId, p_location_id: locationId || null, p_notes: clean(notes) || null })
-  if (error) throw error
-  return normalizeStocktake(data)
-}
-
-export async function fetchStocktakeLines(stocktakeId) {
-  if (!supabase || !stocktakeId) return []
-  const { data, error } = await supabase.from('inventory_stocktake_lines').select('*').eq('stocktake_id', stocktakeId).order('id')
-  if (error) throw error
-  return (data || []).map(normalizeStocktakeLine)
-}
-
-export async function countStocktakeLine(lineId, countedQuantity, notes = '') {
-  const { data, error } = await supabase.rpc('inventory_count_stocktake_line', { p_line_id: lineId, p_counted: Number(countedQuantity), p_notes: clean(notes) || null })
-  if (error) throw error
-  return normalizeStocktakeLine(data)
-}
-
-export async function finalizeStocktake(stocktakeId) {
-  const { data, error } = await supabase.rpc('inventory_finalize_stocktake', { p_stocktake_id: stocktakeId })
-  if (error) throw error
-  return normalizeStocktake(data)
-}
-
-export async function startInventoryTransfer(sourceItemId, destinationHotelId, quantity, note = '') {
-  const { data, error } = await supabase.rpc('inventory_start_transfer', { p_source_item_id: sourceItemId, p_destination_hotel_id: destinationHotelId, p_quantity: Number(quantity), p_note: clean(note) || null })
-  if (error) throw error
-  return normalizeTransfer(data)
-}
-
-export async function fetchInventoryTransfers(hotelId) {
-  if (!supabase) return []
-  const { data, error } = await supabase.from('inventory_transfers').select('*').or(`source_hotel_id.eq.${hotelId},destination_hotel_id.eq.${hotelId}`).order('created_at', { ascending: false }).limit(100)
-  if (error) throw error
-  return (data || []).map(normalizeTransfer)
-}
-
-export async function receiveInventoryTransfer(transferId) {
-  const { data, error } = await supabase.rpc('inventory_receive_transfer', { p_transfer_id: transferId })
-  if (error) throw error
-  return normalizeTransfer(data)
-}
+export function inventoryDeepLink(hotelId, scanCode) { if (typeof window === 'undefined') return `item:${hotelId}:${scanCode}`; const url = new URL(window.location.href); url.searchParams.set('inventoryCode', `item:${hotelId}:${scanCode}`); return url.toString() }
+export async function getInventoryQrSvg(text) { if (!supabase) return ''; const { data, error } = await supabase.functions.invoke('inventory-qr-label', { body: { text: clean(text) } }); if (error) throw error; return data?.svg || '' }
+export async function fetchSerialUnits(itemId) { if (!supabase || !itemId) return []; const { data, error } = await supabase.from('inventory_serial_units').select('*').eq('item_id', itemId).eq('active', true).order('created_at'); if (error) throw error; return (data || []).map(normalizeSerial) }
+export async function registerSerialUnit(hotelId, itemId, draft = {}) { if (!supabase) throw new Error('Supabase non disponibile'); const serialNumber = clean(draft.serialNumber); if (!hotelId || !itemId || !serialNumber) throw new TypeError('Hotel, articolo e seriale sono obbligatori'); const { data, error } = await supabase.from('inventory_serial_units').insert({ hotel_id: hotelId, item_id: itemId, serial_number: serialNumber, barcode: clean(draft.barcode) || null, location_id: draft.locationId || null, status: draft.status || 'available', condition: draft.condition || 'ok', notes: clean(draft.notes) || null }).select('*').single(); if (error) throw error; return normalizeSerial(data) }
+export async function updateSerialUnit(id, hotelId, changes = {}) { const payload = {}; if ('status' in changes) payload.status = changes.status; if ('condition' in changes) payload.condition = changes.condition; if ('locationId' in changes) payload.location_id = changes.locationId || null; if ('barcode' in changes) payload.barcode = clean(changes.barcode) || null; if ('notes' in changes) payload.notes = clean(changes.notes) || null; payload.updated_at = new Date().toISOString(); const { data, error } = await supabase.from('inventory_serial_units').update(payload).eq('id', id).eq('hotel_id', hotelId).select('*').single(); if (error) throw error; return normalizeSerial(data) }
+export async function fetchCompatibility(itemId) { if (!supabase || !itemId) return []; const { data, error } = await supabase.from('inventory_compatibility').select('*').or(`source_item_id.eq.${itemId},target_item_id.eq.${itemId}`).order('created_at'); if (error) throw error; return (data || []).map(normalizeCompatibility) }
+export async function addCompatibility(hotelId, sourceItemId, targetItemId, relation, notes = '') { const { data, error } = await supabase.from('inventory_compatibility').insert({ hotel_id: hotelId, source_item_id: sourceItemId, target_item_id: targetItemId, relation, notes: clean(notes) || null }).select('*').single(); if (error) throw error; return normalizeCompatibility(data) }
+export async function fetchOpenStocktake(hotelId) { if (!supabase) return null; const { data, error } = await supabase.from('inventory_stocktakes').select('*').eq('hotel_id', hotelId).eq('status', 'open').order('opened_at', { ascending: false }).limit(1); if (error) throw error; return data?.[0] ? normalizeStocktake(data[0]) : null }
+export async function openStocktake(hotelId, locationId = null, notes = '') { const { data, error } = await supabase.rpc('inventory_open_stocktake', { p_hotel_id: hotelId, p_location_id: locationId || null, p_notes: clean(notes) || null }); if (error) throw error; return normalizeStocktake(data) }
+export async function fetchStocktakeLines(stocktakeId) { if (!supabase || !stocktakeId) return []; const { data, error } = await supabase.from('inventory_stocktake_lines').select('*').eq('stocktake_id', stocktakeId).order('id'); if (error) throw error; return (data || []).map(normalizeStocktakeLine) }
+export async function countStocktakeLine(lineId, countedQuantity, notes = '') { const { data, error } = await supabase.rpc('inventory_count_stocktake_line', { p_line_id: lineId, p_counted: Number(countedQuantity), p_notes: clean(notes) || null }); if (error) throw error; return normalizeStocktakeLine(data) }
+export async function finalizeStocktake(stocktakeId) { const { data, error } = await supabase.rpc('inventory_finalize_stocktake', { p_stocktake_id: stocktakeId }); if (error) throw error; return normalizeStocktake(data) }
+export async function startInventoryTransfer(sourceItemId, destinationHotelId, quantity, note = '') { const { data, error } = await supabase.rpc('inventory_start_transfer', { p_source_item_id: sourceItemId, p_destination_hotel_id: destinationHotelId, p_quantity: Number(quantity), p_note: clean(note) || null }); if (error) throw error; return normalizeTransfer(data) }
+export async function fetchInventoryTransfers(hotelId) { if (!supabase) return []; const { data, error } = await supabase.from('inventory_transfers').select('*').or(`source_hotel_id.eq.${hotelId},destination_hotel_id.eq.${hotelId}`).order('created_at', { ascending: false }).limit(100); if (error) throw error; return (data || []).map(normalizeTransfer) }
+export async function receiveInventoryTransfer(transferId) { const { data, error } = await supabase.rpc('inventory_receive_transfer', { p_transfer_id: transferId }); if (error) throw error; return normalizeTransfer(data) }
