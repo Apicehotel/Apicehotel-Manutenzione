@@ -14,7 +14,7 @@ Funzioni consolidate:
 - Housekeeping con import `.xls`, storico giornaliero e idempotenza;
 - promemoria, inbox notifiche, push e ntfy per struttura;
 - meteo operativo, sensori e impianti;
-- Magazzino autonomo multi-hotel con catalogo tecnico, categorie/ubicazioni gerarchiche, ledger, QR/barcode, seriali, compatibilità, inventario fisico e trasferimenti tra strutture;
+- Magazzino autonomo multi-hotel con catalogo tecnico, categorie/ubicazioni gerarchiche, ledger, QR/barcode, seriali, compatibilità, inventario fisico, trasferimenti tra strutture e ricambi collegati agli interventi con prenotazione/consumo tracciato;
 - modalità offline con outbox IndexedDB, retry controllato e gestione conflitti;
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
@@ -180,21 +180,62 @@ Questo modello mantiene una catena di custodia chiara e impedisce trasferimenti 
 - QR e asset tag non contengono segreti;
 - il saldo continua a essere modificabile solo attraverso percorsi server-side controllati.
 
+### Blocco 3 — Ricambi negli interventi
+
+Il Blocco 3 collega il dominio Interventi al Magazzino senza permettere agli interventi di modificare direttamente `inventory_items.quantity`.
+
+#### Richiesta, prenotazione e disponibilità
+
+- `inventory_intervention_parts` collega ogni richiesta/ricambio all'intervento e all'hotel;
+- un ricambio può essere `requested`, `reserved`, `consumed`, `released` o `cancelled`;
+- il testo libero resta solo come fallback quando il pezzo non è ancora catalogato;
+- se l'articolo è presente e disponibile, viene prenotato senza scalare la giacenza fisica;
+- `inventory_available_stock` distingue `quantity` fisica, `reserved_quantity` e `available_quantity`;
+- la prenotazione usa lock server-side e impedisce a due interventi di prenotare contemporaneamente l'ultimo pezzo disponibile;
+- un'unità serializzata può essere associata alla prenotazione e non può essere prenotata da due interventi insieme.
+
+#### Consumo confermato
+
+La giacenza viene scalata solo quando il manutentore conferma **Usato**. `inventory_consume_intervention_part`:
+
+1. blocca prenotazione e articolo;
+2. verifica hotel, permesso e giacenza;
+3. decrementa il saldo una sola volta;
+4. crea un movimento `consumo` con `reason_code=intervention_part`, `reference_type=intervention` e `reference_id` dell'intervento;
+5. collega il movimento alla riga ricambio;
+6. aggiorna il campo legacy `pezzo_sostituito` dell'intervento con i ricambi realmente consumati.
+
+“Non usato” libera la prenotazione senza toccare il saldo. “Annulla” chiude la richiesta. Un pezzo non disponibile può restare richiesto e venire associato/prenotato in seguito quando entra a catalogo o torna disponibile.
+
+#### Chiusura e storico
+
+- un intervento con ricambi `requested` o `reserved` non può essere chiuso;
+- prima del completamento ogni ricambio deve diventare `consumed`, `released` oppure `cancelled`;
+- il controllo esiste sia nella UI sia in un trigger database, quindi non è aggirabile da un client vecchio;
+- un intervento con movimenti Magazzino consumati non viene eliminato distruttivamente dalla UI: il riferimento storico resta intatto;
+- richieste/prenotazioni non consumate vengono annullate prima di una cancellazione consentita.
+
+Questa separazione evita due errori frequenti: scaricare materiale solo perché era stato richiesto e lasciare prenotazioni fantasma dopo la chiusura di un intervento.
+
 File principali Magazzino:
 
 - `src/inventory-domain.js`
 - `src/inventory-data.js`
 - `src/inventory-block2-data.js`
+- `src/inventory-intervention-data.js`
 - `src/randapp/InventoryView.jsx`
 - `src/randapp/InventoryBlock2Panel.jsx`
+- `src/randapp/operations/InterventionsView.jsx`
 - `src/randapp/inventory.css`
 - `supabase/functions/inventory-qr-label/index.ts`
 - `supabase/migrations/20260901082438_inventory_block1_foundation.sql`
 - `supabase/migrations/20260901082525_inventory_block1_updated_at.sql`
 - `supabase/migrations/20260901105000_inventory_block2_traceability_stocktake_transfer.sql`
 - `supabase/migrations/20260901105500_inventory_block2_cancel_and_transfer_snapshot.sql`
+- `supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql`
 - `test/inventory-domain.test.js`
 - `test/inventory-block2-contract.test.js`
+- `test/inventory-block3-intervention-parts.test.js`
 
 ## Parità e isolamento multi-hotel
 
@@ -222,7 +263,7 @@ Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: came
 
 Ogni articolo appartiene a una sola struttura. Categorie, parentela articolo e ubicazioni usano riferimenti vincolati allo stesso `hotel_id`; i campi testuali legacy restano solo per compatibilità progressiva.
 
-Carichi, scarichi, consumi, inventari, rettifiche e trasferimenti passano dal ledger/RPC. Seriali e compatibilità arricchiscono la tracciabilità, ma non possono creare una seconda giacenza.
+Carichi, scarichi, consumi, inventari, rettifiche e trasferimenti passano dal ledger/RPC. Seriali e compatibilità arricchiscono la tracciabilità, ma non possono creare una seconda giacenza. Le prenotazioni per interventi riducono la disponibilità senza modificare la giacenza fisica; solo la conferma `Usato` genera un movimento di consumo.
 
 Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows possono proporre Fotocamera, Libreria o File secondo le capacità del dispositivo.
 
@@ -239,7 +280,7 @@ Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows pos
 - Planning: `src/randapp/planning/`;
 - RandAI: `src/randai/`;
 - RandAI context: `src/randai/context/`;
-- Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`;
+- Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/inventory-intervention-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`, `src/randapp/operations/InterventionsView.jsx`;
 - reliability: `src/reliability/`;
 - Supabase client: `src/supabase.js`;
 - session policy: `src/session-policy.js`;
