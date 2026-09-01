@@ -29,6 +29,7 @@ import './randapp/notification-onboarding.css'
 import './randapp/urgent-shell-layout-fix.css'
 import './randapp/vendor/liquid-glass-ui.css'
 import './randapp/prototype-liquid-dock.css'
+import './randapp/randapp-final-layout.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { installDeploymentRecovery } from './deployment-recovery.js'
@@ -92,8 +93,6 @@ function afterPageLoad(task) {
 }
 
 if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
-  // PWA registration is intentionally immediate: offline/installability is a bootstrap contract,
-  // unlike authenticated operational services that can remain deferred.
   registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))
