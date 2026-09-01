@@ -22,6 +22,7 @@ Funzioni principali consolidate:
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
 - **App Shell Foundation** con cinque slot mobile stabili, Home centrale, `+` separato dalla navigazione e safe-area pronta per futuri inset nativi Android;
+- **UI Components & Theme System** light-first con accenti separati per hotel, Material-inspired surfaces e Liquid Glass selettivo sulla chrome;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
 - Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 39**.
 
@@ -173,11 +174,12 @@ Struttura CSS e shell consolidata:
 - `src/randapp/app-shell-foundation.css`: **layer finale della chrome condivisa**, cinque slot mobile, effective safe-area, posizione del `+` e geometria Grande;
 - `src/randapp/shell-navigation.js`: contratto strutturale della bottom navigation;
 - `src/randapp/system-insets.js`: bridge opzionale tra safe-area web e futuri `WindowInsets` nativi Android;
+- `src/randapp/ui-material-glass.css`: layer visuale light-first, accenti hotel, superfici Material-like e glass selettivo;
 - `src/randapp/ui-coherence.css`: accessibilità, focus, touch target e coerenza dei controlli;
 - `src/randapp/login-reference.css`: layout e tema di login/Admin Gate;
 - `src/randapp/admin-keyboard-fix.css`: guardia mobile dedicata all'Admin Gate; mantiene il layout compatto e scrollabile quando la tastiera riduce il viewport senza introdurre cambi di geometria legati al focus dei pulsanti;
 - `src/randapp/hotel-selector-reference.css`: layout e tema del selettore struttura;
-- `src/randapp/theme-coherence.css`: sole regole tema trasversali non appartenenti a una singola feature;
+- `src/randapp/theme-coherence.css`: carica il layer visuale Punto 2 e mantiene le regole tema trasversali;
 - CSS specifici di feature rimangono separati quando hanno responsabilità reale (Planning, nuova segnalazione, housekeeping, notifiche, RandAI).
 
 I vecchi layer autonomi `planning-sale-fix.css`, `mobile-bottom-anchor.css`, `home-center-nav.css`, `large-header-balance.css`, `auth-theme-fix.css` e `theme-audit-fix.css` sono stati rimossi/assorbiti nei moduli proprietari. Le regole legacy del vecchio Planning Sale non più raggiungibili non vengono mantenute.
@@ -198,6 +200,21 @@ Il Punto 1 separa definitivamente **destinazioni** e **azioni** nella chrome mob
 - non sono state aggiunte dipendenze UI né Capacitor in questo punto: Konsta/Material/21st restano sorgenti di pattern per il Punto 2, mentre Capacitor potrà essere collegato in futuro al bridge inset già predisposto.
 
 Il contratto è protetto da `test/ui-shell-foundation.test.js`; dettagli in `docs/architecture/APP_SHELL_FOUNDATION.md`.
+
+### UI Components & Theme System — Punto 2
+
+Il Punto 2 non introduce un secondo framework UI: evolve le primitive già usate da RandApp e mantiene un solo linguaggio visuale.
+
+- in assenza di una preferenza salvata, il tema di lavoro predefinito è **Chiaro**; `Sistema` e `Scuro` restano disponibili;
+- la struttura attiva viene esposta come `html[data-hotel]` e governa solo l'accento visivo: Giò, Choco e Brigantino possono avere identità diverse senza duplicare componenti;
+- rosso/ambra/verde restano esclusivamente semantici per errore/urgenza, warning/attesa e successo/completato;
+- Card, Button, IconButton, Input, Segment, Sheet e Modal mantengono le primitive React di `ui.jsx`, ma ricevono una gerarchia più vicina a un'app Material moderna;
+- Liquid Glass è limitato a header, bottom navigation, Sheet e `+`; card operative, liste, form e tabelle restano superfici solide e leggibili;
+- Safari/WebKit non dipende da effetti Chromium-only: se `backdrop-filter` non è disponibile viene usato un fallback opaco;
+- `prefers-reduced-motion`, `prefers-contrast` e `forced-colors` hanno priorità sull'estetica;
+- non sono state aggiunte dipendenze runtime UI: Konsta UI, 21st.dev e LiquidGlass-UI sono stati usati come benchmark/pattern, non come framework paralleli.
+
+Il contratto è protetto da `test/ui-components-theme-system.test.js`; dettagli in `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`.
 
 ## Struttura React consolidata
 
@@ -318,6 +335,7 @@ npm run test:device
 - entry: `src/main.jsx`;
 - shell/UI: `src/randapp/`;
 - contratto App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
+- layer visuale Punto 2: `src/randapp/ui-material-glass.css`, `src/randapp/theme.js`, `src/randapp/theme-coherence.css`;
 - componenti Planning focalizzati: `src/randapp/planning/`;
 - motore RandAI: `src/randai/`;
 - reliability condivisa: `src/reliability/`;
@@ -330,7 +348,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/APP_SHELL_FOUNDATION.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/APP_SHELL_FOUNDATION.md`, `docs/architecture/UI_COMPONENTS_THEME_SYSTEM.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
 
 ## Sicurezza
 
