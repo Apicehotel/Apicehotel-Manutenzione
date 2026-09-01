@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import AppErrorBoundary from './error-boundary.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
+import { installLiquidDockPrototype } from './randapp/prototype-liquid-dock.js'
 import { loadSession } from './session.js'
 import { registerPwa } from './pwa.js'
 import './randapp/shell.css'
@@ -26,6 +27,7 @@ import './randapp/single-insert-entry.css'
 import './randapp/presence-dot.css'
 import './randapp/notification-onboarding.css'
 import './randapp/urgent-shell-layout-fix.css'
+import './randapp/prototype-liquid-dock.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { installDeploymentRecovery } from './deployment-recovery.js'
@@ -74,6 +76,8 @@ createRoot(document.getElementById('root')).render(
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
   </AppErrorBoundary></React.StrictMode>,
 )
+
+if (!technicianMatch && !publicIssueMatch && !ntfyShortMatch && !randaiConsoleMatch) installLiquidDockPrototype()
 
 if (pendingNtfyShort && !ntfyShortMatch) window.addEventListener(SESSION_EVENT,()=>window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`),{once:true})
 
