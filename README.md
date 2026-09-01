@@ -23,6 +23,7 @@ Funzioni consolidate:
 - App Shell Foundation, UI Components & Theme System e RandAI Contextual Integration completati;
 - RandAI operativo fino al Blocco 32;
 - RandAI Control Center — fondazione operativa completata;
+- RandAI WhatsApp — ingresso Twilio end-to-end, inbox, pausa per struttura, idempotenza e conservazione foto completati;
 - Reliability & Safety condivisa RandApp/RandAI fino al Blocco 39.
 
 ## Strategia piattaforme
@@ -71,15 +72,41 @@ File principali: `src/randai/context/RandAIContextBridge.jsx`, `src/randai/conte
 
 RandAI non deve inventare procedure operative mancanti, soglie tecniche non configurate o stati dispositivi non mappati.
 
-## RandAI Control Center — fondazione operativa
+## RandAI Control Center
 
-La route protetta `/randai` è il centro operativo di RandAI. La fondazione espone sei moduli primari: `Overview`, `WhatsApp`, `Segnalazioni`, `Tecnici`, `Worker` e `Log`; i moduli avanzati già esistenti restano disponibili nella sezione Sistema.
+La route protetta `/randai` è il centro operativo di RandAI. Espone sei moduli primari: `Overview`, `WhatsApp`, `Segnalazioni`, `Tecnici`, `Worker` e `Log`; i moduli avanzati già esistenti restano disponibili nella sezione Sistema.
 
 La console usa la membership amministrativa reale per determinare le strutture accessibili e non replica una seconda matrice permessi nel frontend. La barra di stato mostra struttura attiva, connettività browser, stato dei dati Supabase, integrazione WhatsApp/Twilio e registro worker. Un servizio privo di una sorgente verificabile non viene mai mostrato come online.
 
-`WhatsApp` e `Worker` sono fondazioni fail-closed: finché webhook e registro worker non sono configurati e verificati, la UI li indica esplicitamente come `Da collegare` e non simula inbox, esecuzioni o creazioni automatiche. La sezione WhatsApp legge esclusivamente la configurazione reale di `src/config.js`.
+### Punto 2 — WhatsApp end-to-end
 
-File principali: `src/randai/control/RandAIControlCenter.jsx`, `src/randai/control/randai-control.css`, `test/randai-control-center-foundation.test.js`.
+L'ingresso ufficiale configurato in Twilio è `POST /api/whatsapp/incoming`. La funzione Vercel inoltra senza modificare il payload form-urlencoded e la firma `X-Twilio-Signature` alla Edge Function `randai-whatsapp-inbound`, che esegue la validazione della firma con il token Twilio conservato solo lato server.
+
+Canali configurati:
+
+- Hotel Giò: `+390759978247`;
+- Chocohotel: `+390759970610`;
+- Brigantino: nessun numero WhatsApp configurato.
+
+La ricezione e l'invio a RandApp sono due stati separati. `receive_enabled` stabilisce se il numero è accettato; `ingestion_enabled` controlla esclusivamente la creazione automatica delle Segnalazioni. La regola di sicurezza è **receive-first / fail-closed**: `ingestion_enabled` nasce `false`, quindi un messaggio viene ricevuto, registrato e mostrato nella Inbox ma non crea una Segnalazione finché la struttura resta in pausa.
+
+La pausa è per singola struttura e non spegne Twilio. I messaggi ricevuti in pausa sono salvati con stato `paused` e la UI mostra `Ricevuto durante pausa` e `Non inviato a RandApp`. Riattivare l'ingestion non importa automaticamente lo storico ricevuto durante la pausa.
+
+Ogni messaggio usa `MessageSid` come chiave idempotente univoca. Un retry dello stesso webhook non può creare una seconda riga né una seconda Segnalazione. Le immagini vengono scaricate da Twilio e preservate subito nel bucket privato `maintenance-photos`, anche quando la struttura è in pausa, così non dipendiamo dalla durata dell'URL media Twilio.
+
+Quando l'ingestion è attiva, la pipeline riconosce solo camere e zone mappate. Se posizione o descrizione non sono sufficienti, lo stato diventa `needs_info` e WhatsApp riceve una richiesta di integrazione; RandAI non inventa camera, zona o guasto. Se i dati sono completi, la Segnalazione viene creata con `origine = WhatsApp`, il messaggio passa a `created` e conserva il riferimento `issue_id`.
+
+La Inbox RandAI legge `whatsapp_inbound_messages` e `whatsapp_channel_settings` con RLS hotel-scoped; soltanto utenti con membership attiva e `can_access_admin = true` possono leggerli. Il cambio pausa/attivo passa dalla RPC `whatsapp_set_ingestion`, che ripete il controllo autorizzativo server-side. Le due tabelle sono abilitate su Supabase Realtime.
+
+File principali WhatsApp:
+
+- `api/whatsapp/incoming.js`;
+- `src/randai/control/WhatsAppConsole.jsx`;
+- `src/randai/control/whatsapp-console.css`;
+- `supabase/functions/randai-whatsapp-inbound/index.ts`;
+- `supabase/migrations/20260901231000_randai_whatsapp_inbound_foundation.sql`;
+- `supabase/migrations/20260901232000_randai_whatsapp_realtime.sql`;
+- `test/randai-whatsapp-inbound.test.js`.
 
 ## Reliability & Safety — blocchi 33–39
 
@@ -323,6 +350,7 @@ Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows pos
 - Rifornimenti: `src/supply-data.js`, `src/randapp/SupplyRequestsPortal.jsx`, `src/randapp/supply-requests.css`;
 - RandAI: `src/randai/`;
 - RandAI Control Center: `src/randai/control/`;
+- WhatsApp ingress Vercel: `api/whatsapp/incoming.js`;
 - RandAI context: `src/randai/context/`;
 - Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/inventory-intervention-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`, `src/randapp/operations/InterventionsView.jsx`;
 - reliability: `src/reliability/`;
@@ -378,6 +406,8 @@ npm run test:device
 - il bucket foto manutenzione è privato;
 - la chiave Supabase pubblicabile può stare nel client;
 - service role, token, secret Edge Function, PIN e credenziali private non devono entrare nel repository;
+- i webhook Twilio vengono accettati solo dopo verifica della firma server-side;
+- `MessageSid` è il vincolo idempotente dell'ingresso WhatsApp;
 - RandAI non esegue scritture bypassando l'Action Gateway;
 - apprendimento e procedure distinguono evidenza verificata da suggerimenti/bozze.
 
@@ -385,11 +415,13 @@ npm run test:device
 
 `src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e consente override tramite `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se configurati e abilitati.
 
+Le credenziali Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) restano nei secret della Edge Function Supabase. Il client e la funzione Vercel non contengono il token Twilio.
+
 ## Deploy
 
-- **Vercel:** produzione ufficiale RandApp, collegata a `main`;
+- **Vercel:** produzione ufficiale RandApp, collegata a `main`; espone anche `/api/whatsapp/incoming`;
 - **DigitalOcean:** test/staging;
-- **Supabase:** backend, database, autenticazione, servizi RandAI e generazione etichette QR.
+- **Supabase:** backend, database, autenticazione, servizi RandAI, Edge Function WhatsApp e generazione etichette QR.
 
 Il progetto Vercel attivo è `apicehotel-manutenzionr`.
 
