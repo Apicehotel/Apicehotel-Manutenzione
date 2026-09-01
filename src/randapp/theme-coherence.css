@@ -1,3 +1,5 @@
+@import './ui-material-glass.css';
+
 /* RandApp theme coherence — cross-cutting rules that are not owned by one feature. */
 
 html[data-theme='light'] .rs-usage-overall__time,
