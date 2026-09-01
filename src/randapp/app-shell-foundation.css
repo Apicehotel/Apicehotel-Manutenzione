@@ -1,0 +1,123 @@
+/* ============================================================
+   RandApp — App Shell Foundation
+   Final geometry contract for shared chrome.
+   Keeps the mobile shell stable across iOS PWA, Android web/PWA,
+   Windows and a future native Android wrapper.
+   ============================================================ */
+
+:root {
+  --rs-native-safe-top: 0px;
+  --rs-native-safe-right: 0px;
+  --rs-native-safe-bottom: 0px;
+  --rs-native-safe-left: 0px;
+
+  /* Browser safe-area and future native insets share one contract. */
+  --rs-safe-top: max(env(safe-area-inset-top, 0px), var(--rs-native-safe-top));
+  --rs-safe-right: max(env(safe-area-inset-right, 0px), var(--rs-native-safe-right));
+  --rs-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--rs-native-safe-bottom));
+  --rs-safe-left: max(env(safe-area-inset-left, 0px), var(--rs-native-safe-left));
+
+  --rs-nav-shell-h: calc(64px * var(--rs-scale));
+  --rs-nav-gap: calc(10px * var(--rs-scale));
+  --rs-content-bottom-clearance: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) + 24px * var(--rs-scale));
+}
+
+/* Shared chrome consumes effective insets, never page-specific guesses. */
+.rs-app {
+  padding-top: var(--rs-safe-top);
+}
+
+.rs-header {
+  padding-left: max(12px, var(--rs-safe-left));
+  padding-right: max(12px, var(--rs-safe-right));
+}
+
+.rs-content {
+  padding-left: max(var(--rs-page-pad-x, 16px), var(--rs-safe-left));
+  padding-right: max(var(--rs-page-pad-x, 16px), var(--rs-safe-right));
+  padding-bottom: var(--rs-content-bottom-clearance);
+}
+
+/* Five-slot mobile contract: Home is structurally slot 3.
+   Missing permissions leave a slot empty instead of moving navigation around. */
+.rs-bottomnav {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  min-height: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom));
+  padding: 6px max(8px, var(--rs-safe-right)) max(8px, var(--rs-safe-bottom)) max(8px, var(--rs-safe-left)) !important;
+  align-items: start;
+}
+
+.rs-navbtn {
+  min-width: 0;
+  min-height: calc(52px * var(--rs-scale)) !important;
+  padding: 5px 2px !important;
+  justify-content: center;
+}
+
+.rs-navbtn[data-slot='1'] { grid-column: 1; }
+.rs-navbtn[data-slot='2'] { grid-column: 2; }
+.rs-navbtn[data-slot='3'] { grid-column: 3; }
+.rs-navbtn[data-slot='4'] { grid-column: 4; }
+.rs-navbtn[data-slot='5'] { grid-column: 5; }
+
+.rs-navbtn small {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Create is an action, not a sixth destination. It is anchored to the app nav,
+   so Android system navigation and iOS Home Indicator can grow underneath safely. */
+.rs-navfab {
+  right: max(14px, calc(var(--rs-safe-right) + 10px)) !important;
+  bottom: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) + var(--rs-nav-gap)) !important;
+  width: calc(54px * var(--rs-scale));
+  height: calc(54px * var(--rs-scale));
+  border-radius: calc(18px * var(--rs-scale));
+}
+
+/* Never cap a real system inset. Three-button Android navigation, gesture bars
+   and future native WindowInsets are allowed to reserve all the space they need. */
+@media (max-width: 899px) {
+  .rs-bottomnav {
+    bottom: 0 !important;
+  }
+
+  .rs-content {
+    padding-bottom: var(--rs-content-bottom-clearance) !important;
+  }
+}
+
+/* Very narrow phones keep the same five-slot geometry instead of reordering Home. */
+@media (max-width: 380px) {
+  .rs-bottomnav {
+    padding-left: max(4px, var(--rs-safe-left)) !important;
+    padding-right: max(4px, var(--rs-safe-right)) !important;
+  }
+
+  .rs-navbtn small {
+    font-size: .56rem;
+  }
+}
+
+/* Tablet keeps bottom navigation; desktop/Windows uses the existing sidebar. */
+@media (min-width: 960px) {
+  .rs-content {
+    padding-bottom: clamp(28px, 3vw, 48px);
+  }
+}
+
+/* Grande mode scales controls through tokens while preserving navigation geometry. */
+html[data-ui-size='large'] {
+  --rs-nav-shell-h: calc(68px * var(--rs-scale));
+  --rs-nav-gap: calc(10px * var(--rs-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-navbtn,
+  .rs-navfab {
+    transition: none !important;
+  }
+}
