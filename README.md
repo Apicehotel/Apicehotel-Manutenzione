@@ -22,6 +22,7 @@ Funzioni consolidate:
 - PWA responsive per iOS, Android e Windows;
 - App Shell Foundation, UI Components & Theme System e RandAI Contextual Integration completati;
 - RandAI operativo fino al Blocco 32;
+- RandAI Control Center — fondazione operativa completata;
 - Reliability & Safety condivisa RandApp/RandAI fino al Blocco 39.
 
 ## Strategia piattaforme
@@ -69,6 +70,16 @@ File principali: `src/randai/context/RandAIContextBridge.jsx`, `src/randai/conte
 - **32 — Operational Prioritization & Dispatch:** ranking spiegabile, blocker e prossimo lavoro consigliato senza auto-assegnazioni fuori dal Gateway.
 
 RandAI non deve inventare procedure operative mancanti, soglie tecniche non configurate o stati dispositivi non mappati.
+
+## RandAI Control Center — fondazione operativa
+
+La route protetta `/randai` è il centro operativo di RandAI. La fondazione espone sei moduli primari: `Overview`, `WhatsApp`, `Segnalazioni`, `Tecnici`, `Worker` e `Log`; i moduli avanzati già esistenti restano disponibili nella sezione Sistema.
+
+La console usa la membership amministrativa reale per determinare le strutture accessibili e non replica una seconda matrice permessi nel frontend. La barra di stato mostra struttura attiva, connettività browser, stato dei dati Supabase, integrazione WhatsApp/Twilio e registro worker. Un servizio privo di una sorgente verificabile non viene mai mostrato come online.
+
+`WhatsApp` e `Worker` sono fondazioni fail-closed: finché webhook e registro worker non sono configurati e verificati, la UI li indica esplicitamente come `Da collegare` e non simula inbox, esecuzioni o creazioni automatiche. La sezione WhatsApp legge esclusivamente la configurazione reale di `src/config.js`.
+
+File principali: `src/randai/control/RandAIControlCenter.jsx`, `src/randai/control/randai-control.css`, `test/randai-control-center-foundation.test.js`.
 
 ## Reliability & Safety — blocchi 33–39
 
@@ -311,6 +322,7 @@ Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows pos
 - Planning: `src/randapp/planning/`;
 - Rifornimenti: `src/supply-data.js`, `src/randapp/SupplyRequestsPortal.jsx`, `src/randapp/supply-requests.css`;
 - RandAI: `src/randai/`;
+- RandAI Control Center: `src/randai/control/`;
 - RandAI context: `src/randai/context/`;
 - Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/inventory-intervention-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`, `src/randapp/operations/InterventionsView.jsx`;
 - reliability: `src/reliability/`;
