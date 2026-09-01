@@ -7,6 +7,7 @@ let busy=false
 
 const currentHotelId=()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')?.hotelId||null}catch{return null}}
 const remove=()=>document.getElementById(ID)?.remove()
+const isPreviewHost=()=>/\.ondigitalocean\.app$/i.test(window.location.hostname)&&window.location.hostname!=='randapp-b2akx.ondigitalocean.app'
 
 function ensureBanner(){
   let el=document.getElementById(ID)
@@ -37,6 +38,7 @@ function ensureBanner(){
 }
 
 async function refresh(nextHotelId=currentHotelId()){
+  if(isPreviewHost()){remove();return}
   hotelId=nextHotelId||currentHotelId()
   if(!hotelId){remove();return}
   const info=getPushSupportInfo()
@@ -93,6 +95,7 @@ function routeAssignmentIntent(rawUrl=window.location.href,attempt=0){
 }
 
 export function initNotificationOnboarding(){
+  if(isPreviewHost()){remove();return}
   const run=(id)=>window.setTimeout(()=>refresh(id).catch(()=>{}),500)
   window.addEventListener('apice-session-changed',(event)=>{run(event.detail?.hotelId);window.setTimeout(()=>routeAssignmentIntent(),700)})
   window.addEventListener('focus',()=>run(currentHotelId()))
