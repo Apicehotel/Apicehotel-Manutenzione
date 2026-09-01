@@ -21,6 +21,7 @@ Funzioni principali consolidate:
 - diagnostica con codici incidente `RAND-XXXX`;
 - ruoli e permessi centralizzati;
 - PWA responsive per iOS, Android e Windows;
+- **App Shell Foundation** con cinque slot mobile stabili, Home centrale, `+` separato dalla navigazione e safe-area pronta per futuri inset nativi Android;
 - RandAI integrata nel flusso operativo fino al **Blocco 32**;
 - Reliability & Safety condivisa RandApp/RandAI fino al **Blocco 39**.
 
@@ -165,10 +166,13 @@ Un blocco architetturale non è considerato completato finché codice, test e RE
 
 Il design system RandApp è mobile-first e mantiene lo stesso contratto su iOS, Android e Windows, con tema chiaro/scuro, safe-area e modalità Piccolo/Normale/Grande.
 
-Struttura CSS consolidata:
+Struttura CSS e shell consolidata:
 
 - `src/randapp/shell.css`: token, superfici e componenti base `rs-*`;
-- `src/randapp/adaptive-layout.css`: responsive layout, safe-area, navigazione mobile, Home centrata e bilanciamento header in modalità Grande;
+- `src/randapp/adaptive-layout.css`: responsive generale, layout tablet/desktop e regole di contenuto;
+- `src/randapp/app-shell-foundation.css`: **layer finale della chrome condivisa**, cinque slot mobile, effective safe-area, posizione del `+` e geometria Grande;
+- `src/randapp/shell-navigation.js`: contratto strutturale della bottom navigation;
+- `src/randapp/system-insets.js`: bridge opzionale tra safe-area web e futuri `WindowInsets` nativi Android;
 - `src/randapp/ui-coherence.css`: accessibilità, focus, touch target e coerenza dei controlli;
 - `src/randapp/login-reference.css`: layout e tema di login/Admin Gate;
 - `src/randapp/admin-keyboard-fix.css`: guardia mobile dedicata all'Admin Gate; mantiene il layout compatto e scrollabile quando la tastiera riduce il viewport senza introdurre cambi di geometria legati al focus dei pulsanti;
@@ -177,6 +181,23 @@ Struttura CSS consolidata:
 - CSS specifici di feature rimangono separati quando hanno responsabilità reale (Planning, nuova segnalazione, housekeeping, notifiche, RandAI).
 
 I vecchi layer autonomi `planning-sale-fix.css`, `mobile-bottom-anchor.css`, `home-center-nav.css`, `large-header-balance.css`, `auth-theme-fix.css` e `theme-audit-fix.css` sono stati rimossi/assorbiti nei moduli proprietari. Le regole legacy del vecchio Planning Sale non più raggiungibili non vengono mantenute.
+
+### App Shell Foundation — Punto 1
+
+Il Punto 1 separa definitivamente **destinazioni** e **azioni** nella chrome mobile:
+
+- i cinque slot strutturali sono `Segnalazioni · Interventi · Home · Planning · Menu`;
+- Home occupa sempre lo slot 3; un permesso può nascondere una destinazione ma non sposta gli altri slot;
+- il `+` continua a usare `InsertLauncher`, ma resta un'azione contestuale separata dalla navigazione e viene posizionato rispetto alla navbar, non rispetto al bordo fisico del dispositivo;
+- la safe-area effettiva usa il massimo tra `env(safe-area-inset-*)` del browser e gli opzionali `--rs-native-safe-*`;
+- l'inset inferiore **non viene più limitato** nel layer finale: Android a tre tasti, gesture navigation e Home Indicator iOS possono riservare lo spazio reale necessario;
+- un futuro APK Android può alimentare lo stesso contratto emettendo `randapp-system-insets`, senza riscrivere componenti o layout;
+- `viewport-fit=cover` resta obbligatorio;
+- da 960px in su Windows/desktop continua a usare la sidebar esistente;
+- Piccolo/Normale/Grande continuano a usare `--rs-scale`, senza alterare l'ordine della navigazione;
+- non sono state aggiunte dipendenze UI né Capacitor in questo punto: Konsta/Material/21st restano sorgenti di pattern per il Punto 2, mentre Capacitor potrà essere collegato in futuro al bridge inset già predisposto.
+
+Il contratto è protetto da `test/ui-shell-foundation.test.js`; dettagli in `docs/architecture/APP_SHELL_FOUNDATION.md`.
 
 ## Struttura React consolidata
 
@@ -296,6 +317,7 @@ npm run test:device
 
 - entry: `src/main.jsx`;
 - shell/UI: `src/randapp/`;
+- contratto App Shell: `src/randapp/shell-navigation.js`, `src/randapp/system-insets.js`, `src/randapp/app-shell-foundation.css`;
 - componenti Planning focalizzati: `src/randapp/planning/`;
 - motore RandAI: `src/randai/`;
 - reliability condivisa: `src/reliability/`;
@@ -308,7 +330,7 @@ npm run test:device
 - Edge Functions: `supabase/functions/`;
 - test: `test/` + `scripts/`.
 
-Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
+Per i dettagli tecnici aggiornati vedere `FRONTEND_ARCHITECTURE.md`, `docs/architecture/APP_SHELL_FOUNDATION.md`, `docs/architecture/RELIABILITY_SAFETY.md`, `docs/architecture/VALIDATION_LAYER.md`, `docs/architecture/SAFE_WRITE_ENGINE.md`, `docs/architecture/AUTHORIZATION_RLS_MATRIX.md`, `docs/architecture/AUDIT_REVERSIBLE_OPERATIONS.md` e `docs/architecture/OFFLINE_RETRY_CONCURRENCY.md`.
 
 ## Sicurezza
 

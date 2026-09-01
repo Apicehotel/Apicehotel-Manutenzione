@@ -5,6 +5,8 @@ import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.j
 import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
+import { buildPrimaryBottomNav } from './shell-navigation.js'
+import { initSystemInsetsBridge } from './system-insets.js'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
@@ -13,6 +15,7 @@ import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
+import './app-shell-foundation.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
@@ -42,25 +45,6 @@ const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then(
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
-
-const NAV_BUTTONS = [
-  { id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
-  { id: 'interventions', key: 'interventions', icon: 'wrench', label: 'Interventi' },
-  { id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' },
-  { id: 'home', key: 'home', icon: 'home', label: 'Home' },
-  { id: 'planning-work', key: 'planning_work', icon: 'calendar', label: 'Planning' },
-  { id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
-  { id: 'urgent', key: 'urgent', icon: 'warning', label: 'Urgenti' },
-  { id: 'reminders', key: 'reminders', icon: 'bell', label: 'Promemoria' },
-  { id: 'temperature', key: 'temperature', icon: 'thermometer', label: 'Temperature' },
-  { id: 'technicians', key: 'technicians', icon: 'phone', label: 'Tecnici' },
-  { id: 'profile', key: 'profile', icon: 'user', label: 'Profilo' },
-  { id: 'manual', key: 'manual', icon: 'book', label: 'Manuale' },
-  { id: 'feedback', key: 'feedback', icon: 'message', label: 'Feedback' },
-  { id: 'feedback-received', key: 'feedback_received', icon: 'message', label: 'Ricevuti' },
-  { id: 'structure', key: 'structure', icon: 'hotel', label: 'Struttura' },
-  { id: 'menu', key: 'other', icon: 'menu', label: 'Menu' },
-]
 
 function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
   const placement = variant === 'drawer' ? 'side' : null
@@ -102,6 +86,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [cacheStatus, setCacheStatus] = useState('')
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
+
+  useEffect(() => initSystemInsetsBridge(), [])
 
   useEffect(() => {
     let active = true
@@ -244,14 +230,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const bottomNav = useMemo(() => {
     if (!user) return []
-    const allowed = NAV_BUTTONS.filter((item) => {
-      if (placement(item.key) !== 'bottom') return false
-      if (item.id === 'menu' || item.id === 'structure') return true
-      return viewAllowed(item.id)
-    })
-    if (allowed.length <= 5) return allowed
-    const menu = allowed.find((item) => item.id === 'menu')
-    return menu ? [...allowed.filter((item) => item.id !== 'menu').slice(0, 4), menu] : allowed.slice(0, 5)
+    return buildPrimaryBottomNav({ placement, viewAllowed })
   }, [user, placement, viewAllowed])
 
   const insertAllowed = useMemo(() => ({
@@ -344,9 +323,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
-        <nav className="rs-bottomnav" data-count={bottomNav.length} style={{ '--rs-bottom-count': Math.max(1, Math.min(5, bottomNav.length)) }} data-testid="bottom-nav">
+        <nav className="rs-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => (
-            <button key={item.id} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`}>
+            <button key={item.id} data-slot={item.slot} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={view === item.id ? 'page' : undefined}>
               <Icon name={item.icon} /><small>{item.label}</small>
             </button>
           ))}
