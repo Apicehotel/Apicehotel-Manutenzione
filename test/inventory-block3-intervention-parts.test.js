@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const migration = readFileSync(new URL('../supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql', import.meta.url), 'utf8')
+const deleteGuard = readFileSync(new URL('../supabase/migrations/20260901113200_inventory_block3_delete_guard.sql', import.meta.url), 'utf8')
+const movementIndex = readFileSync(new URL('../supabase/migrations/20260901113000_inventory_block3_movement_index.sql', import.meta.url), 'utf8')
 const data = readFileSync(new URL('../src/inventory-intervention-data.js', import.meta.url), 'utf8')
 const view = readFileSync(new URL('../src/randapp/operations/InterventionsView.jsx', import.meta.url), 'utf8')
 
@@ -14,6 +16,7 @@ test('block 3 links intervention parts to the immutable inventory ledger', () =>
   assert.match(migration, /'consumo'/)
   assert.match(migration, /'intervention_part'/)
   assert.match(migration, /v_row\.intervention_id::text/)
+  assert.match(movementIndex, /inventory_intervention_parts_movement_idx/)
 })
 
 test('reservations prevent two interventions from claiming the same last stock', () => {
@@ -40,8 +43,8 @@ test('UI keeps uncatalogued requests as fallback and consumes stock only after e
   assert.match(data, /inventory_release_intervention_part/)
 })
 
-test('consumed intervention parts preserve history and block destructive deletion in UI', () => {
-  assert.match(view, /movimenti Magazzino/)
-  assert.match(view, /non può essere eliminato/)
+test('any warehouse linkage preserves intervention history against destructive deletion', () => {
+  assert.match(deleteGuard, /inventory_guard_intervention_delete/)
+  assert.match(deleteGuard, /INTERVENTION_HAS_INVENTORY_HISTORY/)
   assert.match(migration, /on delete restrict/i)
 })
