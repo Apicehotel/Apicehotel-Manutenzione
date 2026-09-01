@@ -14,9 +14,10 @@ test('runtime uses the modular RandApp entry, not the legacy root App', async ()
 })
 
 test('Shell imports operational views directly from focused modules', async () => {
-  const [shell, shellNavigation] = await Promise.all([
+  const [shell, shellNavigation, swipeNavigation] = await Promise.all([
     source('src/randapp/Shell.jsx'),
     source('src/randapp/shell-navigation.js'),
+    source('src/randapp/swipe-navigation.js'),
   ])
   assert.match(shell, /operations\/InterventionsView\.jsx/)
   assert.match(shell, /operations\/UrgentView\.jsx/)
@@ -27,7 +28,9 @@ test('Shell imports operational views directly from focused modules', async () =
   assert.match(shell, /buildPrimaryBottomNav/)
   assert.match(shell, /data-count="5"/)
   assert.match(shellNavigation, /slot:\s*3,\s*id:\s*'home'/)
-  assert.match(shellNavigation, /slot:\s*5,\s*id:\s*'menu'/)
+  assert.match(shellNavigation, /slot:\s*5,\s*id:\s*'inventory'/)
+  assert.match(shellNavigation, /slot:\s*6,\s*id:\s*'menu'.*gestureOnly:\s*true/s)
+  assert.match(swipeNavigation, /nav-menu/)
   assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })
 
