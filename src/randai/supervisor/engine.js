@@ -18,7 +18,7 @@ function positiveInteger(value, name) {
 }
 
 function metric(value, name) {
-  const numeric = Number(value || 0)
+  const numeric = Number(value ?? 0)
   if (!Number.isFinite(numeric) || numeric < 0) throw new TypeError(`Invalid supervisor metric: ${name}`)
   return numeric
 }
@@ -90,7 +90,7 @@ export class RandAISupervisor {
       run.result = clone(execution)
       const metrics = execution?.metrics || {}
       run.metrics = {
-        agents: metric(metrics.agentsRequested || metrics.agents || (plan.mode === SupervisorMode.SINGLE_AGENT ? 1 : 0), 'agents'),
+        agents: metric(metrics.agentsRequested ?? metrics.agents ?? (plan.mode === SupervisorMode.SINGLE_AGENT ? 1 : 0), 'agents'),
         toolCalls: metric(metrics.toolCalls, 'toolCalls'),
         retries: metric(metrics.retries, 'retries'),
         cost: metric(metrics.cost, 'cost'),
