@@ -11,6 +11,16 @@ function validateDefinition(definition) {
   if (!/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(definition.id)) throw new TypeError(`Invalid tool id: ${definition.id}`)
   if (definition.risk && !VALID_RISKS.has(definition.risk)) throw new TypeError(`Invalid tool risk: ${definition.risk}`)
   if (definition.permission && !VALID_PERMISSIONS.has(definition.permission)) throw new TypeError(`Invalid tool permission: ${definition.permission}`)
+  if (definition.healthCheck != null && typeof definition.healthCheck !== 'function') throw new TypeError('Tool healthCheck must be a function')
+  if (definition.timeoutMs != null && (!Number.isFinite(Number(definition.timeoutMs)) || Number(definition.timeoutMs) <= 0)) {
+    throw new TypeError('Tool timeoutMs must be a positive number')
+  }
+  if (definition.retryPolicy?.maxAttempts != null && (!Number.isInteger(Number(definition.retryPolicy.maxAttempts)) || Number(definition.retryPolicy.maxAttempts) < 1)) {
+    throw new TypeError('Tool retryPolicy.maxAttempts must be an integer >= 1')
+  }
+  if (definition.retryPolicy?.delayMs != null && (!Number.isFinite(Number(definition.retryPolicy.delayMs)) || Number(definition.retryPolicy.delayMs) < 0)) {
+    throw new TypeError('Tool retryPolicy.delayMs must be a number >= 0')
+  }
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -21,12 +31,18 @@ export class ToolRegistry {
   register(definition) {
     validateDefinition(definition)
     if (this.#tools.has(definition.id)) throw new Error(`Tool already registered: ${definition.id}`)
+    const retryPolicy = Object.freeze({
+      maxAttempts: 1,
+      delayMs: 0,
+      ...(definition.retryPolicy ?? {}),
+    })
     const normalized = Object.freeze({
       description: '', inputSchema: null, outputSchema: null,
       risk: ToolRisk.LOW, permission: ToolPermission.READ,
-      timeoutMs: 15000, retryPolicy: { maxAttempts: 1, delayMs: 0 }, healthCheck: null,
+      timeoutMs: 15000, healthCheck: null,
       idempotent: false,
       ...definition,
+      retryPolicy,
     })
     this.#tools.set(normalized.id, normalized)
     return normalized
@@ -38,6 +54,8 @@ export class ToolRegistry {
   list() { return [...this.#tools.values()] }
 
   discover({ permission, maxRisk, text } = {}) {
+    if (permission && !VALID_PERMISSIONS.has(permission)) throw new TypeError(`Invalid tool permission filter: ${permission}`)
+    if (maxRisk && !VALID_RISKS.has(maxRisk)) throw new TypeError(`Invalid tool maxRisk filter: ${maxRisk}`)
     const risks = Object.values(ToolRisk)
     const maxRiskIndex = maxRisk ? risks.indexOf(maxRisk) : risks.length - 1
     const needle = text?.trim().toLowerCase()
