@@ -14,6 +14,8 @@ export const ScopeReason = Object.freeze({
   PERMISSION_DENIED: 'PERMISSION_DENIED',
   OWNERSHIP_MISMATCH: 'OWNERSHIP_MISMATCH',
   MODULE_MISMATCH: 'MODULE_MISMATCH',
+  SOURCE_MISMATCH: 'SOURCE_MISMATCH',
+  VERSION_MISMATCH: 'VERSION_MISMATCH',
 })
 
 function add(reasons, reason, detail = null) {
@@ -27,6 +29,7 @@ export function evaluateContextScope({
   permissionAllowed = null,
   requireActor = false,
   requireResource = false,
+  requireModule = false,
   ownership = null,
 } = {}) {
   const reasons = []
@@ -35,12 +38,22 @@ export function evaluateContextScope({
   const expectedModule = text(expected.module)
   const expectedRecordId = text(expected.recordId)
   const expectedRecordType = text(expected.recordType)
+  const expectedSource = text(expected.source)
+  const expectedVersion = expected.version ?? null
 
   if (!expectedHotelId || !expectedModule) add(reasons, ScopeReason.MISSING_CONTEXT, 'hotelId and module are required')
   if (!context || !text(context.hotelId)) add(reasons, ScopeReason.MISSING_CONTEXT, 'context.hotelId is required')
 
   if (context && expectedHotelId && text(context.hotelId) && text(context.hotelId) !== expectedHotelId) {
     add(reasons, ScopeReason.HOTEL_MISMATCH, `${context.hotelId} != ${expectedHotelId}`)
+  }
+
+  if (context && expectedSource && text(context.source) !== expectedSource) {
+    add(reasons, ScopeReason.SOURCE_MISMATCH, `${text(context.source) || 'missing'} != ${expectedSource}`)
+  }
+
+  if (context && expectedVersion !== null && Number(context.version) !== Number(expectedVersion)) {
+    add(reasons, ScopeReason.VERSION_MISMATCH, `${context.version ?? 'missing'} != ${expectedVersion}`)
   }
 
   const recordHotelId = text(record?.hotelId ?? record?.hotel_id)
@@ -54,6 +67,7 @@ export function evaluateContextScope({
   }
 
   const contextView = text(context?.screen?.view)
+  if (requireModule && !contextView) add(reasons, ScopeReason.MISSING_CONTEXT, 'screen.view is required')
   if (expectedModule && contextView && contextView !== expectedModule) {
     add(reasons, ScopeReason.MODULE_MISMATCH, `${contextView} != ${expectedModule}`)
   }

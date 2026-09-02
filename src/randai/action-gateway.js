@@ -1,7 +1,27 @@
 import { supabase } from '../supabase.js'
 import { assertSensitiveActionOnline } from '../session-policy.js'
 import { assertContextScope } from '../reliability/context-scope-guard.js'
+import {
+  OperationValidationError,
+  ValidationCode,
+  combineValidation,
+  required,
+  validationIssue,
+} from '../reliability/validation-engine.js'
 import { getRandAIContext } from './context/envelope.js'
+
+function validatePrepareInput({ hotelId, type, resourceId, input }) {
+  const issues = [
+    ...required(hotelId, 'hotelId'),
+    ...required(type, 'type'),
+    ...required(resourceId, 'resourceId'),
+  ]
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    issues.push(validationIssue('input', ValidationCode.INVALID_VALUE, 'input deve essere un oggetto'))
+  }
+  const result = combineValidation(issues)
+  if (!result.ok) throw new OperationValidationError(result, 'Azione RandAI non valida')
+}
 
 async function invoke(body) {
   assertSensitiveActionOnline('Le azioni operative RandAI')
@@ -18,12 +38,20 @@ async function invoke(body) {
 }
 
 export async function prepareRandAIAction({ hotelId, type, resourceId, input = {}, context = null } = {}) {
-  if (!hotelId || !type || !resourceId) throw new TypeError('hotelId, type e resourceId sono obbligatori')
+  validatePrepareInput({ hotelId, type, resourceId, input })
   const resolvedContext = context || getRandAIContext() || null
   assertContextScope({
-    expected: { hotelId, module: 'issues', recordType: 'issue', recordId: resourceId },
+    expected: {
+      hotelId,
+      module: 'issues',
+      recordType: 'issue',
+      recordId: resourceId,
+      source: 'randapp',
+      version: 1,
+    },
     context: resolvedContext,
     requireResource: true,
+    requireModule: true,
   })
   return invoke({
     operation: 'prepare',
@@ -34,7 +62,8 @@ export async function prepareRandAIAction({ hotelId, type, resourceId, input = {
 }
 
 export async function executeRandAIAction({ hotelId, approvalId } = {}) {
-  if (!hotelId || !approvalId) throw new TypeError('hotelId e approvalId sono obbligatori')
+  const result = combineValidation(required(hotelId, 'hotelId'), required(approvalId, 'approvalId'))
+  if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI non valida')
   return invoke({ operation: 'execute', hotel_id: hotelId, approval_id: approvalId })
 }
 

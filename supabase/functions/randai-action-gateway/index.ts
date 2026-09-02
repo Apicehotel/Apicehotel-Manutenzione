@@ -7,6 +7,7 @@ import {
   validateIssueTransition,
   verifyAppliedIssueAction,
 } from "../_shared/randai-action-policy.js";
+import { stableJson } from "../_shared/stable-json.js";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -97,12 +98,19 @@ async function readIssue(hotelId: string, resourceId: string) {
 
 function contextMatches(body: any, hotelId: string, resourceId: string) {
   const context = body?.context;
-  if (!context) return true;
+  if (!context || typeof context !== "object") return false;
   const contextHotel = clean(context.hotelId || context.hotel_id, 80);
+  const contextSource = clean(context.source, 40);
+  const contextVersion = Number(context.version);
+  const contextModule = clean(context.screen?.view, 120);
+  const contextResourceType = clean(context.resource?.type, 80);
   const contextResource = clean(context.resource?.id, 120);
-  if (contextHotel && contextHotel !== hotelId) return false;
-  if (contextResource && contextResource !== resourceId) return false;
-  return true;
+  return contextHotel === hotelId
+    && contextSource === "randapp"
+    && contextVersion === 1
+    && contextModule === "issues"
+    && contextResourceType === "issue"
+    && contextResource === resourceId;
 }
 
 async function findExistingApproval(idempotencyKey: string) {
@@ -182,12 +190,29 @@ async function createApproval({ hotelId, actor, action, preview, idempotencyKey 
 }
 
 async function writeAudit(entry: any) {
-  const { error } = await admin.from("randai_action_audit").insert(entry);
+  const { data, error } = await admin.from("randai_action_audit").insert(entry).select("id").maybeSingle();
   if (error) {
     console.error("randai_action_audit", error.message);
-    return false;
+    return { recorded: false, id: null };
   }
-  return true;
+  return { recorded: true, id: data?.id || null };
+}
+
+function receipt({ hotelId, approval, action, executedAt, audit = null, replayed = false }: any) {
+  return {
+    version: 1,
+    hotel_id: hotelId,
+    approval_id: approval?.id || null,
+    idempotency_key: approval?.idempotency_key || approval?.identity || null,
+    action_type: action?.type || approval?.action_type || approval?.tool_id || null,
+    resource_type: action?.definition?.resourceType || approval?.resource_type || null,
+    resource_id: action?.resourceId || approval?.resource_id || null,
+    executed_at: executedAt || null,
+    verified: true,
+    replayed: Boolean(replayed),
+    audit_recorded: audit?.recorded ?? true,
+    audit_id: audit?.id || null,
+  };
 }
 
 async function prepare(req: Request, body: any) {
@@ -211,8 +236,8 @@ async function prepare(req: Request, body: any) {
 
   const previewTime = nowIso();
   const preview = buildIssuePreview(issue, action, (actor as any).displayName, previewTime);
-  const identityMaterial = JSON.stringify({
-    v: 1,
+  const identityMaterial = stableJson({
+    v: 2,
     actor: (actor as any).userId,
     hotelId,
     type: action.type,
@@ -263,7 +288,15 @@ async function execute(req: Request, body: any) {
   if (approval.requested_by_auth_user_id !== (actor as any).userId) return json({ ok: false, error: "approval_actor_mismatch" }, 403);
 
   if (approval.status === "APPROVED" && approval.payload?.execution?.status === "EXECUTED") {
-    return json({ ok: true, operation: "executed", replayed: true, verified: true, result: approval.payload.execution.after });
+    const executedAt = approval.payload.execution.executedAt || approval.decided_at || null;
+    return json({
+      ok: true,
+      operation: "executed",
+      replayed: true,
+      verified: true,
+      receipt: receipt({ hotelId, approval, action: null, executedAt, replayed: true }),
+      result: approval.payload.execution.after,
+    });
   }
   if (approval.expires_at && new Date(approval.expires_at).getTime() <= Date.now()) {
     await admin.from("randai_action_approvals").update({ status: "EXPIRED", decided_at: nowIso(), decided_by: (actor as any).userId }).eq("id", approval.id);
@@ -290,7 +323,23 @@ async function execute(req: Request, body: any) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (priorExecution) return json({ ok: true, operation: "executed", replayed: true, verified: true, result: priorExecution.after_state });
+  if (priorExecution) {
+    return json({
+      ok: true,
+      operation: "executed",
+      replayed: true,
+      verified: true,
+      receipt: receipt({
+        hotelId,
+        approval,
+        action,
+        executedAt: priorExecution.executed_at,
+        audit: { recorded: true, id: priorExecution.id },
+        replayed: true,
+      }),
+      result: priorExecution.after_state,
+    });
+  }
 
   const issue = await readIssue(hotelId, action.resourceId);
   if (!issue) return json({ ok: false, error: "resource_not_found" }, 404);
@@ -391,7 +440,7 @@ async function execute(req: Request, body: any) {
     return json({ ok: false, error: "approval_finalize_failed", action_applied: true, verified: true }, 500);
   }
 
-  const auditRecorded = await writeAudit({
+  const audit = await writeAudit({
     hotel_id: hotelId,
     actor_auth_user_id: (actor as any).userId,
     actor_role: (actor as any).role,
@@ -410,7 +459,15 @@ async function execute(req: Request, body: any) {
     executed_at: executedAt,
   });
 
-  return json({ ok: true, operation: "executed", replayed: false, verified: true, audit_recorded: auditRecorded, result: verified });
+  return json({
+    ok: true,
+    operation: "executed",
+    replayed: false,
+    verified: true,
+    audit_recorded: audit.recorded,
+    receipt: receipt({ hotelId, approval, action, executedAt, audit, replayed: false }),
+    result: verified,
+  });
 }
 
 async function reject(req: Request, body: any) {

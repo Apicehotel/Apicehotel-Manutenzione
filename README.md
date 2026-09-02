@@ -19,7 +19,7 @@ Regole architetturali:
 - una parte viene eliminata come zombie solo con evidenza che è inutilizzata, irraggiungibile o sostituita da una sorgente canonica migliore;
 - **se esiste una soluzione nettamente migliore, si sostituisce la debolezza invece di accumulare patch**.
 
-## RandAI — roadmap canonica 1–26 ✅
+## RandAI — roadmap originale 1–26 ✅
 
 La roadmap originale RandAI è consolidata da 1 a 26. La numerazione sotto è la sorgente canonica; le precedenti denominazioni storiche a coppie non cambiano più i numeri.
 
@@ -67,32 +67,56 @@ La roadmap originale RandAI è consolidata da 1 a 26. La numerazione sotto è la
 
 ### Blocco 7 — Proattività e Control Center — 25–26 ✅
 
-25. **Proactive RandAI 2.0** — ogni segnale appartiene a un hotel oppure a uno scope globale esplicito; non esiste più uno scope globale implicito. Dedupe e fingerprint sono isolati per hotel, process/resolve falliscono su scope mancante o errato, i segnali critici restano bloccati, quelli actionable passano dal Supervisor e la telemetria è non-fatal con self-diagnostic.
-26. **Control Center 2.0** — proiezione read-only sugli store autorevoli, mai seconda sorgente di verità. Ogni snapshot richiede `hotelId` oppure `allHotels:true`; la vista hotel applica un filtro difensivo anche se uno store sottostante ignora i filtri, mentre la vista cross-hotel esiste solo se richiesta esplicitamente.
+25. **Proactive RandAI 2.0** — ogni segnale appartiene a un hotel oppure a uno scope globale esplicito; dedupe/fingerprint sono isolati per hotel, process/resolve falliscono su scope mancante o errato e le azioni passano dal Supervisor.
+26. **Control Center 2.0** — proiezione read-only sugli store autorevoli, mai seconda sorgente di verità. Ogni snapshot richiede `hotelId` oppure `allHotels:true`; la vista hotel applica un filtro difensivo anche se uno store sottostante ignora i filtri.
 
-Sorgenti canoniche Blocco 7: `src/randai/proactive/` e `src/randai/control-center/`. `proactive/` rileva, deduplica e governa i segnali prima dell'orchestrazione; `control-center/` aggrega lo stato in sola lettura. Non duplicano rispettivamente `supervisor/` e `control/`: Supervisor esegue/coordinata il lavoro, mentre `control/` contiene UI e console operative.
+## RandAI — estensione Reliability
 
-Test dedicato: `test/randai-block7-25-26.test.js`, insieme ai contratti storici `randai-proactive-control-center.test.js` e all'E2E `randai-e2e-hardening.test.js`.
+La roadmap originale 1–26 resta chiusa e non viene rinumerata. I blocchi successivi sono estensioni evolutive distinte.
+
+### Blocco 8 — Operational Safety Foundation — 27–30 ✅
+
+27. **Operational Context Layer 2.0** — RandApp pubblica un envelope operativo versionato con hotel, actor locale, schermata e risorsa autorizzata. Il server risanifica il contesto, non si fida dell'actor proveniente dal client e rifiuta versioni/source non supportati. Il dominio operativo attualmente verificato end-to-end è `issue`; nuovi tipi di risorsa vanno aggiunti solo insieme alla verifica server corrispondente.
+28. **Context & Scope Guard 2.0** — il guard condiviso verifica hotel, source, versione, modulo, risorsa, actor quando richiesto, permessi e ownership. Per le azioni RandAI `screen.view` e resource type/id sono obbligatori: un contesto incompleto non viene interpretato come autorizzazione.
+29. **Unified Validation Layer 2.0** — `validation-engine.js` resta il motore generico e `domain-validation.js` lo compone per i domini. L'Action Gateway usa lo stesso motore per il preflight di `prepare/execute`, evitando validazioni parallele e divergenti.
+30. **Safe Write Engine / Action Gateway 2.0** — il server `prepare` è fail-closed e richiede contesto esatto `hotel + randapp/v1 + issues + issue/id`; membership e permission vengono ricontrollate server-side; l'identità idempotente usa serializzazione deterministica; execute mantiene approval actor/hotel-scoped, expiry, optimistic version fence, post-write verification e audit. Ogni esecuzione/replay verificato produce una receipt con approval, idempotency key, resource, timestamp e stato audit.
+
+Sorgenti canoniche Blocco 8:
+
+- `src/randai/context/envelope.js` — envelope operativo client;
+- `supabase/functions/_shared/randai-operational-context.js` — sanitizer/normalizzazione server;
+- `src/reliability/context-scope-guard.js` — scope guard condiviso;
+- `src/reliability/validation-engine.js` + `domain-validation.js` — validazione generica + composizione di dominio;
+- `src/reliability/safe-write-engine.js` — primitiva generica di write verificata;
+- `src/randai/action-gateway.js` + `supabase/functions/randai-action-gateway/` — adapter e boundary operativo RandAI.
+
+Questi file non sono doppioni zombie: client/server, primitive generiche e boundary RandAI hanno responsabilità diverse. Non è stata aggiunta alcuna dipendenza esterna o nuova migrazione perché il percorso esistente era già più integrato e sicuro di un framework aggiuntivo.
+
+Test dedicato: `test/randai-block8-27-30.test.js`, insieme ai contratti reliability e Action Gateway esistenti.
 
 ## Runtime Safety Layer — trasversale
 
 - **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili.
-- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval, recovery, learning, supervisor, segnali proattivi e Control Center.
+- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval, recovery, learning, supervisor, segnali proattivi, Control Center e write operative.
+- **Operational context:** source/version/module/resource sono verificati ai boundary sensibili; il client non può auto-certificare la propria identità al server.
 - **Permission/Autonomy:** critical/admin passano sempre dai controlli previsti; approval legate all'azione esatta e allo scope.
+- **Unified validation:** i domini compongono lo stesso motore di validazione condiviso invece di introdurre controlli incompatibili.
+- **Safe writes:** approval + idempotenza + optimistic version fence + read-back verification + receipt/audit per l'Action Gateway.
 - **Verification:** nessun tool call, software change o esperienza diventa verità/successo soltanto perché l'esecuzione tecnica è terminata.
 - **Recovery bounded:** niente retry infinito; fingerprint ripetuti e budget esauriti fermano il ciclo.
 - **Telemetry non-fatal:** un guasto di log/telemetria viene diagnosticato ma non riscrive l'esito operativo.
 - **External discovery:** una repository/skill/tool candidata resta candidata; assessment, sandbox ed evaluation non autorizzano da soli installazione o esecuzione.
-- **Explicit global scope:** eventi globali reali, come una CI di progetto, devono dichiararlo; l'assenza di `hotelId` non equivale più automaticamente a globale.
+- **Explicit global scope:** eventi globali reali devono dichiararlo; l'assenza di `hotelId` non equivale automaticamente a globale.
 
 ## Consolidamento storico
 
 - PR #118: Blocco 1.
 - PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
 - #120, #121 e #122: chiuse come superseded/zombie dopo la #123.
-- PR #124: consolidamento canonico 17–20, mergiato solo dopo CI completa verde e nuovamente verde su `main`.
-- PR #125: consolidamento canonico 21–24, mergiato dopo contratti RandAI/shared, browser cross-platform e device acceptance verdi e nuovamente verificati su `main`.
-- PR #126: consolidamento canonico 25–26; la chiusura finale richiede CI completa verde sulla revisione README e successiva verifica post-merge su `main`.
+- PR #124: consolidamento canonico 17–20.
+- PR #125: consolidamento canonico 21–24.
+- PR #126: consolidamento canonico 25–26 e chiusura della roadmap originale 1–26, verificata anche su `main`.
+- PR #127: consolidamento Reliability 27–30; codice e test dedicati hanno superato audit, quality, multi-hotel, RandAI/shared e browser/device prima della marcatura finale del blocco.
 
 ## CI e quality gates
 
@@ -112,9 +136,10 @@ Canali WhatsApp configurati:
 
 ## Stato roadmap RandAI
 
-La **roadmap originale 1–26 è completa** a livello di implementazione canonica sulla branch del Blocco 7. La chiusura definitiva su `main` avviene solo dopo CI finale verde, merge della PR #126 e CI post-merge verde.
+- **Roadmap originale 1–26: completa ✅**
+- **Estensione Reliability Blocco 8, 27–30: completa ✅**
 
-Le estensioni successive di reliability, operational context, persistent tasks, Action Gateway, memory/KG e production guard restano una roadmap evolutiva separata: non vengono rinumerate o dichiarate complete per inferenza.
+Le estensioni successive restano separate e devono essere riesaminate con lo stesso criterio: nessun numero viene dichiarato completo per inferenza o perché esiste già codice storico.
 
 ## RandApp
 
@@ -143,14 +168,15 @@ Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movim
 - `src/randapp/` — shell/UI e domini RandApp;
 - `src/randai/core/`, `tools/`, `skills/`, `directives/` — Blocco 1;
 - `src/randai/maintenance/`, `runtime/` — Blocco 2;
-- `src/randai/memory/`, `context/`, `models/`, `gaps/` — Blocco 3;
+- `src/randai/memory/`, `context/`, `models/`, `gaps/` — Blocco 3 e Operational Context;
 - `src/randai/guidance/`, `projects/`, `observability/` — Blocco 4;
 - `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/` — Blocco 5;
 - `src/randai/software/`, `learning/`, `discovery/`, `supervisor/` — Blocco 6;
 - `src/randai/proactive/`, `control-center/` — Blocco 7;
+- `src/randai/action-gateway.js` — adapter Safe Write RandAI;
 - `src/randai/control/` — UI e console operative RandAI;
-- `src/reliability/` — reliability/safety condivisa;
-- `supabase/functions/` — Edge Functions;
+- `src/reliability/` — reliability/safety condivisa, inclusi scope, validation e safe-write;
+- `supabase/functions/` — Edge Functions e boundary server;
 - `supabase/migrations/` — migrazioni;
 - `test/` e `scripts/` — contratti, quality gates ed E2E.
 
