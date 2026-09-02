@@ -24,6 +24,7 @@ Funzioni consolidate:
 - RandAI operativo fino al Blocco 32;
 - RandAI Control Center — fondazione operativa completata;
 - RandAI WhatsApp — ingresso Twilio end-to-end, inbox, pausa per struttura, idempotenza e conservazione foto completati;
+- RandAI Segnalazioni operative — workspace unificato RandApp/WhatsApp, timeline, contesto tecnico, casi simili e azioni protette da Action Gateway completati;
 - Reliability & Safety condivisa RandApp/RandAI fino al Blocco 39.
 
 ## Strategia piattaforme
@@ -107,6 +108,33 @@ File principali WhatsApp:
 - `supabase/migrations/20260901231000_randai_whatsapp_inbound_foundation.sql`;
 - `supabase/migrations/20260901232000_randai_whatsapp_realtime.sql`;
 - `test/randai-whatsapp-inbound.test.js`.
+
+### Punto 3 — Segnalazioni operative RandAI
+
+Il modulo `Segnalazioni` del Control Center usa lo stesso dominio `segnalazioni` di RandApp: non esiste un secondo archivio RandAI. Una segnalazione nata da WhatsApp diventa una normale segnalazione RandApp con `origine = WhatsApp`; il messaggio originale resta collegato tramite `whatsapp_inbound_messages.issue_id` e viene mostrato nella timeline unificata.
+
+Lo spazio operativo mostra coda, priorità, stato, camera/zona, foto iniziale e finale, autore, tecnico, ricambi e cronologia. Sul caso selezionato RandAI costruisce esclusivamente contesto verificabile: casi simili della stessa struttura, procedure `approved`, possibili impianti correlati e documenti già collegati a procedure/impianti. Matching e storico sono sempre hotel-scoped; una somiglianza non viene presentata come diagnosi e una procedura mancante non viene inventata.
+
+La timeline combina gli eventi RandApp disponibili con i messaggi WhatsApp realmente collegati e si aggiorna tramite Supabase Realtime. La console pubblica esplicitamente `createIssueContextEnvelope` anche nella route isolata `/randai`, così l'Action Gateway riceve sempre hotel e risorsa coerenti.
+
+Le sole scritture operative esposte dal Punto 3 sono quelle già supportate dal RandAI Action Gateway:
+
+- `issue.update_priority`;
+- `issue.set_waiting_part`;
+- `issue.mark_done`.
+
+Ogni azione segue `prepare → anteprima → conferma → execute → verifica`, con permessi, stato corrente, idempotenza e audit server-side. La console non usa `updateIssueRow` e non effettua fallback diretto sul database se il Gateway è disabilitato o nega l'operazione.
+
+L'analisi contestuale è spiegabile: evidenzia fatti già presenti nei dati e propone una prossima azione prudente. Non produce diagnosi tecniche certe, equivalenze di ricambi, autorizzazioni o procedure non documentate.
+
+File principali Punto 3:
+
+- `src/randai/control/IssueOperationsConsole.jsx`;
+- `src/randai/control/issue-operations-console.css`;
+- `src/randai/control/RandAIControlCenter.jsx`;
+- `src/randai/action-gateway.js`;
+- `src/randai/context/envelope.js`;
+- `test/randai-issue-operations.test.js`.
 
 ## Reliability & Safety — blocchi 33–39
 
@@ -327,6 +355,8 @@ Le regole camere di Hotel Giò sono specifiche di Giò e non vanno propagate all
 ### Segnalazioni
 
 Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: camera/zona, urgenza, stato, categoria e data. Le camere vengono ordinate numericamente. Una Segnalazione aperta pubblica il proprio Operational Context a RandAI.
+
+Nel RandAI Control Center la stessa Segnalazione viene arricchita con timeline WhatsApp/RandApp, casi simili, procedure approvate e possibili impianti correlati. Le corrispondenze restano hotel-scoped e le modifiche operative passano dall'Action Gateway.
 
 ### Magazzino
 
