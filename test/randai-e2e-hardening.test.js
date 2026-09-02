@@ -74,13 +74,14 @@ test('hardening: proactive signal routes through supervisor and appears as compl
   const supervisor = new RandAISupervisor({ store: supervisorStore, qualityThreshold: 0.8 })
   const proactive = new ProactiveEngine({ store: signalStore, supervisor, actThreshold: 'HIGH', cooldownMs: 60_000 })
 
-  const first = await proactive.ingest({ projectId: 'randai', type: 'BUILD_FAILED', fingerprint: 'build:hardening', severity: 'HIGH', source: 'github-ci' })
-  const duplicate = await proactive.ingest({ projectId: 'randai', type: 'BUILD_FAILED', fingerprint: 'build:hardening', severity: 'HIGH', source: 'observer' })
+  const first = await proactive.ingest({ projectId: 'randai', global: true, type: 'BUILD_FAILED', fingerprint: 'build:hardening', severity: 'HIGH', source: 'github-ci' })
+  const duplicate = await proactive.ingest({ projectId: 'randai', global: true, type: 'BUILD_FAILED', fingerprint: 'build:hardening', severity: 'HIGH', source: 'observer' })
   assert.equal(first.id, duplicate.id)
   assert.equal(duplicate.count, 2)
   assert.equal(duplicate.suppressedDuplicates, 1)
 
   const processed = await proactive.process(first.id, {
+    global: true,
     executeSingle: async () => ({ ok: true, qualityScore: 0.95, metrics: { agents: 1, toolCalls: 3, retries: 0, cost: 0.1 } }),
   })
   assert.equal(processed.status, 'ACTIONED')
@@ -95,7 +96,7 @@ test('hardening: proactive signal routes through supervisor and appears as compl
     discoveryStore: new ListStore(),
     learningStore: new ListStore(),
   })
-  const snapshot = await control.snapshot({ projectId: 'randai' })
+  const snapshot = await control.snapshot({ projectId: 'randai', allHotels: true })
   assert.equal(snapshot.counts.COMPLETED >= 1, true)
   assert.equal(snapshot.items.some(item => item.id === processed.supervisorRunId && item.section === 'COMPLETED'), true)
 })
