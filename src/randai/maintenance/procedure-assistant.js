@@ -84,9 +84,12 @@ export class ProcedureAssistant {
     }
   }
 
-  approve(draft, engine, { approvedBy = 'human' } = {}) {
+  approve(draft, engine, { hotelId, approvedBy } = {}) {
+    if (!hotelId) throw new TypeError('hotelId is required for approval')
+    if (!approvedBy) throw new TypeError('approvedBy is required')
     if (!draft?.requiresApproval || draft.trust !== KnowledgeTrust.DRAFT) throw new TypeError('Only a draft proposal can be approved')
     if (!engine) throw new TypeError('Maintenance knowledge engine is required')
+    if (draft.hotelId !== hotelId || draft.proposal?.hotelId !== hotelId) throw new Error('Procedure draft is outside the requested hotel scope')
     if (draft.missingFields?.length) throw new Error(`Procedure incomplete: ${draft.missingFields.join(', ')}`)
     const proposal = draft.proposal
     const procedure = engine.registerProcedure(proposal)
@@ -97,6 +100,6 @@ export class ProcedureAssistant {
     for (const item of proposal.evidence || []) {
       engine.addEvidence({ ...item, procedureId: proposal.id, equipmentId: proposal.equipment?.id || null, trust: KnowledgeTrust.APPROVED })
     }
-    return engine.approveProcedure(procedure.id, { approvedBy })
+    return engine.approveProcedure(procedure.id, { hotelId, approvedBy })
   }
 }
