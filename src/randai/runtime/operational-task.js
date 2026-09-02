@@ -134,7 +134,7 @@ export class OperationalTaskCoordinator {
     if (!task) throw new Error(`No active RandAI task for issue ${issueId}`)
 
     if (!this.supervisor) {
-      const advanced = await this.runner.resume(task.id, { pauseAfterSteps })
+      const advanced = await this.runner.resume(task.id, { hotelId, pauseAfterSteps })
       return { task: advanced, supervisorRun: null, summary: summarizeOperationalTask(advanced) }
     }
 
@@ -145,7 +145,7 @@ export class OperationalTaskCoordinator {
       complexity: task.plan?.steps?.length > 3 ? 'HIGH' : 'LOW',
       context: { ...clone(supervisorContext), taskId: task.id, operationId: task.metadata?.operation?.operationId || null, sourceType: OperationalSourceType.ISSUE, sourceId: String(issueId), hotelId },
       executeSingle: async () => {
-        const advanced = await this.runner.resume(task.id, { pauseAfterSteps })
+        const advanced = await this.runner.resume(task.id, { hotelId, pauseAfterSteps })
         return {
           ok: advanced.status !== RuntimeTaskStatus.FAILED && advanced.status !== RuntimeTaskStatus.CANCELLED,
           taskId: advanced.id,
@@ -158,6 +158,13 @@ export class OperationalTaskCoordinator {
     })
     const advanced = await this.store.load(task.id)
     return { task: advanced, supervisorRun, summary: summarizeOperationalTask(advanced) }
+  }
+
+  async cancelIssueTask({ hotelId, issueId, reason = 'cancelled_by_user' } = {}) {
+    const task = await this.findIssueTask({ hotelId, issueId })
+    if (!task) throw new Error(`No active RandAI task for issue ${issueId}`)
+    const cancelled = await this.runner.cancel(task.id, { hotelId, reason })
+    return { task: cancelled, summary: summarizeOperationalTask(cancelled) }
   }
 
   async getIssueTaskSummary({ hotelId, issueId } = {}) {
