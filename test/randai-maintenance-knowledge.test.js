@@ -59,12 +59,31 @@ test('approved proposal becomes searchable only in its hotel and keeps evidence'
     attachments: [{ id: 'meter-photo', type: 'photo', label: 'Foto identificativa' }],
   })
 
-  const approved = assistant.approve(draft, engine, { approvedBy: 'maintenance-admin' })
+  const approved = assistant.approve(draft, engine, { hotelId: 'hotelgio', approvedBy: 'maintenance-admin' })
   assert.equal(approved.trust, KnowledgeTrust.APPROVED)
   assert.equal(engine.search({ hotelId: 'hotelgio', query: 'contatore acqua Jazz' }).found, true)
   assert.equal(engine.search({ hotelId: 'chocohotel', query: 'contatore acqua Jazz' }).found, false)
   assert.equal(engine.getEvidence({ hotelId: 'hotelgio', procedureId: approved.id })[0].trust, KnowledgeTrust.APPROVED)
   assert.equal(engine.findEquipmentForArea({ hotelId: 'hotelgio', area: 'Jazz' })[0].name, 'Contatore acqua Jazz')
+})
+
+test('knowledge reads and approvals fail closed without the correct hotel scope', () => {
+  const engine = new MaintenanceKnowledgeEngine({ procedures: [{
+    id: 'hotelgio-scope', hotelId: 'hotelgio', title: 'Procedura scope', summary: 'Solo Hotel Giò', trust: KnowledgeTrust.DRAFT,
+  }] })
+  assert.throws(() => engine.getProcedure('hotelgio-scope'), /hotelId is required/)
+  assert.throws(() => engine.listProcedures(), /hotelId is required/)
+  assert.throws(() => engine.approveProcedure('hotelgio-scope', { approvedBy: 'admin' }), /hotelId is required/)
+  assert.throws(() => engine.getProcedure('hotelgio-scope', { hotelId: 'chocohotel' }), /outside|Unknown procedure/i)
+  assert.throws(() => engine.approveProcedure('hotelgio-scope', { hotelId: 'chocohotel', approvedBy: 'admin' }), /Unknown procedure/i)
+})
+
+test('Procedure Assistant cannot approve a draft across hotels or without attribution', () => {
+  const engine = new MaintenanceKnowledgeEngine()
+  const assistant = new ProcedureAssistant()
+  const draft = assistant.compose({ hotelId: 'hotelgio', text: 'Procedura test. Eseguire controllo.', hints: { area: 'Jazz', steps: ['Eseguire controllo.'] } })
+  assert.throws(() => assistant.approve(draft, engine, { hotelId: 'chocohotel', approvedBy: 'admin' }), /outside the requested hotel scope/)
+  assert.throws(() => assistant.approve(draft, engine, { hotelId: 'hotelgio' }), /approvedBy is required/)
 })
 
 test('procedure revisions are versioned and require re-approval', () => {
@@ -73,15 +92,16 @@ test('procedure revisions are versioned and require re-approval', () => {
     summary: 'Posizione iniziale verificata.', keywords: ['valvola', 'jazz'], trust: KnowledgeTrust.APPROVED, version: 1,
   }] })
 
-  const revised = engine.reviseProcedure('hotelgio-valve', { summary: 'Nuova posizione da verificare.' }, { changeNote: 'impianto modificato' })
+  const revised = engine.reviseProcedure('hotelgio-valve', { summary: 'Nuova posizione da verificare.', hotelId: 'chocohotel' }, { hotelId: 'hotelgio', changeNote: 'impianto modificato' })
+  assert.equal(revised.hotelId, 'hotelgio')
   assert.equal(revised.version, 2)
   assert.equal(revised.trust, KnowledgeTrust.DRAFT)
   assert.equal(engine.search({ hotelId: 'hotelgio', query: 'valvola Jazz' }).found, false)
 
-  const approved = engine.approveProcedure('hotelgio-valve', { approvedBy: 'maintenance-admin' })
+  const approved = engine.approveProcedure('hotelgio-valve', { hotelId: 'hotelgio', approvedBy: 'maintenance-admin' })
   assert.equal(approved.version, 2)
   assert.equal(approved.trust, KnowledgeTrust.APPROVED)
-  const history = engine.getRevisionHistory('hotelgio-valve')
+  const history = engine.getRevisionHistory('hotelgio-valve', { hotelId: 'hotelgio' })
   assert.ok(history.some((entry) => entry.version === 1 && entry.trust === KnowledgeTrust.OUTDATED))
   assert.ok(history.some((entry) => entry.version === 2 && entry.trust === KnowledgeTrust.APPROVED))
 })
@@ -93,6 +113,7 @@ test('equipment relationships are hotel scoped', () => {
   })
   assert.equal(engine.findEquipmentForArea({ hotelId: 'hotelgio', area: '3° Jazz' }).length, 1)
   assert.equal(engine.findEquipmentForArea({ hotelId: 'brigantino', area: '3° Jazz' }).length, 0)
+  assert.equal(engine.getEquipment('jazz-motor', { hotelId: 'brigantino' }), null)
 })
 
 test('Supabase adapter preserves the maintenance knowledge contract', () => {
