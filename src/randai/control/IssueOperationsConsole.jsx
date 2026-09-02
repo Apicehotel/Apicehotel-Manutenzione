@@ -3,19 +3,20 @@ import { supabase } from '../../supabase.js'
 import { HOTELS } from '../../config.js'
 import { createIssueContextEnvelope, publishRandAIContext } from '../context/envelope.js'
 import { executeRandAIAction, prepareRandAIAction, rejectRandAIAction } from '../action-gateway.js'
+import {
+  buildContextAnalysis,
+  buildTimeline,
+  normalize,
+  rankEquipment,
+  rankProcedures,
+  rankSimilarIssues,
+  relatedDocuments,
+} from './issue-operations-core.js'
 import './issue-operations-console.css'
 
 const HOTEL_LABELS = Object.fromEntries(HOTELS.map((hotel) => [hotel.id, hotel.name]))
-const normalize = (value) => String(value || '').trim().toLowerCase()
 const fmt = (value) => value ? new Date(value).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 const statusLabel = (value) => ({ done: 'Risolta', pending: 'Da fare', in_corso: 'In corso', progress: 'In corso', waiting: 'Attesa ricambio', tecnico: 'Tecnico' }[value] || value || '—')
-const words = (value) => new Set(normalize(value).replace(/[^a-z0-9à-ÿ]+/gi, ' ').split(/\s+/).filter((word) => word.length >= 3))
-const overlap = (a, b) => {
-  const left = words(a), right = words(b)
-  let score = 0
-  for (const token of left) if (right.has(token)) score += 1
-  return score
-}
 
 function Badge({ children, tone = '' }) { return <span className={`ioc-badge ${tone}`}>{children}</span> }
 function Empty({ children }) { return <div className="ioc-empty">{children}</div> }
@@ -26,69 +27,6 @@ function urgencyTone(value) {
   if (['urgente', 'alta'].includes(level)) return 'bad'
   if (level === 'media') return 'warn'
   return 'good'
-}
-
-function similarScore(issue, candidate) {
-  if (!issue || !candidate || issue.hotelId !== candidate.hotelId || issue.id === candidate.id) return -1
-  let score = 0
-  if (normalize(issue.category) && normalize(issue.category) === normalize(candidate.category)) score += 4
-  if (normalize(issue.room) && normalize(issue.room) === normalize(candidate.room)) score += 3
-  score += Math.min(3, overlap(`${issue.title} ${issue.category}`, `${candidate.title} ${candidate.category}`))
-  if (normalize(candidate.status) === 'done') score += 1
-  return score
-}
-
-function procedureScore(issue, procedure) {
-  if (!issue || !procedure || issue.hotelId !== procedure.hotel_id || procedure.status !== 'approved') return -1
-  let score = 0
-  if (normalize(issue.category) && normalize(issue.category) === normalize(procedure.category)) score += 5
-  score += Math.min(4, overlap(`${issue.title} ${issue.category} ${issue.room}`, `${procedure.title} ${procedure.summary} ${procedure.symptom} ${procedure.area} ${procedure.category}`))
-  return score
-}
-
-function equipmentScore(issue, equipment) {
-  if (!issue || !equipment || issue.hotelId !== equipment.hotel_id || equipment.active === false) return -1
-  let score = 0
-  if (normalize(issue.room) && normalize(equipment.location).includes(normalize(issue.room))) score += 4
-  if (normalize(issue.category) && normalize(equipment.category) === normalize(issue.category)) score += 3
-  score += Math.min(3, overlap(`${issue.title} ${issue.category} ${issue.room}`, `${equipment.name} ${equipment.category} ${equipment.location}`))
-  return score
-}
-
-function buildTimeline(issue, whatsappRows) {
-  if (!issue) return []
-  const events = []
-  for (const message of whatsappRows) {
-    events.push({ id: `wa-${message.id}`, time: message.received_at, title: 'Messaggio WhatsApp ricevuto', detail: message.body || 'Messaggio con allegato', tone: 'whatsapp' })
-    if (message.processed_at && message.processing_status) events.push({ id: `wa-process-${message.id}`, time: message.processed_at, title: `WhatsApp · ${message.processing_status}`, detail: message.reply_text || 'Messaggio elaborato e collegato alla segnalazione.' })
-  }
-  if (issue.createdAt) events.push({ id: `created-${issue.id}`, time: issue.createdAt, title: 'Segnalazione creata', detail: `${issue.createdByName || issue.origin || 'Sistema'} · ${issue.room || 'zona non indicata'}` })
-  if (issue.technicianAskedAt || issue.technicianAskedBy) events.push({ id: `tech-asked-${issue.id}`, time: issue.technicianAskedAt || issue.updatedAt, title: 'Tecnico richiesto', detail: [issue.technicianAskedBy, issue.technicianNote].filter(Boolean).join(' · ') || 'Richiesta tecnico registrata.' })
-  if (issue.technicianExpectedArrival) events.push({ id: `tech-arrival-${issue.id}`, time: issue.technicianExpectedArrival, title: 'Arrivo tecnico previsto', detail: issue.technicianName || 'Tecnico esterno' })
-  if (normalize(issue.status) === 'waiting' || issue.pieceName) events.push({ id: `part-${issue.id}`, time: issue.updatedAt || issue.createdAt, title: 'Ricambio / materiale', detail: issue.pieceName ? `In attesa: ${issue.pieceName}` : 'Segnalazione in attesa ricambio.' })
-  if (issue.completedAt) events.push({ id: `done-${issue.id}`, time: issue.completedAt, title: 'Segnalazione risolta', detail: [issue.completedBy, issue.completionNote].filter(Boolean).join(' · ') || 'Completamento registrato.', tone: 'good' })
-  return events.sort((a, b) => new Date(a.time || 0) - new Date(b.time || 0))
-}
-
-function buildContextAnalysis(issue, similar, procedures, equipment) {
-  if (!issue) return { facts: [], next: 'Seleziona una segnalazione.' }
-  const facts = []
-  if (['urgente', 'alta'].includes(normalize(issue.urgency))) facts.push('La segnalazione è già ad alta priorità.')
-  if (normalize(issue.origin) === 'whatsapp') facts.push('La segnalazione proviene da WhatsApp ed è stata unificata con RandApp.')
-  if (issue.technicianAskedBy || issue.technicianRequestedBy || normalize(issue.status) === 'tecnico') facts.push('È presente una richiesta o assegnazione tecnico.')
-  if (normalize(issue.status) === 'waiting' || issue.pieceName) facts.push(`È in attesa di ricambio${issue.pieceName ? `: ${issue.pieceName}` : ''}.`)
-  if (similar.length) facts.push(`Trovati ${similar.length} casi simili nella stessa struttura.`)
-  if (procedures.length) facts.push(`Trovate ${procedures.length} procedure approvate pertinenti.`)
-  if (equipment.length) facts.push(`Trovati ${equipment.length} possibili impianti correlati.`)
-  if (!facts.length) facts.push('Nessuna evidenza aggiuntiva verificabile oltre ai dati della segnalazione.')
-
-  let next = 'Verifica sul posto e raccogli dati prima di modificare lo stato.'
-  if (normalize(issue.status) === 'done') next = 'Nessuna azione operativa: la segnalazione risulta risolta.'
-  else if (normalize(issue.status) === 'waiting' || issue.pieceName) next = 'Verifica disponibilità del ricambio e aggiorna l’intervento quando disponibile.'
-  else if (issue.technicianAskedBy || issue.technicianRequestedBy || normalize(issue.status) === 'tecnico') next = 'Segui autorizzazione, assegnazione e arrivo del tecnico senza chiudere anticipatamente.'
-  else if (procedures.length) next = `Apri la procedura approvata più pertinente: “${procedures[0].title}”.`
-  else if (similar.length) next = 'Confronta i casi simili risolti, senza assumere che la causa sia la stessa.'
-  return { facts, next }
 }
 
 function ActionGatewayPanel({ issue, onRefresh }) {
@@ -190,14 +128,10 @@ export default function IssueOperationsConsole({ issues = [], allIssues = [], pr
     publishRandAIContext(createIssueContextEnvelope({ hotelId: selected.hotelId, issue: selected }))
   }, [selected?.id, selected?.hotelId, selected?.status, selected?.urgency, selected?.updatedAt])
 
-  const similar = useMemo(() => selected ? allIssues.map((item) => ({ item, score: similarScore(selected, item) })).filter((entry) => entry.score >= 4).sort((a, b) => b.score - a.score || (b.item.completedAt || b.item.updatedAt || 0) - (a.item.completedAt || a.item.updatedAt || 0)).slice(0, 6).map((entry) => entry.item) : [], [selected, allIssues])
-  const matchedProcedures = useMemo(() => selected ? procedures.map((item) => ({ item, score: procedureScore(selected, item) })).filter((entry) => entry.score >= 2).sort((a, b) => b.score - a.score).slice(0, 5).map((entry) => entry.item) : [], [selected, procedures])
-  const matchedEquipment = useMemo(() => selected ? equipment.map((item) => ({ item, score: equipmentScore(selected, item) })).filter((entry) => entry.score >= 2).sort((a, b) => b.score - a.score).slice(0, 5).map((entry) => entry.item) : [], [selected, equipment])
-  const relatedDocs = useMemo(() => {
-    const procedureIds = new Set(matchedProcedures.map((item) => item.id))
-    const equipmentIds = new Set(matchedEquipment.map((item) => item.id))
-    return documents.filter((item) => item.hotel_id === selected?.hotelId && (procedureIds.has(item.procedure_id) || equipmentIds.has(item.equipment_id))).slice(0, 8)
-  }, [documents, matchedProcedures, matchedEquipment, selected?.hotelId])
+  const similar = useMemo(() => rankSimilarIssues(selected, allIssues), [selected, allIssues])
+  const matchedProcedures = useMemo(() => rankProcedures(selected, procedures), [selected, procedures])
+  const matchedEquipment = useMemo(() => rankEquipment(selected, equipment), [selected, equipment])
+  const relatedDocs = useMemo(() => relatedDocuments(selected, documents, matchedProcedures, matchedEquipment), [selected, documents, matchedProcedures, matchedEquipment])
   const timeline = useMemo(() => buildTimeline(selected, whatsappRows), [selected, whatsappRows])
   const analysis = useMemo(() => buildContextAnalysis(selected, similar, matchedProcedures, matchedEquipment), [selected, similar, matchedProcedures, matchedEquipment])
 
