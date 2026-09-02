@@ -30,6 +30,19 @@ Principi del blocco: nessun framework agentico esterno nel core se non porta un 
 
 Test principali: `test/randai-core-tool-registry.test.js`, `test/randai-skills-directives.test.js`.
 
+## RandAI — Blocco 2 (punti canonici 5–8)
+
+Il Blocco 2 usa e consolida le implementazioni già presenti, senza introdurre un secondo runtime o un framework agentico parallelo:
+
+5. **Maintenance Knowledge Engine** — procedure, equipment, relazioni, revisioni ed evidenze restano hotel-scoped. Letture e mutazioni sensibili richiedono `hotelId`; procedure non approvate non diventano fatti operativi e una revisione non può cambiare hotel.
+6. **Procedure Assistant** — una proposta nasce sempre `DRAFT`, conserva testo/evidenze e richiede approvazione esplicita. L'approvazione richiede hotel corrispondente e `approvedBy`; una bozza cross-hotel viene rifiutata.
+7. **Planner → Executor → Verifier** — il piano rifiuta tool mancanti, self-dependency, dipendenze sconosciute e cicli prima dell'esecuzione. L'Executor continua a passare dal Tool Registry/Autonomy e il Verifier può respingere un tool call tecnicamente riuscito.
+8. **Durable Tasks / Checkpoint** — task operativi con hotel obbligatorio, checkpoint che preservano `hotelId`, resume/reconcile/cancel fail-closed sullo scope, idempotency key per gli effetti, lease, cancellazione persistita e retry limitati per strategia.
+
+**Anti-zombie:** sono stati mantenuti `src/randai/maintenance` e `src/randai/runtime` perché sono moduli canonici, attivi e coperti da test. Sono stati eliminati o corretti i comportamenti zombie/obsoleti individuati: accessi knowledge senza scope, approvazioni non attribuite, piani ciclici, task operativi riprendibili fuori hotel, retry potenzialmente non limitati e assenza di una cancellazione durevole. La CI condivisa è stata inoltre resa diagnostica e due contratti statici obsoleti sono stati riallineati al comportamento canonico corrente, senza indebolire la logica applicativa.
+
+Test principali: `test/randai-maintenance-knowledge.test.js`, `test/randai-durable-runtime.test.js` e i gate RandAI/shared della CI.
+
 ## Piattaforme
 
 - **iOS/iPadOS:** PWA/Web App;
