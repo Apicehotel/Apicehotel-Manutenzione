@@ -10,6 +10,10 @@ const TRUST_RANK = Object.freeze({
 })
 
 const clone = (value) => structuredClone(value)
+const requireHotelId = (hotelId) => {
+  if (!hotelId) throw new TypeError('hotelId is required')
+  return hotelId
+}
 
 function searchableProcedure(procedure) {
   return normalizeText([
@@ -58,15 +62,20 @@ export class MaintenanceKnowledgeEngine {
     return clone(procedure)
   }
 
-  getProcedure(id) { const item = this.#procedures.get(id); return item ? clone(item) : null }
+  getProcedure(id, { hotelId } = {}) {
+    const item = this.#requireProcedure(id, requireHotelId(hotelId))
+    return clone(item)
+  }
+
   listProcedures({ hotelId, includeOutdated = false } = {}) {
+    requireHotelId(hotelId)
     return [...this.#procedures.values()]
-      .filter((item) => (!hotelId || item.hotelId === hotelId) && (includeOutdated || item.trust !== KnowledgeTrust.OUTDATED))
+      .filter((item) => item.hotelId === hotelId && (includeOutdated || item.trust !== KnowledgeTrust.OUTDATED))
       .map(clone)
   }
 
-  approveProcedure(id, { approvedBy = 'human', approvedAt = new Date().toISOString() } = {}) {
-    const procedure = this.#requireProcedure(id)
+  approveProcedure(id, { hotelId, approvedBy = 'human', approvedAt = new Date().toISOString() } = {}) {
+    const procedure = this.#requireProcedure(id, requireHotelId(hotelId))
     procedure.trust = KnowledgeTrust.APPROVED
     procedure.approvedBy = approvedBy
     procedure.approvedAt = approvedAt
@@ -75,8 +84,8 @@ export class MaintenanceKnowledgeEngine {
     return clone(procedure)
   }
 
-  verifyProcedure(id, { verifiedBy = 'human', verifiedAt = new Date().toISOString() } = {}) {
-    const procedure = this.#requireProcedure(id)
+  verifyProcedure(id, { hotelId, verifiedBy = 'human', verifiedAt = new Date().toISOString() } = {}) {
+    const procedure = this.#requireProcedure(id, requireHotelId(hotelId))
     procedure.trust = KnowledgeTrust.VERIFIED
     procedure.verifiedBy = verifiedBy
     procedure.verifiedAt = verifiedAt
@@ -85,13 +94,14 @@ export class MaintenanceKnowledgeEngine {
     return clone(procedure)
   }
 
-  reviseProcedure(id, patch, { changeNote = 'revision' } = {}) {
-    const current = this.#requireProcedure(id)
+  reviseProcedure(id, patch, { hotelId, changeNote = 'revision' } = {}) {
+    const current = this.#requireProcedure(id, requireHotelId(hotelId))
     const nextVersion = Number(current.version || 1) + 1
     const previous = clone(current)
     previous.trust = KnowledgeTrust.OUTDATED
     this.#snapshot(previous, 'superseded')
     Object.assign(current, clone(patch), {
+      hotelId: current.hotelId,
       version: nextVersion,
       trust: KnowledgeTrust.DRAFT,
       approvedAt: null,
@@ -102,10 +112,15 @@ export class MaintenanceKnowledgeEngine {
     return clone(current)
   }
 
-  getRevisionHistory(id) { return clone(this.#revisions.get(id) || []) }
+  getRevisionHistory(id, { hotelId } = {}) {
+    const scopedHotelId = requireHotelId(hotelId)
+    this.#requireProcedure(id, scopedHotelId)
+    return clone((this.#revisions.get(id) || []).filter((entry) => entry.hotelId === scopedHotelId))
+  }
 
-  search({ hotelId, query, allowedTrust = [KnowledgeTrust.APPROVED, KnowledgeTrust.VERIFIED] }) {
-    if (!hotelId || !normalizeText(query)) return this.unknown({ hotelId, query })
+  search({ hotelId, query, allowedTrust = [KnowledgeTrust.APPROVED, KnowledgeTrust.VERIFIED] } = {}) {
+    requireHotelId(hotelId)
+    if (!normalizeText(query)) return this.unknown({ hotelId, query })
     const allowed = new Set(allowedTrust)
     const ranked = [...this.#procedures.values()]
       .filter((item) => item.hotelId === hotelId && allowed.has(item.trust))
@@ -117,7 +132,8 @@ export class MaintenanceKnowledgeEngine {
     return { found: true, trust: procedure.trust, procedure, score: ranked[0].score }
   }
 
-  unknown({ hotelId = null, query = '' } = {}) {
+  unknown({ hotelId, query = '' } = {}) {
+    requireHotelId(hotelId)
     return {
       found: false,
       trust: KnowledgeTrust.UNKNOWN,
@@ -135,13 +151,20 @@ export class MaintenanceKnowledgeEngine {
     return clone(item)
   }
 
-  getEquipment(id) { const item = this.#equipment.get(id); return item ? clone(item) : null }
-  findEquipmentForArea({ hotelId, area }) {
+  getEquipment(id, { hotelId } = {}) {
+    const scopedHotelId = requireHotelId(hotelId)
+    const item = this.#equipment.get(id)
+    if (!item || item.hotelId !== scopedHotelId) return null
+    return clone(item)
+  }
+
+  findEquipmentForArea({ hotelId, area } = {}) {
+    requireHotelId(hotelId)
     const needle = normalizeText(area)
     const ids = this.#relations
       .filter((relation) => relation.hotelId === hotelId && relation.type === RelationType.SERVES && normalizeText(relation.to) === needle)
       .map((relation) => relation.from)
-    return ids.map((id) => this.#equipment.get(id)).filter(Boolean).map(clone)
+    return ids.map((id) => this.#equipment.get(id)).filter((item) => item?.hotelId === hotelId).map(clone)
   }
 
   addRelation(input) {
@@ -153,6 +176,7 @@ export class MaintenanceKnowledgeEngine {
   }
 
   getRelations({ hotelId, entityId, type } = {}) {
+    requireHotelId(hotelId)
     return this.#relations.filter((item) => item.hotelId === hotelId && (!entityId || item.from === entityId || item.to === entityId) && (!type || item.type === type)).map(clone)
   }
 
@@ -166,12 +190,13 @@ export class MaintenanceKnowledgeEngine {
   }
 
   getEvidence({ hotelId, procedureId, equipmentId } = {}) {
+    requireHotelId(hotelId)
     return this.#evidence.filter((item) => item.hotelId === hotelId && (!procedureId || item.procedureId === procedureId) && (!equipmentId || item.equipmentId === equipmentId)).map(clone)
   }
 
-  #requireProcedure(id) {
+  #requireProcedure(id, hotelId) {
     const item = this.#procedures.get(id)
-    if (!item) throw new Error(`Unknown procedure: ${id}`)
+    if (!item || item.hotelId !== hotelId) throw new Error(`Unknown procedure in hotel scope: ${id}`)
     return item
   }
 
