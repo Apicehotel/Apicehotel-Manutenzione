@@ -82,7 +82,8 @@ test('block 5 / point 19: action identity is deterministic and hotel approvals c
   await engine.decide(gio.approval.id, { approved: true, decidedBy: 'direzione', hotelId: 'hotelgio' })
   assert.equal((await engine.authorize({ toolId: 'danger.write', hotelId: 'hotelgio', input: { room: '1101' }, taskId: 'T', stepId: 'S' })).decision, AutonomyDecision.ALLOW)
   assert.equal((await engine.authorize({ toolId: 'danger.write', hotelId: 'chocohotel', input: { room: '1101' }, taskId: 'T', stepId: 'S' })).decision, AutonomyDecision.REQUIRE_APPROVAL)
-  await assert.rejects(() => engine.decide((await engine.authorize({ toolId: 'danger.write', hotelId: 'chocohotel', input: { room: '1101' }, taskId: 'T2', stepId: 'S' })).approval.id, { approved: true, decidedBy: 'direzione', hotelId: 'hotelgio' }), /scope mismatch/)
+  const pendingChoco = await engine.authorize({ toolId: 'danger.write', hotelId: 'chocohotel', input: { room: '1101' }, taskId: 'T2', stepId: 'S' })
+  await assert.rejects(() => engine.decide(pendingChoco.approval.id, { approved: true, decidedBy: 'direzione', hotelId: 'hotelgio' }), /scope mismatch/)
 })
 
 test('block 5 / point 19: autonomy policy contradictions and invalid approval ttl fail fast', async () => {
