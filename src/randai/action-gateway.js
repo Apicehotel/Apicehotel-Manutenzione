@@ -1,6 +1,7 @@
 import { supabase } from '../supabase.js'
 import { assertSensitiveActionOnline } from '../session-policy.js'
 import { assertContextScope } from '../reliability/context-scope-guard.js'
+import { assertActionMayExecute } from '../reliability/execution-policy.js'
 import {
   OperationValidationError,
   ValidationCode,
@@ -65,6 +66,19 @@ export async function executeRandAIAction({ hotelId, approvalId } = {}) {
   const result = combineValidation(required(hotelId, 'hotelId'), required(approvalId, 'approvalId'))
   if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI non valida')
   return invoke({ operation: 'execute', hotel_id: hotelId, approval_id: approvalId })
+}
+
+export async function executeGovernedRandAIAction({ hotelId, approvalId, planValidation, confidenceDecision, permissionGranted = false } = {}) {
+  const result = combineValidation(required(hotelId, 'hotelId'), required(approvalId, 'approvalId'))
+  if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI governata non valida')
+  assertActionMayExecute({
+    hotelId,
+    planValidation,
+    confidenceDecision,
+    permissionGranted,
+    approvalPresent: Boolean(approvalId),
+  })
+  return executeRandAIAction({ hotelId, approvalId })
 }
 
 export async function rejectRandAIAction({ hotelId, approvalId } = {}) {

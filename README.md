@@ -63,25 +63,27 @@ PWA React/Vite multi-hotel per Hotel Giò, Chocohotel e Hotel Il Brigantino. Sup
 29. Unified Validation Layer 2.0 — motore condiviso + composizione di dominio.
 30. Safe Write Engine / Action Gateway 2.0 — approval, idempotenza, version fence, read-back, verification e receipt/audit.
 
-Sorgenti principali: `src/randai/context/`, `src/reliability/context-scope-guard.js`, `validation-engine.js`, `domain-validation.js`, `safe-write-engine.js`, `src/randai/action-gateway.js`, `supabase/functions/randai-action-gateway/`.
-
 ### Blocco 9 — Production Hardening — 31–34 ✅
 31. Authorization & RLS Verification Matrix — verifica l'autorità server senza duplicarla nel client.
 32. Audit & Reversible Operations — compensazioni autorizzate, conflict-checked, read-back verified e auditate.
 33. Offline / Retry / Concurrency Hardening — lease/backoff, idempotenza hotel-scoped, revision fence e riconciliazione prima del retry.
-34. Import Safety Pipeline — `normalize → scope → validate → dedupe → stage → commit → read-back → verify → audit`; nessun commit parziale con righe invalide/cross-hotel.
-
-Sorgenti principali: `src/reliability/authorization-matrix.js`, `audit-reversible.js`, `offline-concurrency.js`, `import-safety.js`.
+34. Import Safety Pipeline — `normalize → scope → validate → dedupe → stage → commit → read-back → verify → audit`.
 
 ### Blocco 10 — Verification, Trust, Hybrid Knowledge & Risk — 35–38 ✅
-35. **Verification Gate 2.0** — verifica multi-check hotel-scoped; controlli duplicati o invalidi falliscono, serve almeno una verifica indipendente e il risultato è `PASS`, `REVIEW` o `BLOCK`.
-36. **Evidence & Knowledge Trust** — trust deterministico da tier, freschezza e corroborazione multi-source; evidenza cross-hotel viene rifiutata.
-37. **Hybrid Memory + Knowledge Graph Production** — composizione read-only sopra Scoped Memory Engine e Project Graph esistenti; filtra per hotel e trust, deduplica e non introduce un secondo store o graph database.
-38. **Operational Confidence & Risk Engine** — confidence calcolata da verification + evidence trust + completezza contesto, poi ridotta dal rischio; azioni critical/high-risk non possono diventare AUTO.
+35. Verification Gate 2.0 — verifica multi-check hotel-scoped con `PASS/REVIEW/BLOCK`.
+36. Evidence & Knowledge Trust — tier, freschezza e corroborazione; cross-hotel fail-closed.
+37. Hybrid Memory + Knowledge Graph Production — composizione read-only sopra Memory Engine e Project Graph canonici.
+38. Operational Confidence & Risk Engine — confidence deterministica ridotta dal rischio; critical/high-risk mai AUTO.
 
-Sorgenti Blocco 10: `src/reliability/verification-gate.js`, `evidence-trust.js`, `hybrid-memory-graph.js`, `confidence-risk.js`. Test dedicato: `test/randai-block10-reliability-35-38.test.js`.
+### Blocco 11 — Execution Resilience & Failure Intelligence — 39–42 ✅
+39. **Plan Validator 2.0** — compone il `validatePlan()` canonico del runtime e aggiunge readiness operativa: tool realmente disponibili, permission, prerequisiti, rischio e hotel scope prima dell'esecuzione.
+40. **Action Gateway 3.0 / Execution Policy** — il Gateway esistente resta il boundary canonico. Il nuovo percorso `executeGovernedRandAIAction()` richiede plan valido, permission e disposition del Confidence/Risk Engine; `REVIEW` richiede approval esplicita e `BLOCK` non può essere aggirato dall'approval.
+41. **Recovery Budgets & Circuit Breakers** — budget separati per tentativi, tempo e costo; circuit breaker `CLOSED → OPEN → HALF_OPEN → CLOSED`, una sola probe half-open e nessun retry quando budget o circuito lo vietano.
+42. **Failure Intelligence & Root Cause Engine** — fingerprint hotel-scoped per component/operation/resource/code, classificazione root cause deterministica, ricorrenze e ranking delle recovery sulla base dei successi reali, senza sostituire Observability.
 
-Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` restano canonici e vivi. Il nuovo layer li compone invece di copiarli. Nessuna dipendenza esterna o nuova migrazione viene aggiunta perché le primitive interne sono già più integrate e hanno superato i gate completi.
+Sorgenti Blocco 11: `src/reliability/plan-validator.js`, `execution-policy.js`, `recovery-circuit.js`, `failure-intelligence.js` e l'adapter esistente `src/randai/action-gateway.js`. Test dedicato: `test/randai-block11-reliability-39-42.test.js`.
+
+Zombie scan Blocco 11: `src/randai/runtime/planner.js`, `runtime/contracts.js`, `runtime/verifier.js`, `recovery/` e `observability/` restano vivi e canonici. Il nuovo layer compone queste primitive; non introduce un secondo planner, un secondo gateway, un secondo recovery engine o una seconda observability.
 
 ## Runtime Safety Layer — trasversale
 
@@ -89,12 +91,15 @@ Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` res
 - Hotel isolation esplicita in conoscenza, memoria, context, guidance, gap, approval, recovery, learning, supervisor, proactive, Control Center e write.
 - RLS/RPC Supabase restano autorità server.
 - Safe write con approval + idempotenza + optimistic version fence + read-back + audit.
+- Plan readiness: un piano sintatticamente valido non è automaticamente eseguibile; tool/permission/prerequisiti/scope devono essere verificati.
+- Execution policy: `AUTO/REVIEW/BLOCK` del Confidence/Risk Engine governa il nuovo percorso Action Gateway 3.0.
 - Offline/concurrency: retry solo dopo riconciliazione; niente promessa fittizia di exactly-once.
+- Recovery: tentativi, tempo e costo sono bounded; circuit breaker ferma failure storm e consente probe controllate.
+- Failure intelligence: errori e recovery sono aggregati per hotel; un successo in Giò non insegna automaticamente una recovery a Chocohotel.
 - Import safety: staging e verifica prima del commit.
 - Verification/trust: successo tecnico, memoria o evidenza non equivalgono automaticamente a verità.
-- Confidence/risk: l'autonomia è limitata da verifica, trust, completezza contesto e rischio; critical/high-risk restano bloccate.
-- Recovery bounded e telemetria non-fatal.
-- External discovery non installa automaticamente.
+- Confidence/risk: l'autonomia è limitata da verifica, trust, completezza contesto e rischio.
+- Telemetria non-fatal ed external discovery senza installazione automatica.
 
 ## Consolidamento storico
 
@@ -106,6 +111,7 @@ Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` res
 - PR #127 — 27–30.
 - PR #129 — 31–34.
 - PR #130 — 35–38, Verification/Trust/Hybrid Knowledge/Risk.
+- PR #131 — 39–42, Execution Resilience/Recovery Budgets/Failure Intelligence.
 
 ## CI e regola di chiusura
 
