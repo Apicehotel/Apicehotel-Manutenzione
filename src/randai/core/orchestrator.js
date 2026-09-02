@@ -16,10 +16,26 @@ export class RandAIOrchestrator {
     const log = this.logger.child({ taskId: task.id, toolId })
     transitionTask(task, 'RUNNING', { toolId })
     log.info('task.started', { objective: task.objective })
-    const result = await this.registry.execute(toolId, input, { ...context, task })
-    const ok = result.status === ToolStatus.SUCCESS || result.status === ToolStatus.PARTIAL
-    transitionTask(task, ok ? 'SUCCEEDED' : 'FAILED', { toolId, toolStatus: result.status })
-    log.info('task.completed', { status: task.status, toolStatus: result.status })
-    return { task, result }
+
+    try {
+      const result = await this.registry.execute(toolId, input, { ...context, task })
+      const ok = result.status === ToolStatus.SUCCESS || result.status === ToolStatus.PARTIAL
+      transitionTask(task, ok ? 'SUCCEEDED' : 'FAILED', { toolId, toolStatus: result.status })
+      log.info('task.completed', { status: task.status, toolStatus: result.status })
+      return { task, result }
+    } catch (error) {
+      transitionTask(task, 'FAILED', {
+        toolId,
+        error: error?.message || String(error),
+        errorCode: error?.code ?? null,
+      })
+      log.error?.('task.failed', {
+        status: task.status,
+        error: error?.message || String(error),
+        errorCode: error?.code ?? null,
+      })
+      error.task = error.task ?? task
+      throw error
+    }
   }
 }
