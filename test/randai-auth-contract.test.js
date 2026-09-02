@@ -28,3 +28,11 @@ test('RandAI access management supports creation and password change',()=>{
   assert.match(gate,/Crea utente RandAI/)
   assert.match(gate,/La mia password/)
 })
+
+test('RandAI UI does not ship predictable default credentials',()=>{
+  assert.doesNotMatch(gate,/useState\('RandAI'\),\[password,setPassword\]=useState\('00000000'\)/)
+  assert.doesNotMatch(gate,/\[password,setPassword\]=useState\('00000000'\)/)
+  assert.match(gate,/autoComplete="username"/)
+  assert.match(gate,/autoComplete="current-password"/)
+  assert.match(gate,/autoComplete="new-password"/)
+})

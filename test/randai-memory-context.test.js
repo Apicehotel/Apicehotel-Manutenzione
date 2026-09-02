@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { MemoryEngine, MemoryStore, MemoryType, MemoryTrust } from '../src/randai/memory/index.js'
+import { MemoryEngine, MemoryScope, MemoryStore, MemoryType, MemoryTrust } from '../src/randai/memory/index.js'
 import { ContextEngine } from '../src/randai/context/index.js'
 
 const source = (id) => ({ kind: 'test', id })
@@ -19,6 +19,22 @@ test('hotel scope prevents cross-hotel recall', async () => {
   const store = new MemoryStore(); const engine = new MemoryEngine({ store })
   await engine.remember({ type: MemoryType.SEMANTIC, scope: 'hotel', hotelId: 'hotelgio', trust: MemoryTrust.APPROVED, content: 'quadro ascensore jazz locale tecnico', source: source('a') })
   assert.equal((await engine.recall('quadro ascensore jazz', { hotelId: 'choco' })).length, 0)
+})
+
+test('memory recall and context build fail closed without an explicit scope', async () => {
+  const store = new MemoryStore(); const engine = new MemoryEngine({ store })
+  await engine.remember({ type: MemoryType.SEMANTIC, scope: MemoryScope.HOTEL, hotelId: 'hotelgio', trust: MemoryTrust.APPROVED, content: 'dato hotel gio', source: source('gio') })
+  await engine.remember({ type: MemoryType.SEMANTIC, scope: MemoryScope.HOTEL, hotelId: 'chocohotel', trust: MemoryTrust.APPROVED, content: 'dato choco', source: source('choco') })
+  await assert.rejects(() => engine.recall('dato'), /explicit hotel, project, task or global scope/)
+  await assert.rejects(() => new ContextEngine({ memoryEngine: engine }).build({ query: 'dato' }), /explicit hotel, project, task or global scope/)
+})
+
+test('global memory must be requested explicitly', async () => {
+  const store = new MemoryStore(); const engine = new MemoryEngine({ store })
+  await engine.remember({ type: MemoryType.PROCEDURAL, scope: MemoryScope.GLOBAL, trust: MemoryTrust.VERIFIED, content: 'build test merge', source: source('global') })
+  const recalled = await engine.recall('build test merge', { scope: MemoryScope.GLOBAL })
+  assert.equal(recalled.length, 1)
+  assert.equal(recalled[0].scope, MemoryScope.GLOBAL)
 })
 
 test('context engine respects token budget and keeps provenance', async () => {
@@ -42,8 +58,8 @@ test('completed durable task becomes episodic and procedural memory', async () =
 
 test('expired memory is ignored and near-duplicate can be detected', async () => {
   const store = new MemoryStore(); const engine = new MemoryEngine({ store })
-  await engine.remember({ type: MemoryType.CONVERSATIONAL, scope: 'global', trust: MemoryTrust.DRAFT, content: 'usa sempre build e test prima del merge', source: source('chat-1'), expiresAt: '2020-01-01T00:00:00Z' })
-  assert.equal((await engine.recall('build test merge')).length, 0)
-  await engine.remember({ type: MemoryType.PROCEDURAL, scope: 'global', trust: MemoryTrust.VERIFIED, content: 'build test merge', source: source('chat-2') })
-  assert.ok(await engine.deduplicate({ content: 'build test merge' }))
+  await engine.remember({ type: MemoryType.CONVERSATIONAL, scope: MemoryScope.GLOBAL, trust: MemoryTrust.DRAFT, content: 'usa sempre build e test prima del merge', source: source('chat-1'), expiresAt: '2020-01-01T00:00:00Z' })
+  assert.equal((await engine.recall('build test merge', { scope: MemoryScope.GLOBAL })).length, 0)
+  await engine.remember({ type: MemoryType.PROCEDURAL, scope: MemoryScope.GLOBAL, trust: MemoryTrust.VERIFIED, content: 'build test merge', source: source('chat-2') })
+  assert.ok(await engine.deduplicate({ scope: MemoryScope.GLOBAL, content: 'build test merge' }))
 })

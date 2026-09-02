@@ -1,4 +1,4 @@
-import { MemoryTrust, MemoryType, validateMemory } from './contracts.js'
+import { MemoryScope, MemoryTrust, MemoryType, validateMemory } from './contracts.js'
 
 const nowIso = () => new Date().toISOString()
 const idOf = () => `MEM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -9,6 +9,7 @@ const overlap = (a, b) => {
   let hit = 0; for (const t of x) if (y.has(t)) hit += 1
   return hit / Math.max(x.size, y.size)
 }
+const scoped = ({ scope, hotelId, projectId, taskId } = {}) => Boolean(hotelId || projectId || taskId || scope === MemoryScope.GLOBAL)
 
 export class MemoryEngine {
   constructor({ store }) { if (!store) throw new TypeError('store is required'); this.store = store }
@@ -17,7 +18,7 @@ export class MemoryEngine {
     const memory = {
       id: input.id || idOf(),
       type: input.type || MemoryType.EPISODIC,
-      scope: input.scope || 'global',
+      scope: input.scope || MemoryScope.GLOBAL,
       trust: input.trust || MemoryTrust.DRAFT,
       content: String(input.content || '').trim(), summary: input.summary || null,
       source: input.source, hotelId: input.hotelId || null, projectId: input.projectId || null, taskId: input.taskId || null,
@@ -34,12 +35,13 @@ export class MemoryEngine {
     if (!task || task.status !== 'SUCCEEDED') return []
     const source = { kind: 'task', id: task.id }
     const created = []
-    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? 'hotel' : 'task', hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 1, tags: ['task-completed'] }))
-    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? 'hotel' : 'task', hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.9, tags: ['decision', decision.type] }))
+    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 1, tags: ['task-completed'] }))
+    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.9, tags: ['decision', decision.type] }))
     return created
   }
 
   async recall(query, filters = {}) {
+    if (!scoped(filters)) throw new TypeError('Memory recall requires an explicit hotel, project, task or global scope')
     const now = Date.now(); const items = await this.store.list(filters)
     return items.filter(m => !m.expiresAt || Date.parse(m.expiresAt) > now).filter(m => !filters.types || filters.types.includes(m.type)).filter(m => !filters.trust || filters.trust.includes(m.trust)).map(m => {
       const textScore = Math.max(overlap(query, m.content), overlap(query, m.summary || ''))
@@ -50,7 +52,9 @@ export class MemoryEngine {
   }
 
   async deduplicate(candidate, threshold = 0.82) {
-    const items = await this.store.list({ hotelId: candidate.hotelId, projectId: candidate.projectId, taskId: candidate.taskId })
+    const filters = { scope: candidate.scope, hotelId: candidate.hotelId, projectId: candidate.projectId, taskId: candidate.taskId }
+    if (!scoped(filters)) throw new TypeError('Memory deduplication requires an explicit hotel, project, task or global scope')
+    const items = await this.store.list(filters)
     return items.find(m => overlap(candidate.content, m.content) >= threshold) || null
   }
 }
