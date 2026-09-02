@@ -19,12 +19,14 @@ test('context bridge publishes hotel actor and active screen without overwriting
   assert.match(bridge, /aria-current/)
 })
 
-test('the global insert launcher exposes RandAI as a contextual action', async () => {
+test('RandAI stays a dedicated header action and is not mixed into contextual creation', async () => {
   const launcher = await source('src/randapp/InsertLauncher.jsx')
-  assert.match(launcher, /id:\s*'randai'/)
-  assert.match(launcher, /Chiedi a RandAI/)
-  assert.match(launcher, /randai-toggle/)
-  assert.match(launcher, /contesto della schermata/)
+  const shell = await source('src/randapp/Shell.jsx')
+  const actions = await source('src/randapp/contextual-add.js')
+  assert.doesNotMatch(launcher, /Chiedi a RandAI/)
+  assert.doesNotMatch(actions, /id:\s*'randai'/)
+  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(shell, /randai-toggle/)
 })
 
 test('guidance backend consumes the published operational context', async () => {

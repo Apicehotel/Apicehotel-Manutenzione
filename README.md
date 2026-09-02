@@ -217,6 +217,25 @@ Gli interventi non modificano direttamente la giacenza. Solo la conferma server-
 - affidabilità: `src/reliability/`;
 - Magazzino: `src/inventory-*.js` + UI `src/randapp/Inventory*`.
 
+## Inserimenti contestuali (`+`)
+
+Il pulsante `+` della shell non apre più un catalogo generico uguale in ogni schermata. La sorgente unica è `src/randapp/contextual-add.js`, che combina **pagina corrente + permessi + disponibilità della funzione**.
+
+Regole operative:
+
+- `Home`: mostra solo le principali creazioni realmente consentite;
+- `Segnalazioni`: apre direttamente **Nuova segnalazione**;
+- `Interventi` e `I miei lavori`: apre direttamente **Nuovo lavoro**;
+- `Planning`: propone soltanto Lavori/Sale realmente autorizzati;
+- `Avvisi urgenti`: apre direttamente **Nuovo allarme**;
+- `Rubrica tecnici`: apre direttamente **Nuovo tecnico**;
+- pagine con un proprio composer già visibile (`Magazzino`, `Rifornimenti`, `Promemoria`) non ricevono un secondo `+` globale duplicato;
+- pagine senza un'azione di creazione coerente (`Housekeeping`, `Sensori`, `Impianti`, Profilo, Manuale, Feedback in sola lettura) non mostrano il `+`.
+
+La Rubrica tecnici usa ora la stessa fonte canonica del Punto 4: `external_technicians` + `external_technician_competencies`. Creazione e modifica passano dalle RPC `technician_manage_directory` e `technician_set_competencies`; la vecchia lista derivata dagli utenti con ruolo `Tecnico esterno` non è più la fonte della rubrica.
+
+Test principale: `test/contextual-add-router.test.js`.
+
 ## Qualità
 
 ```bash
