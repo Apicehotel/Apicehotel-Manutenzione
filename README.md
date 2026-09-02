@@ -30,6 +30,19 @@ Principi del blocco: nessun framework agentico esterno nel core se non porta un 
 
 Test principali: `test/randai-core-tool-registry.test.js`, `test/randai-skills-directives.test.js`.
 
+## RandAI — Blocco 2 (Runtime 5–8)
+
+Il secondo blocco consolida i confini di esecuzione che stanno tra il Core e i moduli operativi:
+
+5. **Identity / Authorization boundary** — la console `/randai` continua a usare sessione Supabase e membership `RandAI` + `can_access_admin`; il client non contiene più username/password prevedibili precompilati e non propone password iniziali di default.
+6. **Model Router** — routing provider-agnostic con capability, privacy e context-window espliciti; descriptor duplicati o metriche/limiti invalidi vengono rifiutati fail-fast, mentre i fallback restano limitati e tracciati.
+7. **Memory / Context** — ogni recall deve dichiarare uno scope (`hotelId`, `projectId`, `taskId` oppure `global`). Una query senza scope non equivale mai a leggere tutte le memorie; anche il Context Engine applica lo stesso confine e mantiene budget e provenance.
+8. **Multi-Agent / Evals** — limiti di agenti e concorrenza validati come interi positivi, grafo delle dipendenze controllato, task dipendenti da un failure terminalizzati in `SKIPPED`; nessun run completato può lasciare task zombie in `PENDING`.
+
+Il Blocco 2 mantiene come sorgenti canoniche `src/randai/auth`, `models`, `memory`, `context`, `agents` ed `evals`: sono componenti attivamente referenziati e coperti da test, quindi non vengono eliminati come zombie. Sono state invece rimosse le condizioni zombie/insicure individuate: credenziali client prevedibili, recall senza scope e task multi-agent non terminalizzati.
+
+Test principali: `test/randai-auth-contract.test.js`, `test/randai-model-router-knowledge-gaps.test.js`, `test/randai-memory-context.test.js`, `test/randai-evals-multi-agent.test.js`.
+
 ## Piattaforme
 
 - **iOS/iPadOS:** PWA/Web App;
