@@ -7,7 +7,8 @@ import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import { buildPrimaryBottomNav } from './shell-navigation.js'
 import { initSystemInsetsBridge } from './system-insets.js'
-import { contextualAddActionIds, contextualAddLabel } from './contextual-add.js'
+import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
+import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
@@ -47,7 +48,6 @@ const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then(
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
-const TECHNICIAN_MANAGER_ROLES = new Set(['Direzione', 'Direttore Centro Congressi', 'Reception', 'admin'])
 
 function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
   const placement = variant === 'drawer' ? 'side' : null
@@ -235,7 +235,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       requestPlanningCreate('sale')
       return
     }
-    if (id === 'technician' && viewAllowed('technicians')) {
+    if (id === 'technician' && viewAllowed('technicians') && canManageTechnicianDirectory(user)) {
       setView('technicians')
       setTechnicianCreateSignal((n) => n + 1)
     }
@@ -251,11 +251,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
     'planning-work': Boolean(user && canCreatePlanned(user) && viewAllowed('planning-work')),
     'planning-sale': Boolean(user && canUser(user, 'planning_sale', 'create') && viewAllowed('planning-sale')),
-    technician: Boolean(user && viewAllowed('technicians') && (canUser(user, 'technicians', 'create') || canUser(user, 'technicians', 'manage') || TECHNICIAN_MANAGER_ROLES.has(user.role))),
+    technician: Boolean(user && viewAllowed('technicians') && canManageTechnicianDirectory(user)),
   }), [user, viewAllowed])
 
-  const contextualActionIds = useMemo(() => contextualAddActionIds(view, addCapabilities), [view, addCapabilities])
-  const fabLabel = contextualAddLabel(contextualActionIds.map((id) => ({ title: id === 'technician' ? 'Nuovo tecnico' : id === 'issue' ? 'Nuova segnalazione' : id === 'urgent' ? 'Nuovo allarme' : id === 'planning-sale' ? 'Nuova attività sala' : 'Nuovo lavoro' })))
+  const contextualActions = useMemo(() => contextualAddActions(view, addCapabilities), [view, addCapabilities])
+  const contextualActionIds = useMemo(() => contextualActions.map((action) => action.id), [contextualActions])
+  const fabLabel = contextualAddLabel(contextualActions)
   const openContextualAdd = () => {
     if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
     if (contextualActionIds.length > 1) setInsertOpen(true)
