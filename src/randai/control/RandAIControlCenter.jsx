@@ -7,6 +7,7 @@ import { fetchUsers } from '../../users-data.js'
 import { fetchAllSensors } from '../../sensors-admin-data.js'
 import RandAIKnowledgeConsole from '../console/RandAIConsole.jsx'
 import WhatsAppConsole from './WhatsAppConsole.jsx'
+import IssueOperationsConsole from './IssueOperationsConsole.jsx'
 import './randai-control.css'
 
 const PRIMARY_NAV = [
@@ -29,11 +30,6 @@ function Panel({ title, meta, children, className = '' }) { return <section clas
 function Empty({ children = 'Nessun dato disponibile.' }) { return <div className="rc-empty">{children}</div> }
 function Badge({ children, tone = '' }) { return <span className={`rc-badge ${tone}`}>{children}</span> }
 function StatusDot({ state = 'neutral' }) { return <span className={`rc-status-dot ${state}`} aria-hidden="true" /> }
-
-function IssueTable({ rows, onSelect }) {
-  if (!rows.length) return <Empty>Nessuna segnalazione con i filtri correnti.</Empty>
-  return <div className="rc-table-wrap"><table><thead><tr><th>Hotel</th><th>Camera / zona</th><th>Problema</th><th>Priorità</th><th>Stato</th><th>Reparto</th><th>Data</th></tr></thead><tbody>{rows.map((item) => <tr key={item.id} onClick={() => onSelect(item)}><td>{HOTEL_LABELS[item.hotelId] || item.hotelId}</td><td>{item.room || '—'}</td><td><strong>{item.title || item.category || 'Segnalazione'}</strong><small>{item.category || ''}</small></td><td><Badge tone={['urgente', 'alta'].includes(normalize(item.urgency)) ? 'bad' : normalize(item.urgency) === 'media' ? 'warn' : 'good'}>{item.urgency || '—'}</Badge></td><td><Badge>{statusLabel(item.status)}</Badge></td><td>{item.department || '—'}</td><td>{item.date || fmt(item.createdAt)}</td></tr>)}</tbody></table></div>
-}
 
 function DetailDrawer({ item, onClose }) {
   if (!item) return null
@@ -135,7 +131,7 @@ export default function RandAIControlCenter() {
     dashboard,
     whatsapp: whatsappPanel,
     workers: workersPanel,
-    issues: <Panel title="Segnalazioni" meta={`${visibleIssues.length} risultati`}><IssueTable rows={visibleIssues} onSelect={setSelectedIssue} /></Panel>,
+    issues: <IssueOperationsConsole issues={visibleIssues} allIssues={issues} procedures={procedures} equipment={equipment} documents={documents} hotelFilter={hotelFilter} onRefresh={load} />,
     maintenance: <Panel title="Manutenzioni programmate" meta={`${upcoming.length} attive`}><div className="rc-table-wrap"><table><thead><tr><th>Hotel</th><th>Intervento</th><th>Zona</th><th>Stato</th><th>Programmato</th><th>Assegnatari</th></tr></thead><tbody>{upcoming.map((i) => <tr key={i.id}><td>{HOTEL_LABELS[i.hotelId]}</td><td><strong>{i.category || 'Intervento'}</strong><small>{i.notes || ''}</small></td><td>{i.location || '—'}</td><td><Badge>{statusLabel(i.status)}</Badge></td><td>{fmt(i.scheduledAt)}</td><td>{(i.assignees || []).map((a) => a.name || a).join(', ') || '—'}</td></tr>)}</tbody></table></div>{!upcoming.length && <Empty />}</Panel>,
     knowledge: <div className="rc-embedded"><RandAIKnowledgeConsole /></div>,
     drafts: <Panel title="Bozze RandAI" meta={`${scopedProcedures.filter((p) => p.status === 'draft').length}`}><div className="rc-stack">{scopedProcedures.filter((p) => p.status === 'draft').map((p) => <div className="rc-row" key={p.id}><span><strong>{p.title}</strong><small>{HOTEL_LABELS[p.hotel_id]} · {p.summary}</small></span><Badge tone="warn">bozza</Badge></div>)}</div></Panel>,
