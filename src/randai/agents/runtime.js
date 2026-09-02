@@ -2,22 +2,35 @@ import { AgentRunStatus, validateAgentTask } from './contracts.js'
 
 const clone = (value) => structuredClone(value)
 const nowIso = () => new Date().toISOString()
+const positiveInteger = (value, name) => {
+  const numeric = Number(value)
+  if (!Number.isInteger(numeric) || numeric < 1) throw new TypeError(`${name} must be an integer >= 1`)
+  return numeric
+}
 
 export class MultiAgentRuntime {
   constructor({ registry, invokeAgent, maxAgents = 5, maxConcurrency = 3, eventSink = null } = {}) {
     if (!registry?.findByRole) throw new TypeError('MultiAgentRuntime requires an AgentRegistry')
     if (typeof invokeAgent !== 'function') throw new TypeError('MultiAgentRuntime requires invokeAgent')
+    if (eventSink != null && typeof eventSink !== 'function') throw new TypeError('eventSink must be a function')
     this.registry = registry
     this.invokeAgent = invokeAgent
-    this.maxAgents = Math.max(1, Number(maxAgents || 5))
-    this.maxConcurrency = Math.max(1, Number(maxConcurrency || 3))
+    this.maxAgents = positiveInteger(maxAgents, 'maxAgents')
+    this.maxConcurrency = positiveInteger(maxConcurrency, 'maxConcurrency')
     this.eventSink = eventSink
   }
 
   async run({ objective, tasks = [], context = {}, preferSingleAgent = false } = {}) {
     if (!String(objective || '').trim()) throw new TypeError('objective is required')
+    if (!Array.isArray(tasks)) throw new TypeError('tasks must be an array')
     tasks.forEach(validateAgentTask)
+    if (new Set(tasks.map((task) => task.id)).size !== tasks.length) throw new TypeError('Agent task ids must be unique')
     if (tasks.length > this.maxAgents) throw new Error(`Agent task limit exceeded: ${tasks.length}/${this.maxAgents}`)
+    const knownIds = new Set(tasks.map((task) => task.id))
+    for (const task of tasks) for (const dependency of task.dependsOn || []) {
+      if (!knownIds.has(dependency)) throw new TypeError(`Unknown dependency ${dependency} for task ${task.id}`)
+      if (dependency === task.id) throw new TypeError(`Task ${task.id} cannot depend on itself`)
+    }
     const trace = []
     const emit = async (type, data = {}) => {
       const event = { type, at: nowIso(), ...clone(data) }
@@ -33,8 +46,9 @@ export class MultiAgentRuntime {
     while (Object.values(statuses).includes(AgentRunStatus.PENDING)) {
       const ready = tasks.filter((task) => statuses[task.id] === AgentRunStatus.PENDING && (task.dependsOn || []).every((id) => statuses[id] === AgentRunStatus.SUCCEEDED))
       if (!ready.length) {
-        for (const task of tasks.filter((item) => statuses[item.id] === AgentRunStatus.PENDING)) statuses[task.id] = AgentRunStatus.SKIPPED
-        await emit('DEPENDENCY_BLOCKED')
+        const blocked = tasks.filter((item) => statuses[item.id] === AgentRunStatus.PENDING)
+        for (const task of blocked) statuses[task.id] = AgentRunStatus.SKIPPED
+        await emit('DEPENDENCY_BLOCKED', { taskIds: blocked.map((task) => task.id) })
         break
       }
       const batch = ready.slice(0, this.maxConcurrency)
@@ -60,7 +74,12 @@ export class MultiAgentRuntime {
           await emit('AGENT_FAILED', { taskId: task.id, agentId: agent.id, reason: results[task.id].error })
         }
       }))
-      if (batch.some((task) => statuses[task.id] === AgentRunStatus.FAILED)) break
+      if (batch.some((task) => statuses[task.id] === AgentRunStatus.FAILED)) {
+        const blocked = tasks.filter((item) => statuses[item.id] === AgentRunStatus.PENDING)
+        for (const task of blocked) statuses[task.id] = AgentRunStatus.SKIPPED
+        if (blocked.length) await emit('DEPENDENCY_BLOCKED', { taskIds: blocked.map((task) => task.id), reason: 'UPSTREAM_FAILED' })
+        break
+      }
     }
 
     const failed = Object.values(statuses).some((status) => status === AgentRunStatus.FAILED)
