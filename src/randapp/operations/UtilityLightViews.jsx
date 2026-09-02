@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchFeedback, insertFeedback, subscribeFeedback } from '../../feedback-data.js'
 import { changeOwnPin, updateOwnProfile, setOwnPresence } from '../../auth-data.js'
-import { canUser } from '../../permissions.js'
 import { supabase } from '../../supabase.js'
 import { Button, Card, EmptyState, Field, Icon, Sheet, TextInput } from '../ui.jsx'
+import { canManageTechnicianDirectory } from '../technician-directory-policy.js'
 import { PageTitle, fmt, whatsappLink } from './view-primitives.jsx'
 
-const TECHNICIAN_MANAGER_ROLES = new Set(['Direzione', 'Direttore Centro Congressi', 'Reception', 'admin'])
 const emptyTechnician = () => ({ id: null, name: '', phone: '', company: '', email: '', notes: '', active: true, competencyIds: [] })
 
 function normalizeTechnicianPhone(value) {
@@ -28,7 +27,7 @@ export function TechnicianDirectoryView({ user, hotel, createSignal = 0 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  const canManage = Boolean(user && (canUser(user, 'technicians', 'create') || canUser(user, 'technicians', 'manage') || TECHNICIAN_MANAGER_ROLES.has(user.role)))
+  const canManage = canManageTechnicianDirectory(user)
 
   const load = useCallback(async () => {
     if (!supabase || !hotel?.id) return
@@ -67,7 +66,16 @@ export function TechnicianDirectoryView({ user, hotel, createSignal = 0 }) {
   const close = () => { if (!busy) { setOpen(false); setDraft(emptyTechnician()) } }
   const edit = (technician) => {
     if (!canManage) return
-    setDraft({ ...technician, competencyIds: links.filter((item) => item.technician_id === technician.id).map((item) => item.competency_id) })
+    setDraft({
+      id: technician.id,
+      name: technician.name || '',
+      phone: technician.phone || '',
+      company: technician.company || '',
+      email: technician.email || '',
+      notes: technician.notes || '',
+      active: technician.active !== false,
+      competencyIds: links.filter((item) => item.technician_id === technician.id).map((item) => item.competency_id),
+    })
     setMessage('')
     setOpen(true)
   }
@@ -75,7 +83,7 @@ export function TechnicianDirectoryView({ user, hotel, createSignal = 0 }) {
   const save = async (event) => {
     event.preventDefault()
     if (!canManage || busy) return
-    const name = draft.name.trim()
+    const name = String(draft.name || '').trim()
     const phone = normalizeTechnicianPhone(draft.phone)
     if (!name) { setMessage('Inserisci il nome del tecnico.'); return }
     if (!/^\+[1-9]\d{7,14}$/.test(phone)) { setMessage('Inserisci un numero WhatsApp valido in formato internazionale, es. +393341196935.'); return }
@@ -86,9 +94,9 @@ export function TechnicianDirectoryView({ user, hotel, createSignal = 0 }) {
         p_technician_id: draft.id || null,
         p_name: name,
         p_phone: phone,
-        p_company: draft.company.trim() || null,
-        p_email: draft.email.trim() || null,
-        p_notes: draft.notes.trim() || null,
+        p_company: String(draft.company || '').trim() || null,
+        p_email: String(draft.email || '').trim() || null,
+        p_notes: String(draft.notes || '').trim() || null,
         p_active: Boolean(draft.active),
       })
       if (error) throw error
