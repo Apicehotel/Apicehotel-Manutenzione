@@ -94,14 +94,14 @@ Questi file non sono doppioni zombie: client/server, primitive generiche e bound
 
 Test dedicato: `test/randai-block8-27-30.test.js`, insieme ai contratti reliability e Action Gateway esistenti.
 
-### Blocco 9 — Production Hardening — 31–34 (in consolidamento)
+### Blocco 9 — Production Hardening — 31–34 ✅
 
 31. **Authorization & RLS Verification Matrix** — `src/reliability/authorization-matrix.js` descrive e verifica casi attesi `ALLOW/DENY` senza diventare una seconda autorità: membership, RLS e RPC Supabase restano la decisione server. Un inatteso `ALLOW` cross-hotel è un fallimento di verifica, non una permission concessa dal client.
 32. **Audit & Reversible Operations** — `src/reliability/audit-reversible.js` definisce audit strutturati e compensazioni esplicite. Una compensazione richiede operazione originale riuscita e verificata, nuova autorizzazione, controllo dello stato corrente, restore, read-back verification e un nuovo audit; niente rollback distruttivi silenziosi.
 33. **Offline, Retry & Concurrency Hardening** — `src/reliability/offline-concurrency.js` mantiene lease/backoff già esistenti e aggiunge identità idempotente deterministica hotel-scoped, optimistic revision fence, riconciliazione delle write ambigue prima del retry e blocco outbox cross-hotel.
 34. **Import Safety Pipeline** — `src/reliability/import-safety.js` impone `normalize → scope → validate → dedupe → stage → commit → read-back → verify → audit`. Una riga cross-hotel o invalida rende il batch non committable: niente import parziali silenziosi.
 
-I punti 31–34 consolidano capacità che in documentazione reliability storica erano state discusse con numerazioni successive (in particolare i filoni Authorization/RLS, Audit/Reversible e Offline/Concurrency). I riferimenti storici restano nei documenti per tracciabilità; la numerazione evolutiva corrente è 31–34.
+I punti 31–34 consolidano capacità che in documentazione reliability storica erano state discusse con numerazioni successive. I riferimenti storici restano nei documenti per tracciabilità; la numerazione evolutiva corrente è 31–34.
 
 Zombie scan Blocco 9: RLS/RPC server, Action Gateway/Safe Write, audit/compensazione, offline/concurrency e import staging hanno responsabilità distinte. Non viene duplicata la logica RLS nel client e `SafeWrite` resta una primitiva piccola senza retry nascosti. Test dedicato: `test/randai-block9-reliability-31-34.test.js`.
 
@@ -130,8 +130,8 @@ Zombie scan Blocco 9: RLS/RPC server, Action Gateway/Safe Write, audit/compensaz
 - PR #124: consolidamento canonico 17–20.
 - PR #125: consolidamento canonico 21–24.
 - PR #126: consolidamento canonico 25–26 e chiusura della roadmap originale 1–26, verificata anche su `main`.
-- PR #127: consolidamento Reliability 27–30; codice e test dedicati hanno superato audit, quality, multi-hotel, RandAI/shared e browser/device prima della marcatura finale del blocco.
-- Blocco 9: branch canonica `randai/block9-canonical-31-34`; merge consentito solo dopo CI completa verde.
+- PR #127: consolidamento Reliability 27–30, verificato anche su `main`.
+- PR #129: consolidamento Production Hardening 31–34; primo giro CI completo verde prima della marcatura finale ✅.
 
 ## CI e quality gates
 
@@ -153,7 +153,7 @@ Canali WhatsApp configurati:
 
 - **Roadmap originale 1–26: completa ✅**
 - **Estensione Reliability Blocco 8, 27–30: completa ✅**
-- **Estensione Reliability Blocco 9, 31–34: in consolidamento**
+- **Estensione Reliability Blocco 9, 31–34: completa ✅**
 
 Le estensioni successive restano separate e devono essere riesaminate con lo stesso criterio: nessun numero viene dichiarato completo per inferenza o perché esiste già codice storico.
 
