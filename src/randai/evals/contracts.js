@@ -7,6 +7,13 @@ export function validateThreshold(value, name = 'passThreshold') {
   return numeric
 }
 
+export function normalizeEvalDimension(value) {
+  if (value == null) return null
+  const normalized = String(value).trim().toUpperCase()
+  if (!Object.values(EvalDimension).includes(normalized)) throw new TypeError(`Invalid evaluation dimension: ${value}`)
+  return normalized
+}
+
 export function validateScenario(scenario) {
   if (!scenario?.id || !scenario?.name) throw new TypeError('Evaluation scenario requires id and name')
   if (typeof scenario.run !== 'function') throw new TypeError('Evaluation scenario requires run function')
@@ -17,7 +24,7 @@ export function validateScenario(scenario) {
     if (!grader?.id || typeof grader.grade !== 'function') throw new TypeError('Each grader requires id and grade function')
     if (graderIds.has(grader.id)) throw new TypeError(`Duplicate grader id: ${grader.id}`)
     graderIds.add(grader.id)
-    if (grader.dimension != null && !Object.values(EvalDimension).includes(grader.dimension)) throw new TypeError(`Invalid evaluation dimension: ${grader.dimension}`)
+    normalizeEvalDimension(grader.dimension)
     if (grader.weight != null && (!Number.isFinite(Number(grader.weight)) || Number(grader.weight) <= 0)) throw new TypeError('Grader weight must be positive')
   }
   return true
