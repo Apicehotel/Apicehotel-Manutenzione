@@ -1,5 +1,7 @@
 export * from './operation-envelope.js'
+export * from './operational-context.js'
 export * from './context-scope-guard.js'
 export * from './validation-engine.js'
 export * from './domain-validation.js'
 export * from './safe-write-engine.js'
+export * from './action-gateway.js'
