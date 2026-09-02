@@ -25,6 +25,7 @@ Funzioni consolidate:
 - RandAI Control Center — fondazione operativa completata;
 - RandAI WhatsApp — ingresso Twilio end-to-end, inbox, pausa per struttura, idempotenza e conservazione foto completati;
 - RandAI Segnalazioni operative — workspace unificato RandApp/WhatsApp, timeline, contesto tecnico, casi simili e azioni protette da Action Gateway completati;
+- RandAI Tecnici esterni — richiesta, autorizzazione, competenze, dispatch WhatsApp, portale sicuro e chiusura interna completati;
 - Reliability & Safety condivisa RandApp/RandAI fino al Blocco 39.
 
 ## Strategia piattaforme
@@ -107,6 +108,7 @@ File principali WhatsApp:
 - `supabase/functions/randai-whatsapp-inbound/index.ts`;
 - `supabase/migrations/20260901231000_randai_whatsapp_inbound_foundation.sql`;
 - `supabase/migrations/20260901232000_randai_whatsapp_realtime.sql`;
+- `supabase/migrations/20260901234500_randai_whatsapp_manual_actions.sql`;
 - `test/randai-whatsapp-inbound.test.js`.
 
 ### Punto 3 — Segnalazioni operative RandAI
@@ -130,11 +132,44 @@ L'analisi contestuale è spiegabile: evidenzia fatti già presenti nei dati e pr
 File principali Punto 3:
 
 - `src/randai/control/IssueOperationsConsole.jsx`;
+- `src/randai/control/issue-operations-core.js`;
 - `src/randai/control/issue-operations-console.css`;
 - `src/randai/control/RandAIControlCenter.jsx`;
 - `src/randai/action-gateway.js`;
 - `src/randai/context/envelope.js`;
 - `test/randai-issue-operations.test.js`.
+
+### Punto 4 — Tecnici, autorizzazioni e interventi esterni
+
+Il Punto 4 usa un unico workflow server-side `richiesta → autorizzazione → dispatch → intervento → richiesta chiusura → chiusura interna`. Non vengono create segnalazioni parallele e un tecnico esterno non riceve accesso generale a RandApp.
+
+La richiesta di un tecnico esterno può partire da Manutenzione o dai ruoli operativi abilitati. L'autorizzazione effettiva resta limitata a `Direzione`, `Direttore Centro Congressi` e `Reception`: il controllo viene ripetuto nelle RPC e nella Edge Function di invio, quindi non dipende dal solo frontend. RandAI e gli account amministrativi possono monitorare il flusso ma non acquisiscono automaticamente il diritto di autorizzare un tecnico.
+
+L'anagrafica tecnici è separata dagli utenti RandApp e supporta competenze many-to-many tramite `technician_competencies` e `external_technician_competencies`. Ogni tecnico, richiesta, token, evento e intervento resta hotel-scoped.
+
+La superficie interna `/tecnici-esterni` consente ai ruoli operativi reali di gestire anagrafica, competenze, richieste, autorizzazioni e cronologia. `TechnicianOperationsConsole` è riutilizzabile anche come vista RandAI, ma le azioni restano subordinate alla membership reale della struttura.
+
+Quando una richiesta viene autorizzata, `technician_authorize_external` genera una credenziale casuale a breve durata. Nel database viene salvato esclusivamente `token_hash` in `technician_dispatch_tokens`; il token in chiaro viene restituito una sola volta al client autorizzante per costruire il link `/tecnico/<token>`. I vecchi token pre-Punto-4 vengono revocati e sostituiti irreversibilmente con hash dalla migrazione `20260902034000_randai_point4_revoke_legacy_technician_tokens.sql`.
+
+L'invio WhatsApp passa da `send-tecnico-whatsapp`, che verifica sessione, ruolo autorizzante, hotel, richiesta, tecnico, scadenza e hash del token prima di contattare Twilio. Fuori dalla finestra WhatsApp viene usato il template approvato `richiesta_tecnico_portale`; se il template non è approvato l'invio si blocca in sicurezza e la richiesta conserva lo stato di errore/template richiesto.
+
+Il portale pubblico del tecnico espone esclusivamente la richiesta collegata al token. Il tecnico può comunicare arrivo, avvio intervento, note e fine lavoro. La fine lavoro porta la richiesta a `awaiting_internal_close` e imposta l'evidenza `tecnico_completato`; **non imposta mai `segnalazioni.stato = done`**. La chiusura finale resta interna a RandApp/RandAI attraverso i normali controlli operativi e, quando usata dalla console RandAI, attraverso l'Action Gateway.
+
+Ogni apertura link, modifica arrivo, avvio, nota e richiesta di chiusura genera un evento in `technician_intervention_events`, così la cronologia resta verificabile e non dipende dai messaggi WhatsApp.
+
+File principali Punto 4:
+
+- `src/randai/control/TechnicianOperationsConsole.jsx`;
+- `src/randai/control/technician-operations-console.css`;
+- `src/randapp/TechnicianDispatchPortal.jsx`;
+- `src/technician-portal.jsx`;
+- `supabase/functions/tech-portal/index.ts`;
+- `supabase/functions/send-tecnico-whatsapp/index.ts`;
+- `supabase/migrations/20260902014500_randai_point4_technician_dispatch.sql`;
+- `supabase/migrations/20260902015500_randai_point4_dispatch_notification.sql`;
+- `supabase/migrations/20260902020500_randai_point4_read_scope_and_issue_state.sql`;
+- `supabase/migrations/20260902034000_randai_point4_revoke_legacy_technician_tokens.sql`;
+- `test/randai-technician-dispatch.test.js`.
 
 ## Reliability & Safety — blocchi 33–39
 
@@ -358,6 +393,10 @@ Ricerca, stato e filtri avanzati sono combinabili. Ordinamenti disponibili: came
 
 Nel RandAI Control Center la stessa Segnalazione viene arricchita con timeline WhatsApp/RandApp, casi simili, procedure approvate e possibili impianti correlati. Le corrispondenze restano hotel-scoped e le modifiche operative passano dall'Action Gateway.
 
+### Tecnici esterni
+
+La richiesta di tecnico è un workflow collegato alla Segnalazione, non un secondo ticket. Le competenze del tecnico sono many-to-many e hotel-scoped. Solo Direzione, Direttore Centro Congressi e Reception possono autorizzare l'invio; Manutenzione può richiederlo. Il tecnico opera esclusivamente tramite link temporaneo e può chiedere la chiusura, non chiudere direttamente la Segnalazione.
+
 ### Magazzino
 
 Ogni articolo appartiene a una sola struttura. Categorie, parentela articolo e ubicazioni usano riferimenti vincolati allo stesso `hotel_id`; i campi testuali legacy restano solo per compatibilità progressiva.
@@ -380,6 +419,8 @@ Il controllo file delle foto non forza la fotocamera: iOS, Android e Windows pos
 - Rifornimenti: `src/supply-data.js`, `src/randapp/SupplyRequestsPortal.jsx`, `src/randapp/supply-requests.css`;
 - RandAI: `src/randai/`;
 - RandAI Control Center: `src/randai/control/`;
+- Centro Tecnici interno: `src/randapp/TechnicianDispatchPortal.jsx`, route `/tecnici-esterni`;
+- Portale tecnico esterno: `src/technician-portal.jsx`, route `/tecnico/<token>`;
 - WhatsApp ingress Vercel: `api/whatsapp/incoming.js`;
 - RandAI context: `src/randai/context/`;
 - Magazzino: `src/inventory-domain.js`, `src/inventory-data.js`, `src/inventory-block2-data.js`, `src/inventory-intervention-data.js`, `src/randapp/InventoryView.jsx`, `src/randapp/InventoryBlock2Panel.jsx`, `src/randapp/operations/InterventionsView.jsx`;
@@ -438,6 +479,9 @@ npm run test:device
 - service role, token, secret Edge Function, PIN e credenziali private non devono entrare nel repository;
 - i webhook Twilio vengono accettati solo dopo verifica della firma server-side;
 - `MessageSid` è il vincolo idempotente dell'ingresso WhatsApp;
+- i nuovi link tecnico salvano solo l'hash della credenziale, hanno scadenza e sono legati a una singola richiesta/tecnico;
+- i link tecnico legacy sono revocati e le vecchie credenziali sono sostituite da hash non riutilizzabili;
+- un tecnico esterno non può impostare direttamente una Segnalazione come `done`;
 - RandAI non esegue scritture bypassando l'Action Gateway;
 - apprendimento e procedure distinguono evidenza verificata da suggerimenti/bozze.
 
@@ -445,13 +489,13 @@ npm run test:device
 
 `src/supabase.js` contiene il progetto Supabase di produzione con chiave pubblicabile e consente override tramite `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Sentry e OpenTelemetry sono opzionali e vengono inizializzati solo se configurati e abilitati.
 
-Le credenziali Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) restano nei secret della Edge Function Supabase. Il client e la funzione Vercel non contengono il token Twilio.
+Le credenziali Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`) restano nei secret della Edge Function Supabase. Il client e la funzione Vercel non contengono il token Twilio. Il dispatch tecnico usa il template WhatsApp `richiesta_tecnico_portale` e si blocca fail-closed se il template non è approvato.
 
 ## Deploy
 
 - **Vercel:** produzione ufficiale RandApp, collegata a `main`; espone anche `/api/whatsapp/incoming`;
 - **DigitalOcean:** test/staging;
-- **Supabase:** backend, database, autenticazione, servizi RandAI, Edge Function WhatsApp e generazione etichette QR.
+- **Supabase:** backend, database, autenticazione, servizi RandAI, Edge Function WhatsApp, portale tecnico e generazione etichette QR.
 
 Il progetto Vercel attivo è `apicehotel-manutenzionr`.
 
