@@ -75,7 +75,7 @@ PWA React/Vite multi-hotel per Hotel Giò, Chocohotel e Hotel Il Brigantino. Sup
 37. Hybrid Memory + Knowledge Graph Production — composizione read-only sopra Memory Engine e Project Graph canonici.
 38. Operational Confidence & Risk Engine — confidence deterministica ridotta dal rischio; critical/high-risk mai AUTO.
 
-### Blocco 11 — Execution Resilience & Failure Intelligence — 39–42 ⏳
+### Blocco 11 — Execution Resilience & Failure Intelligence — 39–42 ✅
 39. **Plan Validator 2.0** — compone il `validatePlan()` canonico del runtime e aggiunge readiness operativa: tool realmente disponibili, permission, prerequisiti, rischio e hotel scope prima dell'esecuzione.
 40. **Action Gateway 3.0 / Execution Policy** — il Gateway esistente resta il boundary canonico. Il nuovo percorso `executeGovernedRandAIAction()` richiede plan valido, permission e disposition del Confidence/Risk Engine; `REVIEW` richiede approval esplicita e `BLOCK` non può essere aggirato dall'approval.
 41. **Recovery Budgets & Circuit Breakers** — budget separati per tentativi, tempo e costo; circuit breaker `CLOSED → OPEN → HALF_OPEN → CLOSED`, una sola probe half-open e nessun retry quando budget o circuito lo vietano.
@@ -111,6 +111,7 @@ Zombie scan Blocco 11: `src/randai/runtime/planner.js`, `runtime/contracts.js`, 
 - PR #127 — 27–30.
 - PR #129 — 31–34.
 - PR #130 — 35–38, Verification/Trust/Hybrid Knowledge/Risk.
+- PR #131 — 39–42, Execution Resilience/Recovery Budgets/Failure Intelligence.
 
 ## CI e regola di chiusura
 
