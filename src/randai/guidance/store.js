@@ -3,7 +3,11 @@ const clone = (value) => structuredClone(value)
 export class GuidanceStore {
   constructor() { this.items = new Map() }
   async save(session) { this.items.set(session.id, clone(session)); return clone(session) }
-  async get(id) { const item = this.items.get(id); return item ? clone(item) : null }
+  async get(id, { hotelId = null } = {}) {
+    const item = this.items.get(id)
+    if (!item || (hotelId && item.hotelId !== hotelId)) return null
+    return clone(item)
+  }
   async list(filters = {}) {
     return [...this.items.values()]
       .filter((item) => !filters.hotelId || item.hotelId === filters.hotelId)
@@ -33,8 +37,10 @@ export class SupabaseGuidanceStore {
     if (error) throw error
     return clone(session)
   }
-  async get(id) {
-    const { data, error } = await this.supabase.from('randai_guidance_sessions').select('state').eq('id', id).maybeSingle()
+  async get(id, { hotelId = null } = {}) {
+    let query = this.supabase.from('randai_guidance_sessions').select('state').eq('id', id)
+    if (hotelId) query = query.eq('hotel_id', hotelId)
+    const { data, error } = await query.maybeSingle()
     if (error) throw error
     return data?.state ? clone(data.state) : null
   }
