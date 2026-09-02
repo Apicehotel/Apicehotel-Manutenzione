@@ -36,10 +36,12 @@ const App = lazy(() => import('./randapp/App.jsx'))
 const RandAIAssistant = lazy(() => import('./randai/RandAIAssistant.jsx'))
 const RandAIContextBridge = lazy(() => import('./randai/context/RandAIContextBridge.jsx'))
 const TechnicianPortal = lazy(() => import('./technician-portal.jsx'))
+const TechnicianDispatchPortal = lazy(() => import('./randapp/TechnicianDispatchPortal.jsx'))
 const PublicIssueView = lazy(() => import('./public-issue-view.jsx'))
 const NtfyShortLink = lazy(() => import('./randapp/ntfy/NtfyShortLink.jsx'))
 const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
+const technicianDispatchMatch = /^\/tecnici-esterni\/?$/.test(window.location.pathname)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
 const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
@@ -68,6 +70,7 @@ function AuthenticatedRandAI() {
 createRoot(document.getElementById('root')).render(
   <React.StrictMode><AppErrorBoundary>
     {technicianMatch ? <Suspense fallback={<RouteFallback />}><TechnicianPortal token={technicianMatch[1]} /></Suspense>
+      : technicianDispatchMatch ? <Suspense fallback={<RouteFallback label="Caricamento Centro Tecnici…" dark />}><TechnicianDispatchPortal /></Suspense>
       : publicIssueMatch ? <Suspense fallback={<RouteFallback />}><PublicIssueView id={publicIssueMatch[1]} /></Suspense>
       : ntfyShortMatch ? <Suspense fallback={<RouteFallback />}><NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} /></Suspense>
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
@@ -86,7 +89,7 @@ function afterPageLoad(task) {
   else window.addEventListener('load', run, { once: true })
 }
 
-if (!technicianMatch && !ntfyShortMatch && !randaiConsoleMatch) {
+if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch) {
   // PWA registration is intentionally immediate: offline/installability is a bootstrap contract,
   // unlike authenticated operational services that can remain deferred.
   registerPwa()
