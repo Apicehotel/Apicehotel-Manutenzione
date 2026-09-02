@@ -67,23 +67,24 @@ test('approved proposal becomes searchable only in its hotel and keeps evidence'
   assert.equal(engine.findEquipmentForArea({ hotelId: 'hotelgio', area: 'Jazz' })[0].name, 'Contatore acqua Jazz')
 })
 
-test('procedure revisions are versioned and require re-approval', () => {
+test('procedure revisions are versioned, hotel-scoped and require re-approval', () => {
   const engine = new MaintenanceKnowledgeEngine({ procedures: [{
     id: 'hotelgio-valve', hotelId: 'hotelgio', title: 'Valvola generale Jazz', category: 'acqua', area: 'Jazz',
     summary: 'Posizione iniziale verificata.', keywords: ['valvola', 'jazz'], trust: KnowledgeTrust.APPROVED, version: 1,
   }] })
 
-  const revised = engine.reviseProcedure('hotelgio-valve', { summary: 'Nuova posizione da verificare.' }, { changeNote: 'impianto modificato' })
+  const revised = engine.reviseProcedure('hotelgio-valve', { summary: 'Nuova posizione da verificare.' }, { hotelId: 'hotelgio', changeNote: 'impianto modificato' })
   assert.equal(revised.version, 2)
   assert.equal(revised.trust, KnowledgeTrust.DRAFT)
   assert.equal(engine.search({ hotelId: 'hotelgio', query: 'valvola Jazz' }).found, false)
 
-  const approved = engine.approveProcedure('hotelgio-valve', { approvedBy: 'maintenance-admin' })
+  const approved = engine.approveProcedure('hotelgio-valve', { hotelId: 'hotelgio', approvedBy: 'maintenance-admin' })
   assert.equal(approved.version, 2)
   assert.equal(approved.trust, KnowledgeTrust.APPROVED)
-  const history = engine.getRevisionHistory('hotelgio-valve')
+  const history = engine.getRevisionHistory('hotelgio-valve', { hotelId: 'hotelgio' })
   assert.ok(history.some((entry) => entry.version === 1 && entry.trust === KnowledgeTrust.OUTDATED))
   assert.ok(history.some((entry) => entry.version === 2 && entry.trust === KnowledgeTrust.APPROVED))
+  assert.throws(() => engine.reviseProcedure('hotelgio-valve', {}, { changeNote: 'missing scope' }), /hotelId is required/)
 })
 
 test('equipment relationships are hotel scoped', () => {
