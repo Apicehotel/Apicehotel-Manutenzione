@@ -67,11 +67,17 @@ jobs:
           mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[C-Dc-d]/')
           if ((${#files[@]})); then node --test "${files[@]}"; fi
 
-      - name: Shared contracts E-F
-        shell: bash
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[E-Fe-f]/')
-          if ((${#files[@]})); then node --test "${files[@]}"; fi
+      - name: Shared contract FAB contextual add
+        run: node --test test/fab-multi-insert.test.js
+
+      - name: Shared contract full-app isolation
+        run: node --test test/full-app-isolation-hardening.test.js
+
+      - name: Shared contract full-app notification query
+        run: node --test test/full-app-notification-query-regression.test.js
+
+      - name: Shared contract full-app session hotel
+        run: node --test test/full-app-session-hotel-regression.test.js
 
       - name: Shared contracts G-M
         shell: bash
