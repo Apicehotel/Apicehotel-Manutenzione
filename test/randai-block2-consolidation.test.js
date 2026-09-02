@@ -7,6 +7,7 @@ import { KnowledgeTrust } from '../src/randai/maintenance/contracts.js'
 import { validatePlan, RuntimeTaskStatus, RuntimeStepStatus } from '../src/randai/runtime/contracts.js'
 import { RandAIPlanner } from '../src/randai/runtime/planner.js'
 import { DurableTaskRunner } from '../src/randai/runtime/durable-runner.js'
+import { cancelDurableTask } from '../src/randai/runtime/task-control.js'
 import { MemoryTaskStore } from '../src/randai/runtime/store.js'
 
 test('block 2 / point 5: knowledge ids are isolated by hotel and reads fail closed without scope', () => {
@@ -107,4 +108,26 @@ test('block 2 / point 8: pause and resume persist checkpoints without replaying 
   assert.equal(completed.status, RuntimeTaskStatus.SUCCEEDED)
   assert.deepEqual(calls.map((item) => item.toolId), ['maintenance.one', 'maintenance.two'])
   assert.equal(new Set(calls.map((item) => item.key)).size, 2)
+})
+
+test('block 2 / point 8: cancellation is leased, persisted and terminal', async () => {
+  const planner = new RandAIPlanner()
+  const store = new MemoryTaskStore()
+  const runner = new DurableTaskRunner({
+    planner,
+    store,
+    registry: { execute: async () => ({ status: 'SUCCESS' }) },
+    verifier: { verify: async () => ({ ok: true }) },
+  })
+  const task = await runner.create({
+    objective: 'Task annullabile',
+    metadata: { hotelId: 'hotelgio' },
+    proposedPlan: { steps: [{ id: 'one', title: 'Uno', strategies: [{ toolId: 'maintenance.one', input: {} }] }] },
+  })
+
+  const cancelled = await cancelDurableTask({ store, taskId: task.id, reason: 'operatore', cancelledBy: 'user-1' })
+  assert.equal(cancelled.status, RuntimeTaskStatus.CANCELLED)
+  assert.equal(cancelled.checkpoint.kind, 'CANCELLED')
+  assert.equal((await store.load(task.id)).status, RuntimeTaskStatus.CANCELLED)
+  assert.equal((await runner.resume(task.id)).status, RuntimeTaskStatus.CANCELLED)
 })
