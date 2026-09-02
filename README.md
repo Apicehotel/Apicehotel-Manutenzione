@@ -37,7 +37,7 @@ La roadmap originale RandAI è consolidata da 1 a 26 su `main`.
 
 La roadmap evolutiva continua dopo la 1–26 senza riscrivere la numerazione storica.
 
-### Blocco 8 — Reliability Foundation — 27–30
+### Blocco 8 — Reliability Foundation — 27–30 ✅
 
 27. **Operational Context Layer** — contratto canonico `src/reliability/operational-context.js`: ogni contesto dichiara esattamente uno scope (`hotelId` oppure `global:true`); i contesti hotel richiedono un attore, le risorse non possono appartenere a un altro hotel, permissions/evidence/attachments sono strutturati e non esiste widening implicito.
 28. **Context & Scope Guard** — `src/reliability/context-scope-guard.js` resta il guard canonico condiviso: verifica hotel, attore, modulo, risorsa, permission e ownership e fallisce chiuso sui mismatch.
@@ -73,7 +73,7 @@ Non sono stati creati duplicati di Scope Guard, Validation Engine o Safe Write E
 - PR #124: consolidamento canonico 17–20.
 - PR #125: consolidamento canonico 21–24.
 - PR #126: consolidamento canonico 25–26; CI completa verde sulla PR e nuovamente verde su `main`.
-- Blocco 8: branch `randai/block8-reliability-27-30`; merge consentito solo dopo CI completa verde.
+- PR #128: Blocco 8 Reliability Foundation 27–30; merge consentito solo con CI finale e post-merge verdi.
 
 ## CI e quality gates
 
