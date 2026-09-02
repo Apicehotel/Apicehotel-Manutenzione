@@ -8,6 +8,21 @@ const positiveInteger = (value, name) => {
   return numeric
 }
 
+function validateDependencyGraph(tasks) {
+  const byId = new Map(tasks.map((task) => [task.id, task]))
+  const visiting = new Set()
+  const visited = new Set()
+  const visit = (id) => {
+    if (visited.has(id)) return
+    if (visiting.has(id)) throw new TypeError(`Agent dependency cycle detected at task ${id}`)
+    visiting.add(id)
+    for (const dependency of byId.get(id)?.dependsOn || []) visit(dependency)
+    visiting.delete(id)
+    visited.add(id)
+  }
+  for (const task of tasks) visit(task.id)
+}
+
 export class MultiAgentRuntime {
   constructor({ registry, invokeAgent, maxAgents = 5, maxConcurrency = 3, eventSink = null } = {}) {
     if (!registry?.findByRole) throw new TypeError('MultiAgentRuntime requires an AgentRegistry')
@@ -27,10 +42,16 @@ export class MultiAgentRuntime {
     if (new Set(tasks.map((task) => task.id)).size !== tasks.length) throw new TypeError('Agent task ids must be unique')
     if (tasks.length > this.maxAgents) throw new Error(`Agent task limit exceeded: ${tasks.length}/${this.maxAgents}`)
     const knownIds = new Set(tasks.map((task) => task.id))
-    for (const task of tasks) for (const dependency of task.dependsOn || []) {
-      if (!knownIds.has(dependency)) throw new TypeError(`Unknown dependency ${dependency} for task ${task.id}`)
-      if (dependency === task.id) throw new TypeError(`Task ${task.id} cannot depend on itself`)
+    for (const task of tasks) {
+      const dependencies = task.dependsOn || []
+      if (new Set(dependencies).size !== dependencies.length) throw new TypeError(`Duplicate dependencies for task ${task.id}`)
+      for (const dependency of dependencies) {
+        if (!knownIds.has(dependency)) throw new TypeError(`Unknown dependency ${dependency} for task ${task.id}`)
+        if (dependency === task.id) throw new TypeError(`Task ${task.id} cannot depend on itself`)
+      }
     }
+    validateDependencyGraph(tasks)
+
     const trace = []
     const emit = async (type, data = {}) => {
       const event = { type, at: nowIso(), ...clone(data) }
