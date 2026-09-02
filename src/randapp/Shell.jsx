@@ -7,6 +7,7 @@ import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import { buildPrimaryBottomNav } from './shell-navigation.js'
 import { initSystemInsetsBridge } from './system-insets.js'
+import { contextualAddActionIds, contextualAddLabel } from './contextual-add.js'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
@@ -46,6 +47,7 @@ const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then(
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
+const TECHNICIAN_MANAGER_ROLES = new Set(['Direzione', 'Direttore Centro Congressi', 'Reception', 'admin'])
 
 function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
   const placement = variant === 'drawer' ? 'side' : null
@@ -74,6 +76,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [personalizeSignal, setPersonalizeSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
@@ -134,6 +137,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     window.addEventListener('randapp-sale-booking-created', onSaleCreated)
     return () => window.removeEventListener('randapp-sale-booking-created', onSaleCreated)
   }, [planningCreateRequest, hotel?.id])
+
+  useEffect(() => { setInsertOpen(false) }, [view, hotel?.id])
 
   const allowedHotels = useMemo(() => {
     const set = new Set([session.hotelId, ...(user?.hotels || [])])
@@ -222,11 +227,18 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       setUrgentCreateOpen(true)
       return
     }
-    if (id === 'intervention' || id === 'planning-work') {
+    if (id === 'planning-work') {
       requestPlanningCreate('work')
       return
     }
-    if (id === 'planning-sale') requestPlanningCreate('sale')
+    if (id === 'planning-sale') {
+      requestPlanningCreate('sale')
+      return
+    }
+    if (id === 'technician' && viewAllowed('technicians')) {
+      setView('technicians')
+      setTechnicianCreateSignal((n) => n + 1)
+    }
   }
 
   const bottomNav = useMemo(() => {
@@ -234,13 +246,20 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return buildPrimaryBottomNav({ placement, viewAllowed })
   }, [user, placement, viewAllowed])
 
-  const insertAllowed = useMemo(() => ({
+  const addCapabilities = useMemo(() => ({
     issue: Boolean(user && canUser(user, 'issues', 'create') && viewAllowed('issues')),
     urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
-    intervention: Boolean(user && canCreatePlanned(user) && viewAllowed('interventions') && viewAllowed('planning-work')),
     'planning-work': Boolean(user && canCreatePlanned(user) && viewAllowed('planning-work')),
-    'planning-sale': Boolean(user && viewAllowed('planning-sale')),
+    'planning-sale': Boolean(user && canUser(user, 'planning_sale', 'create') && viewAllowed('planning-sale')),
+    technician: Boolean(user && viewAllowed('technicians') && (canUser(user, 'technicians', 'create') || canUser(user, 'technicians', 'manage') || TECHNICIAN_MANAGER_ROLES.has(user.role))),
   }), [user, viewAllowed])
+
+  const contextualActionIds = useMemo(() => contextualAddActionIds(view, addCapabilities), [view, addCapabilities])
+  const fabLabel = contextualAddLabel(contextualActionIds.map((id) => ({ title: id === 'technician' ? 'Nuovo tecnico' : id === 'issue' ? 'Nuova segnalazione' : id === 'urgent' ? 'Nuovo allarme' : id === 'planning-sale' ? 'Nuova attività sala' : 'Nuovo lavoro' })))
+  const openContextualAdd = () => {
+    if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
+    if (contextualActionIds.length > 1) setInsertOpen(true)
+  }
 
   if (directoryState === 'loading') return <Spinner label="Verifico accesso alla struttura…" />
   if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
@@ -263,7 +282,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'plants') return <PlantView hotel={hotel} />
     if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
-    if (view === 'technicians') return <TechnicianDirectoryView users={users} hotel={hotel} />
+    if (view === 'technicians') return <TechnicianDirectoryView user={user} hotel={hotel} createSignal={technicianCreateSignal} />
     if (view === 'feedback-received') return <FeedbackView user={user} hotel={hotel} received />
     if (view === 'feedback') return <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') return <PinView user={user} />
@@ -332,10 +351,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
           ))}
         </nav>
-        {Object.values(insertAllowed).some(Boolean) && <button className="rs-navfab" onClick={() => setInsertOpen(true)} data-testid="fab-new" aria-label="Nuovo inserimento"><Icon name="plus" /></button>}
+        {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
-      {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} allowedActions={insertAllowed} /></Suspense>}
+      {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
       {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} /></Suspense>}
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
