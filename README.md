@@ -19,9 +19,9 @@ Regole architetturali:
 - una parte viene eliminata come zombie solo con evidenza che è inutilizzata, irraggiungibile o sostituita da una sorgente canonica migliore;
 - **se esiste una soluzione nettamente migliore, si sostituisce la debolezza invece di accumulare patch**.
 
-## RandAI — roadmap canonica 1–24
+## RandAI — roadmap canonica 1–26 ✅
 
-La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storiche a coppie non cambiano più i numeri della roadmap.
+La roadmap originale RandAI è consolidata da 1 a 26. La numerazione sotto è la sorgente canonica; le precedenti denominazioni storiche a coppie non cambiano più i numeri.
 
 ### Blocco 1 — Fondazione Core — 1–4 ✅
 
@@ -60,24 +60,30 @@ La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storic
 
 ### Blocco 6 — Engineering, learning, discovery e supervisor — 21–24 ✅
 
-21. **Software Engineering Agent 2.0** — impact analysis prima dell'esecuzione, target unici, scope hotel propagato a task/review/evaluation, DurableTaskRunner come unica via di esecuzione, verifier/review/eval prima del successo e osservabilità non-fatal. Un impatto esplicitamente appartenente a un altro hotel viene rifiutato.
-22. **Learning Engine 2.0** — apprende soltanto esperienze `verified`, richiede evidenza ripetuta, promuove automaticamente al massimo fino a `TESTED` e mai `APPROVED`; `minEvidence` è validato e propose/evaluate di candidati hotel-scoped falliscono senza lo stesso `hotelId`.
-23. **Skill / Tool Discovery 2.0** — discovery multi-source senza installazione automatica; source ID e candidate ID duplicati vengono rifiutati, licenza/rischio/reputation sono validati, sandbox obbligatoria prima dell'evaluation e score utility/security devono essere finiti `0..1`. La raccomandazione non equivale a installazione.
-24. **RandAI Supervisor 2.0** — sceglie single/multi-agent solo da piani espliciti, governa budget e quality gate, mantiene run e anti-loop hotel-scoped, valida metriche e soglie, usa Discovery per capability gap e tratta la telemetria come non-fatal con self-diagnostic. Metriche non finite come `NaN` vengono rifiutate e non possono aggirare i budget gate.
+21. **Software Engineering Agent 2.0** — impact analysis prima dell'esecuzione, target unici, scope hotel propagato a task/review/evaluation, DurableTaskRunner come unica via di esecuzione, verifier/review/eval prima del successo e osservabilità non-fatal.
+22. **Learning Engine 2.0** — apprende soltanto esperienze `verified`, richiede evidenza ripetuta, promuove automaticamente al massimo fino a `TESTED` e mai `APPROVED`; `minEvidence` e scope hotel sono validati.
+23. **Skill / Tool Discovery 2.0** — discovery multi-source senza installazione automatica; source/candidate ID duplicati rifiutati, licenza/rischio/reputation validati, sandbox prima dell'evaluation e score utility/security finiti `0..1`.
+24. **RandAI Supervisor 2.0** — sceglie single/multi-agent da piani espliciti, governa budget/quality gate, mantiene run e anti-loop hotel-scoped, valida metriche e tratta la telemetria come non-fatal. Metriche non finite come `NaN` non possono aggirare i budget gate.
 
-Sorgenti canoniche Blocco 6: `src/randai/software/`, `learning/`, `discovery/`, `supervisor/`. Non sono implementazioni duplicate: Software Engineering esegue cambi verificati, Learning trasforma evidenza in candidati, Discovery valuta capacità esterne e Supervisor coordina i motori.
+### Blocco 7 — Proattività e Control Center — 25–26 ✅
 
-Test dedicato: `test/randai-block6-21-24.test.js`, oltre ai contratti storici `randai-software-learning.test.js` e `randai-discovery-supervisor.test.js`.
+25. **Proactive RandAI 2.0** — ogni segnale appartiene a un hotel oppure a uno scope globale esplicito; non esiste più uno scope globale implicito. Dedupe e fingerprint sono isolati per hotel, process/resolve falliscono su scope mancante o errato, i segnali critici restano bloccati, quelli actionable passano dal Supervisor e la telemetria è non-fatal con self-diagnostic.
+26. **Control Center 2.0** — proiezione read-only sugli store autorevoli, mai seconda sorgente di verità. Ogni snapshot richiede `hotelId` oppure `allHotels:true`; la vista hotel applica un filtro difensivo anche se uno store sottostante ignora i filtri, mentre la vista cross-hotel esiste solo se richiesta esplicitamente.
+
+Sorgenti canoniche Blocco 7: `src/randai/proactive/` e `src/randai/control-center/`. `proactive/` rileva, deduplica e governa i segnali prima dell'orchestrazione; `control-center/` aggrega lo stato in sola lettura. Non duplicano rispettivamente `supervisor/` e `control/`: Supervisor esegue/coordinata il lavoro, mentre `control/` contiene UI e console operative.
+
+Test dedicato: `test/randai-block7-25-26.test.js`, insieme ai contratti storici `randai-proactive-control-center.test.js` e all'E2E `randai-e2e-hardening.test.js`.
 
 ## Runtime Safety Layer — trasversale
 
 - **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili.
-- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval, recovery, learning e supervisor.
+- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval, recovery, learning, supervisor, segnali proattivi e Control Center.
 - **Permission/Autonomy:** critical/admin passano sempre dai controlli previsti; approval legate all'azione esatta e allo scope.
 - **Verification:** nessun tool call, software change o esperienza diventa verità/successo soltanto perché l'esecuzione tecnica è terminata.
 - **Recovery bounded:** niente retry infinito; fingerprint ripetuti e budget esauriti fermano il ciclo.
 - **Telemetry non-fatal:** un guasto di log/telemetria viene diagnosticato ma non riscrive l'esito operativo.
 - **External discovery:** una repository/skill/tool candidata resta candidata; assessment, sandbox ed evaluation non autorizzano da soli installazione o esecuzione.
+- **Explicit global scope:** eventi globali reali, come una CI di progetto, devono dichiararlo; l'assenza di `hotelId` non equivale più automaticamente a globale.
 
 ## Consolidamento storico
 
@@ -85,7 +91,8 @@ Test dedicato: `test/randai-block6-21-24.test.js`, oltre ai contratti storici `r
 - PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
 - #120, #121 e #122: chiuse come superseded/zombie dopo la #123.
 - PR #124: consolidamento canonico 17–20, mergiato solo dopo CI completa verde e nuovamente verde su `main`.
-- PR #125: consolidamento canonico 21–24; codice, contratti RandAI/shared, browser cross-platform e device acceptance verificati verdi prima della marcatura finale del blocco.
+- PR #125: consolidamento canonico 21–24, mergiato dopo contratti RandAI/shared, browser cross-platform e device acceptance verdi e nuovamente verificati su `main`.
+- PR #126: consolidamento canonico 25–26; la chiusura finale richiede CI completa verde sulla revisione README e successiva verifica post-merge su `main`.
 
 ## CI e quality gates
 
@@ -95,7 +102,7 @@ La CI esegue dependency security audit, Quality Matrix, Critical Operational Gat
 
 Route protetta: `/randai`.
 
-La console centralizza Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze/Approvazioni, Impianti, Scadenze, Regole, Anomalie, Costi/Osservabilità, Media/Drive e Sensori. UI e console non sostituiscono RLS/RPC/Action Gateway.
+La console centralizza Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze/Approvazioni, Impianti, Scadenze, Regole, Anomalie, Costi/Osservabilità, Media/Drive e Sensori. UI e console non sostituiscono RLS/RPC/Action Gateway. Il motore `control-center/` resta una proiezione read-only e le viste cross-hotel devono essere richieste esplicitamente.
 
 Canali WhatsApp configurati:
 
@@ -103,14 +110,11 @@ Canali WhatsApp configurati:
 - Chocohotel: `+390759970610`;
 - Brigantino: nessun numero configurato.
 
-## Prossimi punti RandAI
+## Stato roadmap RandAI
 
-Dopo il Blocco 6 restano gli ultimi punti della roadmap storica:
+La **roadmap originale 1–26 è completa** a livello di implementazione canonica sulla branch del Blocco 7. La chiusura definitiva su `main` avviene solo dopo CI finale verde, merge della PR #126 e CI post-merge verde.
 
-25. **Proactive RandAI**;
-26. **Control Center**.
-
-I moduli già presenti per 25–26 non vengono considerati automaticamente completi: saranno riesaminati con lo stesso criterio di consolidamento, zombie scan e CI completa usato per 1–24.
+Le estensioni successive di reliability, operational context, persistent tasks, Action Gateway, memory/KG e production guard restano una roadmap evolutiva separata: non vengono rinumerate o dichiarate complete per inferenza.
 
 ## RandApp
 
@@ -143,7 +147,8 @@ Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movim
 - `src/randai/guidance/`, `projects/`, `observability/` — Blocco 4;
 - `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/` — Blocco 5;
 - `src/randai/software/`, `learning/`, `discovery/`, `supervisor/` — Blocco 6;
-- `src/randai/control/`, `control-center/` — console e proiezioni operative;
+- `src/randai/proactive/`, `control-center/` — Blocco 7;
+- `src/randai/control/` — UI e console operative RandAI;
 - `src/reliability/` — reliability/safety condivisa;
 - `supabase/functions/` — Edge Functions;
 - `supabase/migrations/` — migrazioni;
