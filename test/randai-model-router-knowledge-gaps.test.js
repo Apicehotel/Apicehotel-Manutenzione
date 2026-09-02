@@ -37,6 +37,14 @@ test('model router performs bounded fallback and records attempts', async () => 
   assert.equal(result.result, 'ok:balanced')
 })
 
+test('model router rejects duplicate or invalid descriptors and execution limits', async () => {
+  const router = new ModelRouter({ models: [models[0]] })
+  assert.throws(() => router.register(models[0]), /already registered/)
+  assert.throws(() => router.register({ id: 'bad', provider: 'demo', capabilities: [ModelCapability.FAST], quality: Number.NaN }), /quality/)
+  assert.throws(() => router.route({ minContextWindow: -1 }), /minContextWindow/)
+  await assert.rejects(() => router.execute({}, async () => 'ok', { maxFallbacks: -1 }), /maxFallbacks/)
+})
+
 test('unknown maintenance lookup creates one hotel-scoped knowledge gap without guessing', async () => {
   const knowledge = new MaintenanceKnowledgeEngine()
   const result = knowledge.search({ hotelId: 'hotelgio', query: 'dove si trova valvola acqua piano 4 wine' })
