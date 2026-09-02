@@ -17,6 +17,19 @@ Funzioni consolidate:
 - RandAI operativo fino al Blocco 32 e Reliability & Safety fino al Blocco 39;
 - RandAI Control Center completato fino al **Punto 5**.
 
+## RandAI — Blocco 1 (Core 1–4)
+
+Il primo blocco della roadmap RandAI è la fondazione interna su cui devono poggiare i blocchi successivi:
+
+1. **Core / Orchestrator** — task con transizioni terminali esplicite; anche un errore generato dal registry chiude il task in `FAILED`, evitando task logicamente zombie in `RUNNING`.
+2. **Tool Registry** — registrazione e discovery capability-driven, rischio/permesso espliciti, health check, timeout, retry solo quando sicuro e configurazione di retry normalizzata/immutabile. Parametri e filtri non validi vengono rifiutati fail-fast.
+3. **Skill Engine** — lifecycle controllato `DRAFT → CANDIDATE → TESTED → APPROVED`, progressive disclosure e accesso esclusivo ai tool dichiarati dalla skill.
+4. **Directive Composer** — testo originale preservato, struttura rules/forbidden/success criteria, approvazione esplicita, versionamento e promozione a candidate skill solo dopo approvazione.
+
+Principi del blocco: nessun framework agentico esterno nel core se non porta un vantaggio netto, nessun doppione per la stessa responsabilità, compatibilità con i moduli RandAI successivi e test di regressione dedicati. Le parti esistenti `core`, `tools`, `skills` e `directives` sono quindi mantenute come sorgenti canoniche; una componente viene rimossa come zombie solo quando esiste evidenza che non è più referenziata o che duplica una responsabilità già coperta.
+
+Test principali: `test/randai-core-tool-registry.test.js`, `test/randai-skills-directives.test.js`.
+
 ## Piattaforme
 
 - **iOS/iPadOS:** PWA/Web App;
