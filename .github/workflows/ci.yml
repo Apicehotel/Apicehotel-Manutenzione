@@ -49,8 +49,14 @@ jobs:
       - name: Bundle budget
         run: node scripts/check-bundle.mjs
 
-      - name: Full unit and contract suite
-        run: npm test
+      - name: RandAI Point 3 behavior contracts
+        run: node --test test/randai-issue-operations.test.js
+
+      - name: RandAI legacy and platform contracts
+        run: node --test $(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
+
+      - name: RandApp and shared contracts
+        run: node --test $(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort)
 
       - name: Install Playwright Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit

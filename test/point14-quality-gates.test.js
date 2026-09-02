@@ -7,14 +7,24 @@ const workflow = fs.readFileSync(new URL('../.github/workflows/ci.yml', import.m
 const matrix = JSON.parse(fs.readFileSync(new URL('./quality-matrix.json', import.meta.url), 'utf8'))
 const criticalRunner = fs.readFileSync(new URL('../scripts/run-critical-tests.mjs', import.meta.url), 'utf8')
 
-test('point 14 exposes explicit quality, critical and browser gates', () => {
+test('point 14 exposes explicit quality, contract and browser gates', () => {
   assert.equal(pkg.scripts['test:matrix'], 'node scripts/check-quality-matrix.mjs')
   assert.equal(pkg.scripts['test:critical'], 'node scripts/run-critical-tests.mjs')
   assert.equal(pkg.scripts['test:e2e'], 'node test/e2e.mjs')
-  assert.match(workflow, /Quality matrix/)
-  assert.match(workflow, /Critical operational gate/)
-  assert.match(workflow, /Full unit and contract suite/)
-  assert.match(workflow, /Cross-platform browser gate/)
+
+  assert.match(workflow, /Quality matrix[\s\S]*npm run test:matrix/)
+  assert.match(workflow, /Critical operational gate[\s\S]*npm run test:critical/)
+  assert.match(workflow, /Multi-hotel parity gate[\s\S]*npm run test:multihotel/)
+
+  // Keep the CI contract explicit without depending on the retired monolithic
+  // "Full unit and contract suite" step name. Each partition must remain wired.
+  assert.match(workflow, /RandAI Point 3 behavior contracts[\s\S]*node --test test\/randai-issue-operations\.test\.js/)
+  assert.match(workflow, /RandAI legacy and platform contracts[\s\S]*node --test \$\(find test -maxdepth 1 -name 'randai-\*\.test\.js'/)
+  assert.match(workflow, /RandApp and shared contracts[\s\S]*node --test \$\(find test -maxdepth 1 -name '\*\.test\.js'/)
+
+  assert.match(workflow, /Install Playwright Chromium and WebKit[\s\S]*playwright install --with-deps chromium webkit/)
+  assert.match(workflow, /Cross-platform browser gate[\s\S]*npm run test:e2e/)
+  assert.match(workflow, /Device acceptance gate[\s\S]*npm run test:device/)
 })
 
 test('point 14 matrix covers all hotels, platforms and network states', () => {
