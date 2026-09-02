@@ -53,7 +53,36 @@ jobs:
         run: node --test test/randai-issue-operations.test.js
 
       - name: RandAI legacy and platform contracts
-        run: node --test $(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
+        shell: bash
+        run: |
+          set +e
+          : > /tmp/randai-contract-failures.txt
+          failed=0
+          while IFS= read -r test_file; do
+            echo "::group::RandAI contract: ${test_file}"
+            node --test "$test_file"
+            status=$?
+            echo "::endgroup::"
+            if [ "$status" -ne 0 ]; then
+              echo "$test_file" | tee -a /tmp/randai-contract-failures.txt
+              failed=1
+            fi
+          done < <(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error title=RandAI contract failures::$(paste -sd ', ' /tmp/randai-contract-failures.txt)"
+            cat /tmp/randai-contract-failures.txt
+            exit 1
+          fi
+
+      - name: Upload RandAI contract diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: randai-contract-diagnostics-${{ github.sha }}
+          path: /tmp/randai-contract-failures.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: RandApp and shared contracts
         shell: bash
