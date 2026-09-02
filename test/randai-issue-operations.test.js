@@ -31,8 +31,8 @@ test('similar cases, procedures and equipment are hotel scoped', () => {
 
 test('operational writes use only supported RandAI Action Gateway actions', () => {
   for (const action of ['issue.update_priority', 'issue.set_waiting_part', 'issue.mark_done']) {
-    assert.match(consoleSource, new RegExp(action.replace('.', '\\.')))
-    assert.match(actionPolicy, new RegExp(action.replace('.', '\\.')))
+    assert.ok(consoleSource.includes(action), `console must use ${action}`)
+    assert.ok(actionPolicy.includes(action), `server policy must support ${action}`)
   }
   assert.match(consoleSource, /prepareRandAIAction/)
   assert.match(consoleSource, /executeRandAIAction/)
