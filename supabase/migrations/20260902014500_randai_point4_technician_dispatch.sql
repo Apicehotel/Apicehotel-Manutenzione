@@ -83,18 +83,23 @@ create table if not exists public.technician_intervention_events (
 );
 create index if not exists technician_events_request_time_idx on public.technician_intervention_events(request_id,created_at);
 
-alter table public.technician_access_tokens alter column auth_user_id drop not null;
-alter table public.technician_access_tokens alter column token drop not null;
-alter table public.technician_access_tokens add column if not exists dispatch_request_id uuid references public.technician_dispatch_requests(id) on delete cascade;
-alter table public.technician_access_tokens add column if not exists technician_id uuid references public.external_technicians(id) on delete cascade;
-alter table public.technician_access_tokens add column if not exists token_hash text;
-alter table public.technician_access_tokens add column if not exists token_prefix text;
-alter table public.technician_access_tokens add column if not exists expires_at timestamptz;
-alter table public.technician_access_tokens add column if not exists opened_at timestamptz;
-alter table public.technician_access_tokens add column if not exists ended_at timestamptz;
-alter table public.technician_access_tokens add column if not exists last_used_at timestamptz;
-create unique index if not exists technician_access_token_hash_uidx on public.technician_access_tokens(token_hash) where token_hash is not null;
-create index if not exists technician_access_dispatch_idx on public.technician_access_tokens(dispatch_request_id,revoked_at,expires_at);
+-- New Point 4 links never reuse the legacy technician_access_tokens table because its
+-- primary key is auth_user_id and its bearer token is stored in clear text. Existing
+-- links remain compatible, while every new dispatch uses a dedicated hash-only token.
+create table if not exists public.technician_dispatch_tokens (
+  id uuid primary key default gen_random_uuid(),
+  dispatch_request_id uuid not null references public.technician_dispatch_requests(id) on delete cascade,
+  technician_id uuid not null references public.external_technicians(id) on delete cascade,
+  token_hash text not null unique check (length(token_hash)=64),
+  token_prefix text not null,
+  expires_at timestamptz not null,
+  opened_at timestamptz,
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  ended_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists technician_dispatch_tokens_active_idx on public.technician_dispatch_tokens(dispatch_request_id,revoked_at,expires_at);
 
 insert into public.technician_competencies(code,label) values
  ('electrical','Elettrico'),('plumbing','Idraulica'),('hvac','Climatizzazione / HVAC'),('refrigeration','Refrigerazione'),
@@ -173,7 +178,7 @@ end $$;
 
 create or replace function public.technician_authorize_external(p_request_id uuid,p_technician_id uuid,p_note text default null,p_expires_hours integer default 72)
 returns jsonb language plpgsql security definer set search_path=public as $$
-declare v_req public.technician_dispatch_requests%rowtype; v_issue public.segnalazioni%rowtype; v_tech public.external_technicians%rowtype; v_role text; v_name text; v_raw text; v_hash text; v_intervention uuid;
+declare v_req public.technician_dispatch_requests%rowtype; v_issue public.segnalazioni%rowtype; v_tech public.external_technicians%rowtype; v_role text; v_name text; v_raw text; v_hash text; v_intervention uuid; v_exp timestamptz;
 begin
   select * into v_req from public.technician_dispatch_requests where id=p_request_id for update;
   if not found then raise exception 'request_not_found'; end if;
@@ -190,14 +195,15 @@ begin
     values(v_req.hotel_id,v_issue.camera,'Tecnico esterno',coalesce(nullif(trim(v_req.reason),''),v_issue.note),'pending',coalesce(v_name,'Autorità'),auth.uid(),'intervento',v_req.id)
     returning id into v_intervention;
   else v_intervention := v_req.intervention_id; end if;
-  update public.technician_access_tokens set revoked_at=coalesce(revoked_at,now()),ended_at=coalesce(ended_at,now()) where dispatch_request_id=v_req.id and revoked_at is null;
+  update public.technician_dispatch_tokens set revoked_at=coalesce(revoked_at,now()),ended_at=coalesce(ended_at,now()) where dispatch_request_id=v_req.id and revoked_at is null;
   v_raw := encode(gen_random_bytes(32),'hex');
   v_hash := encode(digest(v_raw,'sha256'),'hex');
-  insert into public.technician_access_tokens(auth_user_id,token,dispatch_request_id,technician_id,token_hash,token_prefix,expires_at)
-  values(null,null,v_req.id,p_technician_id,v_hash,left(v_raw,8),now()+make_interval(hours=>greatest(1,least(coalesce(p_expires_hours,72),168))));
+  v_exp := now()+make_interval(hours=>greatest(1,least(coalesce(p_expires_hours,72),168)));
+  insert into public.technician_dispatch_tokens(dispatch_request_id,technician_id,token_hash,token_prefix,expires_at)
+  values(v_req.id,p_technician_id,v_hash,left(v_raw,8),v_exp);
   update public.technician_dispatch_requests set technician_id=p_technician_id,intervention_id=v_intervention,status='authorized',authorized_by_user_id=auth.uid(),authorized_by_name=coalesce(v_name,'Autorità'),authorized_by_role=v_role,authorized_at=now(),authorization_note=nullif(trim(coalesce(p_note,'')),''),updated_at=now() where id=v_req.id;
   update public.segnalazioni set tecnico_id=p_technician_id::text,tecnico_nome=v_tech.name,tecnico_telefono=v_tech.phone,tecnico_richiesto_da=coalesce(v_name,'Autorità'),tecnico_richiesto_il=now(),updated_at=now() where id=v_req.issue_id and hotel_id=v_req.hotel_id;
-  return jsonb_build_object('request_id',v_req.id,'issue_id',v_req.issue_id,'hotel_id',v_req.hotel_id,'technician_id',p_technician_id,'technician_name',v_tech.name,'phone',v_tech.phone,'intervention_id',v_intervention,'token',v_raw,'expires_at',now()+make_interval(hours=>greatest(1,least(coalesce(p_expires_hours,72),168))));
+  return jsonb_build_object('request_id',v_req.id,'issue_id',v_req.issue_id,'hotel_id',v_req.hotel_id,'technician_id',p_technician_id,'technician_name',v_tech.name,'phone',v_tech.phone,'intervention_id',v_intervention,'token',v_raw,'expires_at',v_exp);
 end $$;
 
 create or replace function public.technician_reject_external(p_request_id uuid,p_reason text)
@@ -230,18 +236,15 @@ alter table public.technician_competencies enable row level security;
 alter table public.external_technician_competencies enable row level security;
 alter table public.technician_dispatch_requests enable row level security;
 alter table public.technician_intervention_events enable row level security;
+alter table public.technician_dispatch_tokens enable row level security;
 
-drop policy if exists external_technicians_read on public.external_technicians;
 create policy external_technicians_read on public.external_technicians for select to authenticated using (public.technician_can_request_role(public.technician_membership_role(hotel_id)) or lower(coalesce(public.technician_membership_role(hotel_id),''))='admin');
-drop policy if exists technician_competencies_read on public.technician_competencies;
 create policy technician_competencies_read on public.technician_competencies for select to authenticated using (active=true);
-drop policy if exists external_technician_competencies_read on public.external_technician_competencies;
 create policy external_technician_competencies_read on public.external_technician_competencies for select to authenticated using (exists(select 1 from public.external_technicians t where t.id=technician_id and (public.technician_can_request_role(public.technician_membership_role(t.hotel_id)) or lower(coalesce(public.technician_membership_role(t.hotel_id),''))='admin')));
-drop policy if exists technician_dispatch_read on public.technician_dispatch_requests;
 create policy technician_dispatch_read on public.technician_dispatch_requests for select to authenticated using (public.technician_can_request_role(public.technician_membership_role(hotel_id)) or lower(coalesce(public.technician_membership_role(hotel_id),''))='admin');
-drop policy if exists technician_events_read on public.technician_intervention_events;
 create policy technician_events_read on public.technician_intervention_events for select to authenticated using (public.technician_can_request_role(public.technician_membership_role(hotel_id)) or lower(coalesce(public.technician_membership_role(hotel_id),''))='admin');
 
+revoke all on public.technician_dispatch_tokens from authenticated,anon;
 revoke insert,update,delete on public.external_technicians,public.external_technician_competencies,public.technician_dispatch_requests,public.technician_intervention_events from authenticated,anon;
 grant select on public.external_technicians,public.technician_competencies,public.external_technician_competencies,public.technician_dispatch_requests,public.technician_intervention_events to authenticated;
 
@@ -253,7 +256,7 @@ begin
       where issue_id=new.id and status='awaiting_internal_close';
     update public.interventi set stato='done',completato_il=coalesce(completato_il,now()),completato_da=coalesce(completato_da,new.completato_da,'RandApp'),updated_at=now()
       where dispatch_request_id in (select id from public.technician_dispatch_requests where issue_id=new.id and status='closed');
-    update public.technician_access_tokens set ended_at=coalesce(ended_at,now()),revoked_at=coalesce(revoked_at,now())
+    update public.technician_dispatch_tokens set ended_at=coalesce(ended_at,now()),revoked_at=coalesce(revoked_at,now())
       where dispatch_request_id in (select id from public.technician_dispatch_requests where issue_id=new.id and status='closed') and revoked_at is null;
   end if;
   return new;
