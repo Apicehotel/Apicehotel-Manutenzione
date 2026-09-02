@@ -7,7 +7,7 @@ const config = await readFile(new URL('../src/config.js', import.meta.url), 'utf
 
 test('RandAI control center exposes the six operational foundation modules', () => {
   for (const label of ['Overview', 'WhatsApp', 'Segnalazioni', 'Tecnici', 'Worker', 'Log']) {
-    assert.match(controlCenter, new RegExp(`['\"]${label}['\"]`))
+    assert.match(controlCenter, new RegExp(`['\\"]${label}['\\"]`))
   }
 })
 
@@ -19,14 +19,15 @@ test('RandAI foundation exposes hotel scope, service health and permission state
   assert.match(controlCenter, /can_access_admin/)
 })
 
-test('WhatsApp and worker status are fail-closed instead of simulated online', () => {
-  assert.match(controlCenter, /Webhook inbound non configurato/)
+test('WhatsApp status follows the configured Twilio ingress while workers remain fail-closed', () => {
+  assert.match(controlCenter, /Boolean\(TWILIO\?\.enabled && TWILIO\?\.inboundWebhook\)/)
   assert.match(controlCenter, /Nessun worker è dichiarato online/)
-  assert.match(config, /TWILIO = Object\.freeze\(\{ enabled: false, inboundWebhook: null/)
+  assert.match(config, /TWILIO = Object\.freeze\(\{[\s\S]*enabled: true,[\s\S]*inboundWebhook: ['"]\/api\/whatsapp\/incoming['"]/)
+  assert.match(config, /automaticMessages: false/)
 })
 
 test('existing advanced RandAI modules remain reachable', () => {
   for (const label of ['Manutenzioni', 'Conoscenze', 'Impianti', 'Sensori']) {
-    assert.match(controlCenter, new RegExp(`['\"]${label}['\"]`))
+    assert.match(controlCenter, new RegExp(`['\\"]${label}['\\"]`))
   }
 })
