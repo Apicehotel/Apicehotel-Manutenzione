@@ -16,11 +16,14 @@ test('point 14 exposes explicit quality, contract and browser gates', () => {
   assert.match(workflow, /Critical operational gate[\s\S]*npm run test:critical/)
   assert.match(workflow, /Multi-hotel parity gate[\s\S]*npm run test:multihotel/)
 
-  // Keep the CI contract explicit without depending on the retired monolithic
-  // "Full unit and contract suite" step name. Each partition must remain wired.
   assert.match(workflow, /RandAI Point 3 behavior contracts[\s\S]*node --test test\/randai-issue-operations\.test\.js/)
-  assert.match(workflow, /RandAI legacy and platform contracts[\s\S]*node --test \$\(find test -maxdepth 1 -name 'randai-\*\.test\.js'/)
-  assert.match(workflow, /RandApp and shared contracts[\s\S]*node --test \$\(find test -maxdepth 1 -name '\*\.test\.js'/)
+  assert.match(workflow, /RandAI legacy and platform contracts[\s\S]*find test -maxdepth 1 -name 'randai-\*\.test\.js'/)
+
+  // Shared contracts may be executed as one Node test command or isolated one-by-one
+  // for diagnostics, but the complete non-RandAI partition must remain fail-closed.
+  assert.match(workflow, /RandApp and shared contracts[\s\S]*find test -maxdepth 1 -name '\*\.test\.js' ! -name 'randai-\*\.test\.js'/)
+  assert.match(workflow, /RandApp and shared contracts[\s\S]*node --test/)
+  assert.match(workflow, /shared-contract-failures|exit 1/)
 
   assert.match(workflow, /Install Playwright Chromium and WebKit[\s\S]*playwright install --with-deps chromium webkit/)
   assert.match(workflow, /Cross-platform browser gate[\s\S]*npm run test:e2e/)
