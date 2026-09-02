@@ -55,7 +55,7 @@ Il Blocco 1 è stato consolidato e mergiato tramite PR #118.
 
 I Blocchi 2–4 sono stati consolidati insieme tramite PR #123, assorbendo il materiale valido di #119 e #122. La CI post-merge su `main` è risultata completamente verde; #120, #121 e #122 sono state poi chiuse come linee superseded/zombie.
 
-### Blocco 5 — Valutazione, coordinamento e recovery — 17–20
+### Blocco 5 — Valutazione, coordinamento e recovery — 17–20 ✅
 
 17. **Evaluation / Benchmark 2.0** — grader e dimensioni validati, soglie `0..1`, suite non vuote e con scenario ID unici, scope `hotelId/projectId/taskId`, storico filtrabile per scope e confronto baseline/candidate con `regressed`, tolleranza e blocco dei confronti cross-scope.
 18. **Multi-Agent 2.0** — registry con ID unici, ruoli/task/tool dichiarati validati, DAG senza cicli, limiti di agenti/concorrenza, tool richiesti come subset dell'allowlist dell'agente, scope hotel coerente, dipendenti terminalizzati dopo failure e telemetria non-fatal con self-diagnostic.
@@ -64,7 +64,7 @@ I Blocchi 2–4 sono stati consolidati insieme tramite PR #123, assorbendo il ma
 
 Sorgenti canoniche: `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/`, integrate con `runtime/`.
 
-Test di consolidamento Blocco 5: `test/randai-block5-17-20.test.js`, oltre a `test/randai-evals-multi-agent.test.js` e `test/randai-autonomy-recovery.test.js`.
+Test di consolidamento Blocco 5: `test/randai-block5-17-20.test.js`, oltre a `test/randai-evals-multi-agent.test.js` e `test/randai-autonomy-recovery.test.js`. La CI completa della PR #124 ha superato audit, quality, critical, multi-hotel, build, contratti RandAI/shared, Chromium/WebKit, cross-platform browser e device acceptance prima della marcatura finale del README.
 
 ## Runtime Safety Layer — trasversale, non rinumerato
 
@@ -82,7 +82,7 @@ Questi requisiti valgono per più blocchi:
 - PR #118: Blocco 1.
 - PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
 - #120, #121 e #122: chiuse come superseded dopo la #123.
-- Branch `randai/block5-17-20`: consolidamento canonico dei punti 17–20; deve essere mergiata solo con CI completa verde.
+- PR #124: consolidamento canonico dei punti 17–20; merge consentito solo dopo CI completa verde sulla revisione finale.
 
 ## CI e quality gates
 
