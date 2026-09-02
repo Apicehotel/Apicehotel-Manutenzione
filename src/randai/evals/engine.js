@@ -1,4 +1,4 @@
-import { EvalStatus, validateScenario, validateThreshold } from './contracts.js'
+import { EvalStatus, normalizeEvalDimension, validateScenario, validateThreshold } from './contracts.js'
 import { EvalStore } from './store.js'
 
 const clone = (value) => structuredClone(value)
@@ -36,7 +36,7 @@ export class EvaluationEngine {
         const weight = Number(grader.weight || 1)
         weighted += normalized * weight
         weightTotal += weight
-        run.grades.push({ id: grader.id, dimension: grader.dimension || null, score: normalized, weight, reason: result?.reason || null, details: clone(result?.details || null) })
+        run.grades.push({ id: grader.id, dimension: normalizeEvalDimension(grader.dimension), score: normalized, weight, reason: result?.reason || null, details: clone(result?.details || null) })
       }
       run.score = weightTotal ? weighted / weightTotal : 0
       run.passed = run.score >= validateThreshold(scenario.passThreshold ?? this.passThreshold, 'Scenario passThreshold')
