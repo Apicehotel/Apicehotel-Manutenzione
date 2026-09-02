@@ -116,6 +116,7 @@ jobs:
           if ((${#files[@]})); then node --test "${files[@]}"; fi
 
       - name: Install Playwright Chromium and WebKit
+        timeout-minutes: 5
         run: npx playwright install --with-deps chromium webkit
 
       - name: Start preview server
