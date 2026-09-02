@@ -15,11 +15,11 @@ Regole architetturali:
 - nessun modello riceve `service_role`, PIN, refresh token o secret non necessari;
 - le scritture operative RandAI passano da tool/Action Gateway controllati;
 - output AI e telemetria non equivalgono a verità operativa finché non sono verificati;
-- niente implementazioni parallele per la stessa responsabilità: il codice duplicato viene mantenuto solo se rappresenta un layer distinto e referenziato;
+- niente implementazioni parallele per la stessa responsabilità;
 - una parte viene eliminata come zombie solo con evidenza che è inutilizzata, irraggiungibile o sostituita da una sorgente canonica migliore;
-- **se esiste una soluzione nettamente migliore, si preferisce sostituire la debolezza invece di accumulare patch**.
+- **se esiste una soluzione nettamente migliore, si sostituisce la debolezza invece di accumulare patch**.
 
-## RandAI — roadmap canonica 1–16
+## RandAI — roadmap canonica 1–20
 
 La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storiche a coppie non cambiano più i numeri della roadmap.
 
@@ -32,92 +32,86 @@ La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storic
 
 Il Blocco 1 è stato consolidato e mergiato tramite PR #118.
 
-### Blocco 2 — Motore operativo — 5–8
+### Blocco 2 — Motore operativo — 5–8 ✅
 
-5. **Maintenance Knowledge Engine** — procedure, impianti, relazioni, evidenze e revisioni con provenienza/trust. Tutte le operazioni sensibili sono hotel-scoped. Procedure e impianti usano chiavi composite `hotelId + id`, così lo stesso ID può esistere in strutture diverse senza collisioni. Draft e conoscenza non verificata non diventano fatti operativi.
-6. **Procedure Assistant** — trasforma il testo fornito dallo staff in una proposta `DRAFT`, conserva testo/evidenze, rileva campi mancanti e richiede approvazione umana. Lo scope hotel viene preservato fino all'approvazione finale e non può essere cambiato silenziosamente.
-7. **Planner → Executor → Verifier** — il piano viene validato prima dell'esecuzione; ID e dipendenze devono essere coerenti, non sono ammessi grafi ciclici, auto-dipendenze o strategie senza tool. Il risultato di un tool non equivale a successo: la verifica deve passare prima che lo step diventi `SUCCEEDED`.
-8. **Durable Tasks / Checkpoint** — task persistenti, checkpoint, revisioni ottimistiche, lease, idempotency key per gli effetti, resume, pause e riconciliazione obbligatoria dopo interruzioni in `RUNNING/VERIFYING`. La cancellazione usa un controllo dedicato con lease e non può dichiarare cancellato un effetto ancora incerto.
+5. **Maintenance Knowledge Engine** — procedure, impianti, relazioni, evidenze e revisioni con provenienza/trust; operazioni sensibili hotel-scoped e chiavi composite `hotelId + id`.
+6. **Procedure Assistant** — produce proposte `DRAFT`, conserva testo/evidenze, rileva campi mancanti e preserva lo scope hotel fino all'approvazione.
+7. **Planner → Executor → Verifier** — piano validato prima dell'esecuzione; niente cicli, auto-dipendenze o strategie senza tool; un tool riuscito non equivale a successo finché il verifier non passa.
+8. **Durable Tasks / Checkpoint** — checkpoint, revisioni ottimistiche, lease, idempotency key, resume/pause, riconciliazione delle interruzioni e cancellazione persistente sicura.
 
-Sorgenti principali: `src/randai/maintenance/` e `src/randai/runtime/`.
+### Blocco 3 — Memoria, contesto e routing — 9–12 ✅
 
-Test di consolidamento: `test/randai-block2-consolidation.test.js`, `test/randai-maintenance-knowledge.test.js`.
+9. **Scoped Memory Engine** — recall/dedup con scope esplicito (`hotelId`, `projectId`, `taskId` o `global`).
+10. **Authorized Context Engine** — contesto da sole evidenze autorizzate, budget positivo, provenance e nessun widening implicito.
+11. **Model Router** — provider-agnostic, descriptor/capability/privacy/context/metriche validate, fallback bounded e tracciabile.
+12. **Knowledge Gaps** — registra ciò che manca invece di inventare; gap manutentivi hotel-scoped, deduplicati e risolvibili solo con approvazione + provenance.
 
-### Blocco 3 — Memoria, contesto e routing — 9–12
+### Blocco 4 — Intelligenza operativa e osservabilità — 13–16 ✅
 
-9. **Scoped Memory Engine** — recall/dedup richiedono uno scope esplicito (`hotelId`, `projectId`, `taskId` o `global` dichiarato). Nessuna query senza scope equivale a leggere tutte le memorie.
-10. **Authorized Context Engine** — costruisce il contesto solo da evidenze autorizzate, con budget positivo, provenance e nessun widening implicito dello scope.
-11. **Model Router** — provider-agnostic; valida descriptor, capability, privacy, context window e metriche; rifiuta ID duplicati e fallback illimitati; seleziona/fallback in modo bounded e tracciabile.
-12. **Knowledge Gaps** — quando manca conoscenza verificata RandAI registra un gap invece di inventare. I gap manutentivi richiedono `hotelId` anche per lettura/modifica/risoluzione, deduplicano le domande equivalenti e richiedono approvazione + provenance per diventare risolti.
+13. **Smart Maintenance Suggestions 2.0** — procedure `APPROVED/VERIFIED` prevalgono sui casi precedenti; le esperienze restano non-actionable finché non validate.
+14. **Guided Procedures 2.0** — branching/`stopOn` validati, niente step zombie o grafi senza terminale raggiungibile, sessioni hotel-scoped.
+15. **Project Intelligence 2.0** — grafo di file/moduli/database/workflow/test e relazioni semantiche senza archi duplicati.
+16. **Observability 2.0** — trace/span/event e lifecycle coerenti, niente successo con span aperti, progress validi e self-diagnostics non-fatal.
 
-L'hardening di Memory, Context e Model Router proviene dalla PR #119 ed è stato assorbito nella linea di consolidamento #123.
+I Blocchi 2–4 sono stati consolidati insieme tramite PR #123, assorbendo il materiale valido di #119 e #122. La CI post-merge su `main` è risultata completamente verde; #120, #121 e #122 sono state poi chiuse come linee superseded/zombie.
 
-### Blocco 4 — Intelligenza operativa e osservabilità — 13–16
+### Blocco 5 — Valutazione, coordinamento e recovery — 17–20
 
-13. **Smart Maintenance Suggestions 2.0** — combina conoscenza verificata e memoria pertinente senza confonderne il livello di fiducia. Una procedura `APPROVED/VERIFIED` ha priorità operativa sui casi precedenti; le esperienze restano non-actionable finché non vengono validate.
-14. **Guided Procedures 2.0** — branching e `stopOn` validati, riferimenti a step verificati, rifiuto degli step irraggiungibili/zombie e dei grafi senza terminale raggiungibile; sessioni di guida leggibili/modificabili nello scope hotel corretto.
-15. **Project Intelligence 2.0** — grafo di file/moduli/database/workflow/test e relazioni semantiche; archi duplicati vengono rifiutati per evitare impatti/dipendenze conteggiati più volte.
-16. **Observability 2.0** — trace/span/event validati, lifecycle coerente, nessun `SUCCEEDED` con span ancora aperti, progress weights validi e self-diagnostics per errori di telemetria. Un errore dell'instrumentation non deve rompere l'operazione principale, ma non viene nascosto.
+17. **Evaluation / Benchmark 2.0** — grader e dimensioni validati, soglie `0..1`, suite non vuote e con scenario ID unici, scope `hotelId/projectId/taskId`, storico filtrabile per scope e confronto baseline/candidate con `regressed`, tolleranza e blocco dei confronti cross-scope.
+18. **Multi-Agent 2.0** — registry con ID unici, ruoli/task/tool dichiarati validati, DAG senza cicli, limiti di agenti/concorrenza, tool richiesti come subset dell'allowlist dell'agente, scope hotel coerente, dipendenti terminalizzati dopo failure e telemetria non-fatal con self-diagnostic.
+19. **Permission / Autonomy 2.0** — livelli L0–L4 e risk/permission continuano a governare le azioni; le policy contraddittorie vengono rifiutate, TTL approval validato e l'identità di una approval è deterministica e include lo scope. Un'approvazione di Hotel Giò non può autorizzare Chocohotel; DurableTaskRunner propaga lo scope hotel anche ai rollback.
+20. **Recovery / Self-Correction 2.0** — classificazione failure, retry same strategy, switch strategy, rollback autorizzato, escalation umana e stop; budget e fingerprint anti-loop sono validati fail-fast, safety/permission non vengono ritentati automaticamente e le recovery decision conservano lo scope hotel. La self-correction resta dentro DurableTaskRunner/Verifier/Autonomy e non crea un secondo runtime.
 
-L'hardening 13–16 proviene dalla PR #122 ed è stato assorbito selettivamente nella linea di consolidamento #123 senza duplicare i motori esistenti.
+Sorgenti canoniche: `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/`, integrate con `runtime/`.
 
-Test di consolidamento: `test/randai-block4-hardening.test.js`, `test/randai-smart-maintenance-guidance.test.js`.
+Test di consolidamento Blocco 5: `test/randai-block5-17-20.test.js`, oltre a `test/randai-evals-multi-agent.test.js` e `test/randai-autonomy-recovery.test.js`.
 
 ## Runtime Safety Layer — trasversale, non rinumerato
 
-Questi requisiti valgono per più blocchi e **non sostituiscono i punti 5–16**:
+Questi requisiti valgono per più blocchi:
 
-- **Identity/Auth:** console `/randai` vincolata a sessione Supabase + membership autorizzata; niente credenziali prevedibili precompilate o password iniziali proposte dal client.
-- **Multi-Agent:** limiti di agenti/concorrenza validati, ID unici, riferimenti alle dipendenze validi, grafi ciclici rifiutati prima dell'esecuzione; dopo un failure i dipendenti vengono terminalizzati e nessun run concluso lascia task `PENDING`.
-- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance e gap manutentivi; nessun recupero cross-hotel per semplice conoscenza di un ID.
+- **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili precompilate.
+- **Multi-Agent:** limiti e DAG validati; nessun run concluso lascia task `PENDING`; tool e scope sono verificati prima dell'invocazione.
+- **Permission/Autonomy:** approval legate all'identità esatta dell'azione e allo scope; critical/admin richiedono sempre il controllo umano previsto.
+- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval e recovery operative.
 - **Fail closed:** assenza di dati, verifier, permessi, contesto o conoscenza non produce una risposta operativa inventata.
+- **Recovery bounded:** nessun retry infinito; repeated fingerprint e budget esaurito fermano il ciclo.
 
-## Consolidamento #119 / #122 → #123
+## Consolidamento storico
 
-La PR **#123 — RandAI 1–16 consolidation foundation** è la linea di integrazione canonica.
-
-- #119 è stata assorbita nella branch di consolidamento per Auth, Model Router, Memory/Context e Multi-Agent hardening;
-- #122 è stata assorbita selettivamente per i punti 13–16; il suo README storico non viene mantenuto perché usava una classificazione ormai superata;
-- i punti 5–8 sono stati riesaminati separatamente e le parti deboli vengono riscritte invece di adattare la nuova roadmap a vecchie API insicure;
-- main resta invariato finché CI, multi-hotel, contratti RandAI, contratti RandApp/shared e browser/device gate non risultano verdi.
+- PR #118: Blocco 1.
+- PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
+- #120, #121 e #122: chiuse come superseded dopo la #123.
+- Branch `randai/block5-17-20`: consolidamento canonico dei punti 17–20; deve essere mergiata solo con CI completa verde.
 
 ## CI e quality gates
 
-La CI esegue:
-
-1. dependency security audit;
-2. Quality Matrix;
-3. Critical Operational Gate;
-4. Multi-hotel parity gate;
-5. build;
-6. bundle budget;
-7. contratti RandAI;
-8. contratti RandApp/shared;
-9. Playwright Chromium/WebKit;
-10. cross-platform browser gate;
-11. device acceptance gate.
-
-Le partizioni RandAI e RandApp/shared eseguono i file singolarmente e producono una lista diagnostica completa dei fallimenti. Questo migliora la diagnosi senza rendere il gate più permissivo: se un singolo contratto fallisce, la pipeline resta rossa.
+La CI esegue dependency security audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, build, bundle budget, contratti RandAI, contratti RandApp/shared, Playwright Chromium/WebKit, cross-platform browser e device acceptance. Le partizioni dei contratti eseguono i file singolarmente e producono diagnostica completa senza rendere il gate più permissivo.
 
 ## RandAI Control Center
 
 Route protetta: `/randai`.
 
-La console centralizza Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze/Approvazioni, Impianti, Scadenze, Regole, Anomalie, Costi/Osservabilità, Media/Drive e Sensori. L'accesso richiede membership attiva e permessi amministrativi; UI e console non sostituiscono RLS/RPC/Action Gateway.
+La console centralizza Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze/Approvazioni, Impianti, Scadenze, Regole, Anomalie, Costi/Osservabilità, Media/Drive e Sensori. UI e console non sostituiscono RLS/RPC/Action Gateway.
 
-Canali WhatsApp attualmente configurati:
+Canali WhatsApp configurati:
 
 - Hotel Giò: `+390759978247`;
 - Chocohotel: `+390759970610`;
 - Brigantino: nessun numero configurato.
 
-Il flusso WhatsApp resta server-side, con validazione webhook, idempotenza, isolamento hotel e nessuna creazione di dettagli tecnici inventati.
+## Prossimi punti RandAI
 
-## RandAI operativo successivo
+Dopo la chiusura verificata del Blocco 5, la roadmap storica continua con:
 
-La roadmap storica oltre il 16 comprende evaluation/benchmark, Multi-Agent, permission/autonomy, recovery/self-correction, software engineering agent, learning, skill/tool discovery, supervisor, proactive RandAI e Control Center. I moduli già presenti oltre il 16 restano disponibili, ma la numerazione 1–16 sopra è la base canonica da rendere interamente coerente prima di considerare concluso questo consolidamento.
+21. **Software Engineering Agent**;
+22. **Learning Engine**;
+23. **Skill / Tool Discovery**;
+24. **RandAI Supervisor**;
+25. **Proactive RandAI**;
+26. **Control Center**.
 
-I moduli operativi successivi già documentati includono anche Operational Context, Action Gateway, persistent supervisor/tasks, RandAI nelle Segnalazioni, Operational Learning e prioritization/dispatch. Reliability & Safety comprende scope guard, validation, safe write, RLS verification, audit/reversibility e offline/retry/concurrency.
+I moduli già presenti per alcuni punti successivi non vengono considerati automaticamente completi: saranno riesaminati con lo stesso criterio di consolidamento, zombie scan e CI completa usato per 1–20.
 
 ## RandApp
 
@@ -131,11 +125,9 @@ Funzioni principali:
 - offline/outbox IndexedDB, retry controllato, diagnostica e audit;
 - shell responsive per iOS, Android e Windows.
 
-Il pulsante `+` usa il router contestuale della shell: una singola azione viene aperta direttamente, più azioni aprono il launcher. I test devono verificare questo contratto attuale e non le vecchie implementazioni `allowedActions`/FAB monolitiche.
+Il pulsante `+` usa il router contestuale della shell: una singola azione viene aperta direttamente, più azioni aprono il launcher.
 
 ### Hotel Giò — camere
-
-Regola operativa mantenuta:
 
 - **Jazz:** numerazione a 4 cifre, per esempio `1101`, `1114`;
 - **Wine:** numerazione a 3 cifre, per esempio `201`, `214`.
@@ -148,12 +140,12 @@ Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movim
 
 - `src/main.jsx` — entry;
 - `src/randapp/` — shell/UI e domini RandApp;
-- `src/randai/` — motori RandAI;
-- `src/randai/maintenance/` — Knowledge + Procedure Assistant + Suggestions;
-- `src/randai/runtime/` — planner/verifier/durable tasks/store/task control;
+- `src/randai/core/`, `tools/`, `skills/`, `directives/` — Blocco 1;
+- `src/randai/maintenance/`, `runtime/` — Blocco 2;
 - `src/randai/memory/`, `context/`, `models/`, `gaps/` — Blocco 3;
 - `src/randai/guidance/`, `projects/`, `observability/` — Blocco 4;
-- `src/randai/control/` — Control Center;
+- `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/` — Blocco 5;
+- `src/randai/control/`, `control-center/` — console e proiezioni operative;
 - `src/reliability/` — reliability/safety condivisa;
 - `supabase/functions/` — Edge Functions;
 - `supabase/migrations/` — migrazioni;
@@ -170,4 +162,4 @@ Un blocco non è ✅ perché esiste il codice. È chiuso solo quando:
 - RandApp/shared contracts verdi;
 - CI completa e browser/device gates verdi;
 - scan zombie completato e README coerente;
-- merge finale eseguito senza forzare main.
+- merge finale eseguito senza forzare `main`.
