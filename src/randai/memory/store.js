@@ -6,8 +6,9 @@ export class MemoryStore {
   #items = new Map()
   async save(memory) { validateMemory(memory); this.#items.set(memory.id, clone(memory)); return clone(memory) }
   async get(id) { return this.#items.has(id) ? clone(this.#items.get(id)) : null }
-  async list({ hotelId, projectId, taskId } = {}) {
+  async list({ scope, hotelId, projectId, taskId } = {}) {
     return [...this.#items.values()]
+      .filter((memory) => !scope || memory.scope === scope)
       .filter((memory) => !hotelId || memory.hotelId === hotelId)
       .filter((memory) => !projectId || memory.projectId === projectId)
       .filter((memory) => !taskId || memory.taskId === taskId)
@@ -51,8 +52,9 @@ export class SupabaseMemoryStore {
     return memory
   }
 
-  async list({ hotelId, projectId, taskId } = {}) {
+  async list({ scope, hotelId, projectId, taskId } = {}) {
     let query = this.supabase.from('randai_memory_items').select('*')
+    if (scope) query = query.eq('scope', scope)
     if (hotelId) query = query.eq('hotel_id', hotelId)
     if (projectId) query = query.eq('project_id', projectId)
     if (taskId) query = query.eq('task_id', taskId)
