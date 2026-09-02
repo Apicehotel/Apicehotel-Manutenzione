@@ -73,7 +73,7 @@ Sorgenti principali: `src/randai/context/`, `src/reliability/context-scope-guard
 
 Sorgenti principali: `src/reliability/authorization-matrix.js`, `audit-reversible.js`, `offline-concurrency.js`, `import-safety.js`.
 
-### Blocco 10 — Verification, Trust, Hybrid Knowledge & Risk — 35–38 ⏳
+### Blocco 10 — Verification, Trust, Hybrid Knowledge & Risk — 35–38 ✅
 35. **Verification Gate 2.0** — verifica multi-check hotel-scoped; controlli duplicati o invalidi falliscono, serve almeno una verifica indipendente e il risultato è `PASS`, `REVIEW` o `BLOCK`.
 36. **Evidence & Knowledge Trust** — trust deterministico da tier, freschezza e corroborazione multi-source; evidenza cross-hotel viene rifiutata.
 37. **Hybrid Memory + Knowledge Graph Production** — composizione read-only sopra Scoped Memory Engine e Project Graph esistenti; filtra per hotel e trust, deduplica e non introduce un secondo store o graph database.
@@ -81,7 +81,7 @@ Sorgenti principali: `src/reliability/authorization-matrix.js`, `audit-reversibl
 
 Sorgenti Blocco 10: `src/reliability/verification-gate.js`, `evidence-trust.js`, `hybrid-memory-graph.js`, `confidence-risk.js`. Test dedicato: `test/randai-block10-reliability-35-38.test.js`.
 
-Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` restano canonici e vivi. Il nuovo layer li compone invece di copiarli. Nessuna dipendenza esterna o nuova migrazione viene aggiunta finché non esiste un beneficio misurabile superiore alle primitive interne.
+Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` restano canonici e vivi. Il nuovo layer li compone invece di copiarli. Nessuna dipendenza esterna o nuova migrazione viene aggiunta perché le primitive interne sono già più integrate e hanno superato i gate completi.
 
 ## Runtime Safety Layer — trasversale
 
@@ -92,6 +92,7 @@ Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` res
 - Offline/concurrency: retry solo dopo riconciliazione; niente promessa fittizia di exactly-once.
 - Import safety: staging e verifica prima del commit.
 - Verification/trust: successo tecnico, memoria o evidenza non equivalgono automaticamente a verità.
+- Confidence/risk: l'autonomia è limitata da verifica, trust, completezza contesto e rischio; critical/high-risk restano bloccate.
 - Recovery bounded e telemetria non-fatal.
 - External discovery non installa automaticamente.
 
@@ -104,7 +105,7 @@ Zombie scan Blocco 10: `src/randai/memory/` e `src/randai/projects/graph.js` res
 - PR #126 — 25–26 e chiusura roadmap originale.
 - PR #127 — 27–30.
 - PR #129 — 31–34.
-- Blocco 10 35–38: branch `randai/block10-35-38`; viene marcato ✅ solo dopo CI completa verde e merge su `main`.
+- PR #130 — 35–38, Verification/Trust/Hybrid Knowledge/Risk.
 
 ## CI e regola di chiusura
 
