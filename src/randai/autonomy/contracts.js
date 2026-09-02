@@ -28,18 +28,42 @@ export const AUTONOMY_LEVEL_ORDER = Object.freeze([
 
 export const RISK_ORDER = Object.freeze([ToolRisk.LOW, ToolRisk.MEDIUM, ToolRisk.HIGH, ToolRisk.CRITICAL])
 
+function uniqueStrings(values, name) {
+  if (values == null) return []
+  if (!Array.isArray(values)) throw new TypeError(`${name} must be an array`)
+  if (values.some((value) => !String(value || '').trim())) throw new TypeError(`${name} must contain non-empty tool ids`)
+  if (new Set(values).size !== values.length) throw new TypeError(`${name} must not contain duplicates`)
+  return values
+}
+
 export function validateAutonomyPolicy(policy) {
   if (!policy?.id || !policy?.level) throw new TypeError('Autonomy policy requires id and level')
   if (!AUTONOMY_LEVEL_ORDER.includes(policy.level)) throw new TypeError(`Invalid autonomy level: ${policy.level}`)
   if (policy.maxRisk && !RISK_ORDER.includes(policy.maxRisk)) throw new TypeError(`Invalid max risk: ${policy.maxRisk}`)
-  for (const key of ['allowedTools', 'deniedTools']) if (policy[key] != null && !Array.isArray(policy[key])) throw new TypeError(`${key} must be an array`)
+  const allowed = uniqueStrings(policy.allowedTools, 'allowedTools')
+  const denied = uniqueStrings(policy.deniedTools, 'deniedTools')
+  const overlap = allowed.find((toolId) => denied.includes(toolId))
+  if (overlap) throw new TypeError(`Tool cannot be both allowed and denied: ${overlap}`)
   return true
 }
 
-export function actionIdentity({ toolId, taskId = null, stepId = null, input = null } = {}) {
+function stableSerialize(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(',')}]`
+  const keys = Object.keys(value).sort()
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(',')}}`
+}
+
+export function actionScope({ hotelId = null, scope = null } = {}) {
+  if (hotelId) return `hotel:${hotelId}`
+  if (scope === 'global') return 'global'
+  return 'unscoped'
+}
+
+export function actionIdentity({ toolId, taskId = null, stepId = null, input = null, hotelId = null, scope = null } = {}) {
   if (!toolId) throw new TypeError('toolId is required')
-  const serialized = input == null ? '' : JSON.stringify(input)
-  return `${toolId}|${taskId || ''}|${stepId || ''}|${serialized}`
+  const serialized = input == null ? '' : stableSerialize(input)
+  return `${actionScope({ hotelId, scope })}|${toolId}|${taskId || ''}|${stepId || ''}|${serialized}`
 }
 
 export function requiresHumanByTool(tool) {

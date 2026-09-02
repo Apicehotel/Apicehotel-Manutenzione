@@ -1,4 +1,5 @@
 const clone = (value) => structuredClone(value)
+const matchesScope = (item, filters) => ['hotelId', 'projectId', 'taskId'].every((key) => !filters[key] || item?.[key] === filters[key])
 
 export class EvalStore {
   constructor() { this.items = new Map() }
@@ -8,6 +9,7 @@ export class EvalStore {
     return [...this.items.values()]
       .filter((item) => !filters.suiteId || item.suiteId === filters.suiteId)
       .filter((item) => !filters.status || item.status === filters.status)
+      .filter((item) => matchesScope(item, filters))
       .map(clone)
   }
 }
@@ -34,6 +36,6 @@ export class SupabaseEvalStore {
     if (filters.status) query = query.eq('status', filters.status)
     const { data, error } = await query.order('created_at', { ascending: false })
     if (error) throw error
-    return (data || []).map((row) => clone(row.result))
+    return (data || []).map((row) => clone(row.result)).filter((item) => matchesScope(item, filters))
   }
 }

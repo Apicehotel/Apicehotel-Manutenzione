@@ -24,15 +24,17 @@ function validateDependencyGraph(tasks) {
 }
 
 export class MultiAgentRuntime {
-  constructor({ registry, invokeAgent, maxAgents = 5, maxConcurrency = 3, eventSink = null } = {}) {
+  constructor({ registry, invokeAgent, maxAgents = 5, maxConcurrency = 3, eventSink = null, onTelemetryError = null } = {}) {
     if (!registry?.findByRole) throw new TypeError('MultiAgentRuntime requires an AgentRegistry')
     if (typeof invokeAgent !== 'function') throw new TypeError('MultiAgentRuntime requires invokeAgent')
     if (eventSink != null && typeof eventSink !== 'function') throw new TypeError('eventSink must be a function')
+    if (onTelemetryError != null && typeof onTelemetryError !== 'function') throw new TypeError('onTelemetryError must be a function')
     this.registry = registry
     this.invokeAgent = invokeAgent
     this.maxAgents = positiveInteger(maxAgents, 'maxAgents')
     this.maxConcurrency = positiveInteger(maxConcurrency, 'maxConcurrency')
     this.eventSink = eventSink
+    this.onTelemetryError = onTelemetryError
   }
 
   async run({ objective, tasks = [], context = {}, preferSingleAgent = false } = {}) {
@@ -49,6 +51,7 @@ export class MultiAgentRuntime {
         if (!knownIds.has(dependency)) throw new TypeError(`Unknown dependency ${dependency} for task ${task.id}`)
         if (dependency === task.id) throw new TypeError(`Task ${task.id} cannot depend on itself`)
       }
+      if (task.hotelId && context.hotelId && task.hotelId !== context.hotelId) throw new Error(`Agent task hotel scope mismatch: ${task.id}`)
     }
     validateDependencyGraph(tasks)
 
@@ -56,7 +59,11 @@ export class MultiAgentRuntime {
     const emit = async (type, data = {}) => {
       const event = { type, at: nowIso(), ...clone(data) }
       trace.push(event)
-      if (this.eventSink) await this.eventSink(event)
+      if (!this.eventSink) return
+      try { await this.eventSink(event) }
+      catch (error) {
+        if (this.onTelemetryError) await this.onTelemetryError({ error, event: clone(event) }).catch(() => undefined)
+      }
     }
     const results = {}
     const statuses = Object.fromEntries(tasks.map((task) => [task.id, AgentRunStatus.PENDING]))
@@ -79,6 +86,13 @@ export class MultiAgentRuntime {
           statuses[task.id] = AgentRunStatus.FAILED
           results[task.id] = { ok: false, error: `No enabled agent for role ${task.agentRole}` }
           await emit('AGENT_FAILED', { taskId: task.id, role: task.agentRole, reason: 'AGENT_NOT_FOUND' })
+          return
+        }
+        const missingTools = (task.requiredTools || []).filter((toolId) => !(agent.tools || []).includes(toolId))
+        if (missingTools.length) {
+          statuses[task.id] = AgentRunStatus.FAILED
+          results[task.id] = { ok: false, agentId: agent.id, error: `Agent lacks required tools: ${missingTools.join(', ')}` }
+          await emit('AGENT_FAILED', { taskId: task.id, agentId: agent.id, reason: 'REQUIRED_TOOL_NOT_DECLARED', missingTools })
           return
         }
         statuses[task.id] = AgentRunStatus.RUNNING

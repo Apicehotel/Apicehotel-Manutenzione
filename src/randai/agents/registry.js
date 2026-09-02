@@ -9,6 +9,7 @@ export class AgentRegistry {
 
   register(input) {
     validateAgent(input)
+    if (this.#agents.has(input.id)) throw new Error(`Agent already registered: ${input.id}`)
     const agent = { tools: [], modelRequest: {}, enabled: true, metadata: {}, ...clone(input) }
     this.#agents.set(agent.id, agent)
     return clone(agent)
@@ -16,6 +17,7 @@ export class AgentRegistry {
 
   get(id) { const agent = this.#agents.get(id); return agent ? clone(agent) : null }
   list({ role, enabled = true } = {}) {
+    if (role != null && !String(role).trim()) throw new TypeError('role must be non-empty when supplied')
     return [...this.#agents.values()]
       .filter((agent) => !role || agent.role === role)
       .filter((agent) => enabled == null || Boolean(agent.enabled) === Boolean(enabled))

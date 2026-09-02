@@ -158,10 +158,13 @@ export class DurableTaskRunner {
     return this.#failStep(task, step, state)
   }
 
-  async #authorize(task, step, strategy) { if (!this.autonomyEngine) return null; return this.autonomyEngine.authorize({ toolId: strategy.toolId, input: strategy.input || {}, taskId: task.id, stepId: step.id }) }
+  async #authorize(task, step, strategy) {
+    if (!this.autonomyEngine) return null
+    return this.autonomyEngine.authorize({ toolId: strategy.toolId, input: strategy.input || {}, taskId: task.id, stepId: step.id, hotelId: task.metadata?.hotelId || null, scope: task.metadata?.scope || null })
+  }
   async #rollback(task, step, rollback) {
     if (!rollback?.toolId) return { ok: false, reason: 'INVALID_ROLLBACK' }
-    const authorization = this.autonomyEngine ? await this.autonomyEngine.authorize({ toolId: rollback.toolId, input: rollback.input || {}, taskId: task.id, stepId: `${step.id}:rollback` }) : null
+    const authorization = this.autonomyEngine ? await this.autonomyEngine.authorize({ toolId: rollback.toolId, input: rollback.input || {}, taskId: task.id, stepId: `${step.id}:rollback`, hotelId: task.metadata?.hotelId || null, scope: task.metadata?.scope || null }) : null
     if (authorization && authorization.decision !== AutonomyDecision.ALLOW) return { ok: false, blocked: true, authorization }
     await this.#renewLease(task.id)
     const effectKey = `${task.id}:${step.id}:rollback`
