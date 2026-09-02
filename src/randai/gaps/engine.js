@@ -13,6 +13,7 @@ export class KnowledgeGapEngine {
     const status = GapStatus.OPEN
     const question = String(input.question || '').trim()
     if (!question) throw new TypeError('Gap question is required')
+    if (scope === GapScope.MAINTENANCE && !input.hotelId) throw new TypeError('hotelId is required for maintenance gaps')
     const existing = await this.store.list({ hotelId: input.hotelId, scope, status })
     const duplicate = existing.find((item) => normalize(item.question) === normalize(question) && normalize(item.entityId) === normalize(input.entityId))
     if (duplicate) return { gap: duplicate, created: false }
@@ -60,9 +61,9 @@ export class KnowledgeGapEngine {
     return { captured: true, ...opened }
   }
 
-  async propose(id, { answer, source } = {}) {
+  async propose(id, { answer, source, hotelId = null } = {}) {
     if (!String(answer || '').trim()) throw new TypeError('Proposed answer is required')
-    const gap = await this.#require(id)
+    const gap = await this.#require(id, { hotelId })
     if (gap.status === GapStatus.RESOLVED || gap.status === GapStatus.DISMISSED) throw new Error(`Gap is closed: ${id}`)
     gap.status = GapStatus.PROPOSED
     gap.proposedAnswer = String(answer).trim()
@@ -72,10 +73,10 @@ export class KnowledgeGapEngine {
     return clone(gap)
   }
 
-  async resolve(id, { source, approved = false } = {}) {
+  async resolve(id, { source, approved = false, hotelId = null } = {}) {
     if (!approved) throw new Error('Knowledge gap resolution requires explicit approval')
     if (!source?.kind || !source?.id) throw new TypeError('Verified resolution source is required')
-    const gap = await this.#require(id)
+    const gap = await this.#require(id, { hotelId })
     if (gap.status !== GapStatus.PROPOSED && gap.status !== GapStatus.OPEN) throw new Error(`Gap cannot be resolved from status: ${gap.status}`)
     const now = new Date().toISOString()
     gap.status = GapStatus.RESOLVED
@@ -86,8 +87,8 @@ export class KnowledgeGapEngine {
     return clone(gap)
   }
 
-  async dismiss(id, { reason = null } = {}) {
-    const gap = await this.#require(id)
+  async dismiss(id, { reason = null, hotelId = null } = {}) {
+    const gap = await this.#require(id, { hotelId })
     gap.status = GapStatus.DISMISSED
     gap.metadata = { ...(gap.metadata || {}), dismissReason: reason }
     gap.updatedAt = new Date().toISOString()
@@ -95,16 +96,23 @@ export class KnowledgeGapEngine {
     return clone(gap)
   }
 
-  async list(filters = {}) { return this.store.list(filters) }
+  async list(filters = {}) {
+    if (filters.scope === GapScope.MAINTENANCE && !filters.hotelId) throw new TypeError('hotelId is required to list maintenance gaps')
+    return this.store.list(filters)
+  }
 
-  async #require(id) {
-    if (typeof this.store.get === 'function') {
-      const item = await this.store.get(id)
-      if (item) return item
+  async #require(id, { hotelId = null } = {}) {
+    let item = null
+    if (typeof this.store.get === 'function') item = await this.store.get(id)
+    if (!item) {
+      const all = await this.store.list()
+      item = all.find((gap) => gap.id === id) || null
     }
-    const all = await this.store.list()
-    const item = all.find((gap) => gap.id === id)
     if (!item) throw new Error(`Unknown knowledge gap: ${id}`)
+    if (item.hotelId) {
+      if (!hotelId) throw new TypeError('hotelId is required for hotel-scoped knowledge gaps')
+      if (item.hotelId !== hotelId) throw new Error(`Unknown knowledge gap in requested hotel scope: ${id}`)
+    }
     return item
   }
 }
