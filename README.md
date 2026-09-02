@@ -30,6 +30,19 @@ Principi del blocco: nessun framework agentico esterno nel core se non porta un 
 
 Test principali: `test/randai-core-tool-registry.test.js`, `test/randai-skills-directives.test.js`.
 
+## RandAI — Blocco 4 canonico (13–16)
+
+La numerazione canonica raggruppa qui quattro capacità che nella vecchia suddivisione a coppie erano state introdotte come “Blocco 7” e “Blocco 8”. I motori esistenti restano le sorgenti canoniche: non vengono creati doppioni.
+
+13. **Smart Maintenance Suggestions** — `MaintenanceDecisionEngine` separa procedure approvate/verificate da esperienze pregresse. Una memoria simile non può più superare una procedura verificata nella priorità operativa; solo procedure `APPROVED`/`VERIFIED` sono marcate `actionable` e possono abilitare la guida.
+14. **Guided Procedures** — validazione del grafo dei passi, branch e `stopOn`; i passi irraggiungibili vengono rifiutati come zombie e una procedura deve avere almeno un terminale raggiungibile. Le letture possono essere vincolate esplicitamente a `hotelId` anche nello store Supabase.
+15. **Project Intelligence** — il Project Graph mantiene nodi e relazioni tipizzate e ora rifiuta anche archi semantici duplicati, evitando impatto e dipendenze contate due volte.
+16. **Observability** — Trace → Span → Event con stato validato, nessun evento collegabile a span inesistenti, nessuna chiusura “success” con span ancora aperti, pesi di avanzamento validi e self-diagnostics per gli errori di telemetria senza rompere l'operazione principale.
+
+Regola zombie del blocco: `maintenance`, `guidance`, `projects` e `observability` restano perché attivi e con responsabilità distinte. Non si elimina codice per somiglianza nominale; si eliminano o si bloccano solo stati, step o relazioni dimostrabilmente irraggiungibili/duplicate.
+
+Test di consolidamento: `test/randai-block4-hardening.test.js`.
+
 ## Piattaforme
 
 - **iOS/iPadOS:** PWA/Web App;
