@@ -81,7 +81,15 @@ test('multi-agent runtime bounds concurrency and agent count', async () => {
   ] }), /limit exceeded/)
 })
 
-test('failed specialist stops dependent work instead of fabricating completion', async () => {
+test('multi-agent runtime rejects invalid limits and dependency graphs', async () => {
+  const registry = new AgentRegistry({ agents })
+  assert.throws(() => new MultiAgentRuntime({ registry, maxConcurrency: 0, invokeAgent: async () => null }), /maxConcurrency/)
+  assert.throws(() => new MultiAgentRuntime({ registry, maxAgents: Number.NaN, invokeAgent: async () => null }), /maxAgents/)
+  const runtime = new MultiAgentRuntime({ registry, invokeAgent: async () => null })
+  await assert.rejects(() => runtime.run({ objective: 'bad graph', tasks: [{ id: 'a', objective: 'a', agentRole: AgentRole.RESEARCHER, dependsOn: ['missing'] }] }), /Unknown dependency/)
+})
+
+test('failed specialist terminalizes dependent work as skipped', async () => {
   const registry = new AgentRegistry({ agents })
   const runtime = new MultiAgentRuntime({ registry, invokeAgent: async ({ task }) => {
     if (task.id === 'build') throw new Error('build failed')
@@ -93,6 +101,8 @@ test('failed specialist stops dependent work instead of fabricating completion',
   ] })
   assert.equal(result.ok, false)
   assert.equal(result.statuses.build, AgentRunStatus.FAILED)
-  assert.notEqual(result.statuses.review, AgentRunStatus.SUCCEEDED)
+  assert.equal(result.statuses.review, AgentRunStatus.SKIPPED)
+  assert.equal(Object.values(result.statuses).includes(AgentRunStatus.PENDING), false)
   assert.ok(result.trace.some((e) => e.type === 'AGENT_FAILED'))
+  assert.ok(result.trace.some((e) => e.type === 'DEPENDENCY_BLOCKED' && e.reason === 'UPSTREAM_FAILED'))
 })

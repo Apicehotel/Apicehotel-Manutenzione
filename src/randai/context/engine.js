@@ -1,3 +1,5 @@
+import { MemoryScope } from '../memory/contracts.js'
+
 const estimateTokens = (text) => Math.ceil(String(text || '').length / 4)
 
 export class ContextEngine {
@@ -7,9 +9,11 @@ export class ContextEngine {
     this.defaultBudget = defaultBudget
   }
 
-  async build({ query, hotelId, projectId, taskId, budget = this.defaultBudget, trust = ['approved','verified','suggested'] } = {}) {
+  async build({ query, scope, hotelId, projectId, taskId, budget = this.defaultBudget, trust = ['approved','verified','suggested'] } = {}) {
     if (!String(query || '').trim()) throw new TypeError('query is required')
-    const memories = await this.memoryEngine.recall(query, { hotelId, projectId, taskId, trust })
+    if (!(hotelId || projectId || taskId || scope === MemoryScope.GLOBAL)) throw new TypeError('context build requires an explicit hotel, project, task or global scope')
+    if (!Number.isFinite(Number(budget)) || Number(budget) <= 0) throw new TypeError('budget must be a positive number')
+    const memories = await this.memoryEngine.recall(query, { scope, hotelId, projectId, taskId, trust })
     const sections = []
     let used = 0
     const seen = new Set()
@@ -25,10 +29,10 @@ export class ContextEngine {
     }
     return {
       query,
-      scope: { hotelId: hotelId || null, projectId: projectId || null, taskId: taskId || null },
-      budget,
+      scope: { type: scope || null, hotelId: hotelId || null, projectId: projectId || null, taskId: taskId || null },
+      budget: Number(budget),
       usedTokens: used,
-      remainingTokens: Math.max(0, budget - used),
+      remainingTokens: Math.max(0, Number(budget) - used),
       sections,
       provenance: sections.map(s => ({ memoryId: s.id, source: s.source, trust: s.trust })),
     }

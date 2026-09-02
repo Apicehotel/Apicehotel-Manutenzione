@@ -89,14 +89,16 @@ export class ProcedureAssistant {
     if (!engine) throw new TypeError('Maintenance knowledge engine is required')
     if (draft.missingFields?.length) throw new Error(`Procedure incomplete: ${draft.missingFields.join(', ')}`)
     const proposal = draft.proposal
+    if (!proposal?.hotelId || proposal.hotelId !== draft.hotelId) throw new Error('Draft/proposal hotel scope mismatch')
     const procedure = engine.registerProcedure(proposal)
     if (proposal.equipment) {
       engine.registerEquipment({ ...proposal.equipment, trust: KnowledgeTrust.VERIFIED })
       if (proposal.area) engine.addRelation({ hotelId: proposal.hotelId, from: proposal.equipment.id, to: proposal.area, type: 'SERVES', note: 'Relazione proposta e approvata con la procedura' })
     }
     for (const item of proposal.evidence || []) {
+      if (item.hotelId !== proposal.hotelId) throw new Error('Evidence hotel scope mismatch')
       engine.addEvidence({ ...item, procedureId: proposal.id, equipmentId: proposal.equipment?.id || null, trust: KnowledgeTrust.APPROVED })
     }
-    return engine.approveProcedure(procedure.id, { approvedBy })
+    return engine.approveProcedure(procedure.id, { hotelId: proposal.hotelId, approvedBy })
   }
 }

@@ -17,7 +17,7 @@ function knowledgeWithHotWaterProcedure() {
       { id: 'room', title: 'Controllare i punti accessibili della camera', requiredRole: 'manutentore', next: { DONE: null } },
     ],
   })
-  engine.approveProcedure('gio-hot-water-wine', { approvedBy: 'test' })
+  engine.approveProcedure('gio-hot-water-wine', { hotelId: 'hotelgio', approvedBy: 'test' })
   return engine
 }
 
@@ -43,42 +43,43 @@ test('unknown report creates gap and never invents a procedure', async () => {
   assert.ok(result.gap)
 })
 
-test('guided procedure branches and persists progress across engine instances', async () => {
+test('guided procedure branches and persists progress across engine instances with hotel scope', async () => {
   const store = new GuidanceStore()
-  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine')
+  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine', { hotelId: 'hotelgio' })
   const first = new GuidedProcedureEngine({ store })
   let session = await first.start({ procedure, actorRole: 'manutentore', report: 'camera 412 senza acqua calda' })
-  session = await first.answer(session.id, StepResult.FOUND)
+  session = await first.answer(session.id, StepResult.FOUND, { hotelId: 'hotelgio' })
   assert.equal(session.currentStepId, 'zone')
   const second = new GuidedProcedureEngine({ store })
-  const resumed = await second.current(session.id)
+  const resumed = await second.current(session.id, { hotelId: 'hotelgio' })
   assert.equal(resumed.step.id, 'zone')
-  session = await second.answer(session.id, StepResult.DONE)
+  await assert.rejects(() => second.current(session.id, { hotelId: 'chocohotel' }), /requested scope/)
+  session = await second.answer(session.id, StepResult.DONE, { hotelId: 'hotelgio' })
   assert.equal(session.status, GuidanceStatus.COMPLETED)
   assert.equal(session.history.length, 2)
 })
 
 test('authorization gate blocks staff before technician step and allows controlled resume with higher role', async () => {
   const store = new GuidanceStore()
-  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine')
+  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine', { hotelId: 'hotelgio' })
   const engine = new GuidedProcedureEngine({ store })
   let session = await engine.start({ procedure, actorRole: 'staff' })
-  session = await engine.answer(session.id, StepResult.FOUND)
+  session = await engine.answer(session.id, StepResult.FOUND, { hotelId: 'hotelgio' })
   assert.equal(session.status, GuidanceStatus.BLOCKED)
   assert.equal(session.currentStepId, 'zone')
   assert.match(session.blockedReason, /manutentore/)
-  session = await engine.resume(session.id, { actorRole: 'manutentore' })
+  session = await engine.resume(session.id, { actorRole: 'manutentore', hotelId: 'hotelgio' })
   assert.equal(session.status, GuidanceStatus.ACTIVE)
-  session = await engine.answer(session.id, StepResult.DONE)
+  session = await engine.answer(session.id, StepResult.DONE, { hotelId: 'hotelgio' })
   assert.equal(session.status, GuidanceStatus.COMPLETED)
 })
 
 test('stop condition pauses unsafe uncertainty instead of skipping forward', async () => {
-  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine')
+  const procedure = knowledgeWithHotWaterProcedure().getProcedure('gio-hot-water-wine', { hotelId: 'hotelgio' })
   const engine = new GuidedProcedureEngine()
   let session = await engine.start({ procedure, actorRole: 'manutentore' })
-  session = await engine.answer(session.id, StepResult.FOUND)
-  session = await engine.answer(session.id, StepResult.CANNOT_VERIFY)
+  session = await engine.answer(session.id, StepResult.FOUND, { hotelId: 'hotelgio' })
+  session = await engine.answer(session.id, StepResult.CANNOT_VERIFY, { hotelId: 'hotelgio' })
   assert.equal(session.status, GuidanceStatus.BLOCKED)
   assert.match(session.blockedReason, /CANNOT_VERIFY/)
 })

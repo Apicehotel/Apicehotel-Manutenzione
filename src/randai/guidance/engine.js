@@ -47,15 +47,15 @@ export class GuidedProcedureEngine {
     return clone(session)
   }
 
-  async current(id) {
-    const session = await this.#require(id)
+  async current(id, { hotelId = null } = {}) {
+    const session = await this.#require(id, hotelId)
     const step = session.procedure.steps.find((item) => item.id === session.currentStepId) || null
     return { session: clone(session), step: clone(step) }
   }
 
-  async answer(id, result, { note = null } = {}) {
+  async answer(id, result, { note = null, hotelId = null } = {}) {
     if (!Object.values(StepResult).includes(result)) throw new TypeError(`Invalid step result: ${result}`)
-    const session = await this.#require(id)
+    const session = await this.#require(id, hotelId)
     if (session.status !== GuidanceStatus.ACTIVE) throw new Error(`Guidance session is not active: ${session.status}`)
     const step = session.procedure.steps.find((item) => item.id === session.currentStepId)
     if (!step) throw new Error(`Unknown current step: ${session.currentStepId}`)
@@ -97,8 +97,8 @@ export class GuidedProcedureEngine {
     return clone(session)
   }
 
-  async resume(id, { actorRole } = {}) {
-    const session = await this.#require(id)
+  async resume(id, { actorRole, hotelId = null } = {}) {
+    const session = await this.#require(id, hotelId)
     if (actorRole) session.actorRole = actorRole
     if (session.status === GuidanceStatus.BLOCKED || session.status === GuidanceStatus.PAUSED) {
       session.status = GuidanceStatus.ACTIVE
@@ -110,8 +110,8 @@ export class GuidedProcedureEngine {
     return clone(session)
   }
 
-  async pause(id) {
-    const session = await this.#require(id)
+  async pause(id, { hotelId = null } = {}) {
+    const session = await this.#require(id, hotelId)
     if (session.status === GuidanceStatus.ACTIVE) {
       session.status = GuidanceStatus.PAUSED
       session.updatedAt = new Date().toISOString()
@@ -128,9 +128,9 @@ export class GuidedProcedureEngine {
     }
   }
 
-  async #require(id) {
-    const session = await this.store.get(id)
-    if (!session) throw new Error(`Unknown guidance session: ${id}`)
+  async #require(id, hotelId = null) {
+    const session = await this.store.get(id, { hotelId })
+    if (!session) throw new Error(`Unknown guidance session in requested scope: ${id}`)
     return session
   }
 }
