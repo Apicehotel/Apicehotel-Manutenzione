@@ -6,10 +6,16 @@ const clone = (value) => structuredClone(value)
 const makeId = () => `LEARN-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`
 const nowIso = () => new Date().toISOString()
 
+function validMinEvidence(value) {
+  const numeric = Number(value)
+  if (!Number.isInteger(numeric) || numeric < 2) throw new TypeError('minEvidence must be an integer >= 2')
+  return numeric
+}
+
 export class LearningEngine {
   constructor({ store = new LearningStore(), minEvidence = 2 } = {}) {
     this.store = store
-    this.minEvidence = Math.max(2, Number(minEvidence || 2))
+    this.minEvidence = validMinEvidence(minEvidence)
   }
 
   async observe(experience) {
@@ -33,9 +39,9 @@ export class LearningEngine {
     return clone(candidate)
   }
 
-  async proposeSkill(candidateId, { skillRegistry, id, version = '0.1.0', name, description, risk = 'LOW' } = {}) {
-    const candidate = await this.store.get(candidateId)
-    if (!candidate) throw new Error(`Unknown learning candidate: ${candidateId}`)
+  async proposeSkill(candidateId, { skillRegistry, id, version = '0.1.0', name, description, risk = 'LOW', hotelId = null } = {}) {
+    const candidate = await this.store.get(candidateId, hotelId)
+    if (!candidate) throw new Error(`Unknown or out-of-scope learning candidate: ${candidateId}`)
     if (candidate.status !== LearningCandidateStatus.CANDIDATE) throw new Error('Candidate needs sufficient verified evidence before skill proposal')
     if (!skillRegistry || !id || !name || !description) throw new TypeError('skillRegistry, id, name and description are required')
     skillRegistry.register({ id, version, name, description, risk, status: SkillStatus.DRAFT, requiredTools: candidate.tools, instructions: [candidate.strategy], successCriteria: candidate.successCriteria, metadata: { learningCandidateId: candidate.id, hotelId: candidate.hotelId || null, evidenceCount: candidate.evidence.length } })
@@ -46,9 +52,9 @@ export class LearningEngine {
     return { candidate: clone(candidate), skill: skillRegistry.inspect(id, version) }
   }
 
-  async evaluate(candidateId, { evaluationEngine, scenario, skillRegistry } = {}) {
-    const candidate = await this.store.get(candidateId)
-    if (!candidate?.skillRef) throw new Error('Candidate skill must be proposed before evaluation')
+  async evaluate(candidateId, { evaluationEngine, scenario, skillRegistry, hotelId = null } = {}) {
+    const candidate = await this.store.get(candidateId, hotelId)
+    if (!candidate?.skillRef) throw new Error('Candidate skill must be proposed and in scope before evaluation')
     if (!evaluationEngine || !scenario || !skillRegistry) throw new TypeError('evaluationEngine, scenario and skillRegistry are required')
     candidate.status = LearningCandidateStatus.EVALUATING
     candidate.evaluationError = null
@@ -56,7 +62,7 @@ export class LearningEngine {
     await this.store.save(candidate)
     let evaluation
     try {
-      evaluation = await evaluationEngine.runScenario(scenario, { learningCandidate: clone(candidate), skill: skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version) })
+      evaluation = await evaluationEngine.runScenario(scenario, { hotelId: candidate.hotelId || null, learningCandidate: clone(candidate), skill: skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version) })
     } catch (error) {
       const skill = skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version)
       if (skill?.status === SkillStatus.CANDIDATE) skillRegistry.transition(candidate.skillRef.id, candidate.skillRef.version, SkillStatus.BLOCKED)
