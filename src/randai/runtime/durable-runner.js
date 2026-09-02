@@ -11,19 +11,32 @@ const runnerId = () => globalThis.crypto?.randomUUID?.() || `runner-${Date.now()
 const TERMINAL_TASK_STATUSES = new Set([RuntimeTaskStatus.SUCCEEDED, RuntimeTaskStatus.FAILED, RuntimeTaskStatus.CANCELLED])
 
 function stepState(step) {
-  return { id: step.id, status: RuntimeStepStatus.PENDING, attempts: 0, strategyIndex: 0, result: null, verification: null, startedAt: null, completedAt: null }
+  return { id: step.id, status: RuntimeStepStatus.PENDING, attempts: 0, strategyAttempts: {}, strategyIndex: 0, result: null, verification: null, startedAt: null, completedAt: null }
 }
 function leaseConflict(taskId) { const error = new Error(`Task ${taskId} is already leased by another runner`); error.code = 'TASK_LEASE_CONFLICT'; error.taskId = taskId; return error }
+function assertOperationalScope(task, hotelId) {
+  const taskHotelId = task?.metadata?.hotelId || null
+  if (!taskHotelId) return task
+  if (!hotelId) throw new TypeError('hotelId is required for an operational task')
+  if (hotelId !== taskHotelId) {
+    const error = new Error(`Task ${task.id} is outside the requested hotel scope`)
+    error.code = 'TASK_HOTEL_SCOPE_MISMATCH'
+    throw error
+  }
+  return task
+}
 
 export class DurableTaskRunner {
-  constructor({ planner, registry, verifier, store, logger, autonomyEngine = null, recoveryEngine = null, leaseSeconds = 120 } = {}) {
+  constructor({ planner, registry, verifier, store, logger, autonomyEngine = null, recoveryEngine = null, leaseSeconds = 120, maxAttemptsPerStrategy = 3 } = {}) {
     if (!planner || !registry || !verifier || !store) throw new TypeError('planner, registry, verifier and store are required')
+    if (!Number.isInteger(maxAttemptsPerStrategy) || maxAttemptsPerStrategy < 1) throw new TypeError('maxAttemptsPerStrategy must be an integer >= 1')
     this.planner = planner; this.registry = registry; this.verifier = verifier; this.store = store; this.logger = logger
     this.autonomyEngine = autonomyEngine; this.recoveryEngine = recoveryEngine
-    this.activeResumes = new Map(); this.activeLeases = new Map(); this.runnerId = runnerId(); this.leaseSeconds = Math.max(30, Number(leaseSeconds || 120))
+    this.activeResumes = new Map(); this.activeLeases = new Map(); this.runnerId = runnerId(); this.leaseSeconds = Math.max(30, Number(leaseSeconds || 120)); this.maxAttemptsPerStrategy = maxAttemptsPerStrategy
   }
 
   async create({ objective, proposedPlan, metadata = {}, context = {} }) {
+    if (metadata?.sourceType && !metadata.hotelId) throw new TypeError('Operational tasks require metadata.hotelId')
     const plan = await this.planner.plan({ objective, proposedPlan, context })
     const task = {
       id: nextId(), objective, metadata, plan, status: RuntimeTaskStatus.PENDING,
@@ -46,9 +59,27 @@ export class DurableTaskRunner {
     return execution
   }
 
+  async cancel(taskId, { hotelId, reason = 'cancelled_by_user' } = {}) {
+    const lease = this.store.claim ? await this.store.claim(taskId, { owner: this.runnerId, leaseSeconds: this.leaseSeconds }) : { token: null }
+    if (!lease) throw leaseConflict(taskId)
+    try {
+      const task = await this.store.load(taskId)
+      if (!task) throw new Error(`Task ${taskId} not found`)
+      assertOperationalScope(task, hotelId)
+      if (TERMINAL_TASK_STATUSES.has(task.status)) return task
+      task.status = RuntimeTaskStatus.CANCELLED
+      task.completedAt = nowIso()
+      task.decisions.push({ at: task.completedAt, type: 'TASK_CANCELLED', reason })
+      this.#checkpoint(task, CheckpointKind.CANCELLED, { reason })
+      await this.store.save(task)
+      return task
+    } finally { if (lease.token && this.store.release) await this.store.release(taskId, lease.token).catch(() => false) }
+  }
+
   async #resumeWithLease(taskId, options) {
     const snapshot = await this.store.load(taskId)
     if (!snapshot) throw new Error(`Task ${taskId} not found`)
+    assertOperationalScope(snapshot, options.hotelId)
     if (TERMINAL_TASK_STATUSES.has(snapshot.status)) return snapshot
     const lease = this.store.claim ? await this.store.claim(taskId, { owner: this.runnerId, leaseSeconds: this.leaseSeconds }) : { token: null }
     if (!lease) throw leaseConflict(taskId)
@@ -68,9 +99,10 @@ export class DurableTaskRunner {
     this.activeLeases.set(taskId, { ...lease, ...renewed })
   }
 
-  async #resumeUnlocked(taskId, { pauseAfterSteps = Infinity } = {}) {
+  async #resumeUnlocked(taskId, { hotelId, pauseAfterSteps = Infinity } = {}) {
     const task = await this.store.load(taskId)
     if (!task) throw new Error(`Task ${taskId} not found`)
+    assertOperationalScope(task, hotelId)
     if (TERMINAL_TASK_STATUSES.has(task.status)) return task
 
     const awaitingReconciliation = task.errors?.find((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && task.steps?.[error.stepId]?.status === RuntimeStepStatus.BLOCKED)
@@ -108,12 +140,13 @@ export class DurableTaskRunner {
     await this.store.save(task); return task
   }
 
-  async reconcileInterrupted(taskId, stepId, { resolution, result = null, verification = null } = {}) {
+  async reconcileInterrupted(taskId, stepId, { hotelId, resolution, result = null, verification = null } = {}) {
     const lease = this.store.claim ? await this.store.claim(taskId, { owner: this.runnerId, leaseSeconds: this.leaseSeconds }) : { token: null }
     if (!lease) throw leaseConflict(taskId)
     try {
       const task = await this.store.load(taskId)
       if (!task) throw new Error(`Task ${taskId} not found`)
+      assertOperationalScope(task, hotelId)
       const state = task.steps?.[stepId]
       if (!state) throw new Error(`Step ${stepId} not found`)
       const interrupted = task.errors?.some((error) => error.code === 'INTERRUPTED_STEP_REQUIRES_RECONCILIATION' && error.stepId === stepId)
@@ -131,10 +164,17 @@ export class DurableTaskRunner {
     const state = task.steps[step.id]; state.startedAt ||= nowIso(); const strategies = step.strategies || []
     while (state.strategyIndex < strategies.length) {
       const strategy = strategies[state.strategyIndex]
+      const strategyKey = String(state.strategyIndex)
+      state.strategyAttempts ||= {}
+      if ((state.strategyAttempts[strategyKey] || 0) >= this.maxAttemptsPerStrategy) {
+        task.decisions.push({ at: nowIso(), type: 'RETRY_BUDGET_EXHAUSTED', stepId: step.id, strategyIndex: state.strategyIndex, maxAttempts: this.maxAttemptsPerStrategy })
+        if (state.strategyIndex + 1 < strategies.length) { state.strategyIndex += 1; continue }
+        return this.#failStep(task, step, state, { reason: 'RETRY_BUDGET_EXHAUSTED' })
+      }
       const authorization = await this.#authorize(task, step, strategy)
       if (authorization && authorization.decision !== AutonomyDecision.ALLOW) { state.status = RuntimeStepStatus.BLOCKED; task.decisions.push({ at: nowIso(), type: 'AUTONOMY_BLOCK', stepId: step.id, toolId: strategy.toolId, decision: authorization.decision, reason: authorization.reason, approvalId: authorization.approval?.id || null }); this.#checkpoint(task, CheckpointKind.PAUSED, { stepId: step.id, reason: authorization.reason, approvalId: authorization.approval?.id || null }); return { ok: false, blocked: true, authorization } }
       await this.#renewLease(task.id)
-      state.status = RuntimeStepStatus.RUNNING; state.attempts += 1
+      state.status = RuntimeStepStatus.RUNNING; state.attempts += 1; state.strategyAttempts[strategyKey] = (state.strategyAttempts[strategyKey] || 0) + 1
       this.#checkpoint(task, CheckpointKind.STEP_STARTED, { stepId: step.id, strategyIndex: state.strategyIndex, toolId: strategy.toolId }); await this.store.save(task)
       let result
       const effectKey = `${task.id}:${step.id}:${state.strategyIndex}`
@@ -169,5 +209,5 @@ export class DurableTaskRunner {
     return { ok: result?.status === 'SUCCESS', result }
   }
   #failStep(task, step, state, extra = {}) { state.status = RuntimeStepStatus.FAILED; state.completedAt = nowIso(); this.#checkpoint(task, CheckpointKind.STEP_FAILED, { stepId: step.id, ...extra }); return { ok: false, ...extra } }
-  #checkpoint(task, kind, details = {}) { task.updatedAt = nowIso(); task.checkpoint = { kind, at: task.updatedAt, ...details }; task.events.push({ type: 'CHECKPOINT', ...task.checkpoint }); this.logger?.info?.('runtime.checkpoint', { taskId: task.id, ...task.checkpoint }) }
+  #checkpoint(task, kind, details = {}) { task.updatedAt = nowIso(); task.checkpoint = { kind, at: task.updatedAt, hotelId: task.metadata?.hotelId || null, ...details }; task.events.push({ type: 'CHECKPOINT', ...task.checkpoint }); this.logger?.info?.('runtime.checkpoint', { taskId: task.id, ...task.checkpoint }) }
 }
