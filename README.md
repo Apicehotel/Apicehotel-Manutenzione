@@ -58,12 +58,12 @@ La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storic
 19. **Permission / Autonomy 2.0** — approval identity deterministica e scope-aware; policy contraddittorie e TTL invalidi falliscono; una approval di Hotel Giò non autorizza Chocohotel.
 20. **Recovery / Self-Correction 2.0** — retry/switch/rollback/escalation con budget e fingerprint anti-loop; safety/permission non vengono ritentati automaticamente.
 
-### Blocco 6 — Engineering, learning, discovery e supervisor — 21–24
+### Blocco 6 — Engineering, learning, discovery e supervisor — 21–24 ✅
 
 21. **Software Engineering Agent 2.0** — impact analysis prima dell'esecuzione, target unici, scope hotel propagato a task/review/evaluation, DurableTaskRunner come unica via di esecuzione, verifier/review/eval prima del successo e osservabilità non-fatal. Un impatto esplicitamente appartenente a un altro hotel viene rifiutato.
 22. **Learning Engine 2.0** — apprende soltanto esperienze `verified`, richiede evidenza ripetuta, promuove automaticamente al massimo fino a `TESTED` e mai `APPROVED`; `minEvidence` è validato e propose/evaluate di candidati hotel-scoped falliscono senza lo stesso `hotelId`.
 23. **Skill / Tool Discovery 2.0** — discovery multi-source senza installazione automatica; source ID e candidate ID duplicati vengono rifiutati, licenza/rischio/reputation sono validati, sandbox obbligatoria prima dell'evaluation e score utility/security devono essere finiti `0..1`. La raccomandazione non equivale a installazione.
-24. **RandAI Supervisor 2.0** — sceglie single/multi-agent solo da piani espliciti, governa budget e quality gate, mantiene run e anti-loop hotel-scoped, valida metriche e soglie, usa Discovery per capability gap e tratta la telemetria come non-fatal con self-diagnostic.
+24. **RandAI Supervisor 2.0** — sceglie single/multi-agent solo da piani espliciti, governa budget e quality gate, mantiene run e anti-loop hotel-scoped, valida metriche e soglie, usa Discovery per capability gap e tratta la telemetria come non-fatal con self-diagnostic. Metriche non finite come `NaN` vengono rifiutate e non possono aggirare i budget gate.
 
 Sorgenti canoniche Blocco 6: `src/randai/software/`, `learning/`, `discovery/`, `supervisor/`. Non sono implementazioni duplicate: Software Engineering esegue cambi verificati, Learning trasforma evidenza in candidati, Discovery valuta capacità esterne e Supervisor coordina i motori.
 
@@ -85,7 +85,7 @@ Test dedicato: `test/randai-block6-21-24.test.js`, oltre ai contratti storici `r
 - PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
 - #120, #121 e #122: chiuse come superseded/zombie dopo la #123.
 - PR #124: consolidamento canonico 17–20, mergiato solo dopo CI completa verde e nuovamente verde su `main`.
-- Branch `randai/block6-21-24`: consolidamento canonico 21–24; deve essere mergiato solo dopo CI completa verde sulla revisione finale.
+- PR #125: consolidamento canonico 21–24; codice, contratti RandAI/shared, browser cross-platform e device acceptance verificati verdi prima della marcatura finale del blocco.
 
 ## CI e quality gates
 
@@ -105,7 +105,7 @@ Canali WhatsApp configurati:
 
 ## Prossimi punti RandAI
 
-Dopo la chiusura verificata del Blocco 6 restano gli ultimi punti della roadmap storica:
+Dopo il Blocco 6 restano gli ultimi punti della roadmap storica:
 
 25. **Proactive RandAI**;
 26. **Control Center**.
