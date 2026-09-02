@@ -94,6 +94,17 @@ Questi file non sono doppioni zombie: client/server, primitive generiche e bound
 
 Test dedicato: `test/randai-block8-27-30.test.js`, insieme ai contratti reliability e Action Gateway esistenti.
 
+### Blocco 9 — Production Hardening — 31–34 (in consolidamento)
+
+31. **Authorization & RLS Verification Matrix** — `src/reliability/authorization-matrix.js` descrive e verifica casi attesi `ALLOW/DENY` senza diventare una seconda autorità: membership, RLS e RPC Supabase restano la decisione server. Un inatteso `ALLOW` cross-hotel è un fallimento di verifica, non una permission concessa dal client.
+32. **Audit & Reversible Operations** — `src/reliability/audit-reversible.js` definisce audit strutturati e compensazioni esplicite. Una compensazione richiede operazione originale riuscita e verificata, nuova autorizzazione, controllo dello stato corrente, restore, read-back verification e un nuovo audit; niente rollback distruttivi silenziosi.
+33. **Offline, Retry & Concurrency Hardening** — `src/reliability/offline-concurrency.js` mantiene lease/backoff già esistenti e aggiunge identità idempotente deterministica hotel-scoped, optimistic revision fence, riconciliazione delle write ambigue prima del retry e blocco outbox cross-hotel.
+34. **Import Safety Pipeline** — `src/reliability/import-safety.js` impone `normalize → scope → validate → dedupe → stage → commit → read-back → verify → audit`. Una riga cross-hotel o invalida rende il batch non committable: niente import parziali silenziosi.
+
+I punti 31–34 consolidano capacità che in documentazione reliability storica erano state discusse con numerazioni successive (in particolare i filoni Authorization/RLS, Audit/Reversible e Offline/Concurrency). I riferimenti storici restano nei documenti per tracciabilità; la numerazione evolutiva corrente è 31–34.
+
+Zombie scan Blocco 9: RLS/RPC server, Action Gateway/Safe Write, audit/compensazione, offline/concurrency e import staging hanno responsabilità distinte. Non viene duplicata la logica RLS nel client e `SafeWrite` resta una primitiva piccola senza retry nascosti. Test dedicato: `test/randai-block9-reliability-31-34.test.js`.
+
 ## Runtime Safety Layer — trasversale
 
 - **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili.
@@ -102,6 +113,9 @@ Test dedicato: `test/randai-block8-27-30.test.js`, insieme ai contratti reliabil
 - **Permission/Autonomy:** critical/admin passano sempre dai controlli previsti; approval legate all'azione esatta e allo scope.
 - **Unified validation:** i domini compongono lo stesso motore di validazione condiviso invece di introdurre controlli incompatibili.
 - **Safe writes:** approval + idempotenza + optimistic version fence + read-back verification + receipt/audit per l'Action Gateway.
+- **Authorization verification:** le matrici verificano l'autorità server, non la sostituiscono.
+- **Offline/concurrency:** retry solo dopo riconciliazione, lease e revision fence; nessuna promessa fittizia di exactly-once.
+- **Import safety:** dati esterni vengono staged e verificati prima di qualsiasi commit operativo.
 - **Verification:** nessun tool call, software change o esperienza diventa verità/successo soltanto perché l'esecuzione tecnica è terminata.
 - **Recovery bounded:** niente retry infinito; fingerprint ripetuti e budget esauriti fermano il ciclo.
 - **Telemetry non-fatal:** un guasto di log/telemetria viene diagnosticato ma non riscrive l'esito operativo.
@@ -117,6 +131,7 @@ Test dedicato: `test/randai-block8-27-30.test.js`, insieme ai contratti reliabil
 - PR #125: consolidamento canonico 21–24.
 - PR #126: consolidamento canonico 25–26 e chiusura della roadmap originale 1–26, verificata anche su `main`.
 - PR #127: consolidamento Reliability 27–30; codice e test dedicati hanno superato audit, quality, multi-hotel, RandAI/shared e browser/device prima della marcatura finale del blocco.
+- Blocco 9: branch canonica `randai/block9-canonical-31-34`; merge consentito solo dopo CI completa verde.
 
 ## CI e quality gates
 
@@ -138,6 +153,7 @@ Canali WhatsApp configurati:
 
 - **Roadmap originale 1–26: completa ✅**
 - **Estensione Reliability Blocco 8, 27–30: completa ✅**
+- **Estensione Reliability Blocco 9, 31–34: in consolidamento**
 
 Le estensioni successive restano separate e devono essere riesaminate con lo stesso criterio: nessun numero viene dichiarato completo per inferenza o perché esiste già codice storico.
 
@@ -175,7 +191,7 @@ Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movim
 - `src/randai/proactive/`, `control-center/` — Blocco 7;
 - `src/randai/action-gateway.js` — adapter Safe Write RandAI;
 - `src/randai/control/` — UI e console operative RandAI;
-- `src/reliability/` — reliability/safety condivisa, inclusi scope, validation e safe-write;
+- `src/reliability/` — reliability/safety condivisa, inclusi scope, validation, safe-write e Production Hardening;
 - `supabase/functions/` — Edge Functions e boundary server;
 - `supabase/migrations/` — migrazioni;
 - `test/` e `scripts/` — contratti, quality gates ed E2E.
