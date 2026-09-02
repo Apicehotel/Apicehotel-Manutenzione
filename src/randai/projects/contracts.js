@@ -9,9 +9,13 @@ export function validateProjectGraph(graph) {
     if (ids.has(node.id)) throw new TypeError(`Duplicate project node id: ${node.id}`)
     ids.add(node.id)
   }
+  const edgeKeys = new Set()
   for (const edge of graph.edges) {
     if (!edge?.from || !edge?.to || !Object.values(ProjectEdgeType).includes(edge.type)) throw new TypeError('Project edge requires from, to and valid type')
     if (!ids.has(edge.from) || !ids.has(edge.to)) throw new TypeError(`Project edge references unknown node: ${edge.from} -> ${edge.to}`)
+    const key = `${edge.from}\u0000${edge.type}\u0000${edge.to}`
+    if (edgeKeys.has(key)) throw new TypeError(`Duplicate project edge: ${edge.from} -${edge.type}-> ${edge.to}`)
+    edgeKeys.add(key)
   }
   return true
 }
