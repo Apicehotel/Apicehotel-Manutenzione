@@ -3,12 +3,17 @@ import { FailureClass, RecoveryAction, failureFingerprint } from './contracts.js
 
 const transient = new Set(['TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMIT', 'TOOL_UNAVAILABLE'])
 const permission = new Set(['PERMISSION_DENIED', 'AUTH_ERROR'])
+const positiveInteger = (value, name) => {
+  const numeric = Number(value)
+  if (!Number.isInteger(numeric) || numeric < 1) throw new TypeError(`${name} must be an integer >= 1`)
+  return numeric
+}
 
 export class RecoveryEngine {
   constructor({ maxSameStrategyAttempts = 2, maxTotalRecoveries = 6, maxRepeatedFingerprint = 2 } = {}) {
-    this.maxSameStrategyAttempts = maxSameStrategyAttempts
-    this.maxTotalRecoveries = maxTotalRecoveries
-    this.maxRepeatedFingerprint = maxRepeatedFingerprint
+    this.maxSameStrategyAttempts = positiveInteger(maxSameStrategyAttempts, 'maxSameStrategyAttempts')
+    this.maxTotalRecoveries = positiveInteger(maxTotalRecoveries, 'maxTotalRecoveries')
+    this.maxRepeatedFingerprint = positiveInteger(maxRepeatedFingerprint, 'maxRepeatedFingerprint')
   }
 
   classify({ result, verification, error } = {}) {
@@ -24,6 +29,8 @@ export class RecoveryEngine {
   }
 
   decide({ task, step, state, strategy, result, verification, error } = {}) {
+    if (!task || !step || !state || !strategy) throw new TypeError('Recovery decision requires task, step, state and strategy')
+    if (step.hotelId && task.metadata?.hotelId && step.hotelId !== task.metadata.hotelId) throw new Error(`Recovery hotel scope mismatch for step ${step.id}`)
     const failureClass = this.classify({ result, verification, error })
     const code = error?.code || result?.error?.code || result?.status || 'UNKNOWN'
     const reason = verification?.reason || error?.message || result?.error?.message || 'failure'
@@ -41,12 +48,13 @@ export class RecoveryEngine {
   }
 
   record(task, decision, details = {}) {
+    if (!task || !decision?.action || !decision?.fingerprint) throw new TypeError('Recovery record requires task and a valid decision')
     task.recoveryHistory ||= []
     const at = new Date().toISOString()
-    const event = { at, ...decision, ...details }
+    const event = { at, ...decision, ...details, hotelId: task.metadata?.hotelId || null }
     task.recoveryHistory.push(event)
     task.decisions ||= []
-    task.decisions.push({ at, type: 'RECOVERY_DECISION', action: decision.action, failureClass: decision.failureClass, reason: decision.reason, stepId: details.stepId || null })
+    task.decisions.push({ at, type: 'RECOVERY_DECISION', action: decision.action, failureClass: decision.failureClass, reason: decision.reason, stepId: details.stepId || null, hotelId: task.metadata?.hotelId || null })
     return event
   }
 }
