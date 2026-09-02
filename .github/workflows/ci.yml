@@ -55,10 +55,22 @@ jobs:
       - name: RandAI legacy and platform contracts
         run: node --test $(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
 
-      - name: Shared contracts A-F
+      - name: Shared contracts A-B
         shell: bash
         run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[A-Fa-f]/')
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[A-Ba-b]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts C-D
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[C-Dc-d]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts E-F
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[E-Fe-f]/')
           if ((${#files[@]})); then node --test "${files[@]}"; fi
 
       - name: Shared contracts G-M
