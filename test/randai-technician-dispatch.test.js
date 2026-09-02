@@ -8,6 +8,7 @@ const publicPortal = await readFile(new URL('../src/technician-portal.jsx', impo
 const techFn = await readFile(new URL('../supabase/functions/tech-portal/index.ts', import.meta.url), 'utf8')
 const sendFn = await readFile(new URL('../supabase/functions/send-tecnico-whatsapp/index.ts', import.meta.url), 'utf8')
 const migration = await readFile(new URL('../supabase/migrations/20260902014500_randai_point4_technician_dispatch.sql', import.meta.url), 'utf8')
+const legacyMigration = await readFile(new URL('../supabase/migrations/20260902034000_randai_point4_revoke_legacy_technician_tokens.sql', import.meta.url), 'utf8')
 const main = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
 
 test('Point 4 exposes the internal technician center', () => {
@@ -38,6 +39,8 @@ test('dispatch credentials are request scoped and stored as hashes', () => {
   assert.match(migration, /expires_at/)
   assert.match(techFn, /sha256\(raw\)/)
   assert.match(techFn, /\.eq\("token_hash", hash\)/)
+  assert.match(legacyMigration, /revoked:/)
+  assert.match(legacyMigration, /digest\(token, 'sha256'\)/)
 })
 
 test('external technician requests closure but cannot hard-close RandApp', () => {
@@ -45,7 +48,7 @@ test('external technician requests closure but cannot hard-close RandApp', () =>
   assert.match(techFn, /completed_requested_at/)
   assert.match(techFn, /tecnico_completato: true/)
   assert.doesNotMatch(techFn, /segnalazioni"\)\.update\(\{[^}]*stato:\s*"done"/)
-  assert.match(publicPortal, /conferma interna/i)
+  assert.match(publicPortal, /chiusura interna/i)
 })
 
 test('WhatsApp dispatch validates actor, request and hashed credential', () => {
