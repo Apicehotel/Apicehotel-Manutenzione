@@ -85,10 +85,28 @@ jobs:
           mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[G-Mg-m]/')
           if ((${#files[@]})); then node --test "${files[@]}"; fi
 
-      - name: Shared contracts N-S
+      - name: Shared contracts N-O
         shell: bash
         run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[N-Sn-s]/')
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[N-On-o]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts P-Q
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[P-Qp-q]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts R
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[Rr]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts S
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[Ss]/')
           if ((${#files[@]})); then node --test "${files[@]}"; fi
 
       - name: Shared contracts T-Z
