@@ -33,6 +33,7 @@ export class ModelRouter {
 
   register(input) {
     validateModelDescriptor(input)
+    if (this.#models.has(input.id)) throw new Error(`Model already registered: ${input.id}`)
     const model = {
       privacy: PrivacyLevel.STANDARD,
       reliability: 0.5,
@@ -81,9 +82,11 @@ export class ModelRouter {
 
   async execute(request, invoke, { maxFallbacks = 2, retryable = () => true } = {}) {
     if (typeof invoke !== 'function') throw new TypeError('invoke must be a function')
+    if (!Number.isInteger(Number(maxFallbacks)) || Number(maxFallbacks) < 0) throw new TypeError('maxFallbacks must be an integer >= 0')
+    if (typeof retryable !== 'function') throw new TypeError('retryable must be a function')
     const route = this.route(request)
     if (!route.selected) return { ok: false, route, attempts: [], error: new Error(route.reason) }
-    const sequence = [route.selected, ...route.fallbacks.slice(0, Math.max(0, maxFallbacks))]
+    const sequence = [route.selected, ...route.fallbacks.slice(0, Number(maxFallbacks))]
     const attempts = []
     let lastError = null
     for (const model of sequence) {
