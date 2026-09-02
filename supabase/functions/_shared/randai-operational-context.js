@@ -1,14 +1,30 @@
 const clean = (value, max = 240) => String(value ?? '').trim().slice(0, max)
+const SUPPORTED_VERSION = 1
+const SUPPORTED_SOURCE = 'randapp'
+
+function contextError(code, message = code.toLowerCase()) {
+  const error = new Error(message)
+  error.code = code
+  return error
+}
 
 export function sanitizeOperationalContext(input, expectedHotelId) {
   if (!input || typeof input !== 'object') return null
   const hotelId = clean(input.hotelId || input.hotel_id, 80)
   if (!hotelId) return null
   if (expectedHotelId && hotelId !== expectedHotelId) {
-    const error = new Error('context_hotel_mismatch')
-    error.code = 'CONTEXT_HOTEL_MISMATCH'
-    throw error
+    throw contextError('CONTEXT_HOTEL_MISMATCH')
   }
+
+  const version = Number(input.version ?? SUPPORTED_VERSION)
+  if (!Number.isInteger(version) || version !== SUPPORTED_VERSION) {
+    throw contextError('CONTEXT_VERSION_UNSUPPORTED')
+  }
+  const source = clean(input.source || SUPPORTED_SOURCE, 40)
+  if (source !== SUPPORTED_SOURCE) {
+    throw contextError('CONTEXT_SOURCE_MISMATCH')
+  }
+
   const resource = input.resource && input.resource.type === 'issue' && input.resource.id ? {
     type: 'issue',
     id: clean(input.resource.id, 120),
@@ -20,9 +36,10 @@ export function sanitizeOperationalContext(input, expectedHotelId) {
     roomStatus: clean(input.resource.roomStatus, 80) || null,
     hasPhoto: Boolean(input.resource.hasPhoto),
   } : null
+
   return {
-    version: Number(input.version || 1),
-    source: 'randapp',
+    version: SUPPORTED_VERSION,
+    source: SUPPORTED_SOURCE,
     hotelId,
     screen: input.screen ? { view: clean(input.screen.view, 120) || null } : null,
     resource,
@@ -45,8 +62,8 @@ export function buildContextQuery(query, verifiedResource = null) {
 export function clientContextSummary(context, verifiedResource = null) {
   if (!context) return null
   return {
-    version: context.version || 1,
-    source: 'randapp',
+    version: SUPPORTED_VERSION,
+    source: SUPPORTED_SOURCE,
     hotelId: context.hotelId,
     screen: context.screen || null,
     resource: verifiedResource ? {
@@ -61,3 +78,6 @@ export function clientContextSummary(context, verifiedResource = null) {
     } : null,
   }
 }
+
+export const RANDAI_OPERATIONAL_CONTEXT_VERSION = SUPPORTED_VERSION
+export const RANDAI_OPERATIONAL_CONTEXT_SOURCE = SUPPORTED_SOURCE
