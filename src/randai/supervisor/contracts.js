@@ -3,7 +3,13 @@ export const SupervisorStatus = Object.freeze({ PLANNED: 'PLANNED', RUNNING: 'RU
 export const SupervisorStopReason = Object.freeze({ BUDGET_EXCEEDED: 'BUDGET_EXCEEDED', REPEATED_FAILURE: 'REPEATED_FAILURE', CAPABILITY_GAP: 'CAPABILITY_GAP', QUALITY_GATE: 'QUALITY_GATE', EXECUTION_FAILED: 'EXECUTION_FAILED' })
 
 export function validateSupervisorBudget(budget) {
-  const fields = ['maxAgents', 'maxConcurrency', 'maxToolCalls', 'maxRetries', 'maxCost']
-  for (const field of fields) if (budget?.[field] != null && Number(budget[field]) < 0) throw new TypeError(`Invalid supervisor budget: ${field}`)
+  const integerFields = ['maxAgents', 'maxConcurrency', 'maxToolCalls', 'maxRetries']
+  for (const field of integerFields) {
+    const value = Number(budget?.[field])
+    if (!Number.isInteger(value) || value < 0) throw new TypeError(`Invalid supervisor budget: ${field}`)
+  }
+  const cost = Number(budget?.maxCost)
+  if (!Number.isFinite(cost) || cost < 0) throw new TypeError('Invalid supervisor budget: maxCost')
+  if (Number(budget.maxConcurrency) > Number(budget.maxAgents)) throw new TypeError('maxConcurrency cannot exceed maxAgents')
   return true
 }

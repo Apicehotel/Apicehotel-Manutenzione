@@ -19,7 +19,7 @@ Regole architetturali:
 - una parte viene eliminata come zombie solo con evidenza che è inutilizzata, irraggiungibile o sostituita da una sorgente canonica migliore;
 - **se esiste una soluzione nettamente migliore, si sostituisce la debolezza invece di accumulare patch**.
 
-## RandAI — roadmap canonica 1–20
+## RandAI — roadmap canonica 1–24
 
 La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storiche a coppie non cambiano più i numeri della roadmap.
 
@@ -29,8 +29,6 @@ La numerazione sotto è la sorgente canonica. Le precedenti denominazioni storic
 2. **Tool Registry** — capability discovery, rischio/permesso espliciti, health check, timeout, retry limitati e validazione fail-fast.
 3. **Skill Engine** — lifecycle `DRAFT → CANDIDATE → TESTED → APPROVED`, progressive disclosure e accesso ai soli tool dichiarati.
 4. **Directive Composer** — testo originale preservato, rules/forbidden/success criteria, versionamento e approvazione esplicita prima della promozione a skill candidata.
-
-Il Blocco 1 è stato consolidato e mergiato tramite PR #118.
 
 ### Blocco 2 — Motore operativo — 5–8 ✅
 
@@ -53,36 +51,41 @@ Il Blocco 1 è stato consolidato e mergiato tramite PR #118.
 15. **Project Intelligence 2.0** — grafo di file/moduli/database/workflow/test e relazioni semantiche senza archi duplicati.
 16. **Observability 2.0** — trace/span/event e lifecycle coerenti, niente successo con span aperti, progress validi e self-diagnostics non-fatal.
 
-I Blocchi 2–4 sono stati consolidati insieme tramite PR #123, assorbendo il materiale valido di #119 e #122. La CI post-merge su `main` è risultata completamente verde; #120, #121 e #122 sono state poi chiuse come linee superseded/zombie.
-
 ### Blocco 5 — Valutazione, coordinamento e recovery — 17–20 ✅
 
-17. **Evaluation / Benchmark 2.0** — grader e dimensioni validati, soglie `0..1`, suite non vuote e con scenario ID unici, scope `hotelId/projectId/taskId`, storico filtrabile per scope e confronto baseline/candidate con `regressed`, tolleranza e blocco dei confronti cross-scope.
-18. **Multi-Agent 2.0** — registry con ID unici, ruoli/task/tool dichiarati validati, DAG senza cicli, limiti di agenti/concorrenza, tool richiesti come subset dell'allowlist dell'agente, scope hotel coerente, dipendenti terminalizzati dopo failure e telemetria non-fatal con self-diagnostic.
-19. **Permission / Autonomy 2.0** — livelli L0–L4 e risk/permission continuano a governare le azioni; le policy contraddittorie vengono rifiutate, TTL approval validato e l'identità di una approval è deterministica e include lo scope. Un'approvazione di Hotel Giò non può autorizzare Chocohotel; DurableTaskRunner propaga lo scope hotel anche ai rollback.
-20. **Recovery / Self-Correction 2.0** — classificazione failure, retry same strategy, switch strategy, rollback autorizzato, escalation umana e stop; budget e fingerprint anti-loop sono validati fail-fast, safety/permission non vengono ritentati automaticamente e le recovery decision conservano lo scope hotel. La self-correction resta dentro DurableTaskRunner/Verifier/Autonomy e non crea un secondo runtime.
+17. **Evaluation / Benchmark 2.0** — grader/dimensioni/soglie validati, suite non vuote, scope `hotelId/projectId/taskId`, confronto baseline/candidate e regression detection cross-scope safe.
+18. **Multi-Agent 2.0** — registry con ID unici, DAG validato, agent/tool allowlist, limiti di concorrenza, scope hotel e telemetria non-fatal.
+19. **Permission / Autonomy 2.0** — approval identity deterministica e scope-aware; policy contraddittorie e TTL invalidi falliscono; una approval di Hotel Giò non autorizza Chocohotel.
+20. **Recovery / Self-Correction 2.0** — retry/switch/rollback/escalation con budget e fingerprint anti-loop; safety/permission non vengono ritentati automaticamente.
 
-Sorgenti canoniche: `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/`, integrate con `runtime/`.
+### Blocco 6 — Engineering, learning, discovery e supervisor — 21–24 ✅
 
-Test di consolidamento Blocco 5: `test/randai-block5-17-20.test.js`, oltre a `test/randai-evals-multi-agent.test.js` e `test/randai-autonomy-recovery.test.js`. La CI completa della PR #124 ha superato audit, quality, critical, multi-hotel, build, contratti RandAI/shared, Chromium/WebKit, cross-platform browser e device acceptance prima della marcatura finale del README.
+21. **Software Engineering Agent 2.0** — impact analysis prima dell'esecuzione, target unici, scope hotel propagato a task/review/evaluation, DurableTaskRunner come unica via di esecuzione, verifier/review/eval prima del successo e osservabilità non-fatal. Un impatto esplicitamente appartenente a un altro hotel viene rifiutato.
+22. **Learning Engine 2.0** — apprende soltanto esperienze `verified`, richiede evidenza ripetuta, promuove automaticamente al massimo fino a `TESTED` e mai `APPROVED`; `minEvidence` è validato e propose/evaluate di candidati hotel-scoped falliscono senza lo stesso `hotelId`.
+23. **Skill / Tool Discovery 2.0** — discovery multi-source senza installazione automatica; source ID e candidate ID duplicati vengono rifiutati, licenza/rischio/reputation sono validati, sandbox obbligatoria prima dell'evaluation e score utility/security devono essere finiti `0..1`. La raccomandazione non equivale a installazione.
+24. **RandAI Supervisor 2.0** — sceglie single/multi-agent solo da piani espliciti, governa budget e quality gate, mantiene run e anti-loop hotel-scoped, valida metriche e soglie, usa Discovery per capability gap e tratta la telemetria come non-fatal con self-diagnostic. Metriche non finite come `NaN` vengono rifiutate e non possono aggirare i budget gate.
 
-## Runtime Safety Layer — trasversale, non rinumerato
+Sorgenti canoniche Blocco 6: `src/randai/software/`, `learning/`, `discovery/`, `supervisor/`. Non sono implementazioni duplicate: Software Engineering esegue cambi verificati, Learning trasforma evidenza in candidati, Discovery valuta capacità esterne e Supervisor coordina i motori.
 
-Questi requisiti valgono per più blocchi:
+Test dedicato: `test/randai-block6-21-24.test.js`, oltre ai contratti storici `randai-software-learning.test.js` e `randai-discovery-supervisor.test.js`.
 
-- **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili precompilate.
-- **Multi-Agent:** limiti e DAG validati; nessun run concluso lascia task `PENDING`; tool e scope sono verificati prima dell'invocazione.
-- **Permission/Autonomy:** approval legate all'identità esatta dell'azione e allo scope; critical/admin richiedono sempre il controllo umano previsto.
-- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval e recovery operative.
-- **Fail closed:** assenza di dati, verifier, permessi, contesto o conoscenza non produce una risposta operativa inventata.
-- **Recovery bounded:** nessun retry infinito; repeated fingerprint e budget esaurito fermano il ciclo.
+## Runtime Safety Layer — trasversale
+
+- **Identity/Auth:** `/randai` richiede sessione Supabase + membership autorizzata; niente credenziali prevedibili.
+- **Hotel isolation:** scope esplicito su conoscenza, memoria, contesto, guidance, gap, approval, recovery, learning e supervisor.
+- **Permission/Autonomy:** critical/admin passano sempre dai controlli previsti; approval legate all'azione esatta e allo scope.
+- **Verification:** nessun tool call, software change o esperienza diventa verità/successo soltanto perché l'esecuzione tecnica è terminata.
+- **Recovery bounded:** niente retry infinito; fingerprint ripetuti e budget esauriti fermano il ciclo.
+- **Telemetry non-fatal:** un guasto di log/telemetria viene diagnosticato ma non riscrive l'esito operativo.
+- **External discovery:** una repository/skill/tool candidata resta candidata; assessment, sandbox ed evaluation non autorizzano da soli installazione o esecuzione.
 
 ## Consolidamento storico
 
 - PR #118: Blocco 1.
 - PR #123: consolidamento canonico 1–16 e assorbimento delle parti valide di #119/#122.
-- #120, #121 e #122: chiuse come superseded dopo la #123.
-- PR #124: consolidamento canonico dei punti 17–20; merge consentito solo dopo CI completa verde sulla revisione finale.
+- #120, #121 e #122: chiuse come superseded/zombie dopo la #123.
+- PR #124: consolidamento canonico 17–20, mergiato solo dopo CI completa verde e nuovamente verde su `main`.
+- PR #125: consolidamento canonico 21–24; codice, contratti RandAI/shared, browser cross-platform e device acceptance verificati verdi prima della marcatura finale del blocco.
 
 ## CI e quality gates
 
@@ -102,16 +105,12 @@ Canali WhatsApp configurati:
 
 ## Prossimi punti RandAI
 
-Dopo la chiusura verificata del Blocco 5, la roadmap storica continua con:
+Dopo il Blocco 6 restano gli ultimi punti della roadmap storica:
 
-21. **Software Engineering Agent**;
-22. **Learning Engine**;
-23. **Skill / Tool Discovery**;
-24. **RandAI Supervisor**;
 25. **Proactive RandAI**;
 26. **Control Center**.
 
-I moduli già presenti per alcuni punti successivi non vengono considerati automaticamente completi: saranno riesaminati con lo stesso criterio di consolidamento, zombie scan e CI completa usato per 1–20.
+I moduli già presenti per 25–26 non vengono considerati automaticamente completi: saranno riesaminati con lo stesso criterio di consolidamento, zombie scan e CI completa usato per 1–24.
 
 ## RandApp
 
@@ -125,8 +124,6 @@ Funzioni principali:
 - offline/outbox IndexedDB, retry controllato, diagnostica e audit;
 - shell responsive per iOS, Android e Windows.
 
-Il pulsante `+` usa il router contestuale della shell: una singola azione viene aperta direttamente, più azioni aprono il launcher.
-
 ### Hotel Giò — camere
 
 - **Jazz:** numerazione a 4 cifre, per esempio `1101`, `1114`;
@@ -134,7 +131,7 @@ Il pulsante `+` usa il router contestuale della shell: una singola azione viene 
 
 ## Magazzino
 
-Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movimenti; le giacenze sono saldi derivati/materializzati. Supporta catalogo, categorie/ubicazioni, QR/barcode, seriali, compatibilità, inventario fisico, trasferimenti e ricambi associati agli interventi. Un intervento non deve modificare silenziosamente la giacenza: il consumo deve produrre un movimento tracciato.
+Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movimenti; le giacenze sono saldi derivati/materializzati. Un intervento non deve modificare silenziosamente la giacenza: il consumo deve produrre un movimento tracciato.
 
 ## Struttura repository
 
@@ -145,6 +142,7 @@ Dominio autonomo ma collegato a RandApp. La fonte storica è il ledger dei movim
 - `src/randai/memory/`, `context/`, `models/`, `gaps/` — Blocco 3;
 - `src/randai/guidance/`, `projects/`, `observability/` — Blocco 4;
 - `src/randai/evals/`, `agents/`, `autonomy/`, `recovery/` — Blocco 5;
+- `src/randai/software/`, `learning/`, `discovery/`, `supervisor/` — Blocco 6;
 - `src/randai/control/`, `control-center/` — console e proiezioni operative;
 - `src/reliability/` — reliability/safety condivisa;
 - `supabase/functions/` — Edge Functions;

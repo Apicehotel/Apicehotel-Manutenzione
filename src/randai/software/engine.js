@@ -16,46 +16,63 @@ export class SoftwareEngineeringAgent {
   async analyze({ objective, projectId = 'randai', targetNodeIds = [], proposedPlan, metadata = {} } = {}) {
     const spec = { objective: objective?.trim(), projectId, targetNodeIds: [...targetNodeIds], proposedPlan: clone(proposedPlan), metadata: clone(metadata) }
     validateSoftwareSpec(spec)
+    const hotelId = String(spec.metadata?.hotelId || '').trim() || null
     const impacts = []
-    for (const nodeId of spec.targetNodeIds) impacts.push({ nodeId, impact: await this.projectIntelligence.impact(projectId, nodeId) })
+    for (const nodeId of spec.targetNodeIds) {
+      const impact = await this.projectIntelligence.impact(projectId, nodeId)
+      if (hotelId && impact?.hotelId && impact.hotelId !== hotelId) throw new Error(`Software impact hotel scope mismatch: ${impact.hotelId} != ${hotelId}`)
+      impacts.push({ nodeId, impact })
+    }
     return { ...spec, status: SoftwareRunStatus.ANALYZING, impacts }
   }
 
   async execute(spec, { evaluationScenario = null, pauseAfterSteps = Infinity } = {}) {
     validateSoftwareSpec(spec)
-    const trace = this.observability ? await this.observability.startTrace({ name: 'software-engineering', projectId: spec.projectId, metadata: { objective: spec.objective } }) : null
-    const task = await this.durableRunner.create({ objective: spec.objective, proposedPlan: spec.proposedPlan, metadata: { ...spec.metadata, projectId: spec.projectId, targetNodeIds: spec.targetNodeIds } })
-    if (trace) await this.observability.emit(trace.id, 'SOFTWARE_TASK_CREATED', { taskId: task.id })
-    const completed = await this.durableRunner.resume(task.id, { pauseAfterSteps })
-    if ([RuntimeTaskStatus.BLOCKED, RuntimeTaskStatus.PAUSED].includes(completed.status)) {
-      if (trace) await this.observability.completeTrace(trace.id, { ok: false, metadata: { taskStatus: completed.status } })
-      return { status: SoftwareRunStatus.BLOCKED, task: completed, review: null, evaluation: null, traceId: trace?.id || null }
+    const hotelId = String(spec.metadata?.hotelId || '').trim() || null
+    const trace = this.observability ? await this.observability.startTrace({ name: 'software-engineering', projectId: spec.projectId, hotelId, metadata: { objective: spec.objective } }) : null
+    const closeTrace = async (ok, metadata = {}) => {
+      if (!trace) return
+      try { await this.observability.completeTrace(trace.id, { ok, metadata }) } catch { /* observability must not rewrite task outcome */ }
     }
-    if (completed.status !== RuntimeTaskStatus.SUCCEEDED) {
-      if (trace) await this.observability.completeTrace(trace.id, { ok: false, metadata: { taskStatus: completed.status } })
-      return { status: SoftwareRunStatus.FAILED, task: completed, review: null, evaluation: null, traceId: trace?.id || null }
-    }
-
-    const review = this.reviewer ? await this.reviewer.review({ spec: clone(spec), task: clone(completed) }) : { ok: true, reason: 'no_reviewer_configured' }
-    if (!review?.ok) {
-      if (trace) await this.observability.completeTrace(trace.id, { ok: false, metadata: { review: 'failed' } })
-      return { status: SoftwareRunStatus.FAILED, task: completed, review, evaluation: null, traceId: trace?.id || null }
-    }
-
-    let evaluation = null
-    if (evaluationScenario) {
-      if (!this.evaluationEngine) throw new Error('evaluationEngine is required for evaluationScenario')
-      evaluation = await this.evaluationEngine.runScenario(evaluationScenario, { spec: clone(spec), task: clone(completed), review: clone(review) })
-      if (!evaluation.passed) {
-        if (trace) await this.observability.completeTrace(trace.id, { ok: false, metadata: { evaluationId: evaluation.id } })
-        return { status: SoftwareRunStatus.FAILED, task: completed, review, evaluation, traceId: trace?.id || null }
+    try {
+      const task = await this.durableRunner.create({ objective: spec.objective, proposedPlan: spec.proposedPlan, metadata: { ...spec.metadata, projectId: spec.projectId, hotelId, targetNodeIds: spec.targetNodeIds } })
+      if (trace) {
+        try { await this.observability.emit(trace.id, 'SOFTWARE_TASK_CREATED', { taskId: task.id, hotelId }) } catch { /* non-fatal */ }
       }
-    }
+      const completed = await this.durableRunner.resume(task.id, { pauseAfterSteps })
+      if ([RuntimeTaskStatus.BLOCKED, RuntimeTaskStatus.PAUSED].includes(completed.status)) {
+        await closeTrace(false, { taskStatus: completed.status })
+        return { status: SoftwareRunStatus.BLOCKED, task: completed, review: null, evaluation: null, traceId: trace?.id || null }
+      }
+      if (completed.status !== RuntimeTaskStatus.SUCCEEDED) {
+        await closeTrace(false, { taskStatus: completed.status })
+        return { status: SoftwareRunStatus.FAILED, task: completed, review: null, evaluation: null, traceId: trace?.id || null }
+      }
 
-    if (trace) {
-      await this.observability.emit(trace.id, 'SOFTWARE_VERIFIED', { taskId: completed.id, evaluationId: evaluation?.id || null })
-      await this.observability.completeTrace(trace.id, { ok: true })
+      const review = this.reviewer ? await this.reviewer.review({ spec: clone(spec), task: clone(completed), hotelId }) : { ok: true, reason: 'durable_verifier_only' }
+      if (!review?.ok) {
+        await closeTrace(false, { review: 'failed' })
+        return { status: SoftwareRunStatus.FAILED, task: completed, review, evaluation: null, traceId: trace?.id || null }
+      }
+
+      let evaluation = null
+      if (evaluationScenario) {
+        if (!this.evaluationEngine) throw new Error('evaluationEngine is required for evaluationScenario')
+        evaluation = await this.evaluationEngine.runScenario(evaluationScenario, { hotelId, projectId: spec.projectId, spec: clone(spec), task: clone(completed), review: clone(review) })
+        if (!evaluation.passed) {
+          await closeTrace(false, { evaluationId: evaluation.id })
+          return { status: SoftwareRunStatus.FAILED, task: completed, review, evaluation, traceId: trace?.id || null }
+        }
+      }
+
+      if (trace) {
+        try { await this.observability.emit(trace.id, 'SOFTWARE_VERIFIED', { taskId: completed.id, evaluationId: evaluation?.id || null, hotelId }) } catch { /* non-fatal */ }
+      }
+      await closeTrace(true)
+      return { status: SoftwareRunStatus.SUCCEEDED, task: completed, review, evaluation, traceId: trace?.id || null }
+    } catch (error) {
+      await closeTrace(false, { error: error?.message || String(error) })
+      throw error
     }
-    return { status: SoftwareRunStatus.SUCCEEDED, task: completed, review, evaluation, traceId: trace?.id || null }
   }
 }

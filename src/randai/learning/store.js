@@ -1,16 +1,23 @@
 const clone = (value) => structuredClone(value)
 
+function scopeMatches(item, hotelId = null) {
+  const itemHotel = String(item?.hotelId || '').trim() || null
+  const requested = String(hotelId || '').trim() || null
+  if (itemHotel == null) return requested == null
+  return requested === itemHotel
+}
+
 export class LearningStore {
   constructor() { this.items = new Map() }
   async save(candidate) { this.items.set(candidate.id, clone(candidate)); return clone(candidate) }
-  async get(id) { const item = this.items.get(id); return item ? clone(item) : null }
+  async get(id, hotelId = null) { const item = this.items.get(id); return item && scopeMatches(item, hotelId) ? clone(item) : null }
   async findByFingerprint(fingerprint, hotelId = null) {
-    const item = [...this.items.values()].find((entry) => entry.fingerprint === fingerprint && (hotelId == null || entry.hotelId === hotelId))
+    const item = [...this.items.values()].find((entry) => entry.fingerprint === fingerprint && scopeMatches(entry, hotelId))
     return item ? clone(item) : null
   }
   async list(filters = {}) {
     return [...this.items.values()]
-      .filter((item) => (!filters.status || item.status === filters.status) && (!filters.hotelId || item.hotelId === filters.hotelId))
+      .filter((item) => (!filters.status || item.status === filters.status) && (filters.hotelId == null || scopeMatches(item, filters.hotelId)))
       .map(clone)
   }
 }
@@ -38,10 +45,11 @@ export class SupabaseLearningStore {
     if (error) throw error
     return clone(candidate)
   }
-  async get(id) {
-    const { data, error } = await this.supabase.from('randai_learning_candidates').select('candidate').eq('id', id).maybeSingle()
+  async get(id, hotelId = null) {
+    if (!hotelId) return null
+    const { data, error } = await this.supabase.from('randai_learning_candidates').select('candidate').eq('id', id).eq('hotel_id', hotelId).maybeSingle()
     if (error) throw error
-    return data?.candidate ? clone(data.candidate) : null
+    return data?.candidate && scopeMatches(data.candidate, hotelId) ? clone(data.candidate) : null
   }
   async findByFingerprint(fingerprint, hotelId = null) {
     if (!hotelId) return null
@@ -50,11 +58,11 @@ export class SupabaseLearningStore {
     return data?.candidate ? clone(data.candidate) : null
   }
   async list(filters = {}) {
-    let query = this.supabase.from('randai_learning_candidates').select('candidate')
-    if (filters.hotelId) query = query.eq('hotel_id', filters.hotelId)
+    if (!filters.hotelId) return []
+    let query = this.supabase.from('randai_learning_candidates').select('candidate').eq('hotel_id', filters.hotelId)
     if (filters.status) query = query.eq('status', filters.status)
     const { data, error } = await query.order('updated_at', { ascending: false })
     if (error) throw error
-    return (data || []).map((row) => clone(row.candidate))
+    return (data || []).map((row) => clone(row.candidate)).filter((item) => scopeMatches(item, filters.hotelId))
   }
 }

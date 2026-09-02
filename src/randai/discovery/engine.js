@@ -5,6 +5,12 @@ const clone = (value) => structuredClone(value)
 const RISK_ORDER = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 const nowIso = () => new Date().toISOString()
 
+function boundedScore(value, name) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 1) throw new TypeError(`${name} must be a finite number between 0 and 1`)
+  return numeric
+}
+
 function normalize(raw, source, projectId) {
   const item = {
     projectId,
@@ -25,11 +31,15 @@ function normalize(raw, source, projectId) {
   }
   item.source = { id: source.id, ref: raw.source?.ref || raw.ref }
   validateDiscoveryCandidate(item)
+  if (!RISK_ORDER.includes(item.risk)) throw new TypeError(`Invalid discovery risk: ${item.risk}`)
+  item.reputation = boundedScore(item.reputation, 'reputation')
   return item
 }
 
 export class DiscoveryEngine {
   constructor({ sources = [], store = new DiscoveryStore(), analyzer = null, sandbox = null, evaluator = null, allowedLicenses = ['MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause'], maxRisk = 'HIGH' } = {}) {
+    if (!Array.isArray(allowedLicenses) || allowedLicenses.some((item) => !String(item || '').trim())) throw new TypeError('allowedLicenses must contain non-empty licenses')
+    if (!RISK_ORDER.includes(maxRisk)) throw new TypeError(`Invalid maxRisk: ${maxRisk}`)
     this.sources = new Map()
     for (const source of sources) this.registerSource(source)
     this.store = store; this.analyzer = analyzer; this.sandbox = sandbox; this.evaluator = evaluator
@@ -37,12 +47,18 @@ export class DiscoveryEngine {
     this.lastSourceFailures = []
   }
 
-  registerSource(source) { if (!source?.id || typeof source.search !== 'function') throw new TypeError('Discovery source requires id and search()'); this.sources.set(source.id, source); return source.id }
+  registerSource(source) {
+    if (!source?.id || typeof source.search !== 'function') throw new TypeError('Discovery source requires id and search()')
+    if (this.sources.has(source.id)) throw new Error(`Discovery source already registered: ${source.id}`)
+    this.sources.set(source.id, source)
+    return source.id
+  }
 
   async discover({ query, projectId = 'randai', kind = null } = {}) {
     if (!String(query || '').trim()) throw new TypeError('query is required')
     const found = []
     const failures = []
+    const seenIds = new Map()
     for (const source of this.sources.values()) {
       let results
       try {
@@ -51,8 +67,12 @@ export class DiscoveryEngine {
         failures.push({ sourceId: source.id, message: error?.message || String(error) })
         continue
       }
-      for (const raw of results || []) {
+      if (!Array.isArray(results)) throw new TypeError(`Discovery source ${source.id} must return an array`)
+      for (const raw of results) {
         const item = normalize(raw, source, projectId)
+        const previousSource = seenIds.get(item.id)
+        if (previousSource) throw new Error(`Duplicate discovery candidate id ${item.id} from ${previousSource} and ${source.id}`)
+        seenIds.set(item.id, source.id)
         await this.store.save(item); found.push(item)
       }
     }
@@ -67,7 +87,10 @@ export class DiscoveryEngine {
     const item = await this.#require(id, projectId)
     const analysis = this.analyzer ? await this.analyzer(clone(item)) : {}
     item.analysis = clone(analysis || {})
-    if (analysis?.risk) item.risk = analysis.risk
+    if (analysis?.risk) {
+      if (!RISK_ORDER.includes(analysis.risk)) throw new TypeError(`Invalid analyzed discovery risk: ${analysis.risk}`)
+      item.risk = analysis.risk
+    }
     const licenseOk = Boolean(item.license && this.allowedLicenses.has(item.license))
     const riskOk = RISK_ORDER.indexOf(item.risk) <= RISK_ORDER.indexOf(this.maxRisk)
     const suspicious = Boolean(analysis?.suspicious || analysis?.secretAccess || analysis?.unboundedNetwork)
@@ -92,8 +115,8 @@ export class DiscoveryEngine {
     if (item.status !== DiscoveryStatus.SANDBOXED) throw new Error(`Candidate must be SANDBOXED before evaluation: ${item.status}`)
     if (typeof this.evaluator !== 'function') throw new Error('Discovery evaluator is not configured')
     item.evaluation = clone(await this.evaluator(clone(item)))
-    const utility = Number(item.evaluation?.utilityScore || 0)
-    const security = Number(item.evaluation?.securityScore || 0)
+    const utility = boundedScore(item.evaluation?.utilityScore, 'utilityScore')
+    const security = boundedScore(item.evaluation?.securityScore, 'securityScore')
     item.score = Math.max(0, Math.min(1, item.score * 0.4 + utility * 0.3 + security * 0.3))
     item.status = utility >= 0.75 && security >= 0.9 ? DiscoveryStatus.RECOMMENDED : DiscoveryStatus.REJECTED
     item.updatedAt = nowIso(); await this.store.save(item); return clone(item)
