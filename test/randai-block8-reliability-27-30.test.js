@@ -77,6 +77,6 @@ test('30 action gateway blocks global and cross-hotel writes before mutation', a
     context, operation: 'x', module: 'issues', action: 'update', permission: 'issues.write',
     record: { type: 'issue', id: '1', hotelId: 'chocohotel' },
     write: async () => { writes += 1 }, readBack: async () => null,
-  }), /SCOPE_GUARD_BLOCKED/)
+  }), (error) => error?.code === 'SCOPE_GUARD_BLOCKED' && error.reasons?.some((item) => item.reason === 'HOTEL_MISMATCH'))
   assert.equal(writes, 0)
 })
