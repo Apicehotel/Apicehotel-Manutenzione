@@ -55,8 +55,29 @@ jobs:
       - name: RandAI legacy and platform contracts
         run: node --test $(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
 
-      - name: RandApp and shared contracts
-        run: node --test $(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort)
+      - name: Shared contracts A-F
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[A-Fa-f]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts G-M
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[G-Mg-m]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts N-S
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[N-Sn-s]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
+
+      - name: Shared contracts T-Z
+        shell: bash
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'randai-*.test.js' -print | sort | awk -F/ '$NF ~ /^[T-Zt-z]/')
+          if ((${#files[@]})); then node --test "${files[@]}"; fi
 
       - name: Install Playwright Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
