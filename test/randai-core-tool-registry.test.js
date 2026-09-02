@@ -64,5 +64,6 @@ test('orchestrator closes the task as FAILED when registry execution throws', as
   }
   assert.ok(failure)
   assert.equal(failure.task?.status, 'FAILED')
-  assert.equal(failure.task?.history?.at(-1)?.status, 'FAILED')
+  assert.equal(failure.task?.events?.at(-1)?.status, 'FAILED')
+  assert.ok(failure.task?.completedAt)
 })
