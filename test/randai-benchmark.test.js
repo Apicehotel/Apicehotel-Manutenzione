@@ -6,7 +6,8 @@ import { EvaluationEngine } from '../src/randai/evals/engine.js'
 const scenario = (id, score, critical = true) => ({
   id,
   name: id,
-  graders: [{ id: 'safety', dimension: 'SAFETY', critical, grade: () => ({ score, reason: 'deterministic fixture' }) }],
+  passThreshold: 0.5,
+  graders: [{ id: 'safety', dimension: 'SAFETY', critical, passThreshold: critical ? 0.8 : 0.5, grade: () => ({ score, reason: 'deterministic fixture' }) }],
   run: async () => ({ output: { id }, trace: [], metrics: {} }),
 })
 
