@@ -151,6 +151,19 @@ export default function RandAIAssistant() {
                     ))}
                   </div>
                 )}
+                {message.suggestions?.length > 0 && (
+                  <div className="randai__equipment">
+                    <b>Suggerimenti ordinati</b>
+                    {message.suggestions.map((item) => (
+                      <div key={item.id} className="randai__equipment-item">
+                        <strong>{item.title}</strong>
+                        <span>{item.kind === 'procedure' ? 'Procedura' : 'Esperienza'} · {item.trust} · confidenza {Math.round((item.confidence || 0) * 100)}%</span>
+                        {item.nextAction && <small>Prossima azione: {item.nextAction}</small>}
+                        {item.caution && <small>{item.caution}</small>}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {message.memory?.length > 0 && (
                   <div className="randai__equipment">
                     <b>Memoria RandAI verificata</b>
