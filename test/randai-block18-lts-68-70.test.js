@@ -64,9 +64,12 @@ test('70: Rand Ecosystem LTS attestation is explicit about included and deferred
   assert.equal(attestation.release, `Rand Ecosystem LTS ${RAND_LTS_VERSION}`)
   assert.equal(attestation.zeroCanonicalZombies, true)
   assert.ok(attestation.includedModules.includes('warehouse'))
+  assert.ok(attestation.includedModules.includes('randguide'))
+  assert.equal(byId.get('randguide')?.status, EcosystemStatus.LIVE)
+  assert.ok(byId.get('randguide')?.evidence?.length, 'RandGuide inclusion must remain evidence-backed')
   assert.ok(attestation.deferredModules.some((module) => module.id === 'randaudio' && module.status === EcosystemStatus.PLANNED))
   assert.ok(attestation.deferredModules.some((module) => module.id === 'viking' && module.status === EcosystemStatus.PLANNED))
-  assert.ok(attestation.deferredModules.some((module) => module.id === 'randguide' && module.status === EcosystemStatus.PARTIAL))
+  assert.equal(attestation.deferredModules.some((module) => module.id === 'randguide'), false)
 })
 
 test('70: attestation cannot be emitted when a final gate is missing', () => {
