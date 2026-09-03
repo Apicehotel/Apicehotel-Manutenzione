@@ -24,10 +24,10 @@ function metric(value, name) {
 }
 
 export class RandAISupervisor {
-  constructor({ discovery = null, multiAgentRuntime = null, store = new SupervisorStore(), eventSink = null, onTelemetryError = null, qualityThreshold = 0.8, repeatedFailureLimit = 3, defaultBudget = {} } = {}) {
+  constructor({ discovery = null, multiAgentRuntime = null, multiAgentCoordinator = null, store = new SupervisorStore(), eventSink = null, onTelemetryError = null, qualityThreshold = 0.8, repeatedFailureLimit = 3, defaultBudget = {} } = {}) {
     if (eventSink != null && typeof eventSink !== 'function') throw new TypeError('eventSink must be a function')
     if (onTelemetryError != null && typeof onTelemetryError !== 'function') throw new TypeError('onTelemetryError must be a function')
-    this.discovery = discovery; this.multiAgentRuntime = multiAgentRuntime; this.store = store; this.eventSink = eventSink; this.onTelemetryError = onTelemetryError
+    this.discovery = discovery; this.multiAgentRuntime = multiAgentRuntime; this.multiAgentCoordinator = multiAgentCoordinator; this.store = store; this.eventSink = eventSink; this.onTelemetryError = onTelemetryError
     this.qualityThreshold = threshold(qualityThreshold, 'qualityThreshold')
     this.repeatedFailureLimit = positiveInteger(repeatedFailureLimit, 'repeatedFailureLimit')
     const defaults = { maxAgents: 5, maxConcurrency: 3, maxToolCalls: 40, maxRetries: 5, maxCost: 10 }
@@ -81,8 +81,9 @@ export class RandAISupervisor {
     try {
       let execution
       if (plan.mode === SupervisorMode.MULTI_AGENT) {
-        if (!this.multiAgentRuntime) throw new Error('Multi-agent runtime is not configured')
-        execution = await this.multiAgentRuntime.run({ objective, tasks: agentTasks, context: { ...clone(context), hotelId: scopedHotel } })
+        const coordinator = this.multiAgentCoordinator || this.multiAgentRuntime
+        if (!coordinator) throw new Error('Multi-agent runtime is not configured')
+        execution = await coordinator.run({ objective, tasks: agentTasks, context: { ...clone(context), hotelId: scopedHotel } })
       } else {
         if (typeof executeSingle !== 'function') throw new Error('Single-agent executor is not configured')
         execution = await executeSingle({ objective, context: { ...clone(context), hotelId: scopedHotel }, budget: clone(plan.budget) })
@@ -97,6 +98,7 @@ export class RandAISupervisor {
       }
       const exceeded = run.metrics.agents > plan.budget.maxAgents || run.metrics.toolCalls > plan.budget.maxToolCalls || run.metrics.retries > plan.budget.maxRetries || run.metrics.cost > plan.budget.maxCost
       if (exceeded) { run.stopReason = SupervisorStopReason.BUDGET_EXCEEDED; await emit('SUPERVISOR_BUDGET_EXCEEDED', { metrics: run.metrics }); return this.#finish(run, SupervisorStatus.STOPPED) }
+      if (execution?.status === 'NEEDS_REVIEW') { run.stopReason = SupervisorStopReason.QUALITY_GATE; await emit('SUPERVISOR_NEEDS_REVIEW', { reason: 'MULTI_AGENT_CONFLICT' }); return this.#finish(run, SupervisorStatus.NEEDS_REVIEW) }
       if (execution?.ok === false) { run.stopReason = SupervisorStopReason.EXECUTION_FAILED; await emit('SUPERVISOR_EXECUTION_FAILED'); return this.#finish(run, SupervisorStatus.FAILED) }
       const quality = threshold(execution?.evaluation?.score ?? execution?.qualityScore ?? 1, 'execution quality')
       if (quality < this.qualityThreshold) { run.stopReason = SupervisorStopReason.QUALITY_GATE; await emit('QUALITY_GATE_FAILED', { quality, threshold: this.qualityThreshold }); return this.#finish(run, SupervisorStatus.NEEDS_REVIEW) }
