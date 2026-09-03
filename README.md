@@ -8,7 +8,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target o
 - Nessun modello o frontend riceve `service_role`, PIN, refresh token o secret non necessari.
 - RLS/RPC Supabase sono l'autorità finale; nascondere un bottone non è autorizzazione.
 - `UNKNOWN` e `STALE` non significano `HEALTHY`.
-- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario o health stack per la stessa responsabilità.
+- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario, knowledge o health stack per la stessa responsabilità.
 - Una parte viene eliminata come zombie solo dopo verifica di utilizzo e dipendenze.
 - Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
 
@@ -38,7 +38,7 @@ Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegat
 ### Blocco 18 — 68–70 ✅
 Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
 
-Perimetro LTS obbligatorio: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. Moduli deferred dichiarati: `RandGuide`, `RandMind`, `RandBrain`, `RandUI` (`PARTIAL`), `RandAudio` e `Viking` (`PLANNED`).
+Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive devono essere evidence-backed: dal Blocco 22 `RandGuide` è `LIVE` e non è più deferred.
 
 ### Blocco 19 — Health Evidence Contract — 71 ✅
 
@@ -54,21 +54,35 @@ Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHeal
 
 Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
 
-### Blocco 21 — Full Autodiagnosis & Final Gate — 73
+### Blocco 21 — Full Autodiagnosis & Final Gate — 73 ✅
 
-73 chiude la nuova fase con una regola unica: `FULL_HEALTHY` è possibile soltanto con **7/7 VERIFIED + FRESH + HEALTHY, score 100, confidence 100 e coerenza del commit di deploy/dipendenze**.
+73 chiude la fase health con una regola unica: `FULL_HEALTHY` è possibile soltanto con **7/7 VERIFIED + FRESH + HEALTHY, score 100, confidence 100 e coerenza del commit di deploy/dipendenze**.
 
 `integrations` non usa messaggi sintetici né ping aggressivi: `randcore_measure_integrations_internal()` misura tracce operative realmente già prodotte da meteo, sensori, WhatsApp e configurazione ntfy. Canali WhatsApp esplicitamente in pausa non sono considerati guasti. Assenza, stale o configurazione incompleta degradano il dominio.
 
 `backup_restore` non diventa verde perché “esiste un backup”. `randcore_run_recoverability_drill_internal()` esegue un **restore drill logico reale e isolato** su dati critici non-secret del control plane: copia in tabelle TEMP, crea una copia di backup TEMP, svuota esclusivamente la copia TEMP, la ripristina e confronta conteggi/checksum. Le tabelle di produzione sono solo lette. L'evidenza dichiara esplicitamente `isolated=true`, `production_mutated=false`, `restore_verified` e `managed_pitr_certified=false`: il gate certifica la recoverability applicativa verificata, non inventa una certificazione del PITR gestito dal provider.
 
-`randcore_run_health_check()` esegue ora runtime audit + integration probe + restore drill. Il `randcore-monthly-full-check` usa lo stesso percorso completo. La UI RandControl mostra il Final Health Gate e le ragioni precise quando è `BLOCKED`.
+`randcore_run_health_check()` esegue runtime audit + integration probe + restore drill. Il `randcore-monthly-full-check` usa lo stesso percorso completo. La UI RandControl mostra il Final Health Gate e le ragioni precise quando è `BLOCKED`.
 
 Durante l'analisi reale del 73 sono emerse due debolezze operative, corrette invece di nasconderle: il worker meteo falliva ripetutamente sul primo hotel mentre gli altri due proseguivano, quindi il fetch Open-Meteo ora usa retry bounded e rende esplicito il partial failure; il worker sensori superava talvolta il timeout pg_net predefinito di 5 secondi durante l'autenticazione eWeLink, quindi mantiene la cadenza ogni 30 minuti ma usa timeout HTTP 20 secondi.
 
 Zombie scan 73: nessun secondo health stack, scheduler, dashboard, backup engine, framework o dipendenza runtime. Il final gate compone 71+72 e usa le tracce operative già esistenti.
 
 Sorgenti: `src/randai/core/full-health-gate.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903201000_randcore_full_health_final_gate.sql`, `supabase/functions/weather-alert-worker/index.ts`, `test/randai-block21-full-health-73.test.js`, `.github/workflows/ci.yml`.
+
+### Blocco 22 — RandGuide LIVE — 74–80 ✅
+
+RandGuide consolida il knowledge/guidance domain già esistente invece di crearne uno parallelo. Le autorità restano `randai_procedures`, `randai_documents`, `randai_equipment`, `randai_guidance_sessions` e la Knowledge Console esistente.
+
+Il blocco introduce catalogo e classificazione canonici, rischio e confidence, ingestione con provenance/deduplica, knowledge graph operativo hotel-scoped, authoring assistito che **non può auto-pubblicare**, version snapshot e pubblicazione governata via RPC. Le procedure `critical` richiedono caution; fonti con confidence insufficiente non possono essere pubblicate. RLS e membership mantengono l'isolamento multi-hotel.
+
+`RandGuide` è promosso da `PARTIAL` a `LIVE` solo con evidenze reali nel manifest. I contratti storici sono stati aggiornati senza indebolire il fail-closed: un modulo `LIVE` senza evidence continua a essere rifiutato e RandGuide non può comparire contemporaneamente tra i deferred.
+
+Migration production: `supabase/migrations/20260903213000_randguide_live_74_80.sql`. Tabelle aggiunte: `randguide_procedure_versions`, `randguide_links`; RLS attiva. `anon` non può eseguire `randguide_publish_procedure` né `randguide_get_graph`; `authenticated` può usare le RPC ma l'autorità server verifica membership/gestione hotel.
+
+Zombie scan 74–80: nessun secondo knowledge system, navigation stack, auth plane, scheduler, framework o runtime dependency. `GuidedProcedureEngine` e Knowledge Console sono mantenuti perché canonici e in uso.
+
+Sorgenti: `src/randai/guidance/catalog.js`, `src/randai/guidance/ingestion.js`, `src/randai/guidance/graph.js`, `src/randai/guidance/authoring.js`, `src/randai/guidance/production-gate.js`, `src/randai/core/ecosystem.js`, `test/randai-block22-randguide-74-80.test.js`.
 
 ## Rand Control Plane
 
@@ -122,6 +136,7 @@ npm run test:lts
 npm run test:health-evidence
 npm run test:external-evidence
 npm run test:full-health
+npm run test:randguide
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -132,7 +147,7 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
@@ -140,6 +155,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 
 - `src/randapp/` — shell/UI e domini RandApp.
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
+- `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/control/` — Control Center, Operations, Security, Health e Repo Radar.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
 - `src/reliability/` — safety/reliability 27+.
@@ -168,6 +184,8 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #156 — 68–70.
 - PR #157 — 71.
 - PR #158 — 72.
+- PR #159 — 73.
+- PR #160 — 74–80 / RandGuide LIVE.
 
 ## Deploy
 
