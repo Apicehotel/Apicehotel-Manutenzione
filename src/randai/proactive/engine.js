@@ -37,6 +37,7 @@ export class ProactiveEngine {
     if(item.hotelId){ if(scope.hotelId!==item.hotelId) throw new Error(`Proactive signal hotel scope mismatch for ${id}`) }
     else if(item.global===true){ if(!scope.global) throw new Error(`Proactive signal ${id} requires explicit global scope`) }
     else throw new Error(`Proactive signal ${id} has invalid scope`)
+    if ([SignalStatus.ACTIONED, SignalStatus.BLOCKED, SignalStatus.RESOLVED, SignalStatus.SUPPRESSED].includes(item.status)) return clone(item)
     const decision=this.decide(item,{allowAct}); item.decision=decision
     if(decision===ProactiveDecision.IGNORE){ item.status=SignalStatus.SUPPRESSED; item.updatedAt=nowIso(); await this.store.save(item); return clone(item) }
     if(decision===ProactiveDecision.BLOCK){ item.status=SignalStatus.BLOCKED; item.updatedAt=nowIso(); await this.store.save(item); await this.#emit('PROACTIVE_SIGNAL_BLOCKED',{id,hotelId:item.hotelId,global:item.global}); return clone(item) }
