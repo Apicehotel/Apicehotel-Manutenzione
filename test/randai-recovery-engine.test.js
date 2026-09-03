@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { RecoveryBudget, RecoveryCircuit } from '../src/reliability/recovery-circuit.js'
 import { FailureIntelligence } from '../src/reliability/failure-intelligence.js'
-import { RecoveryAction, RecoveryDisposition, executeRecovery, planRecovery } from '../src/randai/recovery/engine.js'
+import { RecoveryAction, RecoveryDisposition } from '../src/randai/recovery/contracts.js'
+import { executeRecovery, planRecovery } from '../src/randai/recovery/engine.js'
 
 test('recovery plans transient network failures and stops unsafe writes', () => {
   assert.equal(planRecovery({ hotelId: 'gio', code: 'timeout', permission: 'READ' }).action, RecoveryAction.RETRY_READ)
