@@ -2,5 +2,5 @@ export { BrainAutonomyLevel, BrainDecision, BrainDomain, validateBrainRequest, a
 export { routeBrainObjective } from './router.js'
 export { buildReasoningGraph } from './reasoning-graph.js'
 export { RandBrain, decideBrainAutonomy } from './engine.js'
-export { RandBrainFailureIntelligence } from './learning.js'
+export { RandBrainLearningAdapter } from './learning.js'
 export { evaluateRandBrainReadiness } from './production-gate.js'
