@@ -21,7 +21,8 @@
     "test:recovery": "node --test test/randai-recovery-engine.test.js",
     "test:software": "node --test test/randai-software-readiness.test.js",
     "test:learning": "node --test test/randai-learning-governance.test.js",
-    "test:discovery": "node --test test/randai-discovery-governance.test.js"
+    "test:discovery": "node --test test/randai-discovery-governance.test.js",
+    "test:supervisor": "node --test test/randai-supervisor-governance.test.js"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
