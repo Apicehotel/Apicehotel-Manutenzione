@@ -4,7 +4,7 @@ import { HOTELS } from '../../config.js'
 import { changeRandAIPassword, createRandAIUser, isValidRandAIPassword, isValidRandAIUsername, listRandAIUsers, loginRandAI, signOutRandAI } from './randai-auth.js'
 import './randai-auth.css'
 
-const RandAIControlCenter=lazy(()=>import('../control/RandAIControlCenter.jsx'))
+const RandAIControlHub=lazy(()=>import('../control/RandAIControlHub.jsx'))
 const ALL_HOTELS=HOTELS.map((hotel)=>hotel.id)
 
 function Login({onReady}){
@@ -34,5 +34,5 @@ export default function RandAIProtectedRoute(){
   const logout=async()=>{await signOutRandAI();setState({loading:false,allowed:false,user:null})}
   if(state.loading)return <div className="ra-gate"><div className="ra-loading">Controllo credenziali RandAI…</div></div>
   if(!state.allowed)return <Login onReady={ready}/>
-  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">Caricamento Control Center…</div></div>}><RandAIControlCenter/></Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
+  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">Caricamento RandControl 360…</div></div>}><RandAIControlHub accessHotels={state.user?.hotels||[]}/></Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
 }
