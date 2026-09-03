@@ -25,7 +25,9 @@
     "test:supervisor": "node --test test/randai-supervisor-governance.test.js",
     "test:proactive": "node --test test/randai-proactive-governance.test.js",
     "test:control-center": "node --test test/randai-control-center-governance.test.js",
-    "test:ecosystem": "node --test test/randai-block13-ecosystem-51-54.test.js"
+    "test:ecosystem": "node --test test/randai-block13-ecosystem-51-54.test.js",
+    "test:repo-radar": "node --test test/randai-block14-repo-radar-55-58.test.js",
+    "repo:radar": "node scripts/repo-radar-snapshot.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
