@@ -20,8 +20,6 @@ alter table public.randcore_external_health_evidence enable row level security;
 revoke all on public.randcore_external_health_evidence from public, anon, authenticated;
 grant select, insert on public.randcore_external_health_evidence to service_role;
 
-after insert on public.randcore_external_health_evidence;
-
 create or replace function public.randcore_record_external_health_evidence(
   p_domain text,
   p_status text,
