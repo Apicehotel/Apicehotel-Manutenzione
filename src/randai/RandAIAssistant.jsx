@@ -208,7 +208,7 @@ export default function RandAIAssistant() {
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
                 <HvacDiagnostic diagnostic={message.hvacDiagnostic} />
-                <ProjectIntelligencePanel intelligence={buildProjectIntelligence({ hotelId: session.hotelId, issue: issueResource, equipment: message.equipment, history: message.history, memory: message.memory, suggestions: message.suggestions, documents: message.documents, sensors: message.sensors })} />
+                {issueResource?.id && <ProjectIntelligencePanel intelligence={buildProjectIntelligence({ hotelId: session.hotelId, issue: issueResource, equipment: message.equipment, history: message.history, memory: message.memory, suggestions: message.suggestions, documents: message.documents, sensors: message.sensors })} />}
                 {message.sensors?.length > 0 && (
                   <div className="randai__equipment">
                     <b>Dati live impianto</b>
