@@ -146,6 +146,17 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:device
 
+      - name: RandCore health evidence snapshot
+        run: npm run core:health
+
+      - name: Upload RandCore health evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: randcore-health-evidence-${{ github.sha }}
+          path: artifacts/randcore-full-check.json
+          if-no-files-found: error
+          retention-days: 365
+
       - name: Rand Ecosystem LTS attestation
         env:
           RAND_LTS_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

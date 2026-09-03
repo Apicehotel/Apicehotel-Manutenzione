@@ -31,6 +31,7 @@
     "test:operations-security": "node --test test/randai-block16-operations-security-63-66.test.js",
     "test:warehouse-integration": "node --test test/randai-block17-warehouse-integration-67.test.js",
     "test:lts": "node --test test/randai-block18-lts-68-70.test.js",
+    "test:health-evidence": "node --test test/randai-block19-health-evidence-71.test.js",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
     "lts:attest": "node scripts/rand-lts-attestation.mjs"
