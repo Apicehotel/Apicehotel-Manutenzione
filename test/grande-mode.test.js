@@ -26,7 +26,7 @@ test('modalità Grande: nessun font-size fisso tra 9 e 14px, scaling via custom 
 
 test('modalità Grande: bottom nav, header, filtri e calendario Planning possono andare a capo invece di troncare', async () => {
   const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
-  assert.match(styles, /html\[data-ui-size="large"\] \.app-nav button span,\nhtml\[data-ui-size="large"\] \.hotel-identity strong,\nhtml\[data-ui-size="large"\] \.hotel-identity small,\nhtml\[data-ui-size="large"\] \.urgent-filters button,\nhtml\[data-ui-size="large"\] \.work-event span,\nhtml\[data-ui-size="large"\] \.sale-event span \{\n  white-space: normal;/)
+  assert.match(styles, /html\[data-ui-size="large"\] \.app-nav button span,\r?\nhtml\[data-ui-size="large"\] \.hotel-identity strong,\r?\nhtml\[data-ui-size="large"\] \.hotel-identity small,\r?\nhtml\[data-ui-size="large"\] \.urgent-filters button,\r?\nhtml\[data-ui-size="large"\] \.work-event span,\r?\nhtml\[data-ui-size="large"\] \.sale-event span \{\r?\n  white-space: normal;/)
 })
 
 test('modalità Grande: i controlli restano cliccabili (min-height via --control-h) senza distinzione per modalità', async () => {

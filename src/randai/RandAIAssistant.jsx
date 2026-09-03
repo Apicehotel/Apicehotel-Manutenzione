@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadSession } from '../session.js'
 import { retrieveRandAIGuidance } from './randai-data.js'
 import { getIssueWorkspace, startIssueWorkspace, confirmIssueWorkspaceStep, prepareIssueCompletionSummary, issueWorkspaceProgress } from './issue-workspace.js'
 import { getRandAIContext } from './context/envelope.js'
 import { buildProjectIntelligence } from './project-intelligence.js'
+import { createBrowserRandAudio, createTranscriptArtifact } from './audio/index.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -106,6 +107,11 @@ export default function RandAIAssistant() {
   const [workspace, setWorkspace] = useState(null)
   const [workspaceSummary, setWorkspaceSummary] = useState('')
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [audioNotice, setAudioNotice] = useState('')
+  const audio = useRef(null)
+
+  if (!audio.current && typeof window !== 'undefined') audio.current = createBrowserRandAudio(window)
 
   useEffect(() => {
     const refresh = () => setSession(loadSession())
@@ -118,6 +124,10 @@ export default function RandAIAssistant() {
     setMessages([])
     setQuery('')
     setBusy(false)
+    audio.current?.stopListening()
+    audio.current?.stopSpeaking()
+    setListening(false)
+    setAudioNotice('')
   }, [session?.hotelId, session?.userId])
 
   useEffect(() => {
@@ -131,6 +141,33 @@ export default function RandAIAssistant() {
   const activeResource = getRandAIContext()?.resource
   const issueResource = activeResource?.type === 'issue' ? activeResource : null
   const workspaceProgress = issueWorkspaceProgress(workspace)
+  const canDictate = Boolean(audio.current?.capabilities.stt)
+
+  const startDictation = () => {
+    if (!canDictate || listening) return
+    setListening(true)
+    setAudioNotice('Ascolto… la trascrizione dovrà essere confermata prima dell’invio.')
+    try {
+      audio.current.listen({
+        onResult: ({ text, confidence }) => {
+          const artifact = createTranscriptArtifact({ hotelId: session.hotelId, text, confidence })
+          setQuery((current) => [current.trim(), artifact.transcript].filter(Boolean).join(' '))
+          setAudioNotice('Trascrizione inserita: controllala e premi Chiedi per confermare.')
+        },
+        onError: () => setAudioNotice('Dettatura non riuscita. Puoi continuare a scrivere.'),
+        onEnd: () => setListening(false),
+      })
+    } catch {
+      setListening(false)
+      setAudioNotice('Dettatura non disponibile su questo dispositivo.')
+    }
+  }
+
+  const readMessage = (message) => {
+    const text = message.text || [message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || [])].filter(Boolean).join('. ')
+    if (!text) return
+    try { audio.current?.speak(text) } catch { setAudioNotice('Lettura vocale non disponibile su questo dispositivo.') }
+  }
 
   const refreshWorkspace = async (issueId = issueResource?.id) => {
     if (!issueId) return
@@ -207,6 +244,7 @@ export default function RandAIAssistant() {
               <div className="randai__bubble randai__bubble--user" key={`${index}-${message.text}`}>{message.text}</div>
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
+                {audio.current?.capabilities.tts && <button type="button" className="randai__audio-action" onClick={() => readMessage(message)} aria-label="Leggi la risposta RandAI">🔊 Leggi</button>}
                 <HvacDiagnostic diagnostic={message.hvacDiagnostic} />
                 {issueResource?.id && <ProjectIntelligencePanel intelligence={buildProjectIntelligence({ hotelId: session.hotelId, issue: issueResource, equipment: message.equipment, history: message.history, memory: message.memory, suggestions: message.suggestions, documents: message.documents, sensors: message.sensors })} />}
                 {message.sensors?.length > 0 && (
@@ -299,6 +337,7 @@ export default function RandAIAssistant() {
               </article>
             ) : (
               <div className="randai__bubble randai__bubble--assistant" key={`${index}-${message.text}`}>
+                {audio.current?.capabilities.tts && <button type="button" className="randai__audio-action" onClick={() => readMessage(message)} aria-label="Leggi la risposta RandAI">🔊 Leggi</button>}
                 <span className="randai__source">{message.kind === 'error' ? 'Base tecnica non disponibile' : 'Conoscenza insufficiente'}</span>
                 <p>{message.text}</p>
               </div>
@@ -307,9 +346,11 @@ export default function RandAIAssistant() {
           </div>
 
           <form className="randai__composer" onSubmit={submit}>
+            {canDictate && <button type="button" className={`randai__dictate ${listening ? 'is-listening' : ''}`} onClick={startDictation} disabled={busy || listening} aria-pressed={listening} aria-label="Detta la domanda">{listening ? '●' : '🎙'}</button>}
             <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Camera 125 non fredda…" aria-label="Domanda a RandAI" disabled={busy} />
             <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Controllo…' : 'Chiedi'}</button>
           </form>
+          {audioNotice && <small className="randai__audio-notice" role="status">{audioNotice}</small>}
         </section>
       )}
     </div>

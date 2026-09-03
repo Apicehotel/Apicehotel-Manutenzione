@@ -38,6 +38,7 @@
     "test:randmind": "node --test test/randai-block23-randmind-81-86.test.js",
     "test:randbrain": "node --test test/randai-block24-randbrain-87-92.test.js",
     "test:randui": "node --test test/randai-block25-randui-93-97.test.js",
+    "test:randaudio": "node --test test/randai-block26-randaudio-98.test.js",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
     "core:external-evidence": "node scripts/randcore-external-evidence.mjs",

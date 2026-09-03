@@ -52,6 +52,11 @@
 .randai__composer textarea { flex:1; min-height:44px; max-height:120px; resize:vertical; border:1px solid var(--rs-border,rgba(15,23,42,.16)); background:transparent; color:inherit; border-radius:14px; padding:10px 12px; font:inherit; }
 .randai__composer button { min-width:72px; height:44px; border:0; border-radius:14px; background:var(--rs-accent,#315efb); color:#fff; font-weight:800; }
 .randai__composer button:disabled { opacity:.45; }
+.randai__composer .randai__dictate { min-width:44px; width:44px; background:color-mix(in srgb,var(--rs-accent,#315efb) 12%,transparent); color:var(--rs-accent,#315efb); border:1px solid color-mix(in srgb,var(--rs-accent,#315efb) 30%,transparent); }
+.randai__composer .randai__dictate.is-listening { color:var(--rs-danger,#d92d20); animation:randai-audio-pulse 1.2s ease-in-out infinite; }
+.randai__audio-action { float:right; min-height:36px; border:1px solid var(--rs-border,rgba(15,23,42,.14)); border-radius:999px; background:var(--rs-card,#fff); color:inherit; padding:6px 10px; font:inherit; font-size:12px; font-weight:750; }
+.randai__audio-notice { display:block; padding:0 12px 10px; color:var(--rs-text-2,#667085); background:var(--rs-card,#fff); }
+@keyframes randai-audio-pulse { 50% { transform:scale(.92); opacity:.65; } }
 
 @media (max-width: 899px) {
   .randai__panel {

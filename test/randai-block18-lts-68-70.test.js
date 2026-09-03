@@ -72,7 +72,7 @@ test('70: Rand Ecosystem LTS attestation is explicit about included and deferred
     assert.ok(byId.get(id)?.evidence?.length, `${id} inclusion must remain evidence-backed`)
     assert.equal(attestation.deferredModules.some((module) => module.id === id), false)
   }
-  assert.ok(attestation.deferredModules.some((module) => module.id === 'randaudio' && module.status === EcosystemStatus.PLANNED))
+  assert.ok(attestation.deferredModules.some((module) => module.id === 'randaudio' && module.status === EcosystemStatus.PARTIAL))
   assert.ok(attestation.deferredModules.some((module) => module.id === 'viking' && module.status === EcosystemStatus.PLANNED))
 })
 

@@ -126,6 +126,16 @@ Zombie scan 93–97: conservati i CSS feature-specific ancora importati e copert
 
 Sorgenti: `src/randapp/ui.jsx`, `src/randapp/ui-coherence.css`, `src/randapp/ui-material-glass.css`, `src/randapp/adaptive-layout.css`, `src/randapp/hotel-identity.js`, `src/randapp/theme.js`, `src/randapp/Shell.jsx`, `test/randai-block25-randui-93-97.test.js`, `test/e2e.mjs`, `test/device-acceptance.mjs`.
 
+### Blocco 26 — RandAudio — 98 ✅ / LIVE deferred
+
+RandAudio è una capability condivisa di RandAI, non un secondo assistente. L'adapter browser separa STT, TTS e registrazione perché il supporto non è uniforme; la UI RandAI abilita la dettatura solo dove disponibile e la lettura delle risposte dove supportata. Una trascrizione conserva provider, timestamp, confidence e `hotelId`, ma resta `USER_CONFIRMATION_REQUIRED`: viene inserita nel composer e diventa input operativo soltanto quando la persona la controlla e la invia.
+
+Il benchmark di riferimento copre Android/Chromium, Windows/Chromium e iOS/WebKit. TTS è disponibile 3/3; STT nativo è 2/3 e manca su iOS/WebKit. Per questo il punto 98 è completato con l'esito previsto dalla roadmap ma RandAudio resta `PARTIAL`, esplicitamente deferred: nessun falso `LIVE`, nessun provider cloud scelto senza benchmark, nessun segreto client, audio persistente o costo ricorrente introdotto. Il gate potrà promuoverlo quando un adapter locale/cloud autorizzato supererà privacy, costo, qualità e copertura 3/3.
+
+Zombie scan 98: nessun secondo sistema AI, storage audio, coda, permission plane o SDK provider. Il test audio sale resta indipendente perché misura un impianto fisico, non voce/STT/TTS.
+
+Sorgenti: `src/randai/audio/`, `src/randai/RandAIAssistant.jsx`, `test/randai-block26-randaudio-98.test.js`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -182,6 +192,7 @@ npm run test:randguide
 npm run test:randmind
 npm run test:randbrain
 npm run test:randui
+npm run test:randaudio
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -192,7 +203,7 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI, RandAudio e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 

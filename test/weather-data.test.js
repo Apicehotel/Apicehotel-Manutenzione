@@ -5,7 +5,7 @@ import { evaluateOperationalWeather, HOTEL_WEATHER } from '../src/weather-data.j
 const base = (gusts, rainProb = [0, 0, 0], rain = [0, 0, 0]) => {
   const now = new Date()
   now.setMinutes(0, 0, 0)
-  const times = [0, 1, 2].map((hours) => new Date(now.getTime() + hours * 3600000).toISOString().slice(0, 16))
+  const times = [0, 1, 2].map((hours) => new Date(now.getTime() + hours * 3600000).toISOString())
   return { hourly: { time: times, wind_gusts_10m: gusts, wind_speed_10m: gusts.map((v) => Math.max(0, v - 10)), precipitation_probability: rainProb, precipitation: rain } }
 }
 
