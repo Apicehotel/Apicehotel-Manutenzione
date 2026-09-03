@@ -52,6 +52,9 @@ jobs:
       - name: Bundle budget
         run: node scripts/check-bundle.mjs
 
+      - name: RandBrain production contracts
+        run: npm run test:randbrain
+
       - name: RandAI Point 3 behavior contracts
         run: node --test test/randai-issue-operations.test.js
 
