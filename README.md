@@ -8,7 +8,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target o
 - Nessun modello o frontend riceve `service_role`, PIN, refresh token o secret non necessari.
 - RLS/RPC Supabase sono l'autorità finale; nascondere un bottone non è autorizzazione.
 - `UNKNOWN` e `STALE` non significano `HEALTHY`.
-- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario, knowledge, memory o health stack per la stessa responsabilità.
+- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario, knowledge, memory, learning, orchestrazione o health stack per la stessa responsabilità.
 - Una parte viene eliminata come zombie solo dopo verifica di utilizzo e dipendenze.
 - Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
 
@@ -38,7 +38,7 @@ Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegat
 ### Blocco 18 — 68–70 ✅
 Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
 
-Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive devono essere evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`.
+Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE` quando il relativo gate finale è verde.
 
 ### Blocco 19 — Health Evidence Contract — 71 ✅
 
@@ -98,6 +98,22 @@ Migration: `supabase/migrations/20260903223000_randmind_live_81_86.sql`. Zombie 
 
 Sorgenti: `src/randai/memory/randmind.js`, `src/randai/memory/engine.js`, `src/randai/memory/store.js`, `src/randai/memory/production-gate.js`, `src/randai/control/RandMindConsole.jsx`, `test/randai-block23-randmind-81-86.test.js`.
 
+### Blocco 24 — RandBrain LIVE — 87–92 ✅
+
+RandBrain è la facade/orchestratore superiore dell'intelligenza operativa. Non sostituisce né duplica i motori esistenti: compone `RandAISupervisor`, `AgentRegistry/MultiAgent`, `PermissionAutonomyEngine`, `LearningEngine`, Action Gateway e i quality/recovery gate già presenti.
+
+Il routing è deterministico, pesato e minimale: classifica l'obiettivo nei domini `maintenance`, `knowledge`, `warehouse`, `software`, `analysis`, `procedure` e seleziona al massimo gli specialisti realmente utili. A parità non dipende dall'ordine accidentale dell'enum; task e contesto mantengono sempre `hotelId` esplicito.
+
+Il reasoning graph canonico è `problem → evidence → hypothesis → plan → authorization → verification → recovery`. RandBrain rifiuta richieste senza evidenze verificabili, context cross-hotel e stime costo non valide. I livelli `READ_ONLY`, `SUGGEST`, `SAFE_EXECUTE`, `APPROVAL_REQUIRED` non possono auto-escalare: rischio high/critical richiede approvazione e una mutazione operativa può attraversare soltanto Action Gateway/RLS/RPC.
+
+Il learning non introduce un secondo store: `RandBrainLearningAdapter` alimenta esclusivamente il `LearningEngine` già governato e solo con outcome verificati e identità di evidenza. Le candidate skill continuano a richiedere evidence threshold, evaluation/test e approvazione esplicita; nessuna auto-modifica silenziosa in produzione.
+
+Il production gate è fail-closed e comprende facade canonica, routing, reasoning graph, autonomia, learning verificato, hotel isolation, Action Gateway, rollback, cost budget, benchmark e fault injection. I test simulano escalation critica, cost overrun e cross-hotel mismatch. RandControl mostra il contratto RandBrain nella sezione Ecosistema.
+
+Non è stata aggiunta alcuna migration: Supervisor, Agents, Autonomy e Learning possiedono già i loro store/contratti canonici; creare una nuova autorità DB avrebbe duplicato responsabilità. Zombie scan 87–92: eliminata prima del merge l'ipotesi di un secondo failure-learning store e sostituita con adapter al `LearningEngine` esistente. Nessun nuovo scheduler, framework, vector DB o runtime dependency.
+
+Sorgenti: `src/randai/randbrain/`, `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/`, `src/randai/control/RandBrainConsole.jsx`, `test/randai-block24-randbrain-87-92.test.js`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -106,7 +122,7 @@ Runtime agenti, workflow, MCP, memoria, knowledge e tool adapter possono evolver
 
 ## RandAI Control Center
 
-Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center, RandMind e Repo Radar.
+Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center, RandMind, RandBrain e Repo Radar.
 
 ## Worker e automazioni
 
@@ -119,7 +135,7 @@ Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, T
 - `reminder-worker-1m` — event-driven, solo con promemoria attivi.
 - `urgent-reminder-worker-30s` — event-driven temporaneo, solo con coda urgente pending.
 
-Regola: event-driven prima del polling; nessun ghost worker sempre acceso senza motivo. RandMind non introduce worker di retention permanenti: expiry/lifecycle sono fail-closed al read-time e la dimenticanza è esplicita/auditata.
+Regola: event-driven prima del polling; nessun ghost worker sempre acceso senza motivo. RandMind non introduce worker di retention permanenti e RandBrain non introduce scheduler autonomi: usa i runtime e i gate già esistenti.
 
 ## Multi-hotel
 
@@ -152,6 +168,7 @@ npm run test:external-evidence
 npm run test:full-health
 npm run test:randguide
 npm run test:randmind
+npm run test:randbrain
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -162,7 +179,7 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
@@ -172,7 +189,9 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/memory/` — MemoryEngine/Store e facade/governance canonica RandMind.
-- `src/randai/control/` — Control Center, Operations, Security, Health, RandMind e Repo Radar.
+- `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
+- `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/` — motori canonici composti da RandBrain; non duplicati.
+- `src/randai/control/` — Control Center, Operations, Security, Health, RandMind, RandBrain e Repo Radar.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
 - `src/reliability/` — safety/reliability 27+.
 - `supabase/functions/` — boundary server e worker.
@@ -203,6 +222,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #159 — 73.
 - PR #160 — 74–80 / RandGuide LIVE.
 - PR #161 — 81–86 / RandMind LIVE.
+- PR #162 — 87–92 / RandBrain LIVE.
 
 ## Deploy
 

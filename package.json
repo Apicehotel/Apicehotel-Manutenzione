@@ -36,6 +36,7 @@
     "test:full-health": "node --test test/randai-block21-full-health-73.test.js",
     "test:randguide": "node --test test/randai-block22-randguide-74-80.test.js",
     "test:randmind": "node --test test/randai-block23-randmind-81-86.test.js",
+    "test:randbrain": "node --test test/randai-block24-randbrain-87-92.test.js",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
     "core:external-evidence": "node scripts/randcore-external-evidence.mjs",
