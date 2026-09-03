@@ -123,17 +123,22 @@ export class MaintenanceKnowledgeEngine {
     return clone(this.#revisions.get(scopedKey(hotelId, id)) || [])
   }
 
-  search({ hotelId, query, allowedTrust = [KnowledgeTrust.APPROVED, KnowledgeTrust.VERIFIED] } = {}) {
-    if (!hotelId || !normalizeText(query)) return this.unknown({ hotelId, query })
+  searchAll({ hotelId, query, allowedTrust = [KnowledgeTrust.APPROVED, KnowledgeTrust.VERIFIED] } = {}) {
+    if (!hotelId || !normalizeText(query)) return []
     const allowed = new Set(allowedTrust)
-    const ranked = [...this.#procedures.values()]
+    return [...this.#procedures.values()]
       .filter((item) => item.hotelId === hotelId && allowed.has(item.trust))
       .map((item) => ({ item, score: scoreText(item, query) }))
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score || (TRUST_RANK[b.item.trust] || 0) - (TRUST_RANK[a.item.trust] || 0))
+      .map(({ item, score }) => ({ item: clone(item), score }))
+  }
+
+  search({ hotelId, query, allowedTrust = [KnowledgeTrust.APPROVED, KnowledgeTrust.VERIFIED] } = {}) {
+    const ranked = this.searchAll({ hotelId, query, allowedTrust })
     if (!ranked.length) return this.unknown({ hotelId, query })
-    const procedure = clone(ranked[0].item)
-    return { found: true, trust: procedure.trust, procedure, score: ranked[0].score }
+    const { item: procedure, score } = ranked[0]
+    return { found: true, trust: procedure.trust, procedure, score }
   }
 
   unknown({ hotelId = null, query = '' } = {}) {
