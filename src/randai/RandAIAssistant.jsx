@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadSession } from '../session.js'
 import { retrieveRandAIGuidance } from './randai-data.js'
+import { getIssueWorkspace, startIssueWorkspace, confirmIssueWorkspaceStep, prepareIssueCompletionSummary, issueWorkspaceProgress } from './issue-workspace.js'
+import { getRandAIContext } from './context/envelope.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -67,6 +69,9 @@ export default function RandAIAssistant() {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState([])
   const [busy, setBusy] = useState(false)
+  const [workspace, setWorkspace] = useState(null)
+  const [workspaceSummary, setWorkspaceSummary] = useState('')
+  const [workspaceBusy, setWorkspaceBusy] = useState(false)
 
   useEffect(() => {
     const refresh = () => setSession(loadSession())
@@ -89,6 +94,36 @@ export default function RandAIAssistant() {
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
+  const issueResource = getRandAIContext()?.resource
+  const workspaceProgress = issueWorkspaceProgress(workspace)
+
+  const refreshWorkspace = async (issueId = issueResource?.id) => {
+    if (!issueId) return
+    try { setWorkspace(await getIssueWorkspace({ hotelId: session.hotelId, issueId })) } catch (error) { console.error('RandAI workspace load failed', error) }
+  }
+
+  const beginGuidedProcedure = async (procedureId) => {
+    if (!issueResource?.id || workspaceBusy) return
+    setWorkspaceBusy(true)
+    try {
+      const task = await startIssueWorkspace({ hotelId: session.hotelId, issueId: issueResource.id, procedureId })
+      setWorkspace(task)
+      setWorkspaceSummary('')
+    } catch (error) { console.error('RandAI guided procedure start failed', error) }
+    finally { setWorkspaceBusy(false) }
+  }
+
+  const confirmGuidedStep = async () => {
+    if (!issueResource?.id || !workspace?.id || workspaceBusy) return
+    setWorkspaceBusy(true)
+    try {
+      const task = await confirmIssueWorkspaceStep({ hotelId: session.hotelId, issueId: issueResource.id, taskId: workspace.id })
+      setWorkspace(task)
+      if (task?.status === 'VERIFYING' || task?.status === 'SUCCEEDED') setWorkspaceSummary(await prepareIssueCompletionSummary({ hotelId: session.hotelId, issueId: issueResource.id, taskId: workspace.id }))
+    } catch (error) { console.error('RandAI guided procedure step failed', error) }
+    finally { setWorkspaceBusy(false) }
+  }
+
 
   const submit = async (event) => {
     event.preventDefault()
@@ -149,6 +184,20 @@ export default function RandAIAssistant() {
                         {sensor.temperature != null && <small>{sensor.temperature} {sensor.unit || '°C'} · {sensor.zone}</small>}
                       </div>
                     ))}
+                  </div>
+                )}
+                {message.procedure && issueResource?.id && (
+                  <div className="randai__workspace" data-testid="randai-guided-procedure">
+                    <b>Procedura guidata</b>
+                    {!workspace && <button type="button" onClick={() => beginGuidedProcedure(message.procedure.id)} disabled={workspaceBusy}>{workspaceBusy ? 'Avvio…' : 'Avvia procedura guidata'}</button>}
+                    {workspace && (
+                      <>
+                        <small>{workspaceProgress?.label} · {workspace.status}</small>
+                        {workspaceProgress?.next && <strong>Prossimo controllo: {workspaceProgress.next}</strong>}
+                        {workspace.status !== 'SUCCEEDED' && workspaceProgress?.next && <button type="button" onClick={confirmGuidedStep} disabled={workspaceBusy}>{workspaceBusy ? 'Salvataggio…' : 'Conferma passaggio eseguito'}</button>}
+                        {workspaceSummary && <pre>{workspaceSummary}</pre>}
+                      </>
+                    )}
                   </div>
                 )}
                 {message.suggestions?.length > 0 && (
