@@ -70,24 +70,45 @@ async function consumeQuota(hotelId: string, fromNumber: string) {
   return data === true;
 }
 
+function plausibleRoom(hotelId: string, candidate: string) {
+  if (hotelId === "hotelgio") return /^\d{3}$/.test(candidate) || /^(11|22|33|44)\d{2}$/.test(candidate);
+  if (hotelId === "chocohotel") return /^[234]\d{2}$/.test(candidate);
+  if (hotelId === "brigantino") return /^[12]\d{2}$/.test(candidate);
+  return false;
+}
+
+const stripLocationPrefix = (value: string) => String(value || "").replace(/^(?:Camera|Zona)\s*·\s*/i, "").trim();
+
 async function resolveLocation(hotelId: string, body: string) {
   const candidates = [...new Set(body.match(/\b\d{3,4}\b/g) || [])];
   if (candidates.length) {
     const { data, error } = await admin.from("housekeeping_import_rooms").select("camera").eq("hotel_id", hotelId).in("camera", candidates).limit(candidates.length);
     if (error) console.error("whatsapp room lookup", error);
     const known = new Set((data || []).map((row: any) => String(row.camera)));
-    for (const candidate of candidates) if (known.has(candidate)) return candidate;
+    for (const candidate of candidates) if (known.has(candidate) || plausibleRoom(hotelId, candidate)) return candidate;
   }
 
-  const { data: locations, error: locationError } = await admin.from("inventory_locations").select("name,code").eq("hotel_id", hotelId).eq("active", true).limit(500);
-  if (locationError) console.error("whatsapp location lookup", locationError);
-  const normalizedBody = ` ${normalizeText(body)} `;
-  for (const row of locations || []) {
-    for (const value of [row.name, row.code]) {
-      const normalized = normalizeText(value || "");
-      if (normalized && normalizedBody.includes(` ${normalized} `)) return String(row.name || row.code);
-    }
+  const [{ data: inventory, error: inventoryError }, { data: historical, error: historicalError }] = await Promise.all([
+    admin.from("inventory_locations").select("name,code").eq("hotel_id", hotelId).eq("active", true).limit(500),
+    admin.from("segnalazioni").select("camera").eq("hotel_id", hotelId).not("camera", "is", null).limit(500),
+  ]);
+  if (inventoryError) console.error("whatsapp inventory location lookup", inventoryError);
+  if (historicalError) console.error("whatsapp historical location lookup", historicalError);
+
+  const names = new Map<string, string>();
+  for (const row of inventory || []) for (const value of [row.name, row.code]) {
+    const normalized = normalizeText(value || "");
+    if (normalized && !names.has(normalized)) names.set(normalized, String(row.name || row.code));
   }
+  for (const row of historical || []) {
+    const value = stripLocationPrefix(row.camera || "");
+    if (/^\d{3,4}$/.test(value)) continue;
+    const normalized = normalizeText(value);
+    if (normalized && !names.has(normalized)) names.set(normalized, value);
+  }
+
+  const normalizedBody = ` ${normalizeText(body)} `;
+  for (const [normalized, label] of names) if (normalizedBody.includes(` ${normalized} `)) return label;
   return null;
 }
 
@@ -153,7 +174,7 @@ Deno.serve(async (req: Request) => {
   if (duplicateError) { console.error("duplicate lookup", duplicateError); return new Response("Storage error", { status: 503 }); }
   if (duplicate) return twiml("");
 
-  if (!(await consumeQuota(channel.hotel_id, fromNumber))) return twiml("Troppe richieste ravvicinate. Attendi un minuto e riprova.", 429);
+  if (!(await consumeQuota(channel.hotel_id, fromNumber))) return twiml("Troppe richieste ravvicinate. Attendi un minuto e riprova.");
 
   const mediaPath = await preserveImage(channel.hotel_id, messageSid, mediaUrl, mediaType);
   const initialStatus = channel.ingestion_enabled ? "received" : "paused";
