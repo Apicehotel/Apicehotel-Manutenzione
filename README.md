@@ -170,6 +170,21 @@ Il percorso guidato trasforma una procedura approvata in un lavoro tracciabile e
 
 Sorgenti: `src/randai/guidance/`, `src/randai/issue-workspace.js` e `supabase/functions/randai-issue-workspace/index.ts`.
 
+## Blocco 15 — Project Intelligence 2.0
+
+RandAI collega la segnalazione corrente alle sorgenti operative già autorizzate, senza creare un secondo Knowledge Graph e senza trasformare una correlazione in diagnosi.
+
+- Correlazione hotel-scoped tra segnalazione, impianti, storico, memoria verificata, documenti approvati e dati live.
+- Rilevazione deterministica di possibili ricorrenze e distribuzione del problema.
+- Separazione esplicita tra collegamento, precedente, ipotesi e dato mancante.
+- Prossime azioni ordinate per provenienza e fiducia; le memorie restano non-actionable.
+- Nessuna chiusura o modifica automatica della segnalazione: la verifica umana resta obbligatoria.
+- Motore condiviso: `src/randai/project-intelligence.js`, integrato nella chat RandAI.
+
+Test dedicato: `test/randai-project-intelligence.test.js`.
+
+Zombie scan Blocco 15: nessun archivio o grafo parallelo introdotto; il motore usa le sorgenti canoniche già esistenti e restituisce soltanto una proiezione deterministica.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.

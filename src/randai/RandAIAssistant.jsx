@@ -3,6 +3,7 @@ import { loadSession } from '../session.js'
 import { retrieveRandAIGuidance } from './randai-data.js'
 import { getIssueWorkspace, startIssueWorkspace, confirmIssueWorkspaceStep, prepareIssueCompletionSummary, issueWorkspaceProgress } from './issue-workspace.js'
 import { getRandAIContext } from './context/envelope.js'
+import { buildProjectIntelligence } from './project-intelligence.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -59,6 +60,39 @@ function HvacDiagnostic({ diagnostic }) {
       )}
       <div className="randai__caution">{hvacConclusionLabel(diagnostic)}</div>
       {!diagnostic.thresholds_defined && <small>Soglie caldo/freddo non ancora definite: RandAI mostra i valori reali ma non li classifica arbitrariamente come normali o anomali.</small>}
+    </div>
+  )
+}
+
+function ProjectIntelligencePanel({ intelligence }) {
+  if (!intelligence) return null
+  const assessmentLabels = {
+    RECURRING_PATTERN: 'Possibile ricorrenza',
+    CONNECTED: 'Collegamenti trovati',
+    ISOLATED: 'Nessun collegamento forte',
+    INSUFFICIENT_DATA: 'Dati insufficienti',
+  }
+  return (
+    <div className="randai__project-intelligence" data-testid="randai-project-intelligence">
+      <b>Project Intelligence</b>
+      <strong>{assessmentLabels[intelligence.assessment] || 'Analisi progetto'}</strong>
+      <p>{intelligence.summary}</p>
+      {intelligence.signals?.length > 0 && (
+        <div className="randai__project-signals">
+          {intelligence.signals.map((signal) => <span key={signal.id}>{signal.label}: {signal.value}</span>)}
+        </div>
+      )}
+      {intelligence.hypotheses?.map((hypothesis) => (
+        <div className="randai__project-hypothesis" key={hypothesis.id}>
+          <strong>{hypothesis.label}</strong>
+          <small>{hypothesis.caution}</small>
+        </div>
+      ))}
+      {intelligence.nextActions?.length > 0 && (
+        <ol>
+          {intelligence.nextActions.map((action) => <li key={action.id}>{action.label}</li>)}
+        </ol>
+      )}
     </div>
   )
 }
@@ -174,6 +208,7 @@ export default function RandAIAssistant() {
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
                 <HvacDiagnostic diagnostic={message.hvacDiagnostic} />
+                {issueResource?.id && <ProjectIntelligencePanel intelligence={buildProjectIntelligence({ hotelId: session.hotelId, issue: issueResource, equipment: message.equipment, history: message.history, memory: message.memory, suggestions: message.suggestions, documents: message.documents, sensors: message.sensors })} />}
                 {message.sensors?.length > 0 && (
                   <div className="randai__equipment">
                     <b>Dati live impianto</b>
