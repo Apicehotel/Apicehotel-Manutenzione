@@ -9,4 +9,9 @@ Operational sections:
 - BLOCKED: approvals and review gates
 - COMPLETED: verified/resolved work
 
+Source health:
+- READY: source read successfully
+- ERROR: source failed, snapshot remains partial and is DEGRADED
+- NOT_CONFIGURED: source absent; all absent sources produce NO_DATA
+
 Proactive actions must always route through RandAI Supervisor and existing autonomy/permission controls before side effects.

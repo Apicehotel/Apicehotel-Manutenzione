@@ -367,6 +367,22 @@ Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-on
 - Chocohotel: `+390759970610`.
 - Brigantino: nessun numero configurato.
 
+## Blocco 26 — Control Center 2.0
+
+Il Control Center è la proiezione read-only unica dello stato di RandAI: non sostituisce gli store, RLS/RPC, audit, Sentry, Supervisor o i motori operativi.
+
+- Aggrega task, Supervisor, segnali proattivi, trace, approval, discovery e learning nelle sezioni `ACTIVE`, `ATTENTION`, `PROPOSALS`, `BLOCKED` e `COMPLETED`.
+- La vista richiede un `hotelId` oppure `allHotels:true` esplicito; non esiste aggregazione implicita tra Hotel Giò, Chocohotel e Il Brigantino.
+- Ogni sorgente espone `READY`, `ERROR` o `NOT_CONFIGURED`; lo stato generale distingue `HEALTHY`, `DEGRADED` e `NO_DATA`.
+- Un errore di una sorgente non nasconde le altre: la dashboard mostra i dati disponibili e dichiara la degradazione.
+- La proiezione non esegue scritture né azioni; approval, Action Gateway e Supervisor restano i confini operativi.
+- Comando dedicato: `npm run test:control-center`.
+
+Sorgenti: `src/randai/control-center/engine.js`, `contracts.js`, `src/randai/observability/insights.js` e gli store RandAI.
+Test dedicato: `test/randai-control-center-governance.test.js`.
+
+Zombie scan Blocco 26: il Control Center riusa gli store e i motori esistenti; è stata aggiunta solo la gestione esplicita della salute delle sorgenti. Nessun secondo database, logger, dashboard operativa o dispatcher è stato introdotto.
+
 ## RandApp
 
 Funzioni principali: segnalazioni, interventi, Planning Lavori/Sale, housekeeping/rifornimenti, notifiche, meteo, sensori, impianti, Magazzino, offline/outbox e shell responsive.
