@@ -18,7 +18,7 @@ const MODULES = Object.freeze([
   { id:'randaudio', name:'RandAudio', status:EcosystemStatus.PLANNED, phase:'EXPERIENCE', evidence:[], description:'Pipeline STT/TTS/audio non ancora costituita.' },
   { id:'randui', name:'RandUI', status:EcosystemStatus.PARTIAL, phase:'EXPERIENCE', evidence:['src/randapp/ui.jsx','src/randapp/ui-coherence.css'], description:'Primitive UI condivise presenti; design system dedicato da consolidare.' },
   { id:'viking', name:'Viking', status:EcosystemStatus.PLANNED, phase:'EVALUATION', evidence:[], description:'Solo candidato: nessuna integrazione finché non supera evaluation gate.' },
-  { id:'warehouse', name:'Rand Warehouse', status:EcosystemStatus.PLANNED, phase:'BUSINESS', evidence:[], description:'Modulo magazzino previsto come dominio autonomo collegato.' },
+  { id:'warehouse', name:'Rand Warehouse', status:EcosystemStatus.LIVE, phase:'BUSINESS', evidence:['src/inventory-data.js','src/inventory-intervention-data.js','src/randai/context/warehouse-evidence.js','src/randapp/operations/InterventionsView.jsx','supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql'], description:'Bounded domain Magazzino con ledger, stock/seriali e integrazione transazionale con Interventi e contesto RandAI read-only.' },
 ])
 
 export function getRandEcosystemManifest(){
