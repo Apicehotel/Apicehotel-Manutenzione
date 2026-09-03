@@ -1,5 +1,5 @@
 export { BrainAutonomyLevel, BrainDecision, BrainDomain, validateBrainRequest, assertEvidence } from './contracts.js'
-export { routeBrainObjective } from './router.js'
+export { routeBrainObjective, buildBrainAgentTasks } from './router.js'
 export { buildReasoningGraph } from './reasoning-graph.js'
 export { RandBrain, decideBrainAutonomy } from './engine.js'
 export { RandBrainLearningAdapter } from './learning.js'
