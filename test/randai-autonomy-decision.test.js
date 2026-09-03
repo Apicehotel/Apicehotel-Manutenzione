@@ -30,7 +30,7 @@ test('review confidence and protected actions require confirmation', () => {
   })
   assert.equal(review.disposition, 'CONFIRM')
   assert.equal(protectedAction.disposition, 'CONFIRM')
-  assert.equal(resolveAutonomyDecision({ ...protectedAction, humanConfirmed: true }).disposition, 'AUTO')
+  assert.equal(resolveAutonomyDecision({ ...base, evaluation: { ...base.evaluation, tool: { permission: ToolPermission.WRITE_PROTECTED, risk: ToolRisk.MEDIUM } }, humanConfirmed: true }).disposition, 'AUTO')
 })
 
 test('critical, invalid, denied and unscoped actions fail closed', () => {
