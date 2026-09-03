@@ -307,6 +307,24 @@ Sorgenti: `src/randai/learning/contracts.js`, `engine.js`, `store.js` e `src/ran
 Test dedicato: `test/randai-learning-governance.test.js`.
 
 Zombie scan Blocco 22: il LearningEngine, LearningStore e SkillRegistry esistenti restano canonici. È stato rafforzato il contratto delle evidenze e aggiunta l’approvazione manuale; nessun secondo sistema di memoria, scoring o registry è stato introdotto.
+
+## Blocco 23 — Skill / Tool Discovery 2.0
+
+RandAI può scoprire skill, tool, MCP o librerie senza installarli automaticamente.
+
+- Il percorso è `DISCOVER → ASSESS → SANDBOX → EVALUATE → PROPOSE`.
+- Licenza, rischio, manutenzione, reputazione, accessi sospetti, rete non bounded e duplicati vengono valutati prima della proposta.
+- Un candidato sicuro e valutato viene classificato `ADD`.
+- `REPLACE` è possibile solo se esiste un componente target e l’evaluation dimostra esplicitamente la superiorità.
+- Candidati rifiutati, duplicati o non superiori diventano `IGNORE`.
+- Sandbox ed evaluator restano obbligatori per una raccomandazione; non esiste installazione automatica.
+- La classificazione non modifica registry, dipendenze o produzione: l’attivazione resta una decisione approvata.
+- Comando dedicato: `npm run test:discovery`.
+
+Sorgenti: `src/randai/discovery/contracts.js`, `engine.js`, `store.js` e `src/randai/skills/registry.js`.
+Test dedicato: `test/randai-discovery-governance.test.js`.
+
+Zombie scan Blocco 23: il `DiscoveryEngine`, il `DiscoveryStore`, la sandbox, l’evaluator e il Supervisor esistenti restano canonici. È stata aggiunta solo la classificazione `ADD / REPLACE / IGNORE`; nessun installer, marketplace, registry o pipeline parallela è stato introdotto.
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
