@@ -1,5 +1,5 @@
 import { SkillStatus } from '../skills/contracts.js'
-import { LearningCandidateStatus, experienceFingerprint, normalizeExperience } from './contracts.js'
+import { LearningCandidateStatus, experienceEvidenceKey, experienceFingerprint, normalizeExperience } from './contracts.js'
 import { LearningStore } from './store.js'
 
 const clone = (value) => structuredClone(value)
@@ -29,7 +29,7 @@ export class LearningEngine {
         evidence: [], skillRef: null, evaluationId: null, evaluationError: null, createdAt: nowIso(), updatedAt: nowIso(),
       }
     }
-    const evidenceKey = JSON.stringify([normalized.source?.kind || null, normalized.source?.id || null, normalized.metadata?.taskId || null])
+    const evidenceKey = experienceEvidenceKey(experience)
     if (!candidate.evidence.some((item) => item.key === evidenceKey)) {
       candidate.evidence.push({ key: evidenceKey, source: clone(normalized.source), metadata: clone(normalized.metadata), observedAt: nowIso() })
     }
@@ -50,6 +50,22 @@ export class LearningEngine {
     candidate.updatedAt = nowIso()
     await this.store.save(candidate)
     return { candidate: clone(candidate), skill: skillRegistry.inspect(id, version) }
+  }
+
+  async approve(candidateId, { skillRegistry, approvedBy, hotelId = null } = {}) {
+    if (!approvedBy || typeof approvedBy !== 'string' || !approvedBy.trim()) throw new TypeError('approvedBy is required')
+    const candidate = await this.store.get(candidateId, hotelId)
+    if (!candidate?.skillRef) throw new Error('Candidate skill must be proposed and in scope before approval')
+    if (candidate.status !== LearningCandidateStatus.TESTED) throw new Error('Only tested learning candidates can be approved')
+    if (!skillRegistry) throw new TypeError('skillRegistry is required')
+    const skill = skillRegistry.inspect(candidate.skillRef.id, candidate.skillRef.version)
+    if (skill?.status !== SkillStatus.TESTED) throw new Error('Only tested skills can be approved')
+    const approved = skillRegistry.transition(candidate.skillRef.id, candidate.skillRef.version, SkillStatus.APPROVED)
+    candidate.approvedBy = approvedBy.trim()
+    candidate.approvedAt = nowIso()
+    candidate.updatedAt = nowIso()
+    await this.store.save(candidate)
+    return { candidate: clone(candidate), skill: approved }
   }
 
   async evaluate(candidateId, { evaluationEngine, scenario, skillRegistry, hotelId = null } = {}) {
