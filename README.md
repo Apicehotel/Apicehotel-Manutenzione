@@ -156,6 +156,20 @@ Il motore dei suggerimenti è condiviso e hotel-scoped. Non sostituisce la conos
 
 Sorgenti: src/randai/maintenance/suggestion-engine.js, decision-engine.js e test/randai-suggestion-engine.test.js.
 
+## Blocco 14 — Guided Procedures 2.0
+
+Il percorso guidato trasforma una procedura approvata in un lavoro tracciabile e riprendibile, mantenendo hotel scope e controllo umano.
+
+- Avvio dalla procedura approvata suggerita da RandAI.
+- Passaggi sequenziali con stato persistente in `randai_tasks`.
+- Avanzamento solo tramite conferma umana e verifica registrata.
+- Pausa/ripresa, checkpoint, revision fence e riepilogo finale.
+- Diramazioni, ruoli richiesti e stop condition gestiti dal motore canonico `GuidedProcedureEngine`.
+- Le segnalazioni restano separate per hotel; un task non può essere letto o avanzato fuori scope.
+- Nessuna chiusura automatica della segnalazione: l’esito finale resta da confermare nell’operatività RandApp.
+
+Sorgenti: `src/randai/guidance/`, `src/randai/issue-workspace.js` e `supabase/functions/randai-issue-workspace/index.ts`.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
