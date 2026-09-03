@@ -17,8 +17,7 @@ create index if not exists randcore_external_health_evidence_domain_checked_idx
   on public.randcore_external_health_evidence(domain, checked_at desc);
 
 alter table public.randcore_external_health_evidence enable row level security;
-revoke all on public.randcore_external_health_evidence from public, anon, authenticated;
-grant select, insert on public.randcore_external_health_evidence to service_role;
+revoke all on public.randcore_external_health_evidence from public, anon, authenticated, service_role;
 
 create or replace function public.randcore_record_external_health_evidence(
   p_domain text,
