@@ -142,6 +142,20 @@ La CI esegue dependency security audit, Quality Matrix, Critical Operational Gat
 
 Un blocco è ✅ solo con implementazione canonica, isolamento multi-hotel, test dedicati, contratti condivisi verdi, zombie scan, README coerente, CI completa verde e merge finale senza forzare `main`.
 
+## Blocco 13 — Smart Maintenance Suggestions 2.0
+
+Il motore dei suggerimenti è condiviso e hotel-scoped. Non sostituisce la conoscenza approvata, il Verification Gate o l'Action Gateway.
+
+- Cerca più procedure pertinenti invece di fermarsi alla prima corrispondenza.
+- Ordina procedure approvate/verificate ed esperienze precedenti con ranking deterministico.
+- Ogni suggerimento espone provenienza, versione, rilevanza, confidenza, rischio, motivazioni e prossima azione.
+- Le memorie storiche sono sempre non-actionable: vanno confrontate con i dati attuali e non applicate automaticamente.
+- Le procedure non approvate non possono avviare la guida operativa.
+- Deduplicazione per sorgente e limite massimo dei risultati per evitare suggerimenti ripetuti o zombie.
+- Query vuote o non pertinenti producono nessun suggerimento: RandAI non inventa.
+
+Sorgenti: src/randai/maintenance/suggestion-engine.js, decision-engine.js e test/randai-suggestion-engine.test.js.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
