@@ -3,6 +3,7 @@ import RepoRadarConsole from './RepoRadarConsole.jsx'
 import RandCoreHealthConsole from './RandCoreHealthConsole.jsx'
 import RandSecurityConsole from './RandSecurityConsole.jsx'
 import RandMindConsole from './RandMindConsole.jsx'
+import RandBrainConsole from './RandBrainConsole.jsx'
 
 const LABEL={LIVE:'Live',BACKEND_ONLY:'Solo motore',PARTIAL:'Parziale',PLANNED:'Pianificato',ZOMBIE:'Zombie'}
 const TONE={LIVE:'good',BACKEND_ONLY:'warn',PARTIAL:'warn',PLANNED:'',ZOMBIE:'bad'}
@@ -16,6 +17,7 @@ export default function EcosystemConsole(){
     <RandCoreHealthConsole />
     <RandSecurityConsole />
     <RandMindConsole />
+    <RandBrainConsole />
     <section className="rc-panel"><header><strong>Repo Radar 2.0</strong><span>scouting e adozione governata</span></header><div className="rc-panel-body"><RepoRadarConsole /></div></section>
   </div>
 }
