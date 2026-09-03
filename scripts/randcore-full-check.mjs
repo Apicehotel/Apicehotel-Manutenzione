@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { getRandEcosystemManifest, summarizeRandEcosystem } from '../src/randai/core/ecosystem.js'
 import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
-import { REPO_RADAR_CANDIDATES } from '../src/randai/discovery/repo-radar-catalog.js'
+import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.js'
 import { buildHealthEvidenceSnapshot } from '../src/randai/core/health-evidence.js'
 
 const root = process.cwd()
@@ -11,7 +11,7 @@ const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'
 const lock = JSON.parse(await fs.readFile(path.join(root, 'package-lock.json'), 'utf8'))
 const ecosystem = getRandEcosystemManifest()
 const summary = summarizeRandEcosystem(ecosystem)
-const radar = buildRepoRadarSnapshot(REPO_RADAR_CANDIDATES)
+const radar = buildRepoRadarSnapshot(REPO_RADAR_CATALOG)
 const directDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) }
 const lockPackages = Object.keys(lock.packages || {}).length
 const sha = process.env.GITHUB_SHA || null
