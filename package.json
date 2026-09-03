@@ -18,7 +18,8 @@
     "test:device": "node test/device-acceptance.mjs",
     "test:quality": "npm run test:matrix && npm run test:critical && npm run test:multihotel && npm run test:production && npm test",
     "test:autonomy": "node --test test/randai-autonomy-decision.test.js",
-    "test:recovery": "node --test test/randai-recovery-engine.test.js"
+    "test:recovery": "node --test test/randai-recovery-engine.test.js",
+    "test:software": "node --test test/randai-software-readiness.test.js"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
