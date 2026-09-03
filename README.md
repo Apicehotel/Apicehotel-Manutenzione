@@ -72,20 +72,33 @@ PWA React 19 + Vite 7 multi-hotel per **Hotel Giò**, **Chocohotel** e **Hotel I
 49. SLO & Error Budget Guard.
 50. Release Attestation / Evidence Binding.
 
-### Blocco 13 — Ecosystem Truth, RandCore e RandControl — 51–54
+### Blocco 13 — Ecosystem Truth, RandCore e RandControl — 51–54 ✅
 
 51. **Ecosystem Truth Map** — `src/randai/core/ecosystem.js` mantiene il manifesto canonico dei moduli Rand con stati `LIVE`, `PARTIAL`, `BACKEND_ONLY`, `PLANNED`, `ZOMBIE` ed evidenze verificabili. Un modulo non può essere dichiarato `LIVE` senza evidenza concreta.
 52. **RandCore Manifest** — RandCore non è un secondo orchestratore: compone i contratti esistenti e centralizza la verità dell'ecosistema. Duplicati e falsi `LIVE` falliscono chiuso.
 53. **RandControl 360°** — Ecosistema e Configurazione sono integrati direttamente nel `RandAIControlCenter` canonico. Il prototipo `RandAIControlHub` è stato rimosso perché avrebbe creato un secondo livello di navigazione.
 54. **RandAI Configuration 360°** — configurazione non-secret, tipizzata, bounded, versionata e hotel-scoped. Provider/modello, fallback, budget, autonomia e recovery sono configurabili; le invarianti di sicurezza restano bloccate dal codice.
 
-Sorgenti principali 51–54: `src/randai/core/ecosystem.js`, `src/randai/core/configuration.js`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandAIConfigurationConsole.jsx`, `src/randai/control/RandAIControlCenter.jsx`, `supabase/migrations/20260903143000_randai_runtime_configuration.sql` e `test/randai-block13-ecosystem-51-54.test.js`.
+Sorgenti principali 51–54: `src/randai/core/ecosystem.js`, `src/randai/core/configuration.js`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandAIConfigurationConsole.jsx`, `src/randai/control/RandAIControlCenter.jsx`, `supabase/migrations/20260903143000_randai_runtime_configuration.sql`, `supabase/migrations/20260903150000_randai_runtime_configuration_acl_hardening.sql` e `test/randai-block13-ecosystem-51-54.test.js`.
 
-La configurazione runtime usa `randai_runtime_config` e `randai_runtime_config_history`. Le scritture dirette dal browser sono revocate: ogni modifica ammessa passa da `randai_set_runtime_config`, verifica membership RandAI per hotel, usa allowlist delle chiavi e optimistic version fence. API key, token, `service_role` e credenziali non appartengono a questa tabella.
+La configurazione runtime usa `randai_runtime_config` e `randai_runtime_config_history`. Le scritture dirette dal browser sono revocate: ogni modifica ammessa passa da `randai_set_runtime_config`, verifica membership RandAI per hotel, usa allowlist delle chiavi e optimistic version fence. API key, token, `service_role` e credenziali non appartengono a questa tabella. La migration è stata applicata e verificata sul database multi-hotel; l'ACL del nuovo RPC è stata ulteriormente hardenizzata per negare `anon` e consentire solo i ruoli esplicitamente previsti.
 
 Le protezioni `approved_only`, `verified_learning_only`, `require_confirmation_high_risk` e `release_gate_required` sono intenzionalmente non modificabili dalla UI.
 
 Zombie scan 51–54: `src/randai/control-center/` resta vivo perché è il motore/proiezione read-only coperto dai test di governance. `RandAIControlHub.jsx` è stato invece rimosso dopo l'integrazione delle nuove sezioni nel Control Center canonico; sono stati eliminati anche i relativi stili `rch-*`.
+
+### Blocco 14 — Repo Radar 2.0 e Safe Adoption — 55–58
+
+55. **Repo Radar 2.0** — la valutazione repository usa il vocabolario canonico `KEEP`, `UPGRADE`, `REPLACE`, `ADD`, `REJECT`, `WATCH`. Stelle e popolarità servono solo alla discovery e non entrano nel punteggio di adozione. Lo scouting settimanale usa query GitHub bounded e aggiunge al massimo 15 candidate automatiche per ciclo.
+56. **Deep Repository Intelligence** — `src/randai/discovery/repo-radar.js` valuta sicurezza, manutenzione, maturità, test/CI, compatibilità, performance, rollback e manutenibilità. Repository archiviate, non mantenute, con licenza non ammessa/sconosciuta, vulnerabilità critiche note o gate security/compatibility falliti vengono bloccate. Le repository scoperte automaticamente partono sempre con gate sconosciuti e quindi `WATCH`: popolarità e metadati non possono auto-promuoverle.
+57. **Safe Adoption / Replacement Gate** — `ADD` e `REPLACE` richiedono gate security, compatibility, benchmark e rollback tutti verdi. `REPLACE` richiede inoltre target canonico verificato e superiorità misurabile rispetto allo score reale dell'incumbent; nessuna repository viene installata o sostituita automaticamente.
+58. **Repo Radar in RandControl** — la vista governata è integrata dentro `Ecosistema`, quindi non nasce un secondo dashboard o una seconda navigazione. `.github/workflows/repo-radar.yml` esegue discovery/scouting ogni settimana con permesso GitHub `contents: read` e conserva lo snapshot come artifact per 90 giorni; `scripts/repo-radar-snapshot.mjs` arricchisce i candidati con metadati GitHub senza introdurre dipendenze runtime.
+
+Catalogo iniziale governato: Sentry/OpenTelemetry `KEEP`; Promptfoo, MCP TypeScript SDK e MCP-Scan possono risultare `ADD` solo perché i gate dichiarati sono completi; LightRAG, Graphiti, Mem0, Mastra e Trigger.dev restano `WATCH` finché mancano benchmark/evidenze; OpenFGA è `REJECT` nell'architettura attuale perché introdurrebbe un secondo authorization plane.
+
+Zombie scan 55–58: `DiscoveryEngine` resta canonico per skill/tool discovery. Repo Radar non lo duplica: aggiunge la governance specifica delle repository e riusa RandControl esistente. Nessun installer automatico, secondo registry, secondo scheduler applicativo o nuova dipendenza è stato introdotto.
+
+Sorgenti principali 55–58: `src/randai/discovery/repo-radar.js`, `src/randai/discovery/repo-radar-catalog.js`, `src/randai/control/RepoRadarConsole.jsx`, `scripts/repo-radar-snapshot.mjs`, `.github/workflows/repo-radar.yml` e `test/randai-block14-repo-radar-55-58.test.js`.
 
 ## Rand Control Plane
 
@@ -115,7 +128,7 @@ Dietro questo confine possono evolvere runtime agenti, workflow, MCP, memoria, k
 
 Route protetta: `/randai`.
 
-Il Control Center è la console amministrativa canonica. Integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media & Drive, Sensori, **Ecosistema** e **Configurazione 360°**.
+Il Control Center è la console amministrativa canonica. Integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media & Drive, Sensori, **Ecosistema con Repo Radar** e **Configurazione 360°**.
 
 Il motore `src/randai/control-center/` resta una proiezione read-only e non sostituisce store, RLS/RPC, audit, Sentry, Supervisor o Action Gateway.
 
@@ -166,6 +179,7 @@ npm run test:matrix
 npm run test:critical
 npm run test:multihotel
 npm run test:production
+npm run test:repo-radar
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -173,7 +187,7 @@ npm run test:e2e
 npm run test:device
 ```
 
-La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, browser Chromium/WebKit e device acceptance.
+La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, browser Chromium/WebKit e device acceptance. Repo Radar ha inoltre il proprio test deterministico e uno scouting GitHub settimanale separato: un errore di rete nello scouting non può diventare un permesso di adozione.
 
 **Regola di chiusura:** un blocco è ✅ solo con implementazione canonica, isolamento multi-hotel, test dedicati, contratti condivisi verdi, zombie scan, README coerente, migration necessarie applicate e verificate, CI completa verde e merge finale senza forzare `main`.
 
@@ -203,6 +217,7 @@ La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-
 - PR #132 — 43–46.
 - PR #133 — 47–50.
 - PR #150 — 51–54 / Ecosystem Truth, RandCore, RandControl 360° e Configuration 360°.
+- Blocco 14 / 55–58 — Repo Radar 2.0, Deep Repository Intelligence, Safe Adoption e integrazione RandControl.
 
 ## Deploy
 
