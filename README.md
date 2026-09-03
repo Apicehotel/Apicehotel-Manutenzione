@@ -255,6 +255,24 @@ Sorgenti: src/randai/autonomy/decision.js, engine.js e contracts.js.
 Test dedicato: test/randai-autonomy-decision.test.js.
 
 Zombie scan Blocco 19: non è stato introdotto un secondo authorization matrix, un secondo approval store o un secondo Action Gateway. Il resolver riusa PermissionAutonomyEngine, Confidence/Risk Engine, Execution Policy e il gateway server-side.
+
+## Blocco 20 — Recovery / Self-Correction 2.0
+
+RandAI reagisce agli errori in modo bounded e verificabile, usando un solo RecoveryEngine.
+
+- Classifica il guasto per causa: transient/network, concurrency, permission, validation, verification o unknown.
+- I timeout e gli errori di rete possono essere ritentati solo quando l’operazione è read-safe o idempotente.
+- I conflitti richiedono riconciliazione prima del retry; gli errori di permission, verifica, input e causa sconosciuta vanno in revisione.
+- Ogni tentativo passa da RecoveryBudget e RecoveryCircuit: niente retry oltre budget, circuito aperto o limite anti-loop.
+- Un handler deve essere esplicito e l’esito non è `RECOVERED` finché la verifica non restituisce successo.
+- FailureIntelligence registra recovery riuscite o fallite per hotel, senza auto-promuovere una soluzione non verificata.
+- Nessuna auto-modifica del codice, dei permessi o dei dati critici in produzione.
+- Comando dedicato: `npm run test:recovery`.
+
+Sorgenti: `src/randai/recovery/contracts.js`, `engine.js`, `src/reliability/recovery-circuit.js` e `failure-intelligence.js`.
+Test dedicato: `test/randai-recovery-engine.test.js`.
+
+Zombie scan Blocco 20: il precedente `RecoveryEngine` resta l’unico motore; il planner e l’executor verificato sono stati integrati nello stesso modulo. Non è stato introdotto un secondo circuito, budget, store di recovery o sistema di retry.
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
