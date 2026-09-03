@@ -290,6 +290,23 @@ Sorgenti: `src/randai/software/engine.js`, `readiness.js` e `contracts.js`.
 Test dedicato: `test/randai-software-readiness.test.js`.
 
 Zombie scan Blocco 21: il precedente `SoftwareEngineeringAgent`, `RandAIPlanner`, `Plan Validator`, Durable Runtime, Evaluation Engine e Supervisor restano le sorgenti canoniche. È stato aggiunto solo il readiness gate mancante; nessun secondo orchestratore, patch runner o sistema di deploy è stato introdotto.
+
+## Blocco 22 — Learning Engine 2.0
+
+RandAI apprende solo da esperienze verificate e identificabili, mantenendo separati osservazione, candidato, test e approvazione.
+
+- Un’esperienza verificata deve avere una sorgente o un identificativo di task/run; una prova anonima non diventa evidenza.
+- La stessa esecuzione viene deduplicata e non può aumentare artificialmente la soglia di evidenza.
+- Le evidenze restano hotel-scoped e la promozione automatica si ferma a `TESTED`.
+- Il passaggio a `APPROVED` richiede `LearningEngine.approve()` con revisore esplicito e candidato già `TESTED`.
+- Errori, supposizioni e recovery non verificate non alimentano il learning.
+- Una skill approvata non viene propagata automaticamente tra Hotel Giò, Chocohotel e Il Brigantino.
+- Comando dedicato: `npm run test:learning`.
+
+Sorgenti: `src/randai/learning/contracts.js`, `engine.js`, `store.js` e `src/randai/skills/registry.js`.
+Test dedicato: `test/randai-learning-governance.test.js`.
+
+Zombie scan Blocco 22: il LearningEngine, LearningStore e SkillRegistry esistenti restano canonici. È stato rafforzato il contratto delle evidenze e aggiunta l’approvazione manuale; nessun secondo sistema di memoria, scoring o registry è stato introdotto.
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
