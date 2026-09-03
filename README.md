@@ -81,7 +81,7 @@ PWA React/Vite multi-hotel per Hotel Giò, Chocohotel e Hotel Il Brigantino. Sup
 41. **Recovery Budgets & Circuit Breakers** — budget separati per tentativi, tempo e costo; circuit breaker `CLOSED → OPEN → HALF_OPEN → CLOSED`, una sola probe half-open e nessun retry quando budget o circuito lo vietano.
 42. **Failure Intelligence & Root Cause Engine** — fingerprint hotel-scoped per component/operation/resource/code, classificazione root cause deterministica, ricorrenze e ranking delle recovery sulla base dei successi reali, senza sostituire Observability.
 
-### Blocco 12 — Production Confidence & Safe Rollout — 43–46 ⏳
+### Blocco 12 — Production Confidence & Safe Rollout — 43–46 ✅
 43. **Adversarial Reliability Testing** — scenari deterministici hotel-scoped che provano timeout, scope errato, failure e condizioni avverse; una suite non verde blocca il gate.
 44. **Fault Injection & Chaos Safety** — fault riproducibili `THROW_BEFORE`, `THROW_AFTER`, error return e sequenze scriptate. Verifica reale di write-then-timeout, riconciliazione, lease e circuit breaker senza chaos casuale/flaky.
 45. **Production Release Gate** — check obbligatori security/quality/critical/multi-hotel/build/contracts/browser/device/adversarial più soglie su failure, verification failure e rollback rate. Una regressione blocca la release.
@@ -120,6 +120,7 @@ Zombie scan Blocco 12: i test e i gate esistenti restano canonici; fault injecti
 - PR #129 — 31–34.
 - PR #130 — 35–38, Verification/Trust/Hybrid Knowledge/Risk.
 - PR #131 — 39–42, Execution Resilience/Recovery Budgets/Failure Intelligence.
+- PR #132 — 43–46, Production Confidence/Adversarial/Fault Injection/Safe Rollout.
 
 ## CI e regola di chiusura
 
