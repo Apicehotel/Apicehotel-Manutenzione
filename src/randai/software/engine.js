@@ -1,5 +1,6 @@
 import { RuntimeTaskStatus } from '../runtime/contracts.js'
 import { SoftwareRunStatus, validateSoftwareSpec } from './contracts.js'
+import { assessSoftwareReadiness } from './readiness.js'
 
 const clone = (value) => structuredClone(value)
 
@@ -26,8 +27,26 @@ export class SoftwareEngineeringAgent {
     return { ...spec, status: SoftwareRunStatus.ANALYZING, impacts }
   }
 
-  async execute(spec, { evaluationScenario = null, pauseAfterSteps = Infinity } = {}) {
+  async prepare({
+    objective,
+    projectId = 'randai',
+    targetNodeIds = [],
+    proposedPlan,
+    metadata = {},
+    availableTools = null,
+    permissions = null,
+    prerequisites = {},
+  } = {}) {
+    const spec = await this.analyze({ objective, projectId, targetNodeIds, proposedPlan, metadata })
+    const readiness = assessSoftwareReadiness({ spec, availableTools, permissions, prerequisites })
+    return { ...spec, status: SoftwareRunStatus.READY_FOR_REVIEW, readiness, stages: ['LOCALIZE', 'PLAN', 'REVIEW'] }
+  }
+
+  async execute(spec, { evaluationScenario = null, pauseAfterSteps = Infinity, readiness = null } = {}) {
     validateSoftwareSpec(spec)
+    if (readiness && !readiness.ok) {
+      return { status: SoftwareRunStatus.BLOCKED, task: null, review: readiness, evaluation: null, traceId: null }
+    }
     const hotelId = String(spec.metadata?.hotelId || '').trim() || null
     const trace = this.observability ? await this.observability.startTrace({ name: 'software-engineering', projectId: spec.projectId, hotelId, metadata: { objective: spec.objective } }) : null
     const closeTrace = async (ok, metadata = {}) => {
