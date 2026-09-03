@@ -98,6 +98,7 @@ export class RandAISupervisor {
       }
       const exceeded = run.metrics.agents > plan.budget.maxAgents || run.metrics.toolCalls > plan.budget.maxToolCalls || run.metrics.retries > plan.budget.maxRetries || run.metrics.cost > plan.budget.maxCost
       if (exceeded) { run.stopReason = SupervisorStopReason.BUDGET_EXCEEDED; await emit('SUPERVISOR_BUDGET_EXCEEDED', { metrics: run.metrics }); return this.#finish(run, SupervisorStatus.STOPPED) }
+      if (execution?.status === 'NEEDS_REVIEW') { run.stopReason = SupervisorStopReason.QUALITY_GATE; await emit('SUPERVISOR_NEEDS_REVIEW', { reason: 'MULTI_AGENT_CONFLICT' }); return this.#finish(run, SupervisorStatus.NEEDS_REVIEW) }
       if (execution?.ok === false) { run.stopReason = SupervisorStopReason.EXECUTION_FAILED; await emit('SUPERVISOR_EXECUTION_FAILED'); return this.#finish(run, SupervisorStatus.FAILED) }
       const quality = threshold(execution?.evaluation?.score ?? execution?.qualityScore ?? 1, 'execution quality')
       if (quality < this.qualityThreshold) { run.stopReason = SupervisorStopReason.QUALITY_GATE; await emit('QUALITY_GATE_FAILED', { quality, threshold: this.qualityThreshold }); return this.#finish(run, SupervisorStatus.NEEDS_REVIEW) }
