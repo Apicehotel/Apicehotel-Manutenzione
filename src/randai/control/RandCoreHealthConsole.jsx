@@ -36,7 +36,10 @@ export default function RandCoreHealthConsole(){
     setBusy(false);await load()
   }
 
-  const checks=useMemo(()=>Array.isArray(data?.checks)?data.checks.map((item)=>normalizeHealthCheck({...item,snapshot:coerceHealthEvidenceSnapshot(item.snapshot,{generatedAt:item.created_at}),findings:item.findings||[]})):[],[data])
+  const checks=useMemo(()=>{
+    const evaluatedAt=new Date().toISOString()
+    return Array.isArray(data?.checks)?data.checks.map((item)=>normalizeHealthCheck({...item,snapshot:coerceHealthEvidenceSnapshot(item.snapshot,{generatedAt:item.created_at,evaluatedAt}),findings:item.findings||[]})):[]
+  },[data])
   const latest=checks[0]||null
   const previous=checks[1]||null
   const drift=latest?compareHealthChecks(latest,previous):null
