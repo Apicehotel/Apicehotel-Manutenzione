@@ -34,6 +34,26 @@ function equipmentMatchesSection(item: any, section: string | null) {
   const haystack = normalize([item.name, item.location, item.description, ...(item.randai_equipment_serves || []).map((entry: any) => entry.served_area)].join(" "));
   return haystack.includes(section);
 }
+function buildSuggestion({ kind, id, title, summary, trust, actionable, nextAction, provenance, caution = null }: any) {
+  const safeTrust = String(trust || "UNKNOWN").toUpperCase();
+  const relevance = normalize([title, summary].filter(Boolean).join(" "));
+  return {
+    id: `${kind}:${id}`,
+    kind,
+    title: title || "Suggerimento RandAI",
+    summary: summary || "",
+    trust: safeTrust,
+    actionable: actionable === true && ["APPROVED", "VERIFIED"].includes(safeTrust),
+    risk: caution ? "medium" : "low",
+    confidence: safeTrust === "APPROVED" ? 0.9 : safeTrust === "VERIFIED" ? 0.75 : 0.25,
+    relevance: relevance ? 1 : 0,
+    nextAction: nextAction || "Confronta il suggerimento con i dati attuali.",
+    reasons: [kind === "procedure" ? "procedura interna approvata" : "esperienza precedente verificata"],
+    provenance,
+    caution,
+  };
+}
+
 async function verifyOpenAI() {
   const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) return { ok: false, error: "openai_secret_missing" };
@@ -131,7 +151,11 @@ Deno.serve(async (req: Request) => {
     const sensors = intent === "location" ? [] : filterSensorsBySection(rawSensors, section);
     const hvacDiagnostic = rawHvacDiagnostic && (!section || rawHvacDiagnostic.section === section) ? rawHvacDiagnostic : null;
     const memory = intent === "location" ? [] : (memoryResult.data || []);
-    if (memory.length > 0) return json({ ok: true, found: true, source: "verified_memory", intent, section, resolvedQuery: effectiveQuery, operationalContext, memory: memory.map((item: any) => ({ id:item.id, hotelId:item.hotel_id, equipmentId:item.equipment_id, area:item.area, category:item.category, symptom:item.symptom, errorCode:item.error_code, cause:item.cause, solution:item.solution, confidence:item.confidence, confirmationCount:item.confirmation_count, failureCount:item.failure_count, sourceLabel:item.source_label, lastConfirmedAt:item.last_confirmed_at })), sensors, hvacDiagnostic, procedure:null, equipment:[], history:[], documents:[] });
+    if (memory.length > 0) {
+      const normalizedMemory = memory.map((item: any) => ({ id:item.id, hotelId:item.hotel_id, equipmentId:item.equipment_id, area:item.area, category:item.category, symptom:item.symptom, errorCode:item.error_code, cause:item.cause, solution:item.solution, confidence:item.confidence, confirmationCount:item.confirmation_count, failureCount:item.failure_count, sourceLabel:item.source_label, lastConfirmedAt:item.last_confirmed_at }));
+      const suggestions = normalizedMemory.map((item: any) => buildSuggestion({ kind: "experience", id: item.id, title: item.symptom || "Caso precedente simile", summary: item.solution || item.cause, trust: "VERIFIED", actionable: false, nextAction: "Confronta il caso precedente con i dati attuali; non applicare automaticamente la soluzione.", provenance: { kind: "memory", id: item.id } }));
+      return json({ ok: true, found: true, source: "verified_memory", intent, section, resolvedQuery: effectiveQuery, operationalContext, memory: normalizedMemory, suggestions, sensors, hvacDiagnostic, procedure:null, equipment:[], history:[], documents:[] });
+    }
 
     const [proceduresResult, equipmentResult, issuesResult, interventionsResult, documentsResult] = await Promise.all([
       admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
@@ -156,6 +180,10 @@ Deno.serve(async (req: Request) => {
     const historyPool=[...((issuesResult.error?[]:issuesResult.data)||[]).map((item:any)=>({...item,__kind:"segnalazione"})),...((interventionsResult.error?[]:interventionsResult.data)||[]).map((item:any)=>({...item,__kind:"intervento"}))];
     const history=intent === "location" ? [] : historyPool.map((item:any)=>({item,score:scoreHistory(item,effectiveQuery,procedure)})).filter((entry:any)=>entry.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3).map(({item}:any)=>({id:item.id,kind:item.__kind,location:item.location||item.camera||item.sezione||"",category:item.category||item.categoria||"",text:item.completion_note||item.note||item.description||"",status:item.status||item.stato||"",date:item.completed_at||item.completato_il||item.updated_at||null}));
     const source=intent === "location" && equipment.length ? "equipment_location" : hvacDiagnostic?"live_hvac_diagnostic":procedure?"approved_internal_knowledge":documents.length>0?"approved_documentation":"live_sensor_context";
-    return json({ok:true,found:true,source,intent,section,resolvedQuery:effectiveQuery,operationalContext,procedure:procedure?{...procedure,hotelId:procedure.hotel_id,sourceType:"procedura_interna",sourceLabel:procedure.source_label}:null,equipment,history,documents,memory:[],sensors,hvacDiagnostic});
+    const suggestions = [
+      ...(procedure ? [buildSuggestion({ kind: "procedure", id: procedure.id, title: procedure.title, summary: procedure.summary, trust: "APPROVED", actionable: true, nextAction: Array.isArray(procedure.steps) ? procedure.steps[0] : "Apri la procedura e verifica il primo passaggio.", provenance: { kind: "maintenance_procedure", id: procedure.id, version: procedure.version }, caution: procedure.caution })] : []),
+      ...history.slice(0, 3).map((item: any) => buildSuggestion({ kind: "experience", id: item.id, title: `Storico ${item.kind}`, summary: item.text, trust: "VERIFIED", actionable: false, nextAction: "Confronta lo storico con il problema attuale.", provenance: { kind: "history", id: item.id } })),
+    ];
+    return json({ok:true,found:true,source,intent,section,resolvedQuery:effectiveQuery,operationalContext,procedure:procedure?{...procedure,hotelId:procedure.hotel_id,sourceType:"procedura_interna",sourceLabel:procedure.source_label}:null,equipment,history,documents,memory:[],suggestions,sensors,hvacDiagnostic});
   } catch (error) { console.error("randai-assistant", error instanceof Error ? error.message : "unknown"); return json({ok:false,error:"randai_unavailable"},500); }
 });
