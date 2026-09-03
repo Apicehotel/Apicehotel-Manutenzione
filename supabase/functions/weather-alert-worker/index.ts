@@ -11,6 +11,7 @@ const HOTELS:Record<string,{name:string,latitude:number,longitude:number}>={
   brigantino:{name:"Hotel Il Brigantino",latitude:43.46171,longitude:13.62708},
 };
 const max=(values:number[])=>values.reduce((best,value)=>Math.max(best,Number(value)||0),0);
+const sleep=(ms:number)=>new Promise((resolve)=>setTimeout(resolve,ms));
 
 async function secret(key:string){const{data}=await admin.from("edge_function_secrets").select("value").eq("key",key).maybeSingle();return data?.value||null}
 async function hasPresentMaintainer(hotelId:string){
@@ -21,9 +22,19 @@ async function hasPresentMaintainer(hotelId:string){
 }
 async function weather(hotel:{latitude:number,longitude:number}){
   const qs=new URLSearchParams({latitude:String(hotel.latitude),longitude:String(hotel.longitude),hourly:"precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m",forecast_days:"2",timezone:"Europe/Rome",wind_speed_unit:"kmh"});
-  const res=await fetch(`https://api.open-meteo.com/v1/forecast?${qs}`);
-  if(!res.ok) throw new Error(`open_meteo_${res.status}`);
-  return await res.json();
+  const endpoint=`https://api.open-meteo.com/v1/forecast?${qs}`;
+  let lastError="open_meteo_unknown";
+  for(let attempt=1;attempt<=3;attempt++){
+    try{
+      const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),6500);
+      const res=await fetch(endpoint,{signal:controller.signal}); clearTimeout(timeout);
+      if(res.ok)return await res.json();
+      lastError=`open_meteo_${res.status}`;
+      if(res.status<500&&res.status!==429)break;
+    }catch(error){lastError=error instanceof Error?error.message:"open_meteo_fetch_failed"}
+    if(attempt<3)await sleep(250*attempt);
+  }
+  throw new Error(lastError);
 }
 function evaluate(payload:any){
   const h=payload?.hourly||{}; const now=Date.now();
@@ -36,7 +47,7 @@ function evaluate(payload:any){
   return{level,gust:Math.round(gust),wind:Math.round(wind),rainProbability:Math.round(rainProbability),rainAmount:Math.round(rainAmount*10)/10,actions,message:actions.length?actions.join(" · "):"Nessuna azione richiesta"};
 }
 async function state(hotelId:string){const{data}=await admin.from("weather_alert_state").select("*").eq("hotel_id",hotelId).maybeSingle();return data}
-async function saveState(hotelId:string,result:any,notified:boolean){await admin.from("weather_alert_state").upsert({hotel_id:hotelId,level:result.level,signature:`${result.level}:${result.actions.join("|")}`,last_payload:result,last_checked_at:new Date().toISOString(),...(notified?{last_notified_at:new Date().toISOString()}: {})},{onConflict:"hotel_id"})}
+async function saveState(hotelId:string,result:any,notified:boolean){const{error}=await admin.from("weather_alert_state").upsert({hotel_id:hotelId,level:result.level,signature:`${result.level}:${result.actions.join("|")}`,last_payload:result,last_checked_at:new Date().toISOString(),...(notified?{last_notified_at:new Date().toISOString()}: {})},{onConflict:"hotel_id"});if(error)throw new Error(`weather_state_${error.message}`)}
 async function sendNtfy(hotelId:string,hotelName:string,result:any){
   const{data:setting}=await admin.from("integration_settings").select("enabled,config").eq("key","ntfy_alerts").maybeSingle();
   const server=String(setting?.config?.server||"https://ntfy.sh").replace(/\/$/,""); const topic=String(setting?.config?.topics?.[hotelId]||"");
@@ -60,7 +71,8 @@ Deno.serve(async(req:Request)=>{
       if(actionable&&present&&(changed||escalated)){notified=await sendNtfy(hotelId,hotel.name,result)}
       await saveState(hotelId,result,notified);
       summary.push({hotel_id:hotelId,level:result.level,present_maintainer:present,notified});
-    }catch(error){console.error("weather worker",hotelId,error instanceof Error?error.message:"unknown");summary.push({hotel_id:hotelId,error:true})}
+    }catch(error){const reason=error instanceof Error?error.message:"unknown";console.error("weather worker",hotelId,reason);summary.push({hotel_id:hotelId,error:true,reason})}
   }
-  return json({ok:true,summary});
+  const ok=summary.every((item)=>!item.error);
+  return json({ok,summary});
 });
