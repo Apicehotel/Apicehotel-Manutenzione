@@ -1,4 +1,4 @@
-import { SupervisorMode, SupervisorStatus, SupervisorStopReason, validateSupervisorBudget } from './contracts.js'
+import { SupervisorMode, SupervisorStatus, SupervisorStopReason, validateSupervisorBudget, validateSupervisorTaskGraph } from './contracts.js'
 import { SupervisorStore } from './store.js'
 
 const clone = (value) => structuredClone(value)
@@ -40,6 +40,7 @@ export class RandAISupervisor {
   plan({ objective, complexity = 'LOW', capabilityGaps = [], agentTasks = [], budget = {} } = {}) {
     if (!String(objective || '').trim()) throw new TypeError('objective is required')
     if (!Array.isArray(capabilityGaps) || !Array.isArray(agentTasks)) throw new TypeError('capabilityGaps and agentTasks must be arrays')
+    try { validateSupervisorTaskGraph(agentTasks) } catch (error) { return { mode: SupervisorMode.STOPPED, objective, budget: { ...this.defaultBudget, ...budget }, reason: SupervisorStopReason.INVALID_TASK_GRAPH, error: error.message } }
     const effectiveBudget = { ...this.defaultBudget, ...budget }; validateSupervisorBudget(effectiveBudget)
     if (capabilityGaps.length) return { mode: SupervisorMode.DISCOVERY_REQUIRED, objective, capabilityGaps: [...capabilityGaps], budget: effectiveBudget, reason: SupervisorStopReason.CAPABILITY_GAP }
     const wantsMulti = agentTasks.length > 1
