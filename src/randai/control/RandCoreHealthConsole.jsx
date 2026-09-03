@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../supabase.js'
 import { compareHealthChecks, normalizeHealthCheck } from '../core/health-snapshot.js'
+import { getRandEcosystemManifest } from '../core/ecosystem.js'
+import { buildModuleHealthSnapshot } from '../core/module-health.js'
+import { buildRepoRadarSnapshot } from '../discovery/repo-radar.js'
+import { REPO_RADAR_CATALOG } from '../discovery/repo-radar-catalog.js'
 
 const fmt = (value) => value ? new Date(value).toLocaleString('it-IT') : '—'
-const tone = (status) => status === 'HEALTHY' ? 'good' : status === 'CRITICAL' ? 'bad' : status === 'DEGRADED' ? 'warn' : ''
+const tone = (status) => status === 'HEALTHY' || status === 'STABLE' ? 'good' : status === 'CRITICAL' ? 'bad' : status === 'DEGRADED' || status === 'EVOLVING' ? 'warn' : ''
 
 export default function RandCoreHealthConsole(){
   const [data,setData]=useState(null)
@@ -36,6 +40,7 @@ export default function RandCoreHealthConsole(){
   const drift=latest?compareHealthChecks(latest,previous):null
   const findings=Array.isArray(data?.findings)?data.findings:[]
   const coverage=latest?.snapshot?.coverage||{}
+  const moduleHealth=useMemo(()=>buildModuleHealthSnapshot({modules:getRandEcosystemManifest(),repoSnapshot:buildRepoRadarSnapshot(REPO_RADAR_CATALOG),healthCheck:latest}),[latest?.id,latest?.status])
 
   return <div className="rc-health-console">
     <div className="rc-kpis">
@@ -44,7 +49,8 @@ export default function RandCoreHealthConsole(){
       <article className="rc-kpi"><span>Copertura</span><strong>{coverage.measured_domains!=null?`${coverage.measured_domains}/${coverage.total_domains}`:'—'}</strong><small>domini con evidenza misurabile</small></article>
       <article className="rc-kpi"><span>Drift</span><strong>{drift?.direction||'BASELINE'}</strong><small>{drift?.scoreDelta==null?'nessun confronto':`${drift.scoreDelta>0?'+':''}${drift.scoreDelta} punti`}</small></article>
     </div>
-    <section className="rc-panel"><header><strong>RandCore Health & Full Audit</strong><span>59–62</span></header><div className="rc-panel-body"><p>Il controllo periodico consolida salute DB, sicurezza e scheduler oggi misurabili. Deploy, backup, integrazioni e dipendenze restano marcati <b>UNKNOWN</b> finché non esiste evidenza automatica: RandCore non inventa uno stato verde.</p><div className="rc-chip-row"><span className={`rc-badge ${tone(latest?.status)}`}>{latest?.status||'Nessun check'}</span><span className="rc-badge">Ultimo {fmt(latest?.created_at)}</span><button onClick={run} disabled={busy}>{busy?'Controllo…':'Esegui check ora'}</button><button onClick={load} disabled={busy}>Aggiorna storico</button></div>{notice&&<div className="rc-notice">{notice}</div>}</div></section>
+    <section className="rc-panel"><header><strong>RandCore Health & Full Audit</strong><span>59–66</span></header><div className="rc-panel-body"><p>Il controllo periodico consolida salute DB, sicurezza e scheduler oggi misurabili. Deploy, backup, integrazioni e dipendenze restano marcati <b>UNKNOWN</b> finché non esiste evidenza automatica: RandCore non inventa uno stato verde.</p><div className="rc-chip-row"><span className={`rc-badge ${tone(latest?.status)}`}>{latest?.status||'Nessun check'}</span><span className="rc-badge">Ultimo {fmt(latest?.created_at)}</span><button onClick={run} disabled={busy}>{busy?'Controllo…':'Esegui check ora'}</button><button onClick={load} disabled={busy}>Aggiorna storico</button></div>{notice&&<div className="rc-notice">{notice}</div>}</div></section>
+    <section className="rc-panel"><header><strong>Repo / Module Health</strong><span>66</span></header><div className="rc-panel-body"><div className="rc-kpis"><article className="rc-kpi"><span>Stato ecosistema</span><strong className={`rc-badge ${tone(moduleHealth.state)}`}>{moduleHealth.state}</strong><small>UNKNOWN non diventa healthy</small></article><article className="rc-kpi"><span>Moduli Live</span><strong>{moduleHealth.moduleCounts.LIVE||0}</strong><small>{moduleHealth.unfinished} da consolidare</small></article><article className="rc-kpi"><span>Repo KEEP</span><strong>{moduleHealth.repoCounts.KEEP||0}</strong><small>{moduleHealth.repoCounts.WATCH||0} in WATCH</small></article><article className="rc-kpi"><span>Repo REJECT</span><strong>{moduleHealth.repoCounts.REJECT||0}</strong><small>decisione ≠ installazione</small></article></div><p>La salute di un modulo deriva dalla Truth Map e dai check RandCore; la decisione Repo Radar resta separata dall’adozione. Nessun candidato può rendere un modulo “sano” soltanto perché è popolare.</p></div></section>
     <section className="rc-panel"><header><strong>Finding attuali</strong><span>{findings.length}</span></header><div className="rc-panel-body"><div className="rc-stack">{findings.map((item)=><article className="rc-row" key={item.id||item.fingerprint}><span><strong>{item.title||item.code}</strong><small>{item.category||'system'} · {item.detail||'nessun dettaglio'}</small></span><span className={`rc-badge ${item.severity==='CRITICAL'?'bad':item.severity==='HIGH'||item.severity==='WARN'?'warn':''}`}>{item.severity}</span></article>)}{!findings.length&&<div className="rc-empty">Nessun finding aperto nell’ultimo check.</div>}</div></div></section>
     <section className="rc-panel"><header><strong>Storico controlli</strong><span>{checks.length} snapshot</span></header><div className="rc-panel-body"><div className="rc-table-wrap"><table><thead><tr><th>Data</th><th>Sorgente</th><th>Stato</th><th>Score</th><th>Copertura</th></tr></thead><tbody>{checks.map((item)=><tr key={item.id}><td>{fmt(item.created_at)}</td><td>{item.source}</td><td><span className={`rc-badge ${tone(item.status)}`}>{item.status}</span></td><td>{item.score}/100</td><td>{item.snapshot?.coverage?.measured_domains??'—'}/{item.snapshot?.coverage?.total_domains??'—'}</td></tr>)}</tbody></table></div></div></section>
   </div>
