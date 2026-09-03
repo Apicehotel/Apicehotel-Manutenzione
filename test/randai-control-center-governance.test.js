@@ -26,7 +26,7 @@ test('control center reports partial source failure without losing healthy proje
 test('unconfigured sources are explicit and all-hotel scope remains opt-in', async () => {
   const center = new RandAIControlCenter()
   const snapshot = await center.snapshot({ projectId:'randai', allHotels:true })
-  assert.equal(snapshot.health.status, 'HEALTHY')
+  assert.equal(snapshot.health.status, 'NO_DATA')
   assert.equal(snapshot.health.sources.tasks.status, 'NOT_CONFIGURED')
   await assert.rejects(() => center.snapshot({ projectId:'randai' }), /hotelId or explicit allHotels/)
 })
