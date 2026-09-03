@@ -1,4 +1,5 @@
 import { MemoryScope } from '../memory/contracts.js'
+import { buildTieredAuthorizedContext } from '../viking/context-projection.js'
 
 const estimateTokens = (text) => Math.ceil(String(text || '').length / 4)
 
@@ -9,7 +10,7 @@ export class ContextEngine {
     this.defaultBudget = defaultBudget
   }
 
-  async build({ query, scope, hotelId, projectId, taskId, budget = this.defaultBudget, trust = ['approved','verified','suggested'] } = {}) {
+  async build({ query, scope, hotelId, projectId, taskId, budget = this.defaultBudget, trust = ['approved','verified','suggested'], tiered = false, includeDetails = false } = {}) {
     if (!String(query || '').trim()) throw new TypeError('query is required')
     if (!(hotelId || projectId || taskId || scope === MemoryScope.GLOBAL)) throw new TypeError('context build requires an explicit hotel, project, task or global scope')
     if (!Number.isFinite(Number(budget)) || Number(budget) <= 0) throw new TypeError('budget must be a positive number')
@@ -27,7 +28,7 @@ export class ContextEngine {
       sections.push({ id: memory.id, type: memory.type, trust: memory.trust, content: body, score: memory.score, source: memory.source, tokens: cost })
       used += cost
     }
-    return {
+    const result = {
       query,
       scope: { type: scope || null, hotelId: hotelId || null, projectId: projectId || null, taskId: taskId || null },
       budget: Number(budget),
@@ -36,5 +37,8 @@ export class ContextEngine {
       sections,
       provenance: sections.map(s => ({ memoryId: s.id, source: s.source, trust: s.trust })),
     }
+    if (!tiered) return result
+    if (!hotelId) throw new TypeError('tiered context requires explicit hotelId')
+    return { ...result, progressiveContext: buildTieredAuthorizedContext({ hotelId, query, includeDetails, evidence: sections.map((section) => ({ id: section.id, hotelId, authorized: true, kind: section.type, source: section.source?.kind || section.source?.id || 'RandMind', summary: section.content, overview: section.content, details: section.content })) }) }
   }
 }

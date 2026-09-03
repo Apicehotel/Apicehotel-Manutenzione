@@ -61,6 +61,9 @@ jobs:
       - name: RandAudio governance and benchmark contracts
         run: npm run test:randaudio
 
+      - name: Viking evaluation and pattern adoption gate
+        run: npm run test:viking
+
       - name: RandAI Point 3 behavior contracts
         run: node --test test/randai-issue-operations.test.js
 

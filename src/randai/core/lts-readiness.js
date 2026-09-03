@@ -22,7 +22,7 @@ export function evaluateRandLtsReadiness({ modules = getRandEcosystemManifest(),
   }
 
   const included = modules.filter((module) => module.status === EcosystemStatus.LIVE)
-  const deferred = modules.filter((module) => module.status === EcosystemStatus.PARTIAL || module.status === EcosystemStatus.BACKEND_ONLY || module.status === EcosystemStatus.PLANNED)
+  const deferred = modules.filter((module) => module.status !== EcosystemStatus.LIVE && module.status !== EcosystemStatus.ZOMBIE)
 
   return Object.freeze({
     schema: 'rand.ecosystem-lts-readiness.v1',

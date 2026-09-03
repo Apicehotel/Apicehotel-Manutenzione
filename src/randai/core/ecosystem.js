@@ -3,6 +3,7 @@ export const EcosystemStatus = Object.freeze({
   BACKEND_ONLY: 'BACKEND_ONLY',
   PARTIAL: 'PARTIAL',
   PLANNED: 'PLANNED',
+  EVALUATED: 'EVALUATED',
   ZOMBIE: 'ZOMBIE',
 })
 
@@ -17,7 +18,7 @@ const MODULES = Object.freeze([
   { id:'reporadar', name:'Repo Radar', status:EcosystemStatus.LIVE, phase:'DISCOVERY', evidence:['src/randai/discovery/engine.js','src/randai/discovery/repo-radar.js','src/randai/control/RepoRadarConsole.jsx','.github/workflows/repo-radar.yml'], description:'Scouting settimanale, discovery di nuove candidate, valutazione profonda e adozione governata senza auto-install.' },
   { id:'randaudio', name:'RandAudio', status:EcosystemStatus.PARTIAL, phase:'EXPERIENCE', evidence:['src/randai/audio/browser-adapter.js','src/randai/audio/governance.js','src/randai/audio/production-gate.js','src/randai/RandAIAssistant.jsx','test/randai-block26-randaudio-98.test.js'], description:'Capability audio governata in progressive enhancement: TTS condiviso e STT con conferma/provenienza hotel-scoped; LIVE deferred finché iOS/WebKit non supera il benchmark STT.' },
   { id:'randui', name:'RandUI', status:EcosystemStatus.LIVE, phase:'EXPERIENCE', evidence:['src/randapp/ui.jsx','src/randapp/ui-coherence.css','src/randapp/hotel-identity.js','src/randapp/theme.js','src/randapp/Shell.jsx','test/randai-block25-randui-93-97.test.js','test/e2e.mjs','test/device-acceptance.mjs'], description:'Design system canonico versionato: identità multi-hotel, System/Light/Dark, chrome unica, layout adattivo e visual quality gate cross-platform.' },
-  { id:'viking', name:'Viking', status:EcosystemStatus.PLANNED, phase:'EVALUATION', evidence:[], description:'Solo candidato: nessuna integrazione finché non supera evaluation gate.' },
+  { id:'viking', name:'Viking Evaluation', status:EcosystemStatus.EVALUATED, phase:'EVALUATION', evidence:['src/randai/viking/evaluation.js','src/randai/viking/context-projection.js','src/randai/viking/production-gate.js','src/randai/context/engine.js','src/randai/control/VikingConsole.jsx','test/randai-block27-viking-99.test.js'], description:'OpenViking valutato e non installato: adottati soltanto caricamento contestuale L0/L1/L2 e retrieval trace sopra le autorità Rand esistenti.' },
   { id:'warehouse', name:'Rand Warehouse', status:EcosystemStatus.LIVE, phase:'BUSINESS', evidence:['src/inventory-data.js','src/inventory-intervention-data.js','src/randai/context/warehouse-evidence.js','src/randapp/operations/InterventionsView.jsx','supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql'], description:'Bounded domain Magazzino con ledger, stock/seriali e integrazione transazionale con Interventi e contesto RandAI read-only.' },
 ])
 
