@@ -32,6 +32,7 @@ export class RandAIControlCenter {
     items.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))
     const sections=Object.fromEntries(Object.values(ControlSection).map(s=>[s,items.filter(i=>i.section===s)]))
     const degraded=sourceResults.some(source=>source.status==='ERROR')
-    return {projectId,hotelId:scope.hotelId,allHotels:scope.allHotels,generatedAt:new Date().toISOString(),health:{status:degraded?'DEGRADED':'HEALTHY',sources:sourceHealth},counts:Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.length])),sections,items,observability:scope.hotelId?summarizeObservability({hotelId:scope.hotelId,traces:sourceResults[3].items}):null}
+    const noData=sourceResults.every(source=>source.status==='NOT_CONFIGURED')
+    return {projectId,hotelId:scope.hotelId,allHotels:scope.allHotels,generatedAt:new Date().toISOString(),health:{status:degraded?'DEGRADED':noData?'NO_DATA':'HEALTHY',sources:sourceHealth},counts:Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.length])),sections,items,observability:scope.hotelId?summarizeObservability({hotelId:scope.hotelId,traces:sourceResults[3].items}):null}
   }
 }
