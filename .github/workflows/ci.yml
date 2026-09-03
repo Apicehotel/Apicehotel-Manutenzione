@@ -55,6 +55,9 @@ jobs:
       - name: RandBrain production contracts
         run: npm run test:randbrain
 
+      - name: RandUI visual quality contracts
+        run: npm run test:randui
+
       - name: RandAI Point 3 behavior contracts
         run: node --test test/randai-issue-operations.test.js
 

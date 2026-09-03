@@ -1,4 +1,5 @@
 import { loadSession } from '../session.js'
+import { applyHotelIdentity } from './hotel-identity.js'
 
 // Tema RandApp: Sistema | Chiaro | Scuro.
 // La scelta utente resta in localStorage; a livello DOM impostiamo SEMPRE il tema RISOLTO
@@ -12,8 +13,8 @@ const SESSION_EVENT = 'apice-session-changed'
 const prefersDark = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
 
 export const loadThemeChoice = () => {
-  try { const saved = localStorage.getItem(KEY); return CHOICES.includes(saved) ? saved : 'light' }
-  catch { return 'light' }
+  try { const saved = localStorage.getItem(KEY); return CHOICES.includes(saved) ? saved : 'system' }
+  catch { return 'system' }
 }
 
 export const resolveTheme = (choice) => (choice === 'system' ? (prefersDark() ? 'dark' : 'light') : choice)
@@ -26,15 +27,14 @@ const setThemeColorMeta = (resolved) => {
 export const applyHotelAccent = () => {
   if (typeof document === 'undefined') return
   const hotelId = loadSession()?.hotelId || ''
-  if (hotelId) document.documentElement.dataset.hotel = hotelId
-  else delete document.documentElement.dataset.hotel
+  applyHotelIdentity(hotelId)
 }
 
 export const applyTheme = (choice) => {
   if (typeof document === 'undefined') return
   const resolved = resolveTheme(choice)
   document.documentElement.dataset.theme = resolved
-  document.documentElement.dataset.themeChoice = CHOICES.includes(choice) ? choice : 'light'
+  document.documentElement.dataset.themeChoice = CHOICES.includes(choice) ? choice : 'system'
   setThemeColorMeta(resolved)
   applyHotelAccent()
 }
@@ -42,7 +42,7 @@ export const applyTheme = (choice) => {
 const persist = (choice) => { try { localStorage.setItem(KEY, choice) } catch { /* sessione usabile senza storage */ } }
 
 export const setThemeChoice = (choice) => {
-  const next = CHOICES.includes(choice) ? choice : 'light'
+  const next = CHOICES.includes(choice) ? choice : 'system'
   applyTheme(next)
   persist(next)
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('apice-theme-changed', { detail: { choice: next, resolved: resolveTheme(next) } }))

@@ -4,20 +4,22 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('point 2 keeps a light-first theme with explicit dark/system choices', async () => {
+test('point 2 keeps complete light/dark themes with system as the safe default', async () => {
   const theme = await source('src/randapp/theme.js')
-  assert.match(theme, /return CHOICES\.includes\(saved\) \? saved : 'light'/)
+  assert.match(theme, /return CHOICES\.includes\(saved\) \? saved : 'system'/)
   assert.match(theme, /THEMES = \[\['system', 'Sistema'\], \['light', 'Chiaro'\], \['dark', 'Scuro'\]\]/)
   assert.match(theme, /document\.documentElement\.dataset\.theme = resolved/)
 })
 
 test('hotel identity is a visual accent and does not replace semantic status colors', async () => {
-  const [theme, css] = await Promise.all([
+  const [theme, identity, css] = await Promise.all([
     source('src/randapp/theme.js'),
+    source('src/randapp/hotel-identity.js'),
     source('src/randapp/ui-material-glass.css'),
   ])
   for (const hotel of ['hotelgio', 'chocohotel', 'brigantino']) assert.match(css, new RegExp(`data-hotel='${hotel}'`))
-  assert.match(theme, /document\.documentElement\.dataset\.hotel = hotelId/)
+  assert.match(theme, /applyHotelIdentity\(hotelId\)/)
+  assert.match(identity, /dataset\.hotel = identity\.id/)
   assert.match(css, /\.rs-badge--high/)
   assert.match(css, /var\(--rs-danger\)/)
   assert.match(css, /\.rs-badge--waiting/)
@@ -28,7 +30,7 @@ test('hotel identity is a visual accent and does not replace semantic status col
 
 test('liquid glass is restrained to app chrome and has accessibility fallbacks', async () => {
   const css = await source('src/randapp/ui-material-glass.css')
-  assert.match(css, /\.rs-header,\n\.rs-bottomnav,\n\.rs-sheet,\n\.rs-navfab/)
+  assert.match(css, /\.rs-header,\r?\n\.rs-bottomnav,\r?\n\.rs-sheet,\r?\n\.rs-navfab/)
   assert.doesNotMatch(css, /\.rs-card,\n\.rs-header,\n\.rs-bottomnav/)
   assert.match(css, /prefers-reduced-motion: reduce/)
   assert.match(css, /prefers-contrast: more/)
