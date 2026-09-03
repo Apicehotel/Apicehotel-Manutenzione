@@ -10,6 +10,13 @@ export const RANDCORE_HEALTH_DOMAINS = Object.freeze([
   'dependencies',
 ])
 
+export const RANDCORE_EXTERNAL_HEALTH_DOMAINS = Object.freeze([
+  'deploy',
+  'backup_restore',
+  'integrations',
+  'dependencies',
+])
+
 export const EvidenceState = Object.freeze({ VERIFIED:'VERIFIED', UNKNOWN:'UNKNOWN', STALE:'STALE' })
 export const EvidenceFreshness = Object.freeze({ FRESH:'FRESH', STALE:'STALE', UNKNOWN:'UNKNOWN' })
 
@@ -76,6 +83,25 @@ export function buildHealthEvidenceSnapshot({
     }),
     domains:Object.freeze(normalized),
   })
+}
+
+export function buildExternalEvidenceSnapshot(rows = [], { generatedAt = new Date().toISOString() } = {}) {
+  const domains = {}
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const domain = String(row?.domain || '')
+    if (!RANDCORE_EXTERNAL_HEALTH_DOMAINS.includes(domain) || domains[domain]) continue
+    const maxAgeSeconds = Number(row.max_age_seconds)
+    domains[domain] = {
+      status:row.status,
+      score:row.score,
+      checkedAt:row.checked_at,
+      maxAgeMs:Number.isFinite(maxAgeSeconds) && maxAgeSeconds > 0 ? maxAgeSeconds * 1000 : undefined,
+      source:row.source,
+      evidence:{ ...(row.evidence || {}), commit_sha:row.commit_sha || null, evidence_id:row.id || null },
+      confidence:100,
+    }
+  }
+  return buildHealthEvidenceSnapshot({ domains, generatedAt, evaluatedAt:generatedAt })
 }
 
 export function fromLegacyHealthSnapshot(snapshot = {}, { generatedAt, evaluatedAt } = {}) {
