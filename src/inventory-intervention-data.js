@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js'
 
 const clean = (value) => String(value ?? '').trim()
+const requestInFlight = new Map()
 
 const normalizePart = (row) => ({
   id: row.id,
@@ -41,9 +42,17 @@ function readableError(error) {
   return error instanceof Error ? error : new Error(text || 'Operazione non riuscita')
 }
 
-export async function fetchInterventionParts(interventionId) {
-  if (!supabase || !interventionId) return []
-  const { data, error } = await supabase.from('inventory_intervention_parts').select('*').eq('intervention_id', interventionId).order('created_at')
+function requireScope(scope = {}) {
+  const hotelId = clean(scope.hotelId)
+  const interventionId = clean(scope.interventionId)
+  if (!hotelId || !interventionId) throw new TypeError('hotelId e interventionId sono obbligatori')
+  return { hotelId, interventionId }
+}
+
+export async function fetchInterventionParts(scope) {
+  if (!supabase) return []
+  const { hotelId, interventionId } = requireScope(scope)
+  const { data, error } = await supabase.from('inventory_intervention_parts').select('*').eq('hotel_id', hotelId).eq('intervention_id', interventionId).order('created_at')
   if (error) throw readableError(error)
   return (data || []).map(normalizePart)
 }
@@ -57,7 +66,8 @@ export async function fetchInventoryAvailability(hotelId) {
 
 export async function requestInterventionPart(interventionId, draft = {}) {
   if (!supabase) throw new Error('Supabase non disponibile')
-  const { data, error } = await supabase.rpc('inventory_request_intervention_part', {
+  if (!interventionId) throw new TypeError('interventionId è obbligatorio')
+  const args = {
     p_intervention_id: interventionId,
     p_item_id: draft.itemId || null,
     p_requested_name: clean(draft.requestedName) || null,
@@ -65,40 +75,56 @@ export async function requestInterventionPart(interventionId, draft = {}) {
     p_note: clean(draft.note) || null,
     p_reserve: draft.reserve !== false,
     p_serial_unit_id: draft.serialUnitId || null,
-  })
-  if (error) throw readableError(error)
-  return normalizePart(data)
+  }
+  const key = JSON.stringify(args)
+  if (requestInFlight.has(key)) return requestInFlight.get(key)
+  const operation = (async () => {
+    const { data, error } = await supabase.rpc('inventory_request_intervention_part', args)
+    if (error) throw readableError(error)
+    return normalizePart(data)
+  })()
+  requestInFlight.set(key, operation)
+  try { return await operation } finally { if (requestInFlight.get(key) === operation) requestInFlight.delete(key) }
 }
 
 export async function reserveInterventionPart(partId, itemId, serialUnitId = null) {
+  if (!supabase) throw new Error('Supabase non disponibile')
   const { data, error } = await supabase.rpc('inventory_reserve_intervention_part', { p_part_id: partId, p_item_id: itemId || null, p_serial_unit_id: serialUnitId || null })
   if (error) throw readableError(error)
   return normalizePart(data)
 }
 
 export async function releaseInterventionPart(partId, { cancel = false } = {}) {
+  if (!supabase) throw new Error('Supabase non disponibile')
   const { data, error } = await supabase.rpc('inventory_release_intervention_part', { p_part_id: partId, p_cancel: Boolean(cancel) })
   if (error) throw readableError(error)
   return normalizePart(data)
 }
 
 export async function consumeInterventionPart(partId) {
+  if (!supabase) throw new Error('Supabase non disponibile')
   const { data, error } = await supabase.rpc('inventory_consume_intervention_part', { p_part_id: partId })
   if (error) throw readableError(error)
   return normalizePart(data)
 }
 
-export async function fetchAvailableSerialUnits(itemId) {
-  if (!supabase || !itemId) return []
-  const { data, error } = await supabase.from('inventory_serial_units').select('id,serial_number,asset_tag,barcode,status,condition').eq('item_id', itemId).eq('active', true).eq('status', 'available').order('serial_number')
+export async function fetchAvailableSerialUnits({ hotelId, itemId } = {}) {
+  if (!supabase || !hotelId || !itemId) return []
+  const { data, error } = await supabase.from('inventory_serial_units').select('id,serial_number,asset_tag,barcode,status,condition').eq('hotel_id', hotelId).eq('item_id', itemId).eq('active', true).eq('status', 'available').order('serial_number')
   if (error) throw readableError(error)
   return (data || []).map((row) => ({ id: row.id, serialNumber: row.serial_number, assetTag: row.asset_tag || '', barcode: row.barcode || '', status: row.status, condition: row.condition }))
 }
 
-export function subscribeInterventionParts(interventionId, onChange) {
-  if (!supabase || !interventionId) return () => {}
-  const channel = supabase.channel(`inventory-intervention-${interventionId}-${Date.now()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_intervention_parts', filter: `intervention_id=eq.${interventionId}` }, onChange)
+export function subscribeInterventionParts(scope, onChange) {
+  if (!supabase) return () => {}
+  const { hotelId, interventionId } = requireScope(scope)
+  const guardedChange = (payload) => {
+    const rowHotel = payload?.new?.hotel_id || payload?.old?.hotel_id
+    if (rowHotel && rowHotel !== hotelId) return
+    onChange?.(payload)
+  }
+  const channel = supabase.channel(`inventory-intervention-${hotelId}-${interventionId}-${Date.now()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_intervention_parts', filter: `intervention_id=eq.${interventionId}` }, guardedChange)
     .subscribe()
   return () => { supabase.removeChannel(channel) }
 }
