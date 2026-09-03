@@ -1,6 +1,7 @@
 import { ToolPermission, ToolRisk } from '../tools/contracts.js'
 import { AutonomyDecision, AutonomyLevel, ApprovalStatus, RISK_ORDER, actionIdentity, actionScope, requiresHumanByTool, validateAutonomyPolicy } from './contracts.js'
 import { ApprovalStore, AutonomyPolicyStore } from './store.js'
+import { resolveAutonomyDecision } from './decision.js'
 
 const clone = (value) => structuredClone(value)
 const nowIso = () => new Date().toISOString()
@@ -55,6 +56,20 @@ export class PermissionAutonomyEngine {
       return { decision: AutonomyDecision.ALLOW, reason: 'L3_SAFE_ACTION', tool: this.#tool(tool), identity, scopeKey }
     }
     return { decision: AutonomyDecision.ALLOW, reason: 'L4_AUTONOMOUS_ACTION', tool: this.#tool(tool), identity, scopeKey }
+  }
+
+  async evaluateOperationalAction({ confidenceDecision, planValidation = { ok: true }, permissionGranted = false, humanConfirmed = false, contextValid = true, requestedLevel = null, ...action } = {}) {
+    const evaluation = await this.evaluate(action)
+    return resolveAutonomyDecision({
+      evaluation,
+      confidenceDecision,
+      planValidation,
+      permissionGranted,
+      humanConfirmed,
+      contextValid,
+      requestedLevel,
+      policyLevel: (action.policy || await this.getPolicy()).level,
+    })
   }
 
   async requestApproval({ toolId, input = {}, taskId = null, stepId = null, hotelId = null, scope = null, reason = null, payload = {} } = {}) {
