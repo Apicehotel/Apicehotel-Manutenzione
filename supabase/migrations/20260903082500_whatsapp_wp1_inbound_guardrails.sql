@@ -1,5 +1,7 @@
 -- WP1 — WhatsApp Channel Foundation
 -- Atomic, hotel-scoped inbound throttling. Service-role Edge Functions are the only intended caller.
+-- `whatsapp_channel_settings.inbound_number` is already UNIQUE in the canonical schema;
+-- WP1 deliberately reuses that constraint instead of creating a duplicate index.
 
 create table if not exists public.whatsapp_inbound_rate_limits (
   hotel_id text not null,
@@ -58,8 +60,3 @@ grant execute on function public.consume_whatsapp_inbound_quota(text, text, inte
 
 create index if not exists whatsapp_inbound_rate_limits_updated_idx
   on public.whatsapp_inbound_rate_limits (updated_at);
-
--- Keep channel routing fail-closed at the database boundary as well.
-create unique index if not exists whatsapp_channel_settings_inbound_number_not_null_uidx
-  on public.whatsapp_channel_settings (inbound_number)
-  where inbound_number is not null;
