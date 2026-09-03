@@ -6,85 +6,69 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target o
 
 - RandAI riceve solo contesto autorizzato e hotel-scoped.
 - Nessun modello o frontend riceve `service_role`, PIN, refresh token o secret non necessari.
-- Le scritture operative passano da Action Gateway / Safe Write e dall’autorità server.
-- RLS/RPC Supabase sono il controllo finale: nascondere un bottone non è autorizzazione.
-- Output AI, memoria, telemetria e risultati tecnici non diventano verità operativa senza verifica.
-- `UNKNOWN` non significa `HEALTHY`.
-- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler o orchestrazione per la stessa responsabilità.
+- RLS/RPC Supabase sono l'autorità finale; nascondere un bottone non è autorizzazione.
+- `UNKNOWN` e `STALE` non significano `HEALTHY`.
+- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario o health stack per la stessa responsabilità.
 - Una parte viene eliminata come zombie solo dopo verifica di utilizzo e dipendenze.
-- Se esiste una soluzione nettamente migliore e più sicura, si sostituisce la debolezza invece di accumulare patch.
+- Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
 
 ## Stato roadmap consolidata
 
 ### Fondazione RandAI — 1–26 ✅
-
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
 ### Reliability / Production — 27–50 ✅
-
 Operational Context, Scope Guard, Unified Validation, Safe Write/Action Gateway, Authorization & RLS Matrix, Audit/Reversibility, Offline/Retry/Concurrency, Import Safety, Verification Gate, Evidence Trust, Hybrid Memory/Knowledge Graph, Confidence/Risk, Plan Validator, Execution Policy, Recovery Budgets/Circuit Breakers, Failure Intelligence, Adversarial/Fault Injection, Production Gate, Canary/Rollback, Runtime Fuse, Drift Guard, SLO/Error Budget e Release Attestation.
 
-### Blocco 13 — Ecosystem Truth, RandCore e RandControl — 51–54 ✅
+### Blocco 13 — 51–54 ✅
+Ecosystem Truth Map, RandCore Manifest, RandControl 360° e Configuration 360°.
 
-51. Ecosystem Truth Map.
-52. RandCore Manifest.
-53. RandControl 360°.
-54. RandAI Configuration 360°.
+### Blocco 14 — 55–58 ✅
+Repo Radar 2.0, Deep Repository Intelligence, Safe Adoption/Replacement Gate e Repo Radar in RandControl.
 
-### Blocco 14 — Repo Radar 2.0 e Safe Adoption — 55–58 ✅
+### Blocco 15 — 59–62 ✅
+Unified Health Snapshot, Monthly Full Ecosystem Check, Findings/History/Drift e RandControl Health Console.
 
-55. Repo Radar 2.0.
-56. Deep Repository Intelligence.
-57. Safe Adoption / Replacement Gate.
-58. Repo Radar in RandControl.
+### Blocco 16 — 63–66 ✅
+Operations & Workers, Security Center, Observability & Cost Center e Repo/Module Health.
 
-### Blocco 15 — RandCore Health & Full Audit 2.0 — 59–62 ✅
+### Blocco 17 — 67 ✅
+Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegato a Interventi e RandAI senza un secondo inventario.
 
-59. Unified Health Snapshot.
-60. Monthly Full Ecosystem Check.
-61. Findings, History & Drift.
-62. RandControl Health Console.
-
-### Blocco 16 — Operations & Security — 63–66 ✅
-
-63. Rand Operations & Workers.
-64. Rand Security Center.
-65. Rand Observability & Cost Center.
-66. Rand Repo / Module Health.
-
-### Blocco 17 — Rand Warehouse Integration — 67 ✅
-
-67. Il Magazzino resta bounded domain autonomo ma collegato a Interventi e RandAI. Lifecycle ricambi `requested → reserved → consumed/released/cancelled`, consumo atomico, protezioni cross-hotel e nessun secondo inventario.
-
-### Blocco 18 — Final Ecosystem Gate & LTS — 68–70 ✅
-
-68. Final Ecosystem / E2E Contract Gate.
-69. Zombie & Duplication Purge.
-70. Rand Ecosystem LTS 1.0.
+### Blocco 18 — 68–70 ✅
+Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
 
 Perimetro LTS obbligatorio: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. Moduli deferred dichiarati: `RandGuide`, `RandMind`, `RandBrain`, `RandUI` (`PARTIAL`), `RandAudio` e `Viking` (`PLANNED`).
 
 ### Blocco 19 — Health Evidence Contract — 71 ✅
 
-71. **RandCore Health Evidence Contract** — i sette domini canonici sono `database`, `security`, `workers`, `deploy`, `backup_restore`, `integrations`, `dependencies`. Ogni dominio espone evidenza `VERIFIED / STALE / UNKNOWN`, stato salute, score, sorgente, timestamp, freshness e confidence. `UNKNOWN` e `STALE` sono fail-closed e non entrano nella copertura verificata.
+I sette domini canonici sono `database`, `security`, `workers`, `deploy`, `backup_restore`, `integrations`, `dependencies`. Ogni dominio espone stato evidenza `VERIFIED / STALE / UNKNOWN`, stato salute, score, sorgente, timestamp, freshness e confidence.
 
-`100/100` descrive soltanto la qualità dei domini verificati e non implica copertura totale. Un aggregate può essere `HEALTHY` solo con 7/7 evidenze fresche e verificate. Il database misura direttamente `database`, `security`, `workers`; la CI misura `deploy` e `dependencies`; `backup_restore` e `integrations` non vengono falsamente promossi.
+`100/100` descrive la qualità dei domini verificati e non implica copertura totale. L'aggregate può essere `HEALTHY` soltanto con 7/7 prove fresche e verificate.
 
-Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `scripts/randcore-full-check.mjs`, `supabase/migrations/20260903173000_randcore_health_evidence_contract.sql`, `test/randai-block19-health-evidence-71.test.js`.
+Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903173000_randcore_health_evidence_contract.sql`, `test/randai-block19-health-evidence-71.test.js`.
 
-### Blocco 20 — External Evidence Bridge — 72
+### Blocco 20 — External Evidence Bridge — 72 ✅
 
-72. **RandCore External Evidence Bridge** — le prove prodotte fuori dal database entrano in RandCore tramite un solo canale service-only, append-only e bounded. La tabella `randcore_external_health_evidence` accetta esclusivamente i domini esterni `deploy`, `backup_restore`, `integrations`, `dependencies`; browser, `anon` e utenti autenticati non hanno accesso diretto. La RPC `randcore_record_external_health_evidence` valida dominio, stato, score, sorgente, timestamp, freshness, commit ed envelope prima dell'insert.
+`randcore_external_health_evidence` è il canale append-only e service-only per `deploy`, `backup_restore`, `integrations`, `dependencies`. Browser, `anon` e utenti autenticati non possono scriverlo. La CI produce evidenze commit-bound reali per `deploy` e `dependencies`; RandControl le compone con `database/security/workers` senza duplicare il contratto Health Evidence.
 
-RandControl riceve le ultime evidenze esterne attraverso `randcore_get_health_history` e le compone con lo snapshot runtime usando `buildExternalEvidenceSnapshot` + `mergeHealthEvidenceSnapshots`, cioè lo stesso contratto canonico del punto 71. Una prova fresca vince una prova `UNKNOWN`; una prova stale non diventa verificata; `database/security/workers` non possono essere iniettati dal bridge esterno.
+Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
 
-La CI genera anche `artifacts/randcore-external-evidence.json` dopo build, browser/device gate e Health Evidence. Oggi pubblica prove reali per `deploy` e `dependencies`. Il publisher può usare `RANDCORE_SUPABASE_URL` + `RANDCORE_SERVICE_ROLE_KEY` solo nel runner/backend; nessun secret entra nel bundle. Se entrambe le variabili non sono configurate, viene prodotto l'artifact ma non viene simulata la pubblicazione. Una configurazione parziale fallisce chiusa.
+### Blocco 21 — Full Autodiagnosis & Final Gate — 73
 
-`backup_restore` resta `UNKNOWN` finché non esiste una prova reale di backup/restore; `integrations` resta `UNKNOWN` finché non esiste un health probe attendibile delle integrazioni. Il Blocco 72 prepara entrambe le connessioni senza inventare un 7/7.
+73 chiude la nuova fase con una regola unica: `FULL_HEALTHY` è possibile soltanto con **7/7 VERIFIED + FRESH + HEALTHY, score 100, confidence 100 e coerenza del commit di deploy/dipendenze**.
 
-Zombie/duplication scan 72: nessun secondo health stack, scheduler, dashboard, authorization plane o dipendenza runtime. Il bridge estende il contratto 71 invece di duplicarlo.
+`integrations` non usa messaggi sintetici né ping aggressivi: `randcore_measure_integrations_internal()` misura tracce operative realmente già prodotte da meteo, sensori, WhatsApp e configurazione ntfy. Canali WhatsApp esplicitamente in pausa non sono considerati guasti. Assenza, stale o configurazione incompleta degradano il dominio.
 
-Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`, `.github/workflows/ci.yml`.
+`backup_restore` non diventa verde perché “esiste un backup”. `randcore_run_recoverability_drill_internal()` esegue un **restore drill logico reale e isolato** su dati critici non-secret del control plane: copia in tabelle TEMP, crea una copia di backup TEMP, svuota esclusivamente la copia TEMP, la ripristina e confronta conteggi/checksum. Le tabelle di produzione sono solo lette. L'evidenza dichiara esplicitamente `isolated=true`, `production_mutated=false`, `restore_verified` e `managed_pitr_certified=false`: il gate certifica la recoverability applicativa verificata, non inventa una certificazione del PITR gestito dal provider.
+
+`randcore_run_health_check()` esegue ora runtime audit + integration probe + restore drill. Il `randcore-monthly-full-check` usa lo stesso percorso completo. La UI RandControl mostra il Final Health Gate e le ragioni precise quando è `BLOCKED`.
+
+Durante l'analisi reale del 73 sono emerse due debolezze operative, corrette invece di nasconderle: il worker meteo falliva ripetutamente sul primo hotel mentre gli altri due proseguivano, quindi il fetch Open-Meteo ora usa retry bounded e rende esplicito il partial failure; il worker sensori superava talvolta il timeout pg_net predefinito di 5 secondi durante l'autenticazione eWeLink, quindi mantiene la cadenza ogni 30 minuti ma usa timeout HTTP 20 secondi.
+
+Zombie scan 73: nessun secondo health stack, scheduler, dashboard, backup engine, framework o dipendenza runtime. Il final gate compone 71+72 e usa le tracce operative già esistenti.
+
+Sorgenti: `src/randai/core/full-health-gate.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903201000_randcore_full_health_final_gate.sql`, `supabase/functions/weather-alert-worker/index.ts`, `test/randai-block21-full-health-73.test.js`, `.github/workflows/ci.yml`.
 
 ## Rand Control Plane
 
@@ -94,22 +78,18 @@ Runtime agenti, workflow, MCP, memoria, knowledge e tool adapter possono evolver
 
 ## RandAI Control Center
 
-Route protetta: `/randai`.
-
-La console canonica integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center e Repo Radar.
+Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center e Repo Radar.
 
 ## Worker e automazioni
-
-Registro canonico attuale:
 
 - `pulisci-richieste-urgenti-72h` — orario.
 - `presence-auto-expire-7h20` — ogni 5 minuti.
 - `diagnostic-retention-daily` — giornaliero.
 - `weather-alert-worker-2h-daytime` — ogni 2 ore nella finestra diurna prevista.
-- `sync-sensori-temperatura-secure` — ogni 30 minuti.
-- `randcore-monthly-full-check` — mensile.
-- `reminder-worker-1m` — event-driven, esiste solo con promemoria attivi.
-- `urgent-reminder-worker-30s` — event-driven temporaneo, esiste solo con coda urgente pending.
+- `sync-sensori-temperatura-secure` — ogni 30 minuti, HTTP timeout 20s.
+- `randcore-monthly-full-check` — mensile, autodiagnosi completa 7-domain.
+- `reminder-worker-1m` — event-driven, solo con promemoria attivi.
+- `urgent-reminder-worker-30s` — event-driven temporaneo, solo con coda urgente pending.
 
 Regola: event-driven prima del polling; nessun ghost worker sempre acceso senza motivo.
 
@@ -119,15 +99,13 @@ ID canonici: `hotelgio`, `chocohotel`, `brigantino`. Ogni record operativo manti
 
 ## UI
 
-RandApp è mobile-first. `src/randapp/Shell.jsx` è la sola sorgente del chrome autenticato. RandControl può essere desktop-first responsive ma usa lo stesso sistema RandUI. Requisiti: safe-area iOS, `100dvh`, touch target ≥44×44, System/Light/Dark e nessun overflow orizzontale sui viewport supportati.
+RandApp è mobile-first. `src/randapp/Shell.jsx` è la sola sorgente del chrome autenticato. RandControl usa lo stesso sistema RandUI. Requisiti: safe-area iOS, `100dvh`, touch target ≥44×44, System/Light/Dark e nessun overflow orizzontale sui viewport supportati.
 
 ## Osservabilità
 
-Sentry + OpenTelemetry + diagnostica interna restano le fonti canoniche. Costi, token e health sono “misurati” solo se esiste una traccia reale; assenza del dato = `UNKNOWN/non misurato`.
+Sentry + OpenTelemetry + diagnostica interna restano le fonti canoniche. Costi, token e health sono misurati soltanto quando esiste una traccia reale; assenza del dato = `UNKNOWN/non misurato`.
 
 ## Quality gates
-
-Prima di chiudere modifiche critiche:
 
 ```bash
 npm ci
@@ -143,6 +121,7 @@ npm run test:warehouse-integration
 npm run test:lts
 npm run test:health-evidence
 npm run test:external-evidence
+npm run test:full-health
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -153,26 +132,25 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence artifact e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
 ## Struttura repository
 
 - `src/randapp/` — shell/UI e domini RandApp.
-- `src/randai/core/` — orchestrazione, Ecosystem Truth, Configuration, Health, Health Evidence, Module Health e LTS Readiness.
-- `src/randai/control/` — Control Center, Operations, Security, Health, Repo Radar e console operative.
+- `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
+- `src/randai/control/` — Control Center, Operations, Security, Health e Repo Radar.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
-- `src/randai/` — knowledge, memory, agents, evals, recovery, learning, discovery, supervisor e domini AI.
 - `src/reliability/` — safety/reliability 27+.
-- `supabase/functions/` — boundary server.
+- `supabase/functions/` — boundary server e worker.
 - `supabase/migrations/` — schema, RLS/RPC e migration versionate.
-- `test/` e `scripts/` — contratti, quality gate, E2E, device acceptance, Health Evidence, External Evidence e attestation LTS.
+- `test/` e `scripts/` — contract, quality gate, E2E, device acceptance e attestazioni.
 
 ## Consolidamento storico
 
 - PR #118 — Blocco 1.
-- PR #123 — consolidamento 1–16; #120/#121/#122 superseded.
+- PR #123 — 1–16.
 - PR #124 — 17–20.
 - PR #125 — 21–24.
 - PR #126 — 25–26.
@@ -189,8 +167,8 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #155 — 67.
 - PR #156 — 68–70.
 - PR #157 — 71.
-- Blocco 20 — 72 / RandCore External Evidence Bridge.
+- PR #158 — 72.
 
 ## Deploy
 
-Il repository è `Apicehotel/Apicehotel-Manutenzione`; il prodotto è RandApp/RandAI. Il progetto Vercel attivo documentato è `apicehotel-manutenzionr`.
+Repository: `Apicehotel/Apicehotel-Manutenzione`. Progetto Vercel attivo: `apicehotel-manutenzionr`.
