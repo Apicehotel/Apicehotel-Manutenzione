@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/randai-console-v2
+      - rand/block16-operations-security-63-66
   pull_request:
     branches:
       - main
