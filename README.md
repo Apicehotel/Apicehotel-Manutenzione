@@ -203,6 +203,23 @@ Test dedicato: `test/randai-observability-insights.test.js`.
 
 Zombie scan Blocco 16: il nuovo livello riusa TraceStore/ObservabilityEngine e Control Center; non introduce un secondo logger, un secondo sistema di metriche o un altro deploy monitor.
 
+## Blocco 17 — Evaluation / Benchmark 2.0
+
+RandAI viene verificata con scenari ripetibili e grader espliciti, prima di considerare affidabile una modifica.
+
+- Scenari hotel-scoped con output, trace e metriche confrontabili.
+- Dimensioni di valutazione già canoniche: sicurezza, outcome, processo, tool, memoria, pianificazione, recovery e progetto.
+- Grader critici che possono bloccare il benchmark anche quando la media generale supera la soglia.
+- Gate di suite con score, pass/fail, errori critici e confronto con baseline.
+- Rilevamento delle regressioni con tolleranza esplicita.
+- Comando dedicato: `npm run test:benchmark`.
+
+Sorgenti: `src/randai/evals/engine.js`, `benchmark.js`, `contracts.js` e `store.js`.
+
+Test dedicato: `test/randai-benchmark.test.js`.
+
+Zombie scan Blocco 17: il benchmark riusa EvaluationEngine, EvalStore e i grader esistenti; non introduce un secondo runner, un secondo punteggio o una seconda pipeline CI.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
