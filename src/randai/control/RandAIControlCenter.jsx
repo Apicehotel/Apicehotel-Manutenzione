@@ -9,13 +9,17 @@ import RandAIKnowledgeConsole from '../console/RandAIConsole.jsx'
 import WhatsAppConsole from './WhatsAppConsole.jsx'
 import IssueOperationsConsole from './IssueOperationsConsole.jsx'
 import SystemControlConsole from './SystemControlConsole.jsx'
+import EcosystemConsole from './EcosystemConsole.jsx'
+import RandAIConfigurationConsole from './RandAIConfigurationConsole.jsx'
 import './randai-control.css'
+import './ecosystem-control.css'
 
 const PRIMARY_NAV = [
   ['dashboard', 'Overview'], ['whatsapp', 'WhatsApp'], ['issues', 'Segnalazioni'],
   ['team', 'Tecnici'], ['workers', 'Worker'], ['audit', 'Log'],
 ]
 const ADVANCED_NAV = [
+  ['ecosystem', 'Ecosistema'], ['configuration', 'Configurazione 360°'],
   ['maintenance', 'Manutenzioni'], ['knowledge', 'Conoscenze'], ['drafts', 'Bozze'],
   ['approvals', 'Approvazioni'], ['archive', 'Archivio'], ['assets', 'Impianti'],
   ['deadlines', 'Scadenze'], ['rules', 'Regole'], ['anomalies', 'Anomalie'],
@@ -123,6 +127,8 @@ export default function RandAIControlCenter() {
   const systemProps = { accessHotels: access.hotels, hotelFilter }
   const sectionContent = {
     dashboard,
+    ecosystem: <EcosystemConsole />,
+    configuration: <RandAIConfigurationConsole accessHotels={access.hotels} hotelFilter={hotelFilter} />,
     whatsapp: <WhatsAppConsole accessHotels={access.hotels} hotelFilter={hotelFilter} />,
     workers: <SystemControlConsole {...systemProps} mode="workers" />,
     audit: <SystemControlConsole {...systemProps} mode="audit" />,
@@ -142,5 +148,6 @@ export default function RandAIControlCenter() {
     team: <Panel title="Tecnici e team" meta={`${users.length} utenti`}><div className="rc-table-wrap"><table><thead><tr><th>Utente</th><th>Ruolo</th><th>Reparto</th><th>Strutture</th><th>Stato</th></tr></thead><tbody>{users.map((u, index) => <tr key={u.id || u.auth_user_id || index}><td><strong>{u.name || u.display_name || 'Utente'}</strong><small>{u.email || u.phone || ''}</small></td><td>{u.role || '—'}</td><td>{u.department || '—'}</td><td>{(u.hotels || []).map((id) => HOTEL_LABELS[id] || id).join(' · ') || '—'}</td><td><Badge tone={u.active === false ? '' : 'good'}>{u.active === false ? 'disattivato' : 'attivo'}</Badge></td></tr>)}</tbody></table></div></Panel>,
   }[section] || dashboard
 
-  return <div className="rc-shell"><aside className="rc-sidebar"><div className="rc-brand"><img src="/icons/randai-cat.webp" alt="" /><div><strong>RandAI</strong><span>Control Center</span></div></div><div className="rc-nav-label">Operativo</div><nav>{PRIMARY_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{label}</button>)}</nav><div className="rc-nav-label rc-nav-secondary-label">Sistema</div><nav className="rc-nav-secondary">{ADVANCED_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{label}</button>)}</nav><button className="rc-back" onClick={() => window.location.assign('/')}>← RandApp</button></aside><main className="rc-main"><header className="rc-top"><div><small>RANDAPP · AREA AMMINISTRATIVA</small><h1>{NAV.find(([key]) => key === section)?.[1] || 'Overview'}</h1><p>Operatività, stato servizi e controllo RandAI in un’unica console.</p></div><div className="rc-user"><strong>{access.name}</strong><span>{access.hotels.length} strutture abilitate</span></div></header>{systemBar}{section !== 'knowledge' && toolbar}{notice && <div className="rc-notice">{notice}</div>}{busy && section === 'dashboard' && <div className="rc-loading">Aggiornamento dati…</div>}{sectionContent}</main><DetailDrawer item={selectedIssue} onClose={() => setSelectedIssue(null)} /></div>
+  const showToolbar = !['knowledge', 'ecosystem'].includes(section)
+  return <div className="rc-shell"><aside className="rc-sidebar"><div className="rc-brand"><img src="/icons/randai-cat.webp" alt="" /><div><strong>RandAI</strong><span>Control Center</span></div></div><div className="rc-nav-label">Operativo</div><nav>{PRIMARY_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{label}</button>)}</nav><div className="rc-nav-label rc-nav-secondary-label">Sistema</div><nav className="rc-nav-secondary">{ADVANCED_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{label}</button>)}</nav><button className="rc-back" onClick={() => window.location.assign('/')}>← RandApp</button></aside><main className="rc-main"><header className="rc-top"><div><small>RANDAPP · AREA AMMINISTRATIVA</small><h1>{NAV.find(([key]) => key === section)?.[1] || 'Overview'}</h1><p>Operatività, stato servizi e controllo RandAI in un’unica console.</p></div><div className="rc-user"><strong>{access.name}</strong><span>{access.hotels.length} strutture abilitate</span></div></header>{systemBar}{showToolbar && toolbar}{notice && <div className="rc-notice">{notice}</div>}{busy && section === 'dashboard' && <div className="rc-loading">Aggiornamento dati…</div>}{sectionContent}</main><DetailDrawer item={selectedIssue} onClose={() => setSelectedIssue(null)} /></div>
 }
