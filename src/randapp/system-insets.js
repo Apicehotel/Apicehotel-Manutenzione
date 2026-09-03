@@ -36,6 +36,20 @@ export function initSystemInsetsBridge() {
     if (event?.detail && typeof event.detail === 'object') applySystemInsets(event.detail)
   }
 
+  const visualViewport = window.visualViewport
+  const syncVisualViewport = () => {
+    if (!visualViewport) return
+    document.documentElement.style.setProperty('--rs-visual-viewport-height', `${Math.round(visualViewport.height)}px`)
+    document.documentElement.dataset.keyboardOpen = visualViewport.height < window.innerHeight * 0.78 ? 'true' : 'false'
+  }
+
   window.addEventListener('randapp-system-insets', onInsets)
-  return () => window.removeEventListener('randapp-system-insets', onInsets)
+  visualViewport?.addEventListener('resize', syncVisualViewport, { passive: true })
+  visualViewport?.addEventListener('scroll', syncVisualViewport, { passive: true })
+  syncVisualViewport()
+  return () => {
+    window.removeEventListener('randapp-system-insets', onInsets)
+    visualViewport?.removeEventListener('resize', syncVisualViewport)
+    visualViewport?.removeEventListener('scroll', syncVisualViewport)
+  }
 }

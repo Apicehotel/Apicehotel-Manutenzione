@@ -10,6 +10,14 @@
   --rs-page-gap: calc(16px * var(--rs-scale));
 }
 
+html { min-height: 100%; overflow-x: clip; }
+body { min-height: 100dvh; min-height: -webkit-fill-available; }
+
+/* Versioned hotel identities: brand changes accent only, never authority or status semantics. */
+html[data-hotel-identity-version='1'][data-hotel='hotelgio'] { --rs-accent: #6654c7; --rs-accent-strong: #4f3eaa; }
+html[data-hotel-identity-version='1'][data-hotel='chocohotel'] { --rs-accent: #925b32; --rs-accent-strong: #704224; }
+html[data-hotel-identity-version='1'][data-hotel='brigantino'] { --rs-accent: #126b87; --rs-accent-strong: #0b536b; }
+
 /* One interaction contract for every native/custom control. */
 button,
 [role='button'],
@@ -119,6 +127,23 @@ textarea:focus-visible,
 
 .rs-sheet { max-height: min(88dvh, 88svh); }
 .rs-modal { max-height: min(90dvh, 90svh); }
+html[data-keyboard-open='true'] .rs-sheet,
+html[data-keyboard-open='true'] .rs-modal { max-height: calc(var(--rs-visual-viewport-height, 100dvh) - 12px); }
+.rs-sheet__body,
+.rs-modal__body { overflow-y: auto; overscroll-behavior-y: contain; }
+
+@media (pointer: coarse) {
+  button, [role='button'], a, input, select { min-height: 44px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled), [role='button'], a[href] { cursor: pointer; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .rs-sheet, .rs-modal { max-height: calc(100dvh - 16px); }
+  .rs-content { padding-top: 8px; }
+}
 
 /* Consistent operational feedback. */
 .rs-error,

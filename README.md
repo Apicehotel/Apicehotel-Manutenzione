@@ -38,7 +38,7 @@ Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegat
 ### Blocco 18 — 68–70 ✅
 Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
 
-Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE` quando il relativo gate finale è verde.
+Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE`; dal Blocco 25 `RandUI` è `LIVE` quando il visual quality gate finale è verde.
 
 ### Blocco 19 — Health Evidence Contract — 71 ✅
 
@@ -114,6 +114,18 @@ Non è stata aggiunta alcuna migration: Supervisor, Agents, Autonomy e Learning 
 
 Sorgenti: `src/randai/randbrain/`, `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/`, `src/randai/control/RandBrainConsole.jsx`, `test/randai-block24-randbrain-87-92.test.js`.
 
+### Blocco 25 — RandUI LIVE — 93–97 ✅
+
+RandUI consolida le primitive `src/randapp/ui.jsx`, i token e la geometria `rs-*` già esistenti: non introduce una seconda component library. `Shell.jsx` resta l'unico chrome autenticato e mantiene il punto `+` globale, la navigazione role-aware e RandAI integrato; RLS/RPC e RandCore restano le autorità.
+
+Le identità Hotel Giò, ChocoHotel e Hotel Il Brigantino hanno un contratto versionato (`hotel-identity.js`, versione 1) che modifica esclusivamente l'accento visivo. System/Light/Dark condividono gli stessi token; la prima scelta predefinita è System e Light è una superficie completa, non un override parziale.
+
+L'adaptive contract copre safe-area, `100dvh`, visual viewport/tastiera, mouse, touch, edge swipe del menu, portrait/landscape, tablet e desktop Windows. Sheet e modal gestiscono Escape, focus iniziale, focus trap e ripristino focus. Il visual gate usa Chromium e WebKit, screenshot, overflow, tema, touch target, rotazione e controlli runtime; la CI espone inoltre il gate nominato `RandUI visual quality contracts`.
+
+Zombie scan 93–97: conservati i CSS feature-specific ancora importati e coperti da flussi operativi; nessuna eliminazione rischiosa o nuova dipendenza. Issues, Interventions, Planning Sale/Lavori, Warehouse, Home e RandAI continuano a usare Shell e primitive canoniche.
+
+Sorgenti: `src/randapp/ui.jsx`, `src/randapp/ui-coherence.css`, `src/randapp/ui-material-glass.css`, `src/randapp/adaptive-layout.css`, `src/randapp/hotel-identity.js`, `src/randapp/theme.js`, `src/randapp/Shell.jsx`, `test/randai-block25-randui-93-97.test.js`, `test/e2e.mjs`, `test/device-acceptance.mjs`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -169,6 +181,7 @@ npm run test:full-health
 npm run test:randguide
 npm run test:randmind
 npm run test:randbrain
+npm run test:randui
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -179,7 +192,7 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { UI_SIZES, loadUiSize, setUiSize } from './ui-size.js'
 import { THEMES, loadThemeChoice, setThemeChoice } from './theme.js'
 
@@ -135,12 +135,37 @@ function useLockScroll(active) {
   }, [active])
 }
 
+function useDialogA11y(open, onClose) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const previous = document.activeElement
+    const dialog = ref.current
+    const focusable = dialog?.querySelector('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')
+    focusable?.focus()
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose?.()
+      if (event.key !== 'Tab' || !dialog) return
+      const controls = [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
+      if (!controls.length) return
+      const first = controls[0]
+      const last = controls.at(-1)
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown); previous?.focus?.() }
+  }, [open, onClose])
+  return ref
+}
+
 export function Sheet({ open, onClose, title, children, className = '' }) {
   useLockScroll(open)
+  const dialogRef = useDialogA11y(open, onClose)
   if (!open) return null
   return (
     <div className="rs-overlay" onClick={onClose}>
-      <section className={`rs-sheet ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <section ref={dialogRef} className={`rs-sheet ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title || 'Pannello'}>
         <span className="rs-sheet__handle" />
         {title && <header className="rs-sheet__head"><h3>{title}</h3><IconButton icon="close" label="Chiudi" onClick={onClose} /></header>}
         <div className="rs-sheet__body">{children}</div>
@@ -151,10 +176,11 @@ export function Sheet({ open, onClose, title, children, className = '' }) {
 
 export function Modal({ open, onClose, title, subtitle, children, className = '' }) {
   useLockScroll(open)
+  const dialogRef = useDialogA11y(open, onClose)
   if (!open) return null
   return (
     <div className="rs-overlay rs-overlay--center" onClick={onClose}>
-      <section className={`rs-modal ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <section ref={dialogRef} className={`rs-modal ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title || 'Finestra'}>
         {(title || onClose) && (
           <header className="rs-modal__head">
             <div>{title && <h3>{title}</h3>}{subtitle && <p>{subtitle}</p>}</div>

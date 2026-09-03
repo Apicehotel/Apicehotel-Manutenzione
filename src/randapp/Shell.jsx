@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchDirectory } from '../users-data.js'
 import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.js'
@@ -49,6 +49,27 @@ const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then(
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
 
+function useDrawerSwipe({ open, setOpen }) {
+  const gesture = useRef(null)
+  return {
+    onPointerDown: (event) => {
+      if (event.pointerType === 'mouse' || (!open && event.clientX > 24)) return
+      gesture.current = { x: event.clientX, y: event.clientY }
+    },
+    onPointerUp: (event) => {
+      const start = gesture.current
+      gesture.current = null
+      if (!start) return
+      const dx = event.clientX - start.x
+      const dy = Math.abs(event.clientY - start.y)
+      if (dy > 56 || Math.abs(dx) < 72) return
+      if (!open && dx > 0) setOpen(true)
+      if (open && dx < 0) setOpen(false)
+    },
+    onPointerCancel: () => { gesture.current = null },
+  }
+}
+
 function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
   const placement = variant === 'drawer' ? 'side' : null
   const groups = useMemo(() => buildNav(user, hotel, navigationConfig, placement), [user, hotel, navigationConfig, placement])
@@ -90,6 +111,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [cacheStatus, setCacheStatus] = useState('')
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
+  const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
 
   useEffect(() => initSystemInsetsBridge(), [])
 
@@ -310,7 +332,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   return (
-    <div className="rs-root">
+    <div className="rs-root" {...drawerSwipe}>
       <div className="rs-app rs-app--with-side">
         <aside className="rs-sidebar" data-testid="sidebar">
           <div className="rs-sidebar__brand"><img src={logoFor(hotel.id)} alt={hotel.name} /><div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div></div>
@@ -372,7 +394,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
       {drawer && (
         <div className="rs-overlay" onClick={() => setDrawer(false)} style={{ justifyContent: 'flex-end' }}>
-          <aside className="rs-drawer" onClick={(e) => e.stopPropagation()} data-testid="drawer">
+          <aside className="rs-drawer" onClick={(e) => e.stopPropagation()} data-testid="drawer" aria-label="Menu principale">
             {DrawerHeader}
             {showStructureSide && <button className="rs-drawer__switch" onClick={() => { setDrawer(false); setHotelSheet(true) }} data-testid="drawer-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronRight" /></i></button>}
             <div className="rs-drawer__scroll">
