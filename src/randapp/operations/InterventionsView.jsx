@@ -11,6 +11,7 @@ import {
   reserveInterventionPart,
   subscribeInterventionParts,
 } from '../../inventory-intervention-data.js'
+import { clearRandAIContextResource, createInterventionContextEnvelope, publishRandAIContext } from '../../randai/context/envelope.js'
 import { Button, Card, EmptyState, Field, Icon, IconButton, Spinner, TextInput, Sheet, ConfirmDialog, Badge } from '../ui.jsx'
 import { canCreatePlanned, compressPhotoAsDataUrl } from '../helpers.js'
 import { PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
@@ -37,7 +38,7 @@ export default function InterventionsView({ hotel, user }) {
   </div>
 }
 
-function InterventionParts({ item, hotel, editable, onWaitingChange }) {
+function InterventionParts({ item, hotel, user, editable, onWaitingChange }) {
   const [parts, setParts] = useState([])
   const [items, setItems] = useState([])
   const [availability, setAvailability] = useState([])
@@ -54,7 +55,7 @@ function InterventionParts({ item, hotel, editable, onWaitingChange }) {
 
   const load = useCallback(async () => {
     const [nextParts, nextItems, nextAvailability] = await Promise.all([
-      fetchInterventionParts(item.id),
+      fetchInterventionParts({ hotelId: hotel.id, interventionId: item.id }),
       fetchInventoryItems(hotel.id),
       fetchInventoryAvailability(hotel.id),
     ])
@@ -62,12 +63,25 @@ function InterventionParts({ item, hotel, editable, onWaitingChange }) {
     onWaitingChange?.(nextParts.some((p) => p.status === 'requested' || p.status === 'reserved'))
   }, [item.id, hotel.id, onWaitingChange])
 
-  useEffect(() => { load().catch((e) => setError(e.message)); return subscribeInterventionParts(item.id, () => load().catch(() => {})) }, [item.id, load])
+  useEffect(() => { load().catch((e) => setError(e.message)); return subscribeInterventionParts({ hotelId: hotel.id, interventionId: item.id }, () => load().catch(() => {})) }, [item.id, hotel.id, load])
+  useEffect(() => {
+    const context = createInterventionContextEnvelope({
+      hotelId: hotel.id,
+      intervention: item,
+      actor: user ? { userId: user.auth_user_id || user.id, legacyId: user.legacy_id, role: user.role, department: user.department } : null,
+      parts,
+      items,
+      availability,
+    })
+    if (!context) return undefined
+    publishRandAIContext(context)
+    return () => clearRandAIContextResource({ hotelId: hotel.id, resourceId: item.id })
+  }, [hotel.id, item, user, parts, items, availability])
   useEffect(() => {
     setSerialId('')
     if (!itemId) { setSerials([]); return }
-    fetchAvailableSerialUnits(itemId).then(setSerials).catch(() => setSerials([]))
-  }, [itemId])
+    fetchAvailableSerialUnits({ hotelId: hotel.id, itemId }).then(setSerials).catch(() => setSerials([]))
+  }, [hotel.id, itemId])
 
   const availabilityById = useMemo(() => new Map(availability.map((row) => [row.itemId, row])), [availability])
   const itemById = useMemo(() => new Map(items.map((row) => [row.id, row])), [items])
@@ -120,17 +134,17 @@ function InterventionParts({ item, hotel, editable, onWaitingChange }) {
 function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
   const [photo,setPhoto]=useState(null),[confirmDel,setConfirmDel]=useState(false),[partsPending,setPartsPending]=useState(false),[parts,setParts]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
   const assigned=isAssignedTo(item,user),canManage=canCreatePlanned(user)||user?.role==='manutentore',canComplete=(canManage||assigned)&&item.status!=='done',rooms=Array.isArray(item.rooms)?item.rooms:null,roomsDone=item.roomsDone||{},doneCount=rooms?rooms.filter(r=>roomsDone[r]).length:0,pct=rooms?.length?Math.round((doneCount/rooms.length)*100):0
-  useEffect(()=>{fetchInterventionParts(item.id).then(setParts).catch(()=>setParts([]));return subscribeInterventionParts(item.id,()=>fetchInterventionParts(item.id).then(setParts).catch(()=>{}))},[item.id])
+  useEffect(()=>{fetchInterventionParts({hotelId:hotel.id,interventionId:item.id}).then(setParts).catch(()=>setParts([]));return subscribeInterventionParts({hotelId:hotel.id,interventionId:item.id},()=>fetchInterventionParts({hotelId:hotel.id,interventionId:item.id}).then(setParts).catch(()=>{}))},[hotel.id,item.id])
   const consumedParts=parts.filter((part)=>part.status==='consumed')
   const toggleRoom=async(room)=>{if(!canComplete)return;const next={...roomsDone};if(next[room])delete next[room];else next[room]={by:user?.name,at:Date.now()};await onUpdate(item.id,{roomsDone:next})}
   const complete=async()=>{setBusy(true);setError('');try{await onUpdate(item.id,{status:'done',photoAfter:photo,completedBy:user?.name,completedAt:Date.now()});onClose()}catch(e){setError(e.message)}finally{setBusy(false)}}
-  const remove=async()=>{setBusy(true);setError('');try{const current=await fetchInterventionParts(item.id);if(current.some((part)=>part.status==='consumed'))throw new Error('Questo intervento ha movimenti Magazzino: non può essere eliminato senza perdere la tracciabilità.');for(const part of current.filter((p)=>p.status==='requested'||p.status==='reserved'||p.status==='released'))await releaseInterventionPart(part.id,{cancel:true});await onDelete(item.id);onClose()}catch(e){setConfirmDel(false);setError(e.message)}finally{setBusy(false)}}
+  const remove=async()=>{setBusy(true);setError('');try{const current=await fetchInterventionParts({hotelId:hotel.id,interventionId:item.id});if(current.some((part)=>part.status==='consumed'))throw new Error('Questo intervento ha movimenti Magazzino: non può essere eliminato senza perdere la tracciabilità.');for(const part of current.filter((p)=>p.status==='requested'||p.status==='reserved'||p.status==='released'))await releaseInterventionPart(part.id,{cancel:true});await onDelete(item.id);onClose()}catch(e){setConfirmDel(false);setError(e.message)}finally{setBusy(false)}}
   return <Sheet open onClose={onClose} className="rs-issue-detail">
     <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0} onClick={()=>setConfirmDel(true)}/>}</div>
     <h2 className="rs-detail-room">{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p>{!!item.assignees?.length&&<p className="rs-detail-origin">Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</p>}
     {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
     {item.status==='done'&&<div className="rs-note rs-note--done">Completato da <strong>{item.completedBy}</strong>{item.pieceReplaced&&<><br/>Ricambi: <strong>{item.pieceReplaced}</strong></>}{(item.photoAfter||item.photoAfterPath)&&<img className="rs-photo-preview" src={item.photoAfter||item.photoAfterPath} alt="Foto completamento" style={{marginTop:8}}/>}</div>}
-    <InterventionParts item={item} hotel={hotel} editable={canComplete||canManage} onWaitingChange={setPartsPending}/>
+    <InterventionParts item={item} hotel={hotel} user={user} editable={canComplete||canManage} onWaitingChange={setPartsPending}/>
     {canComplete&&<div className="rs-actions-stack"><p className="rs-actions-heading">Completamento</p><label className="rs-photo-action" style={{borderStyle:'dashed'}}><input type="file" accept="image/*" onChange={async e=>setPhoto(await compressPhotoAsDataUrl(e.target.files?.[0]))}/><Icon name="camera"/><strong>{photo?'Foto aggiunta':'Aggiungi foto completamento'}</strong></label>{photo&&<img className="rs-photo-preview" src={photo} alt="Anteprima"/>}{partsPending&&<p className="rs-note rs-note--waiting">Risolvi prima i ricambi richiesti o prenotati: segnali come “Usato” oppure “Non usato/Annulla”.</p>}<Button variant="primary" icon="check" disabled={partsPending||busy} onClick={complete}>Segna completato</Button></div>}
     {consumedParts.length>0&&canManage&&<p className="rs-field__hint">L’intervento non è eliminabile perché contiene movimenti Magazzino storici.</p>}
     {error&&<p className="rs-error" role="alert">{error}</p>}
