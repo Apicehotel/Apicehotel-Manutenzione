@@ -45,8 +45,12 @@ export function normalizeDomainEvidence(domain, input = {}, {
   })
 }
 
-export function buildHealthEvidenceSnapshot({ domains = {}, generatedAt = new Date().toISOString() } = {}) {
-  const normalized = Object.fromEntries(RANDCORE_HEALTH_DOMAINS.map((domain) => [domain, normalizeDomainEvidence(domain, domains[domain] || {}, { now:generatedAt })]))
+export function buildHealthEvidenceSnapshot({
+  domains = {},
+  generatedAt = new Date().toISOString(),
+  evaluatedAt = generatedAt,
+} = {}) {
+  const normalized = Object.fromEntries(RANDCORE_HEALTH_DOMAINS.map((domain) => [domain, normalizeDomainEvidence(domain, domains[domain] || {}, { now:evaluatedAt })]))
   const values = Object.values(normalized)
   const verified = values.filter((item) => item.state === EvidenceState.VERIFIED)
   const stale = values.filter((item) => item.state === EvidenceState.STALE)
@@ -55,10 +59,12 @@ export function buildHealthEvidenceSnapshot({ domains = {}, generatedAt = new Da
   const score = scored.length ? Math.round(scored.reduce((sum, item) => sum + item.score, 0) / scored.length) : 0
   const confidence = Math.round(values.reduce((sum, item) => sum + item.confidence, 0) / RANDCORE_HEALTH_DOMAINS.length)
   const status = values.some((item) => item.status === 'CRITICAL') ? 'CRITICAL'
-    : values.some((item) => item.status === 'DEGRADED') || stale.length > 0 || unknown.length > 0 ? 'DEGRADED'
-      : verified.length === RANDCORE_HEALTH_DOMAINS.length ? 'HEALTHY' : 'UNKNOWN'
+    : values.some((item) => item.status === 'DEGRADED') ? 'DEGRADED'
+      : verified.length === 0 ? 'UNKNOWN'
+        : stale.length > 0 || unknown.length > 0 ? 'DEGRADED'
+          : 'HEALTHY'
   return Object.freeze({
-    version:RANDCORE_HEALTH_CONTRACT_VERSION, generated_at:generatedAt, status, score, confidence,
+    version:RANDCORE_HEALTH_CONTRACT_VERSION, generated_at:generatedAt, evaluated_at:evaluatedAt, status, score, confidence,
     coverage:Object.freeze({
       evaluated_domains:RANDCORE_HEALTH_DOMAINS.length,
       verified_domains:verified.length,
@@ -72,7 +78,7 @@ export function buildHealthEvidenceSnapshot({ domains = {}, generatedAt = new Da
   })
 }
 
-export function fromLegacyHealthSnapshot(snapshot = {}, { generatedAt } = {}) {
+export function fromLegacyHealthSnapshot(snapshot = {}, { generatedAt, evaluatedAt } = {}) {
   const legacyDomains = snapshot?.domains && typeof snapshot.domains === 'object' ? snapshot.domains : {}
   const checkedAt = generatedAt || snapshot.generated_at || snapshot.checked_at || null
   const domains = Object.fromEntries(RANDCORE_HEALTH_DOMAINS.map((domain) => {
@@ -85,17 +91,18 @@ export function fromLegacyHealthSnapshot(snapshot = {}, { generatedAt } = {}) {
       evidence:measured ? legacy : null, details:legacy, confidence:measured ? 100 : 0,
     }]
   }))
-  return buildHealthEvidenceSnapshot({ domains, generatedAt:checkedAt || new Date().toISOString() })
+  const snapshotGeneratedAt = checkedAt || new Date().toISOString()
+  return buildHealthEvidenceSnapshot({ domains, generatedAt:snapshotGeneratedAt, evaluatedAt:evaluatedAt || snapshotGeneratedAt })
 }
 
 export function coerceHealthEvidenceSnapshot(snapshot = {}, options = {}) {
   if (Number(snapshot?.version) < RANDCORE_HEALTH_CONTRACT_VERSION) return fromLegacyHealthSnapshot(snapshot, options)
   const generatedAt = options.generatedAt || snapshot.generated_at || new Date().toISOString()
-  return buildHealthEvidenceSnapshot({ domains:snapshot.domains || {}, generatedAt })
+  return buildHealthEvidenceSnapshot({ domains:snapshot.domains || {}, generatedAt, evaluatedAt:options.evaluatedAt || generatedAt })
 }
 
 export function mergeHealthEvidenceSnapshots(snapshots = [], { generatedAt = new Date().toISOString() } = {}) {
-  const normalized = snapshots.filter(Boolean).map((snapshot) => coerceHealthEvidenceSnapshot(snapshot, { generatedAt }))
+  const normalized = snapshots.filter(Boolean).map((snapshot) => coerceHealthEvidenceSnapshot(snapshot, { evaluatedAt:generatedAt }))
   const domains = Object.fromEntries(RANDCORE_HEALTH_DOMAINS.map((domain) => {
     const candidates = normalized.map((snapshot) => snapshot.domains[domain]).filter(Boolean)
     const ranked = candidates.sort((a, b) => {
@@ -106,5 +113,5 @@ export function mergeHealthEvidenceSnapshots(snapshots = [], { generatedAt = new
     })
     return [domain, ranked[0] || {}]
   }))
-  return buildHealthEvidenceSnapshot({ domains, generatedAt })
+  return buildHealthEvidenceSnapshot({ domains, generatedAt, evaluatedAt:generatedAt })
 }
