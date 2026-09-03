@@ -1,6 +1,6 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
-PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target obbligatori: iOS/iPadOS, Android e Windows. Il `hotel_id`, membership, RLS/RPC, Safe Write e audit restano confini di sicurezza canonici.
+PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target obbligatori: iOS/iPadOS, Android e Windows. `hotel_id`, membership, RLS/RPC, Safe Write e audit restano confini di sicurezza canonici.
 
 ## Regole architetturali non negoziabili
 
@@ -31,7 +31,7 @@ Operational Context, Scope Guard, Unified Validation, Safe Write/Action Gateway,
 53. **RandControl 360°** — Ecosistema e configurazione sono integrati nel `RandAIControlCenter` canonico. Il prototipo di secondo Hub è stato eliminato.
 54. **RandAI Configuration 360°** — configurazione non-secret, tipizzata, bounded, versionata e hotel-scoped. Le invarianti di sicurezza non sono disattivabili dalla UI.
 
-Migration principali: `20260903143000_randai_runtime_configuration.sql` e hardening `20260903150000_randai_runtime_configuration_acl_hardening.sql`.
+Migration principali: `20260903143000_randai_runtime_configuration.sql` e `20260903150000_randai_runtime_configuration_acl_hardening.sql`.
 
 ### Blocco 14 — Repo Radar 2.0 e Safe Adoption — 55–58 ✅
 
@@ -49,37 +49,42 @@ Sorgenti: `src/randai/discovery/repo-radar.js`, `repo-radar-catalog.js`, `RepoRa
 61. **Findings, History & Drift** — storico append-only e confronto `BETTER / STABLE / WORSE / BASELINE`.
 62. **RandControl Health Console** — score, copertura, finding, storico e check manuale dentro `Ecosistema`.
 
-Il primo audit reale ha trovato 12 funzioni `SECURITY DEFINER` eseguibili da `anon`, producendo `CRITICAL 78/100`. Il finding è stato lasciato aperto fino alla revisione dei call-path invece di fare un revoke indiscriminato.
+Il primo audit reale ha trovato 12 funzioni `SECURITY DEFINER` eseguibili da `anon`, producendo `CRITICAL 78/100`. Il Blocco 16 ha poi chiuso il finding in modo mirato portando il controllo a `100/100 HEALTHY` sui domini realmente misurati.
 
 Sorgenti: `src/randai/core/health-snapshot.js`, `RandCoreHealthConsole.jsx`, `20260903153500_randcore_health_full_audit.sql`, `scripts/randcore-full-check.mjs`, `.github/workflows/randcore-monthly-health.yml`.
 
 ### Blocco 16 — Operations & Security — 63–66 ✅
 
-63. **Rand Operations & Workers** — `randcore_worker_registry` censisce cron, edge worker ed event-driven worker con scopo, owner, schedulazione prevista, retry, pause e classe di costo. `randcore_operations_snapshot` sovrappone il registro a `pg_cron` e segnala job non censiti. `randcore_set_worker_active` permette pausa/riattivazione solo ai worker esplicitamente `pauseable` e solo ad admin autenticati. I promemoria restano event-driven: `reminder-worker-1m` e `urgent-reminder-worker-30s` non devono esistere senza lavoro.
+63. **Rand Operations & Workers** — registro canonico worker/cron, pause solo dove sicure, reminder event-driven, meteo e sensori con cadenze bounded. `presence-auto-expire-7h20` è stato ridotto da ogni minuto a ogni 5 minuti.
+64. **Rand Security Center** — revisione mirata delle 12 ACL `SECURITY DEFINER`; `anon SECURITY DEFINER = 0`, worker/trigger interni non esposti agli utenti autenticati.
+65. **Rand Observability & Cost Center** — aggrega soltanto costi/token realmente registrati; niente stime inventate.
+66. **Rand Repo / Module Health** — collega Truth Map, RandCore Health e Repo Radar mantenendo separate salute modulo e decisione repository.
 
-La cadenza `presence-auto-expire-7h20` è stata ridotta da ogni minuto a `*/5 * * * *`: la soglia operativa è 7h20 e il polling al minuto non aggiunge beneficio proporzionato. Meteo resta ogni 2 ore nella finestra diurna; sensori ogni 30 minuti.
+Sorgenti principali: `src/randai/core/module-health.js`, `SystemControlConsole.jsx`, `RandSecurityConsole.jsx`, `RandCoreHealthConsole.jsx`, `20260903160000_randcore_operations_security.sql`, `test/randai-block16-operations-security-63-66.test.js`.
 
-64. **Rand Security Center** — revisione mirata delle 12 ACL `SECURITY DEFINER`. Sei trigger/worker interni ora negano `PUBLIC`, `anon` e `authenticated`; sei RPC tecnici negano `PUBLIC/anon` e restano accessibili agli utenti autenticati con i controlli di membership già presenti. `randcore_security_snapshot` misura le esposizioni invece di dichiarare il sistema sicuro per convenzione. Verifica production: `anon SECURITY DEFINER = 0`, internal worker/trigger esposti ad authenticated = 0. Dopo l’hardening, il nuovo check RandCore è passato da **78/100 CRITICAL a 100/100 HEALTHY** sui domini attualmente misurabili.
-
-65. **Rand Observability & Cost Center** — `randcore_observability_cost_snapshot` aggrega esclusivamente tracce reali, `cost_usd` espliciti e token registrati. Nessuna stima da listino. Le tracce prive di `hotel_id` sono conteggiate separatamente come debito di osservabilità; provider/modello sono mostrati solo quando esiste evidenza.
-
-66. **Rand Repo / Module Health** — `src/randai/core/module-health.js` collega Truth Map, RandCore Health e decisioni Repo Radar senza confonderle: una decisione `ADD/KEEP/WATCH` non equivale a installazione e una repository popolare non rende automaticamente sano un modulo. La proiezione è mostrata dentro `RandCoreHealthConsole`.
-
-Sorgenti principali 63–66: `src/randai/core/module-health.js`, `src/randai/control/SystemControlConsole.jsx`, `src/randai/control/RandSecurityConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903160000_randcore_operations_security.sql` e `test/randai-block16-operations-security-63-66.test.js`.
-
-Zombie scan 63–66: `SystemControlConsole` resta il live control canonico; RandCore Health resta storico/periodico; Repo Radar resta repository governance. Nessun secondo scheduler, observability stack, authorization plane o dashboard è stato creato. Nessuna nuova dipendenza runtime è stata introdotta.
+Zombie scan 63–66: nessun secondo scheduler, observability stack, authorization plane o dashboard è stato creato.
 
 ### Blocco 17 — Rand Warehouse Integration — 67 ✅
 
-67. **Rand Warehouse Integration** — il Magazzino resta un bounded domain autonomo ma ora il collegamento operativo con gli Interventi e RandAI è esplicito e governato. Non è stato creato un secondo inventario: vengono riusati `inventory_items`, il ledger `inventory_movements`, seriali/compatibilità/trasferimenti/inventari fisici e il ponte transazionale `inventory_intervention_parts` già esistente.
+67. **Rand Warehouse Integration** — il Magazzino resta un bounded domain autonomo ma il collegamento con Interventi e RandAI è esplicito e governato. Vengono riusati `inventory_items`, `inventory_movements`, seriali/compatibilità/trasferimenti/inventari fisici e `inventory_intervention_parts`; nessun secondo inventario.
 
-Il lifecycle ricambi degli Interventi resta server-authoritative: `requested → reserved → consumed/released/cancelled`. Il consumo usa lock e movimento atomico; un intervento non può essere chiuso con ricambi pendenti e non può essere eliminato se perderebbe movimenti Magazzino storici. Le letture frontend di ricambi e seriali ora dichiarano anche `hotel_id`, oltre a RLS/RPC, e la subscription realtime scarta eventi di hotel diversi. L’adapter deduplica inoltre richieste iniziali identiche concorrenti per proteggere doppio tap/concorrenza senza introdurre una seconda RPC.
+Lifecycle ricambi: `requested → reserved → consumed/released/cancelled`, con consumo atomico e protezioni sulla chiusura/cancellazione dell’intervento. Le letture frontend sono esplicitamente hotel-scoped e la subscription realtime scarta eventi cross-hotel. RandAI riceve un envelope `resource.type = intervention` con evidenza Magazzino bounded e `readOnly: true`; nessuna funzione di scrittura stock viene esportata nel provider di evidenza.
 
-RandAI riceve dalla scheda Intervento un envelope `resource.type = intervention` con evidenza Magazzino bounded, hotel-scoped e `readOnly: true`: articolo/SKU, quantità, stato, disponibilità, soglia minima, low-stock e presenza di seriale/movimento. Nessuna funzione di scrittura, RPC o client Supabase è esportata dal provider di evidenza. Le azioni stock restano esclusivamente dietro le RPC Magazzino e i permessi server. Il workspace guidato specifico delle Segnalazioni è type-gated su `resource.type = issue`, quindi un ID intervento non può essere usato per errore come issue ID.
+Sorgenti: `src/inventory-intervention-data.js`, `src/randai/context/warehouse-evidence.js`, `src/randai/context/envelope.js`, `src/randapp/operations/InterventionsView.jsx`, `src/randai/RandAIAssistant.jsx`, `20260901112200_inventory_block3_intervention_parts.sql`, `test/randai-block17-warehouse-integration-67.test.js`.
 
-Sorgenti principali 67: `src/inventory-intervention-data.js`, `src/randai/context/warehouse-evidence.js`, `src/randai/context/envelope.js`, `src/randapp/operations/InterventionsView.jsx`, `src/randai/RandAIAssistant.jsx`, `supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql` e `test/randai-block17-warehouse-integration-67.test.js`.
+### Blocco 18 — Final Ecosystem Gate & LTS — 68–70 ✅
 
-Zombie scan 67: Inventory Base, Block 2 e Block 3 sono strati attivi dello stesso dominio e non sono duplicati da eliminare. Il vecchio campo testuale `Serve pezzo` nelle `segnalazioni` viene mantenuto: appartiene a un’entità diversa da `interventi` e non viene forzatamente migrato nel ponte transazionale senza una mappa E2E verificata. La sua eventuale convergenza/eliminazione è candidata ai punti 68–69. Nessuna nuova dipendenza runtime, repository esterna, seconda UI Magazzino o seconda autorità stock è stata introdotta.
+68. **Final Ecosystem / E2E Contract Gate** — `src/randai/core/lts-readiness.js` definisce il perimetro minimo obbligatorio della release LTS (`RandApp`, `RandAI`, `RandCore`, `RandControl`, `Repo Radar`, `Rand Warehouse`). Un modulo richiesto non `LIVE`, senza evidenza o uno zombie canonico bloccano la certificazione. La Truth Map è stata riconciliata con il Blocco 17: `Rand Warehouse` è ora `LIVE` con evidenze reali.
+
+69. **Zombie & Duplication Purge** — nessuna eliminazione cosmetica. `src/App.jsx` e `src/housekeeping.jsx` sono compatibility shim verso le implementazioni canoniche e restano intenzionalmente. Il campo legacy `Serve pezzo` nelle Segnalazioni rimane intake locale e non è autorità stock: non consuma `inventory_movements` e non bypassa le RPC Magazzino. La regola finale è zero zombie canonici, non zero file di compatibilità.
+
+70. **Rand Ecosystem LTS 1.0** — la CI genera `artifacts/rand-ecosystem-lts-1.0.json` soltanto dopo security audit, Quality Matrix, Critical Gate, multi-hotel, production confidence, build/bundle, contratti, Chromium/WebKit e device acceptance. L’attestazione è legata al commit, verifica l’esistenza delle evidenze dei moduli inclusi ed elenca esplicitamente i moduli deferred anziché promuoverli artificialmente a `LIVE`.
+
+Perimetro LTS obbligatorio: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`.
+
+Moduli dichiaratamente deferred alla LTS 1.0 finché non vengono consolidati con roadmap dedicate: `RandGuide`, `RandMind`, `RandBrain`, `RandUI` (`PARTIAL`), `RandAudio` e `Viking` (`PLANNED`). Questo non è un falso completamento: la roadmap 1–70 è chiusa, mentre le capability future restano visibili nella Truth Map.
+
+Sorgenti: `src/randai/core/lts-readiness.js`, `scripts/rand-lts-attestation.mjs`, `test/randai-block18-lts-68-70.test.js`, `.github/workflows/ci.yml`.
 
 ## Rand Control Plane
 
@@ -91,7 +96,7 @@ Runtime agenti, workflow, MCP, memoria, knowledge e tool adapter possono evolver
 
 Route protetta: `/randai`.
 
-La console canonica integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed **Ecosistema con RandCore Health, Security Center e Repo Radar**.
+La console canonica integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center e Repo Radar.
 
 `src/randai/control-center/` resta il motore/proiezione read-only coperto dai test di governance e non è zombie.
 
@@ -137,28 +142,30 @@ npm run test:repo-radar
 npm run test:core-health
 npm run test:operations-security
 npm run test:warehouse-integration
+npm run test:lts
 npm run build
 node scripts/check-bundle.mjs
 npm test
 npm run test:e2e
 npm run test:device
+RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit e device acceptance.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance e generazione dell’attestazione LTS.
 
 **Regola di chiusura:** un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
 ## Struttura repository
 
 - `src/randapp/` — shell/UI e domini RandApp.
-- `src/randai/core/` — orchestrazione, Ecosystem Truth, Configuration, Health e Module Health.
+- `src/randai/core/` — orchestrazione, Ecosystem Truth, Configuration, Health, Module Health e LTS Readiness.
 - `src/randai/control/` — Control Center, Operations, Security, Health, Repo Radar e console operative.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
 - `src/randai/` — knowledge, memory, agents, evals, recovery, learning, discovery, supervisor e domini AI.
 - `src/reliability/` — safety/reliability 27+.
 - `supabase/functions/` — boundary server.
 - `supabase/migrations/` — schema, RLS/RPC e migration versionate.
-- `test/` e `scripts/` — contratti, quality gate, E2E e device acceptance.
+- `test/` e `scripts/` — contratti, quality gate, E2E, device acceptance e attestation LTS.
 
 ## Consolidamento storico
 
@@ -177,7 +184,8 @@ La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, mul
 - PR #152 — 55–58.
 - PR #153 — 59–62.
 - PR #154 — 63–66 / Operations, Security, Observability Cost e Repo/Module Health.
-- Blocco 17 — 67 / Rand Warehouse Integration.
+- PR #155 — 67 / Rand Warehouse Integration.
+- Blocco 18 — 68–70 / Final Ecosystem Gate, Zombie/Duplication Purge e Rand Ecosystem LTS 1.0.
 
 ## Deploy
 
