@@ -81,9 +81,15 @@ PWA React/Vite multi-hotel per Hotel Giò, Chocohotel e Hotel Il Brigantino. Sup
 41. **Recovery Budgets & Circuit Breakers** — budget separati per tentativi, tempo e costo; circuit breaker `CLOSED → OPEN → HALF_OPEN → CLOSED`, una sola probe half-open e nessun retry quando budget o circuito lo vietano.
 42. **Failure Intelligence & Root Cause Engine** — fingerprint hotel-scoped per component/operation/resource/code, classificazione root cause deterministica, ricorrenze e ranking delle recovery sulla base dei successi reali, senza sostituire Observability.
 
-Sorgenti Blocco 11: `src/reliability/plan-validator.js`, `execution-policy.js`, `recovery-circuit.js`, `failure-intelligence.js` e l'adapter esistente `src/randai/action-gateway.js`. Test dedicato: `test/randai-block11-reliability-39-42.test.js`.
+### Blocco 12 — Production Confidence & Safe Rollout — 43–46 ⏳
+43. **Adversarial Reliability Testing** — scenari deterministici hotel-scoped che provano timeout, scope errato, failure e condizioni avverse; una suite non verde blocca il gate.
+44. **Fault Injection & Chaos Safety** — fault riproducibili `THROW_BEFORE`, `THROW_AFTER`, error return e sequenze scriptate. Verifica reale di write-then-timeout, riconciliazione, lease e circuit breaker senza chaos casuale/flaky.
+45. **Production Release Gate** — check obbligatori security/quality/critical/multi-hotel/build/contracts/browser/device/adversarial più soglie su failure, verification failure e rollback rate. Una regressione blocca la release.
+46. **Canary / Safe Rollout & Automatic Rollback** — rollout deterministico per hotel/modulo/attore, percentuale controllata, pause/resume e rollback automatico quando failure o verification failure superano le soglie.
 
-Zombie scan Blocco 11: `src/randai/runtime/planner.js`, `runtime/contracts.js`, `runtime/verifier.js`, `recovery/` e `observability/` restano vivi e canonici. Il nuovo layer compone queste primitive; non introduce un secondo planner, un secondo gateway, un secondo recovery engine o una seconda observability.
+Sorgenti Blocco 12: `src/reliability/fault-injection.js`, `adversarial-suite.js`, `release-gate.js`, `rollout-controller.js`. Test dedicato: `test/randai-block12-production-43-46.test.js`. La CI espone `npm run test:production` come gate esplicito, non duplicato nel loop contratti RandAI.
+
+Zombie scan Blocco 12: i test e i gate esistenti restano canonici; fault injection li esercita invece di sostituirli. RecoveryCircuit, offline reconciliation, CI quality/critical/multi-hotel e browser/device restano sorgenti di verità. Nessun framework chaos, secondo runner CI o secondo sistema di deploy è stato introdotto.
 
 ## Runtime Safety Layer — trasversale
 
@@ -96,6 +102,8 @@ Zombie scan Blocco 11: `src/randai/runtime/planner.js`, `runtime/contracts.js`, 
 - Offline/concurrency: retry solo dopo riconciliazione; niente promessa fittizia di exactly-once.
 - Recovery: tentativi, tempo e costo sono bounded; circuit breaker ferma failure storm e consente probe controllate.
 - Failure intelligence: errori e recovery sono aggregati per hotel; un successo in Giò non insegna automaticamente una recovery a Chocohotel.
+- Adversarial/fault injection: failure-mode riproducibili e deterministici, senza rendere flaky la CI.
+- Release/rollout: una release non è pronta solo perché compila; deve superare il production gate e può essere canary/rollbackata per scope.
 - Import safety: staging e verifica prima del commit.
 - Verification/trust: successo tecnico, memoria o evidenza non equivalgono automaticamente a verità.
 - Confidence/risk: l'autonomia è limitata da verifica, trust, completezza contesto e rischio.
@@ -115,7 +123,7 @@ Zombie scan Blocco 11: `src/randai/runtime/planner.js`, `runtime/contracts.js`, 
 
 ## CI e regola di chiusura
 
-La CI esegue dependency security audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, build, bundle budget, contratti RandAI, RandApp/shared, Chromium/WebKit, cross-platform browser e device acceptance.
+La CI esegue dependency security audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, **Production confidence gate**, build, bundle budget, contratti RandAI, RandApp/shared, Chromium/WebKit, cross-platform browser e device acceptance.
 
 Un blocco è ✅ solo con implementazione canonica, isolamento multi-hotel, test dedicati, contratti condivisi verdi, zombie scan, README coerente, CI completa verde e merge finale senza forzare `main`.
 
