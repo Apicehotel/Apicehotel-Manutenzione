@@ -342,6 +342,23 @@ Test dedicato: `test/randai-supervisor-governance.test.js`.
 
 Zombie scan Blocco 24: è stato rafforzato il preflight del Supervisor esistente; non sono stati creati un nuovo scheduler, un secondo coordinator, un altro budget store o un installer.
 
+## Blocco 25 — Proactive RandAI 2.0
+
+RandAI può trasformare eventi reali in segnali operativi, mantenendo separati rilevazione, proposta e azione.
+
+- I segnali sono hotel-scoped oppure globali solo con scope globale esplicito.
+- Duplicati e storm vengono accorpati per fingerprint e cooldown, conservando conteggio, sorgenti e ultimo dato.
+- `CRITICAL` fallisce chiuso; gli altri livelli seguono una decisione deterministica `IGNORE / PROPOSE / ACT / BLOCK`.
+- I segnali terminali sono idempotenti: non possono essere actionati due volte.
+- L’azione passa dal Supervisor; senza Supervisor resta una proposta e non parte un worker nascosto.
+- Risoluzione, telemetria e stato restano persistenti nello store canonico; nessun secondo sistema di notifiche è stato creato.
+- Comando dedicato: `npm run test:proactive`.
+
+Sorgenti: `src/randai/proactive/engine.js`, `contracts.js`, `store.js` e `src/randai/supervisor/engine.js`.
+Test dedicato: `test/randai-proactive-governance.test.js`.
+
+Zombie scan Blocco 25: è stato corretto il replay dei segnali terminali nel motore esistente; nessun nuovo cron, worker, dispatcher o canale parallelo è stato introdotto.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
