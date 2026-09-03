@@ -43,6 +43,7 @@ test('learning approval is explicit, scoped and only possible after TESTED', asy
     id: 'replace-lamp',
     name: 'Replace lamp',
     description: 'Verified lamp replacement',
+    hotelId: 'hotelgio',
   })
   await assert.rejects(() => engine.approve(candidate.id, { skillRegistry: registry }), /approvedBy/)
 
@@ -53,7 +54,7 @@ test('learning approval is explicit, scoped and only possible after TESTED', asy
     graders: [{ id: 'outcome', dimension: 'outcome', grade: async () => ({ score: 1 }) }],
     run: async () => ({ output: { ok: true } }),
   }
-  const tested = await engine.evaluate(candidate.id, { evaluationEngine, scenario, skillRegistry, hotelId: 'hotelgio' })
+  const tested = await engine.evaluate(candidate.id, { evaluationEngine, scenario, skillRegistry: registry, hotelId: 'hotelgio' })
   assert.equal(tested.candidate.status, LearningCandidateStatus.TESTED)
   assert.equal(tested.skill.status, SkillStatus.TESTED)
 
