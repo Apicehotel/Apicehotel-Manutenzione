@@ -7,6 +7,7 @@ import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
 import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.js'
 
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260903160000_randcore_operations_security.sql',import.meta.url),'utf8')
+const helperHardening=fs.readFileSync(new URL('../supabase/migrations/20260903161000_technician_helper_search_path_hardening.sql',import.meta.url),'utf8')
 
 test('module health keeps repo decision separate from installation',()=>{
   const snapshot=buildModuleHealthSnapshot({modules:getRandEcosystemManifest(),repoSnapshot:buildRepoRadarSnapshot(REPO_RADAR_CATALOG),healthCheck:{status:'HEALTHY'}})
@@ -37,6 +38,11 @@ test('security hardening is targeted and denies anon execution',()=>{
   for(const name of ['technician_authorize_external','technician_manage_directory','technician_membership_role','technician_reject_external','technician_request_external','technician_set_competencies']){
     assert.match(migration,new RegExp(`revoke execute on function public\\.${name}\\([^;]*\\) from public, anon`))
   }
+})
+
+test('technician helper functions pin their search path',()=>{
+  assert.match(helperHardening,/technician_can_request_role\(text\) set search_path = public, pg_catalog/)
+  assert.match(helperHardening,/technician_is_authority_role\(text\) set search_path = public, pg_catalog/)
 })
 
 test('new control RPCs are admin-gated and anon-denied',()=>{
