@@ -238,6 +238,23 @@ Test dedicato: `test/randai-multi-agent-coordinator.test.js`.
 
 Zombie scan Blocco 18: il coordinatore completa il runtime esistente; non introduce un secondo scheduler, un secondo supervisor o un sistema autonomo di decisione.
 
+
+## Blocco 19 — Permission / Autonomy 2.0
+
+RandAI calcola una disposizione operativa unica (AUTO, CONFIRM, BLOCK) componendo autonomia, rischio, verifica, permission e scope.
+
+- AUTO è possibile solo per azioni valutate, verificate, autorizzate e non protette.
+- CONFIRM sospende l’azione e richiede una conferma umana esplicita per review, scritture protette, amministrazione o rischio alto.
+- BLOCK è irrevocabile dal livello applicativo per piano invalido, confidence bloccata, scope invalido, permission negata, tool negato, rischio critico o escalation di autonomia.
+- Una approval già presente non aumenta il livello di autonomia configurato e non può trasformare un BLOCK in esecuzione.
+- Il resolver è una guardia di pianificazione: Action Gateway, RLS/RPC e autorità server restano il controllo finale delle scritture.
+- Hotel scope e contesto non vengono allargati implicitamente; ogni azione mantiene la propria identità e approval.
+- Il comando dedicato è npm run test:autonomy.
+
+Sorgenti: src/randai/autonomy/decision.js, engine.js e contracts.js.
+Test dedicato: test/randai-autonomy-decision.test.js.
+
+Zombie scan Blocco 19: non è stato introdotto un secondo authorization matrix, un secondo approval store o un secondo Action Gateway. Il resolver riusa PermissionAutonomyEngine, Confidence/Risk Engine, Execution Policy e il gateway server-side.
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
