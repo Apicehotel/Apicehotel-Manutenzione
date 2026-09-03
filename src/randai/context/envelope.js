@@ -1,3 +1,5 @@
+import { buildWarehouseEvidence } from './warehouse-evidence.js'
+
 const EVENT = 'randai-context-changed'
 const VERSION = 1
 
@@ -5,20 +7,38 @@ const clean = (value, max = 240) => String(value ?? '').trim().slice(0, max)
 const clone = (value) => value == null ? value : structuredClone(value)
 
 function normalizeResource(resource) {
-  if (!resource || resource.type !== 'issue') return null
+  if (!resource) return null
   const id = clean(resource.id, 120)
   if (!id) return null
-  return {
-    type: 'issue',
-    id,
-    location: clean(resource.location, 160) || null,
-    category: clean(resource.category, 120) || null,
-    status: clean(resource.status, 80) || null,
-    urgency: clean(resource.urgency, 80) || null,
-    summary: clean(resource.summary, 500) || null,
-    roomStatus: clean(resource.roomStatus, 80) || null,
-    hasPhoto: Boolean(resource.hasPhoto),
+
+  if (resource.type === 'issue') {
+    return {
+      type: 'issue',
+      id,
+      location: clean(resource.location, 160) || null,
+      category: clean(resource.category, 120) || null,
+      status: clean(resource.status, 80) || null,
+      urgency: clean(resource.urgency, 80) || null,
+      summary: clean(resource.summary, 500) || null,
+      roomStatus: clean(resource.roomStatus, 80) || null,
+      hasPhoto: Boolean(resource.hasPhoto),
+    }
   }
+
+  if (resource.type === 'intervention') {
+    return {
+      type: 'intervention',
+      id,
+      location: clean(resource.location, 160) || null,
+      category: clean(resource.category, 120) || null,
+      status: clean(resource.status, 80) || null,
+      summary: clean(resource.summary, 500) || null,
+      scheduledAt: clean(resource.scheduledAt, 80) || null,
+      warehouse: resource.warehouse?.readOnly === true ? clone(resource.warehouse) : null,
+    }
+  }
+
+  return null
 }
 
 export function createRandAIContextEnvelope({ hotelId, actor = null, screen = null, resource = null } = {}) {
@@ -58,6 +78,26 @@ export function createIssueContextEnvelope({ hotelId, issue, actor = null } = {}
       summary: issue.title || issue.description,
       roomStatus: issue.roomStatus,
       hasPhoto: Boolean(issue.photoData || issue.photoPath),
+    },
+  })
+}
+
+export function createInterventionContextEnvelope({ hotelId, intervention, actor = null, parts = [], items = [], availability = [] } = {}) {
+  if (!intervention) return createRandAIContextEnvelope({ hotelId, actor, screen: { view: 'interventions' } })
+  const warehouse = buildWarehouseEvidence({ hotelId, parts, items, availability })
+  return createRandAIContextEnvelope({
+    hotelId,
+    actor,
+    screen: { view: 'interventions' },
+    resource: {
+      type: 'intervention',
+      id: intervention.id,
+      location: intervention.location,
+      category: intervention.category,
+      status: intervention.status,
+      summary: intervention.notes,
+      scheduledAt: intervention.scheduledAt,
+      warehouse,
     },
   })
 }

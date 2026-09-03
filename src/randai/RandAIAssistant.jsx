@@ -128,7 +128,8 @@ export default function RandAIAssistant() {
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
-  const issueResource = getRandAIContext()?.resource
+  const activeResource = getRandAIContext()?.resource
+  const issueResource = activeResource?.type === 'issue' ? activeResource : null
   const workspaceProgress = issueWorkspaceProgress(workspace)
 
   const refreshWorkspace = async (issueId = issueResource?.id) => {
@@ -157,7 +158,6 @@ export default function RandAIAssistant() {
     } catch (error) { console.error('RandAI guided procedure step failed', error) }
     finally { setWorkspaceBusy(false) }
   }
-
 
   const submit = async (event) => {
     event.preventDefault()

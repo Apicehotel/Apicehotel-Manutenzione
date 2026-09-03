@@ -69,6 +69,18 @@ Sorgenti principali 63–66: `src/randai/core/module-health.js`, `src/randai/con
 
 Zombie scan 63–66: `SystemControlConsole` resta il live control canonico; RandCore Health resta storico/periodico; Repo Radar resta repository governance. Nessun secondo scheduler, observability stack, authorization plane o dashboard è stato creato. Nessuna nuova dipendenza runtime è stata introdotta.
 
+### Blocco 17 — Rand Warehouse Integration — 67 ✅
+
+67. **Rand Warehouse Integration** — il Magazzino resta un bounded domain autonomo ma ora il collegamento operativo con gli Interventi e RandAI è esplicito e governato. Non è stato creato un secondo inventario: vengono riusati `inventory_items`, il ledger `inventory_movements`, seriali/compatibilità/trasferimenti/inventari fisici e il ponte transazionale `inventory_intervention_parts` già esistente.
+
+Il lifecycle ricambi degli Interventi resta server-authoritative: `requested → reserved → consumed/released/cancelled`. Il consumo usa lock e movimento atomico; un intervento non può essere chiuso con ricambi pendenti e non può essere eliminato se perderebbe movimenti Magazzino storici. Le letture frontend di ricambi e seriali ora dichiarano anche `hotel_id`, oltre a RLS/RPC, e la subscription realtime scarta eventi di hotel diversi. L’adapter deduplica inoltre richieste iniziali identiche concorrenti per proteggere doppio tap/concorrenza senza introdurre una seconda RPC.
+
+RandAI riceve dalla scheda Intervento un envelope `resource.type = intervention` con evidenza Magazzino bounded, hotel-scoped e `readOnly: true`: articolo/SKU, quantità, stato, disponibilità, soglia minima, low-stock e presenza di seriale/movimento. Nessuna funzione di scrittura, RPC o client Supabase è esportata dal provider di evidenza. Le azioni stock restano esclusivamente dietro le RPC Magazzino e i permessi server. Il workspace guidato specifico delle Segnalazioni è type-gated su `resource.type = issue`, quindi un ID intervento non può essere usato per errore come issue ID.
+
+Sorgenti principali 67: `src/inventory-intervention-data.js`, `src/randai/context/warehouse-evidence.js`, `src/randai/context/envelope.js`, `src/randapp/operations/InterventionsView.jsx`, `src/randai/RandAIAssistant.jsx`, `supabase/migrations/20260901112200_inventory_block3_intervention_parts.sql` e `test/randai-block17-warehouse-integration-67.test.js`.
+
+Zombie scan 67: Inventory Base, Block 2 e Block 3 sono strati attivi dello stesso dominio e non sono duplicati da eliminare. Il vecchio campo testuale `Serve pezzo` nelle `segnalazioni` viene mantenuto: appartiene a un’entità diversa da `interventi` e non viene forzatamente migrato nel ponte transazionale senza una mappa E2E verificata. La sua eventuale convergenza/eliminazione è candidata ai punti 68–69. Nessuna nuova dipendenza runtime, repository esterna, seconda UI Magazzino o seconda autorità stock è stata introdotta.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -124,6 +136,7 @@ npm run test:production
 npm run test:repo-radar
 npm run test:core-health
 npm run test:operations-security
+npm run test:warehouse-integration
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -133,7 +146,7 @@ npm run test:device
 
 La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit e device acceptance.
 
-**Regola di chiusura:** un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate, CI completa verde e merge finale senza forzare `main`.
+**Regola di chiusura:** un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
 ## Struttura repository
 
@@ -164,6 +177,7 @@ La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, mul
 - PR #152 — 55–58.
 - PR #153 — 59–62.
 - PR #154 — 63–66 / Operations, Security, Observability Cost e Repo/Module Health.
+- Blocco 17 — 67 / Rand Warehouse Integration.
 
 ## Deploy
 
