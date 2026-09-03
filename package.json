@@ -23,7 +23,8 @@
     "test:learning": "node --test test/randai-learning-governance.test.js",
     "test:discovery": "node --test test/randai-discovery-governance.test.js",
     "test:supervisor": "node --test test/randai-supervisor-governance.test.js",
-    "test:proactive": "node --test test/randai-proactive-governance.test.js"
+    "test:proactive": "node --test test/randai-proactive-governance.test.js",
+    "test:control-center": "node --test test/randai-control-center-governance.test.js"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
