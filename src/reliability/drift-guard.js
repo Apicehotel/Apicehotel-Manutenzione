@@ -1,0 +1,6 @@
+const text=(v)=>String(v??'').trim()
+const canon=(v)=>Array.isArray(v)?v.map(canon):(v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=canon(v[k]),o),{}):v)
+const fp=(v)=>{let h=2166136261;for(const ch of JSON.stringify(canon(v))){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return `cfg-${(h>>>0).toString(16).padStart(8,'0')}`}
+export function createConfigSnapshot({hotelId,module,version,policy={},config={}}={}){if(!text(hotelId)||!text(module)||!text(version))throw new TypeError('hotelId, module and version are required');const base={hotelId:text(hotelId),module:text(module),version:text(version),policy:canon(policy),config:canon(config)};return Object.freeze({...base,fingerprint:fp(base)})}
+export function evaluateConfigDrift({expected,actual}={}){if(!expected||!actual)throw new TypeError('expected and actual snapshots are required');for(const field of ['hotelId','module','version','fingerprint']){if(expected[field]!==actual[field])return Object.freeze({ok:false,code:`DRIFT_${field.toUpperCase()}_MISMATCH`,field,expected:expected[field],actual:actual[field]})}return Object.freeze({ok:true,code:'NO_DRIFT',fingerprint:actual.fingerprint})}
+export function assertNoConfigDrift(input){const result=evaluateConfigDrift(input);if(!result.ok){const error=new Error(result.code);error.code=result.code;error.result=result;throw error}return result}

@@ -12,7 +12,7 @@
     "test:matrix": "node scripts/check-quality-matrix.mjs",
     "test:critical": "node scripts/run-critical-tests.mjs",
     "test:multihotel": "node --test test/multihotel-parity.test.js",
-    "test:production": "node --test test/randai-block12-production-43-46.test.js",
+    "test:production": "node --test test/randai-block12-production-43-46.test.js test/randai-block12bis-production-47-50.test.js",
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",
     "test:quality": "npm run test:matrix && npm run test:critical && npm run test:multihotel && npm run test:production && npm test"
