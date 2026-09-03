@@ -185,6 +185,24 @@ Test dedicato: `test/randai-project-intelligence.test.js`.
 
 Zombie scan Blocco 15: nessun archivio o grafo parallelo introdotto; il motore usa le sorgenti canoniche già esistenti e restituisce soltanto una proiezione deterministica.
 
+## Blocco 16 — Observability 2.0
+
+RandAI espone una sintesi operativa del comportamento reale, usando i trace canonici già presenti e mantenendo lo scope dell’hotel.
+
+- Stato deterministico: `HEALTHY`, `ACTIVE`, `DEGRADED` o `NO_DATA`.
+- Conteggio trace/span, successi, fallimenti, attività e trace rimasti `RUNNING` oltre soglia.
+- Latenza media e P95; errori principali con codice e frequenza.
+- Costi solo quando il trace registra un valore misurato; nessuna stima presentata come dato reale.
+- Raccomandazioni operative per trace stale, failure e assenza di telemetria.
+- Proiezione nel Control Center solo per hotel esplicitamente selezionato; `allHotels` non fonde dati con scope diverso.
+- Nessuna sostituzione di Sentry, audit o release gate: l’osservabilità li collega senza diventare una seconda sorgente di verità.
+
+Sorgenti: `src/randai/observability/insights.js`, `src/randai/observability/engine.js` e `src/randai/control-center/engine.js`.
+
+Test dedicato: `test/randai-observability-insights.test.js`.
+
+Zombie scan Blocco 16: il nuovo livello riusa TraceStore/ObservabilityEngine e Control Center; non introduce un secondo logger, un secondo sistema di metriche o un altro deploy monitor.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.

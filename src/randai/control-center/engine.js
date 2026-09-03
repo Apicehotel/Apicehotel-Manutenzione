@@ -1,3 +1,4 @@
+import { summarizeObservability } from '../observability/insights.js'
 import { ControlSection, classifyControlItem, controlItemMatchesScope, normalizeControlScope } from './contracts.js'
 const clone=v=>structuredClone(v)
 
@@ -21,6 +22,6 @@ export class RandAIControlCenter {
     }
     items.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))
     const sections=Object.fromEntries(Object.values(ControlSection).map(s=>[s,items.filter(i=>i.section===s)]))
-    return {projectId,hotelId:scope.hotelId,allHotels:scope.allHotels,generatedAt:new Date().toISOString(),counts:Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.length])),sections,items}
+    return {projectId,hotelId:scope.hotelId,allHotels:scope.allHotels,generatedAt:new Date().toISOString(),counts:Object.fromEntries(Object.entries(sections).map(([k,v])=>[k,v.length])),sections,items,observability:scope.hotelId?summarizeObservability({hotelId:scope.hotelId,traces}):null}
   }
 }
