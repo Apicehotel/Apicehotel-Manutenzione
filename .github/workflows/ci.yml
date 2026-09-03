@@ -43,6 +43,9 @@ jobs:
       - name: Multi-hotel parity gate
         run: npm run test:multihotel
 
+      - name: Production confidence gate
+        run: npm run test:production
+
       - name: Build
         run: npm run build
 
@@ -67,7 +70,7 @@ jobs:
               echo "$test_file" | tee -a /tmp/randai-contract-failures.txt
               failed=1
             fi
-          done < <(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' -print | sort)
+          done < <(find test -maxdepth 1 -name 'randai-*.test.js' ! -name 'randai-issue-operations.test.js' ! -name 'randai-block12-production-43-46.test.js' -print | sort)
 
           if [ "$failed" -ne 0 ]; then
             echo "::error title=RandAI contract failures::$(paste -sd ', ' /tmp/randai-contract-failures.txt)"
