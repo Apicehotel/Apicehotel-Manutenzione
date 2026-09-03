@@ -273,6 +273,23 @@ Sorgenti: `src/randai/recovery/contracts.js`, `engine.js`, `src/reliability/reco
 Test dedicato: `test/randai-recovery-engine.test.js`.
 
 Zombie scan Blocco 20: il precedente `RecoveryEngine` resta l’unico motore; il planner e l’executor verificato sono stati integrati nello stesso modulo. Non è stato introdotto un secondo circuito, budget, store di recovery o sistema di retry.
+
+## Blocco 21 — Software Engineering Agent 2.0
+
+Il Software Engineering Agent assiste le modifiche tecniche con un ciclo esplicito: localizzazione, piano, readiness, review, esecuzione e verifica.
+
+- `prepare()` esegue impact analysis e produce una scheda `READY_FOR_REVIEW`.
+- Il readiness gate verifica inventory dei tool, permission, prerequisiti, rischio e hotel scope prima di avviare il durable runner.
+- Un piano senza contesto esplicito non viene dichiarato pronto; tool mancanti o permission mancanti bloccano l’esecuzione.
+- Le modifiche protette o ad alto rischio restano marcate per review umana.
+- `execute()` non avvia il runner quando la readiness è negativa e conserva reviewer, evaluation engine e observability già canonici.
+- Nessuna installazione automatica di pacchetti/repository e nessuna scrittura diretta su `main`.
+- Comando dedicato: `npm run test:software`.
+
+Sorgenti: `src/randai/software/engine.js`, `readiness.js` e `contracts.js`.
+Test dedicato: `test/randai-software-readiness.test.js`.
+
+Zombie scan Blocco 21: il precedente `SoftwareEngineeringAgent`, `RandAIPlanner`, `Plan Validator`, Durable Runtime, Evaluation Engine e Supervisor restano le sorgenti canoniche. È stato aggiunto solo il readiness gate mancante; nessun secondo orchestratore, patch runner o sistema di deploy è stato introdotto.
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
