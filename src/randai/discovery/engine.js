@@ -1,4 +1,4 @@
-import { DiscoveryDecision, DiscoveryStatus, validateDiscoveryCandidate } from './contracts.js'
+import { DiscoveryDecision, DiscoveryStatus, classifyDiscoveryDisposition, validateDiscoveryCandidate } from './contracts.js'
 import { DiscoveryStore } from './store.js'
 
 const clone = (value) => structuredClone(value)
@@ -110,7 +110,7 @@ export class DiscoveryEngine {
     item.updatedAt = nowIso(); await this.store.save(item); return clone(item)
   }
 
-  async evaluateCandidate(id, { projectId = 'randai' } = {}) {
+  async evaluateCandidate(id, { projectId = 'randai', existingCandidates = [] } = {}) {
     const item = await this.#require(id, projectId)
     if (item.status !== DiscoveryStatus.SANDBOXED) throw new Error(`Candidate must be SANDBOXED before evaluation: ${item.status}`)
     if (typeof this.evaluator !== 'function') throw new Error('Discovery evaluator is not configured')
@@ -119,6 +119,7 @@ export class DiscoveryEngine {
     const security = boundedScore(item.evaluation?.securityScore, 'securityScore')
     item.score = Math.max(0, Math.min(1, item.score * 0.4 + utility * 0.3 + security * 0.3))
     item.status = utility >= 0.75 && security >= 0.9 ? DiscoveryStatus.RECOMMENDED : DiscoveryStatus.REJECTED
+    item.disposition = classifyDiscoveryDisposition({ candidate: item, existingCandidates })
     item.updatedAt = nowIso(); await this.store.save(item); return clone(item)
   }
 
