@@ -28,6 +28,7 @@
     "test:ecosystem": "node --test test/randai-block13-ecosystem-51-54.test.js",
     "test:repo-radar": "node --test test/randai-block14-repo-radar-55-58.test.js",
     "test:core-health": "node --test test/randai-block15-core-health-59-62.test.js",
+    "test:operations-security": "node --test test/randai-block16-operations-security-63-66.test.js",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs"
   },
