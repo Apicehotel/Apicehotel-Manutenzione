@@ -325,6 +325,23 @@ Sorgenti: `src/randai/discovery/contracts.js`, `engine.js`, `store.js` e `src/ra
 Test dedicato: `test/randai-discovery-governance.test.js`.
 
 Zombie scan Blocco 23: il `DiscoveryEngine`, il `DiscoveryStore`, la sandbox, l’evaluator e il Supervisor esistenti restano canonici. È stata aggiunta solo la classificazione `ADD / REPLACE / IGNORE`; nessun installer, marketplace, registry o pipeline parallela è stato introdotto.
+## Blocco 24 — RandAI Supervisor 2.0
+
+Il Supervisor è il punto unico che decide come eseguire un obiettivo: singolo agente, multi-agent, discovery richiesta o stop.
+
+- Il preflight valida budget, scope e grafo dei task prima di qualsiasi dispatch.
+- ID duplicati, dipendenze sconosciute, dipendenze duplicate e cicli sono `STOPPED` con `INVALID_TASK_GRAPH`.
+- Il multi-agent viene scelto solo per decomposizione esplicita; il Supervisor non inventa agenti né task.
+- Budget, quality gate, errori, capability gap e anti-loop restano bounded e tracciati.
+- Discovery, MultiAgentCoordinator, Recovery, Evaluation e Store restano motori canonici: nessun secondo orchestratore o runner parallelo.
+- Un gap di capability produce una proposta di discovery, mai installazione o attivazione automatica.
+- Comando dedicato: `npm run test:supervisor`.
+
+Sorgenti: `src/randai/supervisor/contracts.js`, `engine.js`, `store.js` e `src/randai/agents/`.
+Test dedicato: `test/randai-supervisor-governance.test.js`.
+
+Zombie scan Blocco 24: è stato rafforzato il preflight del Supervisor esistente; non sono stati creati un nuovo scheduler, un secondo coordinator, un altro budget store o un installer.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
