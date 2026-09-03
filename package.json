@@ -32,8 +32,10 @@
     "test:warehouse-integration": "node --test test/randai-block17-warehouse-integration-67.test.js",
     "test:lts": "node --test test/randai-block18-lts-68-70.test.js",
     "test:health-evidence": "node --test test/randai-block19-health-evidence-71.test.js",
+    "test:external-evidence": "node --test test/randai-block20-external-evidence-72.test.js",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
+    "core:external-evidence": "node scripts/randcore-external-evidence.mjs",
     "lts:attest": "node scripts/rand-lts-attestation.mjs"
   },
   "dependencies": {

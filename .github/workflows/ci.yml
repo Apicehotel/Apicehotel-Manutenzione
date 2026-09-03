@@ -157,6 +157,17 @@ jobs:
           if-no-files-found: error
           retention-days: 365
 
+      - name: RandCore external evidence bridge
+        run: npm run core:external-evidence
+
+      - name: Upload RandCore external evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: randcore-external-evidence-${{ github.sha }}
+          path: artifacts/randcore-external-evidence.json
+          if-no-files-found: error
+          retention-days: 365
+
       - name: Rand Ecosystem LTS attestation
         env:
           RAND_LTS_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
