@@ -79,8 +79,10 @@ test('70: attestation cannot be emitted when a final gate is missing', () => {
 test('70: CI emits a commit-bound LTS artifact only after browser and device gates', () => {
   const ci = fs.readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
   const script = fs.readFileSync(new URL('../scripts/rand-lts-attestation.mjs', import.meta.url), 'utf8')
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.match(ci, /Rand Ecosystem LTS attestation/)
-  assert.match(ci, /rand-lts-attestation\.mjs/)
+  assert.match(ci, /npm run lts:attest/)
+  assert.equal(pkg.scripts?.['lts:attest'], 'node scripts/rand-lts-attestation.mjs')
   assert.match(ci, /rand-ecosystem-lts-1\.0/)
   assert.ok(ci.indexOf('Rand Ecosystem LTS attestation') > ci.indexOf('Device acceptance gate'))
   assert.match(script, /missingEvidence/)
