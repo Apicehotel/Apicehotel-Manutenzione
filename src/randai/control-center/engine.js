@@ -2,7 +2,8 @@ import { summarizeObservability } from '../observability/insights.js'
 import { ControlSection, classifyControlItem, controlItemMatchesScope, normalizeControlScope } from './contracts.js'
 const clone=v=>structuredClone(v)
 
-const SOURCE_NAMES=['tasks','supervisorRuns','signals','traces','approvals','discoveries','learning']
+const SOURCES=[['TASK','tasks'],['SUPERVISOR','supervisorRuns'],['SIGNAL','signals'],['TRACE','traces'],['APPROVAL','approvals'],['DISCOVERY','discoveries'],['LEARNING','learning']]
+const SOURCE_NAMES=SOURCES.map(([,name])=>name)
 
 export class RandAIControlCenter {
   constructor({taskStore=null,supervisorStore=null,signalStore=null,traceStore=null,approvalStore=null,discoveryStore=null,learningStore=null}={}){
@@ -22,7 +23,7 @@ export class RandAIControlCenter {
     const sourceHealth=Object.fromEntries(sourceResults.map(({name,status,error})=>[name,{status,...(error?{error}: {})}]))
     const items=[]
     for(const result of sourceResults){
-      const kind=result.name==='supervisorRuns'?'SUPERVISOR':result.name.slice(0,-1).toUpperCase()
+      const kind=SOURCES.find(([,name])=>name===result.name)?.[0]||'UNKNOWN'
       for(const raw of result.items||[]){
         if(!scope.allHotels&&!controlItemMatchesScope(raw,scope)) continue
         items.push({kind,section:classifyControlItem(raw),id:raw.id,status:raw.status||null,title:raw.title||raw.name||raw.objective||raw.type||raw.id,hotelId:raw.hotelId||raw.hotel_id||raw.scope?.hotelId||null,updatedAt:raw.updatedAt||raw.createdAt||raw.startedAt||null,data:clone(raw)})
