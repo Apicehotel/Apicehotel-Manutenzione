@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { LearningEngine } from '../src/randai/learning/engine.js'
 import { BrainAutonomyLevel, BrainDecision, RandBrain, RandBrainLearningAdapter, benchmarkRandBrainRouter, buildReasoningGraph, decideBrainAutonomy, evaluateRandBrainReadiness, faultInjectRandBrain, routeBrainObjective } from '../src/randai/randbrain/index.js'
 
@@ -65,4 +66,10 @@ test('92 production gate is fail-closed and reaches LIVE_READY only with all evi
   assert.equal(evaluateRandBrainReadiness({canonicalFacade:true}).status,'BLOCKED')
   const yes={canonicalFacade:true,dynamicRouting:true,reasoningGraph:true,autonomyGoverned:true,verifiedLearning:true,hotelIsolation:true,actionGatewayBoundary:true,rollback:true,costBudget:true,faultInjection:true,benchmark:true}
   const result=evaluateRandBrainReadiness(yes);assert.equal(result.status,'LIVE_READY');assert.equal(result.score,100)
+})
+
+test('92 CI exposes RandBrain as a named production gate',()=>{
+  const ci=fs.readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8')
+  assert.match(ci,/RandBrain production contracts/)
+  assert.match(ci,/npm run test:randbrain/)
 })
