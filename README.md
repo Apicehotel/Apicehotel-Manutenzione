@@ -1,4 +1,4 @@
-# RandApp / RandAI — Hotel Operations Platform
+# RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
 PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target obbligatori: iOS/iPadOS, Android e Windows. Il `hotel_id`, membership, RLS/RPC, Safe Write e audit restano confini di sicurezza canonici.
 
@@ -163,7 +163,7 @@ La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, mul
 - PR #150 — 51–54.
 - PR #152 — 55–58.
 - PR #153 — 59–62.
-- Blocco 16 — 63–66 / Operations, Security, Observability Cost e Repo/Module Health.
+- PR #154 — 63–66 / Operations, Security, Observability Cost e Repo/Module Health.
 
 ## Deploy
 
