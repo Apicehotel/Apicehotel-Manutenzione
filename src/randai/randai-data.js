@@ -26,6 +26,7 @@ export async function retrieveRandAIGuidance({ hotelId, query, contextQuery = ''
   if (!data?.found) return null
 
   return {
+    suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
     procedure: data.procedure ? {
       ...data.procedure,
       hotelId: data.procedure?.hotelId || data.procedure?.hotel_id,
