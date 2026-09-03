@@ -86,6 +86,20 @@ Moduli dichiaratamente deferred alla LTS 1.0 finché non vengono consolidati con
 
 Sorgenti: `src/randai/core/lts-readiness.js`, `scripts/rand-lts-attestation.mjs`, `test/randai-block18-lts-68-70.test.js`, `.github/workflows/ci.yml`.
 
+### Blocco 19 — Health Evidence Contract — 71
+
+71. **RandCore Health Evidence Contract** — i sette domini canonici sono ora un unico contratto: `database`, `security`, `workers`, `deploy`, `backup_restore`, `integrations`, `dependencies`. Ogni dominio espone stato dell'evidenza (`VERIFIED / STALE / UNKNOWN`), stato salute, score, sorgente, timestamp, freshness e confidence. `UNKNOWN` e `STALE` sono fail-closed e non entrano nella copertura verificata.
+
+Il significato di `100/100` è stato corretto: lo score descrive soltanto le evidenze realmente verificate e non implica più copertura totale. La console mostra separatamente score, domini valutati, copertura verificata, stale/unknown e confidence. Un aggregate può essere `HEALTHY` solo con **7/7 evidenze fresche e verificate**; 3/7 sani restano esplicitamente `DEGRADED` per incompletezza di evidenza.
+
+Il precedente disallineamento è stato eliminato: il check SQL usava i sette domini operativi mentre lo snapshot CI usava una tassonomia diversa (`ecosystem`, `repo_radar`, `source_control`, ecc.). `src/randai/core/health-evidence.js` è ora l'autorità canonica; il CI riusa quei sette domini e genera `randcore-health-evidence-<sha>` dopo browser/device gate. Il merge di snapshot è predisposto per combinare in futuro evidenza runtime Supabase e CI scegliendo la prova fresca/verificata per dominio, senza creare un secondo health stack.
+
+La migration `20260903173000_randcore_health_evidence_contract.sql` porta il check runtime al contratto v2. Il database può verificare direttamente `database`, `security` e `workers`; `deploy`, `backup_restore`, `integrations` e `dependencies` restano `UNKNOWN` in quel singolo snapshot se non hanno una prova esterna fresca. Il check CI può verificare `deploy` e `dependencies`; backup/restore e integrazioni non vengono falsamente promossi.
+
+Zombie/duplication scan 71: nessun nuovo scheduler, dashboard o provider parallelo; la tassonomia duplicata del vecchio script CI è stata sostituita dal contratto canonico. Nessuna nuova dipendenza runtime o repository esterna è necessaria.
+
+Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `scripts/randcore-full-check.mjs`, `supabase/migrations/20260903173000_randcore_health_evidence_contract.sql`, `test/randai-block19-health-evidence-71.test.js`, `.github/workflows/ci.yml`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -143,29 +157,31 @@ npm run test:core-health
 npm run test:operations-security
 npm run test:warehouse-integration
 npm run test:lts
+npm run test:health-evidence
 npm run build
 node scripts/check-bundle.mjs
 npm test
 npm run test:e2e
 npm run test:device
+npm run core:health
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance e generazione dell’attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, snapshot Health Evidence e generazione dell’attestazione LTS.
 
 **Regola di chiusura:** un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
 ## Struttura repository
 
 - `src/randapp/` — shell/UI e domini RandApp.
-- `src/randai/core/` — orchestrazione, Ecosystem Truth, Configuration, Health, Module Health e LTS Readiness.
+- `src/randai/core/` — orchestrazione, Ecosystem Truth, Configuration, Health, Health Evidence, Module Health e LTS Readiness.
 - `src/randai/control/` — Control Center, Operations, Security, Health, Repo Radar e console operative.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
 - `src/randai/` — knowledge, memory, agents, evals, recovery, learning, discovery, supervisor e domini AI.
 - `src/reliability/` — safety/reliability 27+.
 - `supabase/functions/` — boundary server.
 - `supabase/migrations/` — schema, RLS/RPC e migration versionate.
-- `test/` e `scripts/` — contratti, quality gate, E2E, device acceptance e attestation LTS.
+- `test/` e `scripts/` — contratti, quality gate, E2E, device acceptance, Health Evidence e attestation LTS.
 
 ## Consolidamento storico
 
@@ -185,7 +201,8 @@ La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, mul
 - PR #153 — 59–62.
 - PR #154 — 63–66 / Operations, Security, Observability Cost e Repo/Module Health.
 - PR #155 — 67 / Rand Warehouse Integration.
-- Blocco 18 — 68–70 / Final Ecosystem Gate, Zombie/Duplication Purge e Rand Ecosystem LTS 1.0.
+- PR #156 — 68–70 / Final Ecosystem Gate, Zombie/Duplication Purge e Rand Ecosystem LTS 1.0.
+- Blocco 19 — 71 / RandCore Health Evidence Contract.
 
 ## Deploy
 
