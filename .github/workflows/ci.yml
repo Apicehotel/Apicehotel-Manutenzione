@@ -58,6 +58,9 @@ jobs:
       - name: RandUI visual quality contracts
         run: npm run test:randui
 
+      - name: RandAudio governance and benchmark contracts
+        run: npm run test:randaudio
+
       - name: RandAI Point 3 behavior contracts
         run: node --test test/randai-issue-operations.test.js
 
