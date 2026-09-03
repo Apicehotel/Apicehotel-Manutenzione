@@ -128,6 +128,10 @@ export async function executeRecovery({
   if (verify != null && typeof verify !== 'function') throw new TypeError('verify must be a function')
 
   const initialPlan = planRecovery({ ...failure, circuitState: circuit.state })
+  if (initialPlan.verificationRequired && !verify && initialPlan.disposition !== RecoveryDisposition.REVIEW && initialPlan.disposition !== RecoveryDisposition.STOP) {
+    const reviewPlan = recoveryPlan(RecoveryDisposition.REVIEW, RecoveryAction.MANUAL_REVIEW, 'RECOVERY_VERIFIER_MISSING')
+    return { status: 'NEEDS_REVIEW', plan: reviewPlan, budget: budget.snapshot(now), circuit: circuit.snapshot() }
+  }
   if (initialPlan.disposition === RecoveryDisposition.REVIEW || initialPlan.disposition === RecoveryDisposition.STOP) {
     return { status: initialPlan.disposition === RecoveryDisposition.REVIEW ? 'NEEDS_REVIEW' : 'STOPPED', plan: initialPlan, budget: budget.snapshot(now), circuit: circuit.snapshot() }
   }
