@@ -87,7 +87,7 @@ Le protezioni `approved_only`, `verified_learning_only`, `require_confirmation_h
 
 Zombie scan 51–54: `src/randai/control-center/` resta vivo perché è il motore/proiezione read-only coperto dai test di governance. `RandAIControlHub.jsx` è stato invece rimosso dopo l'integrazione delle nuove sezioni nel Control Center canonico; sono stati eliminati anche i relativi stili `rch-*`.
 
-### Blocco 14 — Repo Radar 2.0 e Safe Adoption — 55–58
+### Blocco 14 — Repo Radar 2.0 e Safe Adoption — 55–58 ✅
 
 55. **Repo Radar 2.0** — la valutazione repository usa il vocabolario canonico `KEEP`, `UPGRADE`, `REPLACE`, `ADD`, `REJECT`, `WATCH`. Stelle e popolarità servono solo alla discovery e non entrano nel punteggio di adozione. Lo scouting settimanale usa query GitHub bounded e aggiunge al massimo 15 candidate automatiche per ciclo.
 56. **Deep Repository Intelligence** — `src/randai/discovery/repo-radar.js` valuta sicurezza, manutenzione, maturità, test/CI, compatibilità, performance, rollback e manutenibilità. Repository archiviate, non mantenute, con licenza non ammessa/sconosciuta, vulnerabilità critiche note o gate security/compatibility falliti vengono bloccate. Le repository scoperte automaticamente partono sempre con gate sconosciuti e quindi `WATCH`: popolarità e metadati non possono auto-promuoverle.
@@ -99,6 +99,21 @@ Catalogo iniziale governato: Sentry/OpenTelemetry `KEEP`; Promptfoo, MCP TypeScr
 Zombie scan 55–58: `DiscoveryEngine` resta canonico per skill/tool discovery. Repo Radar non lo duplica: aggiunge la governance specifica delle repository e riusa RandControl esistente. Nessun installer automatico, secondo registry, secondo scheduler applicativo o nuova dipendenza è stato introdotto.
 
 Sorgenti principali 55–58: `src/randai/discovery/repo-radar.js`, `src/randai/discovery/repo-radar-catalog.js`, `src/randai/control/RepoRadarConsole.jsx`, `scripts/repo-radar-snapshot.mjs`, `.github/workflows/repo-radar.yml` e `test/randai-block14-repo-radar-55-58.test.js`.
+
+### Blocco 15 — RandCore Health & Full Audit 2.0 — 59–62 ✅
+
+59. **Unified Health Snapshot** — `src/randai/core/health-snapshot.js` normalizza stato, score, finding e drift. Il controllo non duplica `SystemControlConsole`: il live control resta istantaneo, RandCore conserva snapshot periodici e confrontabili.
+60. **Monthly Full Ecosystem Check** — Supabase esegue `randcore-monthly-full-check` una volta al mese tramite `pg_cron`; `.github/workflows/randcore-monthly-health.yml` esegue inoltre l'audit code-side mensile con dependency audit, quality gate, test, build, bundle check e snapshot artifact. Nessun polling continuo viene introdotto.
+61. **Findings, History & Drift** — `randcore_health_checks` e `randcore_health_findings` conservano storico append-only; il frontend confronta ultimo e precedente check e segnala `BETTER`, `STABLE`, `WORSE` o `BASELINE`. I domini senza evidenza automatica restano `UNKNOWN`: un'assenza di telemetria non diventa falsamente verde.
+62. **RandControl Health Console** — `RandCoreHealthConsole` è integrata dentro la sezione `Ecosistema` già canonica. Gli admin possono lanciare un check manuale controllato, consultare score, copertura, finding e storico; non nasce un secondo dashboard.
+
+La migration `20260903153500_randcore_health_full_audit.sql` è stata applicata su Apice MultiHotel. Le tabelle sono RLS-protected e read-only dal browser; la scrittura avviene soltanto attraverso funzioni governate. `randcore_run_health_check_internal` non è eseguibile da `anon` o `authenticated`, mentre il trigger manuale richiede un admin RandApp autenticato. È già predisposto un endpoint service-role-only per futura fusione degli snapshot CI senza consegnare credenziali al frontend.
+
+Il primo audit reale non è stato forzato a verde: ha rilevato debito di sicurezza preesistente sulle ACL `SECURITY DEFINER`, dimostrando che il nuovo health layer segnala problemi reali invece di nasconderli. Tali finding non vengono corretti in massa senza verifica delle chiamate perché un revoke indiscriminato potrebbe interrompere flussi operativi.
+
+Zombie scan 59–62: `SystemControlConsole` resta canonico per worker/anomalie/audit live; RandCore Health è storico/periodico. Nessun secondo observability stack, scheduler applicativo o store parallelo è stato aggiunto.
+
+Sorgenti principali 59–62: `src/randai/core/health-snapshot.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903153500_randcore_health_full_audit.sql`, `scripts/randcore-full-check.mjs`, `.github/workflows/randcore-monthly-health.yml` e `test/randai-block15-core-health-59-62.test.js`.
 
 ## Rand Control Plane
 
@@ -128,7 +143,7 @@ Dietro questo confine possono evolvere runtime agenti, workflow, MCP, memoria, k
 
 Route protetta: `/randai`.
 
-Il Control Center è la console amministrativa canonica. Integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media & Drive, Sensori, **Ecosistema con Repo Radar** e **Configurazione 360°**.
+Il Control Center è la console amministrativa canonica. Integra Overview, WhatsApp, Segnalazioni, Tecnici, Worker, Log, Manutenzioni, Conoscenze, Bozze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media & Drive, Sensori, **Ecosistema con RandCore Health e Repo Radar** e **Configurazione 360°**.
 
 Il motore `src/randai/control-center/` resta una proiezione read-only e non sostituisce store, RLS/RPC, audit, Sentry, Supervisor o Action Gateway.
 
@@ -180,6 +195,7 @@ npm run test:critical
 npm run test:multihotel
 npm run test:production
 npm run test:repo-radar
+npm run test:core-health
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -187,14 +203,14 @@ npm run test:e2e
 npm run test:device
 ```
 
-La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, browser Chromium/WebKit e device acceptance. Repo Radar ha inoltre il proprio test deterministico e uno scouting GitHub settimanale separato: un errore di rete nello scouting non può diventare un permesso di adozione.
+La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, browser Chromium/WebKit e device acceptance. Repo Radar ha il proprio test deterministico e scouting GitHub settimanale. RandCore aggiunge un audit mensile separato; errori o telemetria mancante vengono registrati come finding/UNKNOWN, non trasformati in permesso o stato sano.
 
 **Regola di chiusura:** un blocco è ✅ solo con implementazione canonica, isolamento multi-hotel, test dedicati, contratti condivisi verdi, zombie scan, README coerente, migration necessarie applicate e verificate, CI completa verde e merge finale senza forzare `main`.
 
 ## Struttura repository
 
 - `src/randapp/` — shell/UI e domini RandApp.
-- `src/randai/core/` — contratti core, orchestrazione, Ecosystem Truth e Configuration.
+- `src/randai/core/` — contratti core, orchestrazione, Ecosystem Truth, Configuration e Health Snapshot.
 - `src/randai/control/` — UI amministrativa RandAI/Control Center.
 - `src/randai/control-center/` — motore/proiezione read-only canonica.
 - `src/randai/` — knowledge, memory, agents, evals, recovery, learning, discovery, supervisor e domini RandAI.
@@ -217,7 +233,8 @@ La CI esegue dependency audit, Quality Matrix, Critical Operational Gate, multi-
 - PR #132 — 43–46.
 - PR #133 — 47–50.
 - PR #150 — 51–54 / Ecosystem Truth, RandCore, RandControl 360° e Configuration 360°.
-- Blocco 14 / 55–58 — Repo Radar 2.0, Deep Repository Intelligence, Safe Adoption e integrazione RandControl.
+- PR #152 — 55–58 / Repo Radar 2.0, Deep Repository Intelligence, Safe Adoption e integrazione RandControl.
+- Blocco 15 / 59–62 — RandCore Health Snapshot, monthly full check, findings/history/drift e RandControl Health Console.
 
 ## Deploy
 

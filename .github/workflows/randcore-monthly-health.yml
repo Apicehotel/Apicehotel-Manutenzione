@@ -1,0 +1,49 @@
+name: RandCore Monthly Health
+
+on:
+  schedule:
+    - cron: '45 5 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+      - name: Quality matrix
+        run: npm run test:matrix
+      - name: Critical gate
+        run: npm run test:critical
+      - name: Multi-hotel gate
+        run: npm run test:multihotel
+      - name: Production confidence
+        run: npm run test:production
+      - name: Full test suite
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Bundle budget
+        run: node scripts/check-bundle.mjs
+      - name: Build RandCore audit snapshot
+        run: node scripts/randcore-full-check.mjs
+      - name: Upload RandCore audit snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: randcore-monthly-health-${{ github.sha }}
+          path: artifacts/randcore-full-check.json
+          if-no-files-found: error
+          retention-days: 365
