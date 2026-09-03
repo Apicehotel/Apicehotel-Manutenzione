@@ -1,4 +1,4 @@
-# RandApp / RandAI — Hotel Operations Platform
+# RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
 PWA React 19 + Vite 7 multi-hotel per **Hotel Giò**, **Chocohotel** e **Hotel Il Brigantino**. Supabase/Postgres resta il system of record. L'ecosistema Rand è progettato per iOS/iPadOS, Android e Windows con isolamento esplicito per `hotel_id`, membership, RLS/RPC e test cross-hotel.
 
