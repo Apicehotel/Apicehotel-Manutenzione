@@ -220,6 +220,24 @@ Test dedicato: `test/randai-benchmark.test.js`.
 
 Zombie scan Blocco 17: il benchmark riusa EvaluationEngine, EvalStore e i grader esistenti; non introduce un secondo runner, un secondo punteggio o una seconda pipeline CI.
 
+## Blocco 18 — Multi-Agent 2.0
+
+RandAI può usare più agenti specializzati mantenendo un coordinamento unico, hotel scope obbligatorio e controllo umano sui conflitti.
+
+- `MultiAgentRuntime` resta il motore canonico per dipendenze, concorrenza, tool dichiarati e telemetria.
+- `MultiAgentCoordinator` raccoglie gli handoff e calcola il consenso in modo deterministico.
+- Ruoli obbligatori mancanti, risultati incompatibili o consenso insufficiente producono `NEEDS_REVIEW`.
+- Una decisione viene restituita solo quando il consenso supera la soglia configurata.
+- I conflitti non vengono nascosti e nessun agente può aggirare policy, budget, verification gate o Action Gateway.
+- Il Supervisor può instradare l’esecuzione attraverso il coordinatore senza creare un secondo orchestratore.
+- Nessuna aggregazione implicita tra Hotel Giò, Chocohotel e Il Brigantino.
+
+Sorgenti: `src/randai/agents/runtime.js`, `coordinator.js`, `registry.js` e `src/randai/supervisor/engine.js`.
+
+Test dedicato: `test/randai-multi-agent-coordinator.test.js`.
+
+Zombie scan Blocco 18: il coordinatore completa il runtime esistente; non introduce un secondo scheduler, un secondo supervisor o un sistema autonomo di decisione.
+
 ## RandAI Control Center / WhatsApp
 
 Route protetta: `/randai`. Il motore `control-center/` è una proiezione read-only; UI/console non sostituiscono RLS/RPC/Action Gateway.
