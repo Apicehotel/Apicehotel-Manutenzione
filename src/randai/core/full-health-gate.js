@@ -33,10 +33,12 @@ export function evaluateRandCoreFullHealthGate(snapshot, { expectedCommitSha = n
   const integrations = domains.integrations?.evidence || {}
   if (integrations.probe !== 'operational-trace') fail(reasons, 'integrations:operational-proof-missing')
 
+  const deploySha = domains.deploy?.evidence?.commit_sha || null
+  const dependencySha = domains.dependencies?.evidence?.commit_sha || null
+  if (!deploySha || !dependencySha || deploySha !== dependencySha) fail(reasons, 'release-evidence:commit-incoherent')
   if (expectedCommitSha) {
-    for (const domain of ['deploy','dependencies']) {
-      if (domains[domain]?.evidence?.commit_sha !== expectedCommitSha) fail(reasons, `${domain}:commit-mismatch`)
-    }
+    if (deploySha !== expectedCommitSha) fail(reasons, 'deploy:commit-mismatch')
+    if (dependencySha !== expectedCommitSha) fail(reasons, 'dependencies:commit-mismatch')
   }
 
   return Object.freeze({
@@ -46,6 +48,7 @@ export function evaluateRandCoreFullHealthGate(snapshot, { expectedCommitSha = n
     score:Number(snapshot?.score || 0),
     confidence:Number(snapshot?.confidence || 0),
     coverage:`${Number(coverage.verified_domains || 0)}/${RANDCORE_HEALTH_DOMAINS.length}`,
+    commit_sha:deploySha && deploySha === dependencySha ? deploySha : null,
     reasons:Object.freeze(reasons),
   })
 }
