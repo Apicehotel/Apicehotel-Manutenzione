@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { ToolPermission, ToolRisk, toolSuccess } from '../tools/contracts.js'
 import { normalizeRandVisualSpec } from './contracts.js'
 import { assertSafeRandVisualSvg, renderRandVisualSvg } from './renderer.js'
@@ -12,6 +11,16 @@ function stableJson(value) {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`
   }
   return JSON.stringify(value)
+}
+
+function fingerprintOf(value) {
+  const text = stableJson(value)
+  let hash = 2166136261
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `rv1-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
 
 export class RandVisualScopeError extends Error {
@@ -37,7 +46,7 @@ export class RandVisualEngine {
     const rendered = renderRandVisualSvg(spec, { tokens: this.tokens })
     assertSafeRandVisualSvg(rendered.svg)
     const generatedAt = this.clock()
-    const fingerprint = createHash('sha256').update(stableJson({ spec, width: rendered.width, height: rendered.height })).digest('hex')
+    const fingerprint = fingerprintOf({ spec, width: rendered.width, height: rendered.height })
     return {
       svg: rendered.svg,
       manifest: {
