@@ -82,6 +82,18 @@ Zombie scan Blocco 5: Health Evidence, Authorization Matrix, Repo Radar e i domi
 
 Sorgenti: `src/randai/visual/intelligence.js`, `src/randai/visual/index.js`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `src/randai/core/health-evidence.js`, `src/reliability/authorization-matrix.js`, `test/randai-randcore-visual-intelligence-block5.test.js`.
 
+### Roadmap OpenCode + Diagram Design — Blocco 6/6 ✅ RandChange Receipt + Visual QA
+
+`RandChange` chiude la roadmap come contratto di certificazione, senza creare un secondo audit, rollback o visual-test stack. `VisualQA` confronta manifest RandVisual before/after nello stesso `hotelId`, distingue cambiamento atteso da drift inatteso e usa il fingerprint soltanto come prova strutturale. Per dichiarare `PASS` con browser evidence obbligatoria richiede prove reali Chromium e WebKit con `evidenceId`; un semplice diff SVG non viene spacciato per visual regression test.
+
+`RandChangeReceipt` aggrega commit prima/dopo, file aggiunti/modificati/eliminati/rinominati, dipendenze, test, quality gate, VisualQA, provenance, audit e rollback. Le modifiche `CODE` richiedono commit distinti; le `OPERATION` riusano l'audit verificato e hotel-scoped di `audit-reversible.js`. `UNKNOWN`/`FAIL`, provenance mancante, visual QA bloccata, scope mismatch o una modifica mutante priva di rollback dichiarato impediscono lo stato `CERTIFIED`.
+
+Il rollback non viene duplicato né automatizzato alla cieca: per operazioni applicative restano canonici `createCompensationRequest()` ed `executeCompensation()`; per modifiche codice la receipt conserva strategia e riferimento (`git-revert`, commit/base o altra evidenza approvata). E2E Chromium/WebKit, device acceptance e LTS attestation restano le prove canoniche di ciò che l'utente vede e della qualità di release.
+
+Zombie scan Blocco 6: mantenuti audit/reversibility, RandVisual manifest, RandUI/E2E screenshot gate, device acceptance e LTS attestation perché hanno responsabilità differenti. Nessun nuovo store, migration, scheduler, Playwright stack, screenshot service o dipendenza esterna.
+
+Sorgenti: `src/randai/change/visual-qa.js`, `src/randai/change/receipt.js`, `src/randai/change/index.js`, `src/reliability/audit-reversible.js`, `test/e2e.mjs`, `test/device-acceptance.mjs`, `test/randai-randchange-visualqa-block6.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -327,6 +339,7 @@ node --test test/randtool-permission-block2.test.js
 node --test test/randmind-continuity-model-router-block3.test.js
 node --test test/randai-randvisual-block4.test.js
 node --test test/randai-randcore-visual-intelligence-block5.test.js
+node --test test/randai-randchange-visualqa-block6.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -348,6 +361,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
 - `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
 - `src/randai/visual/` — RandVisual canonico: contratti, layout deterministico, renderer SVG sicuro, provenance manifest, RandCore Visual Intelligence e adapter ToolRegistry.
+- `src/randai/change/` — RandChange canonico: VisualQA before/after e Change Receipt evidence-backed; non sostituisce audit, rollback, E2E o LTS.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/memory/` — MemoryEngine/Store, facade RandMind e continuity contract cross-session/cross-channel.
 - `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
@@ -391,6 +405,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #173 — Roadmap OpenCode/Diagram Design, Blocco 3 / RandMind Continuity + Model Router.
 - PR #174 — Roadmap OpenCode/Diagram Design, Blocco 4 / RandVisual Engine.
 - PR #175 — Roadmap OpenCode/Diagram Design, Blocco 5 / RandCore Visual Intelligence.
+- PR #176 — Roadmap OpenCode/Diagram Design, Blocco 6 / RandChange Receipt + Visual QA.
 
 ## Deploy
 
