@@ -1,1 +1,141 @@
-LS0gUmFuZENvcmUgUG9pbnQgMTogb25lIGFwcGVuZC1vbmx5IGV2ZW50IGVudmVsb3BlIGZvciBvcGVyYXRpb25hbCBkb21haW5zLgotLSBUaGlzIGlzIGRlbGliZXJhdGVseSBzZXBhcmF0ZSBmcm9tIG5vdGlmaWNhdGlvbl9vdXRib3g6IGV2ZW50cyBkZXNjcmliZQotLSBmYWN0cywgd2hpbGUgbm90aWZpY2F0aW9ucyBkZXNjcmliZSBkZWxpdmVyeSBhdHRlbXB0cy4KCmNyZWF0ZSB0YWJsZSBpZiBub3QgZXhpc3RzIHB1YmxpYy5yYW5kX2RvbWFpbl9ldmVudHMgKAogIGlkIHV1aWQgcHJpbWFyeSBrZXkgZGVmYXVsdCBnZW5fcmFuZG9tX3V1aWQoKSwKICBldmVudF90eXBlIHRleHQgbm90IG51bGwgY2hlY2sgKGV2ZW50X3R5cGUgfiAnXlthLXowLTlfLi1dKyQnKSwKICBhZ2dyZWdhdGVfdHlwZSB0ZXh0IG5vdCBudWxsLAogIGFnZ3JlZ2F0ZV9pZCB0ZXh0IG5vdCBudWxsLAogIGhvdGVsX2lkIHRleHQgbm90IG51bGwgcmVmZXJlbmNlcyBwdWJsaWMuaG90ZWxzKGlkKSBvbiBkZWxldGUgcmVzdHJpY3QsCiAgb3BlcmF0aW9uIHRleHQgbm90IG51bGwgY2hlY2sgKG9wZXJhdGlvbiBpbiAoJ0lOU0VSVCcsICdVUERBVEUnLCAnREVMRVRFJykpLAogIG9jY3VycmVkX2F0IHRpbWVzdGFtcHR6IG5vdCBudWxsIGRlZmF1bHQgbm93KCksCiAgc291cmNlIHRleHQgbm90IG51bGwgZGVmYXVsdCAnZGF0YWJhc2UnLAogIGNvcnJlbGF0aW9uX2lkIHRleHQsCiAgaWRlbXBvdGVuY3lfa2V5IHRleHQgbm90IG51bGwgdW5pcXVlLAogIHBheWxvYWQganNvbmIgbm90IG51bGwgZGVmYXVsdCAne30nOjpqc29uYgopOwoKY3JlYXRlIGluZGV4IGlmIG5vdCBleGlzdHMgcmFuZF9kb21haW5fZXZlbnRzX2hvdGVsX29jY3VycmVkX2lkeAogIG9uIHB1YmxpYy5yYW5kX2RvbWFpbl9ldmVudHMoaG90ZWxfaWQsIG9jY3VycmVkX2F0IGRlc2MpOwpjcmVhdGUgaW5kZXggaWYgbm90IGV4aXN0cyByYW5kX2RvbWFpbl9ldmVudHNfdHlwZV9vY2N1cnJlZF9pZHgKICBvbiBwdWJsaWMucmFuZF9kb21haW5fZXZlbnRzKGV2ZW50X3R5cGUsIG9jY3VycmVkX2F0IGRlc2MpOwoKYWx0ZXIgdGFibGUgcHVibGljLnJhbmRfZG9tYWluX2V2ZW50cyBlbmFibGUgcm93IGxldmVsIHNlY3VyaXR5OwpyZXZva2UgYWxsIG9uIHB1YmxpYy5yYW5kX2RvbWFpbl9ldmVudHMgZnJvbSBhbm9uLCBhdXRoZW50aWNhdGVkOwpncmFudCBhbGwgb24gcHVibGljLnJhbmRfZG9tYWluX2V2ZW50cyB0byBzZXJ2aWNlX3JvbGU7CgotLSBXZWJob29rIGRlc3RpbmF0aW9ucyBhcmUgY29uZmlndXJlZCBvbmx5IGJ5IHRoZSBzZXJ2aWNlIHBsYW5lLiBTZWNyZXRzIGFyZQotLSByZWZlcmVuY2VkIGJ5IG5hbWUgYW5kIG5ldmVyIHN0b3JlZCBpbiB0aGlzIHRhYmxlLgpjcmVhdGUgdGFibGUgaWYgbm90IGV4aXN0cyBwdWJsaWMucmFuZF93ZWJob29rX3N1YnNjcmlwdGlvbnMgKAogIGlkIHV1aWQgcHJpbWFyeSBrZXkgZGVmYXVsdCBnZW5fcmFuZG9tX3V1aWQoKSwKICBuYW1lIHRleHQgbm90IG51bGwgdW5pcXVlLAogIGVuZHBvaW50X3VybCB0ZXh0IG5vdCBudWxsIGNoZWNrIChlbmRwb2ludF91cmwgfiAnXmh0dHBzOi8vJyksCiAgc2VjcmV0X3JlZiB0ZXh0IG5vdCBudWxsLAogIGV2ZW50X3R5cGVzIHRleHRbXSBub3QgbnVsbCBkZWZhdWx0IGFycmF5WycqJ106OnRleHRbXSwKICBhY3RpdmUgYm9vbGVhbiBub3QgbnVsbCBkZWZhdWx0IHRydWUsCiAgY3JlYXRlZF9hdCB0aW1lc3RhbXB0eiBub3QgbnVsbCBkZWZhdWx0IG5vdygpLAogIHVwZGF0ZWRfYXQgdGltZXN0YW1wdHogbm90IG51bGwgZGVmYXVsdCBub3coKQopOwoKY3JlYXRlIHRhYmxlIGlmIG5vdCBleGlzdHMgcHVibGljLnJhbmRfd2ViaG9va19kZWxpdmVyaWVzICgKICBpZCB1dWlkIHByaW1hcnkga2V5IGRlZmF1bHQgZ2VuX3JhbmRvbV91dWlkKCksCiAgZXZlbnRfaWQgdXVpZCBub3QgbnVsbCByZWZlcmVuY2VzIHB1YmxpYy5yYW5kX2RvbWFpbl9ldmVudHMoaWQpIG9uIGRlbGV0ZSBjYXNjYWRlLAogIHN1YnNjcmlwdGlvbl9pZCB1dWlkIG5vdCBudWxsIHJlZmVyZW5jZXMgcHVibGljLnJhbmRfd2ViaG9va19zdWJzY3JpcHRpb25zKGlkKSBvbiBkZWxldGUgY2FzY2FkZSwKICBzdGF0dXMgdGV4dCBub3QgbnVsbCBkZWZhdWx0ICdwZW5kaW5nJyBjaGVjayAoc3RhdHVzIGluICgncGVuZGluZycsJ3Byb2Nlc3NpbmcnLCdkZWxpdmVyZWQnLCdmYWlsZWQnLCdkZWFkX2xldHRlcicpKSwKICBhdHRlbXB0cyBpbnRlZ2VyIG5vdCBudWxsIGRlZmF1bHQgMCBjaGVjayAoYXR0ZW1wdHMgPj0gMCksCiAgbmV4dF9hdHRlbXB0X2F0IHRpbWVzdGFtcHR6IG5vdCBudWxsIGRlZmF1bHQgbm93KCksCiAgZGVsaXZlcmVkX2F0IHRpbWVzdGFtcHR6LAogIGxhc3RfZXJyb3IgdGV4dCwKICBjcmVhdGVkX2F0IHRpbWVzdGFtcHR6IG5vdCBudWxsIGRlZmF1bHQgbm93KCksCiAgdW5pcXVlKGV2ZW50X2lkLCBzdWJzY3JpcHRpb25faWQpCik7CgpjcmVhdGUgaW5kZXggaWYgbm90IGV4aXN0cyByYW5kX3dlYmhvb2tfZGVsaXZlcmllc19jbGFpbV9pZHgKICBvbiBwdWJsaWMucmFuZF93ZWJob29rX2RlbGl2ZXJpZXMoc3RhdHVzLCBuZXh0X2F0dGVtcHRfYXQpOwoKYWx0ZXIgdGFibGUgcHVibGljLnJhbmRfd2ViaG9va19zdWJzY3JpcHRpb25zIGVuYWJsZSByb3cgbGV2ZWwgc2VjdXJpdHk7CmFsdGVyIHRhYmxlIHB1YmxpYy5yYW5kX3dlYmhvb2tfZGVsaXZlcmllcyBlbmFibGUgcm93IGxldmVsIHNlY3VyaXR5OwpyZXZva2UgYWxsIG9uIHB1YmxpYy5yYW5kX3dlYmhvb2tfc3Vic2NyaXB0aW9ucyBmcm9tIGFub24sIGF1dGhlbnRpY2F0ZWQ7CnJldm9rZSBhbGwgb24gcHVibGljLnJhbmRfd2ViaG9va19kZWxpdmVyaWVzIGZyb20gYW5vbiwgYXV0aGVudGljYXRlZDsKZ3JhbnQgYWxsIG9uIHB1YmxpYy5yYW5kX3dlYmhvb2tfc3Vic2NyaXB0aW9ucyB0byBzZXJ2aWNlX3JvbGU7CmdyYW50IGFsbCBvbiBwdWJsaWMucmFuZF93ZWJob29rX2RlbGl2ZXJpZXMgdG8gc2VydmljZV9yb2xlOwoKY3JlYXRlIG9yIHJlcGxhY2UgZnVuY3Rpb24gcHVibGljLnJhbmRfZW1pdF9kb21haW5fZXZlbnQoKQpyZXR1cm5zIHRyaWdnZXIKbGFuZ3VhZ2UgcGxwZ3NxbApzZWN1cml0eSBkZWZpbmVyCnNldCBzZWFyY2hfcGF0aCA9IHB1YmxpYwphcyAkJApkZWNsYXJlCiAgdl9yZWNvcmQganNvbmI7CiAgdl9ob3RlbF9pZCB0ZXh0OwogIHZfYWdncmVnYXRlX2lkIHRleHQ7CiAgdl9maW5nZXJwcmludCB0ZXh0OwogIHZfZXZlbnRfaWQgdXVpZDsKYmVnaW4KICB2X3JlY29yZCA6PSBjYXNlIHdoZW4gdGdfb3AgPSAnREVMRVRFJyB0aGVuIHRvX2pzb25iKG9sZCkgZWxzZSB0b19qc29uYihuZXcpIGVuZDsKICB2X2hvdGVsX2lkIDo9IG51bGxpZih2X3JlY29yZC0+Pidob3RlbF9pZCcsICcnKTsKICB2X2FnZ3JlZ2F0ZV9pZCA6PSBjb2FsZXNjZShudWxsaWYodl9yZWNvcmQtPj4naWQnLCAnJyksIG1kNSh2X3JlY29yZDo6dGV4dCkpOwoKICAtLSBPbmx5IGhvdGVsLXNjb3BlZCB0YWJsZXMgYXJlIGF0dGFjaGVkIHRvIHRoaXMgdHJpZ2dlci4gRmFpbCBjbG9zZWQgaWYgYQogIC0tIG1hbGZvcm1lZCByb3cgZXZlciByZWFjaGVzIGl0IHJhdGhlciB0aGFuIGNyZWF0aW5nIGEgY3Jvc3MtaG90ZWwgZXZlbnQuCiAgaWYgdl9ob3RlbF9pZCBpcyBudWxsIHRoZW4KICAgIHJldHVybiBjb2FsZXNjZShuZXcsIG9sZCk7CiAgZW5kIGlmOwoKICB2X2ZpbmdlcnByaW50IDo9IG1kNSh2X3JlY29yZDo6dGV4dCk7CiAgaW5zZXJ0IGludG8gcHVibGljLnJhbmRfZG9tYWluX2V2ZW50cygKICAgIGV2ZW50X3R5cGUsIGFnZ3JlZ2F0ZV90eXBlLCBhZ2dyZWdhdGVfaWQsIGhvdGVsX2lkLCBvcGVyYXRpb24sCiAgICBzb3VyY2UsIGlkZW1wb3RlbmN5X2tleSwgcGF5bG9hZAogICkgdmFsdWVzICgKICAgIGxvd2VyKHRnX3RhYmxlX25hbWUgfHwgJy4nIHx8IHRnX29wKSwKICAgIHRnX3RhYmxlX25hbWUsCiAgICB2X2FnZ3JlZ2F0ZV9pZCwKICAgIHZfaG90ZWxfaWQsCiAgICB0Z19vcCwKICAgICdkYXRhYmFzZScsCiAgICB0Z190YWJsZV9uYW1lIHx8ICc6JyB8fCB2X2FnZ3JlZ2F0ZV9pZCB8fCAnOicgfHwgdGdfb3AgfHwgJzonIHx8IHZfZmluZ2VycHJpbnQsCiAgICBqc29uYl9idWlsZF9vYmplY3QoJ3RhYmxlJywgdGdfdGFibGVfbmFtZSwgJ29wZXJhdGlvbicsIHRnX29wLCAnYWdncmVnYXRlX2lkJywgdl9hZ2dyZWdhdGVfaWQpCiAgKSBvbiBjb25mbGljdCAoaWRlbXBvdGVuY3lfa2V5KSBkbyBub3RoaW5nCiAgcmV0dXJuaW5nIGlkIGludG8gdl9ldmVudF9pZDsKCiAgaWYgdl9ldmVudF9pZCBpcyBub3QgbnVsbCB0aGVuCiAgICBpbnNlcnQgaW50byBwdWJsaWMucmFuZF93ZWJob29rX2RlbGl2ZXJpZXMoZXZlbnRfaWQsIHN1YnNjcmlwdGlvbl9pZCkKICAgIHNlbGVjdCB2X2V2ZW50X2lkLCBzLmlkCiAgICBmcm9tIHB1YmxpYy5yYW5kX3dlYmhvb2tfc3Vic2NyaXB0aW9ucyBzCiAgICB3aGVyZSBzLmFjdGl2ZSA9IHRydWUKICAgICAgYW5kICgnKicgPSBhbnkocy5ldmVudF90eXBlcykgb3IgbG93ZXIodGdfdGFibGVfbmFtZSB8fCAnLicgfHwgdGdfb3ApID0gYW55KHMuZXZlbnRfdHlwZXMpKQogICAgb24gY29uZmxpY3QgKGV2ZW50X2lkLCBzdWJzY3JpcHRpb25faWQpIGRvIG5vdGhpbmc7CiAgZW5kIGlmOwoKICBpZiB0Z19vcCA9ICdERUxFVEUnIHRoZW4KICAgIHJldHVybiBvbGQ7CiAgZW5kIGlmOwogIHJldHVybiBuZXc7CmVuZDsKJCQ7CgpyZXZva2UgYWxsIG9uIGZ1bmN0aW9uIHB1YmxpYy5yYW5kX2VtaXRfZG9tYWluX2V2ZW50KCkgZnJvbSBwdWJsaWMsIGFub24sIGF1dGhlbnRpY2F0ZWQ7CgpkbyAkJApkZWNsYXJlCiAgdl90YWJsZSB0ZXh0OwpiZWdpbgogIGZvcmVhY2ggdl90YWJsZSBpbiBhcnJheSBhcnJheVsKICAgICdzZWduYWxhemlvbmknLCAnaW50ZXJ2ZW50aScsICdyaWNoaWVzdGVfdXJnZW50aScsICdwbGFubmluZ19sYXZvcmknLAogICAgJ3ByZW5vdGF6aW9uaV9zYWxlJywgJ3Byb21lbW9yaWEnLCAnc3VwcGx5X3JlcXVlc3RzJywKICAgICd3aGF0c2FwcF9pbmJvdW5kX21lc3NhZ2VzJywgJ3RlY2huaWNpYW5fZGlzcGF0Y2hfcmVxdWVzdHMnCiAgXSBsb29wCiAgICBpZiB0b19yZWdjbGFzcygncHVibGljLicgfHwgdl90YWJsZSkgaXMgbm90IG51bGwgdGhlbgogICAgICBleGVjdXRlIGZvcm1hdCgnZHJvcCB0cmlnZ2VyIGlmIGV4aXN0cyByYW5kX2RvbWFpbl9ldmVudHNfY2FwdHVyZSBvbiBwdWJsaWMuJUknLCB2X3RhYmxlKTsKICAgICAgZXhlY3V0ZSBmb3JtYXQoCiAgICAgICAgJ2NyZWF0ZSB0cmlnZ2VyIHJhbmRfZG9tYWluX2V2ZW50c19jYXB0dXJlIGFmdGVyIGluc2VydCBvciB1cGRhdGUgb3IgZGVsZXRlIG9uIHB1YmxpYy4lSSBmb3IgZWFjaCByb3cgZXhlY3V0ZSBmdW5jdGlvbiBwdWJsaWMucmFuZF9lbWl0X2RvbWFpbl9ldmVudCgpJywKICAgICAgICB2X3RhYmxlCiAgICAgICk7CiAgICBlbmQgaWY7CiAgZW5kIGxvb3A7CmVuZCAkJDsKCmNvbW1lbnQgb24gdGFibGUgcHVibGljLnJhbmRfZG9tYWluX2V2ZW50cyBpcyAnQXBwZW5kLW9ubHksIGhvdGVsLXNjb3BlZCBmYWN0cyBmb3IgUmFuZENvcmUgaW50ZWdyYXRpb25zIGFuZCBhdWRpdCBjb3JyZWxhdGlvbi4nOwpjb21tZW50IG9uIHRhYmxlIHB1YmxpYy5yYW5kX3dlYmhvb2tfZGVsaXZlcmllcyBpcyAnU2VydmljZS1vbmx5IHdlYmhvb2sgZGVsaXZlcnkgcXVldWU7IG5vdGlmaWNhdGlvbl9vdXRib3ggcmVtYWlucyB0aGUgbm90aWZpY2F0aW9uIGRlbGl2ZXJ5IGF1dGhvcml0eS4nOwo=
+-- RandCore Point 1: one append-only event envelope for operational domains.
+-- This is deliberately separate from notification_outbox: events describe
+-- facts, while notifications describe delivery attempts.
+
+create table if not exists public.rand_domain_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null check (event_type ~ '^[a-z0-9_.-]+$'),
+  aggregate_type text not null,
+  aggregate_id text not null,
+  hotel_id text not null references public.hotels(id) on delete restrict,
+  operation text not null check (operation in ('INSERT', 'UPDATE', 'DELETE')),
+  occurred_at timestamptz not null default now(),
+  source text not null default 'database',
+  correlation_id text,
+  idempotency_key text not null unique,
+  payload jsonb not null default '{}'::jsonb
+);
+
+create index if not exists rand_domain_events_hotel_occurred_idx
+  on public.rand_domain_events(hotel_id, occurred_at desc);
+create index if not exists rand_domain_events_type_occurred_idx
+  on public.rand_domain_events(event_type, occurred_at desc);
+
+alter table public.rand_domain_events enable row level security;
+revoke all on public.rand_domain_events from anon, authenticated;
+grant all on public.rand_domain_events to service_role;
+
+-- Webhook destinations are configured only by the service plane. Secrets are
+-- referenced by name and never stored in this table.
+create table if not exists public.rand_webhook_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  endpoint_url text not null check (endpoint_url ~ '^https://'),
+  secret_ref text not null,
+  event_types text[] not null default array['*']::text[],
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.rand_webhook_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.rand_domain_events(id) on delete cascade,
+  subscription_id uuid not null references public.rand_webhook_subscriptions(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','processing','delivered','failed','dead_letter')),
+  attempts integer not null default 0 check (attempts >= 0),
+  next_attempt_at timestamptz not null default now(),
+  delivered_at timestamptz,
+  last_error text,
+  created_at timestamptz not null default now(),
+  unique(event_id, subscription_id)
+);
+
+create index if not exists rand_webhook_deliveries_claim_idx
+  on public.rand_webhook_deliveries(status, next_attempt_at);
+
+alter table public.rand_webhook_subscriptions enable row level security;
+alter table public.rand_webhook_deliveries enable row level security;
+revoke all on public.rand_webhook_subscriptions from anon, authenticated;
+revoke all on public.rand_webhook_deliveries from anon, authenticated;
+grant all on public.rand_webhook_subscriptions to service_role;
+grant all on public.rand_webhook_deliveries to service_role;
+
+create or replace function public.rand_emit_domain_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_record jsonb;
+  v_hotel_id text;
+  v_aggregate_id text;
+  v_fingerprint text;
+  v_event_id uuid;
+begin
+  v_record := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;
+  v_hotel_id := nullif(v_record->>'hotel_id', '');
+  v_aggregate_id := coalesce(nullif(v_record->>'id', ''), md5(v_record::text));
+
+  -- Only hotel-scoped tables are attached to this trigger. Fail closed if a
+  -- malformed row ever reaches it rather than creating a cross-hotel event.
+  if v_hotel_id is null then
+    return coalesce(new, old);
+  end if;
+
+  v_fingerprint := md5(v_record::text);
+  insert into public.rand_domain_events(
+    event_type, aggregate_type, aggregate_id, hotel_id, operation,
+    source, idempotency_key, payload
+  ) values (
+    lower(tg_table_name || '.' || tg_op),
+    tg_table_name,
+    v_aggregate_id,
+    v_hotel_id,
+    tg_op,
+    'database',
+    tg_table_name || ':' || v_aggregate_id || ':' || tg_op || ':' || v_fingerprint,
+    jsonb_build_object('table', tg_table_name, 'operation', tg_op, 'aggregate_id', v_aggregate_id)
+  ) on conflict (idempotency_key) do nothing
+  returning id into v_event_id;
+
+  if v_event_id is not null then
+    insert into public.rand_webhook_deliveries(event_id, subscription_id)
+    select v_event_id, s.id
+    from public.rand_webhook_subscriptions s
+    where s.active = true
+      and ('*' = any(s.event_types) or lower(tg_table_name || '.' || tg_op) = any(s.event_types))
+    on conflict (event_id, subscription_id) do nothing;
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.rand_emit_domain_event() from public, anon, authenticated;
+
+do $$
+declare
+  v_table text;
+begin
+  foreach v_table in array array[
+    'segnalazioni', 'interventi', 'richieste_urgenti', 'planning_lavori',
+    'prenotazioni_sale', 'promemoria', 'supply_requests',
+    'whatsapp_inbound_messages', 'technician_dispatch_requests'
+  ] loop
+    if to_regclass('public.' || v_table) is not null then
+      execute format('drop trigger if exists rand_domain_events_capture on public.%I', v_table);
+      execute format(
+        'create trigger rand_domain_events_capture after insert or update or delete on public.%I for each row execute function public.rand_emit_domain_event()',
+        v_table
+      );
+    end if;
+  end loop;
+end $$;
+
+comment on table public.rand_domain_events is 'Append-only, hotel-scoped facts for RandCore integrations and audit correlation.';
+comment on table public.rand_webhook_deliveries is 'Service-only webhook delivery queue; notification_outbox remains the notification delivery authority.';
