@@ -180,6 +180,16 @@ I domini operativi esistenti (`segnalazioni`, `interventi`, urgenze, planning, p
 
 `rand_webhook_subscriptions` e `rand_webhook_deliveries` sono il canale webhook predisposto per il service plane: endpoint solo HTTPS, segreto indicato tramite riferimento e mai salvato in chiaro, consegne idempotenti, stati `pending/processing/delivered/failed/dead_letter` e coda pronta per un worker con retry bounded. `notification_outbox` resta l'autorità delle notifiche push/WhatsApp/email e non viene duplicata.
 
+### Ricezione segnalazioni WhatsApp multi-hotel predisposta
+
+La ricezione inbound usa un unico endpoint Twilio e il routing canonico su `whatsapp_channel_settings`, separando Giò, Chocohotel e Il Brigantino. La base è ora predisposta così:
+
+- Giò: numero configurato, ricezione e acquisizione in pausa;
+- Chocohotel: numero configurato, ricezione e acquisizione in pausa;
+- Il Brigantino: canale predisposto, numero ancora da inserire, ricezione e acquisizione in pausa.
+
+Con un canale in pausa il webhook non crea segnalazioni e non risponde automaticamente al mittente. Quando sarà il momento di attivare un hotel, la modifica sarà confinata alla configurazione del canale (`receive_enabled` e poi `ingestion_enabled`), senza duplicare endpoint o logica. I numeri e i segreti non sono hardcodati nel codice applicativo.
+
 Migration: `supabase/migrations/20260904090000_randcore_domain_events_webhook_foundation.sql`. Test: `test/randcore-domain-events.test.js`. Il worker di consegna outbound e la configurazione degli endpoint restano il passo successivo: non viene attivato alcun endpoint reale senza una destinazione e una policy approvate.
 
 ## RandCore Point 2 — Aggiornamenti realtime
