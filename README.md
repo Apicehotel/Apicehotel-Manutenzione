@@ -30,6 +30,18 @@ Zombie scan Blocco 1: `MultiAgentCoordinator` è mantenuto perché svolge consen
 
 Sorgenti: `src/randai/agents/orchestration.js`, `src/randai/agents/runtime.js`, `src/randai/agents/coordinator.js`, `test/randagent-runtime-block1.test.js`.
 
+### Roadmap OpenCode + Diagram Design — Blocco 2/6 ✅ RandTool + Permission Gateway
+
+`ToolRegistry` resta il catalogo e runtime canonico dei tool: non è stato creato un secondo registry. Il nuovo `ToolPermissionGateway` è il decision point fail-closed tra Planner e tool e si collega direttamente al `policyGuard` di `RandAgentRuntime`. Il Planner può chiedere un tool, ma **non può dichiararne né abbassarne il rischio o il permesso**: `ToolRisk` e `ToolPermission` vengono sempre letti dalla definizione registrata.
+
+Ogni decisione richiede `hotelId`; mismatch tra contesto, task o richiesta viene rifiutato prima dell'Executor. I tool sconosciuti e le decisioni di autorizzazione assenti/non esplicitamente `allowed` falliscono chiusi. `WRITE_PROTECTED`, `ADMIN` e rischio `CRITICAL` richiedono esplicitamente il boundary `ACTION_GATEWAY` e un `approvalId`; questo è solo un pre-gate, perché la mutazione continua a dover attraversare l'Action Gateway canonico e quindi RLS/RPC server-side.
+
+La difesa è su due livelli: `createRandAgentToolPolicyGuard()` blocca il piano prima dell'Executor; `ToolRegistry` supporta ora un `executionGuard` opzionale e `bindToolPermissionGateway()` lo collega allo stesso gateway, impedendo il bypass tramite esecuzione diretta quando il registry è governato. Il descriptor passato ai provider contiene solo `id/name/permission/risk`, mai la funzione `execute` o altra capability eseguibile.
+
+Zombie scan Blocco 2: mantenuti `ToolRegistry`, `action-gateway.js` e `authorization-matrix.js` perché sono autorità canoniche con responsabilità distinte. Nessun nuovo permission DB, ruolo parallelo, framework esterno, SDK o dipendenza runtime. L'Authorization Matrix resta strumento di verifica; il gateway delega la decisione reale a un `authorize` adapter senza inventare una seconda matrice ruoli.
+
+Sorgenti: `src/randai/tools/contracts.js`, `src/randai/tools/registry.js`, `src/randai/tools/permission-gateway.js`, `src/randai/action-gateway.js`, `src/reliability/authorization-matrix.js`, `test/randtool-permission-block2.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -271,6 +283,7 @@ npm run test:randui
 npm run test:randaudio
 npm run test:viking
 node --test test/randagent-runtime-block1.test.js
+node --test test/randtool-permission-block2.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -289,6 +302,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 
 - `src/randapp/` — shell/UI e domini RandApp.
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
+- `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/memory/` — MemoryEngine/Store e facade/governance canonica RandMind.
 - `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
@@ -327,6 +341,8 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #162 — 87–92 / RandBrain LIVE.
 - PR #163 — 93–97 / RandUI LIVE.
 - PR #164 — 98 / RandAudio capability, LIVE deferred.
+- PR #171 — Roadmap OpenCode/Diagram Design, Blocco 1 / RandAgent Runtime.
+- PR #172 — Roadmap OpenCode/Diagram Design, Blocco 2 / RandTool + Permission Gateway.
 
 ## Deploy
 
