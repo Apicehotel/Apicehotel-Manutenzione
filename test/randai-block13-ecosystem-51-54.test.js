@@ -13,7 +13,7 @@ test('point 51: ecosystem truth map distinguishes live, partial and planned modu
   const randAudio=modules.find((m)=>m.id==='randaudio')
   assert.equal(randAudio.status,EcosystemStatus.PARTIAL)
   assert.ok(randAudio.evidence.length>0)
-  assert.equal(modules.find((m)=>m.id==='viking').status,EcosystemStatus.PLANNED)
+  assert.equal(modules.find((m)=>m.id==='viking').status,EcosystemStatus.EVALUATED)
   const summary=summarizeRandEcosystem(modules)
   assert.equal(summary.total,modules.length)
   assert.ok(summary.unfinished>0)

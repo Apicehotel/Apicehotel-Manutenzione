@@ -38,7 +38,7 @@ Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegat
 ### Blocco 18 — 68–70 ✅
 Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
 
-Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE`; dal Blocco 25 `RandUI` è `LIVE` quando il visual quality gate finale è verde.
+Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE`; dal Blocco 25 `RandUI` è `LIVE`; dal Blocco 26 RandAudio è una capability operativa ma resta `PARTIAL`; dal Blocco 27 Viking è `EVALUATED`, con adozione dei soli pattern compatibili e senza runtime esterno.
 
 ### Blocco 19 — Health Evidence Contract — 71 ✅
 
@@ -136,6 +136,18 @@ Zombie scan 98: nessun secondo sistema AI, storage audio, coda, permission plane
 
 Sorgenti: `src/randai/audio/`, `src/randai/RandAIAssistant.jsx`, `test/randai-block26-randaudio-98.test.js`.
 
+### Blocco 27 — Viking Evaluation — 99 ✅ / pattern adoption
+
+Il candidato “Viking” è stato identificato e fissato a **OpenViking 0.3.22** (`volcengine/OpenViking`), quindi valutato attraverso il Repo Radar canonico. Il runtime completo è stato respinto: progetto principale AGPL-3.0, maturità dichiarata alpha, nuovo servizio Python/context database, configurazione provider e sovrapposizione diretta con RandMind, RandGuide, Skill Engine, Authorized Context e osservabilità. Stelle e benchmark pubblicati restano segnali di discovery, non autorizzazione all'adozione.
+
+La parte realmente migliore è stata adottata senza importare il nuovo stack: `ContextEngine` può produrre opzionalmente una proiezione stateless L0/L1/L2 delle sole evidenze autorizzate e hotel-scoped, con retrieval trace osservabile. Il contratto classico resta invariato per compatibilità; nessun secondo store, protocollo `viking://`, indice, worker, segreto client o dipendenza runtime è stato aggiunto.
+
+Il manifest usa `EVALUATED`, non `LIVE`: il punto 99 certifica una decisione tecnica conclusa e l'adozione dei pattern utili, non finge che il prodotto esterno sia un modulo operativo Rand. RandControl mostra decisione, autorità preservate, costi evitati e production gate.
+
+Zombie scan 99: la precedente voce `PLANNED` priva di specifica è stata sostituita dall'evaluation evidence-backed. Nessun componente canonico è stato eliminato perché OpenViking avrebbe duplicato responsabilità già coperte.
+
+Sorgenti: `src/randai/viking/`, `src/randai/context/engine.js`, `src/randai/control/VikingConsole.jsx`, `test/randai-block27-viking-99.test.js`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
@@ -193,6 +205,7 @@ npm run test:randmind
 npm run test:randbrain
 npm run test:randui
 npm run test:randaudio
+npm run test:viking
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -203,7 +216,7 @@ npm run core:external-evidence
 RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI, RandAudio e attestazione LTS.
+La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI, RandAudio, Viking Evaluation e attestazione LTS.
 
 Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
 
@@ -247,6 +260,8 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #160 — 74–80 / RandGuide LIVE.
 - PR #161 — 81–86 / RandMind LIVE.
 - PR #162 — 87–92 / RandBrain LIVE.
+- PR #163 — 93–97 / RandUI LIVE.
+- PR #164 — 98 / RandAudio capability, LIVE deferred.
 
 ## Deploy
 
