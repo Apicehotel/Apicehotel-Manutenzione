@@ -68,6 +68,20 @@ Zombie scan Blocco 4: non esisteva un RandVisual canonico. Le viste/grafi specif
 
 Sorgenti: `src/randai/visual/contracts.js`, `src/randai/visual/layout.js`, `src/randai/visual/renderer.js`, `src/randai/visual/engine.js`, `src/randai/visual/index.js`, `test/randai-randvisual-block4.test.js`.
 
+### Roadmap OpenCode + Diagram Design — Blocco 5/6 ✅ RandCore Visual Intelligence
+
+`RandCoreVisualIntelligence` collega il motore RandVisual alle fonti canoniche senza trasformare RandVisual in un nuovo data layer. Nessun adapter interroga Supabase, GitHub o servizi esterni: riceve snapshot già autorizzati dai bounded domain, impone `hotelId` e provenance `sourceIds`, li converte in `RandVisualSpec` e delega il rendering al solo `RandVisualEngine`.
+
+Il primo pacchetto comprende sei proiezioni: **Health Map**, **Worker Map**, **Permission Matrix**, **Deployment Map**, **Database Map** e **Repo Radar Impact**. La Health Map usa direttamente Health Evidence contract v2 e conserva `VERIFIED / STALE / UNKNOWN`, stato, score, confidence, sorgenti ed evidence id/commit. Worker/deploy/database validano i riferimenti prima del rendering; la Permission Matrix rifiuta casi cross-hotel e può mostrare expected/actual delle verifiche; Repo Radar Impact separa candidato, moduli coinvolti e dipendenze.
+
+`createRandCoreVisualIntelligenceTool()` espone `randvisual.intelligence` come tool `READ`, rischio `LOW`, idempotente: Planner e agenti possono richiederlo ma ToolRegistry/Permission Gateway restano il confine di esecuzione. L'Ecosystem Console passa ora `accessHotels` e `hotelFilter` a RandCore Health; la Health Map reale viene mostrata solo quando lo scope hotel è univoco e c'è provenance sufficiente. Con filtro multi-hotel ambiguo non viene inventato uno scope globale.
+
+La regola fail-closed vale anche per le visualizzazioni: senza evidenza/provenance il diagramma non viene generato; dati cross-hotel vengono negati; riferimenti a worker/service/table inesistenti vengono rifiutati invece di produrre grafi fuorvianti. Il manifest RandVisual rimane quello del Blocco 4, quindi il Blocco 6 potrà confrontare spec, fingerprint e output visuale senza cambiare contratto.
+
+Zombie scan Blocco 5: Health Evidence, Authorization Matrix, Repo Radar e i domini worker/deploy/database restano autorità dei dati. RandVisual è solo proiezione/rendering; nessun secondo health stack, permission matrix, repo radar, DB introspector, scheduler, store o fetch layer è stato aggiunto.
+
+Sorgenti: `src/randai/visual/intelligence.js`, `src/randai/visual/index.js`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `src/randai/core/health-evidence.js`, `src/reliability/authorization-matrix.js`, `test/randai-randcore-visual-intelligence-block5.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -106,7 +120,7 @@ Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHeal
 
 `randcore_external_health_evidence` è il canale append-only e service-only per `deploy`, `backup_restore`, `integrations`, `dependencies`. Browser, `anon` e utenti autenticati non possono scriverlo. La CI produce evidenze commit-bound reali per `deploy` e `dependencies`; RandControl le compone con `database/security/workers` senza duplicare il contratto Health Evidence.
 
-Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
+Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_health_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
 
 ### Blocco 21 — Full Autodiagnosis & Final Gate — 73 ✅
 
@@ -312,6 +326,7 @@ node --test test/randagent-runtime-block1.test.js
 node --test test/randtool-permission-block2.test.js
 node --test test/randmind-continuity-model-router-block3.test.js
 node --test test/randai-randvisual-block4.test.js
+node --test test/randai-randcore-visual-intelligence-block5.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -332,7 +347,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
 - `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
 - `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
-- `src/randai/visual/` — RandVisual canonico: contratti, layout deterministico, renderer SVG sicuro, provenance manifest e adapter ToolRegistry.
+- `src/randai/visual/` — RandVisual canonico: contratti, layout deterministico, renderer SVG sicuro, provenance manifest, RandCore Visual Intelligence e adapter ToolRegistry.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/memory/` — MemoryEngine/Store, facade RandMind e continuity contract cross-session/cross-channel.
 - `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
@@ -375,6 +390,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #172 — Roadmap OpenCode/Diagram Design, Blocco 2 / RandTool + Permission Gateway.
 - PR #173 — Roadmap OpenCode/Diagram Design, Blocco 3 / RandMind Continuity + Model Router.
 - PR #174 — Roadmap OpenCode/Diagram Design, Blocco 4 / RandVisual Engine.
+- PR #175 — Roadmap OpenCode/Diagram Design, Blocco 5 / RandCore Visual Intelligence.
 
 ## Deploy
 
