@@ -1,8 +1,9 @@
-import { rankAuthorizedNavigation } from './adaptive-layout.js'
+import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
 
 // RandApp primary navigation contract.
-// Home and Menu remain stable anchors; the two operational slots are selected
-// from authorized destinations and ranked by user interests.
+// Home and Altro remain stable anchors. Operational slots are authorized first,
+// then prioritized from the existing per-role placement configuration: items
+// explicitly placed on bottom navigation act as declared operational interests.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' }),
@@ -18,16 +19,20 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   if (typeof placement !== 'function' || typeof viewAllowed !== 'function') return []
 
   const authorized = PRIMARY_OPERATIONAL_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
-  const ranked = rankAuthorizedNavigation(authorized, interests).slice(0, 2)
+  const configuredInterestTags = authorized
+    .filter((item) => placement(item.key) === 'bottom')
+    .flatMap((item) => interestsForNavItem(item.id))
+  const effectiveInterests = interests.length ? interests : configuredInterestTags
+  const ranked = rankAuthorizedNavigation(authorized, effectiveInterests).slice(0, 3)
 
   return [
-    ...ranked.map((item, index) => ({ ...item, slot: index + 1 })),
+    ...ranked.slice(0, 2).map((item, index) => ({ ...item, slot: index + 1 })),
     { slot: 3, id: 'home', key: 'home', icon: 'home', label: 'Home' },
-    { slot: 4, id: ranked[0]?.id ? 'my-work' : 'profile', key: ranked[0]?.id ? 'interventions' : 'profile', icon: ranked[0]?.id ? 'check' : 'user', label: ranked[0]?.id ? 'I miei lavori' : 'Profilo' },
+    ...(ranked[2] ? [{ ...ranked[2], slot: 4 }] : []),
     { slot: 5, id: 'menu', key: 'other', icon: 'menu', label: 'Altro' },
   ].filter((item) => item.id === 'menu' || (placement(item.key) !== 'off' && viewAllowed(item.id)))
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'home' || view === 'my-work' || view === 'profile' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'home' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }
