@@ -73,7 +73,13 @@ export function renderRandVisualSvg(spec, { tokens = {} } = {}) {
 
 export function assertSafeRandVisualSvg(svg) {
   const text = String(svg || '')
-  const forbidden = [/<script\b/i, /on[a-z]+\s*=/i, /<foreignObject\b/i, /\b(?:href|src)\s*=\s*["'](?:https?:|data:|javascript:)/i, /@import/i]
+  const forbidden = [
+    /<script\b/i,
+    /<foreignObject\b/i,
+    /<[^>]+\son[a-z]+\s*=/i,
+    /<[^>]+\s(?:href|src)\s*=\s*["'](?:https?:|data:|javascript:)/i,
+    /@import/i,
+  ]
   for (const pattern of forbidden) if (pattern.test(text)) throw new Error(`Unsafe RandVisual SVG output: ${pattern}`)
   return true
 }
