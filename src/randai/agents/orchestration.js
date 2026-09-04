@@ -6,6 +6,18 @@ const nonNegativeInteger = (value, name) => {
   return numeric
 }
 
+const safeModelDescriptor = (model = {}) => Object.freeze({
+  id: model.id || null,
+  provider: model.provider || null,
+  capabilities: Object.freeze([...(model.capabilities || [])]),
+  privacy: model.privacy || null,
+  reliability: Number(model.reliability),
+  quality: Number(model.quality),
+  cost: Number(model.cost),
+  latency: Number(model.latency),
+  contextWindow: Number(model.contextWindow || 0),
+})
+
 export const RandAgentStage = Object.freeze({
   RECEIVED: 'RECEIVED',
   CONTEXT_LOADED: 'CONTEXT_LOADED',
@@ -56,6 +68,8 @@ export class RandAgentRuntime {
     verifier = null,
     contextProvider = null,
     continuity = null,
+    modelRouter = null,
+    modelRequestProvider = null,
     policyGuard = null,
     eventSink = null,
     onTelemetryError = null,
@@ -67,6 +81,8 @@ export class RandAgentRuntime {
     if (verifier != null && typeof verifier !== 'function') throw new TypeError('verifier must be a function')
     if (contextProvider != null && typeof contextProvider !== 'function') throw new TypeError('contextProvider must be a function')
     if (continuity != null && (typeof continuity?.open !== 'function' || typeof continuity?.commit !== 'function')) throw new TypeError('continuity must expose open() and commit()')
+    if (modelRouter != null && typeof modelRouter?.route !== 'function') throw new TypeError('modelRouter must expose route()')
+    if (modelRequestProvider != null && typeof modelRequestProvider !== 'function') throw new TypeError('modelRequestProvider must be a function')
     if (policyGuard != null && typeof policyGuard !== 'function') throw new TypeError('policyGuard must be a function')
     if (eventSink != null && typeof eventSink !== 'function') throw new TypeError('eventSink must be a function')
     if (onTelemetryError != null && typeof onTelemetryError !== 'function') throw new TypeError('onTelemetryError must be a function')
@@ -75,6 +91,8 @@ export class RandAgentRuntime {
     this.inspector = inspector || verifier || (async () => ({ ok: true }))
     this.contextProvider = contextProvider
     this.continuity = continuity
+    this.modelRouter = modelRouter
+    this.modelRequestProvider = modelRequestProvider
     this.policyGuard = policyGuard
     this.eventSink = eventSink
     this.onTelemetryError = onTelemetryError
@@ -127,9 +145,40 @@ export class RandAgentRuntime {
       })
     }
 
+    let modelRoute = null
+    if (this.modelRouter) {
+      const modelRequest = this.modelRequestProvider
+        ? await this.modelRequestProvider({ objective, context: clone(resolvedContext), channel, metadata: clone(metadata), runId })
+        : (metadata?.modelRequest ?? resolvedContext?.modelRequest ?? null)
+      if (modelRequest != null) {
+        if (typeof modelRequest !== 'object' || Array.isArray(modelRequest)) throw new TypeError('model request must be an object')
+        const routed = this.modelRouter.route(clone(modelRequest))
+        if (!routed?.selected) {
+          await emit('RAND_AGENT_MODEL_ROUTE_DENIED', { reason: routed?.reason || 'NO_COMPATIBLE_MODEL' })
+          throw new RandAgentPolicyError(`No compatible model: ${routed?.reason || 'NO_COMPATIBLE_MODEL'}`)
+        }
+        modelRoute = Object.freeze({
+          selected: safeModelDescriptor(routed.selected),
+          fallbackIds: Object.freeze((routed.fallbacks || []).map((model) => String(model.id))),
+          reason: routed.reason || null,
+          score: Number(routed.score || 0),
+          constraints: clone(routed.constraints || null),
+          request: clone(modelRequest),
+        })
+        resolvedContext = { ...resolvedContext, randModelRoute: modelRoute }
+        await emit('RAND_AGENT_MODEL_ROUTED', {
+          modelId: modelRoute.selected.id,
+          provider: modelRoute.selected.provider,
+          fallbackCount: modelRoute.fallbackIds.length,
+          constraints: clone(modelRoute.constraints),
+        })
+      }
+    }
+
     const runtimeContext = { ...resolvedContext, randAgent: { runId, channel, metadata: clone(metadata) } }
     await stage(RandAgentStage.CONTEXT_LOADED, {
       continuityId: runtimeContext?.randContinuity?.continuityId || runtimeContext?.continuityId || null,
+      modelId: runtimeContext?.randModelRoute?.selected?.id || null,
     })
 
     let previousInspection = null
@@ -218,6 +267,7 @@ export class RandAgentRuntime {
           execution: clone(lastExecution),
           inspection: clone(previousInspection),
           continuity: this.continuity ? clone({ state: continuityState, commit: continuityCommit }) : null,
+          modelRoute: clone(modelRoute),
           trace,
         }
       }
