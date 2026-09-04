@@ -2,4 +2,5 @@ export { MemoryType, MemoryTrust, MemoryScope, validateMemory } from './contract
 export { MemoryStore, SupabaseMemoryStore } from './store.js'
 export { MemoryEngine } from './engine.js'
 export { RandMind, MemoryLifecycle, RetentionClass, normalizeRandMindMemory, memoryQuality, detectMemoryConflicts } from './randmind.js'
+export { RandMindContinuity, RandContinuityError, RandContinuityVersion, resolveContinuityIdentity } from './continuity.js'
 export { evaluateRandMindProductionGate } from './production-gate.js'
