@@ -76,7 +76,7 @@ Il primo pacchetto comprende sei proiezioni: **Health Map**, **Worker Map**, **P
 
 `createRandCoreVisualIntelligenceTool()` espone `randvisual.intelligence` come tool `READ`, rischio `LOW`, idempotente: Planner e agenti possono richiederlo ma ToolRegistry/Permission Gateway restano il confine di esecuzione. L'Ecosystem Console passa ora `accessHotels` e `hotelFilter` a RandCore Health; la Health Map reale viene mostrata solo quando lo scope hotel è univoco e c'è provenance sufficiente. Con filtro multi-hotel ambiguo non viene inventato uno scope globale.
 
-La regola fail-closed vale anche per le visualizzazioni: senza evidenza/provenance il diagramma non viene generato; dati cross-hotel vengono negati; riferimenti a worker/service/table inesistenti vengono rifiutati invece di produrre grafi fuorvianti. Il manifest RandVisual rimane quello del Blocco 4, quindi il Blocco 6 potrà confrontare spec, fingerprint e output visuale senza cambiare contratto.
+La regola fail-closed vale anche per le visualizzazioni: senza evidenza/provenance il diagramma non viene generato; dati cross-hotel vengono negati; riferimenti a worker/service/table inesistenti vengono rifiutati invece di produrre grafi fuorvianti. L'SVG mostrato nella console viene isolato come immagine e non iniettato nel DOM applicativo. Il manifest RandVisual rimane quello del Blocco 4, quindi il Blocco 6 potrà confrontare spec, fingerprint e output visuale senza cambiare contratto.
 
 Zombie scan Blocco 5: Health Evidence, Authorization Matrix, Repo Radar e i domini worker/deploy/database restano autorità dei dati. RandVisual è solo proiezione/rendering; nessun secondo health stack, permission matrix, repo radar, DB introspector, scheduler, store o fetch layer è stato aggiunto.
 
@@ -120,7 +120,7 @@ Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHeal
 
 `randcore_external_health_evidence` è il canale append-only e service-only per `deploy`, `backup_restore`, `integrations`, `dependencies`. Browser, `anon` e utenti autenticati non possono scriverlo. La CI produce evidenze commit-bound reali per `deploy` e `dependencies`; RandControl le compone con `database/security/workers` senza duplicare il contratto Health Evidence.
 
-Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_health_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
+Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
 
 ### Blocco 21 — Full Autodiagnosis & Final Gate — 73 ✅
 
