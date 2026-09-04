@@ -1,11 +1,24 @@
-/* RandApp adaptive layout — single source for responsive geometry, mobile navigation and Grande-mode chrome. */
+/* RandApp adaptive layout — canonical responsive geometry for desktop, tablet, iOS and Android.
+   Permissions decide visibility; interests decide priority; Piccolo/Normale/Grande decide density. */
 :root {
   --rs-page-pad-x: clamp(12px, 2.1vw, 28px);
   --rs-page-pad-top: clamp(12px, 1.8vw, 24px);
   --rs-page-gap: clamp(10px, 1.5vw, 18px);
-  --rs-content-max: 1440px;
+  --rs-content-max: 1560px;
   --rs-reading-max: 1120px;
+  --rs-native-safe-top: 0px;
+  --rs-native-safe-right: 0px;
+  --rs-native-safe-bottom: 0px;
+  --rs-native-safe-left: 0px;
+  --rs-adaptive-safe-top: max(env(safe-area-inset-top, 0px), var(--rs-native-safe-top));
+  --rs-adaptive-safe-right: max(env(safe-area-inset-right, 0px), var(--rs-native-safe-right));
+  --rs-adaptive-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--rs-native-safe-bottom));
+  --rs-adaptive-safe-left: max(env(safe-area-inset-left, 0px), var(--rs-native-safe-left));
+  --rs-adaptive-touch-min: 44px;
 }
+
+html[data-ui-size='small'] { --rs-adaptive-touch-min: 40px; }
+html[data-ui-size='large'] { --rs-adaptive-touch-min: 48px; }
 
 html, body, #root { width: 100%; min-width: 0; }
 body { overflow-x: hidden; }
@@ -14,17 +27,25 @@ body { overflow-x: hidden; }
   min-width: 0;
 }
 
+.rs-app { padding-top: var(--rs-adaptive-safe-top); }
+
 .rs-content {
+  box-sizing: border-box;
   width: min(100%, var(--rs-content-max));
   max-width: var(--rs-content-max);
-  padding-left: max(var(--rs-page-pad-x), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--rs-page-pad-x), env(safe-area-inset-right, 0px));
+  padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
+  padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
   padding-top: var(--rs-page-pad-top);
+  overflow-wrap: anywhere;
 }
 
-.rs-content > * { max-width: 100%; }
-.rs-content img, .rs-content video, .rs-content canvas, .rs-content svg { max-width: 100%; }
+.rs-header {
+  padding-left: max(12px, var(--rs-adaptive-safe-left));
+  padding-right: max(12px, var(--rs-adaptive-safe-right));
+}
 
+.rs-content > * { max-width: 100%; min-width: 0; }
+.rs-content img, .rs-content video, .rs-content canvas, .rs-content svg { max-width: 100%; }
 .rs-card { min-width: 0; }
 .rs-card--pad { padding: clamp(14px, 1.8vw, 22px); }
 
@@ -45,9 +66,7 @@ body { overflow-x: hidden; }
 .rs-toolbar,
 .rs-actions,
 .rs-filterbar,
-.rs-form-actions {
-  flex-wrap: wrap;
-}
+.rs-form-actions { flex-wrap: wrap; }
 
 .rs-section__head > *,
 .rs-pagehead > *,
@@ -62,7 +81,6 @@ body { overflow-x: hidden; }
 .rs-list, .rs-grid, .rs-quick { width: 100%; }
 .rs-list > *, .rs-grid > *, .rs-quick > * { min-width: 0; }
 
-/* Long labels/IDs should wrap rather than force horizontal scrolling. */
 .rs-card, .rs-issue, .rs-issue__main, .rs-issue__title, .rs-issue__meta,
 .rs-section__head h1, .rs-section__head h2, .rs-pagehead h1, .rs-pagehead h2,
 .rs-drawer__item span, .rs-sidebar__item span {
@@ -70,7 +88,6 @@ body { overflow-x: hidden; }
   word-break: normal;
 }
 
-/* Tables keep their structure on wide screens and scroll inside their own area on mobile. */
 .rs-table-wrap, .rs-table-container, .rs-scroll-x {
   width: 100%;
   min-width: 0;
@@ -79,11 +96,11 @@ body { overflow-x: hidden; }
   -webkit-overflow-scrolling: touch;
 }
 
-/* Grande mode: content remains enlarged while shared chrome stays proportional. */
+/* Grande mode enlarges usable controls as well as text; it is not a text-only zoom. */
 html[data-ui-size='large'] .rs-header {
   gap: 7px;
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-left: max(12px, var(--rs-adaptive-safe-left));
+  padding-right: max(12px, var(--rs-adaptive-safe-right));
 }
 html[data-ui-size='large'] .rs-hotelchip {
   flex: 0 1 auto;
@@ -101,110 +118,125 @@ html[data-ui-size='large'] .rs-presence-dot { width: 44px; height: 44px; }
 html[data-ui-size='large'] .rs-presence-dot::before { width: 9px; height: 9px; }
 html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 46px; height: 46px; border-radius: 14px; }
 
-/* Desktop / Windows: use the available screen instead of a narrow phone-like column. */
-@media (min-width: 960px) {
+/* Bottom navigation uses five stable slots. Home remains 3 and Altro remains 5. */
+.rs-bottomnav {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  padding-left: max(8px, var(--rs-adaptive-safe-left)) !important;
+  padding-right: max(8px, var(--rs-adaptive-safe-right)) !important;
+  padding-bottom: max(6px, var(--rs-adaptive-safe-bottom)) !important;
+}
+.rs-navbtn {
+  min-width: 0;
+  min-height: max(var(--rs-adaptive-touch-min), 48px) !important;
+  padding: 4px 2px !important;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.rs-navbtn[data-slot='1'] { grid-column: 1; }
+.rs-navbtn[data-slot='2'] { grid-column: 2; }
+.rs-navbtn[data-slot='3'] { grid-column: 3; }
+.rs-navbtn[data-slot='4'] { grid-column: 4; }
+.rs-navbtn[data-slot='5'] { grid-column: 5; }
+.rs-navbtn small {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+.rs-navfab {
+  right: max(14px, calc(var(--rs-adaptive-safe-right) + 10px)) !important;
+  bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 12px) !important;
+  min-width: var(--rs-adaptive-touch-min);
+  min-height: var(--rs-adaptive-touch-min);
+  touch-action: manipulation;
+}
+
+/* Phone — single-column mobile experience, common to iOS and Android. */
+@media (max-width: 767px) {
+  :root {
+    --rs-page-pad-x: clamp(10px, 3.5vw, 16px);
+    --rs-page-pad-top: clamp(8px, 2.8vw, 14px);
+    --rs-page-gap: 8px;
+  }
+  .rs-app, .rs-content { max-width: 100vw; }
+  .rs-content {
+    width: 100%;
+    padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
+    padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
+    padding-bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 18px);
+  }
+  .rs-card { border-radius: clamp(14px, 4vw, 18px); }
+  .rs-card--pad { padding: 12px; }
+  .rs-btn, .rs-iconbtn { min-height: var(--rs-adaptive-touch-min); }
+  .rs-section__head h1, .rs-pagehead h1 { font-size: clamp(1.45rem, 7vw, 2rem); }
+  .rs-section__head h2, .rs-pagehead h2 { font-size: clamp(1.1rem, 5vw, 1.45rem); }
+  .rs-drawer { width: min(92vw, calc(380px * var(--rs-scale))); max-width: calc(100vw - var(--rs-adaptive-safe-left) - 8px); }
+}
+
+/* Tablet — dedicated touch layout instead of a stretched phone or squeezed desktop. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  :root { --rs-page-pad-x: clamp(20px, 3vw, 32px); }
+  .rs-content {
+    width: 100%;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding-bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 20px);
+  }
+  .rs-card--pad { padding: clamp(16px, 2.5vw, 22px); }
+  .rs-drawer { width: min(430px, 54vw); }
+}
+
+/* Desktop / Windows — sidebar primary, wider dashboards, controlled line length. */
+@media (min-width: 1200px) {
   .rs-app--with-side { grid-template-columns: clamp(220px, 18vw, 286px) minmax(0, 1fr); }
   .rs-content {
     width: 100%;
-    margin: 0;
-    max-width: none;
-    padding-left: clamp(22px, 2.4vw, 40px);
-    padding-right: clamp(22px, 2.4vw, 40px);
+    margin-inline: auto;
+    max-width: var(--rs-content-max);
+    padding-left: clamp(24px, 2.6vw, 44px);
+    padding-right: clamp(24px, 2.6vw, 44px);
     padding-bottom: clamp(28px, 3vw, 48px);
   }
   .rs-header {
     padding-left: clamp(22px, 2.4vw, 40px);
     padding-right: clamp(22px, 2.4vw, 40px);
   }
-  .rs-content > .rs-home,
-  .rs-content > .rs-page,
-  .rs-content > .rs-view,
-  .rs-content > section,
-  .rs-content > form { width: min(100%, var(--rs-content-max)); }
   .rs-bottomnav, .rs-navfab { display: none; }
 }
 
-/* Tablet: keep generous touch targets but reduce dead space. */
-@media (min-width: 640px) and (max-width: 959px) {
-  .rs-content {
-    padding-left: clamp(18px, 3vw, 28px);
-    padding-right: clamp(18px, 3vw, 28px);
-  }
-  .rs-card--pad { padding: clamp(16px, 2.5vw, 22px); }
-}
-
-/* Mobile navigation contract shared by iOS and Android. */
-@media (max-width: 899px) {
-  .rs-bottomnav {
-    bottom: 0 !important;
-    padding-top: 4px !important;
-    padding-bottom: max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) !important;
-  }
-  .rs-navbtn {
-    min-height: 48px !important;
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-  }
-  .rs-navfab {
-    bottom: calc(58px + max(6px, min(env(safe-area-inset-bottom, 0px), 18px)) + 12px) !important;
-  }
-  .rs-bottomnav .rs-navbtn[data-testid='nav-home'] { grid-row: 1; }
-  .rs-bottomnav[data-count='1'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
-  .rs-bottomnav[data-count='2'] .rs-navbtn[data-testid='nav-home'] { grid-column: 1; }
-  .rs-bottomnav[data-count='3'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
-  .rs-bottomnav[data-count='4'] .rs-navbtn[data-testid='nav-home'] { grid-column: 2; }
-  .rs-bottomnav[data-count='5'] .rs-navbtn[data-testid='nav-home'] { grid-column: 3; }
-}
-
-/* iOS / Android: fit viewport and safe areas without crushing controls. */
-@media (max-width: 639px) {
-  :root {
-    --rs-page-pad-x: clamp(10px, 3.5vw, 16px);
-    --rs-page-pad-top: clamp(8px, 2.8vw, 14px);
-    --rs-page-gap: 8px;
-  }
-  .rs-content {
-    width: 100%;
-    padding-left: max(var(--rs-page-pad-x), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--rs-page-pad-x), env(safe-area-inset-right, 0px));
-    padding-bottom: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + 18px);
-  }
-  .rs-header {
-    padding-left: max(10px, env(safe-area-inset-left, 0px));
-    padding-right: max(10px, env(safe-area-inset-right, 0px));
-  }
-  .rs-card { border-radius: clamp(14px, 4vw, 18px); }
-  .rs-card--pad { padding: 12px; }
-  .rs-btn, .rs-iconbtn, button, [role='button'] { touch-action: manipulation; }
-  .rs-btn, .rs-iconbtn { min-height: 44px; }
-  .rs-section__head h1, .rs-pagehead h1 { font-size: clamp(1.45rem, 7vw, 2rem); }
-  .rs-section__head h2, .rs-pagehead h2 { font-size: clamp(1.1rem, 5vw, 1.45rem); }
-  .rs-drawer { width: min(92vw, 380px); }
-  .rs-bottomnav {
-    padding-left: max(8px, env(safe-area-inset-left, 0px));
-    padding-right: max(8px, env(safe-area-inset-right, 0px));
-  }
+@media (pointer: coarse) {
+  button, [role='button'], input, select, textarea { min-height: var(--rs-adaptive-touch-min); }
 }
 
 @media (max-width: 430px) {
-  html[data-ui-size='large'] .rs-header { gap: 5px; padding-left: 10px; padding-right: 10px; }
+  html[data-ui-size='large'] .rs-header { gap: 5px; }
   html[data-ui-size='large'] .rs-hotelchip { width: min(66vw, 360px); min-height: 52px; padding: 6px 9px; }
   html[data-ui-size='large'] .rs-hotelchip img { width: 32px; height: 32px; }
   html[data-ui-size='large'] .rs-presence-dot { width: 40px; height: 40px; }
   html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 44px; height: 44px; }
 }
 
-/* Very narrow phones: prevent controls from colliding. */
 @media (max-width: 380px) {
-  .rs-content { padding-left: 10px; padding-right: 10px; }
+  .rs-content { padding-left: max(10px, var(--rs-adaptive-safe-left)); padding-right: max(10px, var(--rs-adaptive-safe-right)); }
   .rs-hotelchip { gap: 8px; padding-left: 9px; padding-right: 9px; }
   .rs-hotelchip img { width: 34px; height: 34px; }
-  .rs-navbtn small { font-size: .58rem; }
+  .rs-navbtn small { font-size: .56rem; }
 }
 
-/* Large Windows displays: retain readable line lengths while using horizontal space for dashboards. */
+@media (max-width: 767px) and (orientation: landscape) {
+  .rs-content {
+    padding-left: max(20px, var(--rs-adaptive-safe-left));
+    padding-right: max(20px, var(--rs-adaptive-safe-right));
+  }
+}
+
 @media (min-width: 1500px) {
   .rs-content { padding-left: 48px; padding-right: 48px; }
   .rs-content > .rs-home { max-width: 1500px; }
   .rs-content > :not(.rs-home) { max-width: var(--rs-content-max); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-navbtn, .rs-navfab { transition: none !important; }
 }
