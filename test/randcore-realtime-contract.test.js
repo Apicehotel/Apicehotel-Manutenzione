@@ -1,1 +1,21 @@
-aW1wb3J0IHRlc3QgZnJvbSAnbm9kZTp0ZXN0JwppbXBvcnQgYXNzZXJ0IGZyb20gJ25vZGU6YXNzZXJ0L3N0cmljdCcKaW1wb3J0IGZzIGZyb20gJ25vZGU6ZnMnCgpjb25zdCBtaWdyYXRpb24gPSBmcy5yZWFkRmlsZVN5bmMobmV3IFVSTCgnLi4vc3VwYWJhc2UvbWlncmF0aW9ucy8yMDI2MDkwNDEwMDAwMF9yYW5kY29yZV9yZWFsdGltZV9wdWJsaWNhdGlvbl9jb250cmFjdC5zcWwnLCBpbXBvcnQubWV0YS51cmwpLCAndXRmOCcpCgp0ZXN0KCdSYW5kQ29yZSBwb2ludCAyIHB1Ymxpc2hlcyB0aGUgY29tcGxldGUgY2xpZW50IHJlYWx0aW1lIGNvbnRyYWN0IGlkZW1wb3RlbnRseScsICgpID0+IHsKICBhc3NlcnQubWF0Y2gobWlncmF0aW9uLCAvcGdfcHVibGljYXRpb25fdGFibGVzL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL25vdCBleGlzdHMvaSkKICBmb3IgKGNvbnN0IHRhYmxlIG9mIFsKICAgICdwbGFubmluZ19sYXZvcmknLCAncGxhbm5pbmdfbGF2b3JpX2dpb3JuaScsICdwcm9tZW1vcmlhJywgJ3Byb21lbW9yaWFfaW52aW8nLAogICAgJ25vdGlmaWNhdGlvbl9yZWFkcycsICdpbnZlbnRvcnlfaXRlbXMnLCAnaW52ZW50b3J5X21vdmVtZW50cycsICdpbnZlbnRvcnlfY2F0ZWdvcmllcycsCiAgICAnaW52ZW50b3J5X2xvY2F0aW9ucycsICd3aGF0c2FwcF9pbmJvdW5kX21lc3NhZ2VzJywgJ3RlY2huaWNpYW5fZGlzcGF0Y2hfcmVxdWVzdHMnCiAgXSkgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgbmV3IFJlZ0V4cChgJyR7dGFibGV9J2AsICdpJykpCn0pCgp0ZXN0KCdzZXJ2aWNlLW9ubHkgZXZlbnQgYW5kIHdlYmhvb2sgdGFibGVzIGFyZSBleGNsdWRlZCBmcm9tIGNsaWVudCByZWFsdGltZScsICgpID0+IHsKICBhc3NlcnQuZG9lc05vdE1hdGNoKG1pZ3JhdGlvbiwgLydyYW5kX2RvbWFpbl9ldmVudHMnL2kpCiAgYXNzZXJ0LmRvZXNOb3RNYXRjaChtaWdyYXRpb24sIC8ncmFuZF93ZWJob29rX2RlbGl2ZXJpZXMnL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL3NlcnZpY2Utb25seSBldmVudCBhbmQgd2ViaG9vayB0YWJsZXMgYXJlIGludGVudGlvbmFsbHkgZXhjbHVkZWQvaSkKfSkK
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+
+const migration = fs.readFileSync(new URL('../supabase/migrations/20260904100000_randcore_realtime_publication_contract.sql', import.meta.url), 'utf8')
+
+test('RandCore point 2 publishes the complete client realtime contract idempotently', () => {
+  assert.match(migration, /pg_publication_tables/i)
+  assert.match(migration, /not exists/i)
+  for (const table of [
+    'planning_lavori', 'planning_lavori_giorni', 'promemoria', 'promemoria_invio',
+    'notification_reads', 'inventory_items', 'inventory_movements', 'inventory_categories',
+    'inventory_locations', 'whatsapp_inbound_messages', 'technician_dispatch_requests'
+  ]) assert.match(migration, new RegExp(`'${table}'`, 'i'))
+})
+
+test('service-only event and webhook tables are excluded from client realtime', () => {
+  assert.doesNotMatch(migration, /'rand_domain_events'/i)
+  assert.doesNotMatch(migration, /'rand_webhook_deliveries'/i)
+  assert.match(migration, /service-only event and webhook tables are intentionally excluded/i)
+})
