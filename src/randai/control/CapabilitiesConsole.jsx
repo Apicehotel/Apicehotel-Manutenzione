@@ -2,11 +2,19 @@ import './capabilities-console.css'
 
 const CAPABILITIES = [
   { id: 'issues', title: 'Segnalazioni', text: 'Priorità, contesto e operatività sulle segnalazioni reali.', action: 'Apri segnalazioni' },
+  { id: 'whatsapp', title: 'WhatsApp', text: 'Canali Giò e Chocohotel, stato collegamento e gestione inbound.', action: 'Apri WhatsApp' },
+  { id: 'team', title: 'Tecnici e utenti', text: 'Elenco operativo e strutture abilitate. La configurazione completa è in Configurazione.', action: 'Apri utenti' },
+  { id: 'configuration', title: 'Configurazione', text: 'Utenti, permessi, menu, runtime RandAI e RandGuide in un unico centro.', action: 'Configura RandAI' },
+  { id: 'maintenance', title: 'Manutenzioni', text: 'Planning degli interventi e stato dei lavori assegnati.', action: 'Apri manutenzioni' },
   { id: 'knowledge', title: 'RandGuide', text: 'Procedure, fonti e guida tecnica approvata per struttura.', action: 'Apri conoscenze' },
   { id: 'ecosystem', title: 'RandMind', text: 'Memoria verificata, provenienza, validità e conflitti.', action: 'Apri memoria', anchor: 'randmind' },
   { id: 'ecosystem', title: 'RandBrain', text: 'Routing, autonomia e reasoning governati da RandCore.', action: 'Apri orchestrazione', anchor: 'randbrain' },
   { id: 'ecosystem', title: 'Viking', text: 'Contesto L0/L1/L2 e traccia retrieval senza un runtime parallelo.', action: 'Apri valutazione', anchor: 'viking' },
   { id: 'media', title: 'Media e manuali', text: 'Documentazione tecnica collegata alle strutture.', action: 'Apri documenti' },
+  { id: 'workers', title: 'Worker e promemoria', text: 'Stato dei processi, esecuzioni e promemoria operativi.', action: 'Apri worker' },
+  { id: 'observability', title: 'Salute e costi', text: 'Osservabilità, costi e anomalie dell’ecosistema Rand.', action: 'Apri salute sistema' },
+  { id: 'rules', title: 'Regole e anomalie', text: 'Controlli di governo, anomalie e condizioni da verificare.', action: 'Apri controlli' },
+  { id: 'sensors', title: 'Sensori', text: 'Letture e configurazione dei sensori delle strutture autorizzate.', action: 'Apri sensori' },
 ]
 
 export default function CapabilitiesConsole({ onOpen }) {

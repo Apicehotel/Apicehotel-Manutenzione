@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target o
 
 ### RandAI Control Center — responsive UI
 
-La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop e tablet, navigazione orizzontale a larghezza piena su smartphone, schede a colonna singola sui telefoni e nessun overflow orizzontale intenzionale. La home contiene accessi rapidi a Segnalazioni, Manutenzioni, RandGuide e Configurazione; la mappa Ecosistema apre i moduli disponibili. Il tema è configurabile direttamente dall’intestazione RandAI con `Sistema`, `Chiaro` e `Scuro`, usando la stessa preferenza persistente di RandApp. Le regole dedicate sono in `src/randai/control/randai-responsive.css` e vengono caricate direttamente da `RandAIControlCenter.jsx`.
+La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop e tablet, navigazione orizzontale a larghezza piena su smartphone, schede a colonna singola sui telefoni e nessun overflow orizzontale intenzionale. La home contiene accessi rapidi a Segnalazioni, Manutenzioni, RandGuide e Configurazione; la mappa Ecosistema apre i moduli disponibili. Il tema è configurabile direttamente dall’intestazione RandAI con `Sistema`, `Chiaro` e `Scuro`, usando la stessa preferenza persistente di RandApp. La configurazione amministrativa è un centro unico con schede Utenti, Permessi e menu, RandAI e RandGuide: non duplica più le funzioni tra pannello laterale e dashboard. Le regole dedicate sono in `src/randai/control/randai-responsive.css` e vengono caricate direttamente da `RandAIControlCenter.jsx`.
 
 ## Regole architetturali non negoziabili
 
