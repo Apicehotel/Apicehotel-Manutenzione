@@ -36,6 +36,10 @@ const NAV_INTERESTS = Object.freeze({
 
 const clean = (value) => String(value || '').trim().toLowerCase()
 
+export function interestsForNavItem(itemId) {
+  return [...(NAV_INTERESTS[itemId] || [])]
+}
+
 export function resolveUserInterests(user) {
   const explicit = Array.isArray(user?.interests) ? user.interests.map(clean).filter(Boolean) : []
   if (explicit.length) return Array.from(new Set(explicit))
