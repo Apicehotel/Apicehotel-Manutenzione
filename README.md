@@ -148,6 +148,16 @@ Zombie scan 99: la precedente voce `PLANNED` priva di specifica è stata sostitu
 
 Sorgenti: `src/randai/viking/`, `src/randai/context/engine.js`, `src/randai/control/VikingConsole.jsx`, `test/randai-block27-viking-99.test.js`.
 
+### Product completion — 100 ✅
+
+Il punto 100 rende utilizzabile e verificabile ciò che i blocchi precedenti avevano costruito. RandAI espone ora **Funzioni** come percorso primario: Segnalazioni, RandGuide, RandMind, RandBrain, Viking e Media/manuali non sono più nascosti nella sola vista tecnica Ecosistema. Le console approfondite restano uniche e vengono raggiunte tramite collegamenti contestuali; non è nato un secondo frontend o design system.
+
+RandMind riceve lo scope hotel reale della sessione amministrativa, eliminando lo stato vuoto causato da proprietà mancanti. RandCore Health usa RPC dedicate a RandAI che richiedono contemporaneamente utente autenticato, membership attiva, `can_access_admin` e ruolo esatto `RandAI`. Le RPC canoniche di RandApp non vengono ampliate: PIN operativo e sessione amministrativa restano separati intenzionalmente, così un accesso RandAI non acquisisce privilegi sul campo.
+
+Il gate di completamento copre visibilità delle funzioni, propagazione dello scope hotel, contratto di accesso fail-closed, assenza di accesso `anon` e riuso delle autorità esistenti. Il Final Health Gate continua a mostrare lo stato reale delle evidenze e non viene forzato artificialmente a verde.
+
+Sorgenti: `src/randai/control/CapabilitiesConsole.jsx`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260904023000_randai_product_completion_access.sql`, `test/randai-product-completion-100.test.js`.
+
 ## Rand Control Plane
 
 `Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`

@@ -20,8 +20,8 @@ export default function RandCoreHealthConsole(){
   const load=useCallback(async()=>{
     if(!supabase)return
     setBusy(true);setNotice('')
-    const {data:result,error}=await supabase.rpc('randcore_get_health_history',{p_limit:12})
-    if(error)setNotice(error.message||'Storico RandCore non disponibile.')
+    const {data:result,error}=await supabase.rpc('randcore_get_health_history_randai',{p_limit:12})
+    if(error)setNotice(error.message==='not_authorized'?'Il profilo RandAI non dispone dell’autorizzazione Control Center per questa struttura.':(error.message||'Storico RandCore non disponibile.'))
     else setData(result)
     setBusy(false)
   },[])
@@ -31,8 +31,8 @@ export default function RandCoreHealthConsole(){
   const run=async()=>{
     if(!supabase||busy)return
     setBusy(true);setNotice('')
-    const {error}=await supabase.rpc('randcore_run_health_check')
-    if(error)setNotice(error.message||'Check manuale non riuscito.')
+    const {error}=await supabase.rpc('randcore_run_health_check_randai')
+    if(error)setNotice(error.message==='not_authorized'?'Autodiagnosi non autorizzata per questo profilo RandAI.':(error.message||'Check manuale non riuscito.'))
     else setNotice('Autodiagnosi completa eseguita: runtime, integrazioni e restore drill isolato aggiornati.')
     setBusy(false);await load()
   }
