@@ -1,10 +1,17 @@
-import { PrivacyLevel, RoutingPriority, validateModelDescriptor, validateRouteRequest } from './contracts.js'
+import { PrivacyLevel, RoutingPriority, RoutingRisk, validateModelDescriptor, validateRouteRequest } from './contracts.js'
 
 const PRIVACY_RANK = Object.freeze({
   [PrivacyLevel.PUBLIC]: 0,
   [PrivacyLevel.STANDARD]: 1,
   [PrivacyLevel.SENSITIVE]: 2,
   [PrivacyLevel.LOCAL_ONLY]: 3,
+})
+
+const DEFAULT_RISK_POLICY = Object.freeze({
+  [RoutingRisk.LOW]: Object.freeze({ minQuality: 0, minReliability: 0, priority: null }),
+  [RoutingRisk.MEDIUM]: Object.freeze({ minQuality: 0.5, minReliability: 0.55, priority: RoutingPriority.BALANCED }),
+  [RoutingRisk.HIGH]: Object.freeze({ minQuality: 0.7, minReliability: 0.75, priority: RoutingPriority.QUALITY }),
+  [RoutingRisk.CRITICAL]: Object.freeze({ minQuality: 0.85, minReliability: 0.9, priority: RoutingPriority.QUALITY }),
 })
 
 const clone = (value) => structuredClone(value)
@@ -26,10 +33,30 @@ function scoreModel(model, request) {
   return quality * weights[0] + reliability * weights[1] + costEfficiency * weights[2] + latencyEfficiency * weights[3]
 }
 
+function normalizeRiskPolicy(input = {}) {
+  const output = {}
+  for (const risk of Object.values(RoutingRisk)) {
+    const base = DEFAULT_RISK_POLICY[risk]
+    const custom = input?.[risk] || {}
+    const priority = custom.priority ?? base.priority
+    if (priority != null && !Object.values(RoutingPriority).includes(priority)) throw new TypeError(`Invalid routing priority for ${risk}: ${priority}`)
+    output[risk] = Object.freeze({
+      minQuality: normalize(custom.minQuality, base.minQuality),
+      minReliability: normalize(custom.minReliability, base.minReliability),
+      priority,
+    })
+  }
+  return Object.freeze(output)
+}
+
 export class ModelRouter {
   #models = new Map()
+  #riskPolicy
 
-  constructor({ models = [] } = {}) { models.forEach((model) => this.register(model)) }
+  constructor({ models = [], riskPolicy = {} } = {}) {
+    this.#riskPolicy = normalizeRiskPolicy(riskPolicy)
+    models.forEach((model) => this.register(model))
+  }
 
   register(input) {
     validateModelDescriptor(input)
@@ -58,26 +85,50 @@ export class ModelRouter {
     const minPrivacy = PRIVACY_RANK[request.privacy || PrivacyLevel.PUBLIC]
     const minContext = Number(request.minContextWindow || 0)
     const excluded = new Set(request.excludeModelIds || [])
+    const policy = request.risk ? this.#riskPolicy[request.risk] : null
+    const minQuality = Math.max(Number(request.minQuality || 0), Number(policy?.minQuality || 0))
+    const minReliability = Math.max(Number(request.minReliability || 0), Number(policy?.minReliability || 0))
+    const maxCost = request.maxCost == null ? 1 : Number(request.maxCost)
+    const effectiveRequest = {
+      ...request,
+      priority: request.priority || policy?.priority || RoutingPriority.BALANCED,
+    }
     const candidates = [...this.#models.values()]
       .filter((model) => model.enabled !== false)
       .filter((model) => !excluded.has(model.id))
       .filter((model) => [...required].every((capability) => model.capabilities.includes(capability)))
       .filter((model) => PRIVACY_RANK[model.privacy] >= minPrivacy)
       .filter((model) => Number(model.contextWindow || 0) >= minContext)
-      .map((model) => ({ model, score: scoreModel(model, request) }))
+      .filter((model) => normalize(model.quality, 0.5) >= minQuality)
+      .filter((model) => normalize(model.reliability, 0.5) >= minReliability)
+      .filter((model) => normalize(model.cost, 0.5) <= maxCost)
+      .map((model) => ({ model, score: scoreModel(model, effectiveRequest) }))
       .sort((a, b) => b.score - a.score || b.model.reliability - a.model.reliability || a.model.id.localeCompare(b.model.id))
 
+    const governed = Boolean(request.risk || request.minQuality != null || request.minReliability != null || request.maxCost != null)
+    const constraints = governed ? {
+      risk: request.risk || null,
+      minQuality,
+      minReliability,
+      maxCost,
+      priority: effectiveRequest.priority,
+    } : null
+
     if (!candidates.length) {
-      return { selected: null, fallbacks: [], reason: 'NO_COMPATIBLE_MODEL', request: clone(request) }
+      const result = { selected: null, fallbacks: [], reason: 'NO_COMPATIBLE_MODEL', request: clone(request) }
+      if (constraints) result.constraints = clone(constraints)
+      return result
     }
 
-    return {
+    const result = {
       selected: clone(candidates[0].model),
       fallbacks: candidates.slice(1).map(({ model }) => clone(model)),
       score: candidates[0].score,
       reason: 'BEST_COMPATIBLE_MODEL',
       request: clone(request),
     }
+    if (constraints) result.constraints = clone(constraints)
+    return result
   }
 
   async execute(request, invoke, { maxFallbacks = 2, retryable = () => true } = {}) {

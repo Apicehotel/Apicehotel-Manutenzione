@@ -6,6 +6,18 @@ const nonNegativeInteger = (value, name) => {
   return numeric
 }
 
+const safeModelDescriptor = (model = {}) => Object.freeze({
+  id: model.id || null,
+  provider: model.provider || null,
+  capabilities: Object.freeze([...(model.capabilities || [])]),
+  privacy: model.privacy || null,
+  reliability: Number(model.reliability),
+  quality: Number(model.quality),
+  cost: Number(model.cost),
+  latency: Number(model.latency),
+  contextWindow: Number(model.contextWindow || 0),
+})
+
 export const RandAgentStage = Object.freeze({
   RECEIVED: 'RECEIVED',
   CONTEXT_LOADED: 'CONTEXT_LOADED',
@@ -55,6 +67,9 @@ export class RandAgentRuntime {
     inspector = null,
     verifier = null,
     contextProvider = null,
+    continuity = null,
+    modelRouter = null,
+    modelRequestProvider = null,
     policyGuard = null,
     eventSink = null,
     onTelemetryError = null,
@@ -65,6 +80,9 @@ export class RandAgentRuntime {
     if (inspector != null && typeof inspector !== 'function') throw new TypeError('inspector must be a function')
     if (verifier != null && typeof verifier !== 'function') throw new TypeError('verifier must be a function')
     if (contextProvider != null && typeof contextProvider !== 'function') throw new TypeError('contextProvider must be a function')
+    if (continuity != null && (typeof continuity?.open !== 'function' || typeof continuity?.commit !== 'function')) throw new TypeError('continuity must expose open() and commit()')
+    if (modelRouter != null && typeof modelRouter?.route !== 'function') throw new TypeError('modelRouter must expose route()')
+    if (modelRequestProvider != null && typeof modelRequestProvider !== 'function') throw new TypeError('modelRequestProvider must be a function')
     if (policyGuard != null && typeof policyGuard !== 'function') throw new TypeError('policyGuard must be a function')
     if (eventSink != null && typeof eventSink !== 'function') throw new TypeError('eventSink must be a function')
     if (onTelemetryError != null && typeof onTelemetryError !== 'function') throw new TypeError('onTelemetryError must be a function')
@@ -72,6 +90,9 @@ export class RandAgentRuntime {
     this.planner = planner
     this.inspector = inspector || verifier || (async () => ({ ok: true }))
     this.contextProvider = contextProvider
+    this.continuity = continuity
+    this.modelRouter = modelRouter
+    this.modelRequestProvider = modelRequestProvider
     this.policyGuard = policyGuard
     this.eventSink = eventSink
     this.onTelemetryError = onTelemetryError
@@ -101,11 +122,64 @@ export class RandAgentRuntime {
       const provided = await this.contextProvider({ objective, context: clone(resolvedContext), channel, metadata: clone(metadata), runId })
       if (provided != null) {
         if (typeof provided !== 'object' || Array.isArray(provided)) throw new TypeError('contextProvider must return an object')
+        if (resolvedContext?.hotelId && provided?.hotelId && String(resolvedContext.hotelId) !== String(provided.hotelId)) {
+          throw new RandAgentPolicyError('contextProvider attempted to change hotel scope')
+        }
         resolvedContext = { ...resolvedContext, ...clone(provided) }
       }
     }
+
+    let continuityState = null
+    if (this.continuity) {
+      const opened = await this.continuity.open({ objective, context: clone(resolvedContext), channel, metadata: clone(metadata), runId })
+      if (!opened || typeof opened !== 'object' || Array.isArray(opened)) throw new TypeError('continuity.open must return an object')
+      if (opened.context != null && (typeof opened.context !== 'object' || Array.isArray(opened.context))) throw new TypeError('continuity.open context must be an object')
+      if (resolvedContext?.hotelId && opened.context?.hotelId && String(resolvedContext.hotelId) !== String(opened.context.hotelId)) {
+        throw new RandAgentPolicyError('continuity attempted to change hotel scope')
+      }
+      resolvedContext = { ...resolvedContext, ...clone(opened.context || {}) }
+      continuityState = clone(opened.state || null)
+      await emit('RAND_AGENT_CONTINUITY_OPENED', {
+        continuityId: resolvedContext?.randContinuity?.continuityId || resolvedContext?.continuityId || null,
+        memoryCount: Array.isArray(resolvedContext?.randContinuity?.memoryIds) ? resolvedContext.randContinuity.memoryIds.length : 0,
+      })
+    }
+
+    let modelRoute = null
+    if (this.modelRouter) {
+      const modelRequest = this.modelRequestProvider
+        ? await this.modelRequestProvider({ objective, context: clone(resolvedContext), channel, metadata: clone(metadata), runId })
+        : (metadata?.modelRequest ?? resolvedContext?.modelRequest ?? null)
+      if (modelRequest != null) {
+        if (typeof modelRequest !== 'object' || Array.isArray(modelRequest)) throw new TypeError('model request must be an object')
+        const routed = this.modelRouter.route(clone(modelRequest))
+        if (!routed?.selected) {
+          await emit('RAND_AGENT_MODEL_ROUTE_DENIED', { reason: routed?.reason || 'NO_COMPATIBLE_MODEL' })
+          throw new RandAgentPolicyError(`No compatible model: ${routed?.reason || 'NO_COMPATIBLE_MODEL'}`)
+        }
+        modelRoute = Object.freeze({
+          selected: safeModelDescriptor(routed.selected),
+          fallbackIds: Object.freeze((routed.fallbacks || []).map((model) => String(model.id))),
+          reason: routed.reason || null,
+          score: Number(routed.score || 0),
+          constraints: clone(routed.constraints || null),
+          request: clone(modelRequest),
+        })
+        resolvedContext = { ...resolvedContext, randModelRoute: modelRoute }
+        await emit('RAND_AGENT_MODEL_ROUTED', {
+          modelId: modelRoute.selected.id,
+          provider: modelRoute.selected.provider,
+          fallbackCount: modelRoute.fallbackIds.length,
+          constraints: clone(modelRoute.constraints),
+        })
+      }
+    }
+
     const runtimeContext = { ...resolvedContext, randAgent: { runId, channel, metadata: clone(metadata) } }
-    await stage(RandAgentStage.CONTEXT_LOADED)
+    await stage(RandAgentStage.CONTEXT_LOADED, {
+      continuityId: runtimeContext?.randContinuity?.continuityId || runtimeContext?.continuityId || null,
+      modelId: runtimeContext?.randModelRoute?.selected?.id || null,
+    })
 
     let previousInspection = null
     let lastExecution = null
@@ -155,6 +229,32 @@ export class RandAgentRuntime {
       await stage(RandAgentStage.INSPECTED, { attempt, ok: previousInspection.ok })
 
       if (lastExecution?.ok && previousInspection.ok) {
+        let continuityCommit = null
+        if (this.continuity) {
+          try {
+            continuityCommit = await this.continuity.commit({
+              objective,
+              context: clone(runtimeContext),
+              channel,
+              metadata: clone(metadata),
+              runId,
+              plan: clone(lastPlan),
+              execution: clone(lastExecution),
+              inspection: clone(previousInspection),
+            })
+            await emit('RAND_AGENT_CONTINUITY_COMMITTED', {
+              continuityId: runtimeContext?.randContinuity?.continuityId || runtimeContext?.continuityId || null,
+              saved: continuityCommit?.saved === true,
+              memoryId: continuityCommit?.memoryId || null,
+            })
+          } catch (error) {
+            continuityCommit = { saved: false, reason: 'COMMIT_FAILED', error: String(error?.message || error) }
+            await emit('RAND_AGENT_CONTINUITY_COMMIT_FAILED', {
+              continuityId: runtimeContext?.randContinuity?.continuityId || runtimeContext?.continuityId || null,
+              error: String(error?.message || error),
+            })
+          }
+        }
         await stage(RandAgentStage.COMPLETED, { attempt, replans: attempt })
         return {
           ok: true,
@@ -166,6 +266,8 @@ export class RandAgentRuntime {
           plan: clone(lastPlan),
           execution: clone(lastExecution),
           inspection: clone(previousInspection),
+          continuity: this.continuity ? clone({ state: continuityState, commit: continuityCommit }) : null,
+          modelRoute: clone(modelRoute),
           trace,
         }
       }
