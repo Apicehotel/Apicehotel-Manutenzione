@@ -4,6 +4,7 @@ export const ModelCapability = Object.freeze({
 
 export const PrivacyLevel = Object.freeze({ PUBLIC: 'public', STANDARD: 'standard', SENSITIVE: 'sensitive', LOCAL_ONLY: 'local_only' })
 export const RoutingPriority = Object.freeze({ QUALITY: 'quality', BALANCED: 'balanced', COST: 'cost', LATENCY: 'latency', PRIVACY: 'privacy' })
+export const RoutingRisk = Object.freeze({ LOW: 'low', MEDIUM: 'medium', HIGH: 'high', CRITICAL: 'critical' })
 
 const finiteUnit = (value) => Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1
 
@@ -28,9 +29,13 @@ export function validateRouteRequest(input = {}) {
   for (const capability of required) if (!Object.values(ModelCapability).includes(capability)) throw new TypeError(`Invalid required capability: ${capability}`)
   if (input.priority && !Object.values(RoutingPriority).includes(input.priority)) throw new TypeError(`Invalid routing priority: ${input.priority}`)
   if (input.privacy && !Object.values(PrivacyLevel).includes(input.privacy)) throw new TypeError(`Invalid route privacy: ${input.privacy}`)
+  if (input.risk && !Object.values(RoutingRisk).includes(input.risk)) throw new TypeError(`Invalid route risk: ${input.risk}`)
   if (input.minContextWindow != null && (!Number.isInteger(Number(input.minContextWindow)) || Number(input.minContextWindow) < 0)) {
     throw new TypeError('minContextWindow must be an integer >= 0')
   }
   if (input.excludeModelIds != null && !Array.isArray(input.excludeModelIds)) throw new TypeError('excludeModelIds must be an array')
+  for (const field of ['minQuality', 'minReliability', 'maxCost']) {
+    if (input[field] != null && !finiteUnit(input[field])) throw new TypeError(`${field} must be between 0 and 1`)
+  }
   return true
 }
