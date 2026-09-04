@@ -2,6 +2,10 @@
 
 PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target obbligatori: iOS/iPadOS, Android e Windows. `hotel_id`, membership, RLS/RPC, Safe Write e audit restano confini di sicurezza canonici.
 
+### RandAI Control Center — responsive UI
+
+La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop e tablet, navigazione orizzontale a larghezza piena su smartphone, schede a colonna singola sui telefoni e nessun overflow orizzontale intenzionale. La home contiene accessi rapidi a Segnalazioni, Manutenzioni, RandGuide e Configurazione; la mappa Ecosistema apre i moduli disponibili. Le regole dedicate sono in `src/randai/control/randai-responsive.css` e vengono caricate direttamente da `RandAIControlCenter.jsx`.
+
 ## Regole architetturali non negoziabili
 
 - RandAI riceve solo contesto autorizzato e hotel-scoped.

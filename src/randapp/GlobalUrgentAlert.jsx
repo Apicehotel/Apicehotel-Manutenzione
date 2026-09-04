@@ -13,6 +13,8 @@ function priorityFive(item) {
 export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen }) {
   const [items, setItems] = useState([])
   const [ringKey, setRingKey] = useState(0)
+  const [actionBusy, setActionBusy] = useState(null)
+  const [actionError, setActionError] = useState('')
   const audioRef = useRef(null)
   const unlockedRef = useRef(false)
 
@@ -74,11 +76,13 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
 
   if (hidden || !visible.length) return null
   const canManage = MANAGE_ROLES.has(user?.role)
-  const take = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name || 'Utente' }); await load() }
-  const done = async (item) => { await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'completata', completedBy: user?.name || 'Utente' }); await load() }
+  const runAction = async (item, status, payload) => { setActionBusy(item.id); setActionError(''); try { await updateUrgentRow(item.id, { hotelId: hotel.id, status, ...payload }); await load() } catch (error) { setActionError(error?.message || 'Azione non completata. Riprova.'); } finally { setActionBusy(null) } }
+  const take = (item) => runAction(item, 'presa_in_carico', { takenBy: user?.name || 'Utente' })
+  const done = (item) => runAction(item, 'completata', { completedBy: user?.name || 'Utente' })
 
   return (
     <aside className={`rs-global-urgent ${openItems.length ? 'is-open' : 'is-taken'}`} data-ring={ringKey} data-testid="global-priority-5" role="alert" aria-live="assertive">
+      {actionError && <div className="rs-global-urgent__error" role="status">{actionError}</div>}
       {visible.map((item) => (
         <div className="rs-global-urgent__row" key={item.id}>
           <button type="button" className="rs-global-urgent__main" onClick={onOpen}>
@@ -91,8 +95,8 @@ export default function GlobalUrgentAlert({ hotel, user, hidden = false, onOpen 
             <Icon name="chevronRight" />
           </button>
           {canManage && <div className="rs-global-urgent__actions">
-            {item.status === 'aperta' && <Button size="sm" variant="primary" onClick={() => take(item)}>Vado</Button>}
-            {item.status === 'presa_in_carico' && <><Button size="sm" variant="primary" onClick={() => done(item)}>Fatto</Button><Button size="sm" variant="outline" onClick={onOpen}>Non risolvibile</Button></>}
+            {item.status === 'aperta' && <Button size="sm" variant="primary" disabled={actionBusy === item.id} onClick={() => take(item)}>{actionBusy === item.id ? 'Salvo…' : 'Vado'}</Button>}
+            {item.status === 'presa_in_carico' && <><Button size="sm" variant="primary" disabled={actionBusy === item.id} onClick={() => done(item)}>{actionBusy === item.id ? 'Salvo…' : 'Fatto'}</Button><Button size="sm" variant="outline" onClick={onOpen}>Non risolvibile</Button></>}
           </div>}
         </div>
       ))}

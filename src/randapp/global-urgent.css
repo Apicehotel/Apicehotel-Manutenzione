@@ -18,3 +18,4 @@
 .rs-global-urgent__actions .rs-btn{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;height:40px!important;min-height:40px!important;max-height:40px!important;padding:0 14px!important;align-self:auto!important;white-space:nowrap;line-height:1!important}
 }
 @media(max-width:380px){.rs-global-urgent__actions{padding-left:0}.rs-global-urgent__actions .rs-btn{flex:1 1 auto!important;min-width:0}}
+.rs-global-urgent__error{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:rgba(255,92,92,.14);color:#ffd2d2;font-size:12px}
