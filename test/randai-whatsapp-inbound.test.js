@@ -18,6 +18,11 @@ test('Twilio inbound endpoint is configured for Giò and Choco', () => {
   assert.match(config, /inboundWebhook:\s*'\/api\/whatsapp\/incoming'/)
   assert.match(proxy, /x-twilio-signature/)
   assert.match(proxy, /x-randai-webhook-url/)
+  assert.match(proxy, /x-randai-whatsapp-shared-secret/)
+  assert.match(proxy, /WHATSAPP_INBOUND_SHARED_SECRET/)
+  assert.match(proxy, /AbortController/)
+  assert.match(proxy, /12000/)
+  assert.match(proxy, /text\/xml; charset=utf-8/)
 })
 
 test('inbound pipeline is idempotent and receive-first', () => {
