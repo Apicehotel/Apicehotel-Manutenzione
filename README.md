@@ -54,6 +54,20 @@ Zombie scan Blocco 3: mantenuti `RandMind`, `MemoryEngine`, `MemoryStore/Supabas
 
 Sorgenti: `src/randai/memory/continuity.js`, `src/randai/memory/randmind.js`, `src/randai/models/contracts.js`, `src/randai/models/router.js`, `src/randai/agents/orchestration.js`, `test/randmind-continuity-model-router-block3.test.js`.
 
+### Roadmap OpenCode + Diagram Design — Blocco 4/6 ✅ RandVisual Engine
+
+`RandVisual` è il bounded domain visuale canonico di RandAI. Non introduce un secondo frontend, una seconda component library o un renderer remoto: trasforma esclusivamente una specifica già autorizzata e hotel-scoped in SVG deterministico, accessibile e accompagnato da manifest di provenance. Le grammatiche iniziali sono `architecture`, `flow`, `dependency`, `database`, `permission_matrix`, `worker`, `deployment` e `fishbone`; il layout supporta `TB` e `LR` senza coordinate manuali.
+
+Il renderer riusa i token semantici RandUI tramite CSS custom properties con fallback, produce `title`, `desc`, `role=img` e metadata `data-*`, ed esegue escaping XML di titoli, label e sottotitoli. Il safety gate rifiuta superfici eseguibili o remote (`script`, event handler reali, `foreignObject`, URL `http/data/javascript`, `@import`). Nessuna label non fidata può diventare markup eseguibile.
+
+Ogni rendering richiede `hotelId` e un mismatch con il contesto viene negato con `RAND_VISUAL_SCOPE_DENIED`. Il manifest conserva `sourceIds`, `generatedAt`, tipo, dimensioni, conteggi e fingerprint deterministico; è quindi già predisposto per ricevere nel Blocco 5 evidenze reali RandCore/Repo Radar/permissions/workers e nel Blocco 6 per change receipt e visual QA senza cambiare contratto.
+
+`createRandVisualTool()` espone `randvisual.render` come tool canonico `READ`, rischio `LOW`, idempotente e compatibile con ToolRegistry/Permission Gateway. Il motore resta browser/server-neutral: nessun `node:crypto`, storage, SDK provider, Mermaid o dipendenza `diagram-design` è stato aggiunto. Di `diagram-design` sono stati adottati i pattern utili — grammatica visuale, token semantici, output SVG, provenance e hardening — senza importarne il runtime.
+
+Zombie scan Blocco 4: non esisteva un RandVisual canonico. Le viste/grafi specifici già presenti restano consumer di dominio e non sono duplicati né eliminati; nessun secondo design system o sistema di navigazione è nato.
+
+Sorgenti: `src/randai/visual/contracts.js`, `src/randai/visual/layout.js`, `src/randai/visual/renderer.js`, `src/randai/visual/engine.js`, `src/randai/visual/index.js`, `test/randai-randvisual-block4.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -297,6 +311,7 @@ npm run test:viking
 node --test test/randagent-runtime-block1.test.js
 node --test test/randtool-permission-block2.test.js
 node --test test/randmind-continuity-model-router-block3.test.js
+node --test test/randai-randvisual-block4.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -317,6 +332,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
 - `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
 - `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
+- `src/randai/visual/` — RandVisual canonico: contratti, layout deterministico, renderer SVG sicuro, provenance manifest e adapter ToolRegistry.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
 - `src/randai/memory/` — MemoryEngine/Store, facade RandMind e continuity contract cross-session/cross-channel.
 - `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
@@ -358,6 +374,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #171 — Roadmap OpenCode/Diagram Design, Blocco 1 / RandAgent Runtime.
 - PR #172 — Roadmap OpenCode/Diagram Design, Blocco 2 / RandTool + Permission Gateway.
 - PR #173 — Roadmap OpenCode/Diagram Design, Blocco 3 / RandMind Continuity + Model Router.
+- PR #174 — Roadmap OpenCode/Diagram Design, Blocco 4 / RandVisual Engine.
 
 ## Deploy
 
