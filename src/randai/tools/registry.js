@@ -27,6 +27,17 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export class ToolRegistry {
   #tools = new Map()
+  #executionGuard = null
+
+  constructor({ executionGuard = null } = {}) {
+    this.setExecutionGuard(executionGuard)
+  }
+
+  setExecutionGuard(executionGuard = null) {
+    if (executionGuard != null && typeof executionGuard !== 'function') throw new TypeError('executionGuard must be a function')
+    this.#executionGuard = executionGuard
+    return this
+  }
 
   register(definition) {
     validateDefinition(definition)
@@ -82,6 +93,22 @@ export class ToolRegistry {
   async execute(id, input, context = {}) {
     const tool = this.get(id)
     if (!tool) throw new RandAIError(RandAIErrorCode.TOOL_NOT_FOUND, `Unknown tool: ${id}`)
+    if (this.#executionGuard) {
+      let decision
+      try {
+        decision = await this.#executionGuard({ tool, input, context })
+      } catch (error) {
+        throw new RandAIError(RandAIErrorCode.PERMISSION_DENIED, error?.message || `Tool permission denied: ${id}`, {
+          cause: error,
+          details: { toolId: id, code: error?.code || null, details: error?.details || null },
+        })
+      }
+      if (!(decision === true || decision?.allowed === true)) {
+        throw new RandAIError(RandAIErrorCode.PERMISSION_DENIED, `Tool permission denied: ${id}`, {
+          details: { toolId: id, decision: decision ?? null },
+        })
+      }
+    }
     const health = tool.healthCheck ? await tool.healthCheck() : true
     if (health === false) throw new RandAIError(RandAIErrorCode.TOOL_UNAVAILABLE, `Tool unavailable: ${id}`, { retryable: true })
 
