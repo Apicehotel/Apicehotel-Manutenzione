@@ -1,0 +1,1 @@
+update public.urgent_reminder_jobs j set status='cancelled', updated_at=now(), last_error=null from public.richieste_urgenti r where r.id=j.urgent_id and r.stato<>'aperta' and j.status in ('pending','processing');
