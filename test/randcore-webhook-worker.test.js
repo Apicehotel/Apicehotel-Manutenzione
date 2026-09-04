@@ -12,6 +12,13 @@ test('RandCore point 3 claims deliveries atomically with a lease and bounded out
   assert.match(migration, /dead_letter/i)
 })
 
+test('inactive webhook subscriptions cannot strand a delivery', () => {
+  const hardening = fs.readFileSync(new URL('../supabase/migrations/20260904111500_randcore_webhook_inactive_subscription_recovery.sql', import.meta.url), 'utf8')
+  assert.match(hardening, /subscription_inactive/i)
+  assert.match(hardening, /active = true/i)
+  assert.match(hardening, /active = false/i)
+})
+
 test('webhook worker signs payloads, times out, and bounds retries', () => {
   assert.match(worker, /HMAC.*SHA-256/i)
   assert.match(worker, /AbortController/i)
@@ -19,4 +26,3 @@ test('webhook worker signs payloads, times out, and bounds retries', () => {
   assert.match(worker, /idempotency-key/i)
   assert.match(worker, /secret_not_configured/i)
 })
-
