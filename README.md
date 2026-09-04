@@ -18,6 +18,18 @@ La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop
 
 ## Stato roadmap consolidata
 
+### Roadmap OpenCode + Diagram Design — Blocco 1/6 ✅ RandAgent Runtime
+
+Il nuovo `RandAgentRuntime` consolida, senza duplicarlo, il runtime multi-agent già esistente. `MultiAgentRuntime` resta l'Execution Kernel canonico per registry, dipendenze, concorrenza e handoff; sopra di esso il ciclo headless è ora `Planner → Policy → Executor → Inspector`, con replan bounded (`maxReplans`) e compatibilità con il precedente nome `verifier`.
+
+Il runtime è channel-neutral (`web`, `whatsapp`, `audio`, `internal` o altri adapter) e propaga un `runId` unico nel contesto. Sono predisposti hook espliciti, ma non autorità parallele: `contextProvider` è il punto di connessione futuro con RandMind/Authorized Context, `policyGuard` con RandCore/Tool Permission Gateway, `eventSink` con osservabilità e futuro RandChange Receipt/RandVisual. Nessuna shell, database, MCP o provider acquisisce permessi diretti attraverso questo livello.
+
+Il replan non può diventare un loop infinito: dopo il budget configurato il runtime fallisce con `RAND_AGENT_INSPECTION_FAILED`. Una policy negata interrompe l'esecuzione prima dell'Executor con `RAND_AGENT_POLICY_DENIED`. Errori del sink di telemetria non interrompono il lavoro dell'agente e possono essere raccolti da `onTelemetryError`.
+
+Zombie scan Blocco 1: `MultiAgentCoordinator` è mantenuto perché svolge consenso multi-agente e non duplica il nuovo orchestratore; `MultiAgentRuntime` è mantenuto e promosso a kernel di esecuzione. Nessun runtime OpenCode, framework esterno, nuovo store, scheduler o dipendenza è stato aggiunto.
+
+Sorgenti: `src/randai/agents/orchestration.js`, `src/randai/agents/runtime.js`, `src/randai/agents/coordinator.js`, `test/randagent-runtime-block1.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -258,6 +270,7 @@ npm run test:randbrain
 npm run test:randui
 npm run test:randaudio
 npm run test:viking
+node --test test/randagent-runtime-block1.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
