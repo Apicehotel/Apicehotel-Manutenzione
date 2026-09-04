@@ -19,11 +19,14 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   if (typeof placement !== 'function' || typeof viewAllowed !== 'function') return []
 
   const authorized = PRIMARY_OPERATIONAL_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
-  const configuredInterestTags = authorized
-    .filter((item) => placement(item.key) === 'bottom')
-    .flatMap((item) => interestsForNavItem(item.id))
+  const bottomPreferred = authorized.filter((item) => placement(item.key) === 'bottom')
+  const secondary = authorized.filter((item) => placement(item.key) !== 'bottom')
+  const configuredInterestTags = bottomPreferred.flatMap((item) => interestsForNavItem(item.id))
   const effectiveInterests = interests.length ? interests : configuredInterestTags
-  const ranked = rankAuthorizedNavigation(authorized, effectiveInterests).slice(0, 3)
+  const ranked = [
+    ...rankAuthorizedNavigation(bottomPreferred, effectiveInterests),
+    ...rankAuthorizedNavigation(secondary, effectiveInterests),
+  ].slice(0, 3)
 
   return [
     ...ranked.slice(0, 2).map((item, index) => ({ ...item, slot: index + 1 })),
