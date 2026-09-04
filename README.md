@@ -172,16 +172,6 @@ Runtime agenti, workflow, MCP, memoria, knowledge e tool adapter possono evolver
 
 Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center, RandMind, RandBrain e Repo Radar.
 
-### WhatsApp / Twilio inbound
-
-Il webhook pubblico canonico è `POST https://apicehotel.vercel.app/api/whatsapp/incoming`. Twilio invia il messaggio come `application/x-www-form-urlencoded`; il proxy Vercel conserva `X-Twilio-Signature`, inoltra la richiesta alla Edge Function `randai-whatsapp-inbound` e restituisce TwiML `text/xml`. La risposta è limitata a 12 secondi, sotto la finestra massima del webhook: se il servizio a valle non risponde, l'utente riceve una risposta temporanea valida invece di lasciare la conversazione bloccata.
-
-La variabile server-only `WHATSAPP_INBOUND_SHARED_SECRET` deve avere lo stesso valore su Vercel e nella Edge Function Supabase. Supabase deve inoltre avere `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `WHATSAPP_PUBLIC_WEBHOOK_URL=https://apicehotel.vercel.app/api/whatsapp/incoming`. Nessun segreto usa il prefisso `VITE_` o viene incluso nel repository.
-
-La pipeline conserva il contratto operativo nato in HotelGio — camera/zona, categoria, urgenza, descrizione, foto, autore e stato — ma risolve il canale tramite `whatsapp_channel_settings`, impedisce incroci tra hotel, valida la firma Twilio, limita le richieste e deduplica tramite `MessageSid`. La creazione automatica resta attivabile per singolo hotel; durante la pausa i messaggi vengono conservati per revisione senza creare segnalazioni.
-
-La precedente Edge Function `whatsapp-webhook` è mantenuta esclusivamente come rollback durante il passaggio del sender Twilio al webhook canonico. Dopo una prova inbound firmata e la verifica della segnalazione in RandApp, va rimossa dal deploy e dal repository: non deve rimanere un secondo punto di ingresso attivo.
-
 ## RandCore Point 1 — Eventi e webhook
 
 Il primo punto del modello `event-driven` è ora predisposto con un contratto unico e separato dalle notifiche. `rand_domain_events` registra i fatti operativi in forma append-only, sempre con `hotel_id`, tipo evento, operazione, aggregato, timestamp e chiave di idempotenza. Il payload è volutamente minimale e non copia dati sensibili: i consumer possono risalire al record autorizzato usando l'identità dell'evento.
@@ -208,7 +198,7 @@ Ogni consegna viene acquisita con `FOR UPDATE SKIP LOCKED` e lease di 10 minuti,
 
 La migrazione crea anche le transizioni protette `delivered/pending/dead_letter`, con autorizzazione esclusiva al `service_role`. Il job è già attivo in produzione, ma con coda vuota non effettua chiamate esterne: le destinazioni HTTPS restano da configurare e approvare prima di una consegna reale.
 
-Migration: `supabase/migrations/20260904110000_randcore_webhook_delivery_worker.sql`. Test: `test/randcore-webhook-worker.test.js`.
+Migration: `supabase/migrations/20260904110000_randcore_webhook_delivery_worker.sql` + `supabase/migrations/20260904111500_randcore_webhook_inactive_subscription_recovery.sql`. Test: `test/randcore-webhook-worker.test.js`.
 
 ## Worker e automazioni
 
