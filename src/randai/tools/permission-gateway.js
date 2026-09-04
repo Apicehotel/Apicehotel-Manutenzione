@@ -4,6 +4,7 @@ const clone = (value) => value == null ? value : structuredClone(value)
 const text = (value) => String(value ?? '').trim()
 const PROTECTED_PERMISSIONS = new Set([ToolPermission.WRITE_PROTECTED, ToolPermission.ADMIN])
 const PROTECTED_RISKS = new Set([ToolRisk.CRITICAL])
+const descriptorOf = (tool) => ({ id: tool.id, name: tool.name, permission: tool.permission, risk: tool.risk })
 
 export class ToolPermissionGatewayError extends Error {
   constructor(code, message, details = {}) {
@@ -73,11 +74,11 @@ export class ToolPermissionGateway {
       deny('RAND_TOOL_SCOPE_MISMATCH', `Tool hotel scope mismatch: ${id}`, { toolId: id, hotelId, requestedHotelId })
     }
 
-    // Risk and permission always come from the canonical registry. Planner/request metadata is never authoritative.
+    // Risk and permission come only from the canonical registry; planner metadata never grants authority.
     const canonical = { permission: tool.permission, risk: tool.risk }
     const authorization = await this.authorize({
       action: 'tool.execute',
-      tool: { id: tool.id, name: tool.name, permission: tool.permission, risk: tool.risk },
+      tool: descriptorOf(tool),
       hotelId,
       actor: clone(actor),
       context: clone(context),
@@ -163,7 +164,8 @@ export function createToolRegistryExecutionGuard({ gateway, actorProvider = null
   if (!gateway?.authorizeTool || typeof gateway.authorizeTool !== 'function') throw new TypeError('gateway is required')
   if (actorProvider != null && typeof actorProvider !== 'function') throw new TypeError('actorProvider must be a function')
   return async ({ tool, context = {} }) => {
-    const actor = actorProvider ? await actorProvider({ context: clone(context), tool: clone(tool) }) : context?.actor || {}
+    const safeTool = descriptorOf(tool)
+    const actor = actorProvider ? await actorProvider({ context: clone(context), tool: safeTool }) : context?.actor || {}
     const request = context?.randToolRequest || {}
     return gateway.authorizeTool({
       toolId: tool.id,
@@ -173,4 +175,10 @@ export function createToolRegistryExecutionGuard({ gateway, actorProvider = null
       runId: context?.randAgent?.runId || null,
     })
   }
+}
+
+export function bindToolPermissionGateway({ registry, gateway, actorProvider = null } = {}) {
+  if (!registry?.setExecutionGuard || typeof registry.setExecutionGuard !== 'function') throw new TypeError('registry must support setExecutionGuard')
+  registry.setExecutionGuard(createToolRegistryExecutionGuard({ gateway, actorProvider }))
+  return registry
 }
