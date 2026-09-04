@@ -11,24 +11,17 @@ import WhatsAppConsole from './WhatsAppConsole.jsx'
 import IssueOperationsConsole from './IssueOperationsConsole.jsx'
 import SystemControlConsole from './SystemControlConsole.jsx'
 import EcosystemConsole from './EcosystemConsole.jsx'
-import RandAIConfigurationConsole from './RandAIConfigurationConsole.jsx'
 import CapabilitiesConsole from './CapabilitiesConsole.jsx'
+import RandAIAdminConsole from './RandAIAdminConsole.jsx'
 import './randai-control.css'
 import './ecosystem-control.css'
 import './randai-responsive.css'
 
-const PRIMARY_NAV = [
-  ['dashboard', 'Overview'], ['capabilities', 'Funzioni'], ['whatsapp', 'WhatsApp'], ['issues', 'Segnalazioni'],
-  ['team', 'Tecnici'], ['workers', 'Worker'], ['audit', 'Log'],
-]
-const ADVANCED_NAV = [
-  ['ecosystem', 'Ecosistema'], ['configuration', 'Configurazione 360°'],
-  ['maintenance', 'Manutenzioni'], ['knowledge', 'RandGuide'], ['drafts', 'Bozze'],
-  ['approvals', 'Approvazioni'], ['archive', 'Archivio'], ['assets', 'Impianti'],
-  ['deadlines', 'Scadenze'], ['rules', 'Regole'], ['anomalies', 'Anomalie'],
-  ['observability', 'Costi & Osservabilità'], ['media', 'Media & Drive'], ['sensors', 'Sensori'],
-]
-const NAV = [...PRIMARY_NAV, ...ADVANCED_NAV]
+const PRIMARY_NAV = [['dashboard', 'Overview'], ['capabilities', 'Funzioni'], ['configuration', 'Configurazione'], ['ecosystem', 'Salute sistema']]
+const NAV = [...PRIMARY_NAV]
+// Le sezioni operative restano raggiungibili da Funzioni senza gonfiare il pannello laterale:
+// 'Segnalazioni', 'WhatsApp', 'Manutenzioni', 'Regole', 'Anomalie', 'Costi & Osservabilità', 'Sensori' e 'Media'.
+const LEGACY_SECTION_LABELS = Object.freeze(['WhatsApp', 'Segnalazioni', 'Tecnici', 'Worker', 'Log', 'Manutenzioni', 'Conoscenze', 'Impianti', 'Sensori'])
 const HOTEL_LABELS = Object.fromEntries(HOTELS.map((hotel) => [hotel.id, hotel.name]))
 const normalize = (value) => String(value || '').trim().toLowerCase()
 const fmt = (value) => value ? new Date(value).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -137,7 +130,7 @@ export default function RandAIControlCenter() {
     dashboard,
     capabilities: <CapabilitiesConsole onOpen={openSection} />,
     ecosystem: <EcosystemConsole accessHotels={access.hotels} hotelFilter={hotelFilter} onOpenModule={openSection} />,
-    configuration: <RandAIConfigurationConsole accessHotels={access.hotels} hotelFilter={hotelFilter} />,
+    configuration: <RandAIAdminConsole accessHotels={access.hotels} hotelFilter={hotelFilter} />,
     whatsapp: <WhatsAppConsole accessHotels={access.hotels} hotelFilter={hotelFilter} />,
     workers: <SystemControlConsole {...systemProps} mode="workers" />,
     audit: <SystemControlConsole {...systemProps} mode="audit" />,
@@ -158,5 +151,5 @@ export default function RandAIControlCenter() {
   }[section] || dashboard
 
   const showToolbar = !['knowledge', 'ecosystem', 'capabilities'].includes(section)
-  return <div className="rc-shell"><aside className="rc-sidebar"><div className="rc-brand"><img src="/icons/randai-cat.webp" alt="" /><div><strong>RandAI</strong><span>Control Center</span></div></div><div className="rc-nav-label">Operativo</div><nav>{PRIMARY_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => openSection(key)}>{label}</button>)}</nav><div className="rc-nav-label rc-nav-secondary-label">Sistema</div><nav className="rc-nav-secondary">{ADVANCED_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => openSection(key)}>{label}</button>)}</nav><button className="rc-back" onClick={() => window.location.assign('/')}>← RandApp</button></aside><main className="rc-main"><header className="rc-top"><div><small>RANDAPP · AREA AMMINISTRATIVA</small><h1>{NAV.find(([key]) => key === section)?.[1] || 'Overview'}</h1><p>Operatività, stato servizi e controllo RandAI in un’unica console.</p></div><div className="rc-top-actions"><div className="rc-user"><strong>{access.name}</strong><span>{access.hotels.length} strutture abilitate</span></div><div className="rc-theme"><span>Tema</span><ThemeControl /></div></div></header>{systemBar}{showToolbar && toolbar}{notice && <div className="rc-notice">{notice}</div>}{busy && section === 'dashboard' && <div className="rc-loading">Aggiornamento dati…</div>}{sectionContent}</main><DetailDrawer item={selectedIssue} onClose={() => setSelectedIssue(null)} /></div>
+  return <div className="rc-shell"><aside className="rc-sidebar"><div className="rc-brand"><img src="/icons/randai-cat.webp" alt="" /><div><strong>RandAI</strong><span>Control Center</span></div></div><div className="rc-nav-label">RandAI</div><nav>{PRIMARY_NAV.map(([key, label]) => <button key={key} className={section === key ? 'active' : ''} onClick={() => openSection(key)}>{label}</button>)}</nav><button className="rc-back" onClick={() => window.location.assign('/')}>← RandApp</button></aside><main className="rc-main"><header className="rc-top"><div><small>RANDAPP · AREA AMMINISTRATIVA</small><h1>{NAV.find(([key]) => key === section)?.[1] || 'Overview'}</h1><p>Operatività, stato servizi e controllo RandAI in un’unica console.</p></div><div className="rc-top-actions"><div className="rc-user"><strong>{access.name}</strong><span>{access.hotels.length} strutture abilitate</span></div><div className="rc-theme"><span>Tema</span><ThemeControl /></div></div></header>{systemBar}{showToolbar && toolbar}{notice && <div className="rc-notice">{notice}</div>}{busy && section === 'dashboard' && <div className="rc-loading">Aggiornamento dati…</div>}{sectionContent}</main><DetailDrawer item={selectedIssue} onClose={() => setSelectedIssue(null)} /></div>
 }

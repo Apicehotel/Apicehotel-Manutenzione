@@ -1,0 +1,14 @@
+.rc-admin-console{min-width:0}
+.rc-admin-console__head{margin-bottom:14px}
+.rc-admin-console__head small{color:#aa9cff;font-size:10px;font-weight:900;letter-spacing:.13em}
+.rc-admin-console__head h2{margin:5px 0 6px;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}
+.rc-admin-console__head p{margin:0;color:var(--rc-soft)}
+.rc-admin-console__tabs{display:flex;gap:5px;overflow-x:auto;margin-bottom:16px;padding:4px;border:1px solid var(--rc-line);border-radius:12px;background:var(--rc-panel);scrollbar-width:none}
+.rc-admin-console__tabs::-webkit-scrollbar{display:none}
+.rc-admin-console__tabs button{flex:0 0 auto;border:0;border-radius:8px;background:transparent;color:var(--rc-soft);font:700 12px/1.2 inherit;padding:10px 13px;cursor:pointer;white-space:nowrap}
+.rc-admin-console__tabs button.active{background:var(--rc-purple);color:#fff}
+.rc-admin-console__content{min-width:0}
+.rc-admin-console__content>.rs-root{background:transparent}
+html[data-theme='light'] .rc-admin-console__tabs{background:#fff}
+html[data-theme='light'] .rc-admin-console__tabs button{color:var(--rc-soft)}
+@media(max-width:760px){.rc-admin-console__tabs{margin-inline:-1px}.rc-admin-console__head p{font-size:12px}}
