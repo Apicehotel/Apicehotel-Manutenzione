@@ -1,1 +1,53 @@
-LS0gUmFuZENvcmUgUG9pbnQgMjogcHVibGlzaCBldmVyeSBjbGllbnQtdmlzaWJsZSBvcGVyYXRpb25hbCB0YWJsZSB0aGF0IGhhcwotLSBhbiBleGlzdGluZyBwb3N0Z3Jlc19jaGFuZ2VzIHN1YnNjcmliZXIuIFRoZSBjbGllbnQgc3Vic2NyaXB0aW9ucyByZW1haW4KLS0gZG9tYWluLW93bmVkOyB0aGlzIG1pZ3JhdGlvbiBmaXhlcyB0aGUgZGF0YWJhc2Ugc2lkZSBvZiB0aGUgY29udHJhY3QuCgpkbyAkJApkZWNsYXJlCiAgdl90YWJsZSB0ZXh0OwpiZWdpbgogIGZvcmVhY2ggdl90YWJsZSBpbiBhcnJheSBhcnJheVsKICAgICdzZWduYWxhemlvbmknLAogICAgJ2ludGVydmVudGknLAogICAgJ3JpY2hpZXN0ZV91cmdlbnRpJywKICAgICdwbGFubmluZ19sYXZvcmknLAogICAgJ3BsYW5uaW5nX2xhdm9yaV9naW9ybmknLAogICAgJ3ByZW5vdGF6aW9uaV9zYWxlJywKICAgICdwcm9tZW1vcmlhJywKICAgICdwcm9tZW1vcmlhX2ludmlvJywKICAgICdub3RpZmljYXRpb25fcmVhZHMnLAogICAgJ2NhbWVyZV9naW9ybm8nLAogICAgJ2NhbWVyZV9sYXZvcm8nLAogICAgJ2hvdXNla2VlcGluZ19jb21wbGV0aW9ucycsCiAgICAnc2Vuc29yaV90ZW1wZXJhdHVyYScsCiAgICAnZmVlZGJhY2snLAogICAgJ3N1cHBseV9wcm9kdWN0cycsCiAgICAnc3VwcGx5X3JlcXVlc3RzJywKICAgICdzdXBwbHlfcmVxdWVzdF9pdGVtcycsCiAgICAnaW52ZW50b3J5X2l0ZW1zJywKICAgICdpbnZlbnRvcnlfbW92ZW1lbnRzJywKICAgICdpbnZlbnRvcnlfY2F0ZWdvcmllcycsCiAgICAnaW52ZW50b3J5X2xvY2F0aW9ucycsCiAgICAnc2FsZV9yb29tc19jb25maWcnLAogICAgJ3doYXRzYXBwX2NoYW5uZWxfc2V0dGluZ3MnLAogICAgJ3doYXRzYXBwX2luYm91bmRfbWVzc2FnZXMnLAogICAgJ2V4dGVybmFsX3RlY2huaWNpYW5zJywKICAgICdleHRlcm5hbF90ZWNobmljaWFuX2NvbXBldGVuY2llcycsCiAgICAndGVjaG5pY2lhbl9kaXNwYXRjaF9yZXF1ZXN0cycsCiAgICAndGVjaG5pY2lhbl9pbnRlcnZlbnRpb25fZXZlbnRzJwogIF0gbG9vcAogICAgaWYgdG9fcmVnY2xhc3MoJ3B1YmxpYy4nIHx8IHZfdGFibGUpIGlzIG5vdCBudWxsCiAgICAgICBhbmQgbm90IGV4aXN0cyAoCiAgICAgICAgIHNlbGVjdCAxCiAgICAgICAgIGZyb20gcGdfcHVibGljYXRpb25fdGFibGVzCiAgICAgICAgIHdoZXJlIHB1Ym5hbWUgPSAnc3VwYWJhc2VfcmVhbHRpbWUnCiAgICAgICAgICAgYW5kIHNjaGVtYW5hbWUgPSAncHVibGljJwogICAgICAgICAgIGFuZCB0YWJsZW5hbWUgPSB2X3RhYmxlCiAgICAgICApIHRoZW4KICAgICAgZXhlY3V0ZSBmb3JtYXQoJ2FsdGVyIHB1YmxpY2F0aW9uIHN1cGFiYXNlX3JlYWx0aW1lIGFkZCB0YWJsZSBwdWJsaWMuJUknLCB2X3RhYmxlKTsKICAgIGVuZCBpZjsKICBlbmQgbG9vcDsKZW5kICQkOwoKY29tbWVudCBvbiBwdWJsaWNhdGlvbiBzdXBhYmFzZV9yZWFsdGltZSBpcwogICdSYW5kQXBwIGNsaWVudC12aXNpYmxlIG9wZXJhdGlvbmFsIHRhYmxlczsgc2VydmljZS1vbmx5IGV2ZW50IGFuZCB3ZWJob29rIHRhYmxlcyBhcmUgaW50ZW50aW9uYWxseSBleGNsdWRlZC4nOwo=
+-- RandCore Point 2: publish every client-visible operational table that has
+-- an existing postgres_changes subscriber. The client subscriptions remain
+-- domain-owned; this migration fixes the database side of the contract.
+
+do $$
+declare
+  v_table text;
+begin
+  foreach v_table in array array[
+    'segnalazioni',
+    'interventi',
+    'richieste_urgenti',
+    'planning_lavori',
+    'planning_lavori_giorni',
+    'prenotazioni_sale',
+    'promemoria',
+    'promemoria_invio',
+    'notification_reads',
+    'camere_giorno',
+    'camere_lavoro',
+    'housekeeping_completions',
+    'sensori_temperatura',
+    'feedback',
+    'supply_products',
+    'supply_requests',
+    'supply_request_items',
+    'inventory_items',
+    'inventory_movements',
+    'inventory_categories',
+    'inventory_locations',
+    'sale_rooms_config',
+    'whatsapp_channel_settings',
+    'whatsapp_inbound_messages',
+    'external_technicians',
+    'external_technician_competencies',
+    'technician_dispatch_requests',
+    'technician_intervention_events'
+  ] loop
+    if to_regclass('public.' || v_table) is not null
+       and not exists (
+         select 1
+         from pg_publication_tables
+         where pubname = 'supabase_realtime'
+           and schemaname = 'public'
+           and tablename = v_table
+       ) then
+      execute format('alter publication supabase_realtime add table public.%I', v_table);
+    end if;
+  end loop;
+end $$;
+
+comment on publication supabase_realtime is
+  'RandApp client-visible operational tables; service-only event and webhook tables are intentionally excluded.';
