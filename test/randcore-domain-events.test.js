@@ -1,1 +1,29 @@
-aW1wb3J0IHRlc3QgZnJvbSAnbm9kZTp0ZXN0JwppbXBvcnQgYXNzZXJ0IGZyb20gJ25vZGU6YXNzZXJ0L3N0cmljdCcKaW1wb3J0IGZzIGZyb20gJ25vZGU6ZnMnCgpjb25zdCBtaWdyYXRpb24gPSBmcy5yZWFkRmlsZVN5bmMobmV3IFVSTCgnLi4vc3VwYWJhc2UvbWlncmF0aW9ucy8yMDI2MDkwNDA5MDAwMF9yYW5kY29yZV9kb21haW5fZXZlbnRzX3dlYmhvb2tfZm91bmRhdGlvbi5zcWwnLCBpbXBvcnQubWV0YS51cmwpLCAndXRmOCcpCgp0ZXN0KCdSYW5kQ29yZSBwb2ludCAxIGhhcyBvbmUgYXBwZW5kLW9ubHkgZXZlbnQgZW52ZWxvcGUgYW5kIHNlcGFyYXRlIHdlYmhvb2sgZGVsaXZlcnkgcXVldWUnLCAoKSA9PiB7CiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL2NyZWF0ZSB0YWJsZSBpZiBub3QgZXhpc3RzIHB1YmxpY1wucmFuZF9kb21haW5fZXZlbnRzL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL2lkZW1wb3RlbmN5X2tleSB0ZXh0IG5vdCBudWxsIHVuaXF1ZS9pKQogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC9yZXZva2UgYWxsIG9uIHB1YmxpY1wucmFuZF9kb21haW5fZXZlbnRzIGZyb20gYW5vbiwgYXV0aGVudGljYXRlZC9pKQogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC9jcmVhdGUgdGFibGUgaWYgbm90IGV4aXN0cyBwdWJsaWNcLnJhbmRfd2ViaG9va19kZWxpdmVyaWVzL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL3VuaXF1ZVwoZXZlbnRfaWQsIHN1YnNjcmlwdGlvbl9pZFwpL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL2VuZHBvaW50X3VybCB0ZXh0IG5vdCBudWxsIGNoZWNrIFwoZW5kcG9pbnRfdXJsIH4gJ1xeaHR0cHM6XC9cLydcKS9pKQp9KQoKdGVzdCgnZG9tYWluIGV2ZW50IGNhcHR1cmUgaXMgaG90ZWwtc2NvcGVkLCBzYW5pdGl6ZWQgYW5kIGF0dGFjaGVkIG9ubHkgdG8gZXhpc3RpbmcgdGFibGVzJywgKCkgPT4gewogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC92X2hvdGVsX2lkIDo9IG51bGxpZlwodl9yZWNvcmQtPj4naG90ZWxfaWQnLCAnJ1wpL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL2lmIHZfaG90ZWxfaWQgaXMgbnVsbCB0aGVuL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL2pzb25iX2J1aWxkX29iamVjdFwoJ3RhYmxlJywgdGdfdGFibGVfbmFtZSwgJ29wZXJhdGlvbicsIHRnX29wLCAnYWdncmVnYXRlX2lkJywgdl9hZ2dyZWdhdGVfaWRcKS9pKQogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC9mb3JlYWNoIHZfdGFibGUgaW4gYXJyYXkgYXJyYXlcWy9pKQogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC8nc2VnbmFsYXppb25pJy4qJ2ludGVydmVudGknLioncmljaGllc3RlX3VyZ2VudGknL3MpCn0pCgp0ZXN0KCd3ZWJob29rIGNvbmZpZ3VyYXRpb24gbmV2ZXIgc3RvcmVzIGEgcmF3IHNlY3JldCBhbmQgdXNlcyBzZXJ2aWNlLW9ubHkgYWNjZXNzJywgKCkgPT4gewogIGFzc2VydC5tYXRjaChtaWdyYXRpb24sIC9zZWNyZXRfcmVmIHRleHQgbm90IG51bGwvaSkKICBhc3NlcnQuZG9lc05vdE1hdGNoKG1pZ3JhdGlvbiwgL3NlY3JldCB0ZXh0IG5vdCBudWxsL2kpCiAgYXNzZXJ0Lm1hdGNoKG1pZ3JhdGlvbiwgL3Jldm9rZSBhbGwgb24gcHVibGljXC5yYW5kX3dlYmhvb2tfc3Vic2NyaXB0aW9ucyBmcm9tIGFub24sIGF1dGhlbnRpY2F0ZWQvaSkKICBhc3NlcnQubWF0Y2gobWlncmF0aW9uLCAvcmV2b2tlIGFsbCBvbiBwdWJsaWNcLnJhbmRfd2ViaG9va19kZWxpdmVyaWVzIGZyb20gYW5vbiwgYXV0aGVudGljYXRlZC9pKQp9KQo=
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+
+const migration = fs.readFileSync(new URL('../supabase/migrations/20260904090000_randcore_domain_events_webhook_foundation.sql', import.meta.url), 'utf8')
+
+test('RandCore point 1 has one append-only event envelope and separate webhook delivery queue', () => {
+  assert.match(migration, /create table if not exists public\.rand_domain_events/i)
+  assert.match(migration, /idempotency_key text not null unique/i)
+  assert.match(migration, /revoke all on public\.rand_domain_events from anon, authenticated/i)
+  assert.match(migration, /create table if not exists public\.rand_webhook_deliveries/i)
+  assert.match(migration, /unique\(event_id, subscription_id\)/i)
+  assert.match(migration, /endpoint_url text not null check \(endpoint_url ~ '\^https:\/\/'\)/i)
+})
+
+test('domain event capture is hotel-scoped, sanitized and attached only to existing tables', () => {
+  assert.match(migration, /v_hotel_id := nullif\(v_record->>'hotel_id', ''\)/i)
+  assert.match(migration, /if v_hotel_id is null then/i)
+  assert.match(migration, /jsonb_build_object\('table', tg_table_name, 'operation', tg_op, 'aggregate_id', v_aggregate_id\)/i)
+  assert.match(migration, /foreach v_table in array array\[/i)
+  assert.match(migration, /'segnalazioni'.*'interventi'.*'richieste_urgenti'/s)
+})
+
+test('webhook configuration never stores a raw secret and uses service-only access', () => {
+  assert.match(migration, /secret_ref text not null/i)
+  assert.doesNotMatch(migration, /secret text not null/i)
+  assert.match(migration, /revoke all on public\.rand_webhook_subscriptions from anon, authenticated/i)
+  assert.match(migration, /revoke all on public\.rand_webhook_deliveries from anon, authenticated/i)
+})
