@@ -42,6 +42,18 @@ Zombie scan Blocco 2: mantenuti `ToolRegistry`, `action-gateway.js` e `authoriza
 
 Sorgenti: `src/randai/tools/contracts.js`, `src/randai/tools/registry.js`, `src/randai/tools/permission-gateway.js`, `src/randai/action-gateway.js`, `src/reliability/authorization-matrix.js`, `test/randtool-permission-block2.test.js`.
 
+### Roadmap OpenCode + Diagram Design — Blocco 3/6 ✅ RandMind Continuity + Model Router
+
+Il runtime distingue ora due identità: `runId` identifica una singola esecuzione, mentre `continuityId` identifica lo stesso lavoro nel tempo e può attraversare `web`, `whatsapp`, `audio` e `internal`. `RandMindContinuity` riusa `RandMind`, `MemoryEngine` e lo store canonico; non crea un secondo database, vector store o conversation store.
+
+La continuità è fail-closed sullo scope: richiede sempre `hotelId`, legge esclusivamente memorie dello stesso hotel e, quando l'attore o il task sono noti, impedisce il riuso della stessa storia da un actor/task differente. Il `contextProvider` del runtime non può più cambiare silenziosamente un `hotelId` già fissato. In memoria vengono scritti soltanto outcome che hanno superato Executor + Inspector; trascrizioni grezze, chat complete e tentativi falliti non diventano memoria canonica. Un guasto nel commit di memoria dopo un'operazione riuscita viene tracciato ma non trasforma il lavoro operativo in fallimento.
+
+Il `ModelRouter` resta unico e viene governato invece di duplicato. Oltre a capability, privacy, context window, qualità, affidabilità, costo e latenza, accetta ora `risk`, `minQuality`, `minReliability` e `maxCost`. `HIGH` e `CRITICAL` applicano floor minimi di qualità/affidabilità anche se la priorità richiesta è `COST`; se nessun modello è compatibile il router fallisce con `NO_COMPATIBLE_MODEL`. I fallback restano confinati allo stesso insieme già filtrato per capability, privacy, rischio e budget.
+
+Zombie scan Blocco 3: mantenuti `RandMind`, `MemoryEngine`, `MemoryStore/SupabaseMemoryStore`, `ModelRouter` e `RandAgentRuntime` perché sono autorità canoniche con responsabilità distinte. Nessun provider SDK, model gateway esterno, nuovo store, scheduler, vector DB o seconda memoria è stato aggiunto.
+
+Sorgenti: `src/randai/memory/continuity.js`, `src/randai/memory/randmind.js`, `src/randai/models/contracts.js`, `src/randai/models/router.js`, `src/randai/agents/orchestration.js`, `test/randmind-continuity-model-router-block3.test.js`.
+
 ### Fondazione RandAI — 1–26 ✅
 Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
 
@@ -284,6 +296,7 @@ npm run test:randaudio
 npm run test:viking
 node --test test/randagent-runtime-block1.test.js
 node --test test/randtool-permission-block2.test.js
+node --test test/randmind-continuity-model-router-block3.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -303,8 +316,9 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - `src/randapp/` — shell/UI e domini RandApp.
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
 - `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
+- `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
 - `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
-- `src/randai/memory/` — MemoryEngine/Store e facade/governance canonica RandMind.
+- `src/randai/memory/` — MemoryEngine/Store, facade RandMind e continuity contract cross-session/cross-channel.
 - `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
 - `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/` — motori canonici composti da RandBrain; non duplicati.
 - `src/randai/control/` — Control Center, Operations, Security, Health, RandMind, RandBrain e Repo Radar.
@@ -343,6 +357,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #164 — 98 / RandAudio capability, LIVE deferred.
 - PR #171 — Roadmap OpenCode/Diagram Design, Blocco 1 / RandAgent Runtime.
 - PR #172 — Roadmap OpenCode/Diagram Design, Blocco 2 / RandTool + Permission Gateway.
+- PR #173 — Roadmap OpenCode/Diagram Design, Blocco 3 / RandMind Continuity + Model Router.
 
 ## Deploy
 
