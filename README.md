@@ -190,6 +190,16 @@ Il frontend conserva i subscriber nei rispettivi bounded domain: non è stato cr
 
 Migration: `supabase/migrations/20260904100000_randcore_realtime_publication_contract.sql`. Test: `test/randcore-realtime-contract.test.js`. La query di produzione ha verificato la pubblicazione effettiva e ha rilevato/corretto le tabelle che il codice ascoltava ma che non erano ancora registrate.
 
+## RandCore Point 3 — Worker, retry e recovery webhook
+
+La coda webhook ora ha un worker reale: `supabase/functions/randcore-webhook-worker/index.ts`. Il worker viene invocato dal job `randcore-webhook-worker-1m`, termina immediatamente quando non ci sono consegne e usa sempre il secret già conservato nel service plane; nessun secret viene committato nel repository.
+
+Ogni consegna viene acquisita con `FOR UPDATE SKIP LOCKED` e lease di 10 minuti, così due worker concorrenti non lavorano normalmente sulla stessa riga. Il payload è firmato con HMAC-SHA256, include `idempotency-key`, ha timeout di 10 secondi e ritenta solo errori di rete, timeout, 425, 429 e 5xx. Il limite è di 5 tentativi; secret mancanti, endpoint non validi e errori permanenti finiscono in `dead_letter` con errore troncato e senza dati sensibili nei log.
+
+La migrazione crea anche le transizioni protette `delivered/pending/dead_letter`, con autorizzazione esclusiva al `service_role`. Il job è già attivo in produzione, ma con coda vuota non effettua chiamate esterne: le destinazioni HTTPS restano da configurare e approvare prima di una consegna reale.
+
+Migration: `supabase/migrations/20260904110000_randcore_webhook_delivery_worker.sql`. Test: `test/randcore-webhook-worker.test.js`.
+
 ## Worker e automazioni
 
 - `pulisci-richieste-urgenti-72h` — orario.
