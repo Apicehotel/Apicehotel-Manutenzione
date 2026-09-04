@@ -12,7 +12,7 @@ I permessi restano autorità: un interesse può solo dare priorità a una funzio
 
 ## Interessi
 
-La configurazione di navigazione per ruolo già esistente viene riusata come prima sorgente dichiarativa degli interessi operativi: le destinazioni impostate su `bottom` hanno priorità nel bottom-nav. Il contratto `adaptive-layout.js` supporta anche `user.interests` espliciti per una futura personalizzazione individuale senza cambiare la shell.
+La configurazione di navigazione per ruolo già esistente viene riusata come prima sorgente dichiarativa degli interessi operativi: le destinazioni impostate su `bottom` hanno priorità nel bottom-nav. Il contratto `adaptive-layout.js` supporta anche `user.interests` espliciti; `Shell.jsx` li usa già quando il profilo li espone e ricade su interessi coerenti con il ruolo quando non sono presenti.
 
 Il bottom-nav mantiene due ancore stabili: Home in posizione 3 e Altro in posizione 5. Le posizioni operative 1, 2 e 4 sono selezionate soltanto tra destinazioni autorizzate e ordinate per interessi.
 
@@ -30,7 +30,7 @@ La persistenza canonica `apicehotel.ui-size.v1` resta unica. Non viene introdott
 
 ## Safe-area e overflow
 
-Le safe-area browser e i futuri native insets condividono le variabili `--rs-safe-*`. Il contenuto usa `min-width: 0`, larghezza controllata e wrapping difensivo per evitare overflow orizzontale accidentale. Drawer e bottom-nav rispettano safe-area iOS/Android.
+Le safe-area browser e i futuri native insets condividono le variabili `--rs-adaptive-safe-*`. Il contenuto usa `min-width: 0`, larghezza controllata e wrapping difensivo per evitare overflow orizzontale accidentale. Drawer e bottom-nav rispettano safe-area iOS/Android.
 
 ## Quality gate
 
@@ -40,4 +40,6 @@ La CI generale deve continuare a passare build, RandUI contracts, Playwright Chr
 
 ## Zombie scan
 
-Nessuna eliminazione in questo intervento. `ui-size.js`, `role-navigation.js`, sidebar, drawer e bottom-nav sono sistemi canonici e vengono riusati. `housekeeping-v2.jsx` non è zombie: `housekeeping-v3.jsx` lo importa come base e aggiunge lo storico. Nessun framework UI, device detection SDK o seconda navigation stack è stato introdotto.
+È stato eliminato `src/randapp/app-shell-foundation.css`: era un secondo foglio di fondazione che duplicava responsabilità di `adaptive-layout.css`. La CI ha evidenziato anche l'import residuo in `Shell.jsx`, rimosso nello stesso intervento. `src/randapp/adaptive-layout.css`, già caricato dal runtime entrypoint, resta l'unica sorgente canonica della geometria adattiva.
+
+`ui-size.js`, `role-navigation.js`, sidebar, drawer e bottom-nav non sono zombie e vengono riusati. `housekeeping-v2.jsx` non è zombie: `housekeeping-v3.jsx` lo importa come base e aggiunge lo storico. Nessun framework UI, device detection SDK o seconda navigation stack è stato introdotto.
