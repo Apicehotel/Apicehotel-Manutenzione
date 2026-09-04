@@ -1,8 +1,7 @@
 /* ============================================================
-   RandApp — App Shell Foundation
-   Final geometry contract for shared chrome.
-   Keeps the mobile shell stable across iOS PWA, Android web/PWA,
-   Windows and a future native Android wrapper.
+   RandApp — Adaptive App Shell Foundation
+   One chrome contract for iOS, Android, tablet and desktop.
+   Piccolo / Normale / Grande change density without breaking geometry.
    ============================================================ */
 
 :root {
@@ -10,21 +9,30 @@
   --rs-native-safe-right: 0px;
   --rs-native-safe-bottom: 0px;
   --rs-native-safe-left: 0px;
-
-  /* Browser safe-area and future native insets share one contract. */
   --rs-safe-top: max(env(safe-area-inset-top, 0px), var(--rs-native-safe-top));
   --rs-safe-right: max(env(safe-area-inset-right, 0px), var(--rs-native-safe-right));
   --rs-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--rs-native-safe-bottom));
   --rs-safe-left: max(env(safe-area-inset-left, 0px), var(--rs-native-safe-left));
-
   --rs-nav-shell-h: calc(64px * var(--rs-scale));
   --rs-nav-gap: calc(10px * var(--rs-scale));
   --rs-content-bottom-clearance: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) + 24px * var(--rs-scale));
+  --rs-adaptive-content-max: 1560px;
+  --rs-adaptive-touch-min: 44px;
 }
 
-/* Shared chrome consumes effective insets, never page-specific guesses. */
+html[data-ui-size='small'] {
+  --rs-adaptive-touch-min: 40px;
+}
+
+html[data-ui-size='large'] {
+  --rs-nav-shell-h: calc(68px * var(--rs-scale));
+  --rs-nav-gap: calc(10px * var(--rs-scale));
+  --rs-adaptive-touch-min: 48px;
+}
+
 .rs-app {
   padding-top: var(--rs-safe-top);
+  min-width: 0;
 }
 
 .rs-header {
@@ -33,13 +41,21 @@
 }
 
 .rs-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   padding-left: max(var(--rs-page-pad-x, 16px), var(--rs-safe-left));
   padding-right: max(var(--rs-page-pad-x, 16px), var(--rs-safe-right));
   padding-bottom: var(--rs-content-bottom-clearance);
+  overflow-wrap: anywhere;
 }
 
-/* Five-slot mobile contract: Home is structurally slot 3.
-   Missing permissions leave a slot empty instead of moving navigation around. */
+.rs-content > * {
+  min-width: 0;
+}
+
+/* Five stable mobile slots: Home is always slot 3, Altro slot 5.
+   Operational slots are interest-ranked in JS but never bypass permissions. */
 .rs-bottomnav {
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   min-height: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom));
@@ -49,9 +65,10 @@
 
 .rs-navbtn {
   min-width: 0;
-  min-height: calc(52px * var(--rs-scale)) !important;
+  min-height: max(var(--rs-adaptive-touch-min), calc(52px * var(--rs-scale))) !important;
   padding: 5px 2px !important;
   justify-content: center;
+  touch-action: manipulation;
 }
 
 .rs-navbtn[data-slot='1'] { grid-column: 1; }
@@ -68,56 +85,88 @@
   text-align: center;
 }
 
-/* Create is an action, not a sixth destination. It is anchored to the app nav,
-   so Android system navigation and iOS Home Indicator can grow underneath safely. */
 .rs-navfab {
   right: max(14px, calc(var(--rs-safe-right) + 10px)) !important;
   bottom: calc(var(--rs-nav-shell-h) + var(--rs-safe-bottom) + var(--rs-nav-gap)) !important;
-  width: calc(54px * var(--rs-scale));
-  height: calc(54px * var(--rs-scale));
+  width: max(var(--rs-adaptive-touch-min), calc(54px * var(--rs-scale)));
+  height: max(var(--rs-adaptive-touch-min), calc(54px * var(--rs-scale)));
   border-radius: calc(18px * var(--rs-scale));
+  touch-action: manipulation;
 }
 
-/* Never cap a real system inset. Three-button Android navigation, gesture bars
-   and future native WindowInsets are allowed to reserve all the space they need. */
-@media (max-width: 899px) {
-  .rs-bottomnav {
-    bottom: 0 !important;
+/* Phone: single-column chrome, no accidental horizontal page scrolling. */
+@media (max-width: 767px) {
+  .rs-app,
+  .rs-content {
+    max-width: 100vw;
   }
 
+  .rs-bottomnav { bottom: 0 !important; }
+  .rs-content { padding-bottom: var(--rs-content-bottom-clearance) !important; }
+
+  .rs-drawer {
+    width: min(92vw, calc(380px * var(--rs-scale)));
+    max-width: calc(100vw - var(--rs-safe-left) - 8px);
+  }
+}
+
+/* Tablet portrait/landscape: keep touch navigation but allow denser page composition.
+   This avoids pretending an iPad/Android tablet is either a giant phone or desktop. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  :root { --rs-page-pad-x: clamp(20px, 3vw, 32px); }
+
+  .rs-bottomnav { bottom: 0 !important; }
   .rs-content {
     padding-bottom: var(--rs-content-bottom-clearance) !important;
+    max-width: 1100px;
+    margin-inline: auto;
+  }
+
+  .rs-drawer { width: min(430px, 54vw); }
+}
+
+/* Desktop/Windows: sidebar is the primary navigation and content can breathe.
+   The max width prevents ultra-wide monitors from stretching forms indefinitely. */
+@media (min-width: 1200px) {
+  :root { --rs-page-pad-x: clamp(24px, 2.6vw, 44px); }
+
+  .rs-content {
+    padding-bottom: clamp(28px, 3vw, 48px);
+    max-width: var(--rs-adaptive-content-max);
+    margin-inline: auto;
   }
 }
 
-/* Very narrow phones keep the same five-slot geometry instead of reordering Home. */
+/* Coarse pointers need touch-safe controls regardless of viewport width. */
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  input,
+  select,
+  textarea {
+    min-height: var(--rs-adaptive-touch-min);
+  }
+}
+
+/* Small phones retain the geometry and trim labels rather than overflow. */
 @media (max-width: 380px) {
   .rs-bottomnav {
     padding-left: max(4px, var(--rs-safe-left)) !important;
     padding-right: max(4px, var(--rs-safe-right)) !important;
   }
 
-  .rs-navbtn small {
-    font-size: .56rem;
-  }
+  .rs-navbtn small { font-size: .56rem; }
 }
 
-/* Tablet keeps bottom navigation; desktop/Windows uses the existing sidebar. */
-@media (min-width: 960px) {
+/* Landscape phones use horizontal space without sacrificing safe areas. */
+@media (max-width: 767px) and (orientation: landscape) {
   .rs-content {
-    padding-bottom: clamp(28px, 3vw, 48px);
+    padding-left: max(20px, var(--rs-safe-left));
+    padding-right: max(20px, var(--rs-safe-right));
   }
-}
-
-/* Grande mode scales controls through tokens while preserving navigation geometry. */
-html[data-ui-size='large'] {
-  --rs-nav-shell-h: calc(68px * var(--rs-scale));
-  --rs-nav-gap: calc(10px * var(--rs-scale));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rs-navbtn,
-  .rs-navfab {
-    transition: none !important;
-  }
+  .rs-navfab { transition: none !important; }
 }
