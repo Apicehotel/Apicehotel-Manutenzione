@@ -192,3 +192,52 @@ test('fallback execution never escapes the governed candidate set', async () => 
   assert.equal(result.result, 'fallback')
   assert.deepEqual(result.attempts.map((attempt) => attempt.modelId), ['primary', 'fallback'])
 })
+
+test('RandAgentRuntime routes the governed model before Planner and exposes only a safe descriptor', async () => {
+  const router = new ModelRouter({ models: [
+    createModel('cheap', { quality: 0.55, reliability: 0.6, cost: 0.1 }),
+    createModel('strong', { quality: 0.92, reliability: 0.96, cost: 0.7 }),
+  ] })
+  let plannerModel = null
+  const runtime = new RandAgentRuntime({
+    executor: executor(),
+    modelRouter: router,
+    modelRequestProvider: async () => ({
+      risk: RoutingRisk.HIGH,
+      priority: RoutingPriority.COST,
+      requiredCapabilities: [ModelCapability.REASONING],
+      privacy: PrivacyLevel.SENSITIVE,
+    }),
+    planner: async ({ context }) => {
+      plannerModel = context.randModelRoute.selected
+      assert.equal(context.randModelRoute.fallbackIds.includes('cheap'), false)
+      assert.equal('metadata' in plannerModel, false)
+      assert.equal('execute' in plannerModel, false)
+      return { tasks: [] }
+    },
+  })
+  const result = await runtime.run({ objective: 'governed model task', context: { hotelId: 'hotelgio' }, runId: 'model-run' })
+  assert.equal(plannerModel.id, 'strong')
+  assert.equal(result.modelRoute.selected.id, 'strong')
+  assert.equal(result.trace.some((event) => event.type === 'RAND_AGENT_MODEL_ROUTED' && event.modelId === 'strong'), true)
+})
+
+test('RandAgentRuntime fails closed before Planner and Executor when no governed model is compatible', async () => {
+  const router = new ModelRouter({ models: [
+    createModel('almost', { quality: 0.95, reliability: 0.89, cost: 0.4 }),
+  ] })
+  let planned = false
+  let executed = false
+  const runtime = new RandAgentRuntime({
+    executor: executor(async () => { executed = true; return { ok: true } }),
+    modelRouter: router,
+    modelRequestProvider: async () => ({ risk: RoutingRisk.CRITICAL, requiredCapabilities: [ModelCapability.REASONING] }),
+    planner: async () => { planned = true; return { tasks: [] } },
+  })
+  await assert.rejects(
+    () => runtime.run({ objective: 'critical task', context: { hotelId: 'hotelgio' }, runId: 'critical-model-run' }),
+    (error) => error instanceof RandAgentPolicyError && /No compatible model/i.test(error.message),
+  )
+  assert.equal(planned, false)
+  assert.equal(executed, false)
+})
