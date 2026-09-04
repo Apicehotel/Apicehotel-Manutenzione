@@ -1,0 +1,201 @@
+/* RandAI Control Center: one predictable width model across devices. */
+.rc-shell,
+.rc-shell * {
+  box-sizing: border-box;
+}
+
+.rc-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.rc-main,
+.rc-top > div:first-child,
+.rc-panel-body,
+.rc-ecosystem,
+.rc-ecosystem-grid,
+.rc-ecosystem-card {
+  min-width: 0;
+}
+
+.rc-main {
+  width: 100%;
+  max-width: none;
+}
+
+.rc-top h1,
+.rc-top p,
+.rc-ecosystem-card p,
+.rc-evidence code {
+  overflow-wrap: anywhere;
+}
+
+.rc-quick-actions { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.rc-quick-actions button,.rc-module-open { border:1px solid rgba(255,255,255,.12); border-radius:11px; padding:11px 12px; background:rgba(255,255,255,.05); color:inherit; font:inherit; font-weight:700; cursor:pointer; text-align:left; }
+.rc-quick-actions button:hover,.rc-module-open:hover { background:rgba(255,255,255,.1); border-color:rgba(104,218,170,.5); }
+.rc-quick-actions span { float:right; opacity:.7; }
+.rc-module-open { margin-top:14px; width:100%; }
+
+/* Keep the navigation usable on tablets instead of collapsing it to icons. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .rc-shell {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
+
+  .rc-sidebar {
+    padding: 14px 10px;
+  }
+
+  .rc-brand div,
+  .rc-nav-label,
+  .rc-sidebar nav button,
+  .rc-back {
+    font-size: inherit;
+  }
+
+  .rc-brand {
+    justify-content: flex-start;
+    padding-inline: 7px;
+  }
+
+  .rc-nav-label {
+    font-size: 9px;
+  }
+
+  .rc-sidebar nav button {
+    height: auto;
+    padding: 10px 11px;
+  }
+
+  .rc-main {
+    padding-inline: 20px;
+  }
+}
+
+/* Phones: full-width content, two readable horizontal navigation rails. */
+@media (max-width: 760px) {
+  .rc-shell {
+    display: block;
+    width: 100%;
+  }
+
+  .rc-sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    overflow: hidden;
+  }
+
+  .rc-brand {
+    display: flex;
+    padding: 4px 4px 10px;
+  }
+
+  .rc-brand div {
+    display: grid;
+    font-size: inherit;
+  }
+
+  .rc-brand strong {
+    font-size: 18px;
+  }
+
+  .rc-brand span {
+    font-size: 9px;
+  }
+
+  .rc-nav-label {
+    display: block;
+    padding: 2px 4px 5px;
+    font-size: 9px;
+  }
+
+  .rc-nav-secondary-label {
+    margin-top: 6px;
+  }
+
+  .rc-sidebar nav,
+  .rc-nav-secondary {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 3px;
+    scrollbar-width: none;
+  }
+
+  .rc-sidebar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rc-sidebar nav button {
+    flex: 0 0 auto;
+    font-size: 12px !important;
+    white-space: nowrap;
+    padding: 8px 10px;
+  }
+
+  .rc-back {
+    display: none;
+  }
+
+  .rc-main {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 11px 34px;
+  }
+
+  .rc-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rc-top > div:first-child {
+    width: 100%;
+  }
+
+  .rc-system-bar,
+  .rc-toolbar,
+  .rc-kpis,
+  .rc-dashboard-grid,
+  .rc-card-grid,
+  .rc-ecosystem-grid {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .rc-ecosystem-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rc-quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+  .rc-embedded {
+    margin: -16px -11px -34px;
+  }
+}
+
+@media (max-width: 430px) {
+  .rc-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .rc-kpi {
+    padding: 12px;
+  }
+
+  .rc-kpi span {
+    font-size: 11px;
+  }
+
+  .rc-kpi strong {
+    font-size: 23px;
+  }
+
+  .rc-panel-body {
+    padding: 12px;
+  }
+}
