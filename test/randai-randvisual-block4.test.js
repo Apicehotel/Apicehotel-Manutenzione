@@ -53,9 +53,10 @@ test('RandVisual escapes untrusted labels instead of emitting executable markup'
   }), { context: { hotelId: 'hotelgio' } })
   assert.doesNotMatch(result.svg, /<script\b/i)
   assert.doesNotMatch(result.svg, /<img\b/i)
-  assert.doesNotMatch(result.svg, /onerror\s*=/i)
+  assert.doesNotMatch(result.svg, /<[^>]+\sonerror\s*=/i)
   assert.match(result.svg, /&lt;script&gt;/)
   assert.match(result.svg, /&lt;img/)
+  assertSafeRandVisualSvg(result.svg)
 })
 
 test('RandVisual rejects cross-hotel rendering', () => {
