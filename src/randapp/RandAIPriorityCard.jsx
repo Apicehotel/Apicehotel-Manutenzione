@@ -15,7 +15,7 @@ export default function RandAIPriorityCard({ hotel, user, onNavigate }) {
 
   const reasonSummary = (item.reasons || []).slice(0, 2).join(' · ')
   return <section className="rs-randai-priority" data-testid="randai-next-work">
-    <div className="rs-randai-priority__head"><span><Icon name="sparkles"/><strong>RandAI · Prossimo lavoro</strong></span><b>{item.priorityLabel}</b></div>
+    <div className="rs-randai-priority__head"><span><Icon name="sparkles"/><strong>RandAI · Prossimo lavoro consigliato</strong></span><b>{item.priorityLabel}</b></div>
     <button type="button" onClick={() => onNavigate?.('issues')} aria-label={`Apri lavoro consigliato: ${item.title || 'Intervento consigliato'}`}>
       <span className="rs-randai-priority__main"><small>{item.room || item.category || 'Segnalazione'}</small><strong>{item.title || 'Intervento consigliato'}</strong>{reasonSummary&&<span>{reasonSummary}</span>}</span>
       <span className="rs-randai-priority__score">Priorità {item.score}</span><Icon name="chevronRight"/>
