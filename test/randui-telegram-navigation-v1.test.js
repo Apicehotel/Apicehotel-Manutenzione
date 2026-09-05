@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
+const main = fs.readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8')
 const navigation = fs.readFileSync(new URL('../src/randapp/shell-navigation.js', import.meta.url), 'utf8')
 const shell = fs.readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
 const nav = fs.readFileSync(new URL('../src/randapp/nav.js', import.meta.url), 'utf8')
@@ -48,8 +49,9 @@ test('RandAI remains a global assistant action rather than a duplicate page', ()
   assert.match(css, /rs-header__randai--desktop/)
 })
 
-test('Telegram visual layer uses existing RandUI tokens and touch-safe controls', () => {
-  assert.match(navigation, /import '\.\/telegram-navigation\.css'/)
+test('Telegram visual layer is runtime-owned while navigation logic stays side-effect free', () => {
+  assert.match(main, /import ['"]\.\/randapp\/telegram-navigation\.css['"]/)
+  assert.doesNotMatch(navigation, /telegram-navigation\.css/)
   assert.match(css, /var\(--rs-/)
   assert.match(css, /min-height:\s*54px/)
   assert.match(css, /focus-visible/)
