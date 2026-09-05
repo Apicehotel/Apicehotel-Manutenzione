@@ -10,6 +10,7 @@ import { resolveUserInterests } from './adaptive-layout.js'
 import { initSystemInsetsBridge } from './system-insets.js'
 import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
 import { canManageTechnicianDirectory } from './technician-directory-policy.js'
+import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
@@ -35,13 +36,13 @@ const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
-  default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
+  default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
 const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus }) => ({
-  default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
+  default: ({ hotel }) => <div data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
 })))
 const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
-  default: ({ hotel, user }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
+  default: ({ hotel, user }) => <div data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
 })))
 const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
 const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
@@ -301,27 +302,31 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const renderView = () => {
     if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} embedded />
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
-    if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
-    if (view === 'chat') return <ChatGroups user={user} hotel={hotel} />
-    if (view === 'profile') return <Profile user={user} hotel={hotel} />
-    if (view === 'desktop-download') return <RandDesktopDownload />
-    if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
-    if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
-    if (view === 'supplies') return <SupplyRequestsPortal user={user} hotel={hotel} standalone />
-    if (view === 'my-work') return <MyWorkView user={user} hotel={hotel} />
-    if (view === 'planning-work' || view === 'planning-sale') return <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
-    if (view === 'urgent') return <UrgentView user={user} hotel={hotel} />
-    if (view === 'reminders') return <RemindersView user={user} hotel={hotel} />
-    if (view === 'temperature') return <TemperatureView hotel={hotel} />
-    if (view === 'plants') return <PlantView hotel={hotel} />
-    if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
-    if (view === 'technicians') return <TechnicianDirectoryView user={user} hotel={hotel} createSignal={technicianCreateSignal} />
-    if (view === 'feedback-received') return <FeedbackView user={user} hotel={hotel} received />
-    if (view === 'feedback') return <FeedbackView user={user} hotel={hotel} />
-    if (view === 'pin') return <PinView user={user} />
-    if (view === 'manual') return <ManualView />
-    return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
+
+    let content = null
+    if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
+    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
+    if (view === 'profile') content = <Profile user={user} hotel={hotel} />
+    if (view === 'desktop-download') content = <RandDesktopDownload />
+    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
+    if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
+    if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
+    if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
+    if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
+    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
+    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
+    if (view === 'temperature') content = <TemperatureView hotel={hotel} />
+    if (view === 'plants') content = <PlantView hotel={hotel} />
+    if (view === 'housekeeping') content = <HousekeepingView user={user} hotel={hotel} />
+    if (view === 'technicians') content = <TechnicianDirectoryView user={user} hotel={hotel} createSignal={technicianCreateSignal} />
+    if (view === 'feedback-received') content = <FeedbackView user={user} hotel={hotel} received />
+    if (view === 'feedback') content = <FeedbackView user={user} hotel={hotel} />
+    if (view === 'pin') content = <PinView user={user} />
+    if (view === 'manual') content = <ManualView />
+
+    if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
+    return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
   }
 
   const DrawerHeader = (
