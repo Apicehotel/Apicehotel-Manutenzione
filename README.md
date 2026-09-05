@@ -85,6 +85,22 @@ Il Blocco 3 porta le destinazioni runtime sotto il contratto reale, senza riscri
 
 Dettaglio: `docs/architecture/RANDUI_V1_MIGRATION.md`.
 
+### RandUI Visual Language v1
+
+La migrazione strutturale è completata da una grammatica visuale dichiarativa condivisa:
+
+`Page Catalog → Template → Visual Policy → RandUI primitives → domain content → Guard`
+
+- tutti i **14 template** dichiarano una policy di larghezza (`wide / reading / center`) e ritmo (`compact / normal / comfortable`), applicata automaticamente dal `TemplateFrame`;
+- `visual-primitives.jsx` registra cinque primitive canoniche: `PageTitle`, `Surface`, `Stack`, `Grid`, `Metric`;
+- `randui/visual-language.css`, importato dalla Foundation finale, governa gerarchia locale, ritmo, pannelli, grid e metriche senza introdurre un secondo design system;
+- `PageTitle` operativo è unico: le utility views riusano la primitiva RandUI invece di mantenerne una copia;
+- Planning (`PlanningHub`, lavori, sale e calendario) è la prima famiglia top-level completamente ripulita dalla geometria inline ripetuta;
+- il vecchio `src/randapp/migrated.css` è stato eliminato dopo zombie scan: le regole vive sono confluite nel linguaggio RandUI e i selettori legacy non avevano più consumer;
+- RandRadar resta disponibile quando manca una capacità reale; non viene usato per duplicare spacing, card o layout già coperti internamente.
+
+Dettaglio: `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md`.
+
 ## Safe-area iOS / Android
 
 RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
@@ -218,6 +234,7 @@ npm run test:quality
 npm run test:randui
 npm run test:randui:guard
 npm run test:randui:migration
+npm run test:randui:visual
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -234,6 +251,7 @@ La CI certifica, tra gli altri:
 - RandUI/RandAI/RandCore contracts;
 - RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
 - **RandUI Block 3: 23/23 destinazioni catalogate e compatibili con il proprio template boundary**;
+- **RandUI Visual Language v1: Visual Policy sui 14 template, primitive canoniche e Planning senza geometria page-level inline**;
 - matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
@@ -249,13 +267,14 @@ La CI certifica, tra gli altri:
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Vercel sono congelati (`deploymentEnabled: false`) e le prove/deploy della nuova UI vanno soltanto su DigitalOcean/Ocean.** La riattivazione Vercel richiede una decisione esplicita dopo chiusura dei gate e della migrazione.
+Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Vercel sono congelati (`deploymentEnabled: false`) e le prove/deploy della nuova UI vanno soltanto su DigitalOcean/Ocean.** La riattivazione Vercel richiede una decisione esplicita dopo chiusura dei gate e della verifica visuale su Ocean.
 
 ## Documentazione
 
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, copertura 23/23 e strategia di compatibilità.
+- `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — Visual Policy, primitive canoniche, ownership CSS e regole per le future pagine.
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
