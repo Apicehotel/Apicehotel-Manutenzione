@@ -67,23 +67,37 @@ Il FAB multi-azione non copre più le card della Home: la Home espone una azione
 
 La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mostra uno score esplicito `Priorità N`. Il CSS Home è centralizzato in `src/randapp/home-operational.css`, non embedded nei componenti.
 
-## RandChat — Group A
+## RandChat — Group A + B
 
-RandChat riusa l'identità RandApp e non crea un secondo account. Il **Group A** introduce le fondamenta dei gruppi operativi senza aggiungere Matrix o nuove dipendenze:
+RandChat riusa l'identità RandApp e non crea un secondo account. I primi **6/9 blocchi core** sono implementati senza Matrix e senza introdurre una seconda piattaforma utenti.
+
+### Group A — gruppi operativi
 
 - `RandChat ON/OFF` per utente, amministrato dal pannello Utenti;
 - capacità separata `Crea gruppi`;
 - gruppi aziendali realtime con ruoli `owner / admin / member`;
-- membership cross-hotel esplicita: un admin di un gruppo Choco può invitare un utente Brigantino, ma questo **non** crea né amplia `hotel_memberships`;
-- directory inviti minimale (ID, nome, hotel), senza email/telefono;
-- storico testuale configurabile a **30 o 60 giorni**;
-- cleanup automatico notturno; i messaggi marcati **Conserva** restano esclusi dalla retention;
-- audit del cleanup solo quantitativo: il testo eliminato non viene copiato nell'audit;
-- UI responsive integrata nella Shell e autorizzazione finale via Supabase RLS/RPC.
+- membership cross-hotel esplicita senza ampliare `hotel_memberships`;
+- directory minimale ID/nome/hotel, senza email o telefono;
+- retention gruppi **30/60 giorni** e messaggi marcabili **Conserva**;
+- RLS/RPC come autorità finale e audit retention senza copia del testo eliminato.
 
-I gruppi sono operativi aziendali e quindi non E2EE. I **DM E2EE e temporanei** appartengono al Group B; Telegram resta un provider media opzionale futuro e non è una dipendenza del Group A.
+### Group B — DM E2EE e Segnalazioni
 
-Dettagli e invarianti: `docs/architecture/RANDCHAT.md`.
+- DM globali tra utenti RandChat, indipendenti dalla struttura attiva;
+- E2EE v1 nativa browser: **ECDH P-256 + AES-GCM 256 + ECDSA P-256/SHA-256**;
+- chiavi private non esportabili conservate soltanto nell'IndexedDB locale del dispositivo;
+- Supabase conserva ciphertext, IV, chiavi pubbliche, firme ed envelope per-device, mai il body plaintext del DM;
+- ogni invio deve includere una envelope per tutti i dispositivi attivi di entrambi i partecipanti;
+- verifica della firma prima della decifratura;
+- retention DM configurabile **1 / 7 / 15 giorni**, con cleanup automatico orario;
+- promozione esplicita di un messaggio verificato — gruppo o DM — a **Segnalazione persistente**, usando i permessi e la pipeline già esistenti;
+- `chat_issue_links` conserva solo il collegamento metadata tra sorgente chat e Segnalazione.
+
+E2EE v1 non viene descritta come Signal-grade: non implementa Double Ratchet/forward secrecy o verifica indipendente dei device. Questi hardening possono sostituire il protocollo in futuro senza cambiare account, thread o UI.
+
+Restano **3 blocchi core**, tutti nel Group C: Inserimento procedure, RandAI sui contenuti operativi autorizzati e RandMedia. Telegram resta un provider media opzionale futuro.
+
+Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
 
 ## Moduli principali
 
@@ -95,7 +109,7 @@ Dettagli e invarianti: `docs/architecture/RANDCHAT.md`.
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
-- **RandChat** — gruppi operativi, membership cross-hotel controllata e futura messaggistica privata E2EE.
+- **RandChat** — gruppi operativi, DM E2EE per-device, retention temporanea e promozione controllata a dati operativi.
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
@@ -134,6 +148,7 @@ La CI certifica, tra gli altri:
 - production confidence;
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
+- RandChat E2EE round-trip e tamper detection;
 - Chromium + WebKit;
 - device acceptance;
 - RandCore health evidence;
@@ -149,7 +164,7 @@ Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibil
 
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
-- `docs/architecture/RANDCHAT.md` — architettura RandChat, Group A e roadmap successiva.
+- `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, retention e roadmap.
 - `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
 
 Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.
