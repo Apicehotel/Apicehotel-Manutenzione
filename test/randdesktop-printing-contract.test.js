@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { normalizePrintDocument, renderPrintDocumentHtml } from '../desktop/print-template.mjs'
 import { listPrinters, printCurrentView, printStructuredDocument } from '../desktop/print-service.mjs'
 
@@ -83,12 +85,14 @@ test('documento strutturato viene stampato in finestra sandbox senza HTML arbitr
   assert.equal(instance.destroyed, true)
 })
 
-test('preload espone solo API nominate e main valida sender + shell locale in produzione', () => {
-  const preload = read('desktop/preload.mjs')
+test('preload sandbox usa CommonJS ristretto e main valida sender + shell locale in produzione', () => {
+  const preload = read('desktop/preload.cjs')
   const main = read('desktop/main.mjs')
+  assert.match(preload, /require\('electron'\)/)
   assert.match(preload, /contextBridge\.exposeInMainWorld\('randDesktop'/)
   assert.doesNotMatch(preload, /exposeInMainWorld\([^,]+,\s*ipcRenderer\b/)
   assert.doesNotMatch(preload, /ipcRenderer\s*:\s*ipcRenderer/)
+  assert.match(main, /preload: path\.join\(__dirname, 'preload\.cjs'\)/)
   assert.match(main, /event\.sender === mainWindow\.webContents/)
   assert.match(main, /nodeIntegration: false/)
   assert.match(main, /contextIsolation: true/)
@@ -97,8 +101,15 @@ test('preload espone solo API nominate e main valida sender + shell locale in pr
   assert.doesNotMatch(main, /https:\/\/apicehotel\.vercel\.app/)
 })
 
+test('file RandDesktop principali superano il parser Node', () => {
+  for (const relative of ['desktop/main.mjs', 'desktop/preload.cjs', 'desktop/print-service.mjs', 'desktop/print-template.mjs']) {
+    const absolute = fileURLToPath(new URL(`../${relative}`, import.meta.url))
+    execFileSync(process.execPath, ['--check', absolute], { stdio: 'pipe' })
+  }
+})
+
 test('RandDesktop blocca stampa silenziosa dal contratto v1', () => {
-  const preload = read('desktop/preload.mjs')
+  const preload = read('desktop/preload.cjs')
   const service = read('desktop/print-service.mjs')
   assert.doesNotMatch(preload, /silent/)
   assert.match(service, /silent: false/)
