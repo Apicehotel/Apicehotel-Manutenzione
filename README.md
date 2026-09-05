@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandChat**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool + Permission Gateway, RandMind Continuity + Model Router, RandVisual Engine, RandCore Visual Intelligence, RandChange Receipt + Visual QA.
 
@@ -67,6 +67,24 @@ Il FAB multi-azione non copre più le card della Home: la Home espone una azione
 
 La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mostra uno score esplicito `Priorità N`. Il CSS Home è centralizzato in `src/randapp/home-operational.css`, non embedded nei componenti.
 
+## RandChat — Group A
+
+RandChat riusa l'identità RandApp e non crea un secondo account. Il **Group A** introduce le fondamenta dei gruppi operativi senza aggiungere Matrix o nuove dipendenze:
+
+- `RandChat ON/OFF` per utente, amministrato dal pannello Utenti;
+- capacità separata `Crea gruppi`;
+- gruppi aziendali realtime con ruoli `owner / admin / member`;
+- membership cross-hotel esplicita: un admin di un gruppo Choco può invitare un utente Brigantino, ma questo **non** crea né amplia `hotel_memberships`;
+- directory inviti minimale (ID, nome, hotel), senza email/telefono;
+- storico testuale configurabile a **30 o 60 giorni**;
+- cleanup automatico notturno; i messaggi marcati **Conserva** restano esclusi dalla retention;
+- audit del cleanup solo quantitativo: il testo eliminato non viene copiato nell'audit;
+- UI responsive integrata nella Shell e autorizzazione finale via Supabase RLS/RPC.
+
+I gruppi sono operativi aziendali e quindi non E2EE. I **DM E2EE e temporanei** appartengono al Group B; Telegram resta un provider media opzionale futuro e non è una dipendenza del Group A.
+
+Dettagli e invarianti: `docs/architecture/RANDCHAT.md`.
+
 ## Moduli principali
 
 - **RandApp** — segnalazioni, interventi, planning, housekeeping, rifornimenti, magazzino, sensori e operatività hotel.
@@ -77,6 +95,7 @@ La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mos
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
+- **RandChat** — gruppi operativi, membership cross-hotel controllata e futura messaggistica privata E2EE.
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
@@ -130,6 +149,7 @@ Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibil
 
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
+- `docs/architecture/RANDCHAT.md` — architettura RandChat, Group A e roadmap successiva.
 - `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
 
 Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.
