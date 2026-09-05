@@ -28,6 +28,8 @@ const CURRENT_VIEW_PRINT_CSS = `
 }
 `
 
+let printInProgress = false
+
 function ensureWindow(window) {
   if (!window || window.isDestroyed?.() || !window.webContents || window.webContents.isDestroyed?.()) {
     throw new Error('Finestra RandDesktop non disponibile')
@@ -35,6 +37,8 @@ function ensureWindow(window) {
 }
 
 function printWebContents(webContents, options = {}) {
+  if (printInProgress) return Promise.reject(new Error('Una stampa è già in corso'))
+  printInProgress = true
   const printOptions = {
     silent: false,
     printBackground: true,
@@ -42,10 +46,19 @@ function printWebContents(webContents, options = {}) {
     landscape: Boolean(options.landscape),
   }
   return new Promise((resolve, reject) => {
-    webContents.print(printOptions, (success, failureReason) => {
-      if (success) resolve({ ok: true })
-      else reject(new Error(failureReason || 'Stampa non riuscita'))
-    })
+    const finish = (callback) => (value) => {
+      printInProgress = false
+      callback(value)
+    }
+    try {
+      webContents.print(printOptions, (success, failureReason) => {
+        if (success) finish(resolve)({ ok: true })
+        else finish(reject)(new Error(failureReason || 'Stampa non riuscita'))
+      })
+    } catch (error) {
+      printInProgress = false
+      reject(error)
+    }
   })
 }
 
