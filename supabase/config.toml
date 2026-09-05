@@ -1,9 +1,13 @@
-# Solo l'impostazione per la funzione public-iss (nome deployato per una svista
-# in dashboard — la sorgente vive comunque in supabase/functions/public-iss):
-# nessuna verifica JWT, perché è pensata per essere aperta senza login (link
-# mandato al tecnico esterno via WhatsApp). Le altre funzioni già deployate
-# mantengono la loro configurazione esistente lato Supabase (non gestita da
-# questo file finché non viene generato con `supabase init` / `supabase
-# functions list`).
+# Solo le funzioni che devono accettare chiamate senza JWT Supabase sono
+# dichiarate qui. L'accesso applicativo resta comunque protetto dal contratto
+# specifico della funzione.
+
+# Link pubblico inviato al tecnico esterno via WhatsApp.
 [functions.public-iss]
+verify_jwt = false
+
+# Worker server-to-server invocato da pg_cron/pg_net. Non usa JWT utente:
+# richiede invece x-cron-secret confrontato lato server con
+# edge_function_secrets.randchat_media_cron_secret.
+[functions.randchat-media-cleanup]
 verify_jwt = false

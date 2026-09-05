@@ -106,6 +106,27 @@ export async function setChatGroupMemberRole(groupId, authUserId, role) {
   if (error) throw error
 }
 
+export async function fetchShareableProcedures(groupId) {
+  const client = ensureClient()
+  const { data, error } = await client.rpc('chat_list_shareable_procedures', { p_group_id: groupId })
+  if (error) throw error
+  return data || []
+}
+
+export async function shareProcedureToGroup(groupId, procedureId) {
+  const client = ensureClient()
+  const { data, error } = await client.rpc('chat_share_procedure', { p_group_id: groupId, p_procedure_id: procedureId })
+  if (error) throw error
+  return data
+}
+
+export async function fetchGroupProcedureLinks(groupId) {
+  const client = ensureClient()
+  const { data, error } = await client.rpc('chat_list_group_procedures', { p_group_id: groupId })
+  if (error) throw error
+  return data || []
+}
+
 export function subscribeChatGroup(groupId, { onMessage, onMessageChange, onMembershipChange } = {}) {
   if (!supabase || !groupId) return () => {}
   const channel = supabase
