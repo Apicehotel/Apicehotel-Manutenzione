@@ -1,4 +1,4 @@
-# RandApp / RandAI — Hotel Operations Platform
+# RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
 PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target supportati e testati: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
@@ -80,7 +80,7 @@ La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mos
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
-## Qualità e test
+## Quality Matrix e test
 
 Comandi principali:
 
@@ -96,7 +96,7 @@ npm run test:lts
 La CI certifica, tra gli altri:
 
 - dependency/security audit;
-- quality matrix;
+- Quality Matrix;
 - critical operational gate;
 - multi-hotel parity;
 - production confidence;
