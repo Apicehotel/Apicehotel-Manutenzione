@@ -6,13 +6,18 @@ import { EcosystemStatus, getRandEcosystemManifest } from '../src/randai/core/ec
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
-test('93 RandUI remains the single canonical primitive and chrome system', () => {
+test('93 RandUI remains the single canonical primitive chrome and foundation system', () => {
   const shell = read('../src/randapp/Shell.jsx')
   const main = read('../src/main.jsx')
+  const foundation = read('../src/randapp/randui/foundation.css')
   assert.match(shell, /from '\.\/ui\.jsx'/)
   assert.equal((shell.match(/<header className="rs-header/g) || []).length, 1)
   assert.equal((shell.match(/<nav className="rs-bottomnav/g) || []).length, 1)
-  assert.match(main, /ui-coherence\.css/)
+  assert.match(main, /randui\/foundation\.css/)
+  assert.doesNotMatch(main, /import '\.\/randapp\/adaptive-layout\.css'/)
+  assert.doesNotMatch(main, /import '\.\/randapp\/ui-coherence\.css'/)
+  assert.match(foundation, /@import '\.\.\/adaptive-layout\.css'/)
+  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
 })
 
 test('94 identities are versioned and complete for all canonical hotels', () => {
@@ -35,12 +40,15 @@ test('95 System Light Dark and complete light tokens use one theme contract', ()
   for (const token of ['--rs-bg:', '--rs-surface:', '--rs-text:', '--rs-line:', '--rs-accent:']) assert.match(css, new RegExp(token))
 })
 
-test('96 adaptive UI covers safe areas, visual viewport, input modes and rotation', () => {
+test('96 adaptive UI covers safe areas visual viewport input modes rotation and canonical desktop threshold', () => {
   const adaptive = read('../src/randapp/adaptive-layout.css')
   const coherence = read('../src/randapp/ui-coherence.css')
+  const foundation = read('../src/randapp/randui/foundation.css')
   const insets = read('../src/randapp/system-insets.js')
   const shell = read('../src/randapp/Shell.jsx')
   assert.match(adaptive, /safe-area-inset/)
+  assert.match(adaptive, /min-width: 1200px/)
+  assert.match(foundation, /min-width: 1024px\) and \(max-width: 1199px/)
   assert.match(coherence, /100dvh/)
   assert.match(coherence, /pointer: coarse/)
   assert.match(coherence, /pointer: fine/)
@@ -49,7 +57,7 @@ test('96 adaptive UI covers safe areas, visual viewport, input modes and rotatio
   assert.match(shell, /useDrawerSwipe/)
 })
 
-test('97 visual quality gate is named, cross-engine and fail-closed', () => {
+test('97 visual quality gate is named cross-engine and fail-closed', () => {
   const ci = read('../.github/workflows/ci.yml')
   const e2e = read('./e2e.mjs')
   const device = read('./device-acceptance.mjs')
