@@ -1,3 +1,4 @@
+import './telegram-navigation.css'
 import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
 
 // RandUI Telegram-inspired primary navigation contract.
