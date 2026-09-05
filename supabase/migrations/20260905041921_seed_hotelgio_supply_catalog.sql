@@ -1,12 +1,6 @@
 -- Bootstrap idempotente del catalogo Rifornimenti Hotel Giò.
--- Sorgente operativa storica: "Rifornimento Office - Hotel Gio".
---
--- Regole intenzionali:
--- - solo hotelgio: ChocoHotel e Brigantino restano configurabili dai rispettivi Admin;
--- - solo categorie Minibar e Consumo;
--- - nessuna quantità o movimento di Magazzino viene creato;
--- - un prodotto già presente non viene modificato né riattivato automaticamente;
--- - il seed può essere rilanciato senza creare duplicati.
+-- Versione allineata alla migrazione già applicata su Supabase produzione.
+-- La migrazione correttiva immediatamente successiva porta il catalogo alla lista reale completa.
 
 with legacy_supply_products(category, name, sort_order) as (
   values
