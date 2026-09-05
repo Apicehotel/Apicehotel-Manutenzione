@@ -12,7 +12,7 @@
   padding-top: 2px;
 }
 
-.rs-workhome__hero > div { min-width: 0; }
+.rs-workhome__hero > div:first-child { min-width: 0; }
 .rs-workhome__hero h1 {
   margin: 2px 0 1px;
   font-family: Sora, sans-serif;
@@ -33,7 +33,14 @@
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.rs-workhome__view-label { display: inline; }
+.rs-workhome__hero-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rs-workhome__view-label,
+.rs-workhome__create-label { display: inline; }
 
 .rs-workhome__prefs {
   display: flex;
@@ -246,9 +253,8 @@
 .rs-randai-priority__blocked { color: var(--rs-warn); }
 .rs-randai-priority__assign { color: var(--rs-text-2); font-size: .74rem; }
 
-/* Home does not use the floating add button: it was covering task cards.
-   Create remains available from the contextual operational views and navigation. */
-.rs-workhome ~ .rs-navfab,
+/* Home replaces the generic multi-action FAB with a compact, explicit create
+   action in the hero. Other operational views keep their contextual FAB. */
 .rs-app:has(.rs-workhome) .rs-navfab { display: none; }
 
 html[data-ui-size='large'] .rs-workhome { gap: 16px; }
@@ -261,8 +267,10 @@ html[data-ui-size='large'] .rs-randai-priority { padding: 13px; }
   .rs-workhome__hero { gap: 8px; }
   .rs-workhome__hero h1 { font-size: clamp(1.48rem, 7.2vw, 1.85rem); }
   .rs-workhome__hero p { font-size: .82rem; }
-  .rs-workhome__hero .rs-btn { padding-inline: 9px; }
-  .rs-workhome__view-label { display: none; }
+  .rs-workhome__hero-actions { gap: 4px; }
+  .rs-workhome__hero .rs-btn { padding-inline: 8px; }
+  .rs-workhome__view-label,
+  .rs-workhome__create-label { display: none; }
   .rs-workhome__prefs { align-items: stretch; flex-direction: column; }
   .rs-workhome__prefs .rs-segmented { min-width: 0; width: 100%; }
   .rs-workhome__stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
