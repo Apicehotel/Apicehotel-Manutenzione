@@ -26,8 +26,10 @@ test('Shell imports operational views directly from focused modules', async () =
   assert.doesNotMatch(shell, /MigratedViews/)
   assert.match(shell, /buildPrimaryBottomNav/)
   assert.match(shell, /data-count="5"/)
-  assert.match(shellNavigation, /slot:\s*3,\s*id:\s*'home'/)
-  assert.match(shellNavigation, /slot:\s*5,\s*id:\s*'menu'/)
+  assert.match(shellNavigation, /home:\s*3/)
+  assert.match(shellNavigation, /randai:\s*5/)
+  assert.match(shellNavigation, /id:\s*'randai'.*action:\s*'randai'/s)
+  assert.doesNotMatch(shellNavigation, /label:\s*'Altro'/)
   assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })
 
