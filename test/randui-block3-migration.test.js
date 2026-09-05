@@ -13,7 +13,7 @@ import {
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
 const REQUIRED_RUNTIME_PAGES = [
-  'home','issues','chat','housekeeping','supplies','interventions','inventory','my-work',
+  'home','operations','issues','chat','housekeeping','supplies','interventions','inventory','my-work',
   'planning-work','planning-sale','urgent','reminders','temperature','plants','technicians',
   'profile','pin','manual','feedback','feedback-received','desktop-download','settings','randai',
 ]
