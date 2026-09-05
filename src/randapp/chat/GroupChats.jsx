@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { hotelById } from '../helpers.js'
 import {
   addChatGroupMember,
   createChatGroup,
+  deleteChatMessage,
   fetchChatDirectory,
   fetchChatGroupMembers,
   fetchChatGroups,
   fetchChatMessages,
+  fetchGroupProcedureLinks,
   removeChatGroupMember,
   sendChatMessage,
   setChatGroupMemberRole,
@@ -14,7 +16,17 @@ import {
   subscribeChatGroup,
   updateChatGroup,
 } from './chat-data.js'
+import {
+  cleanupRandMediaUploads,
+  fetchGroupAttachments,
+  registerGroupAttachment,
+  subscribeChatAttachments,
+  uploadGroupMediaFiles,
+} from './randmedia.js'
+import ChatAttachment from './ChatAttachment.jsx'
+import ProcedurePicker from './ProcedurePicker.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
+import RandChatAI from './RandChatAI.jsx'
 import './chat.css'
 
 const roleRank = { owner: 0, admin: 1, member: 2 }
@@ -25,16 +37,22 @@ const displayHotels = (ids = []) => ids.map((id) => hotelById(id)?.name || id).j
 
 export default function GroupChats({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
+  const fileRef = useRef(null)
   const [groups, setGroups] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [messages, setMessages] = useState([])
   const [members, setMembers] = useState([])
   const [directory, setDirectory] = useState([])
+  const [attachments, setAttachments] = useState([])
+  const [procedureLinks, setProcedureLinks] = useState([])
+  const [files, setFiles] = useState([])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [showProcedures, setShowProcedures] = useState(false)
+  const [showAI, setShowAI] = useState(false)
   const [newGroup, setNewGroup] = useState({ name: '', retention: 30 })
   const [inviteId, setInviteId] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
@@ -46,6 +64,12 @@ export default function GroupChats({ user, hotel }) {
   const memberById = useMemo(() => new Map(members.map((m) => [m.auth_user_id, m])), [members])
   const invitedIds = useMemo(() => new Set(members.map((m) => m.auth_user_id)), [members])
   const inviteOptions = useMemo(() => directory.filter((u) => !invitedIds.has(u.auth_user_id)), [directory, invitedIds])
+  const attachmentsByMessage = useMemo(() => {
+    const map = new Map()
+    attachments.forEach((item) => map.set(item.group_message_id, [...(map.get(item.group_message_id) || []), item]))
+    return map
+  }, [attachments])
+  const procedureByMessage = useMemo(() => new Map(procedureLinks.map((item) => [item.group_message_id, item])), [procedureLinks])
 
   const loadGroups = useCallback(async () => {
     if (!user?.chat_enabled) return
@@ -55,24 +79,30 @@ export default function GroupChats({ user, hotel }) {
   }, [user?.chat_enabled])
 
   const loadSelected = useCallback(async () => {
-    if (!selectedId) { setMessages([]); setMembers([]); return }
-    const [msg, mem] = await Promise.all([fetchChatMessages(selectedId), fetchChatGroupMembers(selectedId)])
+    if (!selectedId) { setMessages([]); setMembers([]); setAttachments([]); setProcedureLinks([]); return }
+    const [msg, mem, media, procedures] = await Promise.all([
+      fetchChatMessages(selectedId),
+      fetchChatGroupMembers(selectedId),
+      fetchGroupAttachments(selectedId),
+      fetchGroupProcedureLinks(selectedId),
+    ])
     setMessages(msg)
     setMembers(mem.sort((a, b) => (roleRank[a.group_role] ?? 9) - (roleRank[b.group_role] ?? 9) || String(a.display_name).localeCompare(String(b.display_name), 'it')))
+    setAttachments(media)
+    setProcedureLinks(procedures)
   }, [selectedId])
 
   useEffect(() => { loadGroups().catch((e) => setError(e.message || 'Errore caricamento chat')) }, [loadGroups])
   useEffect(() => { loadSelected().catch((e) => setError(e.message || 'Errore caricamento gruppo')) }, [loadSelected])
   useEffect(() => {
     if (!selectedId) return undefined
-    return subscribeChatGroup(selectedId, {
-      onMessage: (message) => setMessages((rows) => rows.some((row) => row.id === message.id) ? rows : [...rows, message]),
-      onMessageChange: (payload) => {
-        if (payload.eventType === 'DELETE') setMessages((rows) => rows.filter((row) => row.id !== payload.old?.id))
-        if (payload.eventType === 'UPDATE') setMessages((rows) => rows.map((row) => row.id === payload.new?.id ? payload.new : row))
-      },
+    const unsubscribeChat = subscribeChatGroup(selectedId, {
+      onMessage: () => loadSelected().catch(() => {}),
+      onMessageChange: () => loadSelected().catch(() => {}),
       onMembershipChange: () => loadSelected().catch(() => {}),
     })
+    const unsubscribeMedia = subscribeChatAttachments(selectedId, () => loadSelected().catch(() => {}))
+    return () => { unsubscribeChat(); unsubscribeMedia() }
   }, [selectedId, loadSelected])
 
   const createGroup = async (event) => {
@@ -87,14 +117,31 @@ export default function GroupChats({ user, hotel }) {
     finally { setBusy(false) }
   }
 
+  const clearFiles = () => {
+    setFiles([])
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const send = async (event) => {
     event.preventDefault()
     const body = text.trim()
-    if (!body || !selectedId || busy) return
-    setText(''); setBusy(true); setError('')
-    try { await sendChatMessage(selectedId, currentUserId, body) }
-    catch (e) { setText(body); setError(e.message || 'Invio non riuscito') }
-    finally { setBusy(false) }
+    const selectedFiles = Array.from(files || [])
+    if ((!body && !selectedFiles.length) || !selectedId || busy) return
+    setBusy(true); setError('')
+    let message = null
+    let uploaded = []
+    try {
+      message = await sendChatMessage(selectedId, currentUserId, body || `📎 ${selectedFiles.length} allegat${selectedFiles.length === 1 ? 'o' : 'i'}`)
+      if (selectedFiles.length) {
+        uploaded = await uploadGroupMediaFiles(selectedFiles, { groupId: selectedId, messageId: message.id })
+        for (const attachment of uploaded) await registerGroupAttachment({ groupId: selectedId, messageId: message.id, attachment })
+      }
+      setText(''); clearFiles(); await loadSelected()
+    } catch (e) {
+      if (message?.id) await deleteChatMessage(message.id).catch(() => {})
+      await cleanupRandMediaUploads(uploaded)
+      setError(e.message || 'Invio non riuscito')
+    } finally { setBusy(false) }
   }
 
   const openMembers = async () => {
@@ -168,16 +215,21 @@ export default function GroupChats({ user, hotel }) {
           <header className="rc-conversation__head">
             <button className="rc-back" onClick={() => setSelectedId(null)}>‹</button>
             <div><h2>{selected.name}</h2><small>{hotelById(selected.hotel_id)?.name || selected.hotel_id} · testo conservato {selected.retention_days} giorni</small></div>
-            <button className="rc-members-btn" onClick={openMembers}>{members.length || ''} membri</button>
+            <div className="rc-head-actions"><button onClick={() => setShowProcedures(true)}>📘 Procedura</button><button onClick={() => setShowAI(true)}>✨ RandAI</button><button className="rc-members-btn" onClick={openMembers}>{members.length || ''} membri</button></div>
           </header>
           {error && <div className="rc-error" role="alert">{error}</div>}
           <div className="rc-messages">
             {messages.map((message) => {
               const sender = memberById.get(message.sender_user_id)
               const own = message.sender_user_id === currentUserId
+              const procedureLink = procedureByMessage.get(message.id)
+              const procedure = procedureLink?.procedure_snapshot
+              const media = attachmentsByMessage.get(message.id) || []
               return <article key={message.id} className={`rc-message ${own ? 'own' : ''} ${message.pinned_at ? 'pinned' : ''}`}>
                 <div className="rc-message__meta"><b>{own ? 'Tu' : sender?.display_name || 'Utente'}</b><time>{fmtTime(message.created_at)}</time>{message.pinned_at && <span>📌</span>}</div>
                 <p>{message.body}</p>
+                {procedure && <div className="rc-procedure-card"><b>📘 {procedure.title}</b><small>{procedure.category || 'Generale'} · v{procedureLink.procedure_version} · rischio {procedure.risk_level || 'normal'}</small><p>{procedure.summary}</p>{procedure.caution && <small>⚠️ {procedure.caution}</small>}</div>}
+                {media.map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} />)}
                 <div className="rc-message__actions">
                   <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>
                   {canManage && <button className="rc-message__pin" onClick={() => togglePin(message)}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
@@ -186,7 +238,11 @@ export default function GroupChats({ user, hotel }) {
             })}
             {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
           </div>
-          <form className="rc-composer" onSubmit={send}><textarea value={text} maxLength={8000} rows={1} placeholder={`Scrivi in #${selected.name}`} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(e) } }} /><button disabled={busy || !text.trim()}>Invia</button></form>
+          <form className="rc-composer rc-composer--media" onSubmit={send}>
+            <label className="rc-file-button" title="Allega foto, video, audio o documento">＋<input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} /></label>
+            <div className="rc-composer__body"><textarea value={text} maxLength={8000} rows={1} placeholder={`Scrivi in #${selected.name}`} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !files.length) { e.preventDefault(); send(e) } }} />{files.length > 0 && <small>{files.length} allegat{files.length === 1 ? 'o' : 'i'} · max 20 MB ciascuno <button type="button" onClick={clearFiles}>Rimuovi</button></small>}</div>
+            <button disabled={busy || (!text.trim() && !files.length)}>Invia</button>
+          </form>
         </>}
       </div>
 
@@ -197,15 +253,9 @@ export default function GroupChats({ user, hotel }) {
         {canManage && <label className="rc-retention">Cancellazione automatica testo <select value={selected.retention_days} onChange={(e) => changeRetention(e.target.value)}><option value={30}>30 giorni</option><option value={60}>60 giorni</option></select></label>}
       </section></div>}
 
-      <PromoteIssueDialog
-        open={Boolean(promoteMessage)}
-        onClose={() => setPromoteMessage(null)}
-        user={user}
-        hotel={hotel}
-        text={promoteMessage?.body || ''}
-        source={promoteMessage ? { type: 'group', id: selectedId, messageId: promoteMessage.id } : null}
-        onPromoted={() => setPromoteMessage(null)}
-      />
+      <ProcedurePicker open={showProcedures && Boolean(selected)} groupId={selectedId} onClose={() => setShowProcedures(false)} onShared={() => loadSelected().catch(() => {})} />
+      <RandChatAI open={showAI && Boolean(selected)} groupId={selectedId} groupName={selected?.name} onClose={() => setShowAI(false)} />
+      <PromoteIssueDialog open={Boolean(promoteMessage)} onClose={() => setPromoteMessage(null)} user={user} hotel={hotel} text={promoteMessage?.body || ''} source={promoteMessage ? { type: 'group', id: selectedId, messageId: promoteMessage.id } : null} onPromoted={() => setPromoteMessage(null)} />
     </section>
   )
 }
