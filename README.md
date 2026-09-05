@@ -1,422 +1,121 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
-PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target obbligatori: iOS/iPadOS, Android e Windows. `hotel_id`, membership, RLS/RPC, Safe Write e audit restano confini di sicurezza canonici.
+PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target supportati e testati: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-### RandAI Control Center — responsive UI
+## Stato attuale
 
-La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop e tablet, navigazione orizzontale a larghezza piena su smartphone, schede a colonna singola sui telefoni e nessun overflow orizzontale intenzionale. La home contiene accessi rapidi a Segnalazioni, Manutenzioni, RandGuide e Configurazione; la mappa Ecosistema apre i moduli disponibili. Il tema è configurabile direttamente dall’intestazione RandAI con `Sistema`, `Chiaro` e `Scuro`, usando la stessa preferenza persistente di RandApp. La configurazione amministrativa è un centro unico con schede Utenti, Permessi e menu, RandAI e RandGuide: non duplica più le funzioni tra pannello laterale e dashboard. Le regole dedicate sono in `src/randai/control/randai-responsive.css` e vengono caricate direttamente da `RandAIControlCenter.jsx`.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
-### RandUI Adaptive Layout — interessi + PC/tablet/iOS/Android ✅
+La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool + Permission Gateway, RandMind Continuity + Model Router, RandVisual Engine, RandCore Visual Intelligence, RandChange Receipt + Visual QA.
 
-RandApp usa ora un unico contratto adattivo: `Hotel scope → identità → permessi → interessi → capacità dispositivo → orientamento/input → Piccolo/Normale/Grande → layout`. I permessi restano autorità: gli interessi possono soltanto ordinare funzioni già autorizzate. La configurazione per ruolo già esistente è riusata come prima sorgente dichiarativa; quando il profilo espone `user.interests`, la shell li usa direttamente senza introdurre un secondo store.
+## Confini architetturali
 
-Il bottom-nav mantiene **Home** in posizione 3 e **Altro** in posizione 5; gli slot operativi 1, 2 e 4 vengono scelti tra destinazioni autorizzate in base agli interessi. Il device contract separa smartphone `<768px`, tablet `768–1199px` e desktop `>=1200px`, con regole anche per touch/pointer, portrait/landscape, safe-area e schermi molto stretti. `Piccolo / Normale / Grande` resta il solo contratto di densità persistente (`apicehotel.ui-size.v1`): Grande aumenta anche controlli e touch target, non soltanto il testo.
-
-`src/randapp/adaptive-layout.css` resta la sola sorgente canonica della geometria responsive. Lo zombie `src/randapp/app-shell-foundation.css`, che duplicava tale responsabilità, è stato eliminato dopo verifica e il relativo import residuo in `Shell.jsx` è stato rimosso. Nessun framework UI, device-detection SDK, navigation stack o dipendenza runtime è stato aggiunto. Contratti dedicati: `src/randapp/adaptive-layout.js`, `test/randui-adaptive-layout.test.js`, documentazione `docs/randui-adaptive-layout.md`.
-
-## Regole architetturali non negoziabili
-
-- RandAI riceve solo contesto autorizzato e hotel-scoped.
-- Nessun modello o frontend riceve `service_role`, PIN, refresh token o secret non necessari.
-- RLS/RPC Supabase sono l'autorità finale; nascondere un bottone non è autorizzazione.
+- `hotel_id`, membership e scope hotel sono obbligatori.
+- Supabase RLS/RPC è l'autorità finale; nascondere una funzione nella UI non concede né revoca permessi.
+- RandAI riceve soltanto contesto autorizzato e hotel-scoped.
+- Nessun modello/frontend riceve `service_role`, PIN, refresh token o secret non necessari.
+- Mutazioni protette passano da Safe Write / Action Gateway / audit.
 - `UNKNOWN` e `STALE` non significano `HEALTHY`.
-- Niente secondi sistemi di navigazione, autorizzazione, offline queue, logging, scheduler, inventario, knowledge, memory, learning, orchestrazione o health stack per la stessa responsabilità.
-- Una parte viene eliminata come zombie solo dopo verifica di utilizzo e dipendenze.
+- Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario o rollback.
+- Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo e dipendenze.
 - Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
 
-## Stato roadmap consolidata
+## RandUI Adaptive Layout
 
-### Roadmap OpenCode + Diagram Design — Blocco 1/6 ✅ RandAgent Runtime
+Il contratto UI è unico:
 
-Il nuovo `RandAgentRuntime` consolida, senza duplicarlo, il runtime multi-agent già esistente. `MultiAgentRuntime` resta l'Execution Kernel canonico per registry, dipendenze, concorrenza e handoff; sopra di esso il ciclo headless è ora `Planner → Policy → Executor → Inspector`, con replan bounded (`maxReplans`) e compatibilità con il precedente nome `verifier`.
+`Hotel scope → identità → permessi → interessi → device/input/orientamento → Piccolo/Normale/Grande → layout`
 
-Il runtime è channel-neutral (`web`, `whatsapp`, `audio`, `internal` o altri adapter) e propaga un `runId` unico nel contesto. Sono predisposti hook espliciti, ma non autorità parallele: `contextProvider` è il punto di connessione futuro con RandMind/Authorized Context, `policyGuard` con RandCore/Tool Permission Gateway, `eventSink` con osservabilità e futuro RandChange Receipt/RandVisual. Nessuna shell, database, MCP o provider acquisisce permessi diretti attraverso questo livello.
+I **permessi** decidono cosa è autorizzato; gli **interessi** decidono priorità e ordine di ciò che è già autorizzato.
 
-Il replan non può diventare un loop infinito: dopo il budget configurato il runtime fallisce con `RAND_AGENT_INSPECTION_FAILED`. Una policy negata interrompe l'esecuzione prima dell'Executor con `RAND_AGENT_POLICY_DENIED`. Errori del sink di telemetria non interrompono il lavoro dell'agente e possono essere raccolti da `onTelemetryError`.
+Breakpoints canonici:
 
-Zombie scan Blocco 1: `MultiAgentCoordinator` è mantenuto perché svolge consenso multi-agente e non duplica il nuovo orchestratore; `MultiAgentRuntime` è mantenuto e promosso a kernel di esecuzione. Nessun runtime OpenCode, framework esterno, nuovo store, scheduler o dipendenza è stato aggiunto.
+- smartphone `<768px`;
+- tablet `768–1199px`;
+- desktop/Windows `>=1200px`.
 
-Sorgenti: `src/randai/agents/orchestration.js`, `src/randai/agents/runtime.js`, `src/randai/agents/coordinator.js`, `test/randagent-runtime-block1.test.js`.
+Sono gestiti anche touch/pointer, portrait/landscape, safe-area, schermi stretti e monitor larghi. `Piccolo / Normale / Grande` è il solo contratto persistente di densità (`apicehotel.ui-size.v1`); Grande aumenta anche controlli e touch target, non soltanto il testo.
 
-### Roadmap OpenCode + Diagram Design — Blocco 2/6 ✅ RandTool + Permission Gateway
+La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. Il bottom-nav mantiene **Home nello slot 3** e **Altro nello slot 5**; gli slot 1, 2 e 4 vengono scelti tra funzioni autorizzate in base agli interessi.
 
-`ToolRegistry` resta il catalogo e runtime canonico dei tool: non è stato creato un secondo registry. Il nuovo `ToolPermissionGateway` è il decision point fail-closed tra Planner e tool e si collega direttamente al `policyGuard` di `RandAgentRuntime`. Il Planner può chiedere un tool, ma **non può dichiararne né abbassarne il rischio o il permesso**: `ToolRisk` e `ToolPermission` vengono sempre letti dalla definizione registrata.
+## Safe-area iOS / Android
 
-Ogni decisione richiede `hotelId`; mismatch tra contesto, task o richiesta viene rifiutato prima dell'Executor. I tool sconosciuti e le decisioni di autorizzazione assenti/non esplicitamente `allowed` falliscono chiusi. `WRITE_PROTECTED`, `ADMIN` e rischio `CRITICAL` richiedono esplicitamente il boundary `ACTION_GATEWAY` e un `approvalId`; questo è solo un pre-gate, perché la mutazione continua a dover attraversare l'Action Gateway canonico e quindi RLS/RPC server-side.
+RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
 
-La difesa è su due livelli: `createRandAgentToolPolicyGuard()` blocca il piano prima dell'Executor; `ToolRegistry` supporta ora un `executionGuard` opzionale e `bindToolPermissionGateway()` lo collega allo stesso gateway, impedendo il bypass tramite esecuzione diretta quando il registry è governato. Il descriptor passato ai provider contiene solo `id/name/permission/risk`, mai la funzione `execute` o altra capability eseguibile.
+- `viewport-fit=cover`;
+- `env(safe-area-inset-*)`;
+- `src/randapp/system-insets.js` per eventuali inset nativi/wrapper futuri;
+- `adaptive-layout.css` come unica geometria responsive.
 
-Zombie scan Blocco 2: mantenuti `ToolRegistry`, `action-gateway.js` e `authorization-matrix.js` perché sono autorità canoniche con responsabilità distinte. Nessun nuovo permission DB, ruolo parallelo, framework esterno, SDK o dipendenza runtime. L'Authorization Matrix resta strumento di verifica; il gateway delega la decisione reale a un `authorize` adapter senza inventare una seconda matrice ruoli.
+La safe-area superiore ha **un solo proprietario: l'header sticky**. Non viene applicata anche al contenitore app, evitando il doppio spazio su iPhone con notch/Dynamic Island. Il bottom inset resta non limitato per Home Indicator e navigazione Android.
 
-Sorgenti: `src/randai/tools/contracts.js`, `src/randai/tools/registry.js`, `src/randai/tools/permission-gateway.js`, `src/randai/action-gateway.js`, `src/reliability/authorization-matrix.js`, `test/randtool-permission-block2.test.js`.
+## Home operativa
 
-### Roadmap OpenCode + Diagram Design — Blocco 3/6 ✅ RandMind Continuity + Model Router
+La Home è una schermata di lavoro, non un elenco di link.
 
-Il runtime distingue ora due identità: `runId` identifica una singola esecuzione, mentre `continuityId` identifica lo stesso lavoro nel tempo e può attraversare `web`, `whatsapp`, `audio` e `internal`. `RandMindContinuity` riusa `RandMind`, `MemoryEngine` e lo store canonico; non crea un secondo database, vector store o conversation store.
+Gerarchia corrente:
 
-La continuità è fail-closed sullo scope: richiede sempre `hotelId`, legge esclusivamente memorie dello stesso hotel e, quando l'attore o il task sono noti, impedisce il riuso della stessa storia da un actor/task differente. Il `contextProvider` del runtime non può più cambiare silenziosamente un `hotelId` già fissato. In memoria vengono scritti soltanto outcome che hanno superato Executor + Inspector; trascrizioni grezze, chat complete e tentativi falliti non diventano memoria canonica. Un guasto nel commit di memoria dopo un'operazione riuscita viene tracciato ma non trasforma il lavoro operativo in fallimento.
+1. ruolo/interesse e saluto;
+2. contatori operativi compatti;
+3. **Cosa fare adesso**;
+4. suggerimento RandAI;
+5. scorciatoie aggiuntive nella vista Completa.
 
-Il `ModelRouter` resta unico e viene governato invece di duplicato. Oltre a capability, privacy, context window, qualità, affidabilità, costo e latenza, accetta ora `risk`, `minQuality`, `minReliability` e `maxCost`. `HIGH` e `CRITICAL` applicano floor minimi di qualità/affidabilità anche se la priorità richiesta è `COST`; se nessun modello è compatibile il router fallisce con `NO_COMPATIBLE_MODEL`. I fallback restano confinati allo stesso insieme già filtrato per capability, privacy, rischio e budget.
+Quando sono presenti esattamente tre contatori, su smartphone restano su una sola riga. `Allarmi` indica il canale Avvisi urgenti ed è distinto dalle segnalazioni con urgenza `alta`.
 
-Zombie scan Blocco 3: mantenuti `RandMind`, `MemoryEngine`, `MemoryStore/SupabaseMemoryStore`, `ModelRouter` e `RandAgentRuntime` perché sono autorità canoniche con responsabilità distinte. Nessun provider SDK, model gateway esterno, nuovo store, scheduler, vector DB o seconda memoria è stato aggiunto.
+Il FAB multi-azione non copre più le card della Home: la Home espone una azione esplicita **Nuova segnalazione**, autorizzata tramite il contratto già esistente `new-issue`. Le altre creazioni restano contestuali nelle rispettive sezioni.
 
-Sorgenti: `src/randai/memory/continuity.js`, `src/randai/memory/randmind.js`, `src/randai/models/contracts.js`, `src/randai/models/router.js`, `src/randai/agents/orchestration.js`, `test/randmind-continuity-model-router-block3.test.js`.
+La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mostra uno score esplicito `Priorità N`. Il CSS Home è centralizzato in `src/randapp/home-operational.css`, non embedded nei componenti.
 
-### Roadmap OpenCode + Diagram Design — Blocco 4/6 ✅ RandVisual Engine
+## Moduli principali
 
-`RandVisual` è il bounded domain visuale canonico di RandAI. Non introduce un secondo frontend, una seconda component library o un renderer remoto: trasforma esclusivamente una specifica già autorizzata e hotel-scoped in SVG deterministico, accessibile e accompagnato da manifest di provenance. Le grammatiche iniziali sono `architecture`, `flow`, `dependency`, `database`, `permission_matrix`, `worker`, `deployment` e `fishbone`; il layout supporta `TB` e `LR` senza coordinate manuali.
+- **RandApp** — segnalazioni, interventi, planning, housekeeping, rifornimenti, magazzino, sensori e operatività hotel.
+- **RandAI** — assistenza operativa, procedure, suggerimenti e control center.
+- **RandMind** — continuità/memoria governata e hotel-scoped.
+- **RandBrain** — reasoning/decision layer governato.
+- **RandCore** — health, governance, workers, sicurezza, costi, integrazioni e LTS evidence.
+- **RandVisual** — proiezioni visuali deterministiche e provenance.
+- **RandChange** — receipt, Visual QA e certificazione modifiche.
+- **RandGuide** — procedure e guide operative.
+- **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
+- **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
-Il renderer riusa i token semantici RandUI tramite CSS custom properties con fallback, produce `title`, `desc`, `role=img` e metadata `data-*`, ed esegue escaping XML di titoli, label e sottotitoli. Il safety gate rifiuta superfici eseguibili o remote (`script`, event handler reali, `foreignObject`, URL `http/data/javascript`, `@import`). Nessuna label non fidata può diventare markup eseguibile.
+## Quality Matrix e test
 
-Ogni rendering richiede `hotelId` e un mismatch con il contesto viene negato con `RAND_VISUAL_SCOPE_DENIED`. Il manifest conserva `sourceIds`, `generatedAt`, tipo, dimensioni, conteggi e fingerprint deterministico; è quindi già predisposto per ricevere nel Blocco 5 evidenze reali RandCore/Repo Radar/permissions/workers e nel Blocco 6 per change receipt e visual QA senza cambiare contratto.
-
-`createRandVisualTool()` espone `randvisual.render` come tool canonico `READ`, rischio `LOW`, idempotente e compatibile con ToolRegistry/Permission Gateway. Il motore resta browser/server-neutral: nessun `node:crypto`, storage, SDK provider, Mermaid o dipendenza `diagram-design` è stato aggiunto. Di `diagram-design` sono stati adottati i pattern utili — grammatica visuale, token semantici, output SVG, provenance e hardening — senza importarne il runtime.
-
-Zombie scan Blocco 4: non esisteva un RandVisual canonico. Le viste/grafi specifici già presenti restano consumer di dominio e non sono duplicati né eliminati; nessun secondo design system o sistema di navigazione è nato.
-
-Sorgenti: `src/randai/visual/contracts.js`, `src/randai/visual/layout.js`, `src/randai/visual/renderer.js`, `src/randai/visual/engine.js`, `src/randai/visual/index.js`, `test/randai-randvisual-block4.test.js`.
-
-### Roadmap OpenCode + Diagram Design — Blocco 5/6 ✅ RandCore Visual Intelligence
-
-`RandCoreVisualIntelligence` collega il motore RandVisual alle fonti canoniche senza trasformare RandVisual in un nuovo data layer. Nessun adapter interroga Supabase, GitHub o servizi esterni: riceve snapshot già autorizzati dai bounded domain, impone `hotelId` e provenance `sourceIds`, li converte in `RandVisualSpec` e delega il rendering al solo `RandVisualEngine`.
-
-Il primo pacchetto comprende sei proiezioni: **Health Map**, **Worker Map**, **Permission Matrix**, **Deployment Map**, **Database Map** e **Repo Radar Impact**. La Health Map usa direttamente Health Evidence contract v2 e conserva `VERIFIED / STALE / UNKNOWN`, stato, score, confidence, sorgenti ed evidence id/commit. Worker/deploy/database validano i riferimenti prima del rendering; la Permission Matrix rifiuta casi cross-hotel e può mostrare expected/actual delle verifiche; Repo Radar Impact separa candidato, moduli coinvolti e dipendenze.
-
-`createRandCoreVisualIntelligenceTool()` espone `randvisual.intelligence` come tool `READ`, rischio `LOW`, idempotente: Planner e agenti possono richiederlo ma ToolRegistry/Permission Gateway restano il confine di esecuzione. L'Ecosystem Console passa ora `accessHotels` e `hotelFilter` a RandCore Health; la Health Map reale viene mostrata solo quando lo scope hotel è univoco e c'è provenance sufficiente. Con filtro multi-hotel ambiguo non viene inventato uno scope globale.
-
-La regola fail-closed vale anche per le visualizzazioni: senza evidenza/provenance il diagramma non viene generato; dati cross-hotel vengono negati; riferimenti a worker/service/table inesistenti vengono rifiutati invece di produrre grafi fuorvianti. L'SVG mostrato nella console viene isolato come immagine e non iniettato nel DOM applicativo. Il manifest RandVisual rimane quello del Blocco 4, quindi il Blocco 6 potrà confrontare spec, fingerprint e output visuale senza cambiare contratto.
-
-Zombie scan Blocco 5: Health Evidence, Authorization Matrix, Repo Radar e i domini worker/deploy/database restano autorità dei dati. RandVisual è solo proiezione/rendering; nessun secondo health stack, permission matrix, repo radar, DB introspector, scheduler, store o fetch layer è stato aggiunto.
-
-Sorgenti: `src/randai/visual/intelligence.js`, `src/randai/visual/index.js`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `src/randai/core/health-evidence.js`, `src/reliability/authorization-matrix.js`, `test/randai-randcore-visual-intelligence-block5.test.js`.
-
-### Roadmap OpenCode + Diagram Design — Blocco 6/6 ✅ RandChange Receipt + Visual QA
-
-`RandChange` chiude la roadmap come contratto di certificazione, senza creare un secondo audit, rollback o visual-test stack. `VisualQA` confronta manifest RandVisual before/after nello stesso `hotelId`, distingue cambiamento atteso da drift inatteso e usa il fingerprint soltanto come prova strutturale. Per dichiarare `PASS` con browser evidence obbligatoria richiede prove reali Chromium e WebKit con `evidenceId`; un semplice diff SVG non viene spacciato per visual regression test.
-
-`RandChangeReceipt` aggrega commit prima/dopo, file aggiunti/modificati/eliminati/rinominati, dipendenze, test, quality gate, VisualQA, provenance, audit e rollback. Le modifiche `CODE` richiedono commit distinti; le `OPERATION` riusano l'audit verificato e hotel-scoped di `audit-reversible.js`. `UNKNOWN`/`FAIL`, provenance mancante, visual QA bloccata, scope mismatch o una modifica mutante priva di rollback dichiarato impediscono lo stato `CERTIFIED`.
-
-Il rollback non viene duplicato né automatizzato alla cieca: per operazioni applicative restano canonici `createCompensationRequest()` ed `executeCompensation()`; per modifiche codice la receipt conserva strategia e riferimento (`git-revert`, commit/base o altra evidenza approvata). E2E Chromium/WebKit, device acceptance e LTS attestation restano le prove canoniche di ciò che l'utente vede e della qualità di release.
-
-Zombie scan Blocco 6: mantenuti audit/reversibility, RandVisual manifest, RandUI/E2E screenshot gate, device acceptance e LTS attestation perché hanno responsabilità differenti. Nessun nuovo store, migration, scheduler, Playwright stack, screenshot service o dipendenza esterna.
-
-Sorgenti: `src/randai/change/visual-qa.js`, `src/randai/change/receipt.js`, `src/randai/change/index.js`, `src/reliability/audit-reversible.js`, `test/e2e.mjs`, `test/device-acceptance.mjs`, `test/randai-randchange-visualqa-block6.test.js`.
-
-### Fondazione RandAI — 1–26 ✅
-Core/Orchestrator, Tool Registry, Skill Engine, Directive Composer, Maintenance Knowledge, Procedure Assistant, Planner→Executor→Verifier, Durable Tasks, Scoped Memory, Authorized Context, Model Router, Knowledge Gaps, Smart Suggestions, Guided Procedures, Project Intelligence, Observability, Evaluation/Benchmark, Multi-Agent, Autonomy, Recovery, Software Engineering Agent, Learning, Discovery, Supervisor, Proactive AI e Control Center.
-
-### Reliability / Production — 27–50 ✅
-Operational Context, Scope Guard, Unified Validation, Safe Write/Action Gateway, Authorization & RLS Matrix, Audit/Reversibility, Offline/Retry/Concurrency, Import Safety, Verification Gate, Evidence Trust, Hybrid Memory/Knowledge Graph, Confidence/Risk, Plan Validator, Execution Policy, Recovery Budgets/Circuit Breakers, Failure Intelligence, Adversarial/Fault Injection, Production Gate, Canary/Rollback, Runtime Fuse, Drift Guard, SLO/Error Budget e Release Attestation.
-
-### Blocco 13 — 51–54 ✅
-Ecosystem Truth Map, RandCore Manifest, RandControl 360° e Configuration 360°.
-
-### Blocco 14 — 55–58 ✅
-Repo Radar 2.0, Deep Repository Intelligence, Safe Adoption/Replacement Gate e Repo Radar in RandControl.
-
-### Blocco 15 — 59–62 ✅
-Unified Health Snapshot, Monthly Full Ecosystem Check, Findings/History/Drift e RandControl Health Console.
-
-### Blocco 16 — 63–66 ✅
-Operations & Workers, Security Center, Observability & Cost Center e Repo/Module Health.
-
-### Blocco 17 — 67 ✅
-Rand Warehouse Integration. Il Magazzino resta bounded domain autonomo, collegato a Interventi e RandAI senza un secondo inventario.
-
-### Blocco 18 — 68–70 ✅
-Final Ecosystem/E2E Gate, Zombie & Duplication Purge e Rand Ecosystem LTS 1.0.
-
-Perimetro LTS 1.0 originario: `randapp`, `randai`, `randcore`, `randcontrol`, `reporadar`, `warehouse`. A quella release `RandGuide`, `RandMind`, `RandBrain`, `RandUI` erano `PARTIAL`, `RandAudio` e `Viking` `PLANNED`. Le promozioni successive sono evidence-backed: dal Blocco 22 `RandGuide` è `LIVE`; dal Blocco 23 `RandMind` è `LIVE`; dal Blocco 24 `RandBrain` è `LIVE`; dal Blocco 25 `RandUI` è `LIVE`; dal Blocco 26 RandAudio è una capability operativa ma resta `PARTIAL`; dal Blocco 27 Viking è `EVALUATED`, con adozione dei soli pattern compatibili e senza runtime esterno.
-
-### Blocco 19 — Health Evidence Contract — 71 ✅
-
-I sette domini canonici sono `database`, `security`, `workers`, `deploy`, `backup_restore`, `integrations`, `dependencies`. Ogni dominio espone stato evidenza `VERIFIED / STALE / UNKNOWN`, stato salute, score, sorgente, timestamp, freshness e confidence.
-
-`100/100` descrive la qualità dei domini verificati e non implica copertura totale. L'aggregate può essere `HEALTHY` soltanto con 7/7 prove fresche e verificate.
-
-Sorgenti: `src/randai/core/health-evidence.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903173000_randcore_health_evidence_contract.sql`, `test/randai-block19-health-evidence-71.test.js`.
-
-### Blocco 20 — External Evidence Bridge — 72 ✅
-
-`randcore_external_health_evidence` è il canale append-only e service-only per `deploy`, `backup_restore`, `integrations`, `dependencies`. Browser, `anon` e utenti autenticati non possono scriverlo. La CI produce evidenze commit-bound reali per `deploy` e `dependencies`; RandControl le compone con `database/security/workers` senza duplicare il contratto Health Evidence.
-
-Sorgenti: `scripts/randcore-external-evidence.mjs`, `supabase/migrations/20260903180500_randcore_external_evidence_bridge.sql`, `test/randai-block20-external-evidence-72.test.js`.
-
-### Blocco 21 — Full Autodiagnosis & Final Gate — 73 ✅
-
-73 chiude la fase health con una regola unica: `FULL_HEALTHY` è possibile soltanto con **7/7 VERIFIED + FRESH + HEALTHY, score 100, confidence 100 e coerenza del commit di deploy/dipendenze**.
-
-`integrations` non usa messaggi sintetici né ping aggressivi: `randcore_measure_integrations_internal()` misura tracce operative realmente già prodotte da meteo, sensori, WhatsApp e configurazione ntfy. Canali WhatsApp esplicitamente in pausa non sono considerati guasti. Assenza, stale o configurazione incompleta degradano il dominio.
-
-`backup_restore` non diventa verde perché “esiste un backup”. `randcore_run_recoverability_drill_internal()` esegue un **restore drill logico reale e isolato** su dati critici non-secret del control plane: copia in tabelle TEMP, crea una copia di backup TEMP, svuota esclusivamente la copia TEMP, la ripristina e confronta conteggi/checksum. Le tabelle di produzione sono solo lette. L'evidenza dichiara esplicitamente `isolated=true`, `production_mutated=false`, `restore_verified` e `managed_pitr_certified=false`: il gate certifica la recoverability applicativa verificata, non inventa una certificazione del PITR gestito dal provider.
-
-`randcore_run_health_check()` esegue runtime audit + integration probe + restore drill. Il `randcore-monthly-full-check` usa lo stesso percorso completo. La UI RandControl mostra il Final Health Gate e le ragioni precise quando è `BLOCKED`.
-
-Durante l'analisi reale del 73 sono emerse due debolezze operative, corrette invece di nasconderle: il worker meteo falliva ripetutamente sul primo hotel mentre gli altri due proseguivano, quindi il fetch Open-Meteo ora usa retry bounded e rende esplicito il partial failure; il worker sensori superava talvolta il timeout pg_net predefinito di 5 secondi durante l'autenticazione eWeLink, quindi mantiene la cadenza ogni 30 minuti ma usa timeout HTTP 20 secondi.
-
-Zombie scan 73: nessun secondo health stack, scheduler, dashboard, backup engine, framework o dipendenza runtime. Il final gate compone 71+72 e usa le tracce operative già esistenti.
-
-Sorgenti: `src/randai/core/full-health-gate.js`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260903201000_randcore_full_health_final_gate.sql`, `supabase/functions/weather-alert-worker/index.ts`, `test/randai-block21-full-health-73.test.js`, `.github/workflows/ci.yml`.
-
-### Blocco 22 — RandGuide LIVE — 74–80 ✅
-
-RandGuide consolida il knowledge/guidance domain già esistente invece di crearne uno parallelo. Le autorità restano `randai_procedures`, `randai_documents`, `randai_equipment`, `randai_guidance_sessions` e la Knowledge Console esistente.
-
-Il blocco introduce catalogo e classificazione canonici, rischio e confidence, ingestione con provenance/deduplica, knowledge graph operativo hotel-scoped, authoring assistito che **non può auto-pubblicare**, version snapshot e pubblicazione governata via RPC. Le procedure `critical` richiedono caution; fonti con confidence insufficiente non possono essere pubblicate. RLS e membership mantengono l'isolamento multi-hotel.
-
-`RandGuide` è promosso da `PARTIAL` a `LIVE` solo con evidenze reali nel manifest. I contratti storici sono stati aggiornati senza indebolire il fail-closed: un modulo `LIVE` senza evidence continua a essere rifiutato e RandGuide non può comparire contemporaneamente tra i deferred.
-
-Migration production: `supabase/migrations/20260903213000_randguide_live_74_80.sql`. Tabelle aggiunte: `randguide_procedure_versions`, `randguide_links`; RLS attiva. `anon` non può eseguire `randguide_publish_procedure` né `randguide_get_graph`; `authenticated` può usare le RPC ma l'autorità server verifica membership/gestione hotel.
-
-Zombie scan 74–80: nessun secondo knowledge system, navigation stack, auth plane, scheduler, framework o runtime dependency. `GuidedProcedureEngine` e Knowledge Console sono mantenuti perché canonici e in uso.
-
-Sorgenti: `src/randai/guidance/catalog.js`, `src/randai/guidance/ingestion.js`, `src/randai/guidance/graph.js`, `src/randai/guidance/authoring.js`, `src/randai/guidance/production-gate.js`, `src/randai/core/ecosystem.js`, `test/randai-block22-randguide-74-80.test.js`.
-
-### Blocco 23 — RandMind LIVE — 81–86 ✅
-
-RandMind consolida il memory domain già esistente: `MemoryEngine`, `MemoryStore/SupabaseMemoryStore` e `randai_memory_items` restano le autorità canoniche. Non è stato aggiunto un secondo database, vector store o framework di memoria.
-
-La facade `RandMind` aggiunge deduplica governata, memoria episodica e timeline temporale, quality scoring fail-closed, rilevamento conflitti, supersession nello stesso scope, retention class (`transient`, `operational`, `long_term`, `legal_hold`) e lifecycle (`active`, `superseded`, `forgotten`). Una memoria `outdated`, scaduta, dimenticata o superseded non viene richiamata come verità corrente.
-
-La dimenticanza è un soft-delete auditabile tramite `randmind_forget_memory`: richiede motivo, verifica l'autorità hotel, marca la memoria `forgotten/outdated` e conserva la traccia. `legal_hold` blocca la dimenticanza. La supersession è rifiutata se tenta di attraversare hotel/project/task scope.
-
-RandControl espone `RandMindConsole` nella sezione Ecosistema con conteggi active/verified/stale/forgotten, conflitti, provenienza, confidence, validità e retention. Il production gate rifiuta transient senza expiry, forget senza audit, self-supersession e trust verificato senza evidenza usabile.
-
-Migration: `supabase/migrations/20260903223000_randmind_live_81_86.sql`. Zombie scan 81–86: nessun secondo memory stack, scheduler, auth plane, framework o runtime dependency; la memoria precedente è stata evoluta invece di essere duplicata.
-
-Sorgenti: `src/randai/memory/randmind.js`, `src/randai/memory/engine.js`, `src/randai/memory/store.js`, `src/randai/memory/production-gate.js`, `src/randai/control/RandMindConsole.jsx`, `test/randai-block23-randmind-81-86.test.js`.
-
-### Blocco 24 — RandBrain LIVE — 87–92 ✅
-
-RandBrain è la facade/orchestratore superiore dell'intelligenza operativa. Non sostituisce né duplica i motori esistenti: compone `RandAISupervisor`, `AgentRegistry/MultiAgent`, `PermissionAutonomyEngine`, `LearningEngine`, Action Gateway e i quality/recovery gate già presenti.
-
-Il routing è deterministico, pesato e minimale: classifica l'obiettivo nei domini `maintenance`, `knowledge`, `warehouse`, `software`, `analysis`, `procedure` e seleziona al massimo gli specialisti realmente utili. A parità non dipende dall'ordine accidentale dell'enum; task e contesto mantengono sempre `hotelId` esplicito.
-
-Il reasoning graph canonico è `problem → evidence → hypothesis → plan → authorization → verification → recovery`. RandBrain rifiuta richieste senza evidenze verificabili, context cross-hotel e stime costo non valide. I livelli `READ_ONLY`, `SUGGEST`, `SAFE_EXECUTE`, `APPROVAL_REQUIRED` non possono auto-escalare: rischio high/critical richiede approvazione e una mutazione operativa può attraversare soltanto Action Gateway/RLS/RPC.
-
-Il learning non introduce un secondo store: `RandBrainLearningAdapter` alimenta esclusivamente il `LearningEngine` già governato e solo con outcome verificati e identità di evidenza. Le candidate skill continuano a richiedere evidence threshold, evaluation/test e approvazione esplicita; nessuna auto-modifica silenziosa in produzione.
-
-Il production gate è fail-closed e comprende facade canonica, routing, reasoning graph, autonomia, learning verificato, hotel isolation, Action Gateway, rollback, cost budget, benchmark e fault injection. I test simulano escalation critica, cost overrun e cross-hotel mismatch. RandControl mostra il contratto RandBrain nella sezione Ecosistema.
-
-Non è stata aggiunta alcuna migration: Supervisor, Agents, Autonomy e Learning possiedono già i loro store/contratti canonici; creare una nuova autorità DB avrebbe duplicato responsabilità. Zombie scan 87–92: eliminata prima del merge l'ipotesi di un secondo failure-learning store e sostituita con adapter al `LearningEngine` esistente. Nessun nuovo scheduler, framework, vector DB o runtime dependency.
-
-Sorgenti: `src/randai/randbrain/`, `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/`, `src/randai/control/RandBrainConsole.jsx`, `test/randai-block24-randbrain-87-92.test.js`.
-
-### Blocco 25 — RandUI LIVE — 93–97 ✅
-
-RandUI consolida le primitive `src/randapp/ui.jsx`, i token e la geometria `rs-*` già esistenti: non introduce una seconda component library. `Shell.jsx` resta l'unico chrome autenticato e mantiene il punto `+` globale, la navigazione role-aware e RandAI integrato; RLS/RPC e RandCore restano le autorità.
-
-Le identità Hotel Giò, ChocoHotel e Hotel Il Brigantino hanno un contratto versionato (`hotel-identity.js`, versione 1) che modifica esclusivamente l'accento visivo. System/Light/Dark condividono gli stessi token; la prima scelta predefinita è System e Light è una superficie completa, non un override parziale.
-
-L'adaptive contract copre safe-area, `100dvh`, visual viewport/tastiera, mouse, touch, edge swipe del menu, portrait/landscape, tablet e desktop Windows. Sheet e modal gestiscono Escape, focus iniziale, focus trap e ripristino focus. Il visual gate usa Chromium e WebKit, screenshot, overflow, tema, touch target, rotazione e controlli runtime; la CI espone inoltre il gate nominato `RandUI visual quality contracts`.
-
-Zombie scan 93–97: conservati i CSS feature-specific ancora importati e coperti da flussi operativi; nessuna eliminazione rischiosa o nuova dipendenza. Issues, Interventions, Planning Sale/Lavori, Warehouse, Home e RandAI continuano a usare Shell e primitive canoniche.
-
-Sorgenti: `src/randapp/ui.jsx`, `src/randapp/ui-coherence.css`, `src/randapp/ui-material-glass.css`, `src/randapp/adaptive-layout.css`, `src/randapp/hotel-identity.js`, `src/randapp/theme.js`, `src/randapp/Shell.jsx`, `test/randai-block25-randui-93-97.test.js`, `test/e2e.mjs`, `test/device-acceptance.mjs`.
-
-### Blocco 26 — RandAudio — 98 ✅ / LIVE deferred
-
-RandAudio è una capability condivisa di RandAI, non un secondo assistente. L'adapter browser separa STT, TTS e registrazione perché il supporto non è uniforme; la UI RandAI abilita la dettatura solo dove disponibile e la lettura delle risposte dove supportata. Una trascrizione conserva provider, timestamp, confidence e `hotelId`, ma resta `USER_CONFIRMATION_REQUIRED`: viene inserita nel composer e diventa input operativo soltanto quando la persona la controlla e la invia.
-
-Il benchmark di riferimento copre Android/Chromium, Windows/Chromium e iOS/WebKit. TTS è disponibile 3/3; STT nativo è 2/3 e manca su iOS/WebKit. Per questo il punto 98 è completato con l'esito previsto dalla roadmap ma RandAudio resta `PARTIAL`, esplicitamente deferred: nessun falso `LIVE`, nessun provider cloud scelto senza benchmark, nessun segreto client, audio persistente o costo ricorrente introdotto. Il gate potrà promuoverlo quando un adapter locale/cloud autorizzato supererà privacy, costo, qualità e copertura 3/3.
-
-Zombie scan 98: nessun secondo sistema AI, storage audio, coda, permission plane o SDK provider. Il test audio sale resta indipendente perché misura un impianto fisico, non voce/STT/TTS.
-
-Sorgenti: `src/randai/audio/`, `src/randai/RandAIAssistant.jsx`, `test/randai-block26-randaudio-98.test.js`.
-
-### Blocco 27 — Viking Evaluation — 99 ✅ / pattern adoption
-
-Il candidato “Viking” è stato identificato e fissato a **OpenViking 0.3.22** (`volcengine/OpenViking`), quindi valutato attraverso il Repo Radar canonico. Il runtime completo è stato respinto: progetto principale AGPL-3.0, maturità dichiarata alpha, nuovo servizio Python/context database, configurazione provider e sovrapposizione diretta con RandMind, RandGuide, Skill Engine, Authorized Context e osservabilità. Stelle e benchmark pubblicati restano segnali di discovery, non autorizzazione all'adozione.
-
-La parte realmente migliore è stata adottata senza importare il nuovo stack: `ContextEngine` può produrre opzionalmente una proiezione stateless L0/L1/L2 delle sole evidenze autorizzate e hotel-scoped, con retrieval trace osservabile. Il contratto classico resta invariato per compatibilità; nessun secondo store, protocollo `viking://`, indice, worker, segreto client o dipendenza runtime è stato aggiunto.
-
-Il manifest usa `EVALUATED`, non `LIVE`: il punto 99 certifica una decisione tecnica conclusa e l'adozione dei pattern utili, non finge che il prodotto esterno sia un modulo operativo Rand. RandControl mostra decisione, autorità preservate, costi evitati e production gate.
-
-Zombie scan 99: la precedente voce `PLANNED` priva di specifica è stata sostituita dall'evaluation evidence-backed. Nessun componente canonico è stato eliminato perché OpenViking avrebbe duplicato responsabilità già coperte.
-
-Sorgenti: `src/randai/viking/`, `src/randai/context/engine.js`, `src/randai/control/VikingConsole.jsx`, `test/randai-block27-viking-99.test.js`.
-
-### Product completion — 100 ✅
-
-Il punto 100 rende utilizzabile e verificabile ciò che i blocchi precedenti avevano costruito. RandAI espone ora **Funzioni** come percorso primario: Segnalazioni, RandGuide, RandMind, RandBrain, Viking e Media/manuali non sono più nascosti nella sola vista tecnica Ecosistema. Le console approfondite restano uniche e vengono raggiunte tramite collegamenti contestuali; non è nato un secondo frontend o design system.
-
-RandMind riceve lo scope hotel reale della sessione amministrativa, eliminando lo stato vuoto causato da proprietà mancanti. RandCore Health usa RPC dedicate a RandAI che richiedono contemporaneamente utente autenticato, membership attiva, `can_access_admin` e ruolo esatto `RandAI`. Le RPC canoniche di RandApp non vengono ampliate: PIN operativo e sessione amministrativa restano separati intenzionalmente, così un accesso RandAI non acquisisce privilegi sul campo.
-
-Il gate di completamento copre visibilità delle funzioni, propagazione dello scope hotel, contratto di accesso fail-closed, assenza di accesso `anon` e riuso delle autorità esistenti. Il Final Health Gate continua a mostrare lo stato reale delle evidenze e non viene forzato artificialmente a verde.
-
-Sorgenti: `src/randai/control/CapabilitiesConsole.jsx`, `src/randai/control/EcosystemConsole.jsx`, `src/randai/control/RandCoreHealthConsole.jsx`, `supabase/migrations/20260904023000_randai_product_completion_access.sql`, `test/randai-product-completion-100.test.js`.
-
-## Rand Control Plane
-
-`Hotel isolation → Identity → Permissions → Policies → Safe Write → Audit`
-
-Runtime agenti, workflow, MCP, memoria, knowledge e tool adapter possono evolvere dietro questo confine ma non ricevono autorità diretta su database, filesystem, shell o dati di altri hotel.
-
-## RandAI Control Center
-
-Route protetta: `/randai`. La console canonica integra WhatsApp, Segnalazioni, Tecnici, Worker/Automazioni, Log, Manutenzioni, Conoscenze, Approvazioni, Archivio, Impianti, Scadenze, Regole, Anomalie, Costi & Osservabilità, Media/Drive, Sensori, Configurazione 360° ed Ecosistema con RandCore Health, Security Center, RandMind, RandBrain e Repo Radar.
-
-## RandCore Point 1 — Eventi e webhook
-
-Il primo punto del modello `event-driven` è ora predisposto con un contratto unico e separato dalle notifiche. `rand_domain_events` registra i fatti operativi in forma append-only, sempre con `hotel_id`, tipo evento, operazione, aggregato, timestamp e chiave di idempotenza. Il payload è volutamente minimale e non copia dati sensibili: i consumer possono risalire al record autorizzato usando l'identità dell'evento.
-
-I domini operativi esistenti (`segnalazioni`, `interventi`, urgenze, planning, prenotazioni sale, promemoria, richieste magazzino, WhatsApp inbound e dispatch tecnici) emettono automaticamente eventi INSERT/UPDATE/DELETE quando le relative tabelle sono presenti. Gli eventi non sostituiscono Realtime: Realtime continua ad aggiornare l'interfaccia, mentre il registro serve per integrazioni, audit, retry e RandAI/RandCore.
-
-`rand_webhook_subscriptions` e `rand_webhook_deliveries` sono il canale webhook predisposto per il service plane: endpoint solo HTTPS, segreto indicato tramite riferimento e mai salvato in chiaro, consegne idempotenti, stati `pending/processing/delivered/failed/dead_letter` e coda pronta per un worker con retry bounded. `notification_outbox` resta l'autorità delle notifiche push/WhatsApp/email e non viene duplicata.
-
-### Ricezione segnalazioni WhatsApp multi-hotel predisposta
-
-La ricezione inbound usa un unico endpoint Twilio e il routing canonico su `whatsapp_channel_settings`, separando Giò, Chocohotel e Il Brigantino. La base è ora predisposta così:
-
-- Giò: numero configurato, ricezione e acquisizione in pausa;
-- Chocohotel: numero configurato, ricezione e acquisizione in pausa;
-- Il Brigantino: canale predisposto, numero ancora da inserire, ricezione e acquisizione in pausa.
-
-Con un canale in pausa il webhook non crea segnalazioni e non risponde automaticamente al mittente. Quando sarà il momento di attivare un hotel, la modifica sarà confinata alla configurazione del canale (`receive_enabled` e poi `ingestion_enabled`), senza duplicare endpoint o logica. I numeri e i segreti non sono hardcodati nel codice applicativo.
-
-Migration: `supabase/migrations/20260904090000_randcore_domain_events_webhook_foundation.sql`. Test: `test/randcore-domain-events.test.js`. Il worker di consegna outbound e la configurazione degli endpoint restano il passo successivo: non viene attivato alcun endpoint reale senza una destinazione e una policy approvate.
-
-## RandCore Point 2 — Aggiornamenti realtime
-
-Il contratto Realtime è stato riallineato al codice realmente usato dall'app. La pubblicazione `supabase_realtime` include ora, in modo idempotente e solo se la tabella esiste, tutte le tabelle client-visible che possiedono già un subscriber `postgres_changes`: operatività, planning, promemoria, notifiche lette, housekeeping, inventario, rifornimenti, sale, WhatsApp e dispatch tecnici.
-
-Il frontend conserva i subscriber nei rispettivi bounded domain: non è stato creato un secondo bus globale e non è stato aggiunto polling. Gli eventi interni aggiornano la schermata interessata; i listener restano filtrati per hotel quando il dominio lo consente. Le tabelle service-only degli eventi RandCore e della coda webhook sono escluse intenzionalmente dalla pubblicazione pubblica.
-
-Migration: `supabase/migrations/20260904100000_randcore_realtime_publication_contract.sql`. Test: `test/randcore-realtime-contract.test.js`. La query di produzione ha verificato la pubblicazione effettiva e ha rilevato/corretto le tabelle che il codice ascoltava ma che non erano ancora registrate.
-
-## RandCore Point 3 — Worker, retry e recovery webhook
-
-La coda webhook ora ha un worker reale: `supabase/functions/randcore-webhook-worker/index.ts`. Il worker viene invocato dal job `randcore-webhook-worker-1m`, termina immediatamente quando non ci sono consegne e usa sempre il secret già conservato nel service plane; nessun secret viene committato nel repository.
-
-Ogni consegna viene acquisita con `FOR UPDATE SKIP LOCKED` e lease di 10 minuti, così due worker concorrenti non lavorano normalmente sulla stessa riga. Il payload è firmato con HMAC-SHA256, include `idempotency-key`, ha timeout di 10 secondi e ritenta solo errori di rete, timeout, 425, 429 e 5xx. Il limite è di 5 tentativi; secret mancanti, endpoint non validi e errori permanenti finiscono in `dead_letter` con errore troncato e senza dati sensibili nei log.
-
-La migrazione crea anche le transizioni protette `delivered/pending/dead_letter`, con autorizzazione esclusiva al `service_role`. Il job è già attivo in produzione, ma con coda vuota non effettua chiamate esterne: le destinazioni HTTPS restano da configurare e approvare prima di una consegna reale.
-
-Migration: `supabase/migrations/20260904110000_randcore_webhook_delivery_worker.sql` + `supabase/migrations/20260904111500_randcore_webhook_inactive_subscription_recovery.sql`. Test: `test/randcore-webhook-worker.test.js`.
-
-## Worker e automazioni
-
-- `pulisci-richieste-urgenti-72h` — orario.
-- `presence-auto-expire-7h20` — ogni 5 minuti.
-- `diagnostic-retention-daily` — giornaliero.
-- `weather-alert-worker-2h-daytime` — ogni 2 ore nella finestra diurna prevista.
-- `sync-sensori-temperatura-secure` — ogni 30 minuti, HTTP timeout 20s.
-- `randcore-monthly-full-check` — mensile, autodiagnosi completa 7-domain.
-- `reminder-worker-1m` — event-driven, solo con promemoria attivi.
-- `urgent-reminder-worker-30s` — event-driven temporaneo, solo con coda urgente pending.
-
-Regola: event-driven prima del polling; nessun ghost worker sempre acceso senza motivo. RandMind non introduce worker di retention permanenti e RandBrain non introduce scheduler autonomi: usa i runtime e i gate già esistenti.
-
-## Multi-hotel
-
-ID canonici: `hotelgio`, `chocohotel`, `brigantino`. Ogni record operativo mantiene `hotel_id`; isolamento tramite membership, RLS, permission, vincoli relazionali, test cross-hotel e offline queue con scope originario.
-
-## UI
-
-RandApp usa un layout adaptive mobile/tablet/desktop con una sola shell. `src/randapp/Shell.jsx` è la sola sorgente del chrome autenticato e `src/randapp/adaptive-layout.css` la sorgente canonica della geometria responsive. RandControl usa lo stesso sistema RandUI. Requisiti: safe-area iOS/Android, `100dvh`, touch target adeguati alla densità, System/Light/Dark, Piccolo/Normale/Grande, nessun overflow orizzontale involontario e priorità di navigazione guidata dagli interessi senza bypass dei permessi.
-
-## Osservabilità
-
-Sentry + OpenTelemetry + diagnostica interna restano le fonti canoniche. Costi, token e health sono misurati soltanto quando esiste una traccia reale; assenza del dato = `UNKNOWN/non misurato`.
-
-## Quality gates
+Comandi principali:
 
 ```bash
-npm ci
-npm audit --audit-level=high
-npm run test:matrix
-npm run test:critical
-npm run test:multihotel
-npm run test:production
-npm run test:repo-radar
-npm run test:core-health
-npm run test:operations-security
-npm run test:warehouse-integration
-npm run test:lts
-npm run test:health-evidence
-npm run test:external-evidence
-npm run test:full-health
-npm run test:randguide
-npm run test:randmind
-npm run test:randbrain
-npm run test:randui
-npm run test:randaudio
-npm run test:viking
-node --test test/randagent-runtime-block1.test.js
-node --test test/randtool-permission-block2.test.js
-node --test test/randmind-continuity-model-router-block3.test.js
-node --test test/randai-randvisual-block4.test.js
-node --test test/randai-randcore-visual-intelligence-block5.test.js
-node --test test/randai-randchange-visualqa-block6.test.js
-node --test test/randui-adaptive-layout.test.js
 npm run build
-node scripts/check-bundle.mjs
 npm test
+npm run test:quality
 npm run test:e2e
 npm run test:device
-npm run core:health
-npm run core:external-evidence
-RAND_LTS_COMMIT_SHA=<sha> npm run lts:attest
+npm run test:lts
 ```
 
-La CI deve restare verde su dependency audit, Quality Matrix, Critical Gate, multi-hotel parity, production confidence, build, bundle budget, contratti RandAI/RandApp/shared, Chromium/WebKit, device acceptance, Health Evidence, External Evidence, Full Health contract, RandGuide, RandMind, RandBrain, RandUI, RandAudio, Viking Evaluation e attestazione LTS.
+La CI certifica, tra gli altri:
 
-Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove serve, wiring UI, isolamento, test dedicati, zombie scan, README coerente, migration applicate/verificate quando necessarie, CI completa verde e merge finale senza forzare `main`.
-
-## Struttura repository
-
-- `src/randapp/` — shell/UI e domini RandApp; include `adaptive-layout.js` per il contratto device/interessi/densità e `adaptive-layout.css` come geometria responsive canonica.
-- `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
-- `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
-- `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
-- `src/randai/visual/` — RandVisual canonico: contratti, layout deterministico, renderer SVG sicuro, provenance manifest, RandCore Visual Intelligence e adapter ToolRegistry.
-- `src/randai/change/` — RandChange canonico: VisualQA before/after e Change Receipt evidence-backed; non sostituisce audit, rollback, E2E o LTS.
-- `src/randai/guidance/` — catalogo, ingestione, graph, authoring e production gate canonici di RandGuide.
-- `src/randai/memory/` — MemoryEngine/Store, facade RandMind e continuity contract cross-session/cross-channel.
-- `src/randai/randbrain/` — facade RandBrain, routing, reasoning graph, learning adapter, validation e production gate.
-- `src/randai/supervisor/`, `src/randai/agents/`, `src/randai/autonomy/`, `src/randai/learning/` — motori canonici composti da RandBrain; non duplicati.
-- `src/randai/control/` — Control Center, Operations, Security, Health, RandMind, RandBrain e Repo Radar.
-- `src/randai/control-center/` — motore/proiezione read-only canonica.
-- `src/reliability/` — safety/reliability 27+.
-- `supabase/functions/` — boundary server e worker.
-- `supabase/migrations/` — schema, RLS/RPC e migration versionate.
-- `test/` e `scripts/` — contract, quality gate, E2E, device acceptance e attestazioni.
-
-## Consolidamento storico
-
-- PR #118 — Blocco 1.
-- PR #123 — 1–16.
-- PR #124 — 17–20.
-- PR #125 — 21–24.
-- PR #126 — 25–26.
-- PR #127 — 27–30.
-- PR #129 — 31–34.
-- PR #130 — 35–38.
-- PR #131 — 39–42.
-- PR #132 — 43–46.
-- PR #133 — 47–50.
-- PR #150 — 51–54.
-- PR #152 — 55–58.
-- PR #153 — 59–62.
-- PR #154 — 63–66.
-- PR #155 — 67.
-- PR #156 — 68–70.
-- PR #157 — 71.
-- PR #158 — 72.
-- PR #159 — 73.
-- PR #160 — 74–80 / RandGuide LIVE.
-- PR #161 — 81–86 / RandMind LIVE.
-- PR #162 — 87–92 / RandBrain LIVE.
-- PR #163 — 93–97 / RandUI LIVE.
-- PR #164 — 98 / RandAudio capability, LIVE deferred.
-- PR #171 — Roadmap OpenCode/Diagram Design, Blocco 1 / RandAgent Runtime.
-- PR #172 — Roadmap OpenCode/Diagram Design, Blocco 2 / RandTool + Permission Gateway.
-- PR #173 — Roadmap OpenCode/Diagram Design, Blocco 3 / RandMind Continuity + Model Router.
-- PR #174 — Roadmap OpenCode/Diagram Design, Blocco 4 / RandVisual Engine.
-- PR #175 — Roadmap OpenCode/Diagram Design, Blocco 5 / RandCore Visual Intelligence.
-- PR #176 — Roadmap OpenCode/Diagram Design, Blocco 6 / RandChange Receipt + Visual QA.
-- PR #177 — RandUI Adaptive Layout / interessi, PC-tablet-mobile e Piccolo-Normale-Grande.
+- dependency/security audit;
+- Quality Matrix;
+- critical operational gate;
+- multi-hotel parity;
+- production confidence;
+- build e bundle budget;
+- RandUI/RandAI/RandCore contracts;
+- Chromium + WebKit;
+- device acceptance;
+- RandCore health evidence;
+- Rand Ecosystem LTS attestation.
 
 ## Deploy
 
-Repository: `Apicehotel/Apicehotel-Manutenzione`. Progetto Vercel attivo: `apicehotel-manutenzionr`.
+Repository: `Apicehotel/Apicehotel-Manutenzione`.
+
+Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibile un ambiente di test prima della produzione.
+
+## Documentazione
+
+- `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
+- `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
+
+Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.

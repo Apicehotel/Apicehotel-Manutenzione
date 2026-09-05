@@ -27,7 +27,9 @@ body { overflow-x: hidden; }
   min-width: 0;
 }
 
-.rs-app { padding-top: var(--rs-adaptive-safe-top); }
+/* Safe-area top has one owner: the sticky header. Applying it to both app and
+   header doubled the iOS notch/Dynamic Island clearance. */
+.rs-app { padding-top: 0; }
 
 .rs-content {
   box-sizing: border-box;
@@ -40,8 +42,10 @@ body { overflow-x: hidden; }
 }
 
 .rs-header {
+  padding-top: calc(var(--rs-adaptive-safe-top) + 6px);
   padding-left: max(12px, var(--rs-adaptive-safe-left));
   padding-right: max(12px, var(--rs-adaptive-safe-right));
+  padding-bottom: 7px;
 }
 
 .rs-content > * { max-width: 100%; min-width: 0; }
