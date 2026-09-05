@@ -56,6 +56,20 @@ Il vecchio `app-shell-foundation.css` resta eliminato. I CSS di dominio vengono 
 
 Dettaglio: `docs/architecture/RANDUI_V1_CORE.md`.
 
+### RandUI v1 Guard
+
+Il Blocco 2 aggiunge un gate **fail-closed** tra il Core e la migrazione delle pagine:
+
+`Page Schema → Registry/Template → RandUI Guard → Chromium/WebKit → Device Acceptance`
+
+- `src/randapp/randui/guard.js` controlla composizione e geometria senza introdurre un secondo framework;
+- componenti non registrati/non ammessi e slot inventati vengono rifiutati;
+- il browser gate blocca overflow orizzontale, fuga dal viewport, target touch RandUI sotto **44×44 px**, azioni senza nome accessibile, template sconosciuti e ID DOM duplicati;
+- matrice canonica: **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Pixel 7 Chromium e iPhone 13 WebKit;
+- una pagina del Blocco 3 non è considerata migrata finché non supera Guard, browser gate e device acceptance.
+
+Dettaglio: `docs/architecture/RANDUI_V1_GUARD.md`.
+
 ## Safe-area iOS / Android
 
 RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
@@ -187,6 +201,7 @@ npm run build
 npm test
 npm run test:quality
 npm run test:randui
+npm run test:randui:guard
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -201,7 +216,8 @@ La CI certifica, tra gli altri:
 - production confidence;
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
-- RandUI v1 design contract, registry, template, page schema e single-shell invariants;
+- RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
+- matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
 - confini Group C Procedure/RandAI/RandMedia e ACL anonime;
@@ -221,6 +237,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 ## Documentazione
 
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
+- `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
