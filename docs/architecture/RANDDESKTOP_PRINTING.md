@@ -102,6 +102,27 @@ In una build pacchettizzata RandDesktop carica solo il renderer locale da:
 
 Non carica Vercel come renderer privilegiato di produzione.
 
+## Installer Windows
+
+Il packaging Windows usa Electron Builder + NSIS su runner GitHub Actions `windows-latest`.
+
+Contratto della release desktop:
+
+- Electron `44.2.0` e Electron Builder `26.15.3` sono versioni fissate;
+- target iniziale `Windows x64`;
+- installer guidato NSIS, non one-click;
+- possibilità di scegliere la cartella di installazione;
+- collegamenti Desktop e menu Start;
+- renderer RandApp incorporato nelle risorse dell'app, non scaricato da Vercel all'avvio;
+- la build web incorporata usa `base=./` per gli asset Vite sotto `file://`;
+- nome artifact: `RandDesktop-Setup-<version>.exe`;
+- per ogni build viene prodotto `SHA256SUMS.txt`;
+- GitHub Actions conserva installer + checksum come artifact scaricabile.
+
+La build iniziale è volutamente **non firmata** (`CSC_IDENTITY_AUTO_DISCOVERY=false`): è installabile, ma Windows SmartScreen può mostrare l'avviso di autore sconosciuto. La firma Authenticode verrà aggiunta solo quando sarà disponibile un certificato di code signing gestito come secret CI, mai nel repository.
+
+Workflow: `.github/workflows/randdesktop-windows.yml`.
+
 ## Stato v1
 
 Implementato:
@@ -112,14 +133,16 @@ Implementato:
 4. elenco stampanti;
 5. motore documenti strutturati;
 6. escape/CSP;
-7. test di contratto.
+7. test di contratto;
+8. packaging Windows x64 NSIS;
+9. artifact `.exe` + checksum SHA-256 in GitHub Actions.
 
 Non ancora incluso in v1:
 
+- firma digitale Authenticode;
 - stampa silenziosa;
 - scelta persistente stampante;
 - PDF/save dialog;
 - code di stampa;
 - telemetria RandCore delle stampe;
-- template specifici per ogni modulo;
-- packaging/installer firmato.
+- template specifici per ogni modulo.
