@@ -42,14 +42,16 @@ export async function deleteSupplyProduct(hotelId, id) {
   if (error) throw error
 }
 
-export async function createSupplyRequest({ hotelId, productIds, note = '' }) {
+export async function createSupplyRequest({ hotelId, productIds, note = '', floorContext = null }) {
   if (!supabase) throw new Error('Supabase non disponibile')
   const uniqueIds = Array.from(new Set((productIds || []).filter(Boolean)))
   if (!uniqueIds.length) throw new Error('Seleziona almeno un prodotto')
-  const { data, error } = await supabase.rpc('supply_create_request', {
+  const { data, error } = await supabase.rpc('supply_create_request_v2', {
     p_hotel_id: hotelId,
     p_product_ids: uniqueIds,
     p_note: clean(note) || null,
+    p_area_code: floorContext?.area_code || null,
+    p_floor_number: Number.isFinite(Number(floorContext?.floor_number)) ? Number(floorContext.floor_number) : null,
   })
   if (error) throw error
   return data
@@ -59,7 +61,7 @@ export async function fetchSupplyRequests(hotelId, { limit = 40 } = {}) {
   if (!supabase || !hotelId) return []
   const { data, error } = await supabase
     .from('supply_requests')
-    .select('id,hotel_id,requested_by_name,note,created_at,completed_at,supply_request_items(id,product_id,product_name,category,status,resolved_by_name,resolved_at)')
+    .select('id,hotel_id,requested_by_name,note,area_code,area_label,floor_number,floor_label,created_at,completed_at,supply_request_items(id,product_id,product_name,category,status,resolved_by_name,resolved_at)')
     .eq('hotel_id', hotelId)
     .order('created_at', { ascending: false })
     .limit(limit)
