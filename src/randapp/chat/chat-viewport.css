@@ -1,0 +1,81 @@
+/* RandChat owns the visible workspace while mounted.
+   The page itself must not scroll: only group/thread lists and message history do. */
+body.rs-randchat-active {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.rs-content.rs-content--randchat {
+  min-height: 0;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+}
+
+.rc-module {
+  height: var(--rc-viewport-h, calc(100dvh - 210px));
+  max-height: var(--rc-viewport-h, calc(100dvh - 210px));
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  overflow: hidden;
+}
+
+.rc-module-tabs {
+  flex: none;
+  min-height: 0;
+}
+
+.rc-module .rc-shell,
+.rc-module .rc-dm {
+  height: 100% !important;
+  max-height: 100%;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.rc-module .rc-groups,
+.rc-module .rc-conversation {
+  min-height: 0;
+  max-height: 100%;
+}
+
+.rc-module .rc-conversation {
+  overflow: hidden;
+}
+
+.rc-module .rc-messages,
+.rc-module .rc-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rc-module .rc-conversation__head,
+.rc-module .rc-composer {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .rs-content.rs-content--randchat {
+    padding-top: var(--rs-page-pad-top);
+  }
+
+  .rc-module {
+    height: var(--rc-viewport-h, calc(100dvh - 210px)) !important;
+    max-height: var(--rc-viewport-h, calc(100dvh - 210px)) !important;
+  }
+
+  .rc-module .rc-shell,
+  .rc-module .rc-dm,
+  .rc-module .rc-groups,
+  .rc-module .rc-conversation {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .rc-module .rc-messages {
+    flex: 1 1 auto;
+  }
+}
