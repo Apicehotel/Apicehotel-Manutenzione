@@ -22,6 +22,11 @@ export const RANDUI_COMPONENT_REGISTRY = Object.freeze({
   ConfirmDialog: entry('../ui.jsx', ['default', 'loading', 'error', 'disabled'], 'overlay'),
   UiSizeControl: entry('../ui.jsx', ['default', 'focus', 'active', 'disabled'], 'preference'),
   ThemeControl: entry('../ui.jsx', ['default', 'focus', 'active', 'disabled'], 'preference'),
+  PageTitle: entry('./visual-primitives.jsx', ['default'], 'heading'),
+  Surface: entry('./visual-primitives.jsx', ['default', 'loading', 'empty', 'error', 'disabled'], 'surface'),
+  Stack: entry('./visual-primitives.jsx', ['default'], 'layout'),
+  Grid: entry('./visual-primitives.jsx', ['default'], 'layout'),
+  Metric: entry('./visual-primitives.jsx', ['default', 'success', 'warning', 'error'], 'metric'),
   SystemState: entry('./system-states.jsx', ['loading', 'empty', 'no-results', 'error', 'degraded', 'offline', 'queued', 'syncing', 'stale', 'conflict', 'forbidden', 'unavailable', 'success', 'warning', 'in-progress'], 'feedback'),
   TemplateFrame: entry('./templates.jsx', ['default', 'loading', 'empty', 'error', 'disabled'], 'layout'),
 })
