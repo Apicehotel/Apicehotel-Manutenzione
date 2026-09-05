@@ -70,7 +70,14 @@ test('reminders notifications and ntfy are independent modules', async () => {
 })
 
 test('active CSS is explicit at the runtime entry and legacy global stacks are gone', async () => {
-  const main = await source('src/main.jsx'); assert.match(main, /randapp\/shell\.css/); assert.match(main, /randapp\/adaptive-layout\.css/)
+  const [main, foundation] = await Promise.all([
+    source('src/main.jsx'),
+    source('src/randapp/randui/foundation.css'),
+  ])
+  assert.match(main, /randapp\/shell\.css/)
+  assert.match(main, /randapp\/randui\/foundation\.css/)
+  assert.match(foundation, /@import '\.\.\/adaptive-layout\.css'/)
+  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
   for (const legacy of ['clean-ui.css','approved-dark-shell.css','unified-ui-v1.css','randapp-layout-overhaul.css','admin-mobile-v2.css']) assert.doesNotMatch(main, new RegExp(legacy.replace('.', '\\.')))
   assert.match(main, /import\('\.\/styles\.css'\)/)
 })
