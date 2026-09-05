@@ -15,6 +15,7 @@ function useRandChatViewport(enabled) {
     const content = node.closest('.rs-content')
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     content?.classList.add('rs-content--randchat')
+    document.documentElement.classList.add('rs-randchat-active')
     document.body.classList.add('rs-randchat-active')
 
     let frame = 0
@@ -54,6 +55,7 @@ function useRandChatViewport(enabled) {
       window.visualViewport?.removeEventListener('resize', sync)
       window.visualViewport?.removeEventListener('scroll', sync)
       content?.classList.remove('rs-content--randchat')
+      document.documentElement.classList.remove('rs-randchat-active')
       document.body.classList.remove('rs-randchat-active')
     }
   }, [enabled])
