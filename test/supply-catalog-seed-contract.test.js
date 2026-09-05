@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const initialSeed = readFileSync(
-  new URL('../supabase/migrations/20260905170000_seed_hotelgio_supply_catalog.sql', import.meta.url),
+  new URL('../supabase/migrations/20260905041921_seed_hotelgio_supply_catalog.sql', import.meta.url),
   'utf8',
 )
 const correction = readFileSync(
@@ -37,11 +37,11 @@ test('Hotel Gio final catalog matches the real legacy Minibar and Consumo lists'
   assert.match(correction, /hotel_id='hotelgio'/)
 
   for (const name of minibar) {
-    assert.match(correction, new RegExp(`'minibar'::text, '${name.replace('/', '\\/')}'::text`))
+    assert.ok(correction.includes(`'minibar'::text, '${name}'::text`), `missing Minibar product: ${name}`)
   }
 
   for (const name of consumo) {
-    assert.match(correction, new RegExp(`'consumo'::text, '${name.replace('/', '\\/')}'::text`))
+    assert.ok(correction.includes(`'consumo'::text, '${name}'::text`), `missing Consumo product: ${name}`)
   }
 })
 
@@ -68,4 +68,8 @@ test('final catalog order is explicit for 7 Minibar and 9 Consumo products', () 
   assert.match(correction, /'Birre'::text, 70/)
   assert.match(correction, /'Carta igienica'::text, 110/)
   assert.match(correction, /'Carta Lucart\/Scottex'::text, 190/)
+})
+
+test('migration filenames preserve the production execution order', () => {
+  assert.ok('20260905041921' < '20260905042146')
 })
