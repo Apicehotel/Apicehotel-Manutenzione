@@ -6,7 +6,7 @@
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.mjs && node --check preload.mjs && node --check print-service.mjs && node --check print-template.mjs"
+    "check": "node --check main.mjs && node --check preload.cjs && node --check print-service.mjs && node --check print-template.mjs"
   },
   "devDependencies": {
     "electron": "44.2.0"
