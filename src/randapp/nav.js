@@ -20,6 +20,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
         { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: canUser(user, 'issues', 'view') },
         { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: canUser(user, 'issues', 'create') },
         { id: 'my-work', icon: 'check', label: 'I miei lavori', show: canUser(user, 'interventions', 'view') },
+        { id: 'chat', icon: 'message', label: 'RandChat', show: Boolean(user.chat_enabled) },
       ],
     },
     {
@@ -73,6 +74,7 @@ export const NAV_TARGET = {
 export const VIEW_GUARDS = {
   home: view('home'),
   issues: view('issues'),
+  chat: (u) => Boolean(u?.chat_enabled),
   interventions: view('interventions'),
   inventory: view('inventory'),
   supplies: view('supplies'),
