@@ -4,9 +4,13 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('consolidated theme layers load after shared coherence styles', async () => {
-  const main = await source('src/main.jsx')
-  assert.match(main, /ui-coherence\.css'[\s\S]*login-reference\.css'[\s\S]*hotel-selector-reference\.css'[\s\S]*theme-coherence\.css'/)
+test('consolidated theme layers load before the final RandUI coherence foundation', async () => {
+  const [main, foundation] = await Promise.all([
+    source('src/main.jsx'),
+    source('src/randapp/randui/foundation.css'),
+  ])
+  assert.match(main, /login-reference\.css'[\s\S]*hotel-selector-reference\.css'[\s\S]*theme-coherence\.css'[\s\S]*randui\/foundation\.css'/)
+  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
   assert.doesNotMatch(main, /auth-theme-fix\.css|theme-audit-fix\.css/)
 })
 

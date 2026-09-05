@@ -4,13 +4,15 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('approved auth reference layer covers login and admin gate', async () => {
-  const [main, css, app] = await Promise.all([
+test('approved auth reference layer covers login and admin gate before the final RandUI coherence owner', async () => {
+  const [main, foundation, css, app] = await Promise.all([
     source('src/main.jsx'),
+    source('src/randapp/randui/foundation.css'),
     source('src/randapp/login-reference.css'),
     source('src/randapp/App.jsx'),
   ])
-  assert.match(main, /ui-coherence\.css'[\s\S]*login-reference\.css'/)
+  assert.match(main, /login-reference\.css'[\s\S]*randui\/foundation\.css'/)
+  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
   assert.match(css, /\.rs-auth:has\(\[data-testid='login-submit'\]\)/)
   assert.match(css, /admin-gate-submit/)
   assert.match(css, /\.rs-brand__logo img[\s\S]*width: 116%/)

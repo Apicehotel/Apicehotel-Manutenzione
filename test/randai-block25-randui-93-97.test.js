@@ -57,16 +57,20 @@ test('96 adaptive UI covers safe areas visual viewport input modes rotation and 
   assert.match(shell, /useDrawerSwipe/)
 })
 
-test('97 visual quality gate is named cross-engine and fail-closed', () => {
+test('97 visual quality gate is named cross-engine fail-closed and guarded', () => {
   const ci = read('../.github/workflows/ci.yml')
   const e2e = read('./e2e.mjs')
   const device = read('./device-acceptance.mjs')
+  const guard = read('../src/randapp/randui/guard.js')
   assert.match(ci, /RandUI visual quality contracts/)
   assert.match(ci, /npm run test:randui/)
   assert.match(e2e, /chromium/)
   assert.match(e2e, /webkit/)
   assert.match(e2e, /assertNoHorizontalOverflow/)
+  assert.match(e2e, /assertRandUiLayoutGuard/)
   assert.match(e2e, /screenshot/)
+  assert.match(guard, /RANDUI_GUARD_VIEWPORTS/)
+  assert.match(guard, /RANDUI_TOUCH_TARGET_MIN = 44/)
   assert.match(device, /touch target/i)
   assert.match(device, /landscape/i)
 })

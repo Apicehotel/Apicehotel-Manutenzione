@@ -21,6 +21,9 @@ export function normalizeRandUiPageSchema(schema = {}) {
   const pageType = PAGE_TYPE_ALIASES[requestedType] || requestedType
   const template = resolveRandUiTemplate(pageType)
   if (!template) throw new Error(`Unknown RandUI page type: ${requestedType || '(empty)'}`)
+  const slots = schema.slots && typeof schema.slots === 'object' && !Array.isArray(schema.slots) ? { ...schema.slots } : {}
+  const unknownSlots = Object.keys(slots).filter((slot) => !template.slots.includes(slot))
+  if (unknownSlots.length) throw new Error(`Unknown slots for RandUI template ${pageType}: ${unknownSlots.join(', ')}`)
   return Object.freeze({
     id,
     domain: String(schema.domain || 'shared'),
@@ -29,7 +32,7 @@ export function normalizeRandUiPageSchema(schema = {}) {
     mobilePriority: Boolean(schema.mobilePriority),
     permissions: Object.freeze(asArray(schema.permissions)),
     capabilities: Object.freeze(asArray(schema.capabilities)),
-    slots: Object.freeze({ ...(schema.slots || {}) }),
+    slots: Object.freeze(slots),
     template,
   })
 }

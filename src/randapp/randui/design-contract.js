@@ -19,6 +19,7 @@ export const RANDUI_LAYER_OWNERS = Object.freeze({
   components: 'src/randapp/randui/component-registry.js',
   pageSchema: 'src/randapp/randui/page-schema.js',
   systemStates: 'src/randapp/randui/system-states.jsx',
+  guard: 'src/randapp/randui/guard.js',
 })
 
 export const RANDUI_SYSTEM_STATES = Object.freeze([
@@ -73,6 +74,7 @@ export const RANDUI_DESIGN_CONTRACT = Object.freeze({
     'safe-area-owned-by-shared-chrome',
     'templates-before-page-specific-layout',
     'registered-components-only',
+    'guard-before-template-migration',
   ]),
 })
 
