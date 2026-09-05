@@ -15,6 +15,9 @@ Deno.serve(async (req: Request) => {
   const expected = await secret("randchat_media_cron_secret");
   if (!expected || req.headers.get("x-cron-secret") !== expected) return json({ ok: false, error: "forbidden" }, 403);
 
+  const { data: orphanCount, error: orphanError } = await admin.rpc("queue_orphaned_chat_media");
+  if (orphanError) return json({ ok: false, error: "orphan_scan_failed" }, 500);
+
   const { data: rows, error: readError } = await admin
     .from("chat_media_gc_queue")
     .select("id,storage_provider,storage_path,attempts")
@@ -40,5 +43,5 @@ Deno.serve(async (req: Request) => {
     deleted += 1;
   }
 
-  return json({ ok: true, processed: (rows || []).length, deleted, failed });
+  return json({ ok: true, orphansQueued: Number(orphanCount || 0), processed: (rows || []).length, deleted, failed });
 });
