@@ -6,6 +6,7 @@ import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import { buildPrimaryBottomNav } from './shell-navigation.js'
+import { resolveUserInterests } from './adaptive-layout.js'
 import { initSystemInsetsBridge } from './system-insets.js'
 import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
 import { canManageTechnicianDirectory } from './technician-directory-policy.js'
@@ -17,7 +18,6 @@ import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
-import './app-shell-foundation.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
@@ -263,10 +263,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
   }
 
+  const userInterests = useMemo(() => resolveUserInterests(user), [user])
   const bottomNav = useMemo(() => {
     if (!user) return []
-    return buildPrimaryBottomNav({ placement, viewAllowed })
-  }, [user, placement, viewAllowed])
+    return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests })
+  }, [user, placement, viewAllowed, userInterests])
 
   const addCapabilities = useMemo(() => ({
     issue: Boolean(user && canUser(user, 'issues', 'create') && viewAllowed('issues')),

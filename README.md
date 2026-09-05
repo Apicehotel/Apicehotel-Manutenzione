@@ -6,6 +6,14 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target o
 
 La console RandAI usa un layout unico e responsive: sidebar leggibile su desktop e tablet, navigazione orizzontale a larghezza piena su smartphone, schede a colonna singola sui telefoni e nessun overflow orizzontale intenzionale. La home contiene accessi rapidi a Segnalazioni, Manutenzioni, RandGuide e Configurazione; la mappa Ecosistema apre i moduli disponibili. Il tema è configurabile direttamente dall’intestazione RandAI con `Sistema`, `Chiaro` e `Scuro`, usando la stessa preferenza persistente di RandApp. La configurazione amministrativa è un centro unico con schede Utenti, Permessi e menu, RandAI e RandGuide: non duplica più le funzioni tra pannello laterale e dashboard. Le regole dedicate sono in `src/randai/control/randai-responsive.css` e vengono caricate direttamente da `RandAIControlCenter.jsx`.
 
+### RandUI Adaptive Layout — interessi + PC/tablet/iOS/Android ✅
+
+RandApp usa ora un unico contratto adattivo: `Hotel scope → identità → permessi → interessi → capacità dispositivo → orientamento/input → Piccolo/Normale/Grande → layout`. I permessi restano autorità: gli interessi possono soltanto ordinare funzioni già autorizzate. La configurazione per ruolo già esistente è riusata come prima sorgente dichiarativa; quando il profilo espone `user.interests`, la shell li usa direttamente senza introdurre un secondo store.
+
+Il bottom-nav mantiene **Home** in posizione 3 e **Altro** in posizione 5; gli slot operativi 1, 2 e 4 vengono scelti tra destinazioni autorizzate in base agli interessi. Il device contract separa smartphone `<768px`, tablet `768–1199px` e desktop `>=1200px`, con regole anche per touch/pointer, portrait/landscape, safe-area e schermi molto stretti. `Piccolo / Normale / Grande` resta il solo contratto di densità persistente (`apicehotel.ui-size.v1`): Grande aumenta anche controlli e touch target, non soltanto il testo.
+
+`src/randapp/adaptive-layout.css` resta la sola sorgente canonica della geometria responsive. Lo zombie `src/randapp/app-shell-foundation.css`, che duplicava tale responsabilità, è stato eliminato dopo verifica e il relativo import residuo in `Shell.jsx` è stato rimosso. Nessun framework UI, device-detection SDK, navigation stack o dipendenza runtime è stato aggiunto. Contratti dedicati: `src/randapp/adaptive-layout.js`, `test/randui-adaptive-layout.test.js`, documentazione `docs/randui-adaptive-layout.md`.
+
 ## Regole architetturali non negoziabili
 
 - RandAI riceve solo contesto autorizzato e hotel-scoped.
@@ -305,7 +313,7 @@ ID canonici: `hotelgio`, `chocohotel`, `brigantino`. Ogni record operativo manti
 
 ## UI
 
-RandApp è mobile-first. `src/randapp/Shell.jsx` è la sola sorgente del chrome autenticato. RandControl usa lo stesso sistema RandUI. Requisiti: safe-area iOS, `100dvh`, touch target ≥44×44, System/Light/Dark e nessun overflow orizzontale sui viewport supportati.
+RandApp usa un layout adaptive mobile/tablet/desktop con una sola shell. `src/randapp/Shell.jsx` è la sola sorgente del chrome autenticato e `src/randapp/adaptive-layout.css` la sorgente canonica della geometria responsive. RandControl usa lo stesso sistema RandUI. Requisiti: safe-area iOS/Android, `100dvh`, touch target adeguati alla densità, System/Light/Dark, Piccolo/Normale/Grande, nessun overflow orizzontale involontario e priorità di navigazione guidata dagli interessi senza bypass dei permessi.
 
 ## Osservabilità
 
@@ -340,6 +348,7 @@ node --test test/randmind-continuity-model-router-block3.test.js
 node --test test/randai-randvisual-block4.test.js
 node --test test/randai-randcore-visual-intelligence-block5.test.js
 node --test test/randai-randchange-visualqa-block6.test.js
+node --test test/randui-adaptive-layout.test.js
 npm run build
 node scripts/check-bundle.mjs
 npm test
@@ -356,7 +365,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 
 ## Struttura repository
 
-- `src/randapp/` — shell/UI e domini RandApp.
+- `src/randapp/` — shell/UI e domini RandApp; include `adaptive-layout.js` per il contratto device/interessi/densità e `adaptive-layout.css` come geometria responsive canonica.
 - `src/randai/core/` — orchestrazione, Truth Map, Configuration, Health Evidence, Final Health Gate, Module Health e LTS Readiness.
 - `src/randai/tools/` — ToolRegistry canonico, contratti rischio/permesso e Tool Permission Gateway; nessuna autorità DB parallela.
 - `src/randai/models/` — ModelRouter canonico, capability/privacy e governance rischio/qualità/affidabilità/costo.
@@ -406,6 +415,7 @@ Regola di chiusura: un blocco è ✅ solo con codice canonico, DB/schema dove se
 - PR #174 — Roadmap OpenCode/Diagram Design, Blocco 4 / RandVisual Engine.
 - PR #175 — Roadmap OpenCode/Diagram Design, Blocco 5 / RandCore Visual Intelligence.
 - PR #176 — Roadmap OpenCode/Diagram Design, Blocco 6 / RandChange Receipt + Visual QA.
+- PR #177 — RandUI Adaptive Layout / interessi, PC-tablet-mobile e Piccolo-Normale-Grande.
 
 ## Deploy
 
