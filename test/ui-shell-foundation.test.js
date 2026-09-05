@@ -42,6 +42,13 @@ test('adaptive App Shell CSS uses effective browser/native insets and never caps
   assert.match(css, /\.rs-bottomnav, \.rs-navfab \{ display: none; \}/)
 })
 
+test('top safe area has one owner so iOS does not double the notch clearance', async () => {
+  const css = await read('src/randapp/adaptive-layout.css')
+  assert.match(css, /\.rs-app\s*\{\s*padding-top:\s*0;\s*\}/)
+  assert.match(css, /\.rs-header\s*\{[\s\S]*padding-top:\s*calc\(var\(--rs-adaptive-safe-top\) \+ 6px\)/)
+  assert.doesNotMatch(css, /\.rs-app\s*\{\s*padding-top:\s*var\(--rs-adaptive-safe-top\)/)
+})
+
 test('native inset bridge writes and clears CSS variables for a future Android wrapper', () => {
   const values = new Map()
   const previousDocument = global.document
