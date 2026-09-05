@@ -5,6 +5,7 @@ export const ROLE_NAV_KEY = 'role_navigation_v1'
 export const ROLE_NAV_ITEMS = [
   ['home', 'Home'],
   ['issues', 'Segnalazioni'],
+  ['chat', 'RandChat'],
   ['interventions', 'Interventi'],
   ['inventory', 'Magazzino'],
   ['supplies', 'Rifornimenti'],
@@ -27,6 +28,7 @@ export const ROLE_NAV_ITEMS = [
 export const VIEW_TO_NAV_KEY = {
   home: 'home',
   issues: 'issues',
+  chat: 'chat',
   interventions: 'interventions',
   inventory: 'inventory',
   supplies: 'supplies',
@@ -48,6 +50,7 @@ export const ITEM_TO_NAV_KEY = {
   home: 'home',
   issues: 'issues',
   'new-issue': 'issues',
+  chat: 'chat',
   interventions: 'interventions',
   inventory: 'inventory',
   supplies: 'supplies',
@@ -68,6 +71,7 @@ export const ITEM_TO_NAV_KEY = {
 const FALLBACK = {
   home: 'bottom',
   issues: 'bottom',
+  chat: 'side',
   interventions: 'side',
   inventory: 'side',
   supplies: 'side',
