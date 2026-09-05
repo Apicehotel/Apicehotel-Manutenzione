@@ -4,7 +4,11 @@ Il modulo Rifornimenti gestisce la comunicazione operativa Housekeeping → Manu
 
 ## Regole di dominio
 
-- il catalogo parte vuoto ed è separato per `hotel_id`;
+- il catalogo è separato per `hotel_id`;
+- **Hotel Giò (`hotelgio`)** riceve un bootstrap iniziale derivato dalla precedente app operativa “Rifornimento Office - Hotel Gio”;
+- il bootstrap Hotel Giò contiene **Minibar**: Coca Cola, Succo ACE, Birra, Patatine, Barretta; e **Consumo**: Saponetta, Shampini, Spugne scarpe, Cuffia doccia;
+- il seed è idempotente: inserisce soltanto prodotti mancanti e non riattiva, rinomina o sovrascrive prodotti già gestiti dall'Admin;
+- ChocoHotel e Brigantino non ereditano automaticamente il catalogo di Giò: restano hotel-scoped e configurabili quando saranno definiti i rispettivi prodotti reali;
 - solo l'Admin aggiunge, modifica, disattiva o elimina prodotti;
 - un prodotto già usato nello storico non viene eliminato distruttivamente: può essere disattivato;
 - Governante e Capo Governante possono vedere il catalogo attivo e inviare richieste;
@@ -44,7 +48,7 @@ Le RPC non sono eseguibili da `anon`.
 
 La Governante vede i prodotti attivi raggruppati in Minibar e Consumo, seleziona le voci necessarie ed eventualmente aggiunge una nota. Il Manutentore vede ogni prodotto richiesto e può scegliere `✓ Consegnato` o `! Manca`. Le voci non toccate restano visivamente in attesa.
 
-Il catalogo parte volutamente vuoto: finché l'Admin non inserisce almeno un prodotto Minibar o Consumo, la Governante non ha voci da selezionare. Il numero personale si inserisce in **Il mio profilo → Contatti → Telefono**.
+A Hotel Giò il catalogo viene inizializzato con i nove prodotti storici sopra elencati. Negli altri hotel il catalogo resta vuoto finché l'Admin della struttura non inserisce prodotti reali. Il numero personale si inserisce in **Il mio profilo → Contatti → Telefono**.
 
 L'Admin, nello stesso pannello, gestisce il catalogo per la struttura corrente.
 
@@ -56,5 +60,7 @@ L'Admin, nello stesso pannello, gestisce il catalogo per la struttura corrente.
 - `src/randapp/HousekeepingCompletionAlerts.jsx`
 - `supabase/migrations/20260901123549_supplies_housekeeping_requests.sql`
 - `supabase/migrations/20260901130855_governanti_private_requests_and_phone_gate.sql`
+- `supabase/migrations/20260905170000_seed_hotelgio_supply_catalog.sql`
 - `test/supply-requests-contract.test.js`
+- `test/supply-catalog-seed-contract.test.js`
 - `test/governanti-private-visibility-contract.test.js`
