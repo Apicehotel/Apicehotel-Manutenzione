@@ -18,12 +18,16 @@ test('download RandDesktop usa un permesso dedicato e non ruoli hardcoded nella 
 test('RandDesktop nasce nel menu laterale ed è configurabile da Ruoli e permessi', () => {
   const roleNavigation = read('src/randapp/role-navigation.js')
   const settings = read('src/randapp/admin/settings-constants.js')
+  const rolesTab = read('src/randapp/admin/RolesTab.jsx')
   assert.match(roleNavigation, /\['desktop_download', 'RandDesktop'\]/)
   assert.match(roleNavigation, /'desktop-download': 'desktop_download'/)
   assert.match(roleNavigation, /desktop_download: 'side'/)
   assert.match(settings, /\['desktop_download', 'RandDesktop'\]/)
   assert.match(settings, /\['desktop_download','Download RandDesktop'\]/)
   assert.match(settings, /desktop_download:\['view'\]/)
+  assert.match(rolesTab, /Object\.prototype\.hasOwnProperty\.call\(draftPerms,k\)/)
+  assert.match(rolesTab, /canRole\(role,m,a\)/)
+  assert.match(rolesTab, /const next=!getPerm\(m,a\)/)
 })
 
 test('pagina download usa configurazione centrale HTTPS e gestisce RandDesktop già attivo', () => {
