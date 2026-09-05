@@ -62,7 +62,7 @@ L'Admin, nello stesso pannello, gestisce il catalogo per la struttura corrente.
 - `src/randapp/HousekeepingCompletionAlerts.jsx`
 - `supabase/migrations/20260901123549_supplies_housekeeping_requests.sql`
 - `supabase/migrations/20260901130855_governanti_private_requests_and_phone_gate.sql`
-- `supabase/migrations/20260905170000_seed_hotelgio_supply_catalog.sql`
+- `supabase/migrations/20260905041921_seed_hotelgio_supply_catalog.sql`
 - `supabase/migrations/20260905042146_correct_hotelgio_supply_catalog_from_legacy_app.sql`
 - `test/supply-requests-contract.test.js`
 - `test/supply-catalog-seed-contract.test.js`
