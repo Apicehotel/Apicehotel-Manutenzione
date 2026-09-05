@@ -19,23 +19,6 @@ function openDb() {
   })
 }
 
-async function withStore(mode, fn) {
-  const db = await openDb()
-  try {
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, mode)
-      const store = tx.objectStore(STORE)
-      let result
-      try { result = fn(store) } catch (error) { reject(error); return }
-      tx.oncomplete = () => resolve(result?.result ?? result)
-      tx.onerror = () => reject(tx.error || new Error('Errore archivio chiavi E2EE'))
-      tx.onabort = () => reject(tx.error || new Error('Operazione archivio chiavi annullata'))
-    })
-  } finally {
-    db.close()
-  }
-}
-
 export async function getDmDeviceIdentity(userId) {
   if (!userId || !storageAvailable()) return null
   const db = await openDb()
