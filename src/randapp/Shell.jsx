@@ -32,6 +32,7 @@ const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
 const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
 const InsertLauncher = lazy(() => import('./InsertLauncher.jsx'))
 const UrgentCreateSheet = lazy(() => import('./UrgentCreateSheet.jsx'))
+const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
 const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
@@ -51,6 +52,7 @@ const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then(
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
+const initialsFor = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'R'
 
 function useDrawerSwipe({ open, setOpen }) {
   const gesture = useRef(null)
@@ -74,24 +76,62 @@ function useDrawerSwipe({ open, setOpen }) {
 }
 
 function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) {
-  const placement = variant === 'drawer' ? 'side' : null
-  const groups = useMemo(() => buildNav(user, hotel, navigationConfig, placement), [user, hotel, navigationConfig, placement])
-  const itemCls = variant === 'sidebar' ? 'rs-sidebar__item' : 'rs-drawer__item'
-  return (
-    <>
-      {groups.map((group) => (
-        <div key={group.id} className={variant === 'sidebar' ? 'rs-sidebar__group' : ''}>
-          <span className={variant === 'sidebar' ? 'rs-sidebar__label' : 'rs-drawer__label'}>{group.label}</span>
-          {group.items.map((item) => (
-            <button key={item.id} className={`${itemCls} ${current === item.id ? 'active' : ''}`} onClick={() => onPick(item)} data-testid={`${variant}-${item.id}`}>
-              <Icon name={item.icon} /> <span>{item.label}</span>
-              {variant === 'drawer' && <i><Icon name="chevronRight" /></i>}
-            </button>
-          ))}
-        </div>
+  const groups = useMemo(() => buildNav(user, hotel, navigationConfig, null), [user, hotel, navigationConfig])
+  const [openGroups, setOpenGroups] = useState(() => new Set(['principale', 'operativita']))
+
+  useEffect(() => {
+    if (variant !== 'drawer') return
+    const activeGroup = groups.find((group) => group.items.some((item) => item.id === current))
+    if (!activeGroup) return
+    setOpenGroups((previous) => {
+      if (previous.has(activeGroup.id)) return previous
+      const next = new Set(previous)
+      next.add(activeGroup.id)
+      return next
+    })
+  }, [variant, current, groups])
+
+  const toggleGroup = (groupId) => {
+    setOpenGroups((previous) => {
+      const next = new Set(previous)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
+      return next
+    })
+  }
+
+  if (variant === 'drawer') {
+    return groups.map((group) => {
+      const open = openGroups.has(group.id)
+      return (
+        <section key={group.id} className="rs-drawer__group" data-nav-group={group.id}>
+          <button type="button" className="rs-drawer__group-toggle" onClick={() => toggleGroup(group.id)} aria-expanded={open} aria-controls={`drawer-group-${group.id}`}>
+            <span>{group.label}</span><Icon name="chevronDown" />
+          </button>
+          {open && (
+            <div id={`drawer-group-${group.id}`} className="rs-drawer__group-items">
+              {group.items.map((item) => (
+                <button key={item.id} className={`rs-drawer__item ${current === item.id ? 'active' : ''}`} onClick={() => onPick(item)} data-testid={`drawer-${item.id}`}>
+                  <Icon name={item.icon} /><span>{item.label}</span><i><Icon name="chevronRight" /></i>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )
+    })
+  }
+
+  return groups.map((group) => (
+    <div key={group.id} className="rs-sidebar__group">
+      <span className="rs-sidebar__label">{group.label}</span>
+      {group.items.map((item) => (
+        <button key={item.id} className={`rs-sidebar__item ${current === item.id ? 'active' : ''}`} onClick={() => onPick(item)} data-testid={`sidebar-${item.id}`}>
+          <Icon name={item.icon} /><span>{item.label}</span>
+        </button>
       ))}
-    </>
-  )
+    </div>
+  ))
 }
 
 export default function Shell({ session, onLogout, onSwitchHotel }) {
@@ -182,7 +222,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -305,6 +345,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
     let content = null
     if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
+    if (view === 'operations') content = <OperationsHub canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
     if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
@@ -329,11 +370,14 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
   }
 
+  const userInitials = initialsFor(user?.name)
   const DrawerHeader = (
-    <div className="rs-drawer__head">
-      <img src={logoFor(hotel.id)} alt="" />
-      <div style={{ minWidth: 0 }}><b>{hotel.name}</b><small>{user ? `${user.name} · ${user.role}` : 'Manutenzione'}</small></div>
-      <IconButton icon="close" label="Chiudi" onClick={() => setDrawer(false)} style={{ marginLeft: 'auto' }} />
+    <div className="rs-drawer__head rs-drawer__head--profile">
+      <button type="button" className="rs-drawer-profile" onClick={() => pick({ id: 'profile' })} data-testid="drawer-profile-header">
+        <span className="rs-profile-avatar">{userInitials}</span>
+        <span className="rs-drawer-profile__copy"><b>{user?.name || 'Utente'}</b><small>{user?.role || 'Personale'} · {hotel.name}</small></span>
+      </button>
+      <IconButton icon="close" label="Chiudi" onClick={() => setDrawer(false)} />
     </div>
   )
 
@@ -342,12 +386,22 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
-    if (item.id === 'menu') { setDrawer(true); return }
+    if (item.action === 'randai') {
+      window.dispatchEvent(new CustomEvent('randai-toggle'))
+      return
+    }
     if (item.id === 'structure') { setHotelSheet(true); return }
     if (viewAllowed(item.id)) {
       setSettings(null)
       setView(item.id)
     }
+  }
+
+  const isBottomActive = (item) => {
+    if (settings !== null || item.action) return false
+    if (item.id === 'operations') return ['operations', 'issues', 'interventions', 'my-work'].includes(view)
+    if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
+    return view === item.id
   }
 
   return (
@@ -371,27 +425,33 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         </aside>
 
         <header className="rs-header rs-header--operational">
-          <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' ? setHotelSheet(true) : setDrawer(true)} data-testid="hotel-chip">
+          <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
             <img src={logoFor(hotel.id)} alt={hotel.name} />
             <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
             {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
           </button>
           <div className="rs-header__actions">
-            <button type="button" className="rs-header__randai" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
+            <button type="button" className="rs-profile-trigger" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu">
+              <span className="rs-profile-avatar">{userInitials}</span><span className="rs-profile-trigger__name">{user?.name?.split(' ')[0] || 'Profilo'}</span>
+            </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
+            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
           </div>
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
-        <nav className="rs-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
-          {bottomNav.map((item) => (
-            <button key={item.id} data-slot={item.slot} className={`rs-navbtn ${settings === null && view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={settings === null && view === item.id ? 'page' : undefined}>
-              <Icon name={item.icon} /><small>{item.label}</small>
-            </button>
-          ))}
+        <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
+          {bottomNav.map((item) => {
+            const active = isBottomActive(item)
+            return (
+              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.action === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
+                <Icon name={item.icon} /><small>{item.label}</small>
+              </button>
+            )
+          })}
         </nav>
         {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
@@ -412,17 +472,19 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </Sheet>
 
       {drawer && (
-        <div className="rs-overlay" onClick={() => setDrawer(false)} style={{ justifyContent: 'flex-end' }}>
-          <aside className="rs-drawer" onClick={(e) => e.stopPropagation()} data-testid="drawer" aria-label="Menu principale">
+        <div className="rs-overlay rs-overlay--drawer" onClick={() => setDrawer(false)}>
+          <aside className="rs-drawer rs-drawer--telegram" onClick={(e) => e.stopPropagation()} data-testid="drawer" aria-label="Menu principale">
             {DrawerHeader}
             {showStructureSide && <button className="rs-drawer__switch" onClick={() => { setDrawer(false); setHotelSheet(true) }} data-testid="drawer-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronRight" /></i></button>}
             <div className="rs-drawer__scroll">
               <NavGroups user={user} hotel={hotel} variant="drawer" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />
-              <span className="rs-drawer__label">Preferenze</span>
-              {viewAllowed('home') && <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i></button>}
-              <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
-              <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
-              {showCacheSide && <><span className="rs-drawer__label">Sistema</span><button className="rs-drawer__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="drawer-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span><i><Icon name="chevronRight" /></i></button></>}
+              <section className="rs-drawer__group">
+                <div className="rs-drawer__group-title">Preferenze</div>
+                {viewAllowed('home') && <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i></button>}
+                <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
+                <div className="rs-drawer__setting"><small>Dimensione interfaccia</small><UiSizeControl /></div>
+                {showCacheSide && <button className="rs-drawer__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="drawer-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span><i><Icon name="chevronRight" /></i></button>}
+              </section>
             </div>
             <button className="rs-drawer__item rs-drawer__item--danger" onClick={onLogout} data-testid="drawer-logout"><Icon name="logout" /> <span>Esci</span></button>
           </aside>

@@ -36,7 +36,7 @@ Breakpoints canonici:
 
 Sono gestiti anche touch/pointer, portrait/landscape, safe-area, schermi stretti e monitor larghi. `Piccolo / Normale / Grande` è il solo contratto persistente di densità (`apicehotel.ui-size.v1`); Grande aumenta anche controlli e touch target, non soltanto il testo.
 
-La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. Il bottom-nav mantiene **Home nello slot 3** e **Altro nello slot 5**; gli slot 1, 2 e 4 vengono scelti tra funzioni autorizzate in base agli interessi.
+La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. La navigazione primaria Telegram-inspired mantiene **Home nello slot 3** e **RandAI nello slot 5**. `Altro` non è più una tab primaria: il menu completo autorizzato si apre dal controllo profilo/nome nell'header. Gli slot mancanti non spostano le ancore geometriche.
 
 ### RandUI v1 Core
 
@@ -77,7 +77,7 @@ Il Blocco 3 porta le destinazioni runtime sotto il contratto reale, senza riscri
 `Shell destination → Page Catalog → PageBoundary → Template Registry → Guard → contenuto operativo`
 
 - `src/randapp/randui/PageBoundary.jsx` è il boundary unico e **fail-closed**: una destinazione non catalogata non può renderizzare fuori RandUI;
-- il catalogo copre ora **23/23 destinazioni correnti**, comprese le quattro secondarie che non erano nella lista iniziale (`my-work`, `pin`, `feedback-received`, `desktop-download`);
+- il catalogo copre ora **24/24 destinazioni correnti**: alle 23 destinazioni della migrazione iniziale si aggiunge l'hub `operations` governato da RandUI;
 - tutte le viste operative della Shell entrano nel relativo template tramite `PageBoundary`; Settings resta direttamente su `SettingsTemplate`, mentre `/randai` resta catalogata come `monitor`;
 - la migrazione è marcata `template-boundary-v1`, così una futura evoluzione può raffinare gli slot interni senza cambiare navigazione, permessi o dati;
 - eliminati i wrapper zombie `rs-legacy--temperature` e `rs-legacy--housekeeping`; i CSS di dominio restano solo dove hanno ancora consumatori reali;
@@ -100,6 +100,28 @@ La migrazione strutturale è completata da una grammatica visuale dichiarativa c
 - RandRadar resta disponibile quando manca una capacità reale; non viene usato per duplicare spacing, card o layout già coperti internamente.
 
 Dettaglio: `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md`.
+
+### RandUI Telegram-inspired Navigation v1
+
+La Shell usa ora i principi di navigazione che rendono Telegram efficace — gerarchia stabile, densità leggera, menu completo separato dalle scorciatoie — senza copiarne grafica o introdurre dipendenze esterne.
+
+Contratto mobile:
+
+1. **Operatività** nello slot 1: hub RandUI per Segnalazioni e Interventi, con permessi e workflow figli indipendenti;
+2. **Planning** nello slot 2;
+3. **Home** sempre geometricamente centrale nello slot 3;
+4. **RandChat** quando autorizzata, altrimenti una destinazione operativa autorizzata scelta dal ranking adattivo esistente;
+5. **RandAI** sempre all'estrema destra nello slot 5 come azione globale dell'assistente.
+
+Il menu completo si apre dal controllo **profilo/nome** nell'header ed è diviso in sezioni accordion accessibili. Il chip hotel torna ad avere una sola responsabilità: cambiare struttura quando l'utente ne possiede più di una. Su desktop RandAI resta disponibile anche nell'header; su mobile il controllo duplicato viene nascosto perché lo slot 5 è permanente.
+
+`src/randapp/telegram-navigation.css` usa i token `--rs-*`, conserva light/dark mode e Piccolo/Normale/Grande, esplicita le cinque colonne e mantiene target touch >=44 px. Nessun badge, numero o percentuale viene simulato: future metriche entreranno solo da fonti reali.
+
+RandRadar non ha richiesto nuove repository per questo blocco: Shell, registry, Adaptive Layout, RandUI e Playwright coprivano già la capacità. Aggiungere un altro framework di navigazione avrebbe creato un secondo sistema e aumentato il rischio.
+
+Gate dedicato: `npm run test:randui:telegram`.
+
+Dettaglio: `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md`.
 
 ### Planning mobile — baseline visuale reale
 
@@ -250,6 +272,7 @@ npm run test:randui:guard
 npm run test:randui:migration
 npm run test:randui:visual
 npm run test:randui:planning
+npm run test:randui:telegram
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -265,8 +288,9 @@ La CI certifica, tra gli altri:
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
 - RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
-- **RandUI Block 3: 23/23 destinazioni catalogate e compatibili con il proprio template boundary**;
+- **RandUI Page Catalog: 24/24 destinazioni correnti catalogate e compatibili con il proprio template boundary**;
 - **RandUI Visual Language v1: Visual Policy sui 14 template, primitive canoniche e Planning senza geometria page-level inline**;
+- **RandUI Telegram Navigation v1: Home slot 3, RandAI slot 5, Operatività hub, menu profilo e accordion accessibili**;
 - **Planning mobile visual baseline: Stack content-sized, riepilogo Oggi unico, banner notifiche dismissibile e nessun ritorno dello spazio morto**;
 - matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
@@ -289,8 +313,9 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
-- `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, copertura 23/23 e strategia di compatibilità.
+- `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, baseline di migrazione e strategia di compatibilità.
 - `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — Visual Policy, primitive canoniche, ownership CSS e regole per le future pagine.
+- `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md` — bottom-nav stabile, Operatività hub, menu profilo, accordion e gate dedicato.
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.

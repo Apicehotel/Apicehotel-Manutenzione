@@ -9,6 +9,7 @@ const page = (schema) => Object.freeze({
 
 export const RANDUI_PAGE_CATALOG = Object.freeze({
   home: page({ id:'home', domain:'operations', pageType:'dashboard', mobilePriority:true, capabilities:['kpi','next-actions','randai-suggestion'] }),
+  operations: page({ id:'operations', domain:'operations', pageType:'operational', mobilePriority:true, capabilities:['navigation-hub','permission-aware-destinations'] }),
   issues: page({ id:'issues', domain:'maintenance', pageType:'list-detail', mobilePriority:true, permissions:['issues.read'], capabilities:['filters','create','detail','photo'] }),
   chat: page({ id:'chat', domain:'communications', pageType:'master-detail', mobilePriority:true, capabilities:['groups','messages','media'] }),
   housekeeping: page({ id:'housekeeping', domain:'housekeeping', pageType:'operational', mobilePriority:true, capabilities:['floor-context','room-list','report-action'] }),

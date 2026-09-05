@@ -10,6 +10,7 @@ const placementAllows = (config, user, itemId, wanted = null) => {
 
 const view = (module) => (user) => canUser(user, module, 'view')
 const create = (module) => (user) => canUser(user, module, 'create')
+const canSeeOperations = (user) => canUser(user, 'issues', 'view') || canUser(user, 'interventions', 'view')
 
 export function buildNav(user, hotel, navigationConfig = null, placement = null) {
   if (!user) return []
@@ -17,21 +18,26 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
     {
       id: 'principale', label: 'Principale', items: [
         { id: 'home', icon: 'home', label: 'Home', show: canUser(user, 'home', 'view') },
-        { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: canUser(user, 'issues', 'view') },
-        { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: canUser(user, 'issues', 'create') },
-        { id: 'my-work', icon: 'check', label: 'I miei lavori', show: canUser(user, 'interventions', 'view') },
+        { id: 'operations', icon: 'issues', label: 'Operatività', show: canSeeOperations(user) },
         { id: 'chat', icon: 'message', label: 'RandChat', show: Boolean(user.chat_enabled) },
       ],
     },
     {
       id: 'operativita', label: 'Operatività', items: [
+        { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: canUser(user, 'issues', 'view') },
+        { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: canUser(user, 'issues', 'create') },
+        { id: 'my-work', icon: 'check', label: 'I miei lavori', show: canUser(user, 'interventions', 'view') },
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },
-        { id: 'inventory', icon: 'package', label: 'Magazzino', show: canUser(user, 'inventory', 'view') },
-        { id: 'supplies', icon: 'package', label: 'Rifornimenti', show: canUser(user, 'supplies', 'view') },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canUser(user, 'urgent', 'view') },
         { id: 'reminders', icon: 'bell', label: 'Promemoria', show: canUser(user, 'reminders', 'view') },
         { id: 'planning-work', icon: 'calendar', label: 'Planning', show: canUser(user, 'planning_work', 'view') || canUser(user, 'planning_sale', 'view') },
         { id: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping', show: canUser(user, 'housekeeping', 'view') },
+        { id: 'supplies', icon: 'package', label: 'Rifornimenti', show: canUser(user, 'supplies', 'view') },
+      ],
+    },
+    {
+      id: 'gestione', label: 'Gestione e controllo', items: [
+        { id: 'inventory', icon: 'package', label: 'Magazzino', show: canUser(user, 'inventory', 'view') },
         { id: 'temperature', icon: 'thermometer', label: 'Sensori', show: canUser(user, 'temperature', 'view') },
         { id: 'plants', icon: 'wrench', label: 'Impianti', show: canUser(user, 'temperature', 'view') },
         { id: 'technicians', icon: 'phone', label: 'Rubrica tecnici', show: canUser(user, 'technicians', 'view') },
@@ -39,7 +45,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       ],
     },
     {
-      id: 'account', label: 'Account', items: [
+      id: 'account', label: 'Profilo e guida', items: [
         { id: 'profile', icon: 'user', label: 'Il mio profilo', show: true },
         { id: 'manual', icon: 'book', label: 'Manuale', show: true },
         { id: 'feedback', icon: 'message', label: 'Invia feedback', show: true },
@@ -78,6 +84,7 @@ export const NAV_TARGET = {
 
 export const VIEW_GUARDS = {
   home: view('home'),
+  operations: canSeeOperations,
   issues: view('issues'),
   chat: (u) => Boolean(u?.chat_enabled),
   interventions: view('interventions'),
