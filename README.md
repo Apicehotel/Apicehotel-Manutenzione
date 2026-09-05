@@ -67,9 +67,9 @@ Il FAB multi-azione non copre più le card della Home: la Home espone una azione
 
 La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mostra uno score esplicito `Priorità N`. Il CSS Home è centralizzato in `src/randapp/home-operational.css`, non embedded nei componenti.
 
-## RandChat — Group A + B
+## RandChat — core 9/9
 
-RandChat riusa l'identità RandApp e non crea un secondo account. I primi **6/9 blocchi core** sono implementati senza Matrix e senza introdurre una seconda piattaforma utenti.
+RandChat riusa l'identità RandApp e non crea un secondo account. I **9/9 blocchi core** sono implementati senza Matrix e senza introdurre una seconda piattaforma utenti, procedure o IA.
 
 ### Group A — gruppi operativi
 
@@ -95,7 +95,17 @@ RandChat riusa l'identità RandApp e non crea un secondo account. I primi **6/9 
 
 E2EE v1 non viene descritta come Signal-grade: non implementa Double Ratchet/forward secrecy o verifica indipendente dei device. Questi hardening possono sostituire il protocollo in futuro senza cambiare account, thread o UI.
 
-Restano **3 blocchi core**, tutti nel Group C: Inserimento procedure, RandAI sui contenuti operativi autorizzati e RandMedia. Telegram resta un provider media opzionale futuro.
+### Group C — Procedure, RandAI e RandMedia
+
+- una procedura **approvata RandGuide** può essere condivisa in un gruppo come snapshot versionato; un invitato cross-hotel vede soltanto ciò che è stato esplicitamente condiviso e non ottiene accesso al catalogo dell'hotel;
+- un messaggio operativo può diventare una **bozza canonica RandGuide** (`randai_procedures.status = draft`) con revisione umana obbligatoria: nessun percorso chat pubblica automaticamente una procedura;
+- RandAI può essere interrogata manualmente sul gruppo tramite il motore `randai-assistant` già esistente; il contesto è bounded e richiede contemporaneamente membership del gruppo e membership reale dell'hotel;
+- **i DM non vengono mai forniti automaticamente a RandAI**;
+- RandMedia espone un contratto provider unico: oggi il provider attivo è il bucket Supabase privato `randchat-media`; Telegram può essere aggiunto in seguito come adapter senza cambiare UI, DB o modello utenti;
+- gruppi: allegati operativi protetti da membership/RLS;
+- DM: foto, video, audio e documenti vengono cifrati AES-GCM **nel browser prima dell'upload**; chiave e IV del file vivono soltanto dentro il payload DM già E2EE;
+- massimo **4 allegati per messaggio**, **20 MiB ciascuno** lato utente;
+- retention/cancellazione chat mette gli oggetti media in una coda server-only; un worker orario elimina anche eventuali upload orfani, evitando media zombie.
 
 Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
 
@@ -109,7 +119,7 @@ Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
-- **RandChat** — gruppi operativi, DM E2EE per-device, retention temporanea e promozione controllata a dati operativi.
+- **RandChat** — gruppi operativi, DM E2EE per-device, Procedure/RandAI autorizzati e RandMedia con provider intercambiabile.
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
@@ -149,6 +159,8 @@ La CI certifica, tra gli altri:
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
 - RandChat E2EE round-trip e tamper detection;
+- RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
+- confini Group C Procedure/RandAI/RandMedia e ACL anonime;
 - Chromium + WebKit;
 - device acceptance;
 - RandCore health evidence;
@@ -164,7 +176,7 @@ Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibil
 
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
-- `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, retention e roadmap.
+- `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, Procedure/RandAI, RandMedia e retention.
 - `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
 
 Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.
