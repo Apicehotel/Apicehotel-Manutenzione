@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandChat**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandChat**, **RandDesktop**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool + Permission Gateway, RandMind Continuity + Model Router, RandVisual Engine, RandCore Visual Intelligence, RandChange Receipt + Visual QA.
 
@@ -109,6 +109,29 @@ E2EE v1 non viene descritta come Signal-grade: non implementa Double Ratchet/for
 
 Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
 
+## RandDesktop — stampa nativa v1
+
+RandDesktop è il guscio Electron per le postazioni Windows e riusa RandApp: non introduce una seconda UI operativa, un secondo account o un secondo database.
+
+La stampa v1 include:
+
+- shell Electron con `nodeIntegration: false`, `contextIsolation: true`, `sandbox: true` e `webSecurity: true`;
+- `File → Stampa…` / `Ctrl+P` con dialog nativo del sistema operativo;
+- `webContents.getPrintersAsync()` per l'elenco stampanti;
+- `webContents.print()` con pagina predefinita della stampante e sfondi;
+- stampa della vista corrente, privilegiando un `Sheet` operativo aperto (es. dettaglio Segnalazione);
+- bridge `contextBridge` ristretto: nessun `ipcRenderer` grezzo nel renderer;
+- motore per documenti strutturati con limiti, escaping e CSP `default-src 'none'`;
+- nessun HTML arbitrario, nessun secret e nessuna stampa silenziosa in v1;
+- renderer locale nelle build pacchettizzate; Vercel non viene caricato come renderer privilegiato di produzione;
+- voce **RandDesktop** nel menu laterale governata dal permesso `desktop_download`; fallback attivo per Reception, Direzione, Direttore Centro Congressi e admin, con configurazione successiva da Ruoli & Permessi;
+- pagina **Scarica RandDesktop** con URL centralizzato `VITE_RANDDESKTOP_DOWNLOAD_URL`, accettato solo se `https://`; finché l'installer non è pubblicato mostra `Installer in preparazione`;
+- se RandApp gira già dentro Electron (`window.randDesktop`), la pagina riconosce RandDesktop attivo e non propone un secondo download.
+
+La stampa silenziosa e la stampante predefinita per reparto restano future opzioni amministrative esplicite, non privilegi del renderer. Il file `.exe` può essere distribuito inizialmente da Google Drive; il link Drive viene configurato tramite `VITE_RANDDESKTOP_DOWNLOAD_URL`, senza hardcoding nella UI.
+
+Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
+
 ## Moduli principali
 
 - **RandApp** — segnalazioni, interventi, planning, housekeeping, rifornimenti, magazzino, sensori e operatività hotel.
@@ -120,6 +143,7 @@ Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
 - **RandChat** — gruppi operativi, DM E2EE per-device, Procedure/RandAI autorizzati e RandMedia con provider intercambiabile.
+- **RandDesktop** — shell Electron Windows/Desktop con capacità native ristrette, a partire dalla stampa.
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
@@ -161,6 +185,8 @@ La CI certifica, tra gli altri:
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
 - confini Group C Procedure/RandAI/RandMedia e ACL anonime;
+- contratto RandDesktop printing: sandbox, IPC ristretto, escaping/CSP e blocco stampa silenziosa;
+- contratto RandDesktop download: permesso dedicato, menu laterale configurabile, URL HTTPS e rilevamento shell desktop;
 - Chromium + WebKit;
 - device acceptance;
 - RandCore health evidence;
@@ -177,6 +203,7 @@ Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibil
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
 - `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, Procedure/RandAI, RandMedia e retention.
+- `docs/architecture/RANDDESKTOP_PRINTING.md` — shell Electron, sicurezza IPC e stampa nativa v1.
 - `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
 
 Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ROLES } from '../../config.js'
 import { supabase } from '../../supabase.js'
-import { fetchRolePermissionRows, saveRolePermission, PERMISSION_ACTIONS } from '../../permissions.js'
+import { canRole, fetchRolePermissionRows, saveRolePermission, PERMISSION_ACTIONS } from '../../permissions.js'
 import { Button, Card, Field, Icon, Spinner } from '../ui.jsx'
 import { ACTION_LABELS, ACTIONS_BY_MODULE, NAV_ITEMS, NAV_KEY, PERMISSION_GROUPS, PLACEMENTS, ROLE_PRIORITY } from './settings-constants.js'
 
@@ -10,8 +10,8 @@ export default function RolesTab(){
   const load=async()=>{const [permRows,navResult]=await Promise.all([fetchRolePermissionRows(),supabase?supabase.from('app_config').select('value').eq('key',NAV_KEY).maybeSingle():Promise.resolve({data:null})]);const p={};permRows.forEach(r=>{p[`${r.role}|${r.module}|${r.action}`]=Boolean(r.allowed)});setDraftPerms(p);try{setConfig(navResult?.data?.value?JSON.parse(navResult.data.value):{})}catch{setConfig({})}}
   useEffect(()=>{load().catch(e=>{setStatus(e?.message||'Errore caricamento');setConfig({})})},[])
   const permKey=(r,m,a)=>`${r}|${m}|${a}`
-  const getPerm=(m,a)=>Boolean(draftPerms[permKey(role,m,a)])
-  const togglePerm=(m,a)=>{if(role==='Supremo')return;const k=permKey(role,m,a);const next=!draftPerms[k];setDraftPerms(p=>({...p,[k]:next}));setDirty(d=>({...d,[k]:{role,module:m,action:a,allowed:next}}));setStatus('')}
+  const getPerm=(m,a)=>{const k=permKey(role,m,a);return Object.prototype.hasOwnProperty.call(draftPerms,k)?Boolean(draftPerms[k]):canRole(role,m,a)}
+  const togglePerm=(m,a)=>{if(role==='Supremo')return;const k=permKey(role,m,a);const next=!getPerm(m,a);setDraftPerms(p=>({...p,[k]:next}));setDirty(d=>({...d,[k]:{role,module:m,action:a,allowed:next}}));setStatus('')}
   const placement=(r,k)=>config?.[r]?.[k]||'off'
   const bottomCount=r=>NAV_ITEMS.filter(([k])=>placement(r,k)==='bottom').length
   const setPlacement=(k,v)=>{setStatus('');if(v==='bottom'&&placement(role,k)!=='bottom'&&bottomCount(role)>=5)return setStatus('Massimo 5 voci nella barra sotto.');setConfig(c=>({...c,[role]:{...(c?.[role]||{}),[k]:v,...(k==='planning_work'?{planning_sale:v}:{})}}))}

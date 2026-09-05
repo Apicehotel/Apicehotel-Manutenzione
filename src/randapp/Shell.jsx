@@ -25,6 +25,7 @@ const ChatGroups = lazy(() => import('./chat/ChatGroups.jsx'))
 const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
+const RandDesktopDownload = lazy(() => import('./RandDesktopDownload.jsx'))
 const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
 const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
 const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
@@ -179,7 +180,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -298,6 +299,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'chat') return <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
+    if (view === 'desktop-download') return <RandDesktopDownload />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') return <SupplyRequestsPortal user={user} hotel={hotel} standalone />

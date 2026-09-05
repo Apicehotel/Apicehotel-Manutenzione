@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js'
 
 export const PERMISSION_ACTIONS = ['view','create','edit','assign','take_charge','complete','delete','manage']
-export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings','sensors','usage','diagnostics','inventory','supplies']
+export const PERMISSION_MODULES = ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','users','role_permissions','app_settings','sensors','usage','diagnostics','inventory','supplies','desktop_download']
 const CACHE_KEY='randapp-role-permissions-v1'
 const allow=(...actions)=>new Set(actions)
 const fallback={
@@ -9,6 +9,7 @@ const fallback={
   RandAI:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,allow(...PERMISSION_ACTIONS)])),
   Supremo:Object.fromEntries(PERMISSION_MODULES.map(m=>[m,new Set()])), Direzione:{}, 'Direttore Centro Congressi':{}, 'Portiere Notturno':{}, manutentore:{}, 'Tecnico esterno':{}, Governante:{}, 'Capo Governante':{}, Reception:{}, 'Isola dei Golosi':{}, 'Ristorante Wine/Jazz':{}, 'Colazione Jazz':{},
 }
+fallback.RandAI.desktop_download=new Set()
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','inventory'])fallback.Supremo[m]=allow('view','create')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','housekeeping','urgent','reminders','notifications','temperature','technicians','inventory'])fallback.Direzione[m]=allow('view','create','edit','assign','take_charge','complete')
 for(const m of ['home','issues','interventions','planning_work','planning_sale','urgent','reminders','notifications','temperature','technicians','inventory'])fallback['Direttore Centro Congressi'][m]=allow('view','create','edit','assign','take_charge','complete')
@@ -27,6 +28,7 @@ fallback.Reception.issues=allow('view','create','assign','take_charge','complete
 for(const r of ['Isola dei Golosi','Ristorante Wine/Jazz','Colazione Jazz']){fallback[r].home=allow('view');fallback[r].issues=allow('view','create');fallback[r].notifications=allow('view')}
 fallback['Colazione Jazz'].temperature=allow('view')
 for(const r of ['Direzione','Direttore Centro Congressi'])fallback[r].reminders=allow(...PERMISSION_ACTIONS)
+for(const r of ['Direzione','Direttore Centro Congressi','Reception'])fallback[r].desktop_download=allow('view')
 
 let live={}
 function loadLocal(){try{const raw=localStorage.getItem(CACHE_KEY);const rows=raw?JSON.parse(raw):[];if(Array.isArray(rows))applyRows(rows,false)}catch{}}

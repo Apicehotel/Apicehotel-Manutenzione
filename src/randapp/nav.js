@@ -46,6 +46,11 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       ],
     },
     {
+      id: 'sistema', label: 'Sistema', items: [
+        { id: 'desktop-download', icon: 'file', label: 'RandDesktop', show: canUser(user, 'desktop_download', 'view') },
+      ],
+    },
+    {
       id: 'admin', label: 'Amministrazione', items: [
         { id: 'admin-users', icon: 'users', label: 'Utenti', show: canUser(user, 'users', 'manage') },
         { id: 'admin-navigation', icon: 'sliders', label: 'Ruoli e permessi', show: canUser(user, 'role_permissions', 'manage') },
@@ -87,6 +92,7 @@ export const VIEW_GUARDS = {
   plants: view('temperature'),
   technicians: view('technicians'),
   'feedback-received': (u) => canUser(u, 'app_settings', 'manage'),
+  'desktop-download': view('desktop_download'),
 }
 
 export const CREATE_GUARDS = {
