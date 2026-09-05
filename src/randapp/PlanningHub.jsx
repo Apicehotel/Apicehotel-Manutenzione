@@ -3,11 +3,11 @@ import { fetchPlanningWork, subscribePlanningWork } from '../planning-work-data.
 import { fetchBookings, subscribeBookings } from '../sale-data.js'
 import { canUser } from '../permissions.js'
 import { Button, Spinner } from './ui.jsx'
-import { Grid, PageTitle, Stack, Surface } from './randui/visual-primitives.jsx'
+import { Grid, PageTitle, Stack } from './randui/visual-primitives.jsx'
 import PlanningWorkSimple from './PlanningWorkSimple.jsx'
 import PlanningSaleSimple from './PlanningSaleSimple.jsx'
 import PlannedCreateSheet from './PlannedCreateSheet.jsx'
-import { PlanningChoice, SaleEventCalendar, eventOnDay, isoDay } from './planning/PlanningOverview.jsx'
+import { PlanningChoice, PlanningTodaySummary, SaleEventCalendar, eventOnDay, isoDay } from './planning/PlanningOverview.jsx'
 
 export default function PlanningHub({hotel,user,createRequest=null,allowSale=true}){
   const [section,setSection]=useState(null),[work,setWork]=useState([]),[bookings,setBookings]=useState([]),[loading,setLoading]=useState(true),[workCreateSignal,setWorkCreateSignal]=useState(0),[saleCreateSignal,setSaleCreateSignal]=useState(0),[interventionCreateOpen,setInterventionCreateOpen]=useState(false)
@@ -23,17 +23,17 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
   const workStats={today:todayWork.filter(x=>x.status!=='done').length,finish:todayWork.filter(x=>x.status==='da_finire').length,done:todayWork.filter(x=>x.status==='done').length}
   const saleStats={today:todayPrepSales.filter(x=>x.status!=='done').length,finish:todayPrepSales.filter(x=>x.status==='da_finire').length,done:todayPrepSales.filter(x=>x.status==='done').length}
   if(loading)return <Spinner label="Carico planning…"/>
-  const subtitle=section?(section==='sale'?'Preparazioni operative delle sale.':'Calendario operativo dei lavori.'):'Riepilogo di lavori e sale.'
+  const subtitle=section?(section==='sale'?'Preparazioni operative delle sale.':'Calendario operativo dei lavori.'):'Lavori, sale e attività di oggi.'
   const action=section?<Button type="button" variant="ghost" size="sm" onClick={()=>setSection(null)}>‹ Riepilogo</Button>:null
-  return <Stack data-testid="planning-hub">
+  return <Stack data-testid="planning-hub" className="rs-planning-hub" gap="sm">
     <PageTitle title="Planning" subtitle={subtitle} action={action}/>
     <Grid columns={canSeeWork&&canSeeSale?2:1} gap="sm" className="rs-planning-choice-grid">
       {canSeeWork&&<PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>setSection('work')}/>} 
       {canSeeSale&&<PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>setSection('sale')}/>} 
     </Grid>
-    {!section?<Stack>
-      {canSeeWork&&<Surface tone="subtle"><strong>Lavori oggi</strong><p className="rs-randui-surface__description">{todayWork.length?`${todayWork.length} lavor${todayWork.length===1?'o':'i'} nel planning.`:'Nessun lavoro previsto oggi.'}</p></Surface>}
-      {canSeeSale&&<><Surface tone="subtle"><strong>Sale oggi</strong><p className="rs-randui-surface__description">{todayEventSales.length?`${todayEventSales.length} attività/prenotazioni in corso oggi.`:'Nessuna sala occupata oggi.'}</p></Surface><SaleEventCalendar bookings={bookings}/></>}
+    {!section?<Stack gap="sm" className="rs-planning-overview-stack">
+      <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>
+      {canSeeSale&&<SaleEventCalendar bookings={bookings}/>} 
     </Stack>:section==='work'&&canSeeWork?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:section==='sale'&&canSeeSale?<PlanningSaleSimple hotel={hotel} user={user} openRequest={saleCreateSignal}/>:null}
     <PlannedCreateSheet open={interventionCreateOpen} onClose={()=>setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={()=>setInterventionCreateOpen(false)}/>
   </Stack>

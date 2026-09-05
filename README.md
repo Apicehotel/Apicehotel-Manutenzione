@@ -101,6 +101,20 @@ La migrazione strutturale è completata da una grammatica visuale dichiarativa c
 
 Dettaglio: `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md`.
 
+### Planning mobile — baseline visuale reale
+
+La verifica su iPhone/Ocean ha esposto un difetto che i precedenti screenshot di login non potevano rilevare: uno `Stack` RandUI alto veniva distribuito come CSS Grid e le righe `auto` potevano stirarsi, trasformando il `PageTitle` in centinaia di pixel di spazio morto. Il fix è nella **primitiva condivisa**, non in un `planning-fix.css` locale:
+
+- `.rs-randui-stack` usa `align-content: start` e `grid-auto-rows: max-content`, quindi le righe seguono il contenuto e non riempiono arbitrariamente il viewport;
+- l'header locale dentro uno Stack non possiede più un secondo margin verticale: il ritmo è governato dal gap della primitiva;
+- Planning usa un flusso compatto `titolo → moduli → Oggi → calendario`, senza il grande vuoto verticale e senza doppio gap sotto le card;
+- `Lavori oggi` e `Sale oggi` sono confluiti in un solo pannello **Oggi / Panoramica operativa**, mantenendo separati i dati ma riducendo rumore e altezza;
+- le due card Planning restano affiancate quando leggibili e passano a una colonna sotto `380px`;
+- il banner di onboarding notifiche è ora compatto e **chiudibile per sessione/hotel**, importante su iPhone browser dove il pulsante Attiva non è disponibile finché la PWA non viene aggiunta alla Home;
+- il contratto dedicato `npm run test:randui:planning` impedisce il ritorno dello Stack stirato, dei due riepiloghi duplicati e del banner non chiudibile.
+
+Regola: se un difetto visuale osservato su Ocean nasce da una primitiva condivisa, si corregge la primitiva e si aggiunge il relativo gate; non si accumulano override pagina-specifici.
+
 ## Safe-area iOS / Android
 
 RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
@@ -235,6 +249,7 @@ npm run test:randui
 npm run test:randui:guard
 npm run test:randui:migration
 npm run test:randui:visual
+npm run test:randui:planning
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -252,6 +267,7 @@ La CI certifica, tra gli altri:
 - RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
 - **RandUI Block 3: 23/23 destinazioni catalogate e compatibili con il proprio template boundary**;
 - **RandUI Visual Language v1: Visual Policy sui 14 template, primitive canoniche e Planning senza geometria page-level inline**;
+- **Planning mobile visual baseline: Stack content-sized, riepilogo Oggi unico, banner notifiche dismissibile e nessun ritorno dello spazio morto**;
 - matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;

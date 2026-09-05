@@ -5,7 +5,7 @@ import fs from 'node:fs'
 const hub=fs.readFileSync(new URL('../src/randapp/PlanningHub.jsx',import.meta.url),'utf8')
 
 test('planning opens on compact work and sale preview',()=>{
-  assert.match(hub,/Riepilogo di lavori e sale/)
+  assert.match(hub,/Lavori, sale e attività di oggi/)
   assert.match(hub,/PlanningChoice/)
   assert.match(hub,/title="Planning lavori"/)
   assert.match(hub,/title="Planning sale"/)
