@@ -1,6 +1,8 @@
 /* RandChat owns the visible workspace while mounted.
    The page itself must not scroll: only group/thread lists and message history do. */
+html.rs-randchat-active,
 body.rs-randchat-active {
+  height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
