@@ -2,35 +2,70 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const seed = readFileSync(
+const initialSeed = readFileSync(
   new URL('../supabase/migrations/20260905170000_seed_hotelgio_supply_catalog.sql', import.meta.url),
   'utf8',
 )
+const correction = readFileSync(
+  new URL('../supabase/migrations/20260905042146_correct_hotelgio_supply_catalog_from_legacy_app.sql', import.meta.url),
+  'utf8',
+)
 
-const minibar = ['Coca Cola', 'Succo ACE', 'Birra', 'Patatine', 'Barretta']
-const consumo = ['Saponetta', 'Shampini', 'Spugne scarpe', 'Cuffia doccia']
+const minibar = [
+  'Acqua naturale',
+  'Acqua frizzante',
+  'Coca Cola',
+  'Succo di frutta',
+  'Patatine',
+  'Barrette',
+  'Birre',
+]
 
-test('Hotel Gio receives the complete legacy Minibar and Consumo catalog', () => {
-  assert.match(seed, /select 'hotelgio'/)
+const consumo = [
+  'Carta igienica',
+  'Saponette',
+  'Shampoo',
+  'Cuffie doccia',
+  'Spugne scarpe',
+  'Sacchi neri 60x50',
+  'Sacchi bianchi 60x50',
+  'Sacchi neri 110x70',
+  'Carta Lucart/Scottex',
+]
+
+test('Hotel Gio final catalog matches the real legacy Minibar and Consumo lists', () => {
+  assert.match(correction, /hotel_id='hotelgio'/)
 
   for (const name of minibar) {
-    assert.match(seed, new RegExp(`\\('minibar'::text, '${name}'::text`))
+    assert.match(correction, new RegExp(`'minibar'::text, '${name.replace('/', '\\/')}'::text`))
   }
 
   for (const name of consumo) {
-    assert.match(seed, new RegExp(`\\('consumo'::text, '${name}'::text`))
+    assert.match(correction, new RegExp(`'consumo'::text, '${name.replace('/', '\\/')}'::text`))
   }
 })
 
-test('legacy bootstrap is idempotent and does not overwrite admin customizations', () => {
-  assert.match(seed, /where not exists/i)
-  assert.match(seed, /existing\.hotel_id = 'hotelgio'/)
-  assert.match(seed, /lower\(existing\.name\) = lower\(p\.name\)/)
-  assert.doesNotMatch(seed, /on conflict.*do update/is)
+test('correction preserves existing product identities when fixing previous bootstrap names', () => {
+  assert.match(correction, /set name = 'Saponette'/)
+  assert.match(correction, /set name = 'Shampoo'/)
+  assert.match(correction, /set name = 'Cuffie doccia'/)
+  assert.match(correction, /set name = 'Succo di frutta'/)
+  assert.match(correction, /set name = 'Barrette'/)
+  assert.match(correction, /set name = 'Birre'/)
 })
 
-test('legacy bootstrap stays inside Rifornimenti and does not seed other hotels or warehouse stock', () => {
-  assert.doesNotMatch(seed, /'chocohotel'/)
-  assert.doesNotMatch(seed, /'brigantino'/)
-  assert.doesNotMatch(seed, /quantity|current_stock|minimum_stock|stock_movement/i)
+test('catalog bootstrap stays hotel-scoped and does not create warehouse stock', () => {
+  const migrations = `${initialSeed}\n${correction}`
+  assert.doesNotMatch(migrations, /'chocohotel'/)
+  assert.doesNotMatch(migrations, /'brigantino'/)
+  assert.doesNotMatch(migrations, /current_stock|minimum_stock|stock_movement/i)
+})
+
+test('final catalog order is explicit for 7 Minibar and 9 Consumo products', () => {
+  assert.equal(minibar.length, 7)
+  assert.equal(consumo.length, 9)
+  assert.match(correction, /'Acqua naturale'::text, 10/)
+  assert.match(correction, /'Birre'::text, 70/)
+  assert.match(correction, /'Carta igienica'::text, 110/)
+  assert.match(correction, /'Carta Lucart\/Scottex'::text, 190/)
 })
