@@ -95,11 +95,15 @@
   gap: var(--rand-space-2);
 }
 
-/* Shared layout primitives. */
+/* Shared layout primitives. Grid stacks must remain content-sized: without
+   align-content:start, auto rows stretch inside a tall shell and create dead space. */
 .rs-randui-stack {
   display: grid;
   min-width: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
+.rs-randui-stack > .rs-randui-local-header { margin-bottom: 0; }
 .rs-randui-stack--xs { gap: var(--rand-space-1); }
 .rs-randui-stack--sm { gap: var(--rand-space-2); }
 .rs-randui-stack--md { gap: var(--randui-visual-gap); }
@@ -175,7 +179,8 @@
 .rs-randui-day[data-today='true'] .rs-randui-day__title { color: var(--rs-ok); }
 
 /* Planning family: shared choice, calendar and overview anatomy. */
-.rs-planning-choice-grid { margin-bottom: var(--randui-visual-gap); }
+.rs-planning-hub { width: 100%; }
+.rs-planning-choice-grid { margin-bottom: 0; }
 .rs-randui-choice {
   min-width: 0;
   width: 100%;
@@ -188,7 +193,10 @@
   box-shadow: var(--rs-shadow);
   font: inherit;
   cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
 }
+.rs-randui-choice:hover { border-color: var(--rs-line-strong); }
+.rs-randui-choice:active { transform: translateY(1px); }
 .rs-randui-choice.is-active,
 .rs-randui-choice[aria-pressed='true'] {
   border-color: var(--rs-line-strong);
@@ -207,7 +215,48 @@
   color: var(--rs-cyan);
   background: var(--rs-surface-2);
 }
-.rs-randui-choice__chevron { margin-left: auto; color: var(--rs-text-3); }
+.rs-randui-choice__chevron { margin-left: auto; color: var(--rs-text-3); font-size: 1.2rem; line-height: 1; }
+
+.rs-planning-today {
+  overflow: hidden;
+  padding: 0;
+}
+.rs-planning-today__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rand-space-3);
+  padding: var(--rand-space-3) var(--rand-space-4);
+  border-bottom: 1px solid var(--rs-line);
+  background: var(--rs-surface-2);
+}
+.rs-planning-today__header > div { min-width: 0; display: grid; gap: 2px; }
+.rs-planning-today__header span { color: var(--rs-text-3); font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.rs-planning-today__header strong { color: var(--rs-text); font-family: 'Sora', system-ui, sans-serif; font-size: .96rem; }
+.rs-planning-today__header small { flex: none; color: var(--rs-text-3); font-weight: 700; }
+.rs-planning-today__items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rs-planning-today__item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--rand-space-2);
+  padding: var(--rand-space-3) var(--rand-space-4);
+}
+.rs-planning-today__item + .rs-planning-today__item { border-left: 1px solid var(--rs-line); }
+.rs-planning-today__icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--rs-cyan);
+  background: var(--rs-surface-2);
+}
+.rs-planning-today__item > div { min-width: 0; display: grid; gap: 2px; }
+.rs-planning-today__item > div strong { overflow-wrap: anywhere; color: var(--rs-text); font-size: .86rem; line-height: 1.25; }
+.rs-planning-today__item > div small { color: var(--rs-text-3); font-size: .7rem; }
+.rs-planning-today__item > b { color: var(--rs-text); font-family: 'Sora', system-ui, sans-serif; font-size: 1.08rem; }
 
 .rs-randui-calendar { display: grid; gap: var(--rand-space-3); }
 .rs-randui-calendar__header { display: flex; align-items: flex-start; gap: var(--rand-space-2); }
@@ -273,5 +322,23 @@
   .rs-randui-grid--2:not(.rs-randui-grid--keep-mobile),
   .rs-randui-grid--3:not(.rs-randui-grid--keep-mobile) { grid-template-columns: minmax(0, 1fr); }
   .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rs-randui-page--planning .rs-randui-local-header {
+    padding-bottom: var(--rand-space-2);
+    border-bottom: 0;
+  }
+  .rs-randui-page--planning .rs-randui-local-header p { margin-top: 3px; }
+  .rs-randui-page--planning .rs-randui-choice { padding: 10px; }
+  .rs-randui-page--planning .rs-randui-choice__icon { width: 34px; height: 34px; }
+  .rs-randui-page--planning .rs-randui-metric--compact { min-height: 50px; }
+  .rs-planning-today__items { grid-template-columns: minmax(0, 1fr); }
+  .rs-planning-today__item + .rs-planning-today__item { border-left: 0; border-top: 1px solid var(--rs-line); }
   .rs-randui-calendar__day { grid-template-columns: 54px minmax(0, 1fr); }
+}
+
+@media (max-width: 380px) {
+  .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-randui-choice { transition: none; }
 }
