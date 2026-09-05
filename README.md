@@ -84,12 +84,12 @@ La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mos
 
 Il modulo Rifornimenti resta separato dal Magazzino e non gestisce quantità: una richiesta indica soltanto quali prodotti servono; ogni voce resta `In attesa` finché il Manutentore la marca `Consegnato` o `Manca`.
 
-Per **Hotel Giò (`hotelgio`)** il catalogo iniziale recupera i prodotti della precedente app “Rifornimento Office - Hotel Gio”:
+Per **Hotel Giò (`hotelgio`)** il catalogo iniziale è allineato alla precedente app operativa **Rifornimento Hotel**:
 
-- **Minibar:** Coca Cola, Succo ACE, Birra, Patatine, Barretta.
-- **Consumo:** Saponetta, Shampini, Spugne scarpe, Cuffia doccia.
+- **Minibar (7):** Acqua naturale, Acqua frizzante, Coca Cola, Succo di frutta, Patatine, Barrette, Birre.
+- **Consumo (9):** Carta igienica, Saponette, Shampoo, Cuffie doccia, Spugne scarpe, Sacchi neri 60x50, Sacchi bianchi 60x50, Sacchi neri 110x70, Carta Lucart/Scottex.
 
-Il bootstrap è idempotente e non sovrascrive prodotti già personalizzati dall'Admin. ChocoHotel e Brigantino restano indipendenti e non ricevono automaticamente il catalogo di Giò.
+La migrazione correttiva preserva gli UUID già creati per le voci rinominate e aggiunge solo ciò che mancava. ChocoHotel e Brigantino restano indipendenti e non ricevono automaticamente il catalogo di Giò. Nessuna voce Rifornimenti genera quantità o movimenti Warehouse.
 
 ## Quality Matrix e test
 
