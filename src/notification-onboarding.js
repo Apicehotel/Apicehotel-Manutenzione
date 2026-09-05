@@ -2,10 +2,14 @@ import { getPushSubscriptionState, getPushSupportInfo, repairPushSubscription, s
 
 const SESSION_KEY='apicehotel.session.v1'
 const ID='randapp-notification-onboarding'
+const DISMISS_PREFIX='randapp.notification-onboarding.dismissed.v1'
 let hotelId=null
 let busy=false
 
 const currentHotelId=()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')?.hotelId||null}catch{return null}}
+const dismissalKey=(id)=>`${DISMISS_PREFIX}:${id||'unknown'}`
+const dismissed=(id)=>{try{return sessionStorage.getItem(dismissalKey(id))==='1'}catch{return false}}
+const dismiss=(id)=>{try{sessionStorage.setItem(dismissalKey(id),'1')}catch{};remove()}
 const remove=()=>document.getElementById(ID)?.remove()
 
 function ensureBanner(){
@@ -15,13 +19,14 @@ function ensureBanner(){
   el.id=ID
   el.className='rs-notification-onboarding'
   el.setAttribute('role','status')
-  el.innerHTML='<span class="rs-notification-onboarding__icon" aria-hidden="true">🔔</span><span class="rs-notification-onboarding__copy"><b>Attiva le notifiche</b><small>Servono per ricevere interventi assegnati, avvisi e promemoria.</small></span><button type="button" class="rs-notification-onboarding__action">Attiva</button>'
+  el.innerHTML='<span class="rs-notification-onboarding__icon" aria-hidden="true">🔔</span><span class="rs-notification-onboarding__copy"><b>Attiva le notifiche</b><small>Servono per ricevere interventi assegnati, avvisi e promemoria.</small></span><button type="button" class="rs-notification-onboarding__close" aria-label="Chiudi avviso notifiche">×</button><button type="button" class="rs-notification-onboarding__action">Attiva</button>'
   const app=document.querySelector('.rs-app')||document.body
   app.appendChild(el)
-  el.querySelector('button')?.addEventListener('click',async()=>{
+  el.querySelector('.rs-notification-onboarding__close')?.addEventListener('click',()=>dismiss(hotelId||currentHotelId()))
+  el.querySelector('.rs-notification-onboarding__action')?.addEventListener('click',async()=>{
     if(busy)return
     busy=true
-    const button=el.querySelector('button')
+    const button=el.querySelector('.rs-notification-onboarding__action')
     if(button){button.disabled=true;button.textContent='Attivo…'}
     try{
       const target=hotelId||currentHotelId()
@@ -38,10 +43,10 @@ function ensureBanner(){
 
 async function refresh(nextHotelId=currentHotelId()){
   hotelId=nextHotelId||currentHotelId()
-  if(!hotelId){remove();return}
+  if(!hotelId||dismissed(hotelId)){remove();return}
   const info=getPushSupportInfo()
   if(info.requiresHomeScreen){
-    const el=ensureBanner(),copy=el.querySelector('.rs-notification-onboarding__copy small'),button=el.querySelector('button')
+    const el=ensureBanner(),copy=el.querySelector('.rs-notification-onboarding__copy small'),button=el.querySelector('.rs-notification-onboarding__action')
     if(copy)copy.textContent='Su iPhone aggiungi RandApp alla schermata Home e aprila da lì per ricevere le notifiche.'
     if(button){button.hidden=true}
     return
@@ -52,7 +57,7 @@ async function refresh(nextHotelId=currentHotelId()){
   }
   const state=await getPushSubscriptionState(hotelId)
   if(state==='subscribed'){remove();return}
-  const el=ensureBanner(),copy=el.querySelector('.rs-notification-onboarding__copy small'),button=el.querySelector('button')
+  const el=ensureBanner(),copy=el.querySelector('.rs-notification-onboarding__copy small'),button=el.querySelector('.rs-notification-onboarding__action')
   if(state==='denied'){
     if(copy)copy.textContent='Le notifiche sono bloccate dal dispositivo. Riabilitale nelle impostazioni di RandApp/browser.'
     if(button){button.hidden=true}
