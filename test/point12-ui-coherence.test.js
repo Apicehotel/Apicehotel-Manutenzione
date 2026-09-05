@@ -5,21 +5,21 @@ import fs from 'node:fs'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 const main = read('src/main.jsx')
+const foundation = read('src/randapp/randui/foundation.css')
 const css = read('src/randapp/ui-coherence.css')
 const settings = read('src/randapp/Settings.jsx')
 const shell = read('src/randapp/shell.css')
 const ui = read('src/randapp/ui.jsx')
 
-test('point 12 coherence layer is loaded after feature-specific styles', () => {
-  const coherence = main.indexOf("import './randapp/ui-coherence.css'")
-  assert.ok(coherence > -1, 'ui-coherence.css must be imported')
+test('point 12 coherence layer is owned by the final foundation after feature-specific styles', () => {
+  const finalFoundation = main.indexOf("import './randapp/randui/foundation.css'")
+  assert.ok(finalFoundation > -1, 'RandUI foundation must be imported')
+  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
   for (const feature of [
     "./randapp/planning-sale-v2.css",
     "./housekeeping-dark-theme.css",
     "./randapp/new-issue-form-v2.css",
-    "./randapp/mobile-bottom-anchor.css",
-    "./randapp/home-center-nav.css",
-  ]) assert.ok(coherence > main.indexOf(`import '${feature}'`), `${feature} must load before final coherence layer`)
+  ]) assert.ok(finalFoundation > main.indexOf(`import '${feature}'`), `${feature} must load before final foundation`)
 })
 
 test('point 12 preserves one shared primitive set', () => {
@@ -48,9 +48,10 @@ test('point 12 handles accessibility preferences and mobile viewport constraints
   assert.match(css, /overscroll-behavior:\s*contain/)
 })
 
-test('settings navigation exposes stable navigation semantics', () => {
+test('settings navigation exposes stable tab semantics', () => {
   assert.match(settings, /aria-label="Sezioni impostazioni"/)
-  assert.match(settings, /aria-current=/)
+  assert.match(settings, /role="tab"/)
+  assert.match(settings, /aria-selected=/)
   assert.match(settings, /aria-controls="settings-panel"/)
   assert.match(settings, /type="button"/)
 })

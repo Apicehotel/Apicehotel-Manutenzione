@@ -27,14 +27,14 @@ test('point 7: diagnostics dashboard checks app services and exposes build ident
   assert.match(vite, /VERCEL_GIT_COMMIT_SHA/)
 })
 
-test('point 7: settings keeps current admin actions and diagnostics is an explicit admin tool', async () => {
+test('point 7: settings keeps current admin actions and diagnostics is an explicit RandUI tab', async () => {
   const settings = await source('src/randapp/Settings.jsx')
   assert.match(settings, /const TABS = \[/)
-  assert.match(settings, /const DIAGNOSTICS/)
-  assert.match(settings, /IconButton icon="wrench" label="Diagnostica"/)
-  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|usage)'/g)].map((match) => match[1])
-  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'usage'])
-  assert.match(settings, /<small>RandApp<\/small>/)
+  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|usage|diagnostics)'/g)].map((match) => match[1])
+  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'usage', 'diagnostics'])
+  assert.match(settings, /id:'diagnostics', icon:'wrench', label:'Diagnostica'/)
+  assert.match(settings, /SettingsTemplate/)
+  assert.doesNotMatch(settings, /rs-settings-head|rs-settings-nav/)
 })
 
 test('point 7: render crashes are centrally reported without making diagnostics an initial static dependency', async () => {

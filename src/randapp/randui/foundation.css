@@ -1,0 +1,215 @@
+/* RandUI v1 final foundation.
+   Loaded last. Cross-cutting geometry belongs to adaptive-layout.css;
+   interaction/accessibility belongs to ui-coherence.css. This file binds those
+   owners together and exposes the page/template primitives used by migration. */
+@import '../adaptive-layout.css';
+@import '../ui-coherence.css';
+
+:root {
+  --rand-space-1: 4px;
+  --rand-space-2: 8px;
+  --rand-space-3: 12px;
+  --rand-space-4: 16px;
+  --rand-space-5: 20px;
+  --rand-space-6: 24px;
+  --rand-space-8: 32px;
+  --rand-space-10: 40px;
+  --rand-radius-sm: 12px;
+  --rand-radius-md: 16px;
+  --rand-radius-lg: 20px;
+  --rand-reading-max: 1120px;
+  --rand-content-max: 1560px;
+  --rand-touch-min: var(--rs-adaptive-touch-min, 44px);
+}
+
+/* Structural invariants shared by every current and future RandUI template. */
+.rs-randui-page,
+.rs-randui-page__header,
+.rs-randui-page__heading,
+.rs-randui-page__actions,
+.rs-randui-page__toolbar,
+.rs-randui-page__body,
+.rs-randui-page__content,
+.rs-randui-page__aside,
+.rs-randui-page__footer {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.rs-randui-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rs-page-gap, var(--rand-space-4));
+}
+
+.rs-randui-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--rand-space-4);
+}
+
+.rs-randui-page__heading { flex: 1 1 280px; }
+.rs-randui-page__heading h1 {
+  margin: 0;
+  font-family: 'Sora', system-ui, sans-serif;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.15;
+  color: var(--rs-text);
+  overflow-wrap: anywhere;
+}
+.rs-randui-page__heading p { margin: 6px 0 0; color: var(--rs-text-2); line-height: 1.5; }
+.rs-randui-page__eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--rs-text-3);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.rs-randui-page__actions,
+.rs-randui-page__toolbar,
+.rs-randui-page__footer { display: flex; align-items: center; flex-wrap: wrap; gap: var(--rand-space-2); }
+.rs-randui-page__actions { margin-left: auto; }
+
+.rs-randui-page__body { width: 100%; }
+.rs-randui-page__body--aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rs-page-gap, var(--rand-space-4));
+}
+.rs-randui-page__content { width: 100%; }
+.rs-randui-page__aside { width: 100%; }
+
+.rs-randui-page--form .rs-randui-page__content,
+.rs-randui-page--wizard .rs-randui-page__content,
+.rs-randui-page--auth .rs-randui-page__content {
+  width: min(100%, var(--rand-reading-max));
+  margin-inline: auto;
+}
+
+/* Local page navigation: never a second application navbar. */
+.rs-randui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rand-space-2);
+  width: 100%;
+  padding: var(--rand-space-1);
+  border: 1px solid var(--rs-line);
+  border-radius: var(--rand-radius-md);
+  background: var(--rs-surface);
+}
+.rs-randui-tab {
+  min-height: var(--rand-touch-min);
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1 1 120px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--rand-radius-sm);
+  background: transparent;
+  color: var(--rs-text-2);
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 700;
+}
+.rs-randui-tab.active,
+.rs-randui-tab[aria-selected='true'] {
+  color: var(--rs-accent-strong, var(--rs-cyan));
+  background: var(--rs-accent-soft, rgba(34,211,238,.10));
+  border-color: var(--rs-accent-line, var(--rs-line-strong));
+}
+.rs-randui-tab .rs-icon { width: 18px; height: 18px; }
+
+/* One semantic state component for empty/loading/network/error/sync feedback. */
+.rs-randui-state {
+  width: min(100%, 680px);
+  min-height: 180px;
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--rand-space-3);
+  border: 1px solid var(--rs-line);
+  border-radius: var(--rand-radius-lg);
+  background: var(--rs-surface);
+}
+.rs-randui-state--compact { min-height: 0; padding: var(--rand-space-4); align-items: flex-start; text-align: left; }
+.rs-randui-state__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--rs-cyan);
+  background: rgba(34,211,238,.10);
+  border: 1px solid var(--rs-line-strong);
+}
+.rs-randui-state__icon .rs-icon { width: 25px; height: 25px; }
+.rs-randui-state__icon.is-busy .rs-icon { animation: rs-spin .9s linear infinite; }
+.rs-randui-state__copy strong { display:block; color:var(--rs-text); font-family:'Sora',system-ui,sans-serif; font-size:1.05rem; }
+.rs-randui-state__copy p { margin:6px 0 0; color:var(--rs-text-2); line-height:1.5; }
+.rs-randui-state__actions { display:flex; flex-wrap:wrap; justify-content:center; gap:var(--rand-space-2); }
+.rs-randui-state--success .rs-randui-state__icon { color:var(--rs-ok); background:rgba(70,217,154,.10); border-color:rgba(70,217,154,.30); }
+.rs-randui-state--warning .rs-randui-state__icon { color:var(--rs-warn); background:rgba(247,185,85,.10); border-color:rgba(247,185,85,.30); }
+.rs-randui-state--danger .rs-randui-state__icon { color:var(--rs-danger); background:rgba(246,96,125,.10); border-color:rgba(246,96,125,.30); }
+
+/* The historical shell stylesheet switches to desktop at 1024px. RandUI v1's
+   architecture contract is desktop >=1200px, so 1024–1199 remains tablet. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  :root {
+    --rs-nav-h: calc(68px * var(--rs-scale));
+    --rs-header-h: calc(62px * var(--rs-scale));
+  }
+  .rs-app,
+  .rs-app.rs-app--with-side {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: none;
+  }
+  .rs-sidebar { display: none !important; }
+  .rs-header { display: flex !important; grid-area: auto; }
+  .rs-content {
+    grid-area: auto;
+    grid-column: 1;
+    width: 100%;
+    max-width: 1100px;
+    padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
+    padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
+    padding-bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 20px);
+  }
+  .rs-content > * { width: 100%; max-width: 100%; }
+  .rs-bottomnav { display: grid !important; }
+  .rs-navfab { display: grid !important; }
+}
+
+@media (min-width: 768px) {
+  .rs-randui-page__body--aside { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
+}
+
+@media (min-width: 1200px) {
+  .rs-randui-page__body--aside { grid-template-columns: minmax(0, 3fr) minmax(280px, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .rs-randui-page__header { gap: var(--rand-space-3); }
+  .rs-randui-page__actions { width: 100%; margin-left: 0; }
+  .rs-randui-page__actions > * { flex: 1 1 140px; }
+  .rs-randui-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .rs-randui-tabs::-webkit-scrollbar { display: none; }
+  .rs-randui-tab { flex: 0 0 auto; min-width: max-content; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-randui-state__icon.is-busy .rs-icon { animation-duration: .01ms !important; }
+}

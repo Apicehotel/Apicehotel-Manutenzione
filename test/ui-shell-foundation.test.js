@@ -74,11 +74,12 @@ test('native inset bridge writes and clears CSS variables for a future Android w
   }
 })
 
-test('Shell and document keep the adaptive PWA/native-ready navigation contract wired', async () => {
-  const [shell, html, main] = await Promise.all([
+test('Shell and document keep the adaptive PWA/native-ready navigation contract wired through RandUI foundation', async () => {
+  const [shell, html, main, foundation] = await Promise.all([
     read('src/randapp/Shell.jsx'),
     read('index.html'),
     read('src/main.jsx'),
+    read('src/randapp/randui/foundation.css'),
   ])
   assert.match(shell, /buildPrimaryBottomNav/)
   assert.match(shell, /resolveUserInterests/)
@@ -86,7 +87,8 @@ test('Shell and document keep the adaptive PWA/native-ready navigation contract 
   assert.match(shell, /data-count="5"/)
   assert.match(shell, /data-slot=\{item\.slot\}/)
   assert.match(shell, /aria-label="Navigazione principale"/)
-  assert.match(main, /import ['"]\.\/randapp\/adaptive-layout\.css['"]/)
+  assert.match(main, /import ['"]\.\/randapp\/randui\/foundation\.css['"]/)
+  assert.match(foundation, /@import ['"]\.\.\/adaptive-layout\.css['"]/)
   assert.doesNotMatch(shell, /app-shell-foundation\.css/)
   assert.match(html, /viewport-fit=cover/)
   assert.doesNotMatch(html, /rs-bottomnav\[data-count=/)

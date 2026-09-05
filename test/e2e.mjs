@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { chromium, webkit, devices } from 'playwright'
+import { RANDUI_GUARD_VIEWPORTS, assertRandUiGeometry } from '../src/randapp/randui/guard.js'
 
 const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
 const artifacts = new URL('./artifacts/', import.meta.url)
@@ -9,13 +10,7 @@ await mkdir(artifacts, { recursive: true })
 
 const failures = []
 
-const desktopViewports = [
-  { name: 'iphone-se-320x568', width: 320, height: 568 },
-  { name: 'iphone-390x844', width: 390, height: 844 },
-  { name: 'large-phone-430x932', width: 430, height: 932 },
-  { name: 'tablet-768x1024', width: 768, height: 1024 },
-  { name: 'desktop-1440x1000', width: 1440, height: 1000 },
-]
+const desktopViewports = RANDUI_GUARD_VIEWPORTS
 
 const engineScenarios = [
   { name: 'android-pixel7-chromium', type: chromium, context: devices['Pixel 7'] },
@@ -25,6 +20,61 @@ const engineScenarios = [
 async function assertNoHorizontalOverflow(page, label) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   assert.ok(overflow <= 1, `Overflow orizzontale di ${overflow}px su ${label}`)
+}
+
+async function assertRandUiLayoutGuard(page, label) {
+  const snapshot = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth
+    const documentWidth = document.documentElement.scrollWidth
+    const visible = (element, rect) => {
+      const style = getComputedStyle(element)
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) !== 0 && rect.width > 0 && rect.height > 0
+    }
+    const nodes = []
+    const structural = document.querySelectorAll('.rs-root,.rs-app,.rs-content,[data-randui-template],[role="dialog"],.rs-modal,.rs-sheet')
+    for (const element of structural) {
+      const rect = element.getBoundingClientRect()
+      nodes.push({
+        subject: element.getAttribute('data-randui-template') ? `template:${element.getAttribute('data-randui-template')}` : element.className || element.tagName,
+        visible: visible(element, rect),
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height,
+        allowViewportEscape: element.dataset.randuiScrollX === 'allowed',
+      })
+    }
+
+    for (const root of document.querySelectorAll('[data-randui-template]')) {
+      const actionables = root.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,[role="button"],[role="tab"]')
+      for (const element of actionables) {
+        const rect = element.getBoundingClientRect()
+        const name = element.getAttribute('aria-label') || element.getAttribute('title') || element.textContent || element.getAttribute('placeholder') || element.value || ''
+        nodes.push({
+          subject: `${root.dataset.randuiTemplate}:${element.tagName.toLowerCase()}`,
+          visible: visible(element, rect),
+          actionable: true,
+          disabled: Boolean(element.disabled) || element.getAttribute('aria-disabled') === 'true',
+          touchExempt: element.dataset.randuiTouchExempt === 'true',
+          accessibleName: String(name).trim(),
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        })
+      }
+    }
+
+    const templates = [...document.querySelectorAll('[data-randui-template]')].map((root) => ({
+      id: root.getAttribute('data-randui-template'),
+      h1Count: root.querySelectorAll('h1').length,
+    }))
+    const counts = new Map()
+    for (const element of document.querySelectorAll('[id]')) counts.set(element.id, (counts.get(element.id) || 0) + 1)
+    const duplicateIds = [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id)
+    return { viewportWidth, documentWidth, nodes, templates, duplicateIds }
+  })
+  assertRandUiGeometry(snapshot, label)
 }
 
 async function assertNoFatalRuntimeErrors(pageErrors, consoleErrors, label) {
@@ -64,6 +114,7 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
     assert.equal(domState.themeChoice, theme, `Scelta tema ${theme} non preservata su ${label}`)
     assert.equal(domState.uiSize, uiSize, `Dimensione UI ${uiSize} non applicata su ${label}`)
     await assertNoHorizontalOverflow(page, `${label}-${theme}-${uiSize}`)
+    await assertRandUiLayoutGuard(page, `${label}-${theme}-${uiSize}`)
 
     const submitBox = await page.getByTestId('login-submit').boundingBox()
     assert.ok(submitBox && submitBox.width >= 44 && submitBox.height >= 44, `Touch target ACCEDI troppo piccolo su ${label}`)
@@ -77,6 +128,7 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
     assert.equal(await page.getByTestId('admin-pin-input').isVisible(), true, `PIN amministratore non visibile su ${label}`)
     assert.equal(await page.getByTestId('admin-gate-submit').isVisible(), true, `ENTRA admin non visibile su ${label}`)
     await assertNoHorizontalOverflow(page, `${label}-${theme}-${uiSize}-settings`)
+    await assertRandUiLayoutGuard(page, `${label}-${theme}-${uiSize}-settings`)
 
     await page.getByRole('button', { name: /RandApp/ }).click()
     await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
@@ -86,6 +138,7 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
     await page.waitForTimeout(150)
     assert.equal(await page.getByRole('heading', { name: 'Bentornato' }).isVisible(), true, `Login instabile offline su ${label}`)
     await assertNoHorizontalOverflow(page, `${label}-${theme}-${uiSize}-offline`)
+    await assertRandUiLayoutGuard(page, `${label}-${theme}-${uiSize}-offline`)
     await context.setOffline(false)
 
     await assertNoFatalRuntimeErrors(pageErrors, consoleErrors, `${label}-${theme}-${uiSize}`)
@@ -101,7 +154,7 @@ try {
   for (const viewport of desktopViewports) {
     await checkLoginShell(chromiumBrowser, viewport.name, { viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1 }, 'dark', 'normal', 'dark')
   }
-  for (const viewport of [desktopViewports[1], desktopViewports[3], desktopViewports[4]]) {
+  for (const viewport of [desktopViewports[2], desktopViewports[4], desktopViewports[6]]) {
     await checkLoginShell(chromiumBrowser, viewport.name, { viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1 }, 'light', 'normal', 'light')
   }
   await checkLoginShell(chromiumBrowser, 'phone-large-ui', { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 }, 'dark', 'large', 'dark')
@@ -127,5 +180,5 @@ if (failures.length) {
   console.error(failures.join('\n'))
   process.exitCode = 1
 } else {
-  console.log('E2E OK: Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
+  console.log('E2E OK: RandUI Guard 320/375/390/430/768/1024/1440, Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
 }
