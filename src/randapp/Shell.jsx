@@ -156,6 +156,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       if (event.detail?.hotelId && event.detail.hotelId !== hotel?.id) return
       const returnView = planningCreateRequest.returnView || 'planning-work'
       setPlanningCreateRequest(null)
+      setSettings(null)
       setView(returnView)
     }
     window.addEventListener('randapp-sale-booking-created', onSaleCreated)
@@ -187,6 +188,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   useEffect(() => {
     if (user && !viewAllowed(view)) {
       setPlanningCreateRequest(null)
+      setSettings(null)
       setView(safeView)
     }
   }, [user, view, viewAllowed, safeView])
@@ -197,6 +199,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     const nextView = target?.view || item.id
     if (target?.settings) { setSettings(target.settings); return }
     if (!viewAllowed(nextView)) return
+    setSettings(null)
     setView(nextView)
     if (target?.create) setCreateSignal((n) => n + 1)
   }
@@ -204,6 +207,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const openHomePersonalize = () => {
     setDrawer(false)
     if (!viewAllowed('home')) return
+    setSettings(null)
     setView('home')
     setPersonalizeSignal((n) => n + 1)
   }
@@ -236,12 +240,14 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (!viewAllowed('planning-work')) return
     if (kind === 'sale' && !viewAllowed('planning-sale')) return
     const returnView = view
+    setSettings(null)
     setView('planning-work')
     setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1, returnView }))
   }
 
   const pickInsert = (id) => {
     setInsertOpen(false)
+    setSettings(null)
     if (id === 'issue' && viewAllowed('issues')) {
       setView('issues')
       setCreateSignal((n) => n + 1)
@@ -280,7 +286,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }), [user, viewAllowed])
 
   const contextualActions = useMemo(() => contextualAddActions(view, addCapabilities), [view, addCapabilities])
-  const contextualActionIds = useMemo(() => contextualActions.map((action) => action.id), [contextualActions])
+  const contextualActionIds = useMemo(() => settings !== null ? [] : contextualActions.map((action) => action.id), [settings, contextualActions])
   const fabLabel = contextualAddLabel(contextualActions)
   const openContextualAdd = () => {
     if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
@@ -291,9 +297,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
   if (directoryState === 'error') return <main className="rs-content"><EmptyState icon="warning" title="Accesso non verificabile">Non riesco a verificare i permessi della struttura. Riprova con connessione disponibile.</EmptyState></main>
   if (directoryState === 'unauthorized' || !user || !hotel) return <main className="rs-content"><EmptyState icon="lock" title="Accesso non consentito">L’utente della sessione non è abilitato per questa struttura.</EmptyState></main>
-  if (settings !== null) return <Suspense fallback={<ViewFallback />}><Settings initialTab={settings} onExit={() => setSettings(null)} /></Suspense>
 
   const renderView = () => {
+    if (settings !== null) return <Settings initialTab={settings} onExit={() => setSettings(null)} embedded />
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
     if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
@@ -333,7 +339,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const handleBottom = (item) => {
     if (item.id === 'menu') { setDrawer(true); return }
     if (item.id === 'structure') { setHotelSheet(true); return }
-    if (viewAllowed(item.id)) setView(item.id)
+    if (viewAllowed(item.id)) {
+      setSettings(null)
+      setView(item.id)
+    }
   }
 
   return (
@@ -345,7 +354,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <button className="rs-sidebar__switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronDown" /></i></button>
           )}
           <div className="rs-sidebar__scroll">
-            <NavGroups user={user} hotel={hotel} variant="sidebar" current={view} onPick={pick} navigationConfig={navigationConfig} />
+            <NavGroups user={user} hotel={hotel} variant="sidebar" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />
             <div className="rs-sidebar__prefs">
               {viewAllowed('home') && <><span className="rs-sidebar__label">Home</span><button className="rs-sidebar__item" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span></button></>}
               <span className="rs-sidebar__label">Tema</span><ThemeControl />
@@ -369,12 +378,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           </div>
         </header>
 
-        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) setView('urgent') }} />
+        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
         <nav className="rs-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => (
-            <button key={item.id} data-slot={item.slot} className={`rs-navbtn ${view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={view === item.id ? 'page' : undefined}>
+            <button key={item.id} data-slot={item.slot} className={`rs-navbtn ${settings === null && view === item.id ? 'active' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={settings === null && view === item.id ? 'page' : undefined}>
               <Icon name={item.icon} /><small>{item.label}</small>
             </button>
           ))}
@@ -383,7 +392,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </div>
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
-      {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) setView('urgent') }} /></Suspense>}
+      {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} /></Suspense>}
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
@@ -394,7 +403,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </Sheet>
 
       <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
-        <Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setView('reminders') }} /></Suspense>
+        <Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setSettings(null); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setSettings(null); setView('reminders') }} /></Suspense>
       </Sheet>
 
       {drawer && (
@@ -403,7 +412,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             {DrawerHeader}
             {showStructureSide && <button className="rs-drawer__switch" onClick={() => { setDrawer(false); setHotelSheet(true) }} data-testid="drawer-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronRight" /></i></button>}
             <div className="rs-drawer__scroll">
-              <NavGroups user={user} hotel={hotel} variant="drawer" current={view} onPick={pick} navigationConfig={navigationConfig} />
+              <NavGroups user={user} hotel={hotel} variant="drawer" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />
               <span className="rs-drawer__label">Preferenze</span>
               {viewAllowed('home') && <button className="rs-drawer__item" onClick={openHomePersonalize} data-testid="drawer-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span><i><Icon name="chevronRight" /></i></button>}
               <div className="rs-drawer__setting"><small>Tema</small><ThemeControl /></div>
