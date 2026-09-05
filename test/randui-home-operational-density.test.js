@@ -20,11 +20,26 @@ test('Home exposes stat count so three operational counters can stay on one mobi
   assert.match(css, /\.rs-workhome__stats\[data-count='3'\]\s*\{\s*grid-template-columns:\s*repeat\(3,/)
 })
 
-test('Home density keeps Piccolo Normale Grande compatible and removes fixed FAB overlap', async () => {
+test('Home distinguishes urgent alerts from high-priority issues', async () => {
+  const home = await read('src/randapp/Home.jsx')
+  assert.match(home, /label:'Allarmi'/)
+  assert.match(home, /eyebrow:'Allarme'/)
+  assert.match(home, /item\.urgency === 'alta' \? 92/)
+})
+
+test('Home replaces floating create overlap with an explicit authorized new-issue action', async () => {
+  const home = await read('src/randapp/Home.jsx')
+  const css = await read('src/randapp/home-operational.css')
+  assert.match(home, /canCreateIssues&&<Button[\s\S]*onNavigate\?\.\('new-issue'\)/)
+  assert.match(home, /aria-label="Nuova segnalazione"/)
+  assert.match(css, /\.rs-app:has\(\.rs-workhome\) \.rs-navfab \{ display: none; \}/)
+})
+
+test('Home density keeps Piccolo Normale Grande compatible', async () => {
   const css = await read('src/randapp/home-operational.css')
   assert.match(css, /html\[data-ui-size='large'\] \.rs-workhome__stat/)
   assert.match(css, /html\[data-ui-size='large'\] \.rs-workhome__task/)
-  assert.match(css, /\.rs-app:has\(\.rs-workhome\) \.rs-navfab \{ display: none; \}/)
+  assert.match(css, /@media \(max-width: 520px\)/)
 })
 
 test('RandAI score is self-explanatory and component no longer owns inline CSS', async () => {
