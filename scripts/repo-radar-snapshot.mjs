@@ -6,28 +6,54 @@ import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
 const token=process.env.GITHUB_TOKEN||''
 const now=Date.now()
 const staleMs=180*24*60*60*1000
-const requestHeaders={'User-Agent':'Rand-Repo-Radar/2.1'}
+const requestHeaders={'User-Agent':'Rand-Repo-Radar/2.2'}
 const githubHeaders={...requestHeaders,Accept:'application/vnd.github+json',...(token?{Authorization:`Bearer ${token}`}:{})}
-const MAX_DISCOVERED=24
-const MAX_PER_CATEGORY=4
+const MAX_DISCOVERED=64
+const MAX_PER_SECTOR=2
 const RAND_STACK_TERMS=['react','typescript','next','next.js','vite','shadcn','tailwind','storybook','playwright','supabase','zod']
 
-const SEARCH_PROFILES=[
-  {id:'ai-agent',category:'AI_RUNTIME',priority:.78,query:'AI agent framework TypeScript',github:'AI agent framework language:TypeScript stars:>1000 archived:false'},
-  {id:'rag',category:'KNOWLEDGE',priority:.75,query:'RAG retrieval augmented generation',github:'RAG retrieval augmented generation stars:>1000 archived:false'},
-  {id:'mcp-security',category:'SECURITY',priority:.82,query:'MCP security model context protocol',github:'MCP security model context protocol stars:>50 archived:false'},
-  {id:'llm-eval',category:'QUALITY',priority:.82,query:'LLM eval red team',github:'LLM eval red team stars:>500 archived:false'},
-  {id:'page-templates',category:'PAGE_TEMPLATE',priority:.94,query:'react responsive admin dashboard template',github:'react responsive admin dashboard template language:TypeScript stars:>250 archived:false'},
-  {id:'app-shell',category:'PAGE_TEMPLATE',priority:.96,query:'react responsive app shell sidebar master detail',github:'react responsive app shell sidebar master detail language:TypeScript archived:false'},
-  {id:'design-system',category:'DESIGN_SYSTEM',priority:.96,query:'react design system storybook accessibility',github:'react design system storybook accessibility language:TypeScript stars:>250 archived:false'},
-  {id:'schema-ui',category:'SCHEMA_UI',priority:1,query:'react schema driven ui component registry',github:'react schema driven ui component registry language:TypeScript archived:false'},
-  {id:'template-registry',category:'SCHEMA_UI',priority:1,query:'react template registry visual editor components',github:'react template registry visual editor components language:TypeScript archived:false'},
-  {id:'visual-testing',category:'TESTING',priority:.97,query:'playwright visual regression responsive layout',github:'playwright visual regression responsive layout language:TypeScript archived:false'},
-  {id:'accessibility',category:'ACCESSIBILITY',priority:.95,query:'react accessibility components aria wcag',github:'react accessibility components aria wcag language:TypeScript stars:>250 archived:false'},
-  {id:'form-engine',category:'FORM_ENGINE',priority:.94,query:'react json schema form engine typescript',github:'react json schema form engine language:TypeScript stars:>100 archived:false'},
-  {id:'visual-builder',category:'BUILDER',priority:.9,query:'react visual page builder component registry',github:'react visual page builder component registry language:TypeScript archived:false'},
-  {id:'asset-resolver',category:'ASSET',priority:.72,query:'react app icon logo asset manager',github:'react app icon logo asset manager language:TypeScript archived:false'},
+const CORE_SEARCH_PROFILES=[
+  {id:'ai-agent',category:'AI_RUNTIME',sector:'AI_AGENT',priority:.78,query:'AI agent framework TypeScript',github:'AI agent framework language:TypeScript stars:>1000 archived:false'},
+  {id:'rag',category:'KNOWLEDGE',sector:'RAG',priority:.75,query:'RAG retrieval augmented generation',github:'RAG retrieval augmented generation stars:>1000 archived:false'},
+  {id:'mcp-security',category:'SECURITY',sector:'MCP_SECURITY',priority:.82,query:'MCP security model context protocol',github:'MCP security model context protocol stars:>50 archived:false'},
+  {id:'llm-eval',category:'QUALITY',sector:'LLM_EVAL',priority:.82,query:'LLM eval red team',github:'LLM eval red team stars:>500 archived:false'},
 ]
+
+const RANDUI_SECTORS=[
+  {id:'FOUNDATION_LAYOUT',priority:.98,query:'responsive web app layout grid spacing design tokens css'},
+  {id:'SHELL_NAVIGATION',priority:.99,query:'react app shell sidebar topbar bottom navigation responsive'},
+  {id:'PAGE_TEMPLATES',priority:.99,query:'react admin page templates dashboard list detail settings responsive'},
+  {id:'DASHBOARD_KPI',priority:.94,query:'react dashboard kpi cards widgets responsive design system'},
+  {id:'DATA_TABLES',priority:.97,query:'react data table data grid filter sort pagination responsive'},
+  {id:'MASTER_DETAIL',priority:.97,query:'react master detail list detail split pane responsive'},
+  {id:'MOBILE_OPERATIONAL',priority:.99,query:'react mobile first operational dashboard touch bottom navigation offline'},
+  {id:'PLANNING_CALENDAR',priority:.95,query:'react planning calendar scheduler timeline resource booking'},
+  {id:'FORMS_WIZARDS',priority:.97,query:'react form wizard schema validation autosave conditional fields'},
+  {id:'SETTINGS_ADMIN_RBAC',priority:.96,query:'react settings admin permissions rbac user management ui'},
+  {id:'SYSTEM_STATES',priority:1,query:'react empty state loading skeleton error retry stale degraded feedback ui'},
+  {id:'SEARCH_COMMAND',priority:.93,query:'react command palette global search autocomplete filter ui'},
+  {id:'NOTIFICATIONS_ACTIVITY',priority:.95,query:'react toast notification activity feed alert center ui'},
+  {id:'OFFLINE_SYNC',priority:.98,query:'react offline queue sync retry conflict stale network state'},
+  {id:'DATA_VISUALIZATION',priority:.94,query:'react charts data visualization dashboard accessible responsive'},
+  {id:'DESIGN_SYSTEM',priority:1,query:'react design system component library tokens storybook accessibility'},
+  {id:'ACCESSIBILITY',priority:1,query:'react accessibility aria wcag keyboard screen reader components'},
+  {id:'SCHEMA_UI',priority:1,query:'react schema driven ui renderer component registry template registry'},
+  {id:'VISUAL_BUILDER',priority:.92,query:'react visual page builder component registry drag drop editor'},
+  {id:'VISUAL_TESTING',priority:1,query:'playwright visual regression responsive layout screenshot testing'},
+  {id:'ASSETS_ICONS',priority:.85,query:'react icon system asset manager logo image component library'},
+  {id:'PRINT_EXPORT',priority:.88,query:'react print layout export pdf responsive report template'},
+]
+
+const UI_SEARCH_PROFILES=RANDUI_SECTORS.map((sector)=>({
+  id:`ui-${sector.id.toLowerCase().replaceAll('_','-')}`,
+  category:'RANDUI',
+  sector:sector.id,
+  priority:sector.priority,
+  query:sector.query,
+  github:`${sector.query} archived:false`,
+}))
+
+const SEARCH_PROFILES=[...CORE_SEARCH_PROFILES,...UI_SEARCH_PROFILES]
 
 const PROVIDERS=[
   {id:'GITHUB',search:discoverGitHub},
@@ -95,6 +121,7 @@ function metaCandidate(meta,profile){
     source:'DISCOVERED',
     sourcePlatform:meta.platform,
     category:profile.category,
+    sector:profile.sector,
     capability:profile.id,
     discoveryScore:discoveryScore(meta,profile),
     license:meta.license||null,
@@ -103,9 +130,9 @@ function metaCandidate(meta,profile){
     stars:Number(meta.stars||0),
     gates:{security:null,compatibility:null,benchmark:null,rollback:null},
     evidence:{security:.5,maintenance:maintenanceScore(pushedAt),maturity:.55,tests:.5,compatibility:technicalCompatibility,performance:.5,rollback:.5,maintainability:.55},
-    note:`WATCH automatico ${meta.platform}/${profile.category}: discovery non equivale ad approvazione; deep review Rand obbligatoria prima di qualunque adozione.`,
+    note:`WATCH automatico ${meta.platform}/${profile.sector}: discovery non equivale ad approvazione; deep review Rand obbligatoria prima di qualunque adozione.`,
     evaluatedAt:new Date().toISOString(),
-    discovery:{profile:profile.id,category:profile.category,platform:meta.platform,score:discoveryScore(meta,profile),description:meta.description||null},
+    discovery:{profile:profile.id,category:profile.category,sector:profile.sector,platform:meta.platform,score:discoveryScore(meta,profile),description:meta.description||null},
     repositoryMeta:{pushedAt,openIssues:Number(meta.openIssues||0),forks:Number(meta.forks||0),defaultBranch:meta.defaultBranch||null,language:meta.language||null,topics:meta.topics||[]},
   }
 }
@@ -168,17 +195,32 @@ async function enrich(candidate){
 }
 
 function boundedSelection(found){
-  const counts=new Map()
-  const selected=[]
   const ordered=[...found.values()].sort((a,b)=>b.discoveryScore-a.discoveryScore||a.name.localeCompare(b.name))
+  const buckets=new Map()
   for(const candidate of ordered){
-    const count=counts.get(candidate.category)||0
-    if(count>=MAX_PER_CATEGORY) continue
-    selected.push(candidate)
-    counts.set(candidate.category,count+1)
-    if(selected.length>=MAX_DISCOVERED) break
+    const key=candidate.sector||candidate.category||'OTHER'
+    if(!buckets.has(key)) buckets.set(key,[])
+    buckets.get(key).push(candidate)
   }
-  return selected
+  const selected=[]
+  const selectedUrls=new Set()
+  for(const items of buckets.values()){
+    const candidate=items[0]
+    if(!candidate||selected.length>=MAX_DISCOVERED) continue
+    selected.push(candidate)
+    selectedUrls.add(canonicalUrl(candidate.repository))
+  }
+  for(const candidate of ordered){
+    if(selected.length>=MAX_DISCOVERED) break
+    const url=canonicalUrl(candidate.repository)
+    if(selectedUrls.has(url)) continue
+    const key=candidate.sector||candidate.category||'OTHER'
+    const count=selected.filter((item)=>(item.sector||item.category||'OTHER')===key).length
+    if(count>=MAX_PER_SECTOR) continue
+    selected.push(candidate)
+    selectedUrls.add(url)
+  }
+  return selected.sort((a,b)=>b.discoveryScore-a.discoveryScore||a.name.localeCompare(b.name))
 }
 
 async function discover(){
@@ -215,7 +257,8 @@ const enriched=[]
 for(const candidate of REPO_RADAR_CATALOG) enriched.push(await enrich(candidate))
 const {candidates:discovered,providerStats}=await discover()
 const snapshot=buildRepoRadarSnapshot([...enriched,...discovered])
+const sectorCoverage=Object.fromEntries(RANDUI_SECTORS.map((sector)=>[sector.id,discovered.filter((item)=>item.sector===sector.id).length]))
 const outDir=path.resolve('artifacts/repo-radar')
 await fs.mkdir(outDir,{recursive:true})
-await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{profiles:SEARCH_PROFILES.length,providers:PROVIDERS.map((item)=>item.id),providerStats,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerCategory:MAX_PER_CATEGORY}},null,2)+'\n')
-console.log(`Repo Radar: ${snapshot.candidates.length} candidate (${discovered.length} discovered across ${PROVIDERS.length} providers); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))
+await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{profiles:SEARCH_PROFILES.length,uiSectors:RANDUI_SECTORS.map((item)=>item.id),sectorCoverage,providers:PROVIDERS.map((item)=>item.id),providerStats,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerSector:MAX_PER_SECTOR}},null,2)+'\n')
+console.log(`Repo Radar: ${snapshot.candidates.length} candidate (${discovered.length} discovered across ${PROVIDERS.length} providers / ${RANDUI_SECTORS.length} RandUI sectors); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))

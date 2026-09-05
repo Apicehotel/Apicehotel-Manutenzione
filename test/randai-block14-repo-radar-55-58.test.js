@@ -38,6 +38,7 @@ test('58 snapshot never auto-installs and catalog spans governed outcomes', () =
   assert.equal(snapshot.policy.automaticReplace,false)
   assert.equal(snapshot.policy.humanApprovalRequired,true)
   assert.equal(snapshot.policy.multiSourceDiscovery,true)
+  assert.equal(snapshot.policy.sectorCoverage,true)
   for(const decision of [RepoRadarDecision.ADD,RepoRadarDecision.WATCH,RepoRadarDecision.REJECT,RepoRadarDecision.KEEP]) assert.ok(snapshot.candidates.some((item)=>item.decision===decision))
 })
 
@@ -54,7 +55,7 @@ test('Repo Radar accepts governed public forge hosts and rejects arbitrary hosts
   assert.throws(()=>validateRepoRadarCandidate({id:'bad-host',name:'Bad',repository:'https://example.com/repo/code'}),/Unsupported repository URL/)
 })
 
-test('weekly discovery is read-only, bounded, multi-source and discovered repos cannot self-promote', () => {
+test('weekly discovery is read-only, bounded, multi-source and sector-complete for RandUI', () => {
   const workflow=fs.readFileSync('.github/workflows/repo-radar.yml','utf8')
   const runner=fs.readFileSync('scripts/repo-radar-snapshot.mjs','utf8')
   assert.match(workflow,/contents: read/)
@@ -63,16 +64,32 @@ test('weekly discovery is read-only, bounded, multi-source and discovered repos 
   assert.doesNotMatch(workflow,/npm install .*@latest|npx .*@latest/)
   assert.match(runner,/source:'DISCOVERED'/)
   assert.match(runner,/gates:\{security:null,compatibility:null,benchmark:null,rollback:null\}/)
-  assert.match(runner,/MAX_DISCOVERED=24/)
-  assert.match(runner,/MAX_PER_CATEGORY=4/)
+  assert.match(runner,/MAX_DISCOVERED=64/)
+  assert.match(runner,/MAX_PER_SECTOR=2/)
+  assert.match(runner,/RANDUI_SECTORS/)
+  for(const sector of [
+    'FOUNDATION_LAYOUT','SHELL_NAVIGATION','PAGE_TEMPLATES','DASHBOARD_KPI','DATA_TABLES','MASTER_DETAIL',
+    'MOBILE_OPERATIONAL','PLANNING_CALENDAR','FORMS_WIZARDS','SETTINGS_ADMIN_RBAC','SYSTEM_STATES','SEARCH_COMMAND',
+    'NOTIFICATIONS_ACTIVITY','OFFLINE_SYNC','DATA_VISUALIZATION','DESIGN_SYSTEM','ACCESSIBILITY','SCHEMA_UI',
+    'VISUAL_BUILDER','VISUAL_TESTING','ASSETS_ICONS','PRINT_EXPORT',
+  ]) assert.match(runner,new RegExp(sector))
+  assert.match(runner,/sectorCoverage/)
   assert.match(runner,/GITHUB/)
   assert.match(runner,/GITLAB/)
   assert.match(runner,/CODEBERG/)
   assert.match(runner,/NPM/)
-  assert.match(runner,/schema-ui/)
-  assert.match(runner,/template-registry/)
-  assert.match(runner,/visual-testing/)
-  assert.match(runner,/accessibility/)
+})
+
+test('discovery metadata preserves sector for governed review', () => {
+  const report=evaluateRepoCandidate({
+    id:'ui-x',name:'UI X',repository:'https://github.com/example/ui-x',license:'MIT',maintained:true,
+    category:'RANDUI',sector:'SYSTEM_STATES',source:'DISCOVERED',sourcePlatform:'GITHUB',capability:'ui-system-states',
+    gates:{security:null,compatibility:null,benchmark:null,rollback:null},
+    evidence:{security:.5,maintenance:.9,maturity:.6,tests:.5,compatibility:.9,performance:.5,rollback:.5,maintainability:.6},
+  })
+  assert.equal(report.sector,'SYSTEM_STATES')
+  assert.equal(report.category,'RANDUI')
+  assert.equal(report.decision,RepoRadarDecision.WATCH)
 })
 
 test('Repo Radar is live in ecosystem only with code UI and weekly evidence', () => {
