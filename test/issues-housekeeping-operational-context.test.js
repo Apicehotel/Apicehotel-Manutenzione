@@ -70,3 +70,11 @@ test('migrazione mantiene compatibilita storica e zone senza piano',()=>{
   assert.match(migration,/where location_mode is null/)
   assert.match(migration,/segnalazioni_hotel_floor_open_idx/)
 })
+
+test('policy update mantiene i permessi e inizializza auth uid una sola volta',()=>{
+  const migration=fs.readFileSync(new URL('../supabase/migrations/20260905060000_optimize_issue_update_policy.sql',import.meta.url),'utf8')
+  for(const action of ['edit','take_charge','complete','assign'])assert.match(migration,new RegExp(`has_app_permission\\(hotel_id,'issues','${action}'\\)`))
+  assert.match(migration,/created_by_user_id = \(select auth\.uid\(\)\)/)
+  assert.match(migration,/has_hotel_role\(hotel_id,array\['Supremo'\]\)/)
+  assert.match(migration,/with check/)
+})
