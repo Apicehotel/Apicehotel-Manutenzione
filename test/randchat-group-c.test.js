@@ -5,11 +5,13 @@ import { readFileSync } from 'node:fs'
 const integration = readFileSync(new URL('../supabase/migrations/20260905110000_randchat_group_c_operational_integration.sql', import.meta.url), 'utf8')
 const mediaHardening = readFileSync(new URL('../supabase/migrations/20260905110100_randchat_group_c_media_hardening.sql', import.meta.url), 'utf8')
 const procedureDrafts = readFileSync(new URL('../supabase/migrations/20260905110200_randchat_group_c_procedure_drafts.sql', import.meta.url), 'utf8')
+const ciphertextHeadroom = readFileSync(new URL('../supabase/migrations/20260905110300_randchat_dm_ciphertext_headroom.sql', import.meta.url), 'utf8')
 const groupUi = readFileSync(new URL('../src/randapp/chat/GroupChats.jsx', import.meta.url), 'utf8')
 const dmUi = readFileSync(new URL('../src/randapp/chat/DirectMessages.jsx', import.meta.url), 'utf8')
 const aiBridge = readFileSync(new URL('../src/randapp/chat/randchat-ai.js', import.meta.url), 'utf8')
 const mediaProvider = readFileSync(new URL('../src/randapp/chat/randmedia.js', import.meta.url), 'utf8')
 const cleanupWorker = readFileSync(new URL('../supabase/functions/randchat-media-cleanup/index.ts', import.meta.url), 'utf8')
+const supabaseConfig = readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8')
 
 test('Group C shares only approved hotel procedures and stores a versioned snapshot', () => {
   assert.match(integration, /p\.status='approved'/i)
@@ -25,6 +27,7 @@ test('group messages can become canonical RandGuide drafts but never auto-publis
   assert.match(procedureDrafts, /revisione umana obbligatoria/i)
   assert.doesNotMatch(procedureDrafts, /'approved'\s*,\s*1/i)
   assert.match(procedureDrafts, /requires_approval/i)
+  assert.match(groupUi, /Bozza procedura/)
 })
 
 test('RandAI group context requires both group membership and hotel membership', () => {
@@ -53,6 +56,13 @@ test('RandMedia deletion is coupled to chat retention and cleanup is server-auth
   assert.match(cleanupWorker, /x-cron-secret/)
   assert.match(cleanupWorker, /randchat_media_cron_secret/)
   assert.match(cleanupWorker, /queue_orphaned_chat_media/)
+  assert.match(supabaseConfig, /\[functions\.randchat-media-cleanup\][\s\S]*verify_jwt\s*=\s*false/i)
+})
+
+test('DM ciphertext headroom supports Unicode and encrypted media payload expansion', () => {
+  assert.match(ciphertextHeadroom, /between 1 and 65536/i)
+  assert.match(ciphertextHeadroom, /chat_dm_send_message\(/i)
+  assert.match(ciphertextHeadroom, /revoke all on function public\.chat_dm_send_message/i)
 })
 
 test('new Group C SECURITY DEFINER RPCs explicitly revoke anonymous execution', () => {
