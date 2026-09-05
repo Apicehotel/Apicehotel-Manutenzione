@@ -47,12 +47,12 @@ Il Core RandUI è ora dichiarativo e ha proprietari espliciti:
 - `src/randapp/randui/design-contract.js` fissa versione, breakpoint, densità, invarianti e stati;
 - `component-registry.js` riusa le primitive di `ui.jsx` e dichiara la state matrix invece di introdurre un secondo design system;
 - `template-registry.js` contiene **14 template ufficiali** (`dashboard`, `list`, `list-detail`, `master-detail`, `operational`, `planning`, `form`, `wizard`, `settings`, `management`, `monitor`, `system-state`, `auth`, `search-archive`);
-- `page-schema.js` risolve e valida le pagine; `page-catalog.js` assegna già il template di destinazione ai principali moduli RandApp/RandAI;
+- `page-schema.js` risolve e valida le pagine; `page-catalog.js` assegna il template canonico ai moduli RandApp/RandAI;
 - `system-states.jsx` unifica loading, empty, error, offline, sync, stale, conflict, access denied e feedback;
 - `randui/foundation.css` viene caricato per ultimo e rende `adaptive-layout.css` proprietario della geometria e `ui-coherence.css` proprietario di interazione/accessibilità;
 - `Shell.jsx` resta l'unica chrome autenticata: anche Impostazioni viene resa dentro la Shell tramite `SettingsTemplate`.
 
-Il vecchio `app-shell-foundation.css` resta eliminato. I CSS di dominio vengono rimossi soltanto durante la migrazione della relativa pagina e dopo prova di assenza di consumatori.
+Il vecchio `app-shell-foundation.css` resta eliminato. I CSS di dominio vengono rimossi solo dopo prova di assenza di consumatori.
 
 Dettaglio: `docs/architecture/RANDUI_V1_CORE.md`.
 
@@ -66,9 +66,24 @@ Il Blocco 2 aggiunge un gate **fail-closed** tra il Core e la migrazione delle p
 - componenti non registrati/non ammessi e slot inventati vengono rifiutati;
 - il browser gate blocca overflow orizzontale, fuga dal viewport, target touch RandUI sotto **44×44 px**, azioni senza nome accessibile, template sconosciuti e ID DOM duplicati;
 - matrice canonica: **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Pixel 7 Chromium e iPhone 13 WebKit;
-- una pagina del Blocco 3 non è considerata migrata finché non supera Guard, browser gate e device acceptance.
+- una pagina non è considerata valida se esce dal contratto RandUI.
 
 Dettaglio: `docs/architecture/RANDUI_V1_GUARD.md`.
+
+### RandUI v1 Block 3 — Page Migration
+
+Il Blocco 3 porta le destinazioni runtime sotto il contratto reale, senza riscrivere la logica dei moduli:
+
+`Shell destination → Page Catalog → PageBoundary → Template Registry → Guard → contenuto operativo`
+
+- `src/randapp/randui/PageBoundary.jsx` è il boundary unico e **fail-closed**: una destinazione non catalogata non può renderizzare fuori RandUI;
+- il catalogo copre ora **23/23 destinazioni correnti**, comprese le quattro secondarie che non erano nella lista iniziale (`my-work`, `pin`, `feedback-received`, `desktop-download`);
+- tutte le viste operative della Shell entrano nel relativo template tramite `PageBoundary`; Settings resta direttamente su `SettingsTemplate`, mentre `/randai` resta catalogata come `monitor`;
+- la migrazione è marcata `template-boundary-v1`, così una futura evoluzione può raffinare gli slot interni senza cambiare navigazione, permessi o dati;
+- eliminati i wrapper zombie `rs-legacy--temperature` e `rs-legacy--housekeeping`; i CSS di dominio restano solo dove hanno ancora consumatori reali;
+- nessuna nuova libreria UI o testing è stata introdotta: il sistema riusa registry, template, Guard e Playwright già presenti.
+
+Dettaglio: `docs/architecture/RANDUI_V1_MIGRATION.md`.
 
 ## Safe-area iOS / Android
 
@@ -202,6 +217,7 @@ npm test
 npm run test:quality
 npm run test:randui
 npm run test:randui:guard
+npm run test:randui:migration
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -217,6 +233,7 @@ La CI certifica, tra gli altri:
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
 - RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
+- **RandUI Block 3: 23/23 destinazioni catalogate e compatibili con il proprio template boundary**;
 - matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
@@ -238,6 +255,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
+- `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, copertura 23/23 e strategia di compatibilità.
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
 - `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
