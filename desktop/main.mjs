@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { listPrinters, printCurrentView, printStructuredDocument } from './print-service.mjs'
 
+app.enableSandbox()
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CHANNELS = Object.freeze({
   printers: 'randdesktop:print:printers',
