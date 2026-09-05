@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
+import { inferIssueOperationalContext, issueOperationalContextLabel } from '../issue-operational-context.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 import { canUser } from '../permissions.js'
@@ -49,29 +50,49 @@ function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, er
   )
 }
 
-const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved }) {
+const emptyDraft = () => ({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null })
+
+const NewIssueForm = memo(function NewIssueForm({ hotel, user, prefill=null, onCancel, onSaved }) {
   const catalog = HOTEL_LOCATIONS[hotel.id]
   const photoInputRef = useRef(null)
   const draftOwner = user?.auth_user_id || user?.legacy_id || user?.id || user?.name || 'anonymous'
   const restoredDraft = useMemo(() => loadDraft('issue', hotel.id, draftOwner), [hotel.id, draftOwner])
-  const [mode, setMode] = useState(restoredDraft?.mode || 'camera')
-  const [draft, setDraft] = useState(() => ({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null, ...(restoredDraft?.draft || {}) }))
+  const initialSaved = prefill ? null : restoredDraft
+  const [mode, setMode] = useState(prefill?.mode || initialSaved?.mode || 'camera')
+  const [draft, setDraft] = useState(() => ({ ...emptyDraft(), ...(initialSaved?.draft || {}), ...(prefill?.location ? { location:String(prefill.location) } : {}) }))
+  const [context, setContext] = useState(prefill || initialSaved?.context || null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [roomStatusSuggested, setRoomStatusSuggested] = useState(false)
+  const prefillKey = prefill?.sourceRef || prefill?.location || ''
+
   useEffect(() => {
+    if(prefill) {
+      setMode(prefill.mode || 'camera')
+      setDraft({ ...emptyDraft(), location:String(prefill.location || '') })
+      setContext(prefill)
+      setSaveError('')
+      return
+    }
     const saved = loadDraft('issue', hotel.id, draftOwner)
     setMode(saved?.mode || 'camera')
-    setDraft({ location: '', title: '', urgency: 'media', category: 'Varie', photoName: '', photoData: null, roomStatus: null, ...(saved?.draft || {}) })
+    setDraft({ ...emptyDraft(), ...(saved?.draft || {}) })
+    setContext(saved?.context || null)
     setSaveError('')
-  }, [hotel.id, draftOwner])
+  }, [hotel.id, draftOwner, prefillKey])
+
   useEffect(() => {
-    const timer = window.setTimeout(() => saveDraft('issue', hotel.id, draftOwner, { mode, draft }), 250)
+    const timer = window.setTimeout(() => saveDraft('issue', hotel.id, draftOwner, { mode, draft, context }), 250)
     return () => window.clearTimeout(timer)
-  }, [hotel.id, draftOwner, mode, draft])
+  }, [hotel.id, draftOwner, mode, draft, context])
+
   const validLocation = mode === 'camera'
     ? catalog.roomGroups.some((g) => g.rooms.includes(draft.location.trim()))
     : catalog.zones.some((z) => z.name === draft.location.trim())
+  const lockedLocation = context?.sourceModule === 'housekeeping' && context?.location && String(context.location) === draft.location.trim()
+  const operationalContext = useMemo(() => inferIssueOperationalContext({ hotelId:hotel.id, catalog, mode, location:draft.location, prefill:context }), [hotel.id,catalog,mode,draft.location,context])
+  const contextLabel = issueOperationalContextLabel(operationalContext)
+
   const pickPhoto = async (file) => {
     try { const photoData = await compressPhotoAsDataUrl(file); setDraft((c) => ({ ...c, photoName: file?.name || '', photoData })); setSaveError('') }
     catch (error) { setSaveError('Impossibile preparare la foto. Riprova o invia senza foto.'); operationFailed(error, 'Foto non disponibile') }
@@ -96,10 +117,19 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
     e.preventDefault()
     if (!validLocation || !draft.title.trim() || saving) return
     setSaving(true)
+    const sourceModule=operationalContext.sourceModule || 'issues'
     const issue = {
       hotelId: hotel.id,
       urgency: draft.urgency,
       room: (mode === 'camera' ? 'Camera' : 'Zona') + ' · ' + draft.location.trim(),
+      locationMode:operationalContext.locationMode,
+      roomNumber:operationalContext.roomNumber,
+      areaCode:operationalContext.areaCode,
+      areaLabel:operationalContext.areaLabel,
+      floorNumber:operationalContext.floorNumber,
+      floorLabel:operationalContext.floorLabel,
+      sourceModule,
+      sourceRef:operationalContext.sourceRef,
       title: draft.title.trim(),
       status: 'todo',
       createdAt: Date.now(),
@@ -107,7 +137,7 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
       createdByUserId: user?.auth_user_id || user?.id || undefined,
       department: user?.department || user?.role || null,
       category: draft.category,
-      origin: 'App',
+      origin: sourceModule === 'housekeeping' ? 'Housekeeping' : 'App',
       photoData: draft.photoData,
       roomStatus: mode === 'camera' ? draft.roomStatus : null,
     }
@@ -130,10 +160,14 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
         <IconButton icon="chevronLeft" label="Indietro" onClick={onCancel} />
         <div><h2>Nuova segnalazione</h2><p>{hotel.name} · stato iniziale Da fare</p></div>
       </div>
-      <Field label="Camera o zona">
-        <LocationAutocomplete catalog={catalog} mode={mode} onModeChange={setMode} value={draft.location} onChange={(location) => setDraft({ ...draft, location })}
-          error={draft.location && !validLocation ? (mode === 'camera' ? 'Camera non presente nella struttura.' : 'Scegli una zona riconosciuta.') : ''} />
-      </Field>
+      {lockedLocation ? (
+        <div className="rs-note" data-testid="issue-housekeeping-context"><strong>Da Housekeeping</strong><p style={{margin:'4px 0 0'}}>{contextLabel || `Camera ${draft.location}`}</p><small>Hotel, area, piano e camera verranno salvati automaticamente.</small></div>
+      ) : (
+        <Field label="Camera o zona">
+          <LocationAutocomplete catalog={catalog} mode={mode} onModeChange={(next)=>{setContext(null);setMode(next)}} value={draft.location} onChange={(location) => {setContext(null);setDraft({ ...draft, location })}}
+            error={draft.location && !validLocation ? (mode === 'camera' ? 'Camera non presente nella struttura.' : 'Scegli una zona riconosciuta.') : ''} />
+        </Field>
+      )}
       {mode === 'camera' && (
         <fieldset className="rs-fieldset">
           <legend>Stato camera (opzionale)</legend>
@@ -179,7 +213,7 @@ const NewIssueForm = memo(function NewIssueForm({ hotel, user, onCancel, onSaved
         </div>
       )}
       {saveError && <p className="rs-error" role="alert" data-testid="issue-save-error">{saveError}</p>}
-      {restoredDraft && !saveError && <small className="rs-field__hint">Bozza precedente ripristinata automaticamente.</small>}
+      {restoredDraft && !prefill && !saveError && <small className="rs-field__hint">Bozza precedente ripristinata automaticamente.</small>}
       <div className="rs-form-actions">
         <Button type="button" variant="ghost" onClick={onCancel}>Annulla</Button>
         <Button variant="primary" icon="plus" disabled={!validLocation || !draft.title.trim() || saving} data-testid="submit-issue">{saving ? 'Invio…' : 'Invia segnalazione'}</Button>
@@ -215,6 +249,7 @@ function technicianWaLink(issue, extraNote, pageUrl) {
   const phone = String(issue.technicianPhone || '').replace(/[^\d+]/g, '').replace(/^\+/, '')
   if (!phone) return null
   const lines = [`Ciao ${issue.technicianName}, c'è un intervento da fare in ${issue.room}${issue.category ? ` (${issue.category})` : ''}.`]
+  if (issue.areaLabel || issue.floorLabel) lines.push(`Posizione: ${[issue.areaLabel,issue.floorLabel].filter(Boolean).join(' · ')}`)
   if (issue.title) lines.push(`Descrizione: ${issue.title}`)
   if (extraNote) lines.push(extraNote)
   lines.push(`Urgenza: ${URGENCY_META[issue.urgency]?.label || issue.urgency}`)
@@ -300,6 +335,9 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
           <dl className="rs-meta-grid">
             <div><dt>Reparto</dt><dd>{issue.department || '—'}</dd></div>
             <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
+            {issue.areaLabel && <div><dt>Area</dt><dd>{issue.areaLabel}</dd></div>}
+            {issue.floorLabel && <div><dt>Piano</dt><dd>{issue.floorLabel}</dd></div>}
+            {issue.sourceModule === 'housekeeping' && <div><dt>Origine operativa</dt><dd>Housekeeping</dd></div>}
             {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
           </dl>
           {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
@@ -447,7 +485,7 @@ function compareIssueRooms(a, b) {
   return left.text.localeCompare(right.text, 'it', { numeric: true, sensitivity: 'base' })
 }
 
-export default function Issues({ user, hotel, users, createSignal }) {
+export default function Issues({ user, hotel, users, createSignal, createRequest }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
   const [filter, setFilter] = useState('todo')
@@ -459,9 +497,11 @@ export default function Issues({ user, hotel, users, createSignal }) {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [locationFilter, setLocationFilter] = useState('all')
   const [creating, setCreating] = useState(false)
+  const [createPrefill,setCreatePrefill] = useState(null)
   const [selected, setSelected] = useState(null)
 
-  useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) setCreating(true) }, [createSignal])
+  useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) { setCreatePrefill(null); setCreating(true) } }, [createSignal,user])
+  useEffect(() => { if (createRequest?.nonce && canUser(user,'issues','create')) { setCreatePrefill(createRequest.prefill||null); setCreating(true) } }, [createRequest?.nonce,user])
 
   const reload = () => fetchIssues(hotel.id).then(({ issues: list }) => setIssues(list || [])).catch(() => {}).finally(() => setLoading(false))
 
@@ -481,8 +521,8 @@ export default function Issues({ user, hotel, users, createSignal }) {
     .filter((i) => filter === 'all' || i.status === filter)
     .filter((i) => urgencyFilter === 'all' || i.urgency === urgencyFilter)
     .filter((i) => categoryFilter === 'all' || i.category === categoryFilter)
-    .filter((i) => locationFilter === 'all' || (locationFilter === 'camera' ? /^Camera\s*·/i.test(i.room || '') : !/^Camera\s*·/i.test(i.room || '')))
-    .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
+    .filter((i) => locationFilter === 'all' || (locationFilter === 'camera' ? (i.locationMode==='camera'||/^Camera\s*·/i.test(i.room || '')) : (i.locationMode==='zona'||(!i.locationMode&&!/^Camera\s*·/i.test(i.room || '')))))
+    .filter((i) => !q || `${i.room} ${i.title} ${i.category} ${i.areaLabel||''} ${i.floorLabel||''}`.toLowerCase().includes(q))
     .sort((a, b) => {
       if (sortBy === 'room') return compareIssueRooms(a, b) * direction
       if (sortBy === 'urgency') return ((URGENCY_SORT[a.urgency] || 0) - (URGENCY_SORT[b.urgency] || 0)) * direction
@@ -501,18 +541,19 @@ const resetExtraFilters = () => {
     try { await updateIssueRow(id, { ...changes, hotelId: hotel.id }) } finally { reload() }
   }
   const doDelete = async (id) => { await deleteIssueRow(id, hotel.id); reload() }
+  const closeCreate=()=>{setCreating(false);setCreatePrefill(null)}
 
-  if (creating) return <NewIssueForm hotel={hotel} user={user} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); reload() }} />
+  if (creating) return <NewIssueForm hotel={hotel} user={user} prefill={createPrefill} onCancel={closeCreate} onSaved={() => { closeCreate(); reload() }} />
 
   return (
     <div data-testid="issues-view">
       <div className="rs-page-title">
         <div><h1>Segnalazioni</h1><p>{hotel.name}</p></div>
-        {canUser(user, 'issues', 'create') && <Button variant="primary" icon="plus" onClick={() => setCreating(true)} data-testid="open-new-issue">Nuova</Button>}
+        {canUser(user, 'issues', 'create') && <Button variant="primary" icon="plus" onClick={() => {setCreatePrefill(null);setCreating(true)}} data-testid="open-new-issue">Nuova</Button>}
       </div>
       <div className="rs-toolbar">
   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
-    <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search" onChange={(e) => setSearch(e.target.value)} />
+    <TextInput icon="search" value={search} placeholder="Cerca camera, piano, problema, categoria…" data-testid="issue-search" onChange={(e) => setSearch(e.target.value)} />
     <Button variant={extraFilterCount ? 'primary' : 'ghost'} icon="filter" onClick={() => setSortOpen(true)} data-testid="issue-sort-filter">Filtra{extraFilterCount ? ` · ${extraFilterCount}` : ''}</Button>
   </div>
   <div className="rs-issue-filter-scroll" data-testid="issue-filters">
@@ -536,7 +577,7 @@ const resetExtraFilters = () => {
                   <Badge tone={ISSUE_STATUS_META[issue.status]?.tone}>{ISSUE_STATUS_META[issue.status]?.label || issue.status}</Badge>
                 </span>
                 <span className="rs-issue__title">{issue.title}</span>
-                <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}{issue.status === 'done' && issue.completedBy && <span>· Risolta da <strong>{issue.completedBy}</strong></span>}</span>
+                <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.areaLabel&&<span>· {issue.areaLabel}</span>}{issue.floorLabel&&<span>· {issue.floorLabel}</span>}{issue.category && <span>· {issue.category}</span>}{issue.status === 'done' && issue.completedBy && <span>· Risolta da <strong>{issue.completedBy}</strong></span>}</span>
               </span>
               {issue.photoData && <img className="rs-issue__photo" src={issue.photoData} alt="" />}
             </Card>

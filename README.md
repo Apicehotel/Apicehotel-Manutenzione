@@ -93,6 +93,22 @@ La migrazione correttiva preserva gli UUID già creati per le voci rinominate e 
 
 Rifornimenti usa inoltre un **contesto operativo Area + Piano** condivisibile con Housekeeping. A Hotel Giò la fonte canonica contiene `Jazz P1–P4` e `Wine P1–P4`. La selezione resta memorizzata per utente e hotel; le nuove richieste salvano lo snapshot Area/Piano e mostrano al Manutentore la destinazione. Dove esistono piani configurati il database rifiuta una nuova richiesta priva di contesto. Gli hotel non ancora configurati continuano a funzionare senza regressioni.
 
+## Segnalazioni operative
+
+`public.segnalazioni` è il modello canonico delle manutenzioni segnalate in RandApp. Housekeeping non crea un secondo issue tracker: dalla scheda camera espone **Segnala problema** e apre lo stesso form Segnalazioni già usato dall'app.
+
+Le nuove segnalazioni possono salvare, oltre all'etichetta legacy `Camera · …` / `Zona · …`, uno snapshot strutturato e retrocompatibile:
+
+`hotel → area → piano → camera → modulo origine`
+
+I campi `location_mode`, `room_number`, `area_code`, `area_label`, `floor_number`, `floor_label`, `source_module` e `source_ref` restano nullable: le zone, lo storico e gli hotel senza piano configurato continuano quindi a funzionare. Le vecchie segnalazioni vengono classificate in modo non distruttivo come camera/zona e, quando possibile, ricevono `room_number`.
+
+Per Hotel Giò una segnalazione manuale da camera ricava Jazz/Wine e piano dal catalogo camere; una segnalazione lanciata da Housekeeping usa invece lo snapshot esplicito della camera e mostra il contesto bloccato nel form, evitando che area/piano e numero camera possano divergere. Il piano selezionato in Housekeeping usa lo stesso storage operativo già condiviso con Rifornimenti.
+
+Il permesso resta `issues:create`: se l'utente non può creare segnalazioni o la sezione è disattivata per quel ruolo, il comando Housekeeping non viene esposto. Il flusso offline/idempotente esistente di `issues-data.js` resta invariato e trasporta anche il nuovo contesto.
+
+La tabella `maintenance_issues` non viene usata come secondo sistema né eliminata in questo blocco: prima di rimuoverla come zombie va verificato ogni riferimento RandAI/migrazione collegato.
+
 ## Quality Matrix e test
 
 Comandi principali:
