@@ -91,6 +91,8 @@ Per **Hotel Giò (`hotelgio`)** il catalogo iniziale è allineato alla precedent
 
 La migrazione correttiva preserva gli UUID già creati per le voci rinominate e aggiunge solo ciò che mancava. ChocoHotel e Brigantino restano indipendenti e non ricevono automaticamente il catalogo di Giò. Nessuna voce Rifornimenti genera quantità o movimenti Warehouse.
 
+Rifornimenti usa inoltre un **contesto operativo Area + Piano** condivisibile con Housekeeping. A Hotel Giò la fonte canonica contiene `Jazz P1–P4` e `Wine P1–P4`. La selezione resta memorizzata per utente e hotel; le nuove richieste salvano lo snapshot Area/Piano e mostrano al Manutentore la destinazione. Dove esistono piani configurati il database rifiuta una nuova richiesta priva di contesto. Gli hotel non ancora configurati continuano a funzionare senza regressioni.
+
 ## Quality Matrix e test
 
 Comandi principali:
