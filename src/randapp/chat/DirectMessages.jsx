@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ensureRegisteredDmDevice,
   fetchDmDevices,
@@ -10,6 +10,7 @@ import {
   setDmRetention,
   subscribeDmThread,
 } from './dm-data.js'
+import ChatAttachment from './ChatAttachment.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
 
 const fmtTime = (value) => {
@@ -18,12 +19,14 @@ const fmtTime = (value) => {
 
 export default function DirectMessages({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
+  const fileRef = useRef(null)
   const [threads, setThreads] = useState([])
   const [directory, setDirectory] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [messages, setMessages] = useState([])
   const [devices, setDevices] = useState([])
   const [text, setText] = useState('')
+  const [files, setFiles] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [cryptoReady, setCryptoReady] = useState(false)
@@ -90,17 +93,23 @@ export default function DirectMessages({ user, hotel }) {
     finally { setBusy(false) }
   }
 
+  const clearFiles = () => {
+    setFiles([])
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const send = async (event) => {
     event.preventDefault()
     const body = text.trim()
-    if (!body || !selectedId || busy) return
-    setText(''); setBusy(true); setError('')
+    const selectedFiles = Array.from(files || [])
+    if ((!body && !selectedFiles.length) || !selectedId || busy) return
+    setBusy(true); setError('')
     try {
-      await sendDmMessage({ threadId: selectedId, userId: currentUserId, body })
+      await sendDmMessage({ threadId: selectedId, userId: currentUserId, body, files: selectedFiles })
+      setText(''); clearFiles()
       await loadSelected()
       await loadThreads()
     } catch (err) {
-      setText(body)
       setError(err?.message || 'Invio E2EE non riuscito')
     } finally { setBusy(false) }
   }
@@ -134,7 +143,7 @@ export default function DirectMessages({ user, hotel }) {
     </aside>
 
     <div className="rc-conversation">
-      {!selected ? <div className="rc-empty"><h2>DM privati</h2><p>Il server conserva solo testo cifrato. Scegli una persona per iniziare.</p>{error && <div className="rc-error">{error}</div>}</div> : <>
+      {!selected ? <div className="rc-empty"><h2>DM privati</h2><p>Il server conserva solo testo e allegati cifrati. Scegli una persona per iniziare.</p>{error && <div className="rc-error">{error}</div>}</div> : <>
         <header className="rc-conversation__head">
           <button className="rc-back" onClick={() => setSelectedId(null)}>‹</button>
           <div><h2>{selected.other_display_name}</h2><small>🔒 E2EE · cancellazione {selected.retention_days} giorni</small></div>
@@ -147,24 +156,21 @@ export default function DirectMessages({ user, hotel }) {
             const own = message.sender_user_id === currentUserId
             return <article key={message.id} className={`rc-message ${own ? 'own' : ''} rc-message--${message.cryptoState}`}>
               <div className="rc-message__meta"><b>{own ? 'Tu' : selected.other_display_name}</b><time>{fmtTime(message.created_at)}</time><span title={message.cryptoState === 'verified' ? 'Firma e cifratura verificate' : 'Messaggio non verificato'}>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span></div>
-              <p>{message.body}</p>
+              {message.body && <p>{message.body}</p>}
+              {(message.attachments || []).map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} encrypted />)}
               {message.cryptoState === 'verified' && <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>}
             </article>
           })}
           {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
         </div>
-        <form className="rc-composer" onSubmit={send}><textarea value={text} maxLength={8000} rows={1} placeholder={`Messaggio privato a ${selected.other_display_name}`} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(event) } }} /><button disabled={busy || !text.trim() || !recipientHasDevice}>Invia</button></form>
+        <form className="rc-composer rc-composer--media" onSubmit={send}>
+          <label className="rc-file-button" title="Allega file cifrato">＋<input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} /></label>
+          <div className="rc-composer__body"><textarea value={text} maxLength={8000} rows={1} placeholder={`Messaggio privato a ${selected.other_display_name}`} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !files.length) { event.preventDefault(); send(event) } }} />{files.length > 0 && <small>🔒 {files.length} allegat{files.length === 1 ? 'o' : 'i'} cifrat{files.length === 1 ? 'o' : 'i'} · max 20 MB <button type="button" onClick={clearFiles}>Rimuovi</button></small>}</div>
+          <button disabled={busy || (!text.trim() && !files.length) || !recipientHasDevice}>Invia</button>
+        </form>
       </>}
     </div>
 
-    <PromoteIssueDialog
-      open={Boolean(promoteMessage)}
-      onClose={() => setPromoteMessage(null)}
-      user={user}
-      hotel={hotel}
-      text={promoteMessage?.body || ''}
-      source={promoteMessage ? { type: 'dm', id: selectedId, messageId: promoteMessage.id } : null}
-      onPromoted={() => setPromoteMessage(null)}
-    />
+    <PromoteIssueDialog open={Boolean(promoteMessage)} onClose={() => setPromoteMessage(null)} user={user} hotel={hotel} text={promoteMessage?.body || ''} source={promoteMessage ? { type: 'dm', id: selectedId, messageId: promoteMessage.id } : null} onPromoted={() => setPromoteMessage(null)} />
   </section>
 }
