@@ -52,9 +52,9 @@ test('Rifornimenti uses the v2 RPC and shows Cambia piano plus destination on re
   assert.match(portal, /Seleziona il piano di consegna/)
 })
 
-test('floor selection does not reintroduce quantities or warehouse movements', () => {
+test('floor selection does not reintroduce the old quantity ledger or warehouse movements', () => {
   assert.doesNotMatch(migration, /stock_movement|current_stock|minimum_stock/i)
-  assert.doesNotMatch(portal, /quantit[aà]|Azzera Piano|Auto-save/i)
+  assert.doesNotMatch(portal, /Azzera Piano|Auto-save|current_stock|stock_movement/i)
   assert.match(portal, /Non ci sono quantità/)
 })
 
