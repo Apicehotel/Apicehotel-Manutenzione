@@ -231,7 +231,7 @@ function RequestsList({ requests, canComplete, onResolve }) {
           <div><b>{request.requested_by_name || 'Governante'}</b><small>{formatTime(request.created_at)}</small></div>
           <span>{request.completed_at ? 'Completata' : 'Aperta'}</span>
         </header>
-        {contextLabel && <div className="rs-supply-destination"><Icon name="mapPin" /><b>{contextLabel}</b></div>}
+        {contextLabel && <div className="rs-supply-destination"><Icon name="hotel" /><b>{contextLabel}</b></div>}
         {request.note && <p className="rs-supply-note">{request.note}</p>}
         <div className="rs-supply-items">
           {(request.supply_request_items || []).map((item) => (
