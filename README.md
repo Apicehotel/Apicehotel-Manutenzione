@@ -123,9 +123,12 @@ La stampa v1 include:
 - bridge `contextBridge` ristretto: nessun `ipcRenderer` grezzo nel renderer;
 - motore per documenti strutturati con limiti, escaping e CSP `default-src 'none'`;
 - nessun HTML arbitrario, nessun secret e nessuna stampa silenziosa in v1;
-- renderer locale nelle build pacchettizzate; Vercel non viene caricato come renderer privilegiato di produzione.
+- renderer locale nelle build pacchettizzate; Vercel non viene caricato come renderer privilegiato di produzione;
+- voce **RandDesktop** nel menu laterale governata dal permesso `desktop_download`; fallback attivo per Reception, Direzione, Direttore Centro Congressi e admin, con configurazione successiva da Ruoli & Permessi;
+- pagina **Scarica RandDesktop** con URL centralizzato `VITE_RANDDESKTOP_DOWNLOAD_URL`, accettato solo se `https://`; finché l'installer non è pubblicato mostra `Installer in preparazione`;
+- se RandApp gira già dentro Electron (`window.randDesktop`), la pagina riconosce RandDesktop attivo e non propone un secondo download.
 
-La stampa silenziosa e la stampante predefinita per reparto restano future opzioni amministrative esplicite, non privilegi del renderer.
+La stampa silenziosa e la stampante predefinita per reparto restano future opzioni amministrative esplicite, non privilegi del renderer. Il file `.exe` può essere distribuito inizialmente da Google Drive; il link Drive viene configurato tramite `VITE_RANDDESKTOP_DOWNLOAD_URL`, senza hardcoding nella UI.
 
 Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
 
@@ -183,6 +186,7 @@ La CI certifica, tra gli altri:
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
 - confini Group C Procedure/RandAI/RandMedia e ACL anonime;
 - contratto RandDesktop printing: sandbox, IPC ristretto, escaping/CSP e blocco stampa silenziosa;
+- contratto RandDesktop download: permesso dedicato, menu laterale configurabile, URL HTTPS e rilevamento shell desktop;
 - Chromium + WebKit;
 - device acceptance;
 - RandCore health evidence;
