@@ -53,24 +53,24 @@ test('interest ranking changes priority but never introduces unauthorized entrie
   assert.ok(interestScore('inventory', ['inventory']) > interestScore('issues', ['inventory']))
 })
 
-test('bottom navigation derives interests from role placement and preserves Home/Altro anchors', () => {
+test('bottom navigation preserves Operatività, Planning, Home and RandAI anchors while ranking only slot 4', () => {
   const placements = {
-    issues: 'side',
-    interventions: 'bottom',
+    chat: 'off',
     planning_work: 'side',
     inventory: 'bottom',
     supplies: 'side',
     urgent: 'side',
     housekeeping: 'off',
     home: 'bottom',
-    other: 'bottom',
   }
   const placement = (key) => placements[key] || 'off'
-  const allowed = new Set(['issues', 'interventions', 'planning-work', 'inventory', 'supplies', 'urgent', 'home'])
+  const allowed = new Set(['operations', 'issues', 'interventions', 'planning-work', 'inventory', 'supplies', 'urgent', 'home'])
   const nav = buildPrimaryBottomNav({ placement, viewAllowed: (id) => allowed.has(id) })
 
+  assert.equal(nav.find((item) => item.slot === 1)?.id, 'operations')
+  assert.equal(nav.find((item) => item.slot === 2)?.id, 'planning-work')
   assert.equal(nav.find((item) => item.slot === 3)?.id, 'home')
-  assert.equal(nav.find((item) => item.slot === 5)?.id, 'menu')
-  assert.deepEqual(nav.slice(0, 2).map((item) => item.id), ['interventions', 'inventory'])
+  assert.equal(nav.find((item) => item.slot === 4)?.id, 'inventory')
+  assert.equal(nav.find((item) => item.slot === 5)?.id, 'randai')
   assert.equal(nav.some((item) => item.id === 'housekeeping'), false)
 })
