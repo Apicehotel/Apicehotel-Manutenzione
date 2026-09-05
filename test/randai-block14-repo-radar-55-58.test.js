@@ -55,7 +55,7 @@ test('Repo Radar accepts governed public forge hosts and rejects arbitrary hosts
   assert.throws(()=>validateRepoRadarCandidate({id:'bad-host',name:'Bad',repository:'https://example.com/repo/code'}),/Unsupported repository URL/)
 })
 
-test('weekly discovery is read-only, bounded, multi-source and sector-complete for RandUI', () => {
+test('weekly discovery is read-only, bounded, multi-source and RANDUI_100_V1 sector-complete', () => {
   const workflow=fs.readFileSync('.github/workflows/repo-radar.yml','utf8')
   const runner=fs.readFileSync('scripts/repo-radar-snapshot.mjs','utf8')
   assert.match(workflow,/contents: read/)
@@ -64,16 +64,23 @@ test('weekly discovery is read-only, bounded, multi-source and sector-complete f
   assert.doesNotMatch(workflow,/npm install .*@latest|npx .*@latest/)
   assert.match(runner,/source:'DISCOVERED'/)
   assert.match(runner,/gates:\{security:null,compatibility:null,benchmark:null,rollback:null\}/)
-  assert.match(runner,/MAX_DISCOVERED=64/)
+  assert.match(runner,/MAX_DISCOVERED=80/)
   assert.match(runner,/MAX_PER_SECTOR=2/)
+  assert.match(runner,/RANDUI_COVERAGE_CONTRACT='RANDUI_100_V1'/)
   assert.match(runner,/RANDUI_SECTORS/)
-  for(const sector of [
+  const sectors=[
     'FOUNDATION_LAYOUT','SHELL_NAVIGATION','PAGE_TEMPLATES','DASHBOARD_KPI','DATA_TABLES','MASTER_DETAIL',
-    'MOBILE_OPERATIONAL','PLANNING_CALENDAR','FORMS_WIZARDS','SETTINGS_ADMIN_RBAC','SYSTEM_STATES','SEARCH_COMMAND',
-    'NOTIFICATIONS_ACTIVITY','OFFLINE_SYNC','DATA_VISUALIZATION','DESIGN_SYSTEM','ACCESSIBILITY','SCHEMA_UI',
-    'VISUAL_BUILDER','VISUAL_TESTING','ASSETS_ICONS','PRINT_EXPORT',
-  ]) assert.match(runner,new RegExp(sector))
+    'MOBILE_OPERATIONAL','PLANNING_CALENDAR','FORMS_WIZARDS','SETTINGS_ADMIN_RBAC','AUTH_ONBOARDING','THEME_DENSITY',
+    'LOCALIZATION_I18N','SYSTEM_STATES','SEARCH_COMMAND','NOTIFICATIONS_ACTIVITY','OFFLINE_SYNC','REALTIME_COLLAB',
+    'PWA_UPDATE','MEDIA_FILES','RICH_CONTENT_EDITOR','PERFORMANCE_VIRTUALIZATION','DATA_VISUALIZATION','MAPS_LOCATION',
+    'DRAG_DROP_REORDER','TOUCH_GESTURES','MOTION_TRANSITIONS','DESIGN_SYSTEM','ACCESSIBILITY','SCHEMA_UI',
+    'VISUAL_BUILDER','VISUAL_TESTING','DOCS_GOVERNANCE','ASSETS_ICONS','PRINT_EXPORT',
+  ]
+  assert.equal(sectors.length,35)
+  for(const sector of sectors) assert.match(runner,new RegExp(sector))
   assert.match(runner,/sectorCoverage/)
+  assert.match(runner,/coveredUiSectors/)
+  assert.match(runner,/uiSectorCount:RANDUI_SECTORS.length/)
   assert.match(runner,/GITHUB/)
   assert.match(runner,/GITLAB/)
   assert.match(runner,/CODEBERG/)

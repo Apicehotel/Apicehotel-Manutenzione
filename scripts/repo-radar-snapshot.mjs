@@ -6,10 +6,11 @@ import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
 const token=process.env.GITHUB_TOKEN||''
 const now=Date.now()
 const staleMs=180*24*60*60*1000
-const requestHeaders={'User-Agent':'Rand-Repo-Radar/2.2'}
+const requestHeaders={'User-Agent':'Rand-Repo-Radar/2.3'}
 const githubHeaders={...requestHeaders,Accept:'application/vnd.github+json',...(token?{Authorization:`Bearer ${token}`}:{})}
-const MAX_DISCOVERED=64
+const MAX_DISCOVERED=80
 const MAX_PER_SECTOR=2
+const RANDUI_COVERAGE_CONTRACT='RANDUI_100_V1'
 const RAND_STACK_TERMS=['react','typescript','next','next.js','vite','shadcn','tailwind','storybook','playwright','supabase','zod']
 
 const CORE_SEARCH_PROFILES=[
@@ -30,16 +31,29 @@ const RANDUI_SECTORS=[
   {id:'PLANNING_CALENDAR',priority:.95,query:'react planning calendar scheduler timeline resource booking'},
   {id:'FORMS_WIZARDS',priority:.97,query:'react form wizard schema validation autosave conditional fields'},
   {id:'SETTINGS_ADMIN_RBAC',priority:.96,query:'react settings admin permissions rbac user management ui'},
+  {id:'AUTH_ONBOARDING',priority:.97,query:'react authentication onboarding login session expired recovery access denied ui'},
+  {id:'THEME_DENSITY',priority:.95,query:'react theme dark light density personalization contrast design tokens'},
+  {id:'LOCALIZATION_I18N',priority:.92,query:'react internationalization i18n locale rtl dates numbers accessibility ui'},
   {id:'SYSTEM_STATES',priority:1,query:'react empty state loading skeleton error retry stale degraded feedback ui'},
   {id:'SEARCH_COMMAND',priority:.93,query:'react command palette global search autocomplete filter ui'},
   {id:'NOTIFICATIONS_ACTIVITY',priority:.95,query:'react toast notification activity feed alert center ui'},
   {id:'OFFLINE_SYNC',priority:.98,query:'react offline queue sync retry conflict stale network state'},
+  {id:'REALTIME_COLLAB',priority:.95,query:'react realtime collaboration presence optimistic updates conflict resolution ui'},
+  {id:'PWA_UPDATE',priority:.96,query:'react pwa service worker update available install offline cache ui'},
+  {id:'MEDIA_FILES',priority:.94,query:'react file upload preview drag drop progress retry image video document ui'},
+  {id:'RICH_CONTENT_EDITOR',priority:.93,query:'react rich text editor structured content tiptap lexical editor ui'},
+  {id:'PERFORMANCE_VIRTUALIZATION',priority:.97,query:'react virtualization large lists tables grids performance virtual scroll'},
   {id:'DATA_VISUALIZATION',priority:.94,query:'react charts data visualization dashboard accessible responsive'},
+  {id:'MAPS_LOCATION',priority:.82,query:'react map location geolocation markers responsive accessible ui'},
+  {id:'DRAG_DROP_REORDER',priority:.9,query:'react drag drop sortable reorder kanban scheduler accessible'},
+  {id:'TOUCH_GESTURES',priority:.94,query:'react touch gestures swipe long press drag mobile accessibility'},
+  {id:'MOTION_TRANSITIONS',priority:.78,query:'react motion transitions reduced motion accessibility micro interaction'},
   {id:'DESIGN_SYSTEM',priority:1,query:'react design system component library tokens storybook accessibility'},
   {id:'ACCESSIBILITY',priority:1,query:'react accessibility aria wcag keyboard screen reader components'},
   {id:'SCHEMA_UI',priority:1,query:'react schema driven ui renderer component registry template registry'},
   {id:'VISUAL_BUILDER',priority:.92,query:'react visual page builder component registry drag drop editor'},
   {id:'VISUAL_TESTING',priority:1,query:'playwright visual regression responsive layout screenshot testing'},
+  {id:'DOCS_GOVERNANCE',priority:.96,query:'react storybook component documentation design system governance visual catalog'},
   {id:'ASSETS_ICONS',priority:.85,query:'react icon system asset manager logo image component library'},
   {id:'PRINT_EXPORT',priority:.88,query:'react print layout export pdf responsive report template'},
 ]
@@ -258,7 +272,8 @@ for(const candidate of REPO_RADAR_CATALOG) enriched.push(await enrich(candidate)
 const {candidates:discovered,providerStats}=await discover()
 const snapshot=buildRepoRadarSnapshot([...enriched,...discovered])
 const sectorCoverage=Object.fromEntries(RANDUI_SECTORS.map((sector)=>[sector.id,discovered.filter((item)=>item.sector===sector.id).length]))
+const coveredUiSectors=Object.values(sectorCoverage).filter((count)=>count>0).length
 const outDir=path.resolve('artifacts/repo-radar')
 await fs.mkdir(outDir,{recursive:true})
-await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{profiles:SEARCH_PROFILES.length,uiSectors:RANDUI_SECTORS.map((item)=>item.id),sectorCoverage,providers:PROVIDERS.map((item)=>item.id),providerStats,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerSector:MAX_PER_SECTOR}},null,2)+'\n')
-console.log(`Repo Radar: ${snapshot.candidates.length} candidate (${discovered.length} discovered across ${PROVIDERS.length} providers / ${RANDUI_SECTORS.length} RandUI sectors); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))
+await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{coverageContract:RANDUI_COVERAGE_CONTRACT,profiles:SEARCH_PROFILES.length,uiSectors:RANDUI_SECTORS.map((item)=>item.id),uiSectorCount:RANDUI_SECTORS.length,coveredUiSectors,sectorCoverage,providers:PROVIDERS.map((item)=>item.id),providerStats,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerSector:MAX_PER_SECTOR}},null,2)+'\n')
+console.log(`Repo Radar ${RANDUI_COVERAGE_CONTRACT}: ${snapshot.candidates.length} candidate (${discovered.length} discovered across ${PROVIDERS.length} providers / ${RANDUI_SECTORS.length} RandUI sectors, ${coveredUiSectors} with results); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))
