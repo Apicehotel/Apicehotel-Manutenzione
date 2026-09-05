@@ -14,6 +14,7 @@ import {
   subscribeChatGroup,
   updateChatGroup,
 } from './chat-data.js'
+import PromoteIssueDialog from './PromoteIssueDialog.jsx'
 import './chat.css'
 
 const roleRank = { owner: 0, admin: 1, member: 2 }
@@ -36,6 +37,7 @@ export default function ChatGroups({ user, hotel }) {
   const [showMembers, setShowMembers] = useState(false)
   const [newGroup, setNewGroup] = useState({ name: '', retention: 30 })
   const [inviteId, setInviteId] = useState('')
+  const [promoteMessage, setPromoteMessage] = useState(null)
 
   const selected = useMemo(() => groups.find((g) => g.id === selectedId) || null, [groups, selectedId])
   const me = useMemo(() => members.find((m) => m.auth_user_id === currentUserId) || null, [members, currentUserId])
@@ -176,7 +178,10 @@ export default function ChatGroups({ user, hotel }) {
               return <article key={message.id} className={`rc-message ${own ? 'own' : ''} ${message.pinned_at ? 'pinned' : ''}`}>
                 <div className="rc-message__meta"><b>{own ? 'Tu' : sender?.display_name || 'Utente'}</b><time>{fmtTime(message.created_at)}</time>{message.pinned_at && <span>📌</span>}</div>
                 <p>{message.body}</p>
-                {canManage && <button className="rc-message__pin" onClick={() => togglePin(message)}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
+                <div className="rc-message__actions">
+                  <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>
+                  {canManage && <button className="rc-message__pin" onClick={() => togglePin(message)}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
+                </div>
               </article>
             })}
             {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
@@ -191,6 +196,16 @@ export default function ChatGroups({ user, hotel }) {
         <div className="rc-member-list">{members.map((member) => <div className="rc-member" key={member.auth_user_id}><span><b>{member.display_name}</b><small>{displayHotels(member.hotel_ids) || 'Nessuna struttura'} · {member.group_role}</small></span>{canManage && member.group_role !== 'owner' && <span className="rc-member__actions"><select value={member.group_role} onChange={(e) => changeRole(member, e.target.value)}><option value="member">Membro</option><option value="admin">Admin gruppo</option></select><button onClick={() => removeMember(member)}>Rimuovi</button></span>}</div>)}</div>
         {canManage && <label className="rc-retention">Cancellazione automatica testo <select value={selected.retention_days} onChange={(e) => changeRetention(e.target.value)}><option value={30}>30 giorni</option><option value={60}>60 giorni</option></select></label>}
       </section></div>}
+
+      <PromoteIssueDialog
+        open={Boolean(promoteMessage)}
+        onClose={() => setPromoteMessage(null)}
+        user={user}
+        hotel={hotel}
+        text={promoteMessage?.body || ''}
+        source={promoteMessage ? { type: 'group', id: selectedId, messageId: promoteMessage.id } : null}
+        onPromoted={() => setPromoteMessage(null)}
+      />
     </section>
   )
 }
