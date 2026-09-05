@@ -62,8 +62,34 @@ jobs:
         with:
           ref: main
 
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Resolve existing Ocean app
+        id: app
+        shell: bash
+        run: |
+          set -euo pipefail
+          target='randapp-b2akx.ondigitalocean.app'
+          row="$(doctl apps list --format ID,Spec.Name,DefaultIngress --no-header | grep "$target" | head -n 1 || true)"
+          if [ -z "$row" ]; then
+            echo "Target DigitalOcean app not found for $target" >&2
+            doctl apps list --format ID,Spec.Name,DefaultIngress
+            exit 1
+          fi
+          app_id="$(awk '{print $1}' <<< "$row")"
+          app_name="$(awk '{print $2}' <<< "$row")"
+          echo "id=$app_id" >> "$GITHUB_OUTPUT"
+          echo "name=$app_name" >> "$GITHUB_OUTPUT"
+          echo "Resolved DigitalOcean app: $app_name ($app_id)"
+
       - name: Deploy to DigitalOcean App Platform
         id: deploy
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_name: ${{ steps.app.outputs.name }}
+          print_build_logs: true
+          print_deploy_logs: true
