@@ -40,7 +40,7 @@ export default function DirectMessages({ user, hotel }) {
   const loadThreads = useCallback(async () => {
     const rows = await fetchDmThreads()
     setThreads(rows)
-    setSelectedId((current) => current && rows.some((thread) => thread.id === current) ? current : current)
+    setSelectedId((current) => current && rows.some((thread) => thread.id === current) ? current : null)
   }, [])
 
   const loadSelected = useCallback(async () => {
