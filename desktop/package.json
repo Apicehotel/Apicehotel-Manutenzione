@@ -2,13 +2,58 @@
   "name": "@randapp/desktop",
   "private": true,
   "version": "0.1.0",
+  "description": "RandDesktop - shell Windows sicura per RandApp",
   "type": "module",
   "main": "main.mjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.mjs && node --check preload.cjs && node --check print-service.mjs && node --check print-template.mjs"
+    "check": "node --check main.mjs && node --check preload.cjs && node --check print-service.mjs && node --check print-template.mjs",
+    "package:win": "electron-builder --win nsis --x64 --publish never"
   },
   "devDependencies": {
-    "electron": "44.2.0"
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "it.apicehotel.randdesktop",
+    "productName": "RandDesktop",
+    "asar": true,
+    "directories": {
+      "output": "../release/randdesktop"
+    },
+    "files": [
+      "main.mjs",
+      "preload.cjs",
+      "print-service.mjs",
+      "print-template.mjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "app",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "RandDesktop-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "RandDesktop"
+    }
   }
 }
