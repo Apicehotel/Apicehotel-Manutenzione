@@ -7,21 +7,27 @@ export const normalizeIssueAreaCode = (value) => clean(value)
   .replace(/[^a-z0-9]+/g,'-')
   .replace(/^-|-$/g,'') || null
 
+function finiteFloor(value) {
+  if(value===null||value===undefined||value==='')return null
+  const floor=Number(value)
+  return Number.isFinite(floor)?floor:null
+}
+
 function groupContext(hotelId, groupName) {
   const name=clean(groupName)
   if(!name)return{}
   if(hotelId==='hotelgio') {
     const area=name.match(/^(Jazz|Wine)\b/i)?.[1]||''
-    const floor=Number(name.match(/\bP(?:iano)?\s*(\d+)\b/i)?.[1]||NaN)
+    const floor=finiteFloor(name.match(/\bP(?:iano)?\s*(\d+)\b/i)?.[1])
     return {
       areaCode:area?normalizeIssueAreaCode(area):null,
       areaLabel:area?area[0].toUpperCase()+area.slice(1).toLowerCase():null,
-      floorNumber:Number.isFinite(floor)?floor:null,
-      floorLabel:Number.isFinite(floor)?`Piano ${floor}`:null,
+      floorNumber:floor,
+      floorLabel:floor===null?null:`Piano ${floor}`,
     }
   }
-  const floor=Number(name.match(/\bP(?:iano)?\s*(\d+)\b/i)?.[1]||NaN)
-  return { floorNumber:Number.isFinite(floor)?floor:null, floorLabel:Number.isFinite(floor)?`Piano ${floor}`:null }
+  const floor=finiteFloor(name.match(/\bP(?:iano)?\s*(\d+)\b/i)?.[1])
+  return { floorNumber:floor, floorLabel:floor===null?null:`Piano ${floor}` }
 }
 
 export function inferIssueOperationalContext({ hotelId, catalog, mode, location, prefill=null }) {
@@ -33,14 +39,14 @@ export function inferIssueOperationalContext({ hotelId, catalog, mode, location,
 
   const prefilled=clean(prefill?.location)===value ? prefill : null
   if(prefilled) {
-    const floor=Number(prefilled.floorNumber)
+    const floor=finiteFloor(prefilled.floorNumber)
     return {
       locationMode:'camera',
       roomNumber:value||null,
       areaCode:prefilled.areaCode||normalizeIssueAreaCode(prefilled.areaLabel),
       areaLabel:prefilled.areaLabel||null,
-      floorNumber:Number.isFinite(floor)?floor:null,
-      floorLabel:prefilled.floorLabel||(Number.isFinite(floor)?`Piano ${floor}`:null),
+      floorNumber:floor,
+      floorLabel:prefilled.floorLabel||(floor===null?null:`Piano ${floor}`),
       sourceModule:prefilled.sourceModule||null,
       sourceRef:prefilled.sourceRef||null,
     }
