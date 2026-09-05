@@ -3,15 +3,25 @@ export const RepoRadarGate = Object.freeze({ PASS:'PASS', FAIL:'FAIL', UNKNOWN:'
 
 const DECISIONS = new Set(Object.values(RepoRadarDecision))
 const ALLOWED_LICENSES = new Set(['MIT','Apache-2.0','BSD-2-Clause','BSD-3-Clause','ISC','MPL-2.0'])
+const SUPPORTED_REPOSITORY_HOSTS = new Set(['github.com','gitlab.com','codeberg.org','gitea.com','code.forgejo.org','bitbucket.org','git.sr.ht'])
 const WEIGHTS = Object.freeze({ security:.22, maintenance:.14, maturity:.10, tests:.10, compatibility:.14, performance:.08, rollback:.10, maintainability:.12 })
 const clamp = (value) => Math.max(0, Math.min(1, Number(value)))
 const score = (value, fallback=0) => Number.isFinite(Number(value)) ? clamp(value) : fallback
 const gate = (value) => value===true||value===RepoRadarGate.PASS ? RepoRadarGate.PASS : value===false||value===RepoRadarGate.FAIL ? RepoRadarGate.FAIL : RepoRadarGate.UNKNOWN
 const weightedScore = (evidence) => Object.entries(WEIGHTS).reduce((sum,[key,weight])=>sum+evidence[key]*weight,0)
 
+function isSupportedRepositoryUrl(repository){
+  try{
+    const url=new URL(repository)
+    if(url.protocol!=='https:'||!SUPPORTED_REPOSITORY_HOSTS.has(url.hostname.toLowerCase())) return false
+    const parts=url.pathname.split('/').filter(Boolean)
+    return parts.length>=2
+  }catch{return false}
+}
+
 export function validateRepoRadarCandidate(candidate){
   if(!candidate?.id||!candidate?.name||!candidate?.repository) throw new TypeError('Repo Radar candidate requires id, name and repository')
-  if(!/^https:\/\/github\.com\/[^/]+\/[^/]+\/?$/.test(candidate.repository)) throw new TypeError(`Unsupported repository URL: ${candidate.repository}`)
+  if(!isSupportedRepositoryUrl(candidate.repository)) throw new TypeError(`Unsupported repository URL: ${candidate.repository}`)
   if(candidate.decision&&!DECISIONS.has(candidate.decision)) throw new TypeError(`Invalid Repo Radar decision: ${candidate.decision}`)
   return true
 }
@@ -50,7 +60,28 @@ export function evaluateRepoCandidate(candidate,{incumbent=null,minAddScore=.78,
     else { superiorityDelta=total-incumbentScore(incumbent); if(allPass&&superiorityDelta>=minReplaceDelta){ decision=RepoRadarDecision.REPLACE; reason='MEASURABLY_SUPERIOR_WITH_SAFE_ROLLBACK' } else reason=hasUnknown?'REPLACEMENT_GATES_INCOMPLETE':'SUPERIORITY_NOT_DEMONSTRATED' }
   } else if(allPass&&total>=minAddScore){ decision=RepoRadarDecision.ADD; reason='ADOPTION_GATES_PASSED' }
   else reason=hasUnknown?'ADOPTION_GATES_INCOMPLETE':'BENEFIT_RISK_THRESHOLD_NOT_MET'
-  return Object.freeze({ id:candidate.id,name:candidate.name,repository:candidate.repository,decision,reason,score:Number(total.toFixed(4)),superiorityDelta:superiorityDelta==null?null:Number(superiorityDelta.toFixed(4)),gates,blockers,evidence,stars:Number(candidate.stars||0),note:candidate.note||'',evaluatedAt:candidate.evaluatedAt||null,source:candidate.source||'CURATED' })
+  return Object.freeze({
+    id:candidate.id,
+    name:candidate.name,
+    repository:candidate.repository,
+    decision,
+    reason,
+    score:Number(total.toFixed(4)),
+    superiorityDelta:superiorityDelta==null?null:Number(superiorityDelta.toFixed(4)),
+    gates,
+    blockers,
+    evidence,
+    stars:Number(candidate.stars||0),
+    note:candidate.note||'',
+    evaluatedAt:candidate.evaluatedAt||null,
+    source:candidate.source||'CURATED',
+    sourcePlatform:candidate.sourcePlatform||'GITHUB',
+    category:candidate.category||null,
+    capability:candidate.capability||null,
+    discoveryScore:Number.isFinite(Number(candidate.discoveryScore))?Number(candidate.discoveryScore):null,
+    discovery:candidate.discovery||null,
+    repositoryMeta:candidate.repositoryMeta||candidate.github||null,
+  })
 }
 
 export function buildRepoRadarSnapshot(candidates=[],options={}){
@@ -58,7 +89,19 @@ export function buildRepoRadarSnapshot(candidates=[],options={}){
   const seen=new Set()
   const reports=candidates.map((candidate)=>{ if(seen.has(candidate.id)) throw new TypeError(`Duplicate Repo Radar candidate: ${candidate.id}`); seen.add(candidate.id); const incumbent=candidate.replaces?candidates.find((item)=>item.id===candidate.replaces)||null:null; return evaluateRepoCandidate(candidate,{...options,incumbent}) })
   const counts=Object.fromEntries(Object.values(RepoRadarDecision).map((value)=>[value,0])); for(const item of reports) counts[item.decision]++
-  return Object.freeze({ generatedAt:new Date().toISOString(),candidates:reports.sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)),counts,policy:Object.freeze({starsAreDiscoveryOnly:true,automaticInstall:false,automaticReplace:false,humanApprovalRequired:true}) })
+  return Object.freeze({
+    generatedAt:new Date().toISOString(),
+    candidates:reports.sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name)),
+    counts,
+    policy:Object.freeze({
+      starsAreDiscoveryOnly:true,
+      automaticInstall:false,
+      automaticReplace:false,
+      humanApprovalRequired:true,
+      multiSourceDiscovery:true,
+      supportedRepositoryHosts:Object.freeze([...SUPPORTED_REPOSITORY_HOSTS]),
+    }),
+  })
 }
 
 export function assertSafeAdoption(report){

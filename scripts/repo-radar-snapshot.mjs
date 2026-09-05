@@ -4,24 +4,46 @@ import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.j
 import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
 
 const token=process.env.GITHUB_TOKEN||''
-const headers={Accept:'application/vnd.github+json','User-Agent':'Rand-Repo-Radar/1.0',...(token?{Authorization:`Bearer ${token}`}:{})}
 const now=Date.now()
 const staleMs=180*24*60*60*1000
-const SEARCH_QUERIES=[
-  'AI agent framework language:TypeScript stars:>1000 archived:false',
-  'RAG retrieval augmented generation stars:>1000 archived:false',
-  'MCP security model context protocol stars:>50 archived:false',
-  'LLM eval red team stars:>500 archived:false',
+const requestHeaders={'User-Agent':'Rand-Repo-Radar/2.1'}
+const githubHeaders={...requestHeaders,Accept:'application/vnd.github+json',...(token?{Authorization:`Bearer ${token}`}:{})}
+const MAX_DISCOVERED=24
+const MAX_PER_CATEGORY=4
+const RAND_STACK_TERMS=['react','typescript','next','next.js','vite','shadcn','tailwind','storybook','playwright','supabase','zod']
+
+const SEARCH_PROFILES=[
+  {id:'ai-agent',category:'AI_RUNTIME',priority:.78,query:'AI agent framework TypeScript',github:'AI agent framework language:TypeScript stars:>1000 archived:false'},
+  {id:'rag',category:'KNOWLEDGE',priority:.75,query:'RAG retrieval augmented generation',github:'RAG retrieval augmented generation stars:>1000 archived:false'},
+  {id:'mcp-security',category:'SECURITY',priority:.82,query:'MCP security model context protocol',github:'MCP security model context protocol stars:>50 archived:false'},
+  {id:'llm-eval',category:'QUALITY',priority:.82,query:'LLM eval red team',github:'LLM eval red team stars:>500 archived:false'},
+  {id:'page-templates',category:'PAGE_TEMPLATE',priority:.94,query:'react responsive admin dashboard template',github:'react responsive admin dashboard template language:TypeScript stars:>250 archived:false'},
+  {id:'app-shell',category:'PAGE_TEMPLATE',priority:.96,query:'react responsive app shell sidebar master detail',github:'react responsive app shell sidebar master detail language:TypeScript archived:false'},
+  {id:'design-system',category:'DESIGN_SYSTEM',priority:.96,query:'react design system storybook accessibility',github:'react design system storybook accessibility language:TypeScript stars:>250 archived:false'},
+  {id:'schema-ui',category:'SCHEMA_UI',priority:1,query:'react schema driven ui component registry',github:'react schema driven ui component registry language:TypeScript archived:false'},
+  {id:'template-registry',category:'SCHEMA_UI',priority:1,query:'react template registry visual editor components',github:'react template registry visual editor components language:TypeScript archived:false'},
+  {id:'visual-testing',category:'TESTING',priority:.97,query:'playwright visual regression responsive layout',github:'playwright visual regression responsive layout language:TypeScript archived:false'},
+  {id:'accessibility',category:'ACCESSIBILITY',priority:.95,query:'react accessibility components aria wcag',github:'react accessibility components aria wcag language:TypeScript stars:>250 archived:false'},
+  {id:'form-engine',category:'FORM_ENGINE',priority:.94,query:'react json schema form engine typescript',github:'react json schema form engine language:TypeScript stars:>100 archived:false'},
+  {id:'visual-builder',category:'BUILDER',priority:.9,query:'react visual page builder component registry',github:'react visual page builder component registry language:TypeScript archived:false'},
+  {id:'asset-resolver',category:'ASSET',priority:.72,query:'react app icon logo asset manager',github:'react app icon logo asset manager language:TypeScript archived:false'},
 ]
 
-async function githubJson(url){
-  const response=await fetch(url,{headers})
-  if(!response.ok) throw new Error(`GitHub ${response.status}`)
+const PROVIDERS=[
+  {id:'GITHUB',search:discoverGitHub},
+  {id:'GITLAB',search:discoverGitLab},
+  {id:'CODEBERG',search:discoverCodeberg},
+  {id:'NPM',search:discoverNpm},
+]
+
+async function requestJson(url,{headers=requestHeaders}={}){
+  const response=await fetch(url,{headers,signal:AbortSignal.timeout(8000)})
+  if(!response.ok) throw new Error(`${new URL(url).hostname} ${response.status}`)
   return response.json()
 }
 
 function maintenanceScore(pushedAt){
-  if(!pushedAt) return 0
+  if(!pushedAt) return .35
   const age=Math.max(0,now-Date.parse(pushedAt))
   if(age<=30*86400000) return .95
   if(age<=90*86400000) return .82
@@ -29,62 +51,171 @@ function maintenanceScore(pushedAt){
   return .25
 }
 
+function normalizeRepositoryUrl(raw){
+  let value=String(raw||'').trim().replace(/^git\+/,'').replace(/^git:\/\//,'https://')
+  value=value.replace(/\.git(?:#.*)?$/,'').replace(/#.*$/,'')
+  if(/^git@github\.com:/i.test(value)) value=value.replace(/^git@github\.com:/i,'https://github.com/')
+  if(/^git@gitlab\.com:/i.test(value)) value=value.replace(/^git@gitlab\.com:/i,'https://gitlab.com/')
+  try{
+    const url=new URL(value)
+    if(url.protocol!=='https:') return null
+    url.hash=''
+    url.search=''
+    url.pathname=url.pathname.replace(/\/+$/,'')
+    return url.toString().replace(/\/$/,'')
+  }catch{return null}
+}
+
+function canonicalUrl(raw){
+  return String(normalizeRepositoryUrl(raw)||'').toLowerCase().replace(/\/$/,'')
+}
+
+function stackCompatibility(meta){
+  const haystack=[meta.name,meta.description,meta.language,...(meta.topics||[])].filter(Boolean).join(' ').toLowerCase()
+  const hits=RAND_STACK_TERMS.filter((term)=>haystack.includes(term)).length
+  return Math.min(.95,.55+hits*.08)
+}
+
+function discoveryScore(meta,profile){
+  const freshness=maintenanceScore(meta.pushedAt)
+  const stack=stackCompatibility(meta)
+  const popularity=Math.min(1,Math.log10(Math.max(1,Number(meta.stars||0)+1))/5)
+  const licenseSignal=meta.license ? .85 : .35
+  const archivedPenalty=meta.archived ? .35 : 1
+  return Number(((profile.priority*.42+freshness*.28+stack*.2+popularity*.07+licenseSignal*.03)*archivedPenalty).toFixed(4))
+}
+
+function metaCandidate(meta,profile){
+  const pushedAt=meta.pushedAt||null
+  const technicalCompatibility=stackCompatibility(meta)
+  return {
+    id:`discovered:${meta.platform.toLowerCase()}:${meta.fullName}`,
+    name:meta.fullName,
+    repository:meta.repository,
+    source:'DISCOVERED',
+    sourcePlatform:meta.platform,
+    category:profile.category,
+    capability:profile.id,
+    discoveryScore:discoveryScore(meta,profile),
+    license:meta.license||null,
+    archived:Boolean(meta.archived),
+    maintained:!meta.archived&&Boolean(pushedAt)&&(now-Date.parse(pushedAt))<=staleMs,
+    stars:Number(meta.stars||0),
+    gates:{security:null,compatibility:null,benchmark:null,rollback:null},
+    evidence:{security:.5,maintenance:maintenanceScore(pushedAt),maturity:.55,tests:.5,compatibility:technicalCompatibility,performance:.5,rollback:.5,maintainability:.55},
+    note:`WATCH automatico ${meta.platform}/${profile.category}: discovery non equivale ad approvazione; deep review Rand obbligatoria prima di qualunque adozione.`,
+    evaluatedAt:new Date().toISOString(),
+    discovery:{profile:profile.id,category:profile.category,platform:meta.platform,score:discoveryScore(meta,profile),description:meta.description||null},
+    repositoryMeta:{pushedAt,openIssues:Number(meta.openIssues||0),forks:Number(meta.forks||0),defaultBranch:meta.defaultBranch||null,language:meta.language||null,topics:meta.topics||[]},
+  }
+}
+
+async function discoverGitHub(profile){
+  const data=await requestJson(`https://api.github.com/search/repositories?q=${encodeURIComponent(profile.github||profile.query)}&sort=stars&order=desc&per_page=4`,{headers:githubHeaders})
+  return (data.items||[]).map((repo)=>({
+    platform:'GITHUB',fullName:repo.full_name,repository:repo.html_url,description:repo.description,pushedAt:repo.pushed_at,
+    stars:repo.stargazers_count,archived:repo.archived,license:repo.license?.spdx_id||null,openIssues:repo.open_issues_count,
+    forks:repo.forks_count,defaultBranch:repo.default_branch,language:repo.language,topics:repo.topics||[],
+  }))
+}
+
+async function discoverGitLab(profile){
+  const data=await requestJson(`https://gitlab.com/api/v4/projects?search=${encodeURIComponent(profile.query)}&order_by=star_count&sort=desc&simple=true&per_page=4`)
+  return (Array.isArray(data)?data:[]).map((repo)=>({
+    platform:'GITLAB',fullName:repo.path_with_namespace||repo.name_with_namespace||repo.name,repository:repo.web_url,
+    description:repo.description,pushedAt:repo.last_activity_at,stars:repo.star_count,archived:repo.archived,license:null,
+    openIssues:0,forks:repo.forks_count,defaultBranch:repo.default_branch,language:null,topics:repo.topics||repo.tag_list||[],
+  }))
+}
+
+async function discoverCodeberg(profile){
+  const data=await requestJson(`https://codeberg.org/api/v1/repos/search?q=${encodeURIComponent(profile.query)}&limit=4&sort=stars&order=desc`)
+  const items=Array.isArray(data)?data:(data.data||[])
+  return items.map((repo)=>({
+    platform:'CODEBERG',fullName:repo.full_name||`${repo.owner?.login||'codeberg'}/${repo.name}`,repository:repo.html_url,
+    description:repo.description,pushedAt:repo.updated_at,stars:repo.stars_count,archived:repo.archived,license:typeof repo.license==='string'?repo.license:repo.license?.spdx_id||null,
+    openIssues:repo.open_issues_count,forks:repo.forks_count,defaultBranch:repo.default_branch,language:repo.language,topics:repo.topics||[],
+  }))
+}
+
+async function discoverNpm(profile){
+  const data=await requestJson(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(profile.query)}&size=4`)
+  const items=[]
+  for(const entry of data.objects||[]){
+    const pkg=entry.package||{}
+    const repository=normalizeRepositoryUrl(pkg.links?.repository)
+    if(!repository) continue
+    items.push({
+      platform:'NPM',fullName:pkg.name||repository,repository,description:pkg.description,pushedAt:entry.updated,
+      stars:0,archived:false,license:pkg.license||null,openIssues:0,forks:0,defaultBranch:null,language:'JavaScript/TypeScript',topics:pkg.keywords||[],
+    })
+  }
+  return items
+}
+
 async function enrich(candidate){
   const match=candidate.repository.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/)
   if(!match) return candidate
   const [,owner,repo]=match
   try{
-    const data=await githubJson(`https://api.github.com/repos/${owner}/${repo}`)
+    const data=await requestJson(`https://api.github.com/repos/${owner}/${repo}`,{headers:githubHeaders})
     const pushedAt=data.pushed_at||null
     const maintained=!data.archived&&Boolean(pushedAt)&&(now-Date.parse(pushedAt))<=staleMs
-    return {...candidate,stars:Number(data.stargazers_count||0),archived:Boolean(data.archived),maintained,license:data.license?.spdx_id||candidate.license||null,evaluatedAt:new Date().toISOString(),github:{pushedAt,openIssues:Number(data.open_issues_count||0),forks:Number(data.forks_count||0),defaultBranch:data.default_branch||null}}
+    return {...candidate,stars:Number(data.stargazers_count||0),archived:Boolean(data.archived),maintained,license:data.license?.spdx_id||candidate.license||null,evaluatedAt:new Date().toISOString(),repositoryMeta:{pushedAt,openIssues:Number(data.open_issues_count||0),forks:Number(data.forks_count||0),defaultBranch:data.default_branch||null,language:data.language||null,topics:data.topics||[]}}
   }catch(error){
-    return {...candidate,evaluatedAt:new Date().toISOString(),github:{error:error?.message||String(error)}}
+    return {...candidate,evaluatedAt:new Date().toISOString(),repositoryMeta:{error:error?.message||String(error)}}
   }
 }
 
-function discoveredCandidate(data){
-  const pushedAt=data.pushed_at||null
-  return {
-    id:`discovered:${data.full_name}`,
-    name:data.full_name,
-    repository:data.html_url,
-    source:'DISCOVERED',
-    license:data.license?.spdx_id||null,
-    archived:Boolean(data.archived),
-    maintained:!data.archived&&Boolean(pushedAt)&&(now-Date.parse(pushedAt))<=staleMs,
-    stars:Number(data.stargazers_count||0),
-    gates:{security:null,compatibility:null,benchmark:null,rollback:null},
-    evidence:{security:.5,maintenance:maintenanceScore(pushedAt),maturity:Math.min(.9,.35+Math.log10(Math.max(1,Number(data.stargazers_count||0)))/10),tests:.5,compatibility:.5,performance:.5,rollback:.5,maintainability:.5},
-    note:'WATCH automatico: scoperta GitHub non equivale ad approvazione; richiede deep review Rand prima di qualunque adozione.',
-    evaluatedAt:new Date().toISOString(),
-    github:{pushedAt,openIssues:Number(data.open_issues_count||0),forks:Number(data.forks_count||0),defaultBranch:data.default_branch||null},
+function boundedSelection(found){
+  const counts=new Map()
+  const selected=[]
+  const ordered=[...found.values()].sort((a,b)=>b.discoveryScore-a.discoveryScore||a.name.localeCompare(b.name))
+  for(const candidate of ordered){
+    const count=counts.get(candidate.category)||0
+    if(count>=MAX_PER_CATEGORY) continue
+    selected.push(candidate)
+    counts.set(candidate.category,count+1)
+    if(selected.length>=MAX_DISCOVERED) break
   }
+  return selected
 }
 
 async function discover(){
-  const known=new Set(REPO_RADAR_CATALOG.map((item)=>item.repository.toLowerCase().replace(/\/$/,'')))
+  const known=new Set(REPO_RADAR_CATALOG.map((item)=>canonicalUrl(item.repository)))
   const found=new Map()
-  for(const query of SEARCH_QUERIES){
-    try{
-      const data=await githubJson(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=5`)
-      for(const repo of data.items||[]){
-        const url=String(repo.html_url||'').toLowerCase().replace(/\/$/,'')
-        if(!url||known.has(url)||found.has(url)) continue
-        found.set(url,discoveredCandidate(repo))
+  const providerStats=Object.fromEntries(PROVIDERS.map((provider)=>[provider.id,{queries:0,results:0,errors:0}]))
+  for(const profile of SEARCH_PROFILES){
+    const settled=await Promise.allSettled(PROVIDERS.map(async(provider)=>{
+      providerStats[provider.id].queries++
+      const results=await provider.search(profile)
+      providerStats[provider.id].results+=results.length
+      return results
+    }))
+    settled.forEach((result,index)=>{
+      const provider=PROVIDERS[index]
+      if(result.status==='rejected'){
+        providerStats[provider.id].errors++
+        console.warn(`Repo Radar ${provider.id}/${profile.id} failed: ${result.reason?.message||result.reason}`)
+        return
       }
-    }catch(error){
-      console.warn(`Repo Radar discovery query failed: ${error?.message||error}`)
-    }
+      for(const meta of result.value){
+        const url=canonicalUrl(meta.repository)
+        if(!url||known.has(url)) continue
+        const candidate=metaCandidate({...meta,repository:normalizeRepositoryUrl(meta.repository)},profile)
+        const previous=found.get(url)
+        if(!previous||candidate.discoveryScore>previous.discoveryScore) found.set(url,candidate)
+      }
+    })
   }
-  return [...found.values()].slice(0,15)
+  return {candidates:boundedSelection(found),providerStats}
 }
 
 const enriched=[]
 for(const candidate of REPO_RADAR_CATALOG) enriched.push(await enrich(candidate))
-const discovered=await discover()
+const {candidates:discovered,providerStats}=await discover()
 const snapshot=buildRepoRadarSnapshot([...enriched,...discovered])
 const outDir=path.resolve('artifacts/repo-radar')
 await fs.mkdir(outDir,{recursive:true})
-await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{queries:SEARCH_QUERIES.length,discovered:discovered.length}},null,2)+'\n')
-console.log(`Repo Radar: ${snapshot.candidates.length} candidate (${discovered.length} discovered); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))
+await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{profiles:SEARCH_PROFILES.length,providers:PROVIDERS.map((item)=>item.id),providerStats,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerCategory:MAX_PER_CATEGORY}},null,2)+'\n')
+console.log(`Repo Radar: ${snapshot.candidates.length} candidate (${discovered.length} discovered across ${PROVIDERS.length} providers); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))

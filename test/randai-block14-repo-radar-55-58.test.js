@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.js'
-import { RepoRadarDecision, assertSafeAdoption, buildRepoRadarSnapshot, evaluateRepoCandidate } from '../src/randai/discovery/repo-radar.js'
+import { RepoRadarDecision, assertSafeAdoption, buildRepoRadarSnapshot, evaluateRepoCandidate, validateRepoRadarCandidate } from '../src/randai/discovery/repo-radar.js'
 import { getRandEcosystemManifest } from '../src/randai/core/ecosystem.js'
 
 test('55 Repo Radar treats stars as discovery metadata, never as adoption score', () => {
@@ -37,10 +37,24 @@ test('58 snapshot never auto-installs and catalog spans governed outcomes', () =
   assert.equal(snapshot.policy.automaticInstall,false)
   assert.equal(snapshot.policy.automaticReplace,false)
   assert.equal(snapshot.policy.humanApprovalRequired,true)
+  assert.equal(snapshot.policy.multiSourceDiscovery,true)
   for(const decision of [RepoRadarDecision.ADD,RepoRadarDecision.WATCH,RepoRadarDecision.REJECT,RepoRadarDecision.KEEP]) assert.ok(snapshot.candidates.some((item)=>item.decision===decision))
 })
 
-test('weekly discovery is read-only, bounded and discovered repos cannot self-promote', () => {
+test('Repo Radar accepts governed public forge hosts and rejects arbitrary hosts', () => {
+  for(const repository of [
+    'https://github.com/example/repo',
+    'https://gitlab.com/example/repo',
+    'https://codeberg.org/example/repo',
+    'https://gitea.com/example/repo',
+    'https://code.forgejo.org/example/repo',
+    'https://bitbucket.org/example/repo',
+    'https://git.sr.ht/~example/repo',
+  ]) assert.equal(validateRepoRadarCandidate({id:repository,name:'Repo',repository}),true)
+  assert.throws(()=>validateRepoRadarCandidate({id:'bad-host',name:'Bad',repository:'https://example.com/repo/code'}),/Unsupported repository URL/)
+})
+
+test('weekly discovery is read-only, bounded, multi-source and discovered repos cannot self-promote', () => {
   const workflow=fs.readFileSync('.github/workflows/repo-radar.yml','utf8')
   const runner=fs.readFileSync('scripts/repo-radar-snapshot.mjs','utf8')
   assert.match(workflow,/contents: read/)
@@ -49,7 +63,16 @@ test('weekly discovery is read-only, bounded and discovered repos cannot self-pr
   assert.doesNotMatch(workflow,/npm install .*@latest|npx .*@latest/)
   assert.match(runner,/source:'DISCOVERED'/)
   assert.match(runner,/gates:\{security:null,compatibility:null,benchmark:null,rollback:null\}/)
-  assert.match(runner,/slice\(0,15\)/)
+  assert.match(runner,/MAX_DISCOVERED=24/)
+  assert.match(runner,/MAX_PER_CATEGORY=4/)
+  assert.match(runner,/GITHUB/)
+  assert.match(runner,/GITLAB/)
+  assert.match(runner,/CODEBERG/)
+  assert.match(runner,/NPM/)
+  assert.match(runner,/schema-ui/)
+  assert.match(runner,/template-registry/)
+  assert.match(runner,/visual-testing/)
+  assert.match(runner,/accessibility/)
 })
 
 test('Repo Radar is live in ecosystem only with code UI and weekly evidence', () => {
