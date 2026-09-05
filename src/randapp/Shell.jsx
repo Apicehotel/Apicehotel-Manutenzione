@@ -21,6 +21,7 @@ import './header-mobile.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
+const ChatGroups = lazy(() => import('./chat/ChatGroups.jsx'))
 const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
@@ -178,7 +179,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'issues', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
+    const order = ['home', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -295,6 +296,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
     if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
     if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'chat') return <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
