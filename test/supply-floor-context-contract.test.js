@@ -60,7 +60,10 @@ test('floor selection does not reintroduce the old quantity ledger or warehouse 
 
 test('legacy requests remain compatible and unconfigured hotels are not blocked', () => {
   assert.match(migration, /add column if not exists area_code text/)
-  assert.doesNotMatch(migration, /area_code text not null/i)
+  assert.doesNotMatch(migration, /add column if not exists area_code text not null/i)
+  assert.doesNotMatch(migration, /add column if not exists area_label text not null/i)
+  assert.doesNotMatch(migration, /add column if not exists floor_number integer not null/i)
+  assert.doesNotMatch(migration, /add column if not exists floor_label text not null/i)
   assert.match(migration, /elsif exists\(select 1 from public\.hotel_floor_contexts/)
   assert.match(migration, /la RPC v1 resta disponibile/i)
 })
