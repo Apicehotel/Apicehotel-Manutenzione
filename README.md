@@ -38,6 +38,24 @@ Sono gestiti anche touch/pointer, portrait/landscape, safe-area, schermi stretti
 
 La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. Il bottom-nav mantiene **Home nello slot 3** e **Altro nello slot 5**; gli slot 1, 2 e 4 vengono scelti tra funzioni autorizzate in base agli interessi.
 
+### RandUI v1 Core
+
+Il Core RandUI è ora dichiarativo e ha proprietari espliciti:
+
+`Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
+
+- `src/randapp/randui/design-contract.js` fissa versione, breakpoint, densità, invarianti e stati;
+- `component-registry.js` riusa le primitive di `ui.jsx` e dichiara la state matrix invece di introdurre un secondo design system;
+- `template-registry.js` contiene **14 template ufficiali** (`dashboard`, `list`, `list-detail`, `master-detail`, `operational`, `planning`, `form`, `wizard`, `settings`, `management`, `monitor`, `system-state`, `auth`, `search-archive`);
+- `page-schema.js` risolve e valida le pagine; `page-catalog.js` assegna già il template di destinazione ai principali moduli RandApp/RandAI;
+- `system-states.jsx` unifica loading, empty, error, offline, sync, stale, conflict, access denied e feedback;
+- `randui/foundation.css` viene caricato per ultimo e rende `adaptive-layout.css` proprietario della geometria e `ui-coherence.css` proprietario di interazione/accessibilità;
+- `Shell.jsx` resta l'unica chrome autenticata: anche Impostazioni viene resa dentro la Shell tramite `SettingsTemplate`.
+
+Il vecchio `app-shell-foundation.css` resta eliminato. I CSS di dominio vengono rimossi soltanto durante la migrazione della relativa pagina e dopo prova di assenza di consumatori.
+
+Dettaglio: `docs/architecture/RANDUI_V1_CORE.md`.
+
 ## Safe-area iOS / Android
 
 RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
@@ -168,6 +186,7 @@ Comandi principali:
 npm run build
 npm test
 npm run test:quality
+npm run test:randui
 npm run test:e2e
 npm run test:device
 npm run test:lts
@@ -182,6 +201,7 @@ La CI certifica, tra gli altri:
 - production confidence;
 - build e bundle budget;
 - RandUI/RandAI/RandCore contracts;
+- RandUI v1 design contract, registry, template, page schema e single-shell invariants;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
 - confini Group C Procedure/RandAI/RandMedia e ACL anonime;
@@ -196,11 +216,13 @@ La CI certifica, tra gli altri:
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibile un ambiente di test prima della produzione.
+Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Vercel sono congelati (`deploymentEnabled: false`) e le prove/deploy della nuova UI vanno soltanto su DigitalOcean/Ocean.** La riattivazione Vercel richiede una decisione esplicita dopo chiusura dei gate e della migrazione.
 
 ## Documentazione
 
+- `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
+- `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
 - `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, Procedure/RandAI, RandMedia e retention.
 - `docs/architecture/RANDDESKTOP_PRINTING.md` — shell Electron, sicurezza IPC e stampa nativa v1.
