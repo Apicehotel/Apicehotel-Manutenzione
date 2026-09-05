@@ -83,11 +83,12 @@ test('documento strutturato viene stampato in finestra sandbox senza HTML arbitr
   assert.equal(instance.destroyed, true)
 })
 
-test('preload non espone ipcRenderer e main valida sender + shell locale in produzione', () => {
+test('preload espone solo API nominate e main valida sender + shell locale in produzione', () => {
   const preload = read('desktop/preload.mjs')
   const main = read('desktop/main.mjs')
   assert.match(preload, /contextBridge\.exposeInMainWorld\('randDesktop'/)
-  assert.doesNotMatch(preload, /ipcRenderer\s*[,}]/)
+  assert.doesNotMatch(preload, /exposeInMainWorld\([^,]+,\s*ipcRenderer\b/)
+  assert.doesNotMatch(preload, /ipcRenderer\s*:\s*ipcRenderer/)
   assert.match(main, /event\.sender === mainWindow\.webContents/)
   assert.match(main, /nodeIntegration: false/)
   assert.match(main, /contextIsolation: true/)
