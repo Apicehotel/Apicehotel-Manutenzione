@@ -4,6 +4,7 @@
    owners together and exposes the page/template primitives used by migration. */
 @import '../adaptive-layout.css';
 @import '../ui-coherence.css';
+@import './visual-language.css';
 
 :root {
   --rand-space-1: 4px;
