@@ -16,7 +16,13 @@ export function TemplateFrame({
   const template = resolveRandUiTemplate(templateId)
   if (!template) throw new Error(`Unknown RandUI template: ${templateId}`)
   return (
-    <section className={`rs-randui-page rs-randui-page--${templateId} ${className}`} data-randui-template={templateId} {...rest}>
+    <section
+      className={`rs-randui-page rs-randui-page--${templateId} ${className}`}
+      data-randui-template={templateId}
+      data-randui-width={template.visual.width}
+      data-randui-rhythm={template.visual.rhythm}
+      {...rest}
+    >
       {(eyebrow || title || description || actions) && (
         <header className="rs-randui-page__header" data-randui-slot="header">
           <div className="rs-randui-page__heading">

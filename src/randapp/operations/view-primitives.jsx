@@ -1,12 +1,10 @@
+export { PageTitle } from '../randui/visual-primitives.jsx'
+
 export const fmt = (value) => value ? new Date(value).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 
 export const whatsappLink = (phone) => {
   const digits = String(phone || '').replace(/[^\d+]/g, '')
   return digits ? `https://wa.me/${digits.replace(/^\+/, '')}` : null
-}
-
-export function PageTitle({ title, subtitle, action }) {
-  return <div className="rs-page-title"><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{action}</div>
 }
 
 function statusTone(status) {
