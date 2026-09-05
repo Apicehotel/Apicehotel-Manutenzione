@@ -4,14 +4,16 @@ import DirectMessages from './DirectMessages.jsx'
 import './chat.css'
 import './chat-viewport.css'
 
-function useRandChatViewport() {
+function useRandChatViewport(enabled) {
   const ref = useRef(null)
 
   useLayoutEffect(() => {
+    if (!enabled) return undefined
     const node = ref.current
     if (!node) return undefined
 
     const content = node.closest('.rs-content')
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     content?.classList.add('rs-content--randchat')
     document.body.classList.add('rs-randchat-active')
 
@@ -54,16 +56,17 @@ function useRandChatViewport() {
       content?.classList.remove('rs-content--randchat')
       document.body.classList.remove('rs-randchat-active')
     }
-  }, [])
+  }, [enabled])
 
   return ref
 }
 
 export default function ChatGroups({ user, hotel }) {
   const [mode, setMode] = useState('groups')
-  const viewportRef = useRandChatViewport()
+  const chatEnabled = Boolean(user?.chat_enabled)
+  const viewportRef = useRandChatViewport(chatEnabled)
 
-  if (!user?.chat_enabled) return <section className="rc-empty"><h2>RandChat non abilitata</h2><p>Un amministratore può abilitarla dal pannello Utenti.</p></section>
+  if (!chatEnabled) return <section className="rc-empty"><h2>RandChat non abilitata</h2><p>Un amministratore può abilitarla dal pannello Utenti.</p></section>
 
   return <div ref={viewportRef} className="rc-module" data-testid="randchat">
     <nav className="rc-module-tabs" aria-label="Modalità RandChat">
