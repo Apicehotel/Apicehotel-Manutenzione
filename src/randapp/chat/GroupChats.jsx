@@ -24,6 +24,7 @@ import {
   uploadGroupMediaFiles,
 } from './randmedia.js'
 import ChatAttachment from './ChatAttachment.jsx'
+import ProcedureDraftDialog from './ProcedureDraftDialog.jsx'
 import ProcedurePicker from './ProcedurePicker.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
 import RandChatAI from './RandChatAI.jsx'
@@ -56,6 +57,7 @@ export default function GroupChats({ user, hotel }) {
   const [newGroup, setNewGroup] = useState({ name: '', retention: 30 })
   const [inviteId, setInviteId] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
+  const [draftMessage, setDraftMessage] = useState(null)
 
   const selected = useMemo(() => groups.find((g) => g.id === selectedId) || null, [groups, selectedId])
   const me = useMemo(() => members.find((m) => m.auth_user_id === currentUserId) || null, [members, currentUserId])
@@ -232,6 +234,7 @@ export default function GroupChats({ user, hotel }) {
                 {media.map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} />)}
                 <div className="rc-message__actions">
                   <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>
+                  {!procedure && message.body && <button className="rc-message__pin" onClick={() => setDraftMessage(message)}>Bozza procedura</button>}
                   {canManage && <button className="rc-message__pin" onClick={() => togglePin(message)}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
                 </div>
               </article>
@@ -254,6 +257,7 @@ export default function GroupChats({ user, hotel }) {
       </section></div>}
 
       <ProcedurePicker open={showProcedures && Boolean(selected)} groupId={selectedId} onClose={() => setShowProcedures(false)} onShared={() => loadSelected().catch(() => {})} />
+      <ProcedureDraftDialog open={Boolean(draftMessage && selected)} groupId={selectedId} hotelId={selected?.hotel_id} message={draftMessage} onClose={() => setDraftMessage(null)} />
       <RandChatAI open={showAI && Boolean(selected)} groupId={selectedId} groupName={selected?.name} onClose={() => setShowAI(false)} />
       <PromoteIssueDialog open={Boolean(promoteMessage)} onClose={() => setPromoteMessage(null)} user={user} hotel={hotel} text={promoteMessage?.body || ''} source={promoteMessage ? { type: 'group', id: selectedId, messageId: promoteMessage.id } : null} onPromoted={() => setPromoteMessage(null)} />
     </section>
