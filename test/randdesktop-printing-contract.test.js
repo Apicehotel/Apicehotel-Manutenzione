@@ -50,6 +50,22 @@ test('stampa corrente usa sempre dialog utente e pagina predefinita della stampa
   assert.equal(webContents.calls.removed[0], 'css-key')
 })
 
+test('una sola stampa può essere aperta alla volta', async () => {
+  const webContents = makeWebContents()
+  let finishFirst
+  webContents.print = (options, callback) => {
+    webContents.calls.print.push(options)
+    finishFirst = callback
+  }
+  const owner = makeOwnerWindow(webContents)
+  const first = printCurrentView(owner)
+  await new Promise((resolve) => setImmediate(resolve))
+  await assert.rejects(() => printCurrentView(owner), /stampa è già in corso/i)
+  finishFirst(true, '')
+  await first
+  assert.equal(webContents.calls.print.length, 1)
+})
+
 test('elenco stampanti non espone options o proprietà non necessarie del driver', async () => {
   const result = await listPrinters(makeOwnerWindow())
   assert.deepEqual(result, [{ name: 'Office_Printer', displayName: 'Office Printer', description: 'Reception', status: 0, isDefault: true }])
@@ -92,6 +108,7 @@ test('preload sandbox usa CommonJS ristretto e main valida sender + shell locale
   assert.match(preload, /contextBridge\.exposeInMainWorld\('randDesktop'/)
   assert.doesNotMatch(preload, /exposeInMainWorld\([^,]+,\s*ipcRenderer\b/)
   assert.doesNotMatch(preload, /ipcRenderer\s*:\s*ipcRenderer/)
+  assert.match(main, /app\.enableSandbox\(\)/)
   assert.match(main, /preload: path\.join\(__dirname, 'preload\.cjs'\)/)
   assert.match(main, /event\.sender === mainWindow\.webContents/)
   assert.match(main, /nodeIntegration: false/)
@@ -113,5 +130,6 @@ test('RandDesktop blocca stampa silenziosa dal contratto v1', () => {
   const service = read('desktop/print-service.mjs')
   assert.doesNotMatch(preload, /silent/)
   assert.match(service, /silent: false/)
+  assert.match(service, /printInProgress/)
   assert.doesNotMatch(service, /deviceName/)
 })
