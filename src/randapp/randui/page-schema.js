@@ -1,4 +1,5 @@
 import { isRegisteredRandUiComponent } from './component-registry.js'
+import { normalizeRandUiDensity } from './design-contract.js'
 import { resolveRandUiTemplate } from './template-registry.js'
 
 const PAGE_TYPE_ALIASES = Object.freeze({
@@ -24,7 +25,7 @@ export function normalizeRandUiPageSchema(schema = {}) {
     id,
     domain: String(schema.domain || 'shared'),
     pageType,
-    density: String(schema.density || template.defaultDensity || 'normal'),
+    density: normalizeRandUiDensity(schema.density || template.defaultDensity || 'normal'),
     mobilePriority: Boolean(schema.mobilePriority),
     permissions: Object.freeze(asArray(schema.permissions)),
     capabilities: Object.freeze(asArray(schema.capabilities)),
