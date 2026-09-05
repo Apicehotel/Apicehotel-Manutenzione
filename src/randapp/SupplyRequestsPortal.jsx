@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { canUser } from '../permissions.js'
 import {
+  fetchOperationalFloorContexts,
+  floorContextId,
+  loadOperationalFloorContext,
+  saveOperationalFloorContext,
+} from '../operational-context.js'
+import {
   createSupplyRequest,
   deleteSupplyProduct,
   fetchSupplyProducts,
@@ -22,6 +28,84 @@ const formatTime = (value) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+const requestContextLabel = (request) => {
+  if (!request?.floor_label) return ''
+  return [request.area_label, request.floor_label].filter(Boolean).join(' · ')
+}
+
+function FloorContextSelector({ contexts, value, onChange, loading = false }) {
+  const areas = useMemo(() => {
+    const map = new Map()
+    contexts.forEach((context) => {
+      if (!map.has(context.area_code)) map.set(context.area_code, { code: context.area_code, label: context.area_label, floors: [] })
+      map.get(context.area_code).floors.push(context)
+    })
+    return Array.from(map.values())
+  }, [contexts])
+  const [editing, setEditing] = useState(!value)
+  const [areaCode, setAreaCode] = useState(value?.area_code || areas[0]?.code || '')
+
+  useEffect(() => {
+    if (value?.area_code) setAreaCode(value.area_code)
+    else if (!areaCode && areas[0]?.code) setAreaCode(areas[0].code)
+    if (!value) setEditing(true)
+  }, [value, areas, areaCode])
+
+  if (loading) return <div className="rs-floor-context is-loading">Carico i piani…</div>
+  if (!contexts.length) return null
+
+  if (value && !editing) {
+    return (
+      <div className="rs-floor-context rs-floor-context--active" data-testid="supply-active-floor">
+        <span><small>Consegna a</small><b>{value.area_label} · {value.floor_label}</b></span>
+        {contexts.length > 1 && <button type="button" onClick={() => setEditing(true)}>Cambia piano</button>}
+      </div>
+    )
+  }
+
+  const selectedArea = areas.find((area) => area.code === areaCode) || areas[0]
+  const chooseArea = (code) => {
+    setAreaCode(code)
+    if (value?.area_code !== code) onChange(null)
+    const area = areas.find((candidate) => candidate.code === code)
+    if (area?.floors.length === 1) {
+      onChange(area.floors[0])
+      setEditing(false)
+    }
+  }
+  const chooseFloor = (context) => {
+    onChange(context)
+    setEditing(false)
+  }
+
+  return (
+    <section className="rs-floor-context" aria-label="Area e piano di consegna">
+      <div className="rs-floor-context__title"><b>Dove serve?</b><small>Il piano resta selezionato finché non lo cambi.</small></div>
+      {areas.length > 1 && (
+        <div className="rs-area-tabs" role="group" aria-label="Area">
+          {areas.map((area) => (
+            <button key={area.code} type="button" className={selectedArea?.code === area.code ? 'selected' : ''} onClick={() => chooseArea(area.code)}>
+              {area.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="rs-floor-tabs" role="group" aria-label="Piano">
+        {(selectedArea?.floors || []).map((context) => (
+          <button
+            key={floorContextId(context)}
+            type="button"
+            className={floorContextId(value) === floorContextId(context) ? 'selected' : ''}
+            onClick={() => chooseFloor(context)}
+          >
+            P{context.floor_number}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 function ProductManager({ hotel, products, onChanged }) {
@@ -87,7 +171,7 @@ function ProductManager({ hotel, products, onChanged }) {
   )
 }
 
-function RequestComposer({ hotel, products, onCreated }) {
+function RequestComposer({ hotel, products, floorContexts, floorContext, onFloorContextChange, contextLoading, onCreated }) {
   const activeProducts = products.filter((product) => product.active)
   const [selected, setSelected] = useState([])
   const [note, setNote] = useState('')
@@ -97,12 +181,14 @@ function RequestComposer({ hotel, products, onCreated }) {
     minibar: activeProducts.filter((p) => p.category === 'minibar'),
     consumo: activeProducts.filter((p) => p.category === 'consumo'),
   }), [activeProducts])
+  const floorRequired = floorContexts.length > 0
 
   const toggle = (id) => setSelected((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id])
   const submit = async () => {
+    if (floorRequired && !floorContext) { setError('Seleziona il piano di consegna'); return }
     setBusy(true); setError('')
     try {
-      await createSupplyRequest({ hotelId: hotel.id, productIds: selected, note })
+      await createSupplyRequest({ hotelId: hotel.id, productIds: selected, note, floorContext })
       setSelected([]); setNote('')
       await onCreated()
     } catch (err) { setError(err?.message || 'Non riesco a inviare la richiesta') }
@@ -113,6 +199,7 @@ function RequestComposer({ hotel, products, onCreated }) {
 
   return (
     <section className="rs-supply-compose">
+      <FloorContextSelector contexts={floorContexts} value={floorContext} onChange={onFloorContextChange} loading={contextLoading} />
       <p className="rs-supply-muted">Seleziona solo ciò che serve. Non ci sono quantità: ogni voce resta in attesa finché non viene segnata come Consegnato o Manca.</p>
       {['minibar', 'consumo'].map((category) => grouped[category].length > 0 && (
         <div key={category} className="rs-supply-category">
@@ -126,9 +213,9 @@ function RequestComposer({ hotel, products, onCreated }) {
           </div>
         </div>
       ))}
-      <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Nota facoltativa (piano, office, indicazioni…)" maxLength={300} />
+      <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Nota facoltativa (office, indicazioni…)" maxLength={300} />
       {error && <p className="rs-supply-error">{error}</p>}
-      <Button variant="primary" disabled={busy || !selected.length} onClick={submit}>{busy ? 'Invio…' : `Invia richiesta (${selected.length})`}</Button>
+      <Button variant="primary" disabled={busy || !selected.length || contextLoading || (floorRequired && !floorContext)} onClick={submit}>{busy ? 'Invio…' : `Invia richiesta (${selected.length})`}</Button>
     </section>
   )
 }
@@ -136,28 +223,32 @@ function RequestComposer({ hotel, products, onCreated }) {
 function RequestsList({ requests, canComplete, onResolve }) {
   const open = requests.filter((request) => !request.completed_at)
   const closed = requests.filter((request) => request.completed_at)
-  const renderRequest = (request) => (
-    <article key={request.id} className={`rs-supply-request ${request.completed_at ? 'is-done' : ''}`}>
-      <header>
-        <div><b>{request.requested_by_name || 'Governante'}</b><small>{formatTime(request.created_at)}</small></div>
-        <span>{request.completed_at ? 'Completata' : 'Aperta'}</span>
-      </header>
-      {request.note && <p className="rs-supply-note">{request.note}</p>}
-      <div className="rs-supply-items">
-        {(request.supply_request_items || []).map((item) => (
-          <div key={item.id} className={`rs-supply-item status-${item.status}`}>
-            <span><b>{item.product_name}</b><small>{CATEGORY_LABEL[item.category]} · {STATUS_LABEL[item.status]}</small></span>
-            {item.status === 'pending' && canComplete && (
-              <div className="rs-supply-actions">
-                <button type="button" className="deliver" onClick={() => onResolve(item.id, 'delivered')}>✓ Consegnato</button>
-                <button type="button" className="missing" onClick={() => onResolve(item.id, 'missing')}>! Manca</button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </article>
-  )
+  const renderRequest = (request) => {
+    const contextLabel = requestContextLabel(request)
+    return (
+      <article key={request.id} className={`rs-supply-request ${request.completed_at ? 'is-done' : ''}`}>
+        <header>
+          <div><b>{request.requested_by_name || 'Governante'}</b><small>{formatTime(request.created_at)}</small></div>
+          <span>{request.completed_at ? 'Completata' : 'Aperta'}</span>
+        </header>
+        {contextLabel && <div className="rs-supply-destination"><Icon name="hotel" /><b>{contextLabel}</b></div>}
+        {request.note && <p className="rs-supply-note">{request.note}</p>}
+        <div className="rs-supply-items">
+          {(request.supply_request_items || []).map((item) => (
+            <div key={item.id} className={`rs-supply-item status-${item.status}`}>
+              <span><b>{item.product_name}</b><small>{CATEGORY_LABEL[item.category]} · {STATUS_LABEL[item.status]}</small></span>
+              {item.status === 'pending' && canComplete && (
+                <div className="rs-supply-actions">
+                  <button type="button" className="deliver" onClick={() => onResolve(item.id, 'delivered')}>✓ Consegnato</button>
+                  <button type="button" className="missing" onClick={() => onResolve(item.id, 'missing')}>! Manca</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </article>
+    )
+  }
   return (
     <section className="rs-supply-requests">
       <h3>Richieste aperte</h3>
@@ -176,6 +267,9 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
   const [open, setOpen] = useState(false)
   const [products, setProducts] = useState([])
   const [requests, setRequests] = useState([])
+  const [floorContexts, setFloorContexts] = useState([])
+  const [floorContext, setFloorContext] = useState(null)
+  const [contextLoading, setContextLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -192,7 +286,35 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
     finally { setLoading(false) }
   }, [canView, canManage, hotel?.id])
 
+  const refreshFloorContexts = useCallback(async () => {
+    if (!canView || !hotel?.id) return
+    setContextLoading(true)
+    try {
+      const rows = await fetchOperationalFloorContexts(hotel.id)
+      setFloorContexts(rows)
+      setFloorContext((current) => {
+        const currentId = floorContextId(current)
+        const stillValid = rows.find((context) => floorContextId(context) === currentId)
+        return stillValid || loadOperationalFloorContext(user, hotel.id, rows)
+      })
+    } catch (err) {
+      setFloorContexts([])
+      setFloorContext(null)
+      setError(err?.message || 'Piani non disponibili')
+    } finally { setContextLoading(false) }
+  }, [canView, hotel?.id, user?.auth_user_id, user?.authUserId, user?.id, user?.username, user?.name, user?.display_name])
+
+  const changeFloorContext = useCallback((context) => {
+    setFloorContext(context)
+    if (context && hotel?.id) saveOperationalFloorContext(user, hotel.id, context)
+  }, [hotel?.id, user])
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refresh(), refreshFloorContexts()])
+  }, [refresh, refreshFloorContexts])
+
   useEffect(() => { if (canView) refresh() }, [canView, refresh])
+  useEffect(() => { if (canView) refreshFloorContexts() }, [canView, refreshFloorContexts])
   useEffect(() => {
     if (!canView || !hotel?.id) return undefined
     return subscribeSupplyRequests(hotel.id, refresh)
@@ -209,9 +331,12 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
 
   const content = (
     <div className="rs-supply-sheet" data-testid="supply-portal">
-      <header className="rs-supply-sheet__head"><div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}</p></div><button type="button" onClick={refresh} disabled={loading}>Aggiorna</button></header>
+      <header className="rs-supply-sheet__head">
+        <div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}{floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}</p></div>
+        <button type="button" onClick={refreshAll} disabled={loading || contextLoading}>Aggiorna</button>
+      </header>
       {error && <p className="rs-supply-error">{error}</p>}
-      {canCreate && <RequestComposer hotel={hotel} products={products} onCreated={refresh} />}
+      {canCreate && <RequestComposer hotel={hotel} products={products} floorContexts={floorContexts} floorContext={floorContext} onFloorContextChange={changeFloorContext} contextLoading={contextLoading} onCreated={refresh} />}
       <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
       {canManage && <ProductManager hotel={hotel} products={products} onChanged={refresh} />}
     </div>
