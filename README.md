@@ -80,6 +80,17 @@ La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mos
 - **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
+## Rifornimenti interni
+
+Il modulo Rifornimenti resta separato dal Magazzino e non gestisce quantità: una richiesta indica soltanto quali prodotti servono; ogni voce resta `In attesa` finché il Manutentore la marca `Consegnato` o `Manca`.
+
+Per **Hotel Giò (`hotelgio`)** il catalogo iniziale recupera i prodotti della precedente app “Rifornimento Office - Hotel Gio”:
+
+- **Minibar:** Coca Cola, Succo ACE, Birra, Patatine, Barretta.
+- **Consumo:** Saponetta, Shampini, Spugne scarpe, Cuffia doccia.
+
+Il bootstrap è idempotente e non sovrascrive prodotti già personalizzati dall'Admin. ChocoHotel e Brigantino restano indipendenti e non ricevono automaticamente il catalogo di Giò.
+
 ## Quality Matrix e test
 
 Comandi principali:
@@ -116,6 +127,7 @@ Produzione: Vercel. Per prove operative e cambiamenti rischiosi resta preferibil
 ## Documentazione
 
 - `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
+- `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
 - `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
 
 Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.
