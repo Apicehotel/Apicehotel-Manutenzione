@@ -2,6 +2,9 @@ name: Deploy RandApp to DigitalOcean
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - ocean-deploy
 
 permissions:
   contents: read
