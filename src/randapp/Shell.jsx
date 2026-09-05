@@ -39,7 +39,7 @@ const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus })
   default: ({ hotel }) => <div className="rs-legacy rs-legacy--temperature" data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
 })))
 const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
-  default: ({ hotel, user }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
+  default: ({ hotel, user, onReportIssue, reportAllowed }) => <div className="rs-legacy rs-legacy--housekeeping" data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} onReportIssue={onReportIssue} reportAllowed={reportAllowed} /></div>,
 })))
 const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
 const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
@@ -97,6 +97,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [issueCreateRequest, setIssueCreateRequest] = useState(null)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [personalizeSignal, setPersonalizeSignal] = useState(0)
@@ -160,7 +161,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return () => window.removeEventListener('randapp-sale-booking-created', onSaleCreated)
   }, [planningCreateRequest, hotel?.id])
 
-  useEffect(() => { setInsertOpen(false) }, [view, hotel?.id])
+  useEffect(() => { setInsertOpen(false); if(view!=='issues')setIssueCreateRequest(null) }, [view, hotel?.id])
 
   const allowedHotels = useMemo(() => {
     const set = new Set([session.hotelId, ...(user?.hotels || [])])
@@ -185,6 +186,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   useEffect(() => {
     if (user && !viewAllowed(view)) {
       setPlanningCreateRequest(null)
+      setIssueCreateRequest(null)
       setView(safeView)
     }
   }, [user, view, viewAllowed, safeView])
@@ -196,7 +198,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (target?.settings) { setSettings(target.settings); return }
     if (!viewAllowed(nextView)) return
     setView(nextView)
-    if (target?.create) setCreateSignal((n) => n + 1)
+    if (target?.create) { if(nextView==='issues')setIssueCreateRequest(null); setCreateSignal((n) => n + 1) }
   }
 
   const openHomePersonalize = () => {
@@ -238,9 +240,16 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1, returnView }))
   }
 
+  const requestHousekeepingIssue = useCallback((prefill) => {
+    if (!user || !canUser(user,'issues','create') || !viewAllowed('issues')) return
+    setIssueCreateRequest((current)=>({nonce:(current?.nonce||0)+1,prefill}))
+    setView('issues')
+  },[user,viewAllowed])
+
   const pickInsert = (id) => {
     setInsertOpen(false)
     if (id === 'issue' && viewAllowed('issues')) {
+      setIssueCreateRequest(null)
       setView('issues')
       setCreateSignal((n) => n + 1)
       return
@@ -294,7 +303,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const renderView = () => {
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
     if (view === 'home') return <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'issues') return <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} createRequest={issueCreateRequest} />
     if (view === 'profile') return <Profile user={user} hotel={hotel} />
     if (view === 'interventions') return <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') return <InventoryView user={user} hotel={hotel} />
@@ -305,7 +314,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'reminders') return <RemindersView user={user} hotel={hotel} />
     if (view === 'temperature') return <TemperatureView hotel={hotel} />
     if (view === 'plants') return <PlantView hotel={hotel} />
-    if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} />
+    if (view === 'housekeeping') return <HousekeepingView user={user} hotel={hotel} reportAllowed={Boolean(canUser(user,'issues','create')&&viewAllowed('issues'))} onReportIssue={requestHousekeepingIssue} />
     if (view === 'technicians') return <TechnicianDirectoryView user={user} hotel={hotel} createSignal={technicianCreateSignal} />
     if (view === 'feedback-received') return <FeedbackView user={user} hotel={hotel} received />
     if (view === 'feedback') return <FeedbackView user={user} hotel={hotel} />
