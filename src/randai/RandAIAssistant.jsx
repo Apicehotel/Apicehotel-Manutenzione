@@ -98,7 +98,8 @@ function ProjectIntelligencePanel({ intelligence }) {
   )
 }
 
-export default function RandAIAssistant() {
+export default function RandAIAssistant({ mode = 'overlay' }) {
+  const pageMode = mode === 'page'
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -131,10 +132,11 @@ export default function RandAIAssistant() {
   }, [session?.hotelId, session?.userId])
 
   useEffect(() => {
+    if (pageMode) return undefined
     const toggle = () => setOpen((value) => !value)
     window.addEventListener(OPEN_EVENT, toggle)
     return () => window.removeEventListener(OPEN_EVENT, toggle)
-  }, [])
+  }, [pageMode])
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
@@ -142,6 +144,7 @@ export default function RandAIAssistant() {
   const issueResource = activeResource?.type === 'issue' ? activeResource : null
   const workspaceProgress = issueWorkspaceProgress(workspace)
   const canDictate = Boolean(audio.current?.capabilities.stt)
+  const visible = pageMode || open
 
   const startDictation = () => {
     if (!canDictate || listening) return
@@ -223,12 +226,12 @@ export default function RandAIAssistant() {
   }
 
   return (
-    <div className={`randai ${open ? 'randai--open' : ''}`} data-testid="randai-root">
-      {open && (
-        <section className="randai__panel" role="dialog" aria-label="RandAI assistente manutenzione">
+    <div className={`randai ${visible ? 'randai--open' : ''} ${pageMode ? 'randai--page' : ''}`} data-testid={pageMode ? 'randai-page' : 'randai-root'}>
+      {visible && (
+        <section className="randai__panel" role={pageMode ? 'region' : 'dialog'} aria-label="RandAI assistente manutenzione">
           <header className="randai__header">
             <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
-            <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>
+            {!pageMode && <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>}
           </header>
 
           <div className="randai__messages" aria-live="polite">
