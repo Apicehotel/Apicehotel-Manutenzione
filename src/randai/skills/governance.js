@@ -67,11 +67,12 @@ function overlapScore(a, b) {
 
 export function assessSkillLifecycle(skill, telemetry = {}, { now = new Date(), staleAfterDays = 90 } = {}) {
   if (!skill?.id || !skill?.status) throw new TypeError('skill is required')
+  const telemetryObserved = Object.keys(telemetry || {}).length > 0
   const evidence = normalizeTelemetry(telemetry)
   const nowMs = now instanceof Date ? now.getTime() : Date.parse(now)
   if (!Number.isFinite(nowMs)) throw new TypeError('Invalid governance clock')
   const daysSinceUse = ageDays(evidence.lastUsedAt, nowMs)
-  const stale = evidence.usageCount === 0 || (daysSinceUse != null && daysSinceUse >= staleAfterDays)
+  const stale = telemetryObserved && (evidence.usageCount === 0 || (daysSinceUse != null && daysSinceUse >= staleAfterDays))
   const successRate = evidence.usageCount ? Number((evidence.successCount / evidence.usageCount).toFixed(3)) : null
 
   const promotion = learningPromotionDecision({
@@ -84,15 +85,15 @@ export function assessSkillLifecycle(skill, telemetry = {}, { now = new Date(), 
   })
 
   let action = SkillGovernanceAction.KEEP
-  let reason = 'HEALTHY_OR_INSUFFICIENT_SIGNAL'
+  let reason = telemetryObserved ? 'HEALTHY_OR_INSUFFICIENT_SIGNAL' : 'TELEMETRY_UNKNOWN'
 
   if ([SkillStatus.DEPRECATED, SkillStatus.BLOCKED].includes(skill.status)) {
-    if (evidence.usageCount === 0 && evidence.referenceCount === 0 && evidence.replacementSkillId) {
+    if (telemetryObserved && evidence.usageCount === 0 && evidence.referenceCount === 0 && evidence.replacementSkillId) {
       action = SkillGovernanceAction.ZOMBIE_CANDIDATE
       reason = 'INACTIVE_UNREFERENCED_WITH_REPLACEMENT'
     } else {
       action = SkillGovernanceAction.DEPRECATION_REVIEW
-      reason = 'RETIRED_BUT_STILL_REFERENCED_OR_WITHOUT_REPLACEMENT'
+      reason = telemetryObserved ? 'RETIRED_BUT_STILL_REFERENCED_OR_WITHOUT_REPLACEMENT' : 'RETIRED_TELEMETRY_UNKNOWN'
     }
   } else if (skill.status === SkillStatus.TESTED && promotion.mode === LearningPromotionMode.AUTO) {
     action = SkillGovernanceAction.AUTO_APPROVE_ELIGIBLE
@@ -113,6 +114,7 @@ export function assessSkillLifecycle(skill, telemetry = {}, { now = new Date(), 
     action,
     reason,
     stale,
+    telemetryObserved,
     daysSinceUse,
     successRate,
     telemetry: evidence,
@@ -144,6 +146,7 @@ export class RandSkillGovernance {
       overlaps: Object.freeze(overlaps),
       summary: Object.freeze({
         total: assessments.length,
+        telemetryUnknown: assessments.filter((item) => !item.telemetryObserved).length,
         reviewRequired: assessments.filter((item) => item.action === SkillGovernanceAction.REVIEW_REQUIRED || item.action === SkillGovernanceAction.DEPRECATION_REVIEW).length,
         autoApproveEligible: assessments.filter((item) => item.action === SkillGovernanceAction.AUTO_APPROVE_ELIGIBLE).length,
         zombieCandidates: assessments.filter((item) => item.action === SkillGovernanceAction.ZOMBIE_CANDIDATE).length,
