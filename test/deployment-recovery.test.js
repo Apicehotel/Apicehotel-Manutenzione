@@ -1,9 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { isDeploymentAssetError } from '../src/deployment-recovery.js'
+import { canAttemptDeploymentRecovery, isDeploymentAssetError } from '../src/deployment-recovery.js'
 
 const main = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8')
+const app = readFileSync(new URL('../src/randapp/App.jsx', import.meta.url), 'utf8')
+const usersData = readFileSync(new URL('../src/users-data.js', import.meta.url), 'utf8')
+const offlineStore = readFileSync(new URL('../src/offline-store.js', import.meta.url), 'utf8')
 const boundary = readFileSync(new URL('../src/error-boundary.jsx', import.meta.url), 'utf8')
 const serviceWorker = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
 const vercel = readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')
@@ -20,6 +23,20 @@ test('classifies stale deployment and Safari lazy-module failures without treati
   for (const message of staleErrors) assert.equal(isDeploymentAssetError(new Error(message)), true, message)
   assert.equal(isDeploymentAssetError(new Error('Failed to fetch /api/issues')), false)
   assert.equal(isDeploymentAssetError(new Error("Cannot destructure property 'unrelated' from null or undefined value")), false)
+})
+
+test('deployment recovery never performs destructive cache recovery while browser is offline', () => {
+  assert.equal(canAttemptDeploymentRecovery(false), false)
+  assert.equal(canAttemptDeploymentRecovery(true), true)
+})
+
+test('offline bootstrap keeps the last validated access and pre-offline directory data', () => {
+  assert.match(app, /!navigator\.onLine/)
+  assert.match(app, /isOfflineSessionFresh\(session\)/)
+  assert.match(usersData, /getCachedCollection\('directory', hotelId\)/)
+  assert.match(usersData, /offline:\s*true/)
+  assert.match(offlineStore, /new Dexie\('apiceOffline'\)/)
+  assert.match(offlineStore, /cache:'&key,entity,hotelId,updatedAt'/)
 })
 
 test('deployment recovery is installed before any lazy runtime route can load', () => {
