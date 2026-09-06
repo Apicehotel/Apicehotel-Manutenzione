@@ -1,0 +1,32 @@
+name: RandAI Group 3 Durable Runtime
+
+on:
+  push:
+    branches: [randai/group3-durable-runtime, main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: randai-group3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  durable-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - run: npm ci
+      - name: Group 1 authorization boundary
+        run: npm run test:group1
+      - name: Group 2 knowledge boundary
+        run: npm run test:group2
+      - name: Existing recovery contracts
+        run: npm run test:recovery
+      - name: Group 3 durable runtime
+        run: npm run test:group3
