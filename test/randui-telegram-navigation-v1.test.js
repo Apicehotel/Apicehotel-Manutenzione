@@ -14,7 +14,8 @@ test('mobile primary navigation keeps Home central and RandAI far right', () => 
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /randai:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
-  assert.match(navigation, /id:\s*'randai'.*action:\s*'randai'/s)
+  assert.match(navigation, /id:\s*'randai'.*key:\s*'randai'/s)
+  assert.doesNotMatch(navigation, /id:\s*'randai'.*action:\s*'randai'/s)
   assert.doesNotMatch(navigation, /label:\s*'Altro'/)
   assert.match(css, /data-slot='3'/)
   assert.match(css, /data-slot='5'/)
@@ -43,9 +44,12 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('RandAI remains a global assistant action rather than a duplicate page', () => {
-  assert.match(shell, /item\.action === 'randai'/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+test('RandAI navbar is a full page while the headbar keeps quick overlay access', () => {
+  assert.match(shell, /view === 'randai'.*<RandAIAssistantPage mode="page"/s)
+  assert.doesNotMatch(shell, /item\.action === 'randai'/)
+  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(shell, /rs-header__randai[\s\S]*new CustomEvent\('randai-toggle'\)/)
+  assert.doesNotMatch(shell, /handleBottom[\s\S]{0,400}randai-toggle/)
   assert.match(css, /rs-header__randai--desktop/)
 })
 
