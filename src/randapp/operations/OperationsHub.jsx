@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchIssues } from '../../issues-data.js'
 import { fetchPlanned } from '../../planned-data.js'
 import { fetchUrgents } from '../../urgents-data.js'
+import { loadSession } from '../../session.js'
 import { Icon, Spinner } from '../ui.jsx'
 import { Grid, Metric, PageTitle, Stack, Surface } from '../randui/visual-primitives.jsx'
 import './operations-hub.css'
@@ -61,7 +62,8 @@ function OperationalOverview({ rows, onOpen }) {
   )
 }
 
-export default function OperationsHub({ hotel, canIssues, canInterventions, canUrgent, onOpen }) {
+export default function OperationsHub({ hotel = null, canIssues, canInterventions, canUrgent = false, onOpen }) {
+  const hotelId = hotel?.id || loadSession()?.hotelId || null
   const [issues, setIssues] = useState([])
   const [planned, setPlanned] = useState([])
   const [urgents, setUrgents] = useState([])
@@ -69,11 +71,18 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, canU
 
   useEffect(() => {
     let active = true
+    if (!hotelId) {
+      setIssues([])
+      setPlanned([])
+      setUrgents([])
+      setLoading(false)
+      return () => { active = false }
+    }
     setLoading(true)
     Promise.all([
-      canIssues ? fetchIssues(hotel.id) : Promise.resolve({ issues: [] }),
-      canInterventions ? fetchPlanned(hotel.id) : Promise.resolve({ items: [] }),
-      canUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
+      canIssues ? fetchIssues(hotelId) : Promise.resolve({ issues: [] }),
+      canInterventions ? fetchPlanned(hotelId) : Promise.resolve({ items: [] }),
+      canUrgent ? fetchUrgents(hotelId) : Promise.resolve({ items: [] }),
     ]).then(([issueResult, plannedResult, urgentResult]) => {
       if (!active) return
       setIssues(issueResult?.issues || [])
@@ -84,7 +93,7 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, canU
       if (active) { setIssues([]); setPlanned([]); setUrgents([]) }
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [hotel.id, canIssues, canInterventions, canUrgent])
+  }, [hotelId, canIssues, canInterventions, canUrgent])
 
   const issueStats = useMemo(() => {
     const open = issues.filter((item) => !doneStatus(item.status))
