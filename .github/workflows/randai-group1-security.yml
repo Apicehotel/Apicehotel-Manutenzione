@@ -1,0 +1,38 @@
+name: RandAI Group 1 Security
+
+on:
+  push:
+    branches:
+      - randai/group1-guardrails-observability
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: randai-group1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: RandTool Gateway contracts
+        run: npm run test:group1
+
+      - name: Promptfoo authorization regression gate
+        run: npm run eval:randai:security
