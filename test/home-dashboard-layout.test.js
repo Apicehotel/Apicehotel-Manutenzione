@@ -2,11 +2,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { HOME_DASHBOARD_CARDS, resolveHomeDashboardLayout } from '../src/randapp/home-dashboard-layout.js'
 
-test('Home dashboard keeps only permission-visible cards and never leaves invalid spans', () => {
+test('Home dashboard keeps only permission-visible cards and valid row:size states', () => {
   const layout = resolveHomeDashboardLayout(['status', 'planning', 'randai'], 'normal')
   assert.deepEqual(layout.map((item) => item.id), ['status', 'planning', 'randai'])
   assert.ok(layout.every((item) => item.span >= 1 && item.span <= 3))
-  assert.ok(layout.every((item) => /^1:[123]$/.test(item.state)))
+  assert.ok(layout.every((item) => /^\d+:[123]$/.test(item.state)))
+  assert.deepEqual(layout.map((item) => item.state), ['1:3', '2:2', '2:1'])
 })
 
 test('status and priority stay full-width anchors in every official Home template', () => {
@@ -30,4 +31,5 @@ test('Piccolo is dense, Normale balances 1:2 and 1:1, Grande gives full-width de
 test('a single remaining permitted macro-card expands instead of leaving a hole', () => {
   const layout = resolveHomeDashboardLayout(['status', 'structure'], 'normal')
   assert.equal(layout.find((item) => item.id === 'structure')?.span, 3)
+  assert.equal(layout.find((item) => item.id === 'structure')?.state, '2:3')
 })
