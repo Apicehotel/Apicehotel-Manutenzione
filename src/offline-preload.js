@@ -55,10 +55,11 @@ export async function warmOfflineForSession(session, { force = false, now = Date
 
   const results = await Promise.allSettled(tasks.map(([, run]) => run()))
   const failed = results.flatMap((result, index) => result.status === 'rejected' ? [tasks[index][0]] : [])
-  warmedAt.set(key, now)
+  const succeeded = results.length - failed.length
+  if (!tasks.length || succeeded > 0) warmedAt.set(key, now)
 
   return {
-    warmed: true,
+    warmed: succeeded > 0 || tasks.length === 0,
     modules: tasks.map(([name]) => name),
     failed,
   }
