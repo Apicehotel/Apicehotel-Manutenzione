@@ -7,14 +7,13 @@ import { fetchOperationalWeather } from '../weather-data.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
-import { Badge, Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
+import { Badge, Button, EmptyState, Icon, Spinner } from './ui.jsx'
+import { loadUiSize } from './ui-size.js'
+import { resolveHomeDashboardLayout } from './home-dashboard-layout.js'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
 import './home-operational.css'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } } })
-const FOCUS_KEY = 'randapp.home.focus.v1'
-const readFocus = () => { try { return localStorage.getItem(FOCUS_KEY) !== 'complete' } catch { return true } }
-const writeFocus = (focus) => { try { localStorage.setItem(FOCUS_KEY, focus ? 'focus' : 'complete') } catch {} }
 const dateKey = (value = new Date()) => value.toISOString().slice(0, 10)
 const weekdayKey = (date) => ['sun','mon','tue','wed','thu','fri','sat'][date.getDay()]
 const monthDay = (date) => date.getDate()
@@ -49,49 +48,113 @@ export function buildPriorityItems({ user, openUrgents, openIssues, todayInterve
   return rows.sort((a, b) => b.score - a.score || (a.createdAt || 0) - (b.createdAt || 0))
 }
 
-function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
-  const [focusOnly,setFocusOnly]=useState(readFocus)
-  const [preferencesOpen,setPreferencesOpen]=useState(false)
-  useEffect(()=>{ if(personalizeSignal>0) setPreferencesOpen(true) },[personalizeSignal])
+function MacroCard({ id, title, eyebrow, layout, children, onOpen }) {
+  const item = layout.find((entry) => entry.id === id)
+  if (!item) return null
+  return <section className="rs-homecard" data-card={id} data-span={item.span} data-layout-state={item.state}>
+    <header className="rs-homecard__head"><div><span>{eyebrow}</span><h2>{title}</h2></div>{onOpen&&<button type="button" onClick={onOpen} aria-label={`Apri ${title}`}><Icon name="chevronRight"/></button>}</header>
+    <div className="rs-homecard__body">{children}</div>
+  </section>
+}
+
+function Metric({ label, value, tone = 'default', onClick }) {
+  return <button type="button" className="rs-homecard__metric" onClick={onClick} disabled={!onClick}><Badge tone={tone}>{label}</Badge><strong>{value}</strong></button>
+}
+
+function HomeData({ user, hotel, onNavigate }) {
+  const [uiSize, setUiSizeState] = useState(loadUiSize)
+  useEffect(() => {
+    const onSize = (event) => setUiSizeState(event.detail?.value || loadUiSize())
+    window.addEventListener('apice-ui-size-changed', onSize)
+    return () => window.removeEventListener('apice-ui-size-changed', onSize)
+  }, [])
+
   const canIssues = canUser(user, 'issues', 'view')
   const canCreateIssues = canUser(user, 'issues', 'create')
   const canUrgent = canUser(user, 'urgent', 'view')
   const canInterventions = canUser(user, 'interventions', 'view')
   const canReminders = canUser(user, 'reminders', 'view')
+  const canPlanning = canUser(user, 'planning_work', 'view') || canUser(user, 'planning_sale', 'view') || canInterventions
+  const structureLinks = [
+    canUser(user, 'housekeeping', 'view') ? ['housekeeping','housekeeping','Housekeeping'] : null,
+    canUser(user, 'supplies', 'view') ? ['supplies','package','Rifornimenti'] : null,
+    canUser(user, 'inventory', 'view') ? ['inventory','package','Magazzino'] : null,
+    canUser(user, 'temperature', 'view') ? ['temperature','thermometer','Sensori'] : null,
+    canUser(user, 'temperature', 'view') ? ['plants','wrench','Impianti'] : null,
+  ].filter(Boolean)
+
   const issuesQuery=useQuery({queryKey:['home13',hotel.id,'issues'],queryFn:()=>fetchIssues(hotel.id),enabled:canIssues})
   const urgentsQuery=useQuery({queryKey:['home13',hotel.id,'urgents'],queryFn:()=>fetchUrgents(hotel.id),enabled:canUrgent})
-  const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>fetchPlanned(hotel.id),enabled:canInterventions})
+  const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>fetchPlanned(hotel.id),enabled:canPlanning})
   const remindersQuery=useQuery({queryKey:['home13',hotel.id,'reminders',user?.role],queryFn:()=>fetchReminders(hotel.id),enabled:canReminders})
   const weatherQuery=useQuery({queryKey:['home13',hotel.id,'weather'],queryFn:({signal})=>fetchOperationalWeather(hotel.id,{signal}),refetchInterval:5*60_000})
   const loading=[issuesQuery,urgentsQuery,plannedQuery,remindersQuery].some((q)=>q.isPending&&q.fetchStatus!=='idle')
-  const issues=issuesQuery.data?.issues||[], urgents=urgentsQuery.data?.items||[], planned=plannedQuery.data?.items||[], reminders=remindersQuery.data||[]
-  const openIssues=issues.filter((item)=>item.status!=='done'), openUrgents=urgents.filter((item)=>item.status!=='completata')
-  const todayInterventions=planned.filter((item)=>item.status!=='done'&&(isToday(item.scheduledAt)||(item.scheduledAt&&item.scheduledUntil&&item.scheduledAt<=Date.now()&&item.scheduledUntil>=Date.now())))
+
+  const issues=issuesQuery.data?.issues||[]
+  const urgents=urgentsQuery.data?.items||[]
+  const planned=plannedQuery.data?.items||[]
+  const reminders=remindersQuery.data||[]
+  const openIssues=issues.filter((item)=>item.status!=='done')
+  const openUrgents=urgents.filter((item)=>item.status!=='completata')
+  const openPlanned=planned.filter((item)=>item.status!=='done')
+  const todayInterventions=openPlanned.filter((item)=>isToday(item.scheduledAt)||(item.scheduledAt&&item.scheduledUntil&&item.scheduledAt<=Date.now()&&item.scheduledUntil>=Date.now()))
+  const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
   const weather=weatherQuery.data
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
-  const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,7):priorities.slice(0,10)
-  const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
-  const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null].filter(Boolean)
-  const quick=[canCreateIssues?['new-issue','plus','Nuova segnalazione']:null,canInterventions?['interventions','wrench','Interventi']:null,canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','Housekeeping']:null,canReminders?['reminders','bell','Promemoria']:null].filter(Boolean).slice(0,4)
-  const setMode=(focus)=>{setFocusOnly(focus);writeFocus(focus)}
+  const visiblePriorities=priorities.slice(0,7)
 
-  return <section className="rs-workhome" data-testid="home-view">
+  const stats=[
+    canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,
+    canIssues?{label:'Segnalazioni',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,
+    canInterventions?{label:'Interventi oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,
+    canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null,
+  ].filter(Boolean)
+
+  const visibleCardIds=[
+    stats.length ? 'status' : null,
+    (canIssues||canUrgent||canInterventions||canReminders||weather) ? 'priority' : null,
+    canPlanning ? 'planning' : null,
+    (canIssues||canUrgent||canInterventions) ? 'operations' : null,
+    structureLinks.length ? 'structure' : null,
+    canIssues ? 'randai' : null,
+  ].filter(Boolean)
+  const layout=useMemo(()=>resolveHomeDashboardLayout(visibleCardIds,uiSize),[visibleCardIds.join('|'),uiSize])
+
+  return <section className="rs-workhome" data-testid="home-view" data-home-template={uiSize}>
     <header className="rs-workhome__hero">
-      <div><span className="rs-workhome__role">{roleLabel(user)}</span><h1>Ciao, {firstName(user?.name)}</h1><p>{hotel.name} · cosa richiede attenzione adesso</p></div>
-      <div className="rs-workhome__hero-actions">
-        {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
-        <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home"><span className="rs-workhome__view-label">Vista</span></Button>
-      </div>
+      <div><span className="rs-workhome__role">{roleLabel(user)}</span><h1>Ciao, {firstName(user?.name)}</h1><p>{hotel.name} · dashboard operativa</p></div>
+      {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
     </header>
-    {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; puoi scegliere quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
-    {loading?<Spinner label="Preparo le priorità della giornata…"/>:<>
-      <div className="rs-workhome__stats" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
-      {(weather?.level==='danger'||weather?.level==='warning')&&<button type="button" className={`rs-workhome__weather is-${weather.level}`} onClick={()=>{}} data-testid="weather-widget"><Icon name="warning"/><span><strong>{weather.level==='danger'?'Allarme meteo':'Attenzione meteo'}</strong><small>{weather.message||'Controllare gli esterni'}</small></span></button>}
-      <div className="rs-workhome__sectionhead"><div><span>PRIORITÀ</span><h2>Cosa fare adesso</h2></div><small>{visiblePriorities.length} attività rilevanti</small></div>
-      {visiblePriorities.length===0?<EmptyState icon="check" title="Nessuna priorità immediata">Non risultano attività urgenti o pianificate per adesso.</EmptyState>:<div className="rs-workhome__queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
-      {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>} 
-      {!focusOnly&&<><div className="rs-workhome__sectionhead"><div><span>SCORCIATOIE</span><h2>Vai al lavoro</h2></div></div><div className="rs-workhome__quick">{quick.map(([route,icon,label])=><button key={route} type="button" onClick={()=>onNavigate?.(route)}><Icon name={icon}/><span>{label}</span><Icon name="chevronRight"/></button>)}</div></>}
-    </>}
+
+    {loading?<Spinner label="Preparo la dashboard…"/>:<div className="rs-homegrid" data-testid="home-dashboard-grid">
+      <MacroCard id="status" title="Stato generale" eyebrow="OGGI" layout={layout}>
+        <div className="rs-homecard__metrics">{stats.map((stat)=><Metric key={stat.label} label={stat.label} value={stat.value} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)}/>)}</div>
+      </MacroCard>
+
+      <MacroCard id="priority" title="Priorità adesso" eyebrow="COSA FARE" layout={layout}>
+        {(weather?.level==='danger'||weather?.level==='warning')&&<button type="button" className={`rs-workhome__weather is-${weather.level}`} data-testid="weather-widget"><Icon name="warning"/><span><strong>{weather.level==='danger'?'Allarme meteo':'Attenzione meteo'}</strong><small>{weather.message||'Controllare gli esterni'}</small></span></button>}
+        <div className="rs-homecard__countline"><strong>{visiblePriorities.length}</strong><span>attività rilevanti</span></div>
+        {visiblePriorities.length===0?<EmptyState icon="check" title="Nessuna priorità immediata">Non risultano attività urgenti o pianificate per adesso.</EmptyState>:<div className="rs-workhome__queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
+      </MacroCard>
+
+      <MacroCard id="planning" title="Planning" eyebrow="RIEPILOGO" layout={layout} onOpen={()=>onNavigate?.('planning-work')}>
+        <div className="rs-homecard__metrics rs-homecard__metrics--compact"><Metric label="Lavori oggi" value={todayInterventions.length} tone="accent" onClick={()=>onNavigate?.('planning-work')}/><Metric label="Aperti" value={openPlanned.length} tone="todo" onClick={()=>onNavigate?.('planning-work')}/></div>
+      </MacroCard>
+
+      <MacroCard id="operations" title="Operatività" eyebrow="RIEPILOGO" layout={layout} onOpen={()=>onNavigate?.('operations')}>
+        <div className="rs-homecard__metrics rs-homecard__metrics--compact">{canIssues&&<Metric label="Segnalazioni" value={openIssues.length} tone={openIssues.length?'todo':'done'} onClick={()=>onNavigate?.('issues')}/>} {canUrgent&&<Metric label="Allarmi" value={openUrgents.length} tone={openUrgents.length?'high':'done'} onClick={()=>onNavigate?.('urgent')}/>} {canInterventions&&<Metric label="Interventi oggi" value={todayInterventions.length} tone="accent" onClick={()=>onNavigate?.('interventions')}/>}</div>
+      </MacroCard>
+
+      <MacroCard id="structure" title="Struttura" eyebrow="AREE" layout={layout}>
+        <div className="rs-homecard__countline"><strong>{structureLinks.length}</strong><span>aree disponibili</span></div>
+        <div className="rs-workhome__quick">{structureLinks.map(([route,icon,label])=><button key={route} type="button" onClick={()=>onNavigate?.(route)}><Icon name={icon}/><span>{label}</span><Icon name="chevronRight"/></button>)}</div>
+      </MacroCard>
+
+      <MacroCard id="randai" title="RandAI & Attività" eyebrow="ASSISTENZA" layout={layout}>
+        <div className="rs-homecard__countline"><strong>{priorities.length}</strong><span>attività monitorate</span></div>
+        <RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>
+      </MacroCard>
+    </div>}
   </section>
 }
 
