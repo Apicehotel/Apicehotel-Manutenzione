@@ -4,9 +4,9 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandSkills**, **RandChat**, **RandDesktop**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
-La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool + Permission Gateway, RandMind Continuity + Model Router, RandVisual Engine, RandCore Visual Intelligence, RandChange Receipt + Visual QA.
+La regola architetturale resta: **un solo proprietario canonico per capacità**. Se una soluzione è nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch o creare un secondo sistema.
 
 ## Confini architetturali
 
@@ -16,325 +16,90 @@ La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool 
 - Nessun modello/frontend riceve `service_role`, PIN, refresh token o secret non necessari.
 - Mutazioni protette passano da Safe Write / Action Gateway / audit.
 - `UNKNOWN` e `STALE` non significano `HEALTHY`.
-- Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario o rollback.
-- Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo e dipendenze.
-- Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
+- Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario, discovery o rollback.
+- Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo, riferimenti e dipendenze.
 
-## RandSkills v1
+## RandRadar Full Evolution v1
 
-RandSkills introduce competenze modulari e versionate senza creare un secondo sistema di autorizzazione. Il formato segue lo standard aperto Agent Skills: ogni competenza vive in `rand-skills/<name>/SKILL.md`, mentre RandCore/RLS/RPC restano l'autorità finale per permessi e mutazioni.
+`RAND_FULL_EVOLUTION_V1` rende Repo Radar un motore di scouting dell'intero prodotto, non un radar limitato a categorie statiche.
 
-Prime skill canoniche: `maintenance`, `housekeeping`, `planning`, `warehouse`, `whatsapp`, `procedures`, `repo-radar`. `npm run skills:validate` applica un gate fail-closed su nome/cartella, descrizione, scope, permessi, azioni consentite/vietate, workflow e validazione.
+Il perimetro viene derivato da fonti vive già canoniche:
 
-La toolchain usa una sola sorgente Node: `.nvmrc` (**24.20.0 LTS**). `package.json`, npm (`engine-strict=true`) e workflow GitHub leggono lo stesso contratto, evitando drift fra locale, CI, RandCore, RandDesktop, Repo Radar e verifica Ocean.
+- **24/24 pagine RandApp** da `src/randapp/randui/page-catalog.js`, con dominio, tipo pagina e capability reali;
+- **moduli governati dell'ecosistema Rand** da `src/randai/core/ecosystem.js`;
+- **14 fronti evolutivi RandAI**: agent runtime, model routing, tool use/MCP, memoria, RAG/retrieval, eval, observability, guardrail, multimodale, voice, coding agent, learning, ottimizzazione costi e context engineering.
 
-Dettaglio: `docs/architecture/RANDSKILLS_V1.md`.
+Ogni elemento produce un `inventoryRef` e almeno un profilo di ricerca. La copertura è **fail-closed**: se una pagina, un modulo o un fronte AI resta senza profilo, lo snapshot non può dichiararsi completo.
 
-### RandSkills Router — Blocco 1
+Il discovery continua sui provider canonici **GitHub, GitLab, Codeberg e npm**. La precedente matrice specialistica RandUI da **35 settori** resta attiva come approfondimento e non viene rimossa.
 
-RandSkills usa ora un router operativo governato, innestato sullo `SkillRegistry` esistente e senza introdurre un secondo executor. Il flusso è:
+Le candidate vengono deduplicate e selezionate in modo bounded (`MAX_DISCOVERED=80`, massimo 2 per settore). Stelle e popolarità sono soltanto segnali deboli di discovery. L'adozione continua a richiedere licenza ammessa, manutenzione, sicurezza, compatibilità, benchmark e rollback; una sostituzione richiede superiorità misurabile. **Nessuna discovery auto-installa o auto-sostituisce codice.**
 
-`objective → RandSkillRouter → skill APPROVED → permission/tool requirements → intersezione con autorizzazioni caller → risk bound → RandAgentRuntime`.
+Classificazione concettuale: **Aggiungi / Sostituisci / Ignora / Fonte**. Il runtime interno mantiene anche gli stati governati `KEEP / UPGRADE / REPLACE / ADD / REJECT / WATCH`.
 
-- routing implicito con `confidence`, motivazioni e fallback fail-closed;
-- composizione multi-skill quando l'intento coinvolge più domini;
-- manifest runtime canonici con `permissions`, `requiredTools`, `instructions` e `successCriteria`;
-- tool binding tramite pattern ancorati (`maintenance.*`, `warehouse.*`, ecc.), sempre come restrizione dei tool già autorizzati;
-- compatibilità con tool legacy tramite fallback limitato ai permessi dichiarati dalla skill;
-- decisione di routing inserita nel contesto RandMind per audit, learning e observability futuri;
-- regression test dedicati `input → skill`, multi-skill, fallback e tool bounding.
+Comando snapshot:
 
-Regola invariabile: **il router può restringere capacità, mai concederle**. RandCore/RLS/RPC restano autorità finale.
+```bash
+npm run repo:radar
+```
 
-Dettaglio: `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md`.
+Workflow settimanale: `.github/workflows/repo-radar.yml`.
 
-### RandSkills Governance — Blocco 2
+Dettaglio: `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md`.
 
-La roadmap RandSkills è chiusa **2/2**. `RandSkillGovernance` aggiunge lifecycle, osservabilità e hygiene senza duplicare `LearningEngine`, store, telemetry o autorizzazioni.
+## RandSkills
 
-`evidenze RandMind/Learning/RandCore → RandSkillGovernance → KEEP / AUTO_APPROVE_ELIGIBLE / REVIEW_REQUIRED / DEPRECATION_REVIEW / ZOMBIE_CANDIDATE → SkillRegistry`
+RandSkills introduce competenze modulari e versionate senza creare un secondo sistema di autorizzazione. Ogni competenza vive in `rand-skills/<name>/SKILL.md`; RandCore/RLS/RPC restano l'autorità finale per permessi e mutazioni.
 
-- promozione automatica solo per skill `TESTED`, **LOW risk**, con almeno 2 evidenze verificate e senza modifiche ad autorizzazioni/schema o operazioni distruttive;
-- MEDIUM/HIGH/CRITICAL e cambi di boundary restano sempre in review;
-- `UNKNOWN` non diventa `STALE`: assenza di telemetria non viene trasformata artificialmente in zero utilizzi;
-- overlap detection su tag, tool pattern e keyword di routing genera soltanto review, mai merge automatici;
-- una skill diventa `ZOMBIE_CANDIDATE` soltanto se ritirata/bloccata, con uso zero verificato, zero riferimenti e replacement esplicito;
-- nessuna cancellazione fisica automatica: la rimozione del codice richiede sempre verifica repository/runtime e review umana;
-- snapshot aggregato pronto per RandCore/RandAI Control Center senza creare una seconda dashboard o un secondo store.
+Skill canoniche: `maintenance`, `housekeeping`, `planning`, `warehouse`, `whatsapp`, `procedures`, `repo-radar`.
 
-Gate dedicato: `npm run test:randskills:governance`.
+Il flusso resta:
 
-Dettaglio: `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md`.
+`objective → RandSkillRouter → skill APPROVED → permission/tool requirements → autorizzazioni caller → risk bound → RandAgentRuntime`
 
-## RandMind Cognitive + Learning — Blocco 2
+Il router può restringere capacità, mai concederle. Governance e promotion automatica restano limitate a miglioramenti LOW-risk testati e verificati; cambi di boundary, schema, permessi e operazioni distruttive richiedono review.
 
-Il Blocco 2 non introduce Hermes o Ruflo come secondo framework: RandApp possedeva già agent runtime, orchestrazione, ToolRegistry, permission gateway, RandMind/memory, LearningEngine e SkillRegistry. I pattern migliori vengono quindi innestati sui proprietari esistenti.
+Comandi:
 
-Flusso canonico: `RandAI → RandMindCognitiveLoop → RandSkills → tool autorizzati/risk-bounded → RandAgentRuntime → inspection/continuity → LearningEngine`.
+```bash
+npm run skills:validate
+npm run test:randskills
+npm run test:randskills:governance
+```
 
-- le 7 RandSkills del Blocco 1 entrano nel `SkillRegistry` già esistente;
-- `ToolsetResolver` può soltanto restringere una lista di tool già autorizzati, mai concedere permessi;
-- il cognitive loop richiede sempre `hotelId`, usa solo skill `APPROVED` e non crea un secondo executor;
-- l'apprendimento avviene solo dopo esiti riusciti e con osservazioni `verified`;
-- promozione automatica solo per miglioramenti **LOW risk**, testati e con almeno 2 evidenze; MEDIUM/HIGH/CRITICAL, schema, permessi e azioni distruttive richiedono review;
-- regola: **RandMind può imparare da solo, ma non può cambiare da solo i confini critici di RandCore**.
+## RandMind / RandBrain / RandAI
 
-Dettaglio: `docs/architecture/RANDMIND_LEARNING_BLOCK2.md`.
+RandMind è la memoria canonica governata con provenienza, temporalità, conflitti, retention e forgetting auditabile. RandBrain governa routing, reasoning graph, autonomia e learning verificato. RandAI usa questi proprietari invece di duplicare memoria, tool registry, agent runtime o orchestrazione.
 
-## RandCore Security Intelligence + RandRadar — Blocco 3
+Principio invariabile: **RandMind può imparare da esiti verificati, ma non può cambiare da solo i confini critici di RandCore**.
 
-Il Blocco 3 completa la roadmap con un livello di fonti governate e correlazione dell'esposizione reale, senza introdurre un motore offensivo in RandApp.
+## RandCore e Security Intelligence
 
-- `Exploitarium` è una fonte `SECURITY_INTELLIGENCE`: segnala exploit/PoC pubblici ma non li esegue;
-- `reverse-skill` è un donatore `ANALYSIS_PATTERN`: reverse engineering solo con autorizzazione esplicita e sandbox isolata;
-- `NoSignups/FckSignups` è una fonte `DISCOVERY`: le repository scoperte tornano sempre nei normali gate RandRadar;
-- RandCore correla i finding con `component + affectedVersion` realmente presenti nello stack;
-- exploit pubblico e esposizione produzione aumentano la priorità; una patch disponibile la riduce;
-- output: `LOW / MEDIUM / HIGH / CRITICAL` con remediation esplicita;
-- nessuna fonte può auto-installare codice o eseguire exploit in produzione;
-- classificazione concettuale Repo Radar: `Aggiungi / Sostituisci / Ignora / Fonte`.
+RandCore governa health, audit, release gate, workers, sicurezza, costi, integrazioni ed evidenze LTS. Le fonti di security intelligence possono segnalare exploit/PoC pubblici e pattern di analisi, ma non possono eseguire exploit nel runtime di produzione né installare codice.
 
-Dettaglio: `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md`.
+`Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
 
-## RandUI Adaptive Layout
+## RandUI
 
-Il contratto UI è unico:
-
-`Hotel scope → identità → permessi → interessi → device/input/orientamento → Piccolo/Normale/Grande → layout`
-
-I **permessi** decidono cosa è autorizzato; gli **interessi** decidono priorità e ordine di ciò che è già autorizzato.
-
-Breakpoints canonici:
-
-- smartphone `<768px`;
-- tablet `768–1199px`;
-- desktop/Windows `>=1200px`.
-
-Sono gestiti anche touch/pointer, portrait/landscape, safe-area, schermi stretti e monitor larghi. `Piccolo / Normale / Grande` è il solo contratto persistente di densità (`apicehotel.ui-size.v1`); Grande aumenta anche controlli e touch target, non soltanto il testo.
-
-La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. **Header e contenuto condividono lo stesso gutter orizzontale `--rs-page-pad-x`**, aumentato solo dalle safe-area reali; i controlli non possono quindi uscire lateralmente mentre le card restano allineate. Sui telefoni molto stretti l'header operativo può ricomporsi prima di sacrificare la leggibilità del nome struttura. La navigazione primaria Telegram-inspired mantiene **Home nello slot 3** e **RandAI nello slot 5**. `Altro` non è più una tab primaria: il menu completo autorizzato si apre dal controllo profilo/nome nell'header. Gli slot mancanti non spostano le ancore geometriche.
-
-### RandUI v1 Core
-
-Il Core RandUI è ora dichiarativo e ha proprietari espliciti:
+RandUI è il design system canonico. Il flusso è:
 
 `Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
 
-- `src/randapp/randui/design-contract.js` fissa versione, breakpoint, densità, invarianti e stati;
-- `component-registry.js` riusa le primitive di `ui.jsx` e dichiara la state matrix invece di introdurre un secondo design system;
-- `template-registry.js` contiene **14 template ufficiali** (`dashboard`, `list`, `list-detail`, `master-detail`, `operational`, `planning`, `form`, `wizard`, `settings`, `management`, `monitor`, `system-state`, `auth`, `search-archive`);
-- `page-schema.js` risolve e valida le pagine; `page-catalog.js` assegna il template canonico ai moduli RandApp/RandAI;
-- `system-states.jsx` unifica loading, empty, error, offline, sync, stale, conflict, access denied e feedback;
-- `randui/foundation.css` viene caricato per ultimo e rende `adaptive-layout.css` proprietario della geometria e `ui-coherence.css` proprietario di interazione/accessibilità;
-- `Shell.jsx` resta l'unica chrome autenticata: anche Impostazioni viene resa dentro la Shell tramite `SettingsTemplate`.
+Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice principale copre **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Chromium e WebKit.
 
-Il vecchio `app-shell-foundation.css` resta eliminato. I CSS di dominio vengono rimossi solo dopo prova di assenza di consumatori.
+La navigazione mobile mantiene Operatività nello slot 1, Planning nello slot 2, Home nello slot 3, destinazione operativa/RandChat nello slot 4 e RandAI nello slot 5. Il menu completo vive nel controllo profilo/nome.
 
-Dettaglio: `docs/architecture/RANDUI_V1_CORE.md`.
+## Moduli operativi
 
-### RandUI v1 Guard
+RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
 
-Il Blocco 2 aggiunge un gate **fail-closed** tra il Core e la migrazione delle pagine:
+Warehouse resta bounded domain con ledger, stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow operativo separato dal Magazzino e non crea quantità o movimenti Warehouse.
 
-`Page Schema → Registry/Template → RandUI Guard → Chromium/WebKit → Device Acceptance`
+RandChat riusa identità e autorizzazioni RandApp; gruppi, DM E2EE, Procedure/RandGuide, RandAI e RandMedia restano bounded dai rispettivi gate. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette per Windows/desktop.
 
-- `src/randapp/randui/guard.js` controlla composizione e geometria senza introdurre un secondo framework;
-- componenti non registrati/non ammessi e slot inventati vengono rifiutati;
-- il browser gate blocca overflow orizzontale, fuga dal viewport, target touch RandUI sotto **44×44 px**, azioni senza nome accessibile, template sconosciuti e ID DOM duplicati;
-- matrice canonica: **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Pixel 7 Chromium e iPhone 13 WebKit;
-- una pagina non è considerata valida se esce dal contratto RandUI.
+## Safe-area e target device
 
-Dettaglio: `docs/architecture/RANDUI_V1_GUARD.md`.
-
-### RandUI v1 Block 3 — Page Migration
-
-Il Blocco 3 porta le destinazioni runtime sotto il contratto reale, senza riscrivere la logica dei moduli:
-
-`Shell destination → Page Catalog → PageBoundary → Template Registry → Guard → contenuto operativo`
-
-- `src/randapp/randui/PageBoundary.jsx` è il boundary unico e **fail-closed**: una destinazione non catalogata non può renderizzare fuori RandUI;
-- il catalogo copre ora **24/24 destinazioni correnti**: alle 23 destinazioni della migrazione iniziale si aggiunge l'hub `operations` governato da RandUI;
-- tutte le viste operative della Shell entrano nel relativo template tramite `PageBoundary`; Settings resta direttamente su `SettingsTemplate`, mentre `/randai` resta catalogata come `monitor`;
-- la migrazione è marcata `template-boundary-v1`, così una futura evoluzione può raffinare gli slot interni senza cambiare navigazione, permessi o dati;
-- eliminati i wrapper zombie `rs-legacy--temperature` e `rs-legacy--housekeeping`; i CSS di dominio restano solo dove hanno ancora consumatori reali;
-- nessuna nuova libreria UI o testing è stata introdotta: il sistema riusa registry, template, Guard e Playwright già presenti.
-
-Dettaglio: `docs/architecture/RANDUI_V1_MIGRATION.md`.
-
-### RandUI Visual Language v1
-
-La migrazione strutturale è completata da una grammatica visuale dichiarativa condivisa:
-
-`Page Catalog → Template → Visual Policy → RandUI primitives → domain content → Guard`
-
-- tutti i **14 template** dichiarano una policy di larghezza (`wide / reading / center`) e ritmo (`compact / normal / comfortable`), applicata automaticamente dal `TemplateFrame`;
-- `visual-primitives.jsx` registra cinque primitive canoniche: `PageTitle`, `Surface`, `Stack`, `Grid`, `Metric`;
-- `randui/visual-language.css`, importato dalla Foundation finale, governa gerarchia locale, ritmo, pannelli, grid e metriche senza introdurre un secondo design system;
-- `PageTitle` operativo è unico: le utility views riusano la primitiva RandUI invece di mantenerne una copia;
-- Planning (`PlanningHub`, lavori, sale e calendario) è la prima famiglia top-level completamente ripulita dalla geometria inline ripetuta;
-- il vecchio `src/randapp/migrated.css` è stato eliminato dopo zombie scan: le regole vive sono confluite nel linguaggio RandUI e i selettori legacy non avevano più consumer;
-- RandRadar resta disponibile quando manca una capacità reale; non viene usato per duplicare spacing, card o layout già coperti internamente.
-
-Dettaglio: `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md`.
-
-### RandUI Telegram-inspired Navigation v1
-
-La Shell usa ora i principi di navigazione che rendono Telegram efficace — gerarchia stabile, densità leggera, menu completo separato dalle scorciatoie — senza copiarne grafica o introdurre dipendenze esterne.
-
-Contratto mobile:
-
-1. **Operatività** nello slot 1: hub RandUI per Segnalazioni e Interventi, con permessi e workflow figli indipendenti;
-2. **Planning** nello slot 2;
-3. **Home** sempre geometricamente centrale nello slot 3;
-4. **RandChat** quando autorizzata, altrimenti una destinazione operativa autorizzata scelta dal ranking adattivo esistente;
-5. **RandAI** sempre all'estrema destra nello slot 5 come azione globale dell'assistente.
-
-Il menu completo si apre dal controllo **profilo/nome** nell'header ed è diviso in sezioni accordion accessibili. Il chip hotel torna ad avere una sola responsabilità: cambiare struttura quando l'utente ne possiede più di una. Su desktop RandAI resta disponibile anche nell'header; su mobile il controllo duplicato viene nascosto perché lo slot 5 è permanente.
-
-`src/randapp/telegram-navigation.css` usa i token `--rs-*`, conserva light/dark mode e Piccolo/Normale/Grande, esplicita le cinque colonne e mantiene target touch >=44 px. Nessun badge, numero o percentuale viene simulato: future metriche entreranno solo da fonti reali.
-
-RandRadar non ha richiesto nuove repository per questo blocco: Shell, registry, Adaptive Layout, RandUI e Playwright coprivano già la capacità. Aggiungere un altro framework di navigazione avrebbe creato un secondo sistema e aumentato il rischio.
-
-Gate dedicato: `npm run test:randui:telegram`.
-
-Dettaglio: `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md`.
-
-### Planning mobile — baseline visuale reale
-
-La verifica su iPhone/Ocean ha esposto un difetto che i precedenti screenshot di login non potevano rilevare: uno `Stack` RandUI alto veniva distribuito come CSS Grid e le righe `auto` potevano stirarsi, trasformando il `PageTitle` in centinaia di pixel di spazio morto. Il fix è nella **primitiva condivisa**, non in un `planning-fix.css` locale:
-
-- `.rs-randui-stack` usa `align-content: start` e `grid-auto-rows: max-content`, quindi le righe seguono il contenuto e non riempiono arbitrariamente il viewport;
-- l'header locale dentro uno Stack non possiede più un secondo margin verticale: il ritmo è governato dal gap della primitiva;
-- Planning usa un flusso compatto `titolo → moduli → Oggi → calendario`, senza il grande vuoto verticale e senza doppio gap sotto le card;
-- `Lavori oggi` e `Sale oggi` sono confluiti in un solo pannello **Oggi / Panoramica operativa**, mantenendo separati i dati ma riducendo rumore e altezza;
-- le due card Planning restano affiancate quando leggibili e passano a una colonna sotto `380px`;
-- il banner di onboarding notifiche è ora compatto e **chiudibile per sessione/hotel**, importante su iPhone browser dove il pulsante Attiva non è disponibile finché la PWA non viene aggiunta alla Home;
-- il contratto dedicato `npm run test:randui:planning` impedisce il ritorno dello Stack stirato, dei due riepiloghi duplicati e del banner non chiudibile.
-
-Regola: se un difetto visuale osservato su Ocean nasce da una primitiva condivisa, si corregge la primitiva e si aggiunge il relativo gate; non si accumulano override pagina-specifici.
-
-## Safe-area iOS / Android
-
-RandApp non usa una libreria notch separata. Il contratto è interno e condiviso:
-
-- `viewport-fit=cover`;
-- `env(safe-area-inset-*)`;
-- `src/randapp/system-insets.js` per eventuali inset nativi/wrapper futuri;
-- `adaptive-layout.css` come unica geometria responsive.
-
-La safe-area superiore ha **un solo proprietario: l'header sticky**. Non viene applicata anche al contenitore app, evitando il doppio spazio su iPhone con notch/Dynamic Island. Orizzontalmente header e contenuto usano lo stesso gutter canonico e gli inset nativi possono soltanto aumentarlo. Sotto `360px` l'header operativo ricompone i controlli se necessario, invece di tagliare il nome hotel o il profilo. Il bottom inset resta non limitato per Home Indicator e navigazione Android.
-
-## Home operativa
-
-La Home è una schermata di lavoro, non un elenco di link.
-
-Gerarchia corrente:
-
-1. ruolo/interesse e saluto;
-2. contatori operativi compatti;
-3. **Cosa fare adesso**;
-4. suggerimento RandAI;
-5. scorciatoie aggiuntive nella vista Completa.
-
-Quando sono presenti esattamente tre contatori, su smartphone restano su una sola riga. `Allarmi` indica il canale Avvisi urgenti ed è distinto dalle segnalazioni con urgenza `alta`.
-
-Il FAB multi-azione non copre più le card della Home: la Home espone una azione esplicita **Nuova segnalazione**, autorizzata tramite il contratto già esistente `new-issue`. Le altre creazioni restano contestuali nelle rispettive sezioni.
-
-La card `RandAI · Prossimo lavoro` è secondaria rispetto alla coda reale e mostra uno score esplicito `Priorità N`. Il CSS Home è centralizzato in `src/randapp/home-operational.css`, non embedded nei componenti.
-
-## RandChat — core 9/9
-
-RandChat riusa l'identità RandApp e non crea un secondo account. I **9/9 blocchi core** sono implementati senza Matrix e senza introdurre una seconda piattaforma utenti, procedure o IA.
-
-### Group A — gruppi operativi
-
-- `RandChat ON/OFF` per utente, amministrato dal pannello Utenti;
-- capacità separata `Crea gruppi`;
-- gruppi aziendali realtime con ruoli `owner / admin / member`;
-- membership cross-hotel esplicita senza ampliare `hotel_memberships`;
-- directory minimale ID/nome/hotel, senza email o telefono;
-- retention gruppi **30/60 giorni** e messaggi marcabili **Conserva**;
-- RLS/RPC come autorità finale e audit retention senza copia del testo eliminato.
-
-### Group B — DM E2EE e Segnalazioni
-
-- DM globali tra utenti RandChat, indipendenti dalla struttura attiva;
-- E2EE v1 nativa browser: **ECDH P-256 + AES-GCM 256 + ECDSA P-256/SHA-256**;
-- chiavi private non esportabili conservate soltanto nell'IndexedDB locale del dispositivo;
-- Supabase conserva ciphertext, IV, chiavi pubbliche, firme ed envelope per-device, mai il body plaintext del DM;
-- ogni invio deve includere una envelope per tutti i dispositivi attivi di entrambi i partecipanti;
-- verifica della firma prima della decifratura;
-- retention DM configurabile **1 / 7 / 15 giorni**, con cleanup automatico orario;
-- promozione esplicita di un messaggio verificato — gruppo o DM — a **Segnalazione persistente**, usando i permessi e la pipeline già esistenti;
-- `chat_issue_links` conserva solo il collegamento metadata tra sorgente chat e Segnalazione.
-
-E2EE v1 non viene descritta come Signal-grade: non implementa Double Ratchet/forward secrecy o verifica indipendente dei device. Questi hardening possono sostituire il protocollo in futuro senza cambiare account, thread o UI.
-
-### Group C — Procedure, RandAI e RandMedia
-
-- una procedura **approvata RandGuide** può essere condivisa in un gruppo come snapshot versionato; un invitato cross-hotel vede soltanto ciò che è stato esplicitamente condiviso e non ottiene accesso al catalogo dell'hotel;
-- un messaggio operativo può diventare una **bozza canonica RandGuide** (`randai_procedures.status = draft`) con revisione umana obbligatoria: nessun percorso chat pubblica automaticamente una procedura;
-- RandAI può essere interrogata manualmente sul gruppo tramite il motore `randai-assistant` già esistente; il contesto è bounded e richiede contemporaneamente membership del gruppo e membership reale dell'hotel;
-- **i DM non vengono mai forniti automaticamente a RandAI**;
-- RandMedia espone un contratto provider unico: oggi il provider attivo è il bucket Supabase privato `randchat-media`; Telegram può essere aggiunto in seguito come adapter senza cambiare UI, DB o modello utenti;
-- gruppi: allegati operativi protetti da membership/RLS;
-- DM: foto, video, audio e documenti vengono cifrati AES-GCM **nel browser prima dell'upload**; chiave e IV del file vivono soltanto dentro il payload DM già E2EE;
-- massimo **4 allegati per messaggio**, **20 MiB ciascuno** lato utente;
-- retention/cancellazione chat mette gli oggetti media in una coda server-only; un worker orario elimina anche eventuali upload orfani, evitando media zombie.
-
-Dettagli, threat model e invarianti: `docs/architecture/RANDCHAT.md`.
-
-## RandDesktop — stampa nativa v1
-
-RandDesktop è il guscio Electron per le postazioni Windows e riusa RandApp: non introduce una seconda UI operativa, un secondo account o un secondo database.
-
-La stampa v1 include:
-
-- shell Electron con `nodeIntegration: false`, `contextIsolation: true`, `sandbox: true` e `webSecurity: true`;
-- `File → Stampa…` / `Ctrl+P` con dialog nativo del sistema operativo;
-- `webContents.getPrintersAsync()` per l'elenco stampanti;
-- `webContents.print()` con pagina predefinita della stampante e sfondi;
-- stampa della vista corrente, privilegiando un `Sheet` operativo aperto (es. dettaglio Segnalazione);
-- bridge `contextBridge` ristretto: nessun `ipcRenderer` grezzo nel renderer;
-- motore per documenti strutturati con limiti, escaping e CSP `default-src 'none'`;
-- nessun HTML arbitrario, nessun secret e nessuna stampa silenziosa in v1;
-- renderer locale nelle build pacchettizzate; Vercel non viene caricato come renderer privilegiato di produzione;
-- voce **RandDesktop** nel menu laterale governata dal permesso `desktop_download`; fallback attivo per Reception, Direzione, Direttore Centro Congressi e admin, con configurazione successiva da Ruoli & Permessi;
-- pagina **Scarica RandDesktop** con URL centralizzato `VITE_RANDDESKTOP_DOWNLOAD_URL`, accettato solo se `https://`; finché l'installer non è pubblicato mostra `Installer in preparazione`;
-- se RandApp gira già dentro Electron (`window.randDesktop`), la pagina riconosce RandDesktop attivo e non propone un secondo download.
-
-La stampa silenziosa e la stampante predefinita per reparto restano future opzioni amministrative esplicite, non privilegi del renderer. Il file `.exe` può essere distribuito inizialmente da Google Drive; il link Drive viene configurato tramite `VITE_RANDDESKTOP_DOWNLOAD_URL`, senza hardcoding nella UI.
-
-Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
-
-## Moduli principali
-
-- **RandApp** — segnalazioni, interventi, planning, housekeeping, rifornimenti, magazzino, sensori e operatività hotel.
-- **RandAI** — assistenza operativa, procedure, suggerimenti e control center.
-- **RandMind** — continuità/memoria governata e hotel-scoped, cognitive loop e apprendimento verificato.
-- **RandBrain** — reasoning/decision layer governato.
-- **RandCore** — health, governance, workers, sicurezza, security intelligence, costi, integrazioni e LTS evidence.
-- **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore, con router fail-closed e lifecycle governance 2/2.
-- **RandVisual** — proiezioni visuali deterministiche e provenance.
-- **RandChange** — receipt, Visual QA e certificazione modifiche.
-- **RandGuide** — procedure e guide operative.
-- **RandChat** — gruppi operativi, DM E2EE per-device, Procedure/RandAI autorizzati e RandMedia con provider intercambiabile.
-- **RandDesktop** — shell Electron Windows/Desktop con capacità native ristrette, a partire dalla stampa.
-- **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora / Fonte`, con scoring e fonti governate.
-- **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
-
-## Rifornimenti interni
-
-Il modulo Rifornimenti resta separato dal Magazzino e non gestisce quantità: una richiesta indica soltanto quali prodotti servono; ogni voce resta `In attesa` finché il Manutentore la marca `Consegnato` o `Manca`.
-
-Per **Hotel Giò (`hotelgio`)** il catalogo iniziale è allineato alla precedente app operativa **Rifornimento Hotel**:
-
-- **Minibar (7):** Acqua naturale, Acqua frizzante, Coca Cola, Succo di frutta, Patatine, Barrette, Birre.
-- **Consumo (9):** Carta igienica, Saponette, Shampoo, Cuffie doccia, Spugne scarpe, Sacchi neri 60x50, Sacchi bianchi 60x50, Sacchi neri 110x70, Carta Lucart/Scottex.
-
-La migrazione correttiva preserva gli UUID già creati per le voci rinominate e aggiunge solo ciò che mancava. ChocoHotel e Brigantino restano indipendenti e non ricevono automaticamente il catalogo di Giò. Nessuna voce Rifornimenti genera quantità o movimenti Warehouse.
-
-Rifornimenti usa inoltre un **contesto operativo Area + Piano** condivisibile con Housekeeping. A Hotel Giò la fonte canonica contiene `Jazz P1–P4` e `Wine P1–P4`. La selezione resta memorizzata per utente e hotel; le nuove richieste salvano lo snapshot Area/Piano e mostrano al Manutentore la destinazione. Dove esistono piani configurati il database rifiuta una nuova richiesta priva di contesto. Gli hotel non ancora configurati continuano a funzionare senza regressioni.
+Il contratto responsive usa `viewport-fit=cover`, `env(safe-area-inset-*)`, `src/randapp/system-insets.js` e `adaptive-layout.css`. Header e contenuto condividono lo stesso gutter canonico; la safe-area superiore ha un solo proprietario per evitare doppio spazio su iPhone.
 
 ## Quality Matrix e test
 
@@ -344,79 +109,42 @@ Comandi principali:
 npm run build
 npm test
 npm run test:quality
+npm run test:repo-radar
 npm run test:randskills
-npm run test:randskills:governance
 npm run test:mind-learning
 npm run test:security-intelligence
-npm run skills:validate
 npm run test:randui
-npm run test:randui:guard
-npm run test:randui:migration
-npm run test:randui:visual
-npm run test:randui:planning
-npm run test:randui:telegram
 npm run test:e2e
 npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche i contratti RandSkills Router e Governance: routing deterministico/implicito, composizione multi-skill, fallback fail-closed, tool bounding, promotion policy, UNKNOWN≠STALE, overlap review e zombie policy.
+`npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
 
-La CI certifica, tra gli altri:
-
-- Node canonico da `.nvmrc` e installazione fail-closed su engine incompatibile;
-- validazione RandSkills prima dei gate applicativi;
-- RandSkills Router con confidence/reasons, multi-skill, fallback fail-closed e tool visibility bounded;
-- RandSkills Governance con lifecycle policy, auto-approval LOW-risk bounded, overlap review, UNKNOWN≠STALE e zombie detection non distruttiva;
-- cognitive loop RandMind hotel-scoped, tool visibility bounded e learning solo da esiti verificati;
-- fonti RandRadar source-only/sandbox-only, security exposure correlation e reverse analysis non eseguibile in produzione;
-- dependency/security audit;
-- Quality Matrix;
-- critical operational gate;
-- multi-hotel parity;
-- production confidence;
-- build e bundle budget;
-- RandUI/RandAI/RandCore contracts;
-- RandUI v1 design contract, registry, template, page schema, single-shell invariants e **RandUI Guard fail-closed**;
-- **RandUI Page Catalog: 24/24 destinazioni correnti catalogate e compatibili con il proprio template boundary**;
-- **RandUI Visual Language v1: Visual Policy sui 14 template, primitive canoniche e Planning senza geometria page-level inline**;
-- **RandUI Telegram Navigation v1: Home slot 3, RandAI slot 5, Operatività hub, menu profilo e accordion accessibili**;
-- **Planning mobile visual baseline: Stack content-sized, riepilogo Oggi unico, banner notifiche dismissibile e nessun ritorno dello spazio morto**;
-- **RandUI mobile gutter: header e contenuto condividono `--rs-page-pad-x`, safe-area coerenti e ricomposizione header sotto 360px**;
-- matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
-- RandChat E2EE round-trip e tamper detection;
-- RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
-- confini Group C Procedure/RandAI/RandMedia e ACL anonime;
-- contratto RandDesktop printing: sandbox, IPC ristretto, escaping/CSP e blocco stampa silenziosa;
-- contratto RandDesktop download: permesso dedicato, menu laterale configurabile, URL HTTPS e rilevamento shell desktop;
-- Chromium + WebKit;
-- device acceptance;
-- RandCore health evidence;
-- Rand Ecosystem LTS attestation.
+La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation.
 
 ## Deploy
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Vercel sono congelati (`deploymentEnabled: false`) e le prove/deploy della nuova UI vanno soltanto su DigitalOcean/Ocean.** La riattivazione Vercel richiede una decisione esplicita dopo chiusura dei gate e della verifica visuale su Ocean.
+Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); prove e deploy della nuova UI vanno su DigitalOcean/Ocean finché non viene decisa esplicitamente la riattivazione.
 
 ## Documentazione
 
-- `docs/architecture/RANDSKILLS_V1.md` — formato skill, governance RandCore, toolchain Node e percorso di evoluzione.
-- `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing governato, manifest runtime, tool binding, fallback e regression test.
-- `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md` — lifecycle, observability, overlap/zombie policy e chiusura roadmap RandSkills 2/2.
-- `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop, tool visibility, learning verificato e promotion policy.
-- `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — fonti governate, security exposure e reverse analysis sandbox-only.
-- `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
-- `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
-- `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, baseline di migrazione e strategia di compatibilità.
-- `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — Visual Policy, primitive canoniche, ownership CSS e regole per le future pagine.
-- `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md` — bottom-nav stabile, Operatività hub, menu profilo, accordion e gate dedicato.
-- `docs/randui-adaptive-layout.md` — contratto adattivo device/interessi/densità.
-- `docs/architecture/APP_SHELL_FOUNDATION.md` — shell unica, breakpoint e safe-area correnti.
-- `docs/architecture/RIFORNIMENTI_INTERNI.md` — contratto operativo e sicurezza del modulo Rifornimenti.
-- `docs/architecture/RANDCHAT.md` — architettura RandChat, E2EE, Procedure/RandAI, RandMedia e retention.
-- `docs/architecture/RANDDESKTOP_PRINTING.md` — shell Electron, sicurezza IPC e stampa nativa v1.
-- `docs/README-history-2026-09-05.md` — README storico completo con roadmap e dettagli dei blocchi precedenti.
+- `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
+- `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
+- `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.
+- `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md` — lifecycle, overlap e zombie policy.
+- `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop e learning verificato.
+- `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — security intelligence e sandbox boundary.
+- `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
+- `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
+- `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
+- `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — visual language.
+- `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md` — navigazione mobile.
+- `docs/architecture/RANDCHAT.md` — RandChat ed E2EE.
+- `docs/architecture/RANDDESKTOP_PRINTING.md` — RandDesktop e stampa nativa.
+- `docs/architecture/RIFORNIMENTI_INTERNI.md` — Rifornimenti.
+- `docs/README-history-2026-09-05.md` — storico esteso delle roadmap e dei blocchi precedenti.
 
-Il README storico viene conservato integralmente: questa pagina rappresenta lo **stato corrente** dell'architettura e va mantenuta breve e operativa.
+Questo README rappresenta lo **stato corrente** e resta volutamente operativo; i dettagli storici e specialistici vivono nei documenti dedicati.
