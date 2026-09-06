@@ -1,4 +1,4 @@
-/* Operational header: one real toolbar for structure, presence, profile/menu and notifications. */
+/* Operational header: one real toolbar for structure, presence, notifications and profile/menu. */
 .rs-header--operational {
   display: flex;
   align-items: center;
@@ -51,13 +51,13 @@
     gap: calc(4px * var(--rs-scale));
   }
 
-  /* Structure stays on the left, but no longer looks like a second card. */
+  /* Structure stays on the left and uses the real hotel name without changing typography. */
   .rs-header--operational .rs-hotelchip--operational {
     min-width: 0;
     flex: 0 1 auto;
-    width: auto;
+    width: max-content;
     min-height: var(--rs-header-action-size);
-    max-width: clamp(88px, calc(104px * var(--rs-scale)), 122px);
+    max-width: none;
     padding: calc(4px * var(--rs-scale)) calc(6px * var(--rs-scale));
     gap: calc(6px * var(--rs-scale));
     border-color: transparent;
@@ -77,12 +77,20 @@
     object-fit: contain;
   }
 
-  .rs-hotelchip__name-mobile {
+  /* The full canonical hotel name is already in the desktop span: reuse it on mobile. */
+  .rs-hotelchip__name-mobile { display: none; }
+  .rs-hotelchip__name-desktop {
     display: inline;
     font-size: .82rem;
     white-space: nowrap;
   }
-  .rs-hotelchip__name-desktop { display: none; }
+
+  .rs-header--operational .rs-hotelchip__text {
+    min-width: max-content;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
 
   .rs-hotelchip__caret .rs-icon {
     width: calc(14px * var(--rs-scale));
@@ -90,13 +98,14 @@
   }
 
   .rs-header__actions {
+    flex: none;
     gap: calc(3px * var(--rs-scale));
   }
 
-  /* Stable right-side order: presence -> profile/menu -> bell. */
+  /* Stable right-side order requested on device: presence -> bell -> profile/menu. */
   .rs-header [data-testid='presence-chip'] { order: 1; }
-  .rs-header .rs-profile-trigger { order: 2; }
-  .rs-header .rs-header-notify { order: 3; }
+  .rs-header .rs-header-notify { order: 2; }
+  .rs-header .rs-profile-trigger { order: 3; }
   .rs-header .rs-header__randai--desktop { order: 4; }
 
   .rs-header__randai,
@@ -151,7 +160,7 @@
     border: 0 !important;
   }
 
-  /* Profile is the menu trigger: initials stay recognizable and the small menu badge explains the action. */
+  /* Profile is the menu trigger and intentionally remains the last control on the right. */
   .rs-header .rs-profile-trigger {
     position: relative;
     width: var(--rs-header-action-size);
@@ -202,7 +211,7 @@
   }
 
   .rs-header--operational .rs-hotelchip--operational {
-    max-width: clamp(84px, calc(96px * var(--rs-scale)), 112px);
+    max-width: none;
     padding-inline: calc(5px * var(--rs-scale));
   }
 
@@ -211,7 +220,7 @@
     height: calc(30px * var(--rs-scale));
   }
 
-  .rs-hotelchip__name-mobile { font-size: .76rem; }
+  .rs-hotelchip__name-desktop { font-size: .76rem; }
   .rs-header__actions { gap: calc(2px * var(--rs-scale)); }
 
   .rs-header__randai,
