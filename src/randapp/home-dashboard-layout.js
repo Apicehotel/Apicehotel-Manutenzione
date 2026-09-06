@@ -20,17 +20,30 @@ function packNormal(ids) {
   return rows
 }
 
+function withRows(entries) {
+  let row = 1
+  let used = 0
+  return entries.map(([id, rawSpan]) => {
+    const span = clampSpan(rawSpan)
+    if (used > 0 && used + span > 3) { row += 1; used = 0 }
+    const item = { id, row, span, state: `${row}:${span}` }
+    used += span
+    if (used === 3) { row += 1; used = 0 }
+    return item
+  })
+}
+
 export function resolveHomeDashboardLayout(visibleIds, uiSize = 'normal') {
   const ids = HOME_DASHBOARD_CARDS.filter((id) => visibleIds.includes(id))
   if (!ids.length) return []
 
   const pinned = ids.filter((id) => id === 'status' || id === 'priority')
   const rest = ids.filter((id) => !pinned.includes(id))
-  const result = pinned.map((id) => [id, 3])
+  const entries = pinned.map((id) => [id, 3])
 
-  if (uiSize === 'large') result.push(...rest.map((id) => [id, 3]))
-  else if (uiSize === 'small') result.push(...packCompact(rest))
-  else result.push(...packNormal(rest))
+  if (uiSize === 'large') entries.push(...rest.map((id) => [id, 3]))
+  else if (uiSize === 'small') entries.push(...packCompact(rest))
+  else entries.push(...packNormal(rest))
 
-  return result.map(([id, span], index) => ({ id, row: index + 1, span: clampSpan(span), state: `1:${clampSpan(span)}` }))
+  return withRows(entries)
 }
