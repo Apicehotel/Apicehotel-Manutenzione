@@ -5,6 +5,8 @@ import fs from 'node:fs'
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
 const visual = read('../src/randapp/randui/visual-language.css')
+const flow = read('../src/randapp/randui/content-flow.css')
+const main = read('../src/main.jsx')
 const hub = read('../src/randapp/PlanningHub.jsx')
 const overview = read('../src/randapp/planning/PlanningOverview.jsx')
 const onboarding = read('../src/notification-onboarding.js')
@@ -14,6 +16,15 @@ test('RandUI Stack keeps rows content-sized instead of stretching into dead vert
   assert.match(visual, /\.rs-randui-stack\s*\{[^}]*align-content:\s*start;/s)
   assert.match(visual, /\.rs-randui-stack\s*\{[^}]*grid-auto-rows:\s*max-content;/s)
   assert.match(visual, /\.rs-randui-stack\s*>\s*\.rs-randui-local-header\s*\{\s*margin-bottom:\s*0;/)
+})
+
+test('migrated Planning and Magazzino cannot distribute viewport height between grid rows', () => {
+  assert.match(main, /import '\.\/randapp\/randui\/content-flow\.css'/)
+  assert.match(main, /content-flow\.css'[\s\S]*foundation\.css'/)
+  assert.match(flow, /\.rs-randui-page--migrated \.rs-randui-page__content > \.rs-randui-stack/)
+  assert.match(flow, /\.rs-randui-page--migrated \.rs-randui-page__content > \.rs-inventory/)
+  assert.match(flow, /align-content:\s*start;/)
+  assert.match(flow, /grid-auto-rows:\s*max-content;/)
 })
 
 test('Planning overview is compact and uses one today summary instead of duplicated surfaces', () => {
