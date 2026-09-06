@@ -1,4 +1,5 @@
 /* Operational header: one real toolbar for structure, presence, notifications and profile/menu. */
+
 .rs-header--operational {
   display: flex;
   align-items: center;
@@ -44,6 +45,28 @@
 
 .rs-hotelchip__name-mobile { display: none; }
 .rs-hotelchip__name-desktop { display: inline; }
+
+/*
+ * Real mobile headbar pinning.
+ * shell.css already provides sticky globally; on touch layouts we pin the
+ * operational chrome to the viewport and reserve its height in the app frame.
+ * This avoids relying on the page scroll container and keeps safe-area intact.
+ */
+@media (max-width: 1023px) {
+  .rs-app.rs-app--with-side {
+    padding-top: calc(var(--rs-safe-top) + var(--rs-header-h));
+  }
+
+  .rs-header.rs-header--operational {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    width: 100%;
+    min-height: calc(var(--rs-safe-top) + var(--rs-header-h));
+  }
+}
 
 @media (max-width: 899px) {
   .rs-header {

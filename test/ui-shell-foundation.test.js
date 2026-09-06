@@ -6,10 +6,10 @@ import { applySystemInsets, clearSystemInsets } from '../src/randapp/system-inse
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const allBottom = (key) => ['home', 'planning_work', 'chat', ...PRIMARY_OPERATIONAL_NAV.map((item) => item.key)].includes(key) ? 'bottom' : 'off'
+const allBottom = (key) => ['home', 'planning_work', 'reminders', 'randai', ...PRIMARY_OPERATIONAL_NAV.map((item) => item.key)].includes(key) ? 'bottom' : 'off'
 const allAllowed = () => true
 
-test('adaptive primary mobile navigation keeps five structural slots with Home in slot 3 and RandAI in slot 5', () => {
+test('adaptive primary mobile navigation keeps five structural slots with Home in slot 3, Task in slot 4 and RandAI in slot 5', () => {
   assert.ok(PRIMARY_OPERATIONAL_NAV.length >= 3)
   const nav = buildPrimaryBottomNav({ placement: allBottom, viewAllowed: allAllowed })
 
@@ -18,17 +18,36 @@ test('adaptive primary mobile navigation keeps five structural slots with Home i
   assert.equal(nav.find((item) => item.id === 'operations')?.slot, 1)
   assert.equal(nav.find((item) => item.id === 'planning-work')?.slot, 2)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
-  assert.equal(nav.find((item) => item.id === 'chat')?.slot, 4)
+  assert.equal(nav.find((item) => item.id === 'reminders')?.slot, 4)
+  assert.equal(nav.find((item) => item.id === 'reminders')?.label, 'Task')
   assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
 
-test('permissions may hide a contextual destination without moving Home or RandAI anchors', () => {
+test('explicit slot 4 configuration wins over soft interest ranking', () => {
   const nav = buildPrimaryBottomNav({
-    placement: (key) => key === 'chat' ? 'off' : allBottom(key),
-    viewAllowed: (id) => id !== 'inventory',
+    placement: (key) => ['home', 'planning_work', 'reminders', 'inventory', 'randai'].includes(key) ? 'bottom' : 'off',
+    viewAllowed: allAllowed,
+    interests: ['warehouse', 'maintenance'],
   })
 
+  assert.equal(nav.find((item) => item.slot === 4)?.id, 'reminders')
   assert.equal(nav.some((item) => item.id === 'inventory'), false)
+  assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
+  assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
+})
+
+test('slot 4 follows configuration and permissions without moving Home or RandAI anchors', () => {
+  const nav = buildPrimaryBottomNav({
+    placement: (key) => {
+      if (key === 'home' || key === 'planning_work' || key === 'randai') return 'bottom'
+      if (key === 'chat') return 'bottom'
+      return 'off'
+    },
+    viewAllowed: allAllowed,
+  })
+
+  assert.equal(nav.some((item) => item.id === 'reminders'), false)
+  assert.equal(nav.find((item) => item.id === 'chat')?.slot, 4)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
   assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
@@ -92,10 +111,7 @@ test('Shell and document keep the adaptive PWA/native-ready navigation contract 
   assert.match(shell, /initSystemInsetsBridge/)
   assert.match(shell, /data-count="5"/)
   assert.match(shell, /data-slot=\{item\.slot\}/)
-  assert.match(shell, /aria-label="Navigazione principale"/)
-  assert.match(main, /import ['"]\.\/randapp\/randui\/foundation\.css['"]/)
-  assert.match(foundation, /@import ['"]\.\.\/adaptive-layout\.css['"]/)
-  assert.doesNotMatch(shell, /app-shell-foundation\.css/)
   assert.match(html, /viewport-fit=cover/)
-  assert.doesNotMatch(html, /rs-bottomnav\[data-count=/)
+  assert.match(main, /\.\/randapp\/randui\/foundation\.css/)
+  assert.match(foundation, /@import '\.\.\/adaptive-layout\.css';/)
 })

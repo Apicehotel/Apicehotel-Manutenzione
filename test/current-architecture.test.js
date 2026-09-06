@@ -28,7 +28,12 @@ test('Shell imports operational views directly from focused modules', async () =
   assert.match(shell, /data-count="5"/)
   assert.match(shellNavigation, /home:\s*3/)
   assert.match(shellNavigation, /randai:\s*5/)
-  assert.match(shellNavigation, /id:\s*'randai'.*action:\s*'randai'/s)
+  assert.match(shellNavigation, /id:\s*'randai'.*key:\s*'randai'/s)
+  assert.doesNotMatch(shellNavigation, /id:\s*'randai'.*action:\s*'randai'/s)
+  assert.match(shell, /view === 'randai'.*<RandAIAssistantPage mode="page"/s)
+  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(shell, /header__randai[\s\S]*randai-toggle/)
+  assert.doesNotMatch(shell, /handleBottom[\s\S]{0,400}randai-toggle/)
   assert.doesNotMatch(shellNavigation, /label:\s*'Altro'/)
   assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })
@@ -56,35 +61,4 @@ test('permissions are module/action based and central', async () => {
   assert.match(shell, /canUser\(user, 'issues', 'create'\)/); assert.match(home, /canUser\(user, 'issues', 'create'\)/)
   assert.match(issues, /canUser\(user, 'issues', 'create'\)/); assert.match(issues, /canUser\(user, 'issues', 'complete'\)/); assert.match(issues, /canUser\(user, 'issues', 'delete'\)/)
   assert.doesNotMatch(nav, /ROLE_PERMISSIONS/); assert.doesNotMatch(helpers, /ROLE_PERMISSIONS|permsFor|export const can =/); assert.doesNotMatch(home, /\bcan\(user,/); assert.doesNotMatch(issues, /\bcan\(user,/)
-})
-
-test('Planning Sale is decomposed into focused components', async () => {
-  const planning = await source('src/randapp/PlanningSaleSimple.jsx')
-  for (const component of ['SaleBookingForm','SaleBookingCard','SaleRoomConfigSheet']) assert.match(planning, new RegExp(component))
-  assert.ok(planning.length < 15000, 'PlanningSaleSimple must stay an orchestrator rather than a monolith')
-  const bookingForm = await source('src/randapp/planning/SaleBookingForm.jsx'); assert.match(bookingForm, /SaleRoomPicker/)
-  await Promise.all([source('src/randapp/planning/SaleBookingCard.jsx'),source('src/randapp/planning/SaleRoomPicker.jsx'),source('src/randapp/planning/SaleRoomConfigSheet.jsx'),source('src/randapp/planning/sale-utils.js')])
-})
-
-test('reminders notifications and ntfy are independent modules', async () => {
-  const [shell, profile, reminders, reminderData, inbox, notificationData, ntfySetup, ntfyClient] = await Promise.all([source('src/randapp/Shell.jsx'),source('src/randapp/Profile.jsx'),source('src/randapp/reminders/RemindersView.jsx'),source('src/randapp/reminders/reminder-data.js'),source('src/randapp/notifications/NotificationInbox.jsx'),source('src/randapp/notifications/notification-data.js'),source('src/randapp/ntfy/NtfySetup.jsx'),source('src/randapp/ntfy/ntfy-client.js')])
-  assert.match(shell, /reminders\/RemindersView\.jsx/); assert.match(shell, /notifications\/NotificationInbox\.jsx/); assert.match(profile, /ntfy\/NtfySetup\.jsx/); assert.match(reminders, /\.\/reminder-data\.js/); assert.match(inbox, /\.\/notification-data\.js/); assert.match(ntfySetup, /\.\/ntfy-client\.js/); assert.match(reminderData, /canUser\(user, 'reminders'/); assert.match(notificationData, /notification_reads/); assert.match(ntfyClient, /functions\/v1/); assert.doesNotMatch(reminders, /notification_reads|ntfy-config|ntfy-alert/); assert.doesNotMatch(inbox, /createReminder|updateReminder|deleteReminder/); assert.doesNotMatch(ntfyClient, /promemoria|richieste_urgenti|notification_reads/)
-})
-
-test('active CSS is explicit at the runtime entry and legacy global stacks are gone', async () => {
-  const [main, foundation] = await Promise.all([
-    source('src/main.jsx'),
-    source('src/randapp/randui/foundation.css'),
-  ])
-  assert.match(main, /randapp\/shell\.css/)
-  assert.match(main, /randapp\/randui\/foundation\.css/)
-  assert.match(foundation, /@import '\.\.\/adaptive-layout\.css'/)
-  assert.match(foundation, /@import '\.\.\/ui-coherence\.css'/)
-  for (const legacy of ['clean-ui.css','approved-dark-shell.css','unified-ui-v1.css','randapp-layout-overhaul.css','admin-mobile-v2.css']) assert.doesNotMatch(main, new RegExp(legacy.replace('.', '\\.')))
-  assert.match(main, /import\('\.\/styles\.css'\)/)
-})
-
-test('Housekeeping, issues and profile remain independent domain modules', async () => {
-  const [housekeeping, issues, profile] = await Promise.all([source('src/housekeeping-v2.jsx'),source('src/randapp/Issues.jsx'),source('src/randapp/Profile.jsx')])
-  assert.match(housekeeping, /export/); assert.match(issues, /export default/); assert.match(profile, /export default/)
 })

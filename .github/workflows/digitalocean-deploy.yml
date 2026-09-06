@@ -4,25 +4,26 @@ on:
   push:
     branches:
       - main
+      - randui/implementable-preview-ocean
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: digitalocean-production
+  group: digitalocean-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   verify:
-    name: Verify production candidate
+    name: Verify Ocean candidate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout main
+      - name: Checkout candidate commit
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -55,19 +56,114 @@ jobs:
         run: npm test
 
   deploy:
-    name: Deploy main
+    name: Deploy candidate to Ocean
     needs: verify
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout main
+      - name: Checkout candidate commit
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
 
-      - name: Deploy to DigitalOcean App Platform
-        id: deploy
-        uses: digitalocean/app_action/deploy@v2
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: randapp
+
+      - name: Build Ocean spec from live app configuration
+        shell: bash
+        env:
+          OCEAN_APP_NAME: randapp
+          OCEAN_SOURCE_BRANCH: ${{ github.ref_name }}
+          OCEAN_SOURCE_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p .do
+          APP_ID="$(doctl apps list --format ID,Spec.Name --no-header | awk -v name="$OCEAN_APP_NAME" '$2 == name { print $1; exit }')"
+          if [ -z "$APP_ID" ]; then
+            echo "DigitalOcean app '$OCEAN_APP_NAME' not found" >&2
+            exit 1
+          fi
+          echo "OCEAN_APP_ID=$APP_ID" >> "$GITHUB_ENV"
+          doctl apps spec get "$APP_ID" --format json > .do/app.generated.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path('.do/app.generated.json')
+          spec = json.loads(path.read_text())
+          branch = os.environ['OCEAN_SOURCE_BRANCH']
+          repository = os.environ['OCEAN_SOURCE_REPO']
+          changed = 0
+
+          for group in ('services', 'static_sites', 'workers', 'jobs', 'functions'):
+              for component in spec.get(group, []) or []:
+                  github = component.get('github')
+                  if isinstance(github, dict) and github.get('repo') == repository:
+                      github['branch'] = branch
+                      github['deploy_on_push'] = False
+                      changed += 1
+                  git = component.get('git')
+                  if isinstance(git, dict) and repository in str(git.get('repo_clone_url', '')):
+                      git['branch'] = branch
+                      changed += 1
+
+          if changed == 0:
+              raise SystemExit(f'No DigitalOcean component source matched {repository}')
+
+          path.write_text(json.dumps(spec, indent=2) + '\n')
+          print(f'Ocean source pinned to {branch} for {changed} component(s)')
+          PY
+          doctl apps spec validate .do/app.generated.json >/dev/null
+
+      - name: Update Ocean spec and deploy exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          doctl apps update "$OCEAN_APP_ID" \
+            --spec .do/app.generated.json \
+            --update-sources \
+            --wait \
+            --format ID,DefaultIngress,ActiveDeployment.ID,InProgressDeployment.ID \
+            --no-header | tee .do/ocean-deploy.txt
+
+      - name: Verify Ocean source and report URL
+        shell: bash
+        env:
+          EXPECTED_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          doctl apps spec get "$OCEAN_APP_ID" --format json > .do/app.after.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          spec = json.loads(Path('.do/app.after.json').read_text())
+          expected = os.environ['EXPECTED_BRANCH']
+          branches = []
+          for group in ('services', 'static_sites', 'workers', 'jobs', 'functions'):
+              for component in spec.get(group, []) or []:
+                  github = component.get('github')
+                  if isinstance(github, dict):
+                      branches.append(github.get('branch'))
+                  git = component.get('git')
+                  if isinstance(git, dict):
+                      branches.append(git.get('branch'))
+          branches = [b for b in branches if b]
+          if expected not in branches:
+              raise SystemExit(f'Ocean source verification failed: expected {expected}, got {branches}')
+          print(f'Ocean source verified: {expected}')
+          PY
+          INGRESS="$(doctl apps get "$OCEAN_APP_ID" --format DefaultIngress --no-header)"
+          if [ -z "$INGRESS" ]; then
+            echo "Ocean ingress is empty" >&2
+            exit 1
+          fi
+          case "$INGRESS" in
+            http://*|https://*) OCEAN_URL="$INGRESS" ;;
+            *) OCEAN_URL="https://$INGRESS" ;;
+          esac
+          echo "Ocean URL: $OCEAN_URL"

@@ -78,7 +78,6 @@
   }
 }
 
-
 .randai__project-intelligence { display:grid; gap:8px; margin:.75rem 0; padding:11px; border:1px solid var(--rs-border,rgba(15,23,42,.12)); border-radius:12px; background:color-mix(in srgb,var(--rs-accent,#315efb) 8%,transparent); }
 .randai__project-intelligence > b { font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
 .randai__project-intelligence > strong { font-size:14px; }
@@ -89,3 +88,40 @@
 .randai__project-signals span { padding:4px 7px; border-radius:999px; background:color-mix(in srgb,var(--rs-card,#fff) 72%,transparent); font-size:11px; }
 .randai__project-hypothesis { display:grid; gap:2px; padding:8px; border-radius:9px; background:rgba(245,158,11,.12); }
 .randai__project-hypothesis strong, .randai__project-hypothesis small { font-size:12px; }
+
+/* Full RandUI destination: same assistant logic, normal document flow. */
+.randai.randai--page {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.randai--page .randai__panel {
+  position: relative;
+  inset: auto;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  width: min(100%, 980px);
+  margin: 0 auto;
+  max-height: none;
+  min-height: calc(100dvh - var(--rs-header-h, 62px) - 150px);
+  box-shadow: none;
+}
+
+.randai--page .randai__messages {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 899px) {
+  .randai--page .randai__panel {
+    width: 100%;
+    min-height: calc(100dvh - var(--rs-header-h, 62px) - var(--rs-bottomnav-h, 74px) - 28px);
+    border-radius: 18px;
+  }
+}

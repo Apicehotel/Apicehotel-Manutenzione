@@ -1,0 +1,11 @@
+/* RandUI migrated-content flow guard.
+   A tall shell must not distribute unused viewport height between grid rows.
+   Planning already uses the canonical Stack primitive; Magazzino is a migrated
+   management grid, so both are explicitly kept content-sized until every
+   management page is expressed through RandUI primitives. */
+.rs-randui-page--migrated .rs-randui-page__content > .rs-randui-stack,
+.rs-randui-page--migrated .rs-randui-page__content > .rs-inventory {
+  min-height: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
+}

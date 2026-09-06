@@ -27,6 +27,7 @@ const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
 const RandDesktopDownload = lazy(() => import('./RandDesktopDownload.jsx'))
+const RandAIAssistantPage = lazy(() => import('../randai/RandAIAssistant.jsx'))
 const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
 const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
 const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
@@ -222,7 +223,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'issues', 'chat', 'randai', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -348,6 +349,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'operations') content = <OperationsHub canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
     if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
+    if (view === 'randai') content = <RandAIAssistantPage mode="page" />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
@@ -386,10 +388,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
-    if (item.action === 'randai') {
-      window.dispatchEvent(new CustomEvent('randai-toggle'))
-      return
-    }
     if (item.id === 'structure') { setHotelSheet(true); return }
     if (viewAllowed(item.id)) {
       setSettings(null)
@@ -398,7 +396,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const isBottomActive = (item) => {
-    if (settings !== null || item.action) return false
+    if (settings !== null) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions', 'my-work'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
     return view === item.id
@@ -447,7 +445,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           {bottomNav.map((item) => {
             const active = isBottomActive(item)
             return (
-              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.action === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
+              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.id === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
                 <Icon name={item.icon} /><small>{item.label}</small>
               </button>
             )
