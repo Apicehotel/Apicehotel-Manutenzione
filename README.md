@@ -176,12 +176,13 @@ RandApp usa un solo stack offline, già condiviso dai moduli operativi: **Servic
 - directory e collezioni operative già sincronizzate vengono lette dalla cache IndexedDB per hotel, così l'ultimo stato pre-offline resta disponibile;
 - Rifornimenti conserva anche prodotti, richieste recenti e contesti area/piano; le relative scritture restano online-only finché il contratto server non offre idempotenza sufficiente per una coda sicura;
 - Housekeeping mantiene il proprio cache/outbox locale già esistente; non viene duplicato o migrato solo per uniformità cosmetica;
-- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione;
+- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione; su iOS/Safari ogni richiesta intercettata deve terminare con una `Response` valida, anche in assenza sia della rete sia della voce richiesta in cache;
+- il nucleo `src/randapp/App.jsx` è importato staticamente dal bootstrap: l'avvio base non dipende più da un chunk lazy separato che potrebbe mancare dopo un cambio release; RandAI, portali e moduli non critici restano lazy per mantenere il caricamento modulare;
 - un errore di chunk/deployment mentre il dispositivo è offline **non può cancellare le cache PWA né forzare un reload distruttivo**: il recovery viene rinviato fino al ritorno della rete;
 - quando la rete ritorna, la normale validazione Supabase/RandCore torna autoritativa; lo stato persistito non diventa un'autorizzazione permanente;
 - operazioni sensibili continuano a richiedere connettività, mentre le mutazioni offline supportate passano dall'outbox governata e dalla successiva sincronizzazione.
 
-I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`, `test/offline-preload-contract.test.js`, dai test della session policy e dell'offline store.
+I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`, `test/deployment-hardening.test.js`, `test/offline-preload-contract.test.js`, dai test della session policy, dell'offline store e dal contratto dell'architettura corrente.
 
 ## Quality Matrix e test
 
