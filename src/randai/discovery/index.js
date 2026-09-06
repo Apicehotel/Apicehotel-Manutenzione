@@ -1,3 +1,6 @@
 export * from './contracts.js'
 export * from './store.js'
 export * from './engine.js'
+export * from './repo-radar.js'
+export * from './repo-radar-catalog.js'
+export * from './source-registry.js'

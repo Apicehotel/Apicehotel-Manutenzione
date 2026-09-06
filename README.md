@@ -45,6 +45,21 @@ Flusso canonico: `RandAI → RandMindCognitiveLoop → RandSkills → tool autor
 
 Dettaglio: `docs/architecture/RANDMIND_LEARNING_BLOCK2.md`.
 
+## RandCore Security Intelligence + RandRadar — Blocco 3
+
+Il Blocco 3 completa la roadmap con un livello di fonti governate e correlazione dell'esposizione reale, senza introdurre un motore offensivo in RandApp.
+
+- `Exploitarium` è una fonte `SECURITY_INTELLIGENCE`: segnala exploit/PoC pubblici ma non li esegue;
+- `reverse-skill` è un donatore `ANALYSIS_PATTERN`: reverse engineering solo con autorizzazione esplicita e sandbox isolata;
+- `NoSignups/FckSignups` è una fonte `DISCOVERY`: le repository scoperte tornano sempre nei normali gate RandRadar;
+- RandCore correla i finding con `component + affectedVersion` realmente presenti nello stack;
+- exploit pubblico e esposizione produzione aumentano la priorità; una patch disponibile la riduce;
+- output: `LOW / MEDIUM / HIGH / CRITICAL` con remediation esplicita;
+- nessuna fonte può auto-installare codice o eseguire exploit in produzione;
+- classificazione concettuale Repo Radar: `Aggiungi / Sostituisci / Ignora / Fonte`.
+
+Dettaglio: `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md`.
+
 ## RandUI Adaptive Layout
 
 Il contratto UI è unico:
@@ -262,14 +277,14 @@ Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
 - **RandAI** — assistenza operativa, procedure, suggerimenti e control center.
 - **RandMind** — continuità/memoria governata e hotel-scoped, cognitive loop e apprendimento verificato.
 - **RandBrain** — reasoning/decision layer governato.
-- **RandCore** — health, governance, workers, sicurezza, costi, integrazioni e LTS evidence.
+- **RandCore** — health, governance, workers, sicurezza, security intelligence, costi, integrazioni e LTS evidence.
 - **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore.
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
 - **RandChat** — gruppi operativi, DM E2EE per-device, Procedure/RandAI autorizzati e RandMedia con provider intercambiabile.
 - **RandDesktop** — shell Electron Windows/Desktop con capacità native ristrette, a partire dalla stampa.
-- **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora` delle repository candidate.
+- **Repo Radar** — valutazione `Aggiungi / Sostituisci / Ignora / Fonte`, con scoring e fonti governate.
 - **Warehouse** — bounded domain magazzino collegato agli interventi, senza secondo inventario.
 
 ## Rifornimenti interni
@@ -295,6 +310,7 @@ npm test
 npm run test:quality
 npm run test:randskills
 npm run test:mind-learning
+npm run test:security-intelligence
 npm run skills:validate
 npm run test:randui
 npm run test:randui:guard
@@ -312,6 +328,7 @@ La CI certifica, tra gli altri:
 - Node canonico da `.nvmrc` e installazione fail-closed su engine incompatibile;
 - validazione RandSkills prima dei gate applicativi;
 - cognitive loop RandMind hotel-scoped, tool visibility bounded e learning solo da esiti verificati;
+- fonti RandRadar source-only/sandbox-only, security exposure correlation e reverse analysis non eseguibile in produzione;
 - dependency/security audit;
 - Quality Matrix;
 - critical operational gate;
@@ -346,6 +363,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill, governance RandCore, toolchain Node e percorso di evoluzione.
 - `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop, tool visibility, learning verificato e promotion policy.
+- `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — fonti governate, security exposure e reverse analysis sandbox-only.
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, baseline di migrazione e strategia di compatibilità.

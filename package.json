@@ -51,6 +51,7 @@
     "test:completion": "node --test test/randai-product-completion-100.test.js",
     "test:randskills": "node --test test/randskills-foundation.test.js",
     "test:mind-learning": "node --test test/randai-block2-mind-learning.test.js",
+    "test:security-intelligence": "node --test test/randai-block3-security-intelligence.test.js",
     "skills:validate": "node scripts/validate-randskills.mjs",
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
