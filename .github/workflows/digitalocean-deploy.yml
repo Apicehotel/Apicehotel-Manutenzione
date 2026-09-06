@@ -66,11 +66,65 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Deploy to DigitalOcean App Platform
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Build Ocean spec from live app configuration
+        shell: bash
+        env:
+          OCEAN_APP_NAME: randapp
+          OCEAN_SOURCE_BRANCH: ${{ github.ref_name }}
+          OCEAN_SOURCE_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p .do
+          APP_ID="$(doctl apps list --format ID,Spec.Name --no-header | awk -v name="$OCEAN_APP_NAME" '$2 == name { print $1; exit }')"
+          if [ -z "$APP_ID" ]; then
+            echo "DigitalOcean app '$OCEAN_APP_NAME' not found" >&2
+            exit 1
+          fi
+          echo "OCEAN_APP_ID=$APP_ID" >> "$GITHUB_ENV"
+          doctl apps spec get "$APP_ID" --format json > .do/app.generated.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path('.do/app.generated.json')
+          spec = json.loads(path.read_text())
+          branch = os.environ['OCEAN_SOURCE_BRANCH']
+          repository = os.environ['OCEAN_SOURCE_REPO']
+          changed = 0
+
+          for group in ('services', 'static_sites', 'workers', 'jobs', 'functions'):
+              for component in spec.get(group, []) or []:
+                  github = component.get('github')
+                  if isinstance(github, dict) and github.get('repo') == repository:
+                      github['branch'] = branch
+                      # GitHub Actions is the deployment gate; avoid duplicate auto-deploys.
+                      github['deploy_on_push'] = False
+                      changed += 1
+                  git = component.get('git')
+                  if isinstance(git, dict) and repository in str(git.get('repo_clone_url', '')):
+                      git['branch'] = branch
+                      changed += 1
+
+          if changed == 0:
+              raise SystemExit(f'No DigitalOcean component source matched {repository}')
+
+          path.write_text(json.dumps(spec, indent=2) + '\n')
+          print(f'Ocean source pinned to {branch} for {changed} component(s)')
+          PY
+          doctl apps spec validate .do/app.generated.json
+
+      - name: Deploy exact candidate to DigitalOcean App Platform
         id: deploy
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           app_name: randapp
+          app_spec_location: .do/app.generated.json
           print_build_logs: true
           print_deploy_logs: true
