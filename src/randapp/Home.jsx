@@ -7,7 +7,7 @@ import { fetchOperationalWeather } from '../weather-data.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
-import { Badge, Button, EmptyState, Icon, Spinner } from './ui.jsx'
+import { Badge, Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
 import { loadUiSize } from './ui-size.js'
 import { resolveHomeDashboardLayout } from './home-dashboard-layout.js'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
@@ -15,6 +15,9 @@ import './home-operational.css'
 import './home-dashboard.css'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } } })
+const FOCUS_KEY = 'randapp.home.focus.v1'
+const readFocus = () => { try { return localStorage.getItem(FOCUS_KEY) !== 'complete' } catch { return true } }
+const writeFocus = (focus) => { try { localStorage.setItem(FOCUS_KEY, focus ? 'focus' : 'complete') } catch {} }
 const dateKey = (value = new Date()) => value.toISOString().slice(0, 10)
 const weekdayKey = (date) => ['sun','mon','tue','wed','thu','fri','sat'][date.getDay()]
 const monthDay = (date) => date.getDate()
@@ -62,13 +65,16 @@ function Metric({ label, value, tone = 'default', onClick }) {
   return <button type="button" className="rs-homecard__metric" onClick={onClick} disabled={!onClick}><Badge tone={tone}>{label}</Badge><strong>{value}</strong></button>
 }
 
-function HomeData({ user, hotel, onNavigate }) {
+function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const [uiSize, setUiSizeState] = useState(loadUiSize)
+  const [focusOnly, setFocusOnly] = useState(readFocus)
+  const [preferencesOpen, setPreferencesOpen] = useState(false)
   useEffect(() => {
     const onSize = (event) => setUiSizeState(event.detail?.value || loadUiSize())
     window.addEventListener('apice-ui-size-changed', onSize)
     return () => window.removeEventListener('apice-ui-size-changed', onSize)
   }, [])
+  useEffect(() => { if (personalizeSignal > 0) setPreferencesOpen(true) }, [personalizeSignal])
 
   const canIssues = canUser(user, 'issues', 'view')
   const canCreateIssues = canUser(user, 'issues', 'create')
@@ -102,7 +108,8 @@ function HomeData({ user, hotel, onNavigate }) {
   const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
   const weather=weatherQuery.data
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
-  const visiblePriorities=priorities.slice(0,7)
+  const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,7):priorities.slice(0,10)
+  const setMode=(focus)=>{ setFocusOnly(focus); writeFocus(focus) }
 
   const stats=[
     canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,
@@ -124,8 +131,13 @@ function HomeData({ user, hotel, onNavigate }) {
   return <section className="rs-workhome" data-testid="home-view" data-home-template={uiSize}>
     <header className="rs-workhome__hero">
       <div><span className="rs-workhome__role">{roleLabel(user)}</span><h1>Ciao, {firstName(user?.name)}</h1><p>{hotel.name} · dashboard operativa</p></div>
-      {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
+      <div className="rs-workhome__hero-actions">
+        {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
+        <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura contenuto Home"><span className="rs-workhome__view-label">Vista</span></Button>
+      </div>
     </header>
+
+    {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Contenuto Home</strong><small>Piccolo, Normale e Grande decidono la disposizione; qui scegli quanta priorità mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
 
     {loading?<Spinner label="Preparo la dashboard…"/>:<div className="rs-homegrid" data-testid="home-dashboard-grid">
       <MacroCard id="status" title="Stato generale" eyebrow="OGGI" layout={layout}>
