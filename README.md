@@ -89,6 +89,14 @@ Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. I
 
 La navigazione mobile mantiene Operatività nello slot 1, Planning nello slot 2, Home nello slot 3, destinazione operativa/RandChat nello slot 4 e RandAI nello slot 5. Il menu completo vive nel controllo profilo/nome.
 
+### Regola obbligatoria di validazione RandUI
+
+**Ogni modifica o test RandUI deve essere pubblicato e validato prima su DigitalOcean/Ocean.** Ocean è l'ambiente canonico di prova per RandUI: qui si verificano resa reale, responsive, mobile/desktop, safe-area, navigazione, headbar/navbar, permessi, accessibilità e regressioni. Le correzioni restano su Ocean finché la versione non è approvata e i gate previsti risultano verdi.
+
+**Vercel è il passaggio successivo, non l'ambiente di prova RandUI:** una modifica RandUI può arrivare su Vercel solo dopo la validazione su Ocean. Non saltare Ocean per test grafici o strutturali RandUI, salvo decisione esplicita documentata che modifica questa regola.
+
+Flusso canonico: `modifica RandUI → test/CI → deploy Ocean → verifica reale → correzioni su Ocean → approvazione → Vercel`.
+
 ## Moduli operativi
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
@@ -127,7 +135,7 @@ La CI certifica inoltre dependency/security audit, Quality Matrix, critical oper
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); prove e deploy della nuova UI vanno su DigitalOcean/Ocean finché non viene decisa esplicitamente la riattivazione.
+Produzione stabile: Vercel. **Per RandUI, Ocean è obbligatorio come ambiente di test e validazione prima di Vercel.** Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); prove e deploy della nuova UI vanno su DigitalOcean/Ocean finché non viene decisa esplicitamente la riattivazione.
 
 ## Documentazione
 
