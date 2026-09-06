@@ -1,4 +1,4 @@
-import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
+import { rankAuthorizedNavigation } from './adaptive-layout.js'
 
 // RandUI primary mobile navigation contract.
 // The shell owns at most five stable spatial slots. Home stays in the geometric
@@ -31,14 +31,13 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
 function firstContextualDestination({ placement, viewAllowed, interests }) {
   const authorized = CONTEXTUAL_PRIMARY_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
   const preferred = authorized.filter((item) => placement(item.key) === 'bottom')
-  const secondary = authorized.filter((item) => placement(item.key) !== 'bottom')
-  const configuredInterestTags = preferred.flatMap((item) => interestsForNavItem(item.id))
-  const effectiveInterests = interests.length ? interests : configuredInterestTags
-  const ranked = [
-    ...rankAuthorizedNavigation(preferred, effectiveInterests),
-    ...rankAuthorizedNavigation(secondary, effectiveInterests),
-  ]
-  return ranked[0] ? { ...ranked[0], slot: TELEGRAM_PRIMARY_SLOTS.contextual } : null
+
+  // Explicit menu/role configuration is authoritative. Interests may rank a
+  // fallback only when no contextual destination has been explicitly placed
+  // in the bottom bar; they must never reshuffle a configured navbar between
+  // renders or make Magazzino/Chat unexpectedly displace Task.
+  const selected = preferred[0] || rankAuthorizedNavigation(authorized, interests)[0] || null
+  return selected ? { ...selected, slot: TELEGRAM_PRIMARY_SLOTS.contextual } : null
 }
 
 export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }) {
