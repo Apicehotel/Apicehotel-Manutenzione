@@ -62,9 +62,10 @@ test('bottom navigation preserves Operatività, Planning, Home and RandAI anchor
     urgent: 'side',
     housekeeping: 'off',
     home: 'bottom',
+    randai: 'bottom',
   }
   const placement = (key) => placements[key] || 'off'
-  const allowed = new Set(['operations', 'issues', 'interventions', 'planning-work', 'inventory', 'supplies', 'urgent', 'home'])
+  const allowed = new Set(['operations', 'issues', 'interventions', 'planning-work', 'inventory', 'supplies', 'urgent', 'home', 'randai'])
   const nav = buildPrimaryBottomNav({ placement, viewAllowed: (id) => allowed.has(id) })
 
   assert.equal(nav.find((item) => item.slot === 1)?.id, 'operations')
