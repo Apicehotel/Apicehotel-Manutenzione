@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import AppErrorBoundary from './error-boundary.jsx'
+import App from './randapp/App.jsx'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
 import { loadSession } from './session.js'
@@ -31,7 +32,6 @@ import { installDeploymentRecovery } from './deployment-recovery.js'
 
 installDeploymentRecovery()
 
-const App = lazy(() => import('./randapp/App.jsx'))
 const RandAIAssistant = lazy(() => import('./randai/RandAIAssistant.jsx'))
 const RandAIContextBridge = lazy(() => import('./randai/context/RandAIContextBridge.jsx'))
 const TechnicianPortal = lazy(() => import('./technician-portal.jsx'))

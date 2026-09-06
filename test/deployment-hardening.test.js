@@ -18,7 +18,7 @@ test('service worker validates MIME before caching dynamic assets', () => {
   assert.match(sw, /content-type/)
   assert.match(sw, /javascript/)
   assert.match(sw, /text\/css/)
-  assert.match(sw, /CACHE_NAME = 'apicehotel-manutenzione-v14'/)
+  assert.match(sw, /CACHE_NAME = 'apicehotel-manutenzione-v15'/)
   assert.match(sw, /PURGE_RUNTIME_CACHES/)
   assert.match(sw, /Deployment asset no longer available/)
   assert.match(sw, /status:\s*503/)
