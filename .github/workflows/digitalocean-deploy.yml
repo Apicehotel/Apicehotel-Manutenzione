@@ -162,4 +162,8 @@ jobs:
             echo "Ocean ingress is empty" >&2
             exit 1
           fi
-          echo "Ocean URL: https://$INGRESS"
+          case "$INGRESS" in
+            http://*|https://*) OCEAN_URL="$INGRESS" ;;
+            *) OCEAN_URL="https://$INGRESS" ;;
+          esac
+          echo "Ocean URL: $OCEAN_URL"
