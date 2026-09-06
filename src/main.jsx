@@ -120,15 +120,21 @@ if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiCo
         onboarding.initNotificationOnboarding()
         operationalInitialized = true
       }
-      const userId = session.authUserId || session.user?.auth_user_id || session.user?.id || null
+      const userId = session.authUserId || session.user?.auth_user_id || session.user?.id || session.userId || null
       if (userId && userId !== lastRepairUserId) {
         lastRepairUserId = userId
         push.repairPushSubscription().catch((error)=>{if(navigator.onLine)console.warn('Ripristino notifiche non riuscito',error)})
+      }
+      if (navigator.onLine) {
+        import('./offline-preload.js')
+          .then(({ warmOfflineForSession }) => warmOfflineForSession(session))
+          .catch((error) => console.warn('Precaricamento offline rimandato', error))
       }
     } catch (error) {
       if (navigator.onLine) console.warn('Avvio servizi operativi rimandato', error)
     }
   }
   window.addEventListener(SESSION_EVENT, () => setTimeout(startOperationalRuntime, 250))
+  window.addEventListener('online', () => setTimeout(startOperationalRuntime, 250))
   if (loadSession()) afterPageLoad(startOperationalRuntime)
 }
