@@ -121,6 +121,30 @@ Workflow dedicato: `.github/workflows/randai-group2-knowledge.yml`.
 
 Dettaglio: `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md`.
 
+## RandAI Group 3 — Durable runtime
+
+Il Gruppo 3 introduce `RandDurableRuntime` come contratto canonico per workflow lunghi/riprendibili senza creare un secondo orchestratore:
+
+- identità, `hotelId` e `workflow:execute` obbligatori;
+- idempotency key obbligatoria;
+- checkpoint, resume e cancel deterministici;
+- ogni resume rivalida identità/hotel/scope e ricarica conoscenza fresca;
+- `workflowId` + `workflowVersion` impediscono resume incompatibili;
+- retry solo espliciti e bounded;
+- tracing riusa OpenTelemetry del Gruppo 1;
+- recovery engine esistente resta proprietario del recovery locale;
+- Trigger.dev resta executor esterno opzionale, non dipendenza del PWA.
+
+Comando:
+
+```bash
+npm run test:group3
+```
+
+Workflow dedicato: `.github/workflows/randai-group3-durable.yml`.
+
+Dettaglio: `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md`.
+
 ## RandUI
 
 RandUI è il design system canonico. Il flusso è:
@@ -153,6 +177,7 @@ npm test
 npm run test:quality
 npm run test:group1
 npm run test:group2
+npm run test:group3
 npm run eval:randai:security
 npm run test:repo-radar
 npm run test:randskills
@@ -166,7 +191,7 @@ npm run test:lts
 
 `npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1 e Group 2 aggiungono rispettivamente tool authorization/evaluation e knowledge provenance/temporal boundary.
+La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
 
@@ -184,6 +209,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — security intelligence e sandbox boundary.
 - `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway, Promptfoo, OTLP/Phoenix e boundary ToolHive.
 - `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
+- `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
