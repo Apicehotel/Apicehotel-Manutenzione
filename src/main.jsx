@@ -135,5 +135,6 @@ if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiCo
     }
   }
   window.addEventListener(SESSION_EVENT, () => setTimeout(startOperationalRuntime, 250))
+  window.addEventListener('online', () => setTimeout(startOperationalRuntime, 250))
   if (loadSession()) afterPageLoad(startOperationalRuntime)
 }
