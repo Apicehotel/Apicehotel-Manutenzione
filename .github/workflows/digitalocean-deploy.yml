@@ -103,7 +103,6 @@ jobs:
                   github = component.get('github')
                   if isinstance(github, dict) and github.get('repo') == repository:
                       github['branch'] = branch
-                      # GitHub Actions is the deployment gate; avoid duplicate auto-deploys.
                       github['deploy_on_push'] = False
                       changed += 1
                   git = component.get('git')
@@ -117,14 +116,50 @@ jobs:
           path.write_text(json.dumps(spec, indent=2) + '\n')
           print(f'Ocean source pinned to {branch} for {changed} component(s)')
           PY
-          doctl apps spec validate .do/app.generated.json
+          doctl apps spec validate .do/app.generated.json >/dev/null
 
-      - name: Deploy exact candidate to DigitalOcean App Platform
-        id: deploy
-        uses: digitalocean/app_action/deploy@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: randapp
-          app_spec_location: .do/app.generated.json
-          print_build_logs: true
-          print_deploy_logs: true
+      - name: Update Ocean spec and deploy exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          doctl apps update "$OCEAN_APP_ID" \
+            --spec .do/app.generated.json \
+            --update-sources \
+            --wait \
+            --format ID,DefaultIngress,ActiveDeployment.ID,InProgressDeployment.ID \
+            --no-header | tee .do/ocean-deploy.txt
+
+      - name: Verify Ocean source and report URL
+        shell: bash
+        env:
+          EXPECTED_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          doctl apps spec get "$OCEAN_APP_ID" --format json > .do/app.after.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          spec = json.loads(Path('.do/app.after.json').read_text())
+          expected = os.environ['EXPECTED_BRANCH']
+          branches = []
+          for group in ('services', 'static_sites', 'workers', 'jobs', 'functions'):
+              for component in spec.get(group, []) or []:
+                  github = component.get('github')
+                  if isinstance(github, dict):
+                      branches.append(github.get('branch'))
+                  git = component.get('git')
+                  if isinstance(git, dict):
+                      branches.append(git.get('branch'))
+          branches = [b for b in branches if b]
+          if expected not in branches:
+              raise SystemExit(f'Ocean source verification failed: expected {expected}, got {branches}')
+          print(f'Ocean source verified: {expected}')
+          PY
+          INGRESS="$(doctl apps get "$OCEAN_APP_ID" --format DefaultIngress --no-header)"
+          if [ -z "$INGRESS" ]; then
+            echo "Ocean ingress is empty" >&2
+            exit 1
+          fi
+          echo "Ocean URL: https://$INGRESS"
