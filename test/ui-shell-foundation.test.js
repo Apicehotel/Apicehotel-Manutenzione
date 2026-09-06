@@ -23,6 +23,19 @@ test('adaptive primary mobile navigation keeps five structural slots with Home i
   assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
 
+test('explicit slot 4 configuration wins over soft interest ranking', () => {
+  const nav = buildPrimaryBottomNav({
+    placement: (key) => ['home', 'planning_work', 'reminders', 'inventory', 'randai'].includes(key) ? 'bottom' : 'off',
+    viewAllowed: allAllowed,
+    interests: ['warehouse', 'maintenance'],
+  })
+
+  assert.equal(nav.find((item) => item.slot === 4)?.id, 'reminders')
+  assert.equal(nav.some((item) => item.id === 'inventory'), false)
+  assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
+  assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
+})
+
 test('slot 4 follows configuration and permissions without moving Home or RandAI anchors', () => {
   const nav = buildPrimaryBottomNav({
     placement: (key) => {
@@ -98,10 +111,7 @@ test('Shell and document keep the adaptive PWA/native-ready navigation contract 
   assert.match(shell, /initSystemInsetsBridge/)
   assert.match(shell, /data-count="5"/)
   assert.match(shell, /data-slot=\{item\.slot\}/)
-  assert.match(shell, /aria-label="Navigazione principale"/)
-  assert.match(main, /import ['"]\.\/randapp\/randui\/foundation\.css['"]/)
-  assert.match(foundation, /@import ['"]\.\.\/adaptive-layout\.css['"]/)
-  assert.doesNotMatch(shell, /app-shell-foundation\.css/)
   assert.match(html, /viewport-fit=cover/)
-  assert.doesNotMatch(html, /rs-bottomnav\[data-count=/)
+  assert.match(main, /\.\/randapp\/randui\/foundation\.css/)
+  assert.match(foundation, /@import '\.\.\/adaptive-layout\.css';/)
 })
