@@ -12,6 +12,7 @@ import { loadUiSize } from './ui-size.js'
 import { resolveHomeDashboardLayout } from './home-dashboard-layout.js'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
 import './home-operational.css'
+import './home-dashboard.css'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } } })
 const dateKey = (value = new Date()) => value.toISOString().slice(0, 10)
