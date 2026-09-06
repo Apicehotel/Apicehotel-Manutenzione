@@ -45,6 +45,7 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const operationsVisible = viewAllowed('operations')
   const planningVisible = placement('planning_work') !== 'off' && viewAllowed('planning-work')
   const homeVisible = placement('home') !== 'off' && viewAllowed('home')
+  const randaiVisible = placement('randai') !== 'off' && viewAllowed('randai')
 
   if (operationsVisible) {
     items.push({ slot: TELEGRAM_PRIMARY_SLOTS.operations, id: 'operations', key: 'operations', icon: 'issues', label: 'Operatività' })
@@ -59,13 +60,13 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // RandAI is a global assistant action, not a page destination. Keeping it as
-  // an action avoids duplicating the /randai console or bypassing its own auth.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI', action: 'randai' })
+  if (randaiVisible) {
+    items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
+  }
 
   return items
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || view === 'randai' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }
