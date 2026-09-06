@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandChat**, **RandDesktop**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandVisual, RandChange, RandGuide, **RandSkills**, **RandChat**, **RandDesktop**, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool + Permission Gateway, RandMind Continuity + Model Router, RandVisual Engine, RandCore Visual Intelligence, RandChange Receipt + Visual QA.
 
@@ -19,6 +19,16 @@ La roadmap OpenCode + Diagram Design è chiusa **6/6**: RandAgent Runtime, Tool 
 - Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario o rollback.
 - Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo e dipendenze.
 - Se esiste una soluzione nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch.
+
+## RandSkills v1
+
+RandSkills introduce competenze modulari e versionate senza creare un secondo sistema di autorizzazione. Il formato segue lo standard aperto Agent Skills: ogni competenza vive in `rand-skills/<name>/SKILL.md`, mentre RandCore/RLS/RPC restano l'autorità finale per permessi e mutazioni.
+
+Prime skill canoniche: `maintenance`, `housekeeping`, `planning`, `warehouse`, `whatsapp`, `procedures`, `repo-radar`. `npm run skills:validate` applica un gate fail-closed su nome/cartella, descrizione, scope, permessi, azioni consentite/vietate, workflow e validazione.
+
+La toolchain usa una sola sorgente Node: `.nvmrc` (**24.20.0 LTS**). `package.json`, npm (`engine-strict=true`) e workflow GitHub leggono lo stesso contratto, evitando drift fra locale, CI, RandCore, RandDesktop, Repo Radar e verifica Ocean.
+
+Dettaglio: `docs/architecture/RANDSKILLS_V1.md`.
 
 ## RandUI Adaptive Layout
 
@@ -238,6 +248,7 @@ Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
 - **RandMind** — continuità/memoria governata e hotel-scoped.
 - **RandBrain** — reasoning/decision layer governato.
 - **RandCore** — health, governance, workers, sicurezza, costi, integrazioni e LTS evidence.
+- **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore.
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
@@ -267,6 +278,8 @@ Comandi principali:
 npm run build
 npm test
 npm run test:quality
+npm run test:randskills
+npm run skills:validate
 npm run test:randui
 npm run test:randui:guard
 npm run test:randui:migration
@@ -280,6 +293,8 @@ npm run test:lts
 
 La CI certifica, tra gli altri:
 
+- Node canonico da `.nvmrc` e installazione fail-closed su engine incompatibile;
+- validazione RandSkills prima dei gate applicativi;
 - dependency/security audit;
 - Quality Matrix;
 - critical operational gate;
@@ -312,6 +327,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 
 ## Documentazione
 
+- `docs/architecture/RANDSKILLS_V1.md` — formato skill, governance RandCore, toolchain Node e percorso di evoluzione.
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, baseline di migrazione e strategia di compatibilità.
