@@ -5,12 +5,17 @@ const RECOVERY_QUERY_KEY = '__randapp_recover'
 const DEPLOYMENT_ERROR_RE = /(?:Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module|Unable to preload CSS|not a valid JavaScript MIME type|Expected a JavaScript-or-Wasm module script|ChunkLoadError|Loading chunk .* failed|undefined is not an object \(evaluating ['"]v\._result\.default['"]\)|Cannot read propert(?:y|ies) .*default.*(?:undefined|null)|Cannot destructure property ['"](?:TemperatureSensors|PlantStatus|Housekeeping)['"] from null or undefined value)/i
 
 let recoveryStarted = false
+let recoveryDeferred = false
 
 export function isDeploymentAssetError(value) {
   if (!value) return false
   if (typeof value === 'string') return DEPLOYMENT_ERROR_RE.test(value)
   const message = [value?.name, value?.message, value?.stack].filter(Boolean).join(' ')
   return DEPLOYMENT_ERROR_RE.test(message)
+}
+
+export function canAttemptDeploymentRecovery(online = typeof navigator === 'undefined' ? true : navigator.onLine) {
+  return online !== false
 }
 
 function recoveryKey() {
@@ -73,15 +78,9 @@ function clearRecoveryMarker() {
   } catch {}
 }
 
-export async function recoverFromDeploymentAssetError(error, event = null) {
-  if (typeof window === 'undefined' || recoveryStarted || !isDeploymentAssetError(error)) return false
-  if (!canRecover()) return false
-
-  recoveryStarted = true
-  event?.preventDefault?.()
-
+function dispatchRecoveryEvent(type, error) {
   try {
-    window.dispatchEvent(new CustomEvent('randapp:deployment-recovery', {
+    window.dispatchEvent(new CustomEvent(type, {
       detail: {
         message: error?.message || String(error || ''),
         build: typeof __RANDAPP_BUILD__ !== 'undefined' ? __RANDAPP_BUILD__ : null,
@@ -91,6 +90,32 @@ export async function recoverFromDeploymentAssetError(error, event = null) {
   } catch {
     // La telemetria e' best-effort e non deve bloccare il recupero.
   }
+}
+
+function deferRecoveryUntilOnline(error) {
+  if (recoveryDeferred || typeof window === 'undefined') return
+  recoveryDeferred = true
+  window.addEventListener('online', () => {
+    recoveryDeferred = false
+    recoverFromDeploymentAssetError(error).catch(() => {})
+  }, { once: true })
+}
+
+export async function recoverFromDeploymentAssetError(error, event = null) {
+  if (typeof window === 'undefined' || recoveryStarted || !isDeploymentAssetError(error)) return false
+
+  if (!canAttemptDeploymentRecovery()) {
+    event?.preventDefault?.()
+    dispatchRecoveryEvent('randapp:deployment-recovery-deferred', error)
+    deferRecoveryUntilOnline(error)
+    return false
+  }
+
+  if (!canRecover()) return false
+
+  recoveryStarted = true
+  event?.preventDefault?.()
+  dispatchRecoveryEvent('randapp:deployment-recovery', error)
 
   await clearRuntimeCaches()
   await refreshServiceWorkers()
