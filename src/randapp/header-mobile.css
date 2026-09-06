@@ -1,4 +1,10 @@
 /* Operational header: one real toolbar for structure, presence, notifications and profile/menu. */
+.rs-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
 .rs-header--operational {
   display: flex;
   align-items: center;
