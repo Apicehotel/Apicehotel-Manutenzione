@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v14'
+const CACHE_NAME = 'apicehotel-manutenzione-v15'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -36,6 +36,24 @@ const missingDynamicAssetResponse = () => new Response('Deployment asset no long
     'Cache-Control': 'no-store, max-age=0',
   },
 })
+
+const offlineNavigationResponse = async (request) => {
+  const exact = await caches.match(request)
+  if (exact) return exact
+  const shell = await caches.match('/')
+  if (shell) return shell
+  return new Response(
+    '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RandApp offline</title></head><body><main><h1>RandApp offline</h1><p>La copia offline non è ancora disponibile. Riconnettiti una volta per completare il caricamento.</p></main></body></html>',
+    { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
+  )
+}
+
+const offlineAssetResponse = (request) => {
+  if (request.destination === 'image') {
+    return new Response('', { status: 503, headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store' } })
+  }
+  return new Response('', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -81,17 +99,18 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request, { cache: 'no-store' })
-        .then((response) => {
-          if (response.ok && (response.headers.get('content-type') || '').includes('text/html')) {
-            const copy = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-          }
-          return response
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
-    )
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request, { cache: 'no-store' })
+        if (response.ok && (response.headers.get('content-type') || '').includes('text/html')) {
+          const copy = response.clone()
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)))
+        }
+        return response
+      } catch {
+        return offlineNavigationResponse(request)
+      }
+    })())
     return
   }
 
@@ -102,7 +121,7 @@ self.addEventListener('fetch', (event) => {
         const response = await fetch(request, { cache: 'no-store' })
         if (isValidDynamicAsset(request, response)) {
           const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)))
           return response
         }
         return (await getValidCachedDynamicAsset(request)) || missingDynamicAssetResponse()
@@ -113,15 +132,20 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+  event.respondWith((async () => {
+    const cached = await caches.match(request)
+    if (cached) return cached
+    try {
+      const response = await fetch(request)
       if (response.ok) {
         const copy = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)))
       }
       return response
-    })),
-  )
+    } catch {
+      return offlineAssetResponse(request)
+    }
+  })())
 })
 
 self.addEventListener('push', (event) => {
