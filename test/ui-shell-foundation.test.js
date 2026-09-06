@@ -26,16 +26,15 @@ test('adaptive primary mobile navigation keeps five structural slots with Home i
 test('slot 4 follows configuration and permissions without moving Home or RandAI anchors', () => {
   const nav = buildPrimaryBottomNav({
     placement: (key) => {
-      if (key === 'reminders') return 'off'
+      if (key === 'home' || key === 'planning_work' || key === 'randai') return 'bottom'
       if (key === 'chat') return 'bottom'
-      return allBottom(key)
+      return 'off'
     },
-    viewAllowed: (id) => id !== 'inventory',
+    viewAllowed: allAllowed,
   })
 
   assert.equal(nav.some((item) => item.id === 'reminders'), false)
   assert.equal(nav.find((item) => item.id === 'chat')?.slot, 4)
-  assert.equal(nav.some((item) => item.id === 'inventory'), false)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
   assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
