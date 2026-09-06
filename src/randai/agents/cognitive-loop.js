@@ -29,9 +29,13 @@ export class RandMindCognitiveLoop {
     const routing = this.routeSkills({ objective, skillIds })
     const skills = routing.skillIds.map((id) => this.skillRegistry.inspect(id)).filter(Boolean)
     const patterns = routing.requiredToolPatterns || []
-    const boundedAllowedToolIds = patterns.length
-      ? (allowedToolIds || []).filter((toolId) => patterns.some((pattern) => matchesToolPattern(toolId, pattern)))
-      : []
+    const callerAllowed = new Set((allowedToolIds || []).map(String))
+    const patternMatches = [...callerAllowed].filter((toolId) => patterns.some((pattern) => matchesToolPattern(toolId, pattern)))
+    const permissionFallback = this.toolRegistry.list()
+      .filter((tool) => callerAllowed.has(tool.id))
+      .filter((tool) => routing.requiredPermissions.includes(tool.permission))
+      .map((tool) => tool.id)
+    const boundedAllowedToolIds = patternMatches.length ? patternMatches : permissionFallback
     const tools = this.toolsets.resolve({ allowedToolIds: boundedAllowedToolIds, maxRisk: maxToolRisk })
 
     const runtimeContext = {
