@@ -13,6 +13,22 @@ const APP_SHELL = [
   '/logos/card-brigantino.png',
 ]
 
+const getAppCacheVersion = (key) => {
+  const versionPrefix = `${APP_CACHE_PREFIX}v`
+  if (!key.startsWith(versionPrefix)) return null
+  const version = Number(key.slice(versionPrefix.length))
+  return Number.isInteger(version) && version >= 0 ? version : null
+}
+
+const getPreviousAppCache = (keys) => {
+  const currentVersion = getAppCacheVersion(CACHE_NAME)
+  if (!Number.isInteger(currentVersion)) return null
+  return keys
+    .map((key) => ({ key, version: getAppCacheVersion(key) }))
+    .filter(({ key, version }) => key !== CACHE_NAME && Number.isInteger(version) && version < currentVersion)
+    .sort((a, b) => b.version - a.version)[0]?.key || null
+}
+
 const isValidDynamicAsset = (request, response) => {
   if (!response?.ok) return false
   const type = (response.headers.get('content-type') || '').toLowerCase()
@@ -73,11 +89,16 @@ self.addEventListener('install', (event) => {
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME && key.startsWith(APP_CACHE_PREFIX)).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim()),
-  )
+  event.waitUntil((async () => {
+    const keys = await caches.keys()
+    const previousCache = getPreviousAppCache(keys)
+    await Promise.all(
+      keys
+        .filter((key) => key.startsWith(APP_CACHE_PREFIX) && key !== CACHE_NAME && key !== previousCache)
+        .map((key) => caches.delete(key)),
+    )
+    await self.clients.claim()
+  })())
 })
 
 self.addEventListener('message', (event) => {
