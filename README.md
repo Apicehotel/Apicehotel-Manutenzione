@@ -79,6 +79,26 @@ RandCore governa health, audit, release gate, workers, sicurezza, costi, integra
 
 `Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
 
+## RandAI Group 1 — Guardrails e observability
+
+Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di autorizzazione o logging:
+
+- **RandTool Gateway** (`src/randai/core/tool-gateway.js`) filtra i tool prima dell'esposizione al modello e nega tool sconosciuti/disabilitati, caller anonimi, cross-hotel e scope mancanti;
+- **Promptfoo** resta fuori dal bundle runtime e viene usato come regression/evaluation gate CI con versione fissata;
+- **OpenTelemetry** già presente resta il contratto canonico; `ai-observability.js` aggiunge span `randai.*`, mentre Phoenix può essere collegato come backend OTLP opzionale;
+- **ToolHive** resta adapter/runtime MCP opzionale dietro il RandTool Gateway e non può concedere permessi.
+
+Comandi:
+
+```bash
+npm run test:group1
+npm run eval:randai:security
+```
+
+Workflow dedicato: `.github/workflows/randai-group1-security.yml`.
+
+Dettaglio: `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md`.
+
 ## RandUI
 
 RandUI è il design system canonico. Il flusso è:
@@ -109,6 +129,8 @@ Comandi principali:
 npm run build
 npm test
 npm run test:quality
+npm run test:group1
+npm run eval:randai:security
 npm run test:repo-radar
 npm run test:randskills
 npm run test:mind-learning
@@ -121,7 +143,7 @@ npm run test:lts
 
 `npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation.
+La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. Il workflow RandAI Group 1 aggiunge il gate per tool authorization e Promptfoo evaluation.
 
 ## Deploy
 
@@ -137,6 +159,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md` — lifecycle, overlap e zombie policy.
 - `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop e learning verificato.
 - `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — security intelligence e sandbox boundary.
+- `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway, Promptfoo, OTLP/Phoenix e boundary ToolHive.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
