@@ -1,4 +1,4 @@
-/* Operational header: one real toolbar for structure, RandAI, presence and notifications. */
+/* Operational header: one real toolbar for structure, presence, profile/menu and notifications. */
 .rs-header--operational {
   display: flex;
   align-items: center;
@@ -48,34 +48,56 @@
 @media (max-width: 899px) {
   .rs-header {
     --rs-header-action-size: clamp(40px, calc(42px * var(--rs-scale)), 50px);
-    gap: calc(6px * var(--rs-scale));
+    gap: calc(4px * var(--rs-scale));
   }
 
+  /* Structure stays on the left, but no longer looks like a second card. */
   .rs-header--operational .rs-hotelchip--operational {
     min-width: 0;
     flex: 0 1 auto;
     width: auto;
-    max-width: clamp(96px, calc(118px * var(--rs-scale)), 138px);
-    padding: calc(6px * var(--rs-scale)) calc(8px * var(--rs-scale));
-    gap: calc(7px * var(--rs-scale));
+    min-height: var(--rs-header-action-size);
+    max-width: clamp(88px, calc(104px * var(--rs-scale)), 122px);
+    padding: calc(4px * var(--rs-scale)) calc(6px * var(--rs-scale));
+    gap: calc(6px * var(--rs-scale));
+    border-color: transparent;
+    border-radius: calc(13px * var(--rs-scale));
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .rs-header--operational .rs-hotelchip--operational:active {
+    background: color-mix(in srgb, var(--rs-surface-2) 82%, transparent);
   }
 
   .rs-header--operational .rs-hotelchip--operational img {
     width: calc(32px * var(--rs-scale));
     height: calc(32px * var(--rs-scale));
-    border-radius: calc(10px * var(--rs-scale));
+    border-radius: 50%;
+    object-fit: contain;
   }
 
   .rs-hotelchip__name-mobile {
     display: inline;
-    font-size: .84rem;
+    font-size: .82rem;
     white-space: nowrap;
   }
   .rs-hotelchip__name-desktop { display: none; }
 
-  .rs-header__actions {
-    gap: calc(5px * var(--rs-scale));
+  .rs-hotelchip__caret .rs-icon {
+    width: calc(14px * var(--rs-scale));
+    height: calc(14px * var(--rs-scale));
   }
+
+  .rs-header__actions {
+    gap: calc(3px * var(--rs-scale));
+  }
+
+  /* Stable right-side order: presence -> profile/menu -> bell. */
+  .rs-header [data-testid='presence-chip'] { order: 1; }
+  .rs-header .rs-profile-trigger { order: 2; }
+  .rs-header .rs-header-notify { order: 3; }
+  .rs-header .rs-header__randai--desktop { order: 4; }
 
   .rs-header__randai,
   .rs-header [data-testid='header-notifications'] {
@@ -83,7 +105,7 @@
     min-width: var(--rs-header-action-size);
     height: var(--rs-header-action-size);
     min-height: var(--rs-header-action-size);
-    border-radius: calc(14px * var(--rs-scale));
+    border-radius: calc(13px * var(--rs-scale));
   }
 
   .rs-header__randai .rs-cyber-cat-orb {
@@ -91,47 +113,97 @@
     height: calc(var(--rs-header-action-size) - 2px);
   }
 
+  /* Presence remains a real toggle, but the redundant GIO/CHO/BRI text disappears on mobile. */
   .rs-header [data-testid='presence-chip'] {
+    width: var(--rs-header-action-size);
+    min-width: var(--rs-header-action-size);
+    max-width: var(--rs-header-action-size);
     min-height: var(--rs-header-action-size) !important;
     height: var(--rs-header-action-size);
-    min-width: clamp(64px, calc(72px * var(--rs-scale)), 88px);
-    max-width: clamp(82px, calc(96px * var(--rs-scale)), 112px);
-    padding: 0 calc(11px * var(--rs-scale)) !important;
-    gap: calc(6px * var(--rs-scale)) !important;
-    border-radius: calc(14px * var(--rs-scale));
-    font-size: .78rem !important;
-    font-weight: 750 !important;
-    line-height: 1 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    display: grid !important;
+    place-items: center;
+    border-radius: 50% !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
     align-self: center;
   }
 
   .rs-header [data-testid='presence-chip'] > span:first-child {
-    width: clamp(7px, calc(8px * var(--rs-scale)), 10px) !important;
-    height: clamp(7px, calc(8px * var(--rs-scale)), 10px) !important;
+    width: clamp(11px, calc(12px * var(--rs-scale)), 14px) !important;
+    height: clamp(11px, calc(12px * var(--rs-scale)), 14px) !important;
+    margin: 0 !important;
+    border: 2px solid var(--rs-surface) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent), 0 2px 8px color-mix(in srgb, currentColor 20%, transparent);
   }
 
   .rs-header [data-testid='presence-chip'] > span:last-child {
-    display: inline-flex;
-    align-items: center;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
+  /* Profile is the menu trigger: initials stay recognizable and the small menu badge explains the action. */
+  .rs-header .rs-profile-trigger {
+    position: relative;
+    width: var(--rs-header-action-size);
+    min-width: var(--rs-header-action-size);
+    height: var(--rs-header-action-size);
+    min-height: var(--rs-header-action-size);
+    padding: 0;
     justify-content: center;
-    min-height: 1em;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .rs-header .rs-profile-trigger::after {
+    content: '≡';
+    position: absolute;
+    right: -1px;
+    bottom: 0;
+    width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--rs-surface);
+    border-radius: 50%;
+    background: var(--rs-surface-2);
+    color: var(--rs-text-2);
+    font: 800 11px/1 system-ui, sans-serif;
+    letter-spacing: -.08em;
+    box-sizing: border-box;
   }
 
   .rs-header [data-testid='header-notifications'] .rs-icon {
     width: calc(21px * var(--rs-scale));
     height: calc(21px * var(--rs-scale));
   }
+
+  .rs-header .rs-header-notify {
+    flex: none;
+    margin-left: 1px;
+  }
 }
 
 @media (max-width: 430px) {
   .rs-header {
     --rs-header-action-size: clamp(38px, calc(40px * var(--rs-scale)), 46px);
-    gap: calc(5px * var(--rs-scale));
+    gap: calc(3px * var(--rs-scale));
   }
 
   .rs-header--operational .rs-hotelchip--operational {
-    max-width: clamp(90px, calc(108px * var(--rs-scale)), 124px);
-    padding-inline: calc(7px * var(--rs-scale));
+    max-width: clamp(84px, calc(96px * var(--rs-scale)), 112px);
+    padding-inline: calc(5px * var(--rs-scale));
   }
 
   .rs-header--operational .rs-hotelchip--operational img {
@@ -139,22 +211,18 @@
     height: calc(30px * var(--rs-scale));
   }
 
-  .rs-hotelchip__name-mobile { font-size: .78rem; }
-  .rs-header__actions { gap: calc(4px * var(--rs-scale)); }
+  .rs-hotelchip__name-mobile { font-size: .76rem; }
+  .rs-header__actions { gap: calc(2px * var(--rs-scale)); }
 
   .rs-header__randai,
   .rs-header [data-testid='header-notifications'] {
-    border-radius: calc(13px * var(--rs-scale));
+    border-radius: calc(12px * var(--rs-scale));
   }
 
-  .rs-header [data-testid='presence-chip'] {
-    min-height: var(--rs-header-action-size) !important;
-    height: var(--rs-header-action-size);
-    min-width: clamp(60px, calc(64px * var(--rs-scale)), 76px);
-    max-width: clamp(74px, calc(82px * var(--rs-scale)), 96px);
-    padding-inline: calc(9px * var(--rs-scale)) !important;
-    border-radius: calc(13px * var(--rs-scale));
-    font-size: .74rem !important;
+  .rs-header .rs-profile-trigger::after {
+    width: 15px;
+    height: 15px;
+    font-size: 10px;
   }
 }
 
