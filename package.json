@@ -20,6 +20,8 @@
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",
     "test:quality": "npm run test:matrix && npm run test:critical && npm run test:multihotel && npm run test:production && npm test",
+    "test:group1": "node --test test/randai-group1-guardrails.test.js",
+    "eval:randai:security": "npx --yes promptfoo@0.122.2 eval -c evals/randai/promptfooconfig.yaml --no-cache",
     "test:autonomy": "node --test test/randai-autonomy-decision.test.js",
     "test:recovery": "node --test test/randai-recovery-engine.test.js",
     "test:software": "node --test test/randai-software-readiness.test.js",
