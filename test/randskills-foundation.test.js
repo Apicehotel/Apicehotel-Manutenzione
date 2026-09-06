@@ -22,7 +22,7 @@ test('Node toolchain contract is pinned and fail-closed', () => {
   const npmrc = fs.readFileSync(new URL('../.npmrc', import.meta.url), 'utf8')
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.equal(nvmrc, '24.15.0')
-  assert.equal(pkg.engines.node, '>=24.15.0 <25')
+  assert.equal(pkg.engines.node, '24.15.0')
   assert.match(npmrc, /^engine-strict=true/m)
 })
 
