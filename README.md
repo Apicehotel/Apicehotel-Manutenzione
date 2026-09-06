@@ -36,7 +36,7 @@ Breakpoints canonici:
 
 Sono gestiti anche touch/pointer, portrait/landscape, safe-area, schermi stretti e monitor larghi. `Piccolo / Normale / Grande` è il solo contratto persistente di densità (`apicehotel.ui-size.v1`); Grande aumenta anche controlli e touch target, non soltanto il testo.
 
-La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. La navigazione primaria Telegram-inspired mantiene **Home nello slot 3** e **RandAI nello slot 5**. `Altro` non è più una tab primaria: il menu completo autorizzato si apre dal controllo profilo/nome nell'header. Gli slot mancanti non spostano le ancore geometriche.
+La geometria responsive canonica è in `src/randapp/adaptive-layout.css`. **Header e contenuto condividono lo stesso gutter orizzontale `--rs-page-pad-x`**, aumentato solo dalle safe-area reali; i controlli non possono quindi uscire lateralmente mentre le card restano allineate. Sui telefoni molto stretti l'header operativo può ricomporsi prima di sacrificare la leggibilità del nome struttura. La navigazione primaria Telegram-inspired mantiene **Home nello slot 3** e **RandAI nello slot 5**. `Altro` non è più una tab primaria: il menu completo autorizzato si apre dal controllo profilo/nome nell'header. Gli slot mancanti non spostano le ancore geometriche.
 
 ### RandUI v1 Core
 
@@ -146,7 +146,7 @@ RandApp non usa una libreria notch separata. Il contratto è interno e condiviso
 - `src/randapp/system-insets.js` per eventuali inset nativi/wrapper futuri;
 - `adaptive-layout.css` come unica geometria responsive.
 
-La safe-area superiore ha **un solo proprietario: l'header sticky**. Non viene applicata anche al contenitore app, evitando il doppio spazio su iPhone con notch/Dynamic Island. Il bottom inset resta non limitato per Home Indicator e navigazione Android.
+La safe-area superiore ha **un solo proprietario: l'header sticky**. Non viene applicata anche al contenitore app, evitando il doppio spazio su iPhone con notch/Dynamic Island. Orizzontalmente header e contenuto usano lo stesso gutter canonico e gli inset nativi possono soltanto aumentarlo. Sotto `360px` l'header operativo ricompone i controlli se necessario, invece di tagliare il nome hotel o il profilo. Il bottom inset resta non limitato per Home Indicator e navigazione Android.
 
 ## Home operativa
 
@@ -292,6 +292,7 @@ La CI certifica, tra gli altri:
 - **RandUI Visual Language v1: Visual Policy sui 14 template, primitive canoniche e Planning senza geometria page-level inline**;
 - **RandUI Telegram Navigation v1: Home slot 3, RandAI slot 5, Operatività hub, menu profilo e accordion accessibili**;
 - **Planning mobile visual baseline: Stack content-sized, riepilogo Oggi unico, banner notifiche dismissibile e nessun ritorno dello spazio morto**;
+- **RandUI mobile gutter: header e contenuto condividono `--rs-page-pad-x`, safe-area coerenti e ricomposizione header sotto 360px**;
 - matrice RandUI **320/375/390/430/768/1024/1440**, overflow/viewport, touch target e nomi accessibili per le pagine template;
 - RandChat E2EE round-trip e tamper detection;
 - RandMedia E2EE file round-trip e compatibilità payload DM v1→v2;
