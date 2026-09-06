@@ -100,8 +100,8 @@ export function normalizeKnowledgeHit(input = {}, { hotelId, at = new Date().toI
   return normalized
 }
 
-function memoryToKnowledge(memory, hotelId) {
-  const quality = memory.quality || memoryQuality(memory)
+function memoryToKnowledge(memory, hotelId, at) {
+  const quality = memory.quality || memoryQuality(memory, Date.parse(at))
   if (!quality.usable) return null
   return normalizeKnowledgeHit({
     id: memory.id,
@@ -115,7 +115,7 @@ function memoryToKnowledge(memory, hotelId) {
     observedAt: memory.lastVerifiedAt,
     confidence: memory.confidence,
     score: quality.score,
-  }, { hotelId })
+  }, { hotelId, at })
 }
 
 function dedupeHits(items = []) {
@@ -168,7 +168,7 @@ export class RandKnowledgeGateway {
       'rand.knowledge.rag_enabled': Boolean(this.ragAdapter),
     }, async () => {
       const memories = await this.mind.recall(query, { hotelId: authorization.hotelId })
-      const mindHits = memories.map((memory) => memoryToKnowledge(memory, authorization.hotelId)).filter(Boolean)
+      const mindHits = memories.map((memory) => memoryToKnowledge(memory, authorization.hotelId, at)).filter(Boolean)
       const [graph, rag] = await Promise.all([
         projectionQuery(this.graphAdapter, query, context, KnowledgeBackend.GRAPHITI),
         projectionQuery(this.ragAdapter, query, context, KnowledgeBackend.LIGHTRAG),
