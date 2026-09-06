@@ -41,10 +41,13 @@ body { overflow-x: hidden; }
   overflow-wrap: anywhere;
 }
 
+/* Header and page content share the same horizontal gutter token. Safe-area
+   insets can only increase that gutter, never reduce it. */
 .rs-header {
+  min-width: 0;
   padding-top: calc(var(--rs-adaptive-safe-top) + 6px);
-  padding-left: max(12px, var(--rs-adaptive-safe-left));
-  padding-right: max(12px, var(--rs-adaptive-safe-right));
+  padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
+  padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
   padding-bottom: 7px;
 }
 
@@ -103,8 +106,8 @@ body { overflow-x: hidden; }
 /* Grande mode enlarges usable controls as well as text; it is not a text-only zoom. */
 html[data-ui-size='large'] .rs-header {
   gap: 7px;
-  padding-left: max(12px, var(--rs-adaptive-safe-left));
-  padding-right: max(12px, var(--rs-adaptive-safe-right));
+  padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
+  padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
 }
 html[data-ui-size='large'] .rs-hotelchip {
   flex: 0 1 auto;
@@ -122,7 +125,7 @@ html[data-ui-size='large'] .rs-presence-dot { width: 44px; height: 44px; }
 html[data-ui-size='large'] .rs-presence-dot::before { width: 9px; height: 9px; }
 html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 46px; height: 46px; border-radius: 14px; }
 
-/* Bottom navigation uses five stable slots. Home remains 3 and Altro remains 5. */
+/* Bottom navigation uses five stable slots. Home remains 3 and RandAI remains 5. */
 .rs-bottomnav {
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   padding-left: max(8px, var(--rs-adaptive-safe-left)) !important;
@@ -221,8 +224,12 @@ html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 46px; height: 
   html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 44px; height: 44px; }
 }
 
-@media (max-width: 380px) {
-  .rs-content { padding-left: max(10px, var(--rs-adaptive-safe-left)); padding-right: max(10px, var(--rs-adaptive-safe-right)); }
+/* On very narrow phones the layout may reflow before readability is sacrificed.
+   This protects the full hotel name and keeps notification/profile controls inside the viewport. */
+@media (max-width: 360px) {
+  :root { --rs-page-pad-x: 10px; }
+  .rs-header--operational { flex-wrap: wrap; }
+  .rs-header--operational .rs-header__actions { margin-left: auto; }
   .rs-hotelchip { gap: 8px; padding-left: 9px; padding-right: 9px; }
   .rs-hotelchip img { width: 34px; height: 34px; }
   .rs-navbtn small { font-size: .56rem; }
@@ -230,6 +237,10 @@ html[data-ui-size='large'] .rs-header-notify .rs-iconbtn { width: 46px; height: 
 
 @media (max-width: 767px) and (orientation: landscape) {
   .rs-content {
+    padding-left: max(20px, var(--rs-adaptive-safe-left));
+    padding-right: max(20px, var(--rs-adaptive-safe-right));
+  }
+  .rs-header {
     padding-left: max(20px, var(--rs-adaptive-safe-left));
     padding-right: max(20px, var(--rs-adaptive-safe-right));
   }
