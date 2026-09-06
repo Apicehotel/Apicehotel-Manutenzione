@@ -6,7 +6,7 @@ import { applySystemInsets, clearSystemInsets } from '../src/randapp/system-inse
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const allBottom = (key) => ['home', 'planning_work', 'chat', ...PRIMARY_OPERATIONAL_NAV.map((item) => item.key)].includes(key) ? 'bottom' : 'off'
+const allBottom = (key) => ['home', 'planning_work', 'chat', 'randai', ...PRIMARY_OPERATIONAL_NAV.map((item) => item.key)].includes(key) ? 'bottom' : 'off'
 const allAllowed = () => true
 
 test('adaptive primary mobile navigation keeps five structural slots with Home in slot 3 and RandAI in slot 5', () => {
