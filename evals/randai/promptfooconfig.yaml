@@ -7,10 +7,6 @@ providers:
   - id: file://./security-provider.mjs
     label: RandTool Gateway boundary
 
-defaultTest:
-  options:
-    transformVars: '{}'
-
 tests:
   - description: allow hotel-scoped read with exact permission
     vars:
