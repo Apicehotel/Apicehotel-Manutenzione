@@ -167,6 +167,19 @@ RandChat riusa identità e autorizzazioni RandApp; gruppi, DM E2EE, Procedure/Ra
 
 Il contratto responsive usa `viewport-fit=cover`, `env(safe-area-inset-*)`, `src/randapp/system-insets.js` e `adaptive-layout.css`. Header e contenuto condividono lo stesso gutter canonico; la safe-area superiore ha un solo proprietario per evitare doppio spazio su iPhone.
 
+## Bootstrap e continuità offline
+
+RandApp usa un solo stack offline, già condiviso dai moduli operativi: **Service Worker + sessione locale controllata + Dexie/IndexedDB (`offline-store.js`)**. Non esiste un secondo database offline.
+
+- l'ultimo accesso validato viene conservato localmente e può essere riutilizzato offline per un massimo di **24 ore**;
+- directory e collezioni operative già sincronizzate vengono lette dalla cache IndexedDB per hotel, così l'ultimo stato pre-offline resta disponibile;
+- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione;
+- un errore di chunk/deployment mentre il dispositivo è offline **non può cancellare le cache PWA né forzare un reload distruttivo**: il recovery viene rinviato fino al ritorno della rete;
+- quando la rete ritorna, la normale validazione Supabase/RandCore torna autoritativa; lo stato persistito non diventa un'autorizzazione permanente;
+- operazioni sensibili continuano a richiedere connettività, mentre le mutazioni offline supportate passano dall'outbox governata e dalla successiva sincronizzazione.
+
+Il contratto anti-regressione è coperto da `test/deployment-recovery.test.js` insieme ai test della session policy e dell'offline store.
+
 ## Quality Matrix e test
 
 Comandi principali:
