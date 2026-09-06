@@ -1,16 +1,23 @@
 import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
 
-// RandUI Telegram-inspired primary navigation contract.
-// Five spatial slots stay stable on mobile: Operatività, Planning, Home, a
-// contextual fast destination, RandAI. Home is always the geometric centre and
-// RandAI owns the far-right slot. The complete navigation lives in the profile
-// drawer instead of an "Altro" catch-all tab.
+// RandUI primary mobile navigation contract.
+// The shell owns at most five stable spatial slots. Home stays in the geometric
+// centre when available, while the other destinations are resolved from role
+// configuration + effective permissions. Slot 4 is intentionally contextual:
+// Task/Promemoria is the default candidate, but any configured/authorized
+// destination can replace it without leaving an empty hole.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
   Object.freeze({ id: 'supplies', key: 'supplies', icon: 'package', label: 'Rifornimenti' }),
   Object.freeze({ id: 'urgent', key: 'urgent', icon: 'warning', label: 'Urgenti' }),
   Object.freeze({ id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' }),
+])
+
+export const CONTEXTUAL_PRIMARY_NAV = Object.freeze([
+  Object.freeze({ id: 'reminders', key: 'reminders', icon: 'check', label: 'Task' }),
+  Object.freeze({ id: 'chat', key: 'chat', icon: 'message', label: 'Chat' }),
+  ...PRIMARY_OPERATIONAL_NAV,
 ])
 
 export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
@@ -22,11 +29,7 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
 })
 
 function firstContextualDestination({ placement, viewAllowed, interests }) {
-  if (placement('chat') !== 'off' && viewAllowed('chat')) {
-    return { id: 'chat', key: 'chat', icon: 'message', label: 'Chat', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
-  }
-
-  const authorized = PRIMARY_OPERATIONAL_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
+  const authorized = CONTEXTUAL_PRIMARY_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
   const preferred = authorized.filter((item) => placement(item.key) === 'bottom')
   const secondary = authorized.filter((item) => placement(item.key) !== 'bottom')
   const configuredInterestTags = preferred.flatMap((item) => interestsForNavItem(item.id))
@@ -64,9 +67,9 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
     items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
   }
 
-  return items
+  return items.slice(0, 5)
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || view === 'randai' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || view === 'reminders' || view === 'randai' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }
