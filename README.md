@@ -30,6 +30,24 @@ La toolchain usa una sola sorgente Node: `.nvmrc` (**24.20.0 LTS**). `package.js
 
 Dettaglio: `docs/architecture/RANDSKILLS_V1.md`.
 
+### RandSkills Router — Blocco 1
+
+RandSkills usa ora un router operativo governato, innestato sullo `SkillRegistry` esistente e senza introdurre un secondo executor. Il flusso è:
+
+`objective → RandSkillRouter → skill APPROVED → permission/tool requirements → intersezione con autorizzazioni caller → risk bound → RandAgentRuntime`.
+
+- routing implicito con `confidence`, motivazioni e fallback fail-closed;
+- composizione multi-skill quando l'intento coinvolge più domini;
+- manifest runtime canonici con `permissions`, `requiredTools`, `instructions` e `successCriteria`;
+- tool binding tramite pattern ancorati (`maintenance.*`, `warehouse.*`, ecc.), sempre come restrizione dei tool già autorizzati;
+- compatibilità con tool legacy tramite fallback limitato ai permessi dichiarati dalla skill;
+- decisione di routing inserita nel contesto RandMind per audit, learning e observability futuri;
+- regression test dedicati `input → skill`, multi-skill, fallback e tool bounding.
+
+Regola invariabile: **il router può restringere capacità, mai concederle**. RandCore/RLS/RPC restano autorità finale.
+
+Dettaglio: `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md`.
+
 ## RandMind Cognitive + Learning — Blocco 2
 
 Il Blocco 2 non introduce Hermes o Ruflo come secondo framework: RandApp possedeva già agent runtime, orchestrazione, ToolRegistry, permission gateway, RandMind/memory, LearningEngine e SkillRegistry. I pattern migliori vengono quindi innestati sui proprietari esistenti.
@@ -278,7 +296,7 @@ Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
 - **RandMind** — continuità/memoria governata e hotel-scoped, cognitive loop e apprendimento verificato.
 - **RandBrain** — reasoning/decision layer governato.
 - **RandCore** — health, governance, workers, sicurezza, security intelligence, costi, integrazioni e LTS evidence.
-- **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore.
+- **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore, con router operativo fail-closed.
 - **RandVisual** — proiezioni visuali deterministiche e provenance.
 - **RandChange** — receipt, Visual QA e certificazione modifiche.
 - **RandGuide** — procedure e guide operative.
@@ -323,10 +341,13 @@ npm run test:device
 npm run test:lts
 ```
 
+`npm test` include anche `test/randskills-router-block1.test.js`, che certifica routing deterministico/implicito, composizione multi-skill, fallback fail-closed e tool bounding.
+
 La CI certifica, tra gli altri:
 
 - Node canonico da `.nvmrc` e installazione fail-closed su engine incompatibile;
 - validazione RandSkills prima dei gate applicativi;
+- RandSkills Router con confidence/reasons, multi-skill, fallback fail-closed e tool visibility bounded;
 - cognitive loop RandMind hotel-scoped, tool visibility bounded e learning solo da esiti verificati;
 - fonti RandRadar source-only/sandbox-only, security exposure correlation e reverse analysis non eseguibile in produzione;
 - dependency/security audit;
@@ -362,6 +383,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 ## Documentazione
 
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill, governance RandCore, toolchain Node e percorso di evoluzione.
+- `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing governato, manifest runtime, tool binding, fallback e regression test.
 - `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop, tool visibility, learning verificato e promotion policy.
 - `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — fonti governate, security exposure e reverse analysis sandbox-only.
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
