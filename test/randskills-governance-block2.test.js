@@ -25,6 +25,16 @@ test('block2: high risk or boundary-changing skill always requires review', () =
   assert.equal(assessSkillLifecycle(registry.inspect('low-skill'), { verifiedEvidenceCount: 3, changesAuthorization: true }).action, SkillGovernanceAction.REVIEW_REQUIRED)
 })
 
+test('block2: missing telemetry stays UNKNOWN and never becomes stale', () => {
+  const registry = new SkillRegistry()
+  registry.register({ id: 'unknown', version: '1.0.0', name: 'Unknown', description: 'approved skill without telemetry', status: SkillStatus.APPROVED })
+  const assessment = assessSkillLifecycle(registry.inspect('unknown'))
+  assert.equal(assessment.telemetryObserved, false)
+  assert.equal(assessment.stale, false)
+  assert.equal(assessment.action, SkillGovernanceAction.KEEP)
+  assert.equal(assessment.reason, 'TELEMETRY_UNKNOWN')
+})
+
 test('block2: approved but unused skill is review-only, never an automatic zombie', () => {
   const registry = new SkillRegistry()
   registry.register({ id: 'approved', version: '1.0.0', name: 'Approved', description: 'approved skill', status: SkillStatus.APPROVED })
