@@ -30,6 +30,21 @@ La toolchain usa una sola sorgente Node: `.nvmrc` (**24.20.0 LTS**). `package.js
 
 Dettaglio: `docs/architecture/RANDSKILLS_V1.md`.
 
+## RandMind Cognitive + Learning — Blocco 2
+
+Il Blocco 2 non introduce Hermes o Ruflo come secondo framework: RandApp possedeva già agent runtime, orchestrazione, ToolRegistry, permission gateway, RandMind/memory, LearningEngine e SkillRegistry. I pattern migliori vengono quindi innestati sui proprietari esistenti.
+
+Flusso canonico: `RandAI → RandMindCognitiveLoop → RandSkills → tool autorizzati/risk-bounded → RandAgentRuntime → inspection/continuity → LearningEngine`.
+
+- le 7 RandSkills del Blocco 1 entrano nel `SkillRegistry` già esistente;
+- `ToolsetResolver` può soltanto restringere una lista di tool già autorizzati, mai concedere permessi;
+- il cognitive loop richiede sempre `hotelId`, usa solo skill `APPROVED` e non crea un secondo executor;
+- l'apprendimento avviene solo dopo esiti riusciti e con osservazioni `verified`;
+- promozione automatica solo per miglioramenti **LOW risk**, testati e con almeno 2 evidenze; MEDIUM/HIGH/CRITICAL, schema, permessi e azioni distruttive richiedono review;
+- regola: **RandMind può imparare da solo, ma non può cambiare da solo i confini critici di RandCore**.
+
+Dettaglio: `docs/architecture/RANDMIND_LEARNING_BLOCK2.md`.
+
 ## RandUI Adaptive Layout
 
 Il contratto UI è unico:
@@ -245,7 +260,7 @@ Dettagli: `docs/architecture/RANDDESKTOP_PRINTING.md`.
 
 - **RandApp** — segnalazioni, interventi, planning, housekeeping, rifornimenti, magazzino, sensori e operatività hotel.
 - **RandAI** — assistenza operativa, procedure, suggerimenti e control center.
-- **RandMind** — continuità/memoria governata e hotel-scoped.
+- **RandMind** — continuità/memoria governata e hotel-scoped, cognitive loop e apprendimento verificato.
 - **RandBrain** — reasoning/decision layer governato.
 - **RandCore** — health, governance, workers, sicurezza, costi, integrazioni e LTS evidence.
 - **RandSkills** — competenze modulari Agent Skills-compatible, validate e governate da RandCore.
@@ -279,6 +294,7 @@ npm run build
 npm test
 npm run test:quality
 npm run test:randskills
+npm run test:mind-learning
 npm run skills:validate
 npm run test:randui
 npm run test:randui:guard
@@ -295,6 +311,7 @@ La CI certifica, tra gli altri:
 
 - Node canonico da `.nvmrc` e installazione fail-closed su engine incompatibile;
 - validazione RandSkills prima dei gate applicativi;
+- cognitive loop RandMind hotel-scoped, tool visibility bounded e learning solo da esiti verificati;
 - dependency/security audit;
 - Quality Matrix;
 - critical operational gate;
@@ -328,6 +345,7 @@ Produzione stabile: Vercel. **Durante l'unificazione RandUI v1 i Git deploy Verc
 ## Documentazione
 
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill, governance RandCore, toolchain Node e percorso di evoluzione.
+- `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop, tool visibility, learning verificato e promotion policy.
 - `docs/architecture/RANDUI_V1_CORE.md` — contratto Core RandUI v1, registry, template, schema, system states e ownership.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard di composizione/geometria, matrice viewport e regola di migrazione fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — Block 3, PageBoundary, baseline di migrazione e strategia di compatibilità.
