@@ -153,7 +153,9 @@ RandUI è il design system canonico. Il flusso è:
 
 Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice principale copre **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Chromium e WebKit.
 
-La navigazione mobile mantiene Operatività nello slot 1, Planning nello slot 2, Home nello slot 3, destinazione operativa/RandChat nello slot 4 e RandAI nello slot 5. Il menu completo vive nel controllo profilo/nome.
+La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello slot 2, **Home** nello slot 3, **Task** nello slot 4 per i ruoli autorizzati e **RandAI** nello slot 5. Se Task non è autorizzato, lo slot 4 può degradare a una destinazione operativa consentita. Il menu completo vive nel controllo profilo/nome.
+
+Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
 
 ## Moduli operativi
 
@@ -205,7 +207,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
+`npm test` include anche `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; il primo blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione, il secondo protegge il contratto Task/bottom-nav e la semantica dei `+` di Interventi e Planning.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
@@ -213,7 +215,7 @@ La CI certifica inoltre dependency/security audit, Quality Matrix, critical oper
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); prove e deploy della nuova UI vanno su DigitalOcean/Ocean finché non viene decisa esplicitamente la riattivazione.
+Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); **prove e test grafici della nuova UI vanno esclusivamente su DigitalOcean/Ocean** finché non viene decisa esplicitamente la riattivazione.
 
 ## Documentazione
 
