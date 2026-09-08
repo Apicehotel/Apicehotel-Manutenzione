@@ -157,6 +157,8 @@ La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello
 
 Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
 
+Il **Punto 2 RandUI** rende l'audit delle 24 pagine un inventario governato e fail-closed: `KEEP=4`, `ALIGN=18`, `REWORK=2`. Sensori e Impianti sono le sole pagine P0 da riprogettare in modo esplicito; le altre vengono adattate ai template esistenti senza rifarle da zero. Il prossimo passo è Unified Page v2 per gerarchia e spazi condivisi. Dettaglio: `docs/architecture/RANDUI_PAGE_AUDIT_V2.md`.
+
 ## Moduli operativi
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
@@ -207,7 +209,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; il primo blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione, il secondo protegge il contratto Task/bottom-nav e la semantica dei `+` di Interventi e Planning.
+`npm test` include anche `test/randradar-full-evolution-v1.test.js`, `test/randui-navigation-actions-v2.test.js` e `test/randui-page-audit-v2.test.js`: copertura RandRadar 24/24, contratto Task/bottom-nav e semantica dei `+`, più audit fail-closed di tutte le destinazioni RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
@@ -233,6 +235,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
 - `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — visual language.
 - `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md` — navigazione mobile.
+- `docs/architecture/RANDUI_PAGE_AUDIT_V2.md` — audit 24/24, decisioni KEEP/ALIGN/REWORK e priorità.
 - `docs/architecture/RANDCHAT.md` — RandChat ed E2EE.
 - `docs/architecture/RANDDESKTOP_PRINTING.md` — RandDesktop e stampa nativa.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — Rifornimenti.
