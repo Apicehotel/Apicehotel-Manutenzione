@@ -1,12 +1,15 @@
 name: RandUI Ocean Preview
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       ref:
         description: 'Branch, tag or commit to deploy to Ocean preview'
         required: true
-        default: 'randui/point4-ocean-preview'
+        default: 'main'
 
 permissions:
   contents: read
@@ -15,16 +18,19 @@ concurrency:
   group: randui-ocean-preview
   cancel-in-progress: true
 
+env:
+  PREVIEW_REF: ${{ github.event.pull_request.head.sha || inputs.ref }}
+
 jobs:
   verify:
     name: Verify RandUI preview candidate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout requested ref
+      - name: Checkout preview ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ env.PREVIEW_REF }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -56,10 +62,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: preview
     steps:
-      - name: Checkout requested ref
+      - name: Checkout preview ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ env.PREVIEW_REF }}
 
       - name: Deploy to DigitalOcean App Platform
         uses: digitalocean/app_action/deploy@v2
