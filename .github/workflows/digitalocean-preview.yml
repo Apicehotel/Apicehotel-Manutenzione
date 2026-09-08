@@ -1,0 +1,68 @@
+name: RandUI Ocean Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit to deploy to Ocean preview'
+        required: true
+        default: 'randui/point4-ocean-preview'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: randui-ocean-preview
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify RandUI preview candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Quality matrix
+        run: npm run test:matrix
+
+      - name: Critical operational gate
+        run: npm run test:critical
+
+      - name: RandUI contracts
+        run: npm run test:randui
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle budget
+        run: node scripts/check-bundle.mjs
+
+  deploy:
+    name: Deploy RandUI preview to Ocean
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Deploy to DigitalOcean App Platform
+        uses: digitalocean/app_action/deploy@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_name: ${{ vars.DIGITALOCEAN_PREVIEW_APP_NAME || 'randapp' }}
