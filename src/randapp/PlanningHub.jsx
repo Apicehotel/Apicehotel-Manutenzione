@@ -6,11 +6,10 @@ import { Button, Spinner } from './ui.jsx'
 import { Grid, PageTitle, Stack } from './randui/visual-primitives.jsx'
 import PlanningWorkSimple from './PlanningWorkSimple.jsx'
 import PlanningSaleSimple from './PlanningSaleSimple.jsx'
-import PlannedCreateSheet from './PlannedCreateSheet.jsx'
 import { PlanningChoice, PlanningTodaySummary, SaleEventCalendar, eventOnDay, isoDay } from './planning/PlanningOverview.jsx'
 
 export default function PlanningHub({hotel,user,createRequest=null,allowSale=true,onSectionChange,onCreateRequestConsumed}){
-  const [section,setSection]=useState(null),[work,setWork]=useState([]),[bookings,setBookings]=useState([]),[loading,setLoading]=useState(true),[workCreateSignal,setWorkCreateSignal]=useState(0),[saleCreateSignal,setSaleCreateSignal]=useState(0),[interventionCreateOpen,setInterventionCreateOpen]=useState(false)
+  const [section,setSection]=useState(null),[work,setWork]=useState([]),[bookings,setBookings]=useState([]),[loading,setLoading]=useState(true),[workCreateSignal,setWorkCreateSignal]=useState(0),[saleCreateSignal,setSaleCreateSignal]=useState(0)
   const canSeeWork=canUser(user,'planning_work','view')
   const canSeeSale=allowSale&&canUser(user,'planning_sale','view')
   const load=useCallback(async()=>{setLoading(true);try{const [workItems,sales]=await Promise.all([canSeeWork?fetchPlanningWork(hotel.id):Promise.resolve([]),canSeeSale?fetchBookings(hotel.id):Promise.resolve({items:[]})]);setWork(workItems||[]);setBookings(sales.items||[])}finally{setLoading(false)}},[hotel.id,canSeeWork,canSeeSale])
@@ -36,6 +35,5 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
       <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>
       {canSeeSale&&<SaleEventCalendar bookings={bookings}/>} 
     </Stack>:section==='work'&&canSeeWork?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:section==='sale'&&canSeeSale?<PlanningSaleSimple hotel={hotel} user={user} openRequest={saleCreateSignal}/>:null}
-    <PlannedCreateSheet open={interventionCreateOpen} onClose={()=>setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={()=>setInterventionCreateOpen(false)}/>
   </Stack>
 }
