@@ -1,6 +1,7 @@
 import { assertRandUiComposition } from './guard.js'
 import { randUiPageFor } from './page-catalog.js'
 import { TemplateFrame } from './templates.jsx'
+import './layout-v2.css'
 
 const BOUNDARY_COMPONENTS = Object.freeze(['TemplateFrame'])
 
