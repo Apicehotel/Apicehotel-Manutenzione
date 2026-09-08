@@ -28,6 +28,7 @@ const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
 const RandDesktopDownload = lazy(() => import('./RandDesktopDownload.jsx'))
 const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
+const PlannedCreateSheet = lazy(() => import('./PlannedCreateSheet.jsx'))
 const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
 const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
 const InsertLauncher = lazy(() => import('./InsertLauncher.jsx'))
@@ -142,6 +143,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [createSignal, setCreateSignal] = useState(0)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
+  const [interventionCreateOpen, setInterventionCreateOpen] = useState(false)
   const [personalizeSignal, setPersonalizeSignal] = useState(0)
   const [drawer, setDrawer] = useState(false)
   const [hotelSheet, setHotelSheet] = useState(false)
@@ -222,13 +224,14 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
   useEffect(() => {
     if (user && !viewAllowed(view)) {
       setPlanningCreateRequest(null)
+      setInterventionCreateOpen(false)
       setSettings(null)
       setView(safeView)
     }
@@ -240,6 +243,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     const nextView = target?.view || item.id
     if (target?.settings) { setSettings(target.settings); return }
     if (!viewAllowed(nextView)) return
+    setPlanningCreateRequest(null)
+    setInterventionCreateOpen(false)
     setSettings(null)
     setView(nextView)
     if (target?.create) setCreateSignal((n) => n + 1)
@@ -248,6 +253,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const openHomePersonalize = () => {
     setDrawer(false)
     if (!viewAllowed('home')) return
+    setPlanningCreateRequest(null)
+    setInterventionCreateOpen(false)
     setSettings(null)
     setView('home')
     setPersonalizeSignal((n) => n + 1)
@@ -281,8 +288,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (!viewAllowed('planning-work')) return
     if (kind === 'sale' && !viewAllowed('planning-sale')) return
     const returnView = view
+    setInterventionCreateOpen(false)
     setSettings(null)
-    setView('planning-work')
+    setView(kind === 'sale' ? 'planning-sale' : 'planning-work')
     setPlanningCreateRequest((current) => ({ kind, nonce: (current?.nonce || 0) + 1, returnView }))
   }
 
@@ -290,12 +298,22 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     setInsertOpen(false)
     setSettings(null)
     if (id === 'issue' && viewAllowed('issues')) {
+      setPlanningCreateRequest(null)
+      setInterventionCreateOpen(false)
       setView('issues')
       setCreateSignal((n) => n + 1)
       return
     }
     if (id === 'urgent' && viewAllowed('urgent')) {
+      setPlanningCreateRequest(null)
+      setInterventionCreateOpen(false)
       setUrgentCreateOpen(true)
+      return
+    }
+    if (id === 'intervention' && viewAllowed('interventions')) {
+      setPlanningCreateRequest(null)
+      setView('interventions')
+      setInterventionCreateOpen(true)
       return
     }
     if (id === 'planning-work') {
@@ -307,6 +325,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       return
     }
     if (id === 'technician' && viewAllowed('technicians') && canManageTechnicianDirectory(user)) {
+      setPlanningCreateRequest(null)
+      setInterventionCreateOpen(false)
       setView('technicians')
       setTechnicianCreateSignal((n) => n + 1)
     }
@@ -321,6 +341,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const addCapabilities = useMemo(() => ({
     issue: Boolean(user && canUser(user, 'issues', 'create') && viewAllowed('issues')),
     urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
+    intervention: Boolean(user && canUser(user, 'interventions', 'create') && viewAllowed('interventions')),
     'planning-work': Boolean(user && canCreatePlanned(user) && viewAllowed('planning-work')),
     'planning-sale': Boolean(user && canUser(user, 'planning_sale', 'create') && viewAllowed('planning-sale')),
     technician: Boolean(user && viewAllowed('technicians') && canManageTechnicianDirectory(user)),
@@ -333,6 +354,14 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
     if (contextualActionIds.length > 1) setInsertOpen(true)
   }
+
+  const handlePlanningSectionChange = useCallback((section) => {
+    setView(section === 'sale' ? 'planning-sale' : 'planning-work')
+  }, [])
+
+  const handlePlanningCreateConsumed = useCallback((kind) => {
+    if (kind === 'work') setPlanningCreateRequest(null)
+  }, [])
 
   if (directoryState === 'loading') return <Spinner label="Verifico accesso alla struttura…" />
   if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
@@ -354,7 +383,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
-    if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} />
+    if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
     if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
     if (view === 'temperature') content = <TemperatureView hotel={hotel} />
@@ -383,7 +412,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const showStructureSide = allowedHotels.length > 1 && placement('structure') === 'side'
   const showCacheSide = placement('cache') === 'side'
-  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || notificationsOpen
+  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
     if (item.action === 'randai') {
@@ -392,6 +421,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
     if (item.id === 'structure') { setHotelSheet(true); return }
     if (viewAllowed(item.id)) {
+      setPlanningCreateRequest(null)
+      setInterventionCreateOpen(false)
       setSettings(null)
       setView(item.id)
     }
@@ -399,7 +430,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const isBottomActive = (item) => {
     if (settings !== null || item.action) return false
-    if (item.id === 'operations') return ['operations', 'issues', 'interventions', 'my-work'].includes(view)
+    if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
     return view === item.id
   }
@@ -458,6 +489,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
       {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} /></Suspense>}
+      {interventionCreateOpen && <Suspense fallback={null}><PlannedCreateSheet open={interventionCreateOpen} onClose={() => setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { setInterventionCreateOpen(false); setSettings(null); setView('interventions') }} /></Suspense>}
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
