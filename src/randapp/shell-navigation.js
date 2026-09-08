@@ -1,10 +1,10 @@
 import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
 
-// RandUI Telegram-inspired primary navigation contract.
-// Five spatial slots stay stable on mobile: Operatività, Planning, Home, a
-// contextual fast destination, RandAI. Home is always the geometric centre and
-// RandAI owns the far-right slot. The complete navigation lives in the profile
-// drawer instead of an "Altro" catch-all tab.
+// RandUI primary mobile navigation contract.
+// Five spatial slots stay stable on mobile: Operatività, Planning, Home, Task,
+// RandAI. Home is always the geometric centre and RandAI owns the far-right
+// slot. Task is the preferred operational destination; contextual fallbacks are
+// used only for roles that cannot access interventions/my-work.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
@@ -22,6 +22,10 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
 })
 
 function firstContextualDestination({ placement, viewAllowed, interests }) {
+  if (placement('interventions') !== 'off' && viewAllowed('my-work')) {
+    return { id: 'my-work', key: 'interventions', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
+  }
+
   if (placement('chat') !== 'off' && viewAllowed('chat')) {
     return { id: 'chat', key: 'chat', icon: 'message', label: 'Chat', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
   }
@@ -67,5 +71,5 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }
