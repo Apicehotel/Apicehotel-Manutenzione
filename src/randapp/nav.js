@@ -88,6 +88,7 @@ export const VIEW_GUARDS = {
   issues: view('issues'),
   chat: (u) => Boolean(u?.chat_enabled),
   interventions: view('interventions'),
+  'my-work': view('interventions'),
   inventory: view('inventory'),
   supplies: view('supplies'),
   urgent: view('urgent'),
