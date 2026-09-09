@@ -23,6 +23,8 @@
     "test:group1": "node --test test/randai-group1-guardrails.test.js",
     "test:group2": "node --test test/randai-group2-knowledge.test.js",
     "test:group3": "node --test test/randai-group3-*.test.js",
+    "test:agent-supply-chain": "node --test test/randai-agent-supply-chain-security.test.js",
+    "scan:agent-supply-chain": "node scripts/scan-agent-supply-chain.mjs",
     "eval:randai:security": "npx --yes promptfoo@0.122.2 eval -c evals/randai/promptfooconfig.yaml --no-cache",
     "test:autonomy": "node --test test/randai-autonomy-decision.test.js",
     "test:recovery": "node --test test/randai-recovery-engine.test.js",

@@ -86,18 +86,21 @@ Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di
 - **RandTool Gateway** (`src/randai/core/tool-gateway.js`) filtra i tool prima dell'esposizione al modello e nega tool sconosciuti/disabilitati, caller anonimi, cross-hotel e scope mancanti;
 - **Promptfoo** resta fuori dal bundle runtime e viene usato come regression/evaluation gate CI con versione fissata;
 - **OpenTelemetry** già presente resta il contratto canonico; `ai-observability.js` aggiunge span `randai.*`, mentre Phoenix può essere collegato come backend OTLP opzionale;
-- **ToolHive** resta adapter/runtime MCP opzionale dietro il RandTool Gateway e non può concedere permessi.
+- **ToolHive** resta adapter/runtime MCP opzionale dietro il RandTool Gateway e non può concedere permessi;
+- **Agent supply-chain gate** (`scripts/scan-agent-supply-chain.mjs`) controlla sempre e senza rete RandSkills e manifest MCP per prompt override, payload distruttivi, secret inline, shell wrapper e package non pinnati; Snyk Agent Scan v0.6.2 è un arricchimento opzionale per le skill quando `SNYK_TOKEN` è configurato. I manifest MCP non vengono eseguiti automaticamente in CI.
 
 Comandi:
 
 ```bash
 npm run test:group1
+npm run test:agent-supply-chain
+npm run scan:agent-supply-chain
 npm run eval:randai:security
 ```
 
 Workflow dedicato: `.github/workflows/randai-group1-security.yml`.
 
-Dettaglio: `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md`.
+Dettagli: `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` e `docs/architecture/RANDAI_AGENT_SUPPLY_CHAIN_SECURITY.md`.
 
 ## RandAI Group 2 — Knowledge, memoria e RAG
 
@@ -194,6 +197,8 @@ npm run test:quality
 npm run test:group1
 npm run test:group2
 npm run test:group3
+npm run test:agent-supply-chain
+npm run scan:agent-supply-chain
 npm run eval:randai:security
 npm run test:repo-radar
 npm run test:randskills
@@ -207,7 +212,7 @@ npm run test:lts
 
 `npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
+La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation e agent supply-chain scanning, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
 
@@ -224,6 +229,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop e learning verificato.
 - `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — security intelligence e sandbox boundary.
 - `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway, Promptfoo, OTLP/Phoenix e boundary ToolHive.
+- `docs/architecture/RANDAI_AGENT_SUPPLY_CHAIN_SECURITY.md` — scanning fail-closed di skill/MCP, boundary Snyk Agent Scan e policy no-exec per MCP non revisionati.
 - `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
 - `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
