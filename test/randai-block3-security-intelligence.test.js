@@ -6,11 +6,12 @@ import { buildSecurityAnalysisPlan } from '../src/randai/core/security-analysis-
 
 test('block3: curated sources are source-only or sandbox-only and never auto-install', () => {
   const sources = repoRadarIntelligenceSources()
-  assert.deepEqual(sources.map((source) => source.id), ['exploitarium', 'reverse-skill', 'nosignups'])
+  assert.deepEqual(sources.map((source) => source.id), ['exploitarium', 'reverse-skill', 'nosignups', 'openai-plugins'])
   assert.ok(sources.every((source) => assertSafeSource(source)))
   assert.equal(sources.find((source) => source.id === 'exploitarium').role, RepoRadarSourceRole.SECURITY_INTELLIGENCE)
   assert.equal(sources.find((source) => source.id === 'reverse-skill').mode, RepoRadarSourceMode.SANDBOX_ONLY)
   assert.equal(sources.find((source) => source.id === 'nosignups').role, RepoRadarSourceRole.DISCOVERY)
+  assert.equal(sources.find((source) => source.id === 'openai-plugins').role, RepoRadarSourceRole.CAPABILITY_CATALOG)
 })
 
 test('block3: public exploit and production exposure increase severity', () => {
