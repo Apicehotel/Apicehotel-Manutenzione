@@ -79,6 +79,33 @@ RandCore governa health, audit, release gate, workers, sicurezza, costi, integra
 
 `Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
 
+## OpenAI Plugins governance + RandFlow
+
+`https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
+
+Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers` → `ADAPT`, GitHub/Supabase/Vercel → `CONNECT`; `codex-security` resta esterno perché proprietario e RandCore continua a essere l'autorità di sicurezza. Figma/Sentry/PostHog restano `WATCH` finché non superano overlap, privacy e stabilità.
+
+RandFlow formalizza il lavoro agente: `DISCOVER → PLAN → IMPLEMENT → TEST → SECURITY → REVIEW → READY_FOR_HUMAN_MERGE`. Branch dedicato, test/security/CI verdi, zero irrisolti e revisione umana sono obbligatori; niente push agente diretto su `main`, merge automatico o deploy produzione prima dell'approvazione.
+
+La CI canonica valida **ogni pull request**, incluse le PR stacked su branch di lavoro: cambiare la base della PR non può bypassare security audit, Quality Matrix, build, contratti RandApp/RandAI/RandUI, browser/device acceptance o gli altri release gate. I push restano invece limitati alle branch esplicitamente governate. Il contratto è protetto da `test/randai-rand-flow-ci-contract.test.js`.
+
+Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
+
+### Plugin evaluation governata
+
+`plugin-eval` viene adattato come pattern, non installato come secondo evaluator. **Promptfoo + Quality Matrix restano il motore canonico**; `scripts/rand-plugin-eval.mjs` aggiunge una policy versionata con dimensioni obbligatorie, ordinamento `Fix First`, report JSON/Markdown e confronto before/after.
+
+Le dimensioni minime sono sicurezza, isolamento hotel, permessi, correttezza, regressioni, costi, manutenibilità e rollback. Un finding critico blocca il gate. Anche un `PASS` non abilita merge o deploy automatici: la review umana resta obbligatoria.
+
+Comandi:
+
+```bash
+npm run eval:plugin
+npm run eval:plugin:compare -- before.json after.json
+```
+
+Il workflow Group 1 salva il report come artifact di CI per 14 giorni. Dettaglio: `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md`.
+
 ## RandAI Group 1 — Guardrails e observability
 
 Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di autorizzazione o logging:
@@ -93,6 +120,7 @@ Comandi:
 ```bash
 npm run test:group1
 npm run eval:randai:security
+npm run eval:plugin
 ```
 
 Workflow dedicato: `.github/workflows/randai-group1-security.yml`.
@@ -153,7 +181,9 @@ RandUI è il design system canonico. Il flusso è:
 
 Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice principale copre **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Chromium e WebKit.
 
-La navigazione mobile mantiene Operatività nello slot 1, Planning nello slot 2, Home nello slot 3, destinazione operativa/RandChat nello slot 4 e RandAI nello slot 5. Il menu completo vive nel controllo profilo/nome.
+La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello slot 2, **Home** nello slot 3, **Task** nello slot 4 per i ruoli autorizzati e **RandAI** nello slot 5. Se Task non è autorizzato, lo slot 4 può degradare a una destinazione operativa consentita. Il menu completo vive nel controllo profilo/nome.
+
+Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
 
 ## Moduli operativi
 
@@ -195,6 +225,7 @@ npm run test:group1
 npm run test:group2
 npm run test:group3
 npm run eval:randai:security
+npm run eval:plugin
 npm run test:repo-radar
 npm run test:randskills
 npm run test:mind-learning
@@ -205,7 +236,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/randradar-full-evolution-v1.test.js`, che blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
@@ -213,10 +244,12 @@ La CI certifica inoltre dependency/security audit, Quality Matrix, critical oper
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); prove e deploy della nuova UI vanno su DigitalOcean/Ocean finché non viene decisa esplicitamente la riattivazione.
+Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); **prove e test grafici della nuova UI vanno esclusivamente su DigitalOcean/Ocean** finché non viene decisa esplicitamente la riattivazione.
 
 ## Documentazione
 
+- `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
+- `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
 - `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.

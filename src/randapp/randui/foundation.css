@@ -5,6 +5,7 @@
 @import '../adaptive-layout.css';
 @import '../ui-coherence.css';
 @import './visual-language.css';
+@import './completion-v2.css';
 
 :root {
   --rand-space-1: 4px;

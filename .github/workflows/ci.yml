@@ -6,8 +6,6 @@ on:
       - main
       - feature/randai-console-v2
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:

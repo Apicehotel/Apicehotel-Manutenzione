@@ -6,8 +6,6 @@ on:
       - randai/group1-guardrails-observability
       - main
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
@@ -36,3 +34,16 @@ jobs:
 
       - name: Promptfoo authorization regression gate
         run: npm run eval:randai:security
+
+      - name: Governed plugin evaluation report
+        if: ${{ !cancelled() }}
+        run: npm run eval:plugin
+
+      - name: Upload governed evaluation evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rand-plugin-eval-${{ github.sha }}
+          path: artifacts/rand-plugin-eval/
+          if-no-files-found: error
+          retention-days: 14

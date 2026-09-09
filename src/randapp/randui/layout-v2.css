@@ -1,0 +1,47 @@
+/* RandUI Unified Page v2.
+   This file owns only shared page-frame geometry and the vertical-flow invariant.
+   Page internals remain owned by their canonical templates/components. */
+.rs-randui-page {
+  --randui-page-max: var(--rand-content-max);
+  max-width: var(--randui-page-max);
+  margin-inline: auto;
+  min-height: 0;
+  height: auto;
+  align-content: start;
+}
+
+.rs-randui-page[data-randui-width='reading'],
+.rs-randui-page[data-randui-width='center'] {
+  --randui-page-max: var(--rand-reading-max);
+}
+
+/* Vertical-flow contract for every RandApp page inside the operational shell.
+   A page-local header may never consume the remaining viewport height: title ->
+   normal RandUI gap -> first useful content. Empty slots collapse instead of
+   reserving space. The boundary intentionally does not know component classes. */
+.rs-content .rs-randui-page__body,
+.rs-content .rs-randui-page__content,
+.rs-content .rs-randui-stack {
+  min-height: 0;
+  height: auto;
+  align-content: start;
+}
+
+.rs-content .rs-randui-stack {
+  grid-auto-rows: max-content;
+}
+
+/* Protect old/mixed page roots while migration is still in progress. This does
+   not alter dialogs, cards or state panels; it only prevents the first top-level
+   view inside a migrated page from stretching a header/content sequence to the
+   viewport height. Component-specific geometry remains with its owner. */
+.rs-randui-page--migrated .rs-randui-page__content > :first-child {
+  min-height: 0;
+  height: auto;
+  flex: 0 0 auto;
+  align-self: start;
+}
+
+@media (max-width: 767px) {
+  .rs-randui-page { --randui-page-max: 100%; }
+}
