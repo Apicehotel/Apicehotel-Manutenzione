@@ -4,15 +4,24 @@ on:
   push:
     branches:
       - randai/group1-guardrails-observability
+      - randai/agent-supply-chain-security
       - main
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: randai-group1-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  SNYK_AGENT_SCAN_VERSION: '0.6.2'
+  SNYK_AGENT_SCAN_LINUX_SHA256: 'dd6fa8ed4f273f8e969bb131bc88616a1b84026c0e5d8cb0edc9ab153aee6b5c'
 
 jobs:
   guardrails:
@@ -34,5 +43,29 @@ jobs:
       - name: RandTool Gateway contracts
         run: npm run test:group1
 
+      - name: RandAI agent supply-chain tests
+        run: npm run test:agent-supply-chain
+
+      - name: RandAI deterministic skill and MCP manifest gate
+        run: npm run scan:agent-supply-chain
+
       - name: Promptfoo authorization regression gate
         run: npm run eval:randai:security
+
+      - name: Install verified Snyk Agent Scan binary
+        if: env.SNYK_TOKEN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSLo /tmp/snyk-agent-scan "https://github.com/snyk/agent-scan/releases/download/v${SNYK_AGENT_SCAN_VERSION}/agent-scan-${SNYK_AGENT_SCAN_VERSION}-linux-x86_64"
+          echo "${SNYK_AGENT_SCAN_LINUX_SHA256}  /tmp/snyk-agent-scan" | sha256sum -c -
+          chmod +x /tmp/snyk-agent-scan
+
+      - name: Snyk Agent Scan skill analysis
+        if: env.SNYK_TOKEN != ''
+        shell: bash
+        run: /tmp/snyk-agent-scan --ci rand-skills
+
+      - name: Snyk Agent Scan status
+        if: env.SNYK_TOKEN == ''
+        run: echo "SNYK_TOKEN not configured; deterministic RandAI supply-chain gate remains mandatory and Snyk enrichment is skipped."
