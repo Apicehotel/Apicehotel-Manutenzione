@@ -186,6 +186,6 @@ html[data-ui-size='large'] .rs-randui-page--migrated :is(button, [role='button']
 
 @media (prefers-reduced-motion: reduce) {
   .rs-randui-page--migrated * {
-    scroll-behavior: auto !important;
+    scroll-behavior: auto;
   }
 }
