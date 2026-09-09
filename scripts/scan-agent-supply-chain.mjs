@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-const TEXT_EXTENSIONS = new Set(['.md', '.json', '.jsonc'])
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'coverage', 'playwright-report', 'test-results'])
 const MCP_NAMES = new Set(['mcp.json', '.mcp.json'])
 
@@ -54,18 +53,12 @@ function scanText(source, file, findings) {
   }
 }
 
-function stripJsonComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-}
-
 function scanMcpConfig(source, file, findings) {
   let parsed
   try {
-    parsed = JSON.parse(stripJsonComments(source))
+    parsed = JSON.parse(source)
   } catch {
-    add(findings, 'high', 'MCP_PARSE', file, 'MCP configuration is not valid JSON/JSONC for deterministic inspection.')
+    add(findings, 'high', 'MCP_PARSE', file, 'MCP configuration is not strict JSON and cannot be deterministically inspected.')
     return
   }
 
