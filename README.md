@@ -108,6 +108,23 @@ Test dedicato: `test/rand-foundations-group1.test.js`.
 
 Dettaglio: `docs/architecture/RAND_FOUNDATIONS_GROUP1.md`.
 
+### Rand Operational — Gruppo 2
+
+Il Gruppo 2 consolida **Expensify, CryptBoard, Sistem-Housekeeping-Hotel, Magnitude, OpenCode e reverse-skill** senza importare runtime paralleli.
+
+- `Expensify/App` → `SOURCE_ONLY`: riferimento offline-first/collaboration; RandApp/RandChat restano proprietari.
+- `CryptBoard` → `IGNORE_RUNTIME`: RandChat è già il sistema canonico per gruppi, DM E2EE, retention, Procedure, RandAI e media.
+- `Sistem-Housekeeping-Hotel` → `ADAPT`: viene adottato il pattern operativo centrato sul piano.
+- `Magnitude` → `SOURCE_ONLY`: pattern QA/browser-agent, mai autorità produttiva.
+- `OpenCode` → `SOURCE_ONLY`: pattern coding-agent; RandFlow/RandAgent Runtime restano canonici.
+- `reverse-skill` → `SOURCE_ONLY`: pattern security sandbox-only sotto RandCore.
+
+`housekeeping-floor-context.js` introduce il contesto piano governato: `hotelId` obbligatorio e bloccato, piano assegnato come default, cambio piano solo se autorizzato e soltanto nel set assegnato. Le segnalazioni nate da Housekeeping vengono preparate come draft ma persistono nel modulo Issues con i permessi esistenti: nessun secondo archivio operativo.
+
+Test dedicato: `test/rand-operational-group2.test.js`.
+
+Dettaglio: `docs/architecture/RAND_OPERATIONAL_GROUP2.md`.
+
 ### Plugin evaluation governata
 
 `plugin-eval` viene adattato come pattern, non installato come secondo evaluator. **Promptfoo + Quality Matrix restano il motore canonico**; `scripts/rand-plugin-eval.mjs` aggiunge una policy versionata con dimensioni obbligatorie, ordinamento `Fix First`, report JSON/Markdown e confronto before/after.
@@ -280,7 +297,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randvisual-block2-sources.test.js`, `test/randarchitecture-block3.test.js`, `test/rand-foundations-group1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, permission gate/RandFocus, CI universale delle PR, single-evaluator policy, governance visuale/architetturale, inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randvisual-block2-sources.test.js`, `test/randarchitecture-block3.test.js`, `test/rand-foundations-group1.test.js`, `test/rand-operational-group2.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, permission gate/RandFocus, governance fonti operative, housekeeping floor scope, CI universale delle PR, single-evaluator policy, governance visuale/architetturale, inventario/capability e navigazione RandUI.
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
@@ -293,6 +310,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_FOUNDATIONS_GROUP1.md` — consolidamento PI-Desktop/Superpowers/RandFocus, Permission Gate e anti-zombie.
+- `docs/architecture/RAND_OPERATIONAL_GROUP2.md` — adozione operativa governata, anti-zombie e Housekeeping Floor Context.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
