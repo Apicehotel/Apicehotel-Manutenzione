@@ -12,7 +12,7 @@ const clean = (ids, capabilities) => ids.filter((id) => Boolean(capabilities?.[i
 export function contextualAddActionIds(view, capabilities = {}) {
   switch (view) {
     case 'home':
-      return []
+      return clean(['issue', 'urgent', 'planning-work', 'planning-sale'], capabilities)
     case 'issues':
       return clean(['issue'], capabilities)
     case 'interventions':
