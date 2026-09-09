@@ -87,6 +87,8 @@ Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers
 
 RandFlow formalizza il lavoro agente: `DISCOVER → PLAN → IMPLEMENT → TEST → SECURITY → REVIEW → READY_FOR_HUMAN_MERGE`. Branch dedicato, test/security/CI verdi, zero irrisolti e revisione umana sono obbligatori; niente push agente diretto su `main`, merge automatico o deploy produzione prima dell'approvazione.
 
+La CI canonica valida **ogni pull request**, incluse le PR stacked su branch di lavoro: cambiare la base della PR non può bypassare security audit, Quality Matrix, build, contratti RandApp/RandAI/RandUI, browser/device acceptance o gli altri release gate. I push restano invece limitati alle branch esplicitamente governate. Il contratto è protetto da `test/randai-rand-flow-ci-contract.test.js`.
+
 Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
 
 ## RandAI Group 1 — Guardrails e observability
@@ -217,7 +219,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; i primi due proteggono l'intake governato dei plugin e RandFlow, mentre gli altri bloccano regressioni su inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; i primi tre proteggono l'intake governato dei plugin, RandFlow e la CI universale delle PR, mentre gli altri bloccano regressioni su inventario/capability e navigazione RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
