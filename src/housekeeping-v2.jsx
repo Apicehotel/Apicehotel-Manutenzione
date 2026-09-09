@@ -4,6 +4,7 @@ import { HOTEL_LOCATIONS } from './locations.js'
 import { hotelGioClient } from './hotelgio-data.js'
 import { exportHousekeepingYearXlsx, parseSlopePrivacyRows } from './housekeeping-report.js'
 import { parseBrigantinoBookingRows } from './housekeeping-brigantino.js'
+import { fetchOperationalFloorContexts, loadOperationalFloorContext, saveOperationalFloorContext } from './operational-context.js'
 import './housekeeping-v2.css'
 
 const workLabels = { dafare:'Da fare', corso:'In corso', fatto:'Fatta', nondist:'Non disturbare' }
@@ -23,6 +24,7 @@ const groupsForHotel = (hotelId) => HOTEL_LOCATIONS[hotelId]?.roomGroups || []
 const roomMetaForHotel = (hotelId) => Object.fromEntries(groupsForHotel(hotelId).flatMap((group) => group.rooms.map((room) => [String(room), { group:group.name }])))
 const gioSectionFromGroup = (value) => gioSections.find((section) => String(value || '').startsWith(section)) || 'Jazz'
 const gioFloorFromGroup = (value) => Number(String(value || '').match(/P(\d+)/)?.[1] || 1)
+const areaCode = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || null
 const same = (a,b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 const permanentSyncError = (error) => /row level security|permission denied|forbidden|unauthorized|invalid input|not-null|not null|check constraint|violates.*constraint/i.test(String(error?.message || error || ''))
 const actorId = (user) => {
@@ -88,13 +90,14 @@ async function notifyHeadHousekeeper(hotelId, camera, changes, userName) {
   if (error) throw error
 }
 
-export function Housekeeping({ user, hotel }) {
+export function Housekeeping({ user, hotel, onReportIssue, reportAllowed=false }) {
   const cache = useMemo(() => cacheForHotel(hotel.id), [hotel.id])
   const groups = useMemo(() => groupsForHotel(hotel.id), [hotel.id])
   const [day,setDay] = useState([])
   const [work,setWork] = useState([])
   const [loading,setLoading] = useState(true)
   const [group,setGroup] = useState(groups[0]?.name || '')
+  const [floorContexts,setFloorContexts] = useState([])
   const [order,setOrder] = useState('urgenti')
   const [open,setOpen] = useState(null)
   const [pending,setPending] = useState(0)
@@ -105,8 +108,45 @@ export function Housekeeping({ user, hotel }) {
   const [year,setYear] = useState(currentYear())
   const [localReport,setLocalReport] = useState(null)
   const fileRef = useRef(null)
+  const userContextKey = user?.auth_user_id || user?.authUserId || user?.id || user?.name || 'shared'
 
-  useEffect(() => { setGroup(groups[0]?.name || ''); setLocalReport(null) }, [hotel.id, groups])
+  const contextForGroup = useCallback((name, contexts=floorContexts) => {
+    if (!name || !contexts.length) return null
+    if (hotel.id === 'hotelgio') {
+      const section = gioSectionFromGroup(name).toLowerCase()
+      const floor = gioFloorFromGroup(name)
+      return contexts.find((context) => Number(context.floor_number)===floor && (String(context.area_code||'').toLowerCase()===section || String(context.area_label||'').toLowerCase()===section)) || null
+    }
+    return null
+  },[floorContexts,hotel.id])
+
+  const groupForContext = useCallback((context) => {
+    if (!context) return null
+    if (hotel.id === 'hotelgio') {
+      return groups.find((item) => gioFloorFromGroup(item.name)===Number(context.floor_number) && gioSectionFromGroup(item.name).toLowerCase()===String(context.area_label||context.area_code||'').toLowerCase()) || null
+    }
+    return null
+  },[groups,hotel.id])
+
+  const selectGroup = useCallback((name) => {
+    setGroup(name)
+    const context=contextForGroup(name)
+    if(context)saveOperationalFloorContext(user,hotel.id,context)
+  },[contextForGroup,hotel.id,user])
+
+  useEffect(() => {
+    let active=true
+    setLocalReport(null)
+    setFloorContexts([])
+    fetchOperationalFloorContexts(hotel.id).then((contexts)=>{
+      if(!active)return
+      setFloorContexts(contexts)
+      const saved=loadOperationalFloorContext(user,hotel.id,contexts)
+      const savedGroup=groupForContext(saved)
+      setGroup(savedGroup?.name||groups[0]?.name||'')
+    }).catch(()=>{if(active)setGroup(groups[0]?.name||'')})
+    return()=>{active=false}
+  }, [hotel.id, groups, groupForContext, userContextKey])
 
   const loadLocal = useCallback(async () => {
     const [g,w,p,b] = await Promise.all([cache.giorno.toArray(),cache.lavoro.toArray(),cache.outbox.count(),cache.failures.count()])
@@ -201,6 +241,26 @@ export function Housekeeping({ user, hotel }) {
     setOpen(null);setMessage(`Camera ${camera}: modifica salvata`);await loadLocal();drain()
   }
 
+  const reportIssue=useCallback((room)=>{
+    if(!reportAllowed||!onReportIssue)return
+    const activeContext=contextForGroup(group)
+    const inferredArea=textValue(room.struttura)||activeContext?.area_label||(hotel.id==='hotelgio'?gioSectionFromGroup(group):'')
+    const inferredFloor=Number(room.piano??activeContext?.floor_number??(hotel.id==='hotelgio'?gioFloorFromGroup(group):NaN))
+    const hasFloor=Number.isFinite(inferredFloor)
+    onReportIssue({
+      mode:'camera',
+      location:String(room.camera),
+      roomNumber:String(room.camera),
+      areaCode:activeContext?.area_code||areaCode(inferredArea),
+      areaLabel:activeContext?.area_label||inferredArea||null,
+      floorNumber:hasFloor?inferredFloor:null,
+      floorLabel:activeContext?.floor_label||(hasFloor?`Piano ${inferredFloor}`:null),
+      sourceModule:'housekeeping',
+      sourceRef:`housekeeping:${hotel.id}:${new Date().toISOString().slice(0,10)}:${room.camera}`,
+    })
+    setOpen(null)
+  },[contextForGroup,group,hotel.id,onReportIssue,reportAllowed])
+
   const upload=async(event)=>{
     const file=event.target.files?.[0];event.target.value='';if(!file)return
     setUploading(true);setMessage('');setLocalReport(null)
@@ -254,18 +314,18 @@ export function Housekeeping({ user, hotel }) {
     {message&&<p className="hk2-message" role="status">{message}</p>}
 
     {localReport?<LocalReport report={localReport} onClose={()=>setLocalReport(null)}/>:<>
-      {hotel.id==='hotelgio'?<div className="hk2-selectors"><div className="hk2-segment">{gioSections.map((section)=>{const active=gioSectionFromGroup(group)===section;return <button type="button" className={active?'active':''} key={section} onClick={()=>{const next=groups.find((item)=>item.name.startsWith(section));if(next)setGroup(next.name)}}>{section}</button>})}</div><div className="hk2-floors">{groups.filter((item)=>item.name.startsWith(gioSectionFromGroup(group))).map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>setGroup(item.name)}>P{gioFloorFromGroup(item.name)}</button>)}</div></div>:<div className="hk2-floors">{groups.map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>setGroup(item.name)}>{item.name}</button>)}</div>}
+      {hotel.id==='hotelgio'?<div className="hk2-selectors"><div className="hk2-segment">{gioSections.map((section)=>{const active=gioSectionFromGroup(group)===section;return <button type="button" className={active?'active':''} key={section} onClick={()=>{const next=groups.find((item)=>item.name.startsWith(section));if(next)selectGroup(next.name)}}>{section}</button>})}</div><div className="hk2-floors">{groups.filter((item)=>item.name.startsWith(gioSectionFromGroup(group))).map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>selectGroup(item.name)}>P{gioFloorFromGroup(item.name)}</button>)}</div></div>:<div className="hk2-floors">{groups.map((item)=><button type="button" className={group===item.name?'active':''} key={item.name} onClick={()=>selectGroup(item.name)}>{item.name}</button>)}</div>}
       <div className="hk2-toolbar"><strong>{hotel.id==='hotelgio'?`${gioSectionFromGroup(group)} · Piano ${gioFloorFromGroup(group)}`:group||hotel.name}</strong><select aria-label="Ordina camere" value={order} onChange={(e)=>setOrder(e.target.value)}><option value="urgenti">Urgenti prima</option><option value="numero">Per numero</option></select></div>
       {loading?<div className="hk2-empty">Carico Housekeeping…</div>:!rooms.length?<div className="hk2-empty">{canUpload(user)?'Nessuna camera caricata. Usa “Scegli file” qui sopra.':'Nessuna camera disponibile per questa sezione.'}</div>:<div className="hk2-grid">{rooms.map((room)=><button type="button" key={room.camera} className={`hk2-room hk2-room--${room.lavoro} hk2-room--${room.stato_slope}`} onClick={()=>setOpen(room)}><span className="hk2-room-number">{room.camera}</span><span className="hk2-room-type">{room.tipologia||'Camera'}</span><span className="hk2-room-slope">{slopeLabels[room.stato_slope]||room.stato_slope}</span><span className="hk2-room-work">{workLabels[room.lavoro]||room.lavoro}</span>{room.operational_note&&<span className="hk2-room-note">Nota</span>}</button>)}</div>}
     </>}
-    {open&&<RoomSheet room={open} workAllowed={canWork(user)} manageAllowed={canManageRoom(user)} onClose={()=>setOpen(null)} onState={setWorkState} onSave={saveDetails}/>} 
+    {open&&<RoomSheet room={open} workAllowed={canWork(user)} manageAllowed={canManageRoom(user)} reportAllowed={reportAllowed} onReportIssue={reportIssue} onClose={()=>setOpen(null)} onState={setWorkState} onSave={saveDetails}/>} 
   </section>
 }
 
-function RoomSheet({room,workAllowed,manageAllowed,onClose,onState,onSave}) {
+function RoomSheet({room,workAllowed,manageAllowed,reportAllowed,onReportIssue,onClose,onState,onSave}) {
   const [fields,setFields]=useState({stato_slope:room.stato_slope||'libera',letti:room.letti||'',operational_note:room.operational_note||''})
   const stateEntries=Object.entries(workLabels).filter(([key])=>key!=='nondist'||room.stato_slope==='fermata')
-  return <div className="hk2-backdrop" onClick={onClose}><section className="hk2-sheet" role="dialog" aria-modal="true" aria-labelledby="hk2-title" onClick={(e)=>e.stopPropagation()}><header><div><small>Camera</small><h2 id="hk2-title">{room.camera}</h2></div><button type="button" className="hk2-close" onClick={onClose} aria-label="Chiudi">×</button></header><div className="hk2-detail"><strong>{room.tipologia||'Camera'}</strong><span>{slopeLabels[room.stato_slope]||room.stato_slope}{room.arrivo?` · arrivo ${dateOnly(room.arrivo)}`:''}{room.partenza?` · partenza ${dateOnly(room.partenza)}`:''}</span>{room.letti&&<span>Letti: {room.letti}</span>}{room.operational_note&&<p><b>Nota operativa:</b> {room.operational_note}</p>}</div>{workAllowed&&<div className="hk2-actions">{stateEntries.map(([key,label])=><button type="button" className={room.lavoro===key?'active':''} key={key} onClick={()=>onState(room.camera,key)}>{label}</button>)}</div>}{workAllowed&&<form className="hk2-form" onSubmit={(e)=>{e.preventDefault();onSave(room.camera,fields)}}>{manageAllowed&&<><label>Stato soggiorno<select value={fields.stato_slope} onChange={(e)=>setFields({...fields,stato_slope:e.target.value})}>{Object.entries(slopeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label><label>Configurazione letti<input value={fields.letti} onChange={(e)=>setFields({...fields,letti:e.target.value})}/></label></>}<label>Note operative RandApp<textarea rows="3" value={fields.operational_note} onChange={(e)=>setFields({...fields,operational_note:e.target.value})} placeholder="Solo informazioni operative, nessun dato ospite"/></label><button type="submit" className="hk2-primary">Salva modifica</button></form>}</section></div>
+  return <div className="hk2-backdrop" onClick={onClose}><section className="hk2-sheet" role="dialog" aria-modal="true" aria-labelledby="hk2-title" onClick={(e)=>e.stopPropagation()}><header><div><small>Camera</small><h2 id="hk2-title">{room.camera}</h2></div><button type="button" className="hk2-close" onClick={onClose} aria-label="Chiudi">×</button></header><div className="hk2-detail"><strong>{room.tipologia||'Camera'}</strong><span>{slopeLabels[room.stato_slope]||room.stato_slope}{room.arrivo?` · arrivo ${dateOnly(room.arrivo)}`:''}{room.partenza?` · partenza ${dateOnly(room.partenza)}`:''}</span>{room.letti&&<span>Letti: {room.letti}</span>}{room.operational_note&&<p><b>Nota operativa:</b> {room.operational_note}</p>}</div>{reportAllowed&&<button type="button" className="hk2-secondary" data-testid="housekeeping-report-issue" onClick={()=>onReportIssue(room)}>Segnala problema</button>}{workAllowed&&<div className="hk2-actions">{stateEntries.map(([key,label])=><button type="button" className={room.lavoro===key?'active':''} key={key} onClick={()=>onState(room.camera,key)}>{label}</button>)}</div>}{workAllowed&&<form className="hk2-form" onSubmit={(e)=>{e.preventDefault();onSave(room.camera,fields)}}>{manageAllowed&&<><label>Stato soggiorno<select value={fields.stato_slope} onChange={(e)=>setFields({...fields,stato_slope:e.target.value})}>{Object.entries(slopeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label><label>Configurazione letti<input value={fields.letti} onChange={(e)=>setFields({...fields,letti:e.target.value})}/></label></>}<label>Note operative RandApp<textarea rows="3" value={fields.operational_note} onChange={(e)=>setFields({...fields,operational_note:e.target.value})} placeholder="Solo informazioni operative, nessun dato ospite"/></label><button type="submit" className="hk2-primary">Salva modifica</button></form>}</section></div>
 }
 
 function LocalReport({report,onClose}) {
