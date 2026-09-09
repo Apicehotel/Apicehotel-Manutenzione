@@ -13,8 +13,8 @@ const all = {
   technician: true,
 }
 
-test('home has no contextual fab above the bottom navigation', () => {
-  assert.deepEqual(contextualAddActionIds('home', all), [])
+test('home keeps only top-level creation choices', () => {
+  assert.deepEqual(contextualAddActionIds('home', all), ['issue', 'urgent', 'planning-work', 'planning-sale'])
 })
 
 test('single-purpose pages route the plus directly to their own domain', () => {
