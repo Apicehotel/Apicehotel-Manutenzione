@@ -17,6 +17,11 @@ test('RandSkills v1 manifests are valid and complete', () => {
   ])
 })
 
+test('RandSkills frontmatter validation is portable across Windows line endings', () => {
+  const script = fs.readFileSync(new URL('../scripts/validate-randskills.mjs', import.meta.url), 'utf8')
+  assert.match(script, /\\r\?\\n/)
+})
+
 test('Node toolchain contract is pinned and fail-closed', () => {
   const nvmrc = fs.readFileSync(new URL('../.nvmrc', import.meta.url), 'utf8').trim()
   const npmrc = fs.readFileSync(new URL('../.npmrc', import.meta.url), 'utf8')
