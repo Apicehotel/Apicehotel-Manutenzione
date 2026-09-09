@@ -91,6 +91,21 @@ La CI canonica valida **ogni pull request**, incluse le PR stacked su branch di 
 
 Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
 
+### Plugin evaluation governata
+
+`plugin-eval` viene adattato come pattern, non installato come secondo evaluator. **Promptfoo + Quality Matrix restano il motore canonico**; `scripts/rand-plugin-eval.mjs` aggiunge una policy versionata con dimensioni obbligatorie, ordinamento `Fix First`, report JSON/Markdown e confronto before/after.
+
+Le dimensioni minime sono sicurezza, isolamento hotel, permessi, correttezza, regressioni, costi, manutenibilità e rollback. Un finding critico blocca il gate. Anche un `PASS` non abilita merge o deploy automatici: la review umana resta obbligatoria.
+
+Comandi:
+
+```bash
+npm run eval:plugin
+npm run eval:plugin:compare -- before.json after.json
+```
+
+Il workflow Group 1 salva il report come artifact di CI per 14 giorni. Dettaglio: `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md`.
+
 ## RandAI Group 1 — Guardrails e observability
 
 Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di autorizzazione o logging:
@@ -105,6 +120,7 @@ Comandi:
 ```bash
 npm run test:group1
 npm run eval:randai:security
+npm run eval:plugin
 ```
 
 Workflow dedicato: `.github/workflows/randai-group1-security.yml`.
@@ -209,6 +225,7 @@ npm run test:group1
 npm run test:group2
 npm run test:group3
 npm run eval:randai:security
+npm run eval:plugin
 npm run test:repo-radar
 npm run test:randskills
 npm run test:mind-learning
@@ -219,7 +236,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; i primi tre proteggono l'intake governato dei plugin, RandFlow e la CI universale delle PR, mentre gli altri bloccano regressioni su inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
@@ -232,6 +249,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 ## Documentazione
 
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
+- `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
 - `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.
