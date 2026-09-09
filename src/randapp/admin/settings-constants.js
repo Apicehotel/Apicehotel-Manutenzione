@@ -1,14 +1,11 @@
 import { HOTELS } from '../../config.js'
 import { permissionLabels } from '../../permissions.js'
 
-export const NAV_ITEMS = [
-  ['home', 'Home'], ['issues', 'Segnalazioni'], ['interventions', 'Interventi'], ['planning_work', 'Planning'],
-  ['housekeeping', 'Housekeeping'], ['temperature', 'Temperature'], ['urgent', 'Avvisi urgenti'],
-  ['reminders', 'Promemoria'], ['technicians', 'Rubrica tecnici'], ['desktop_download', 'RandDesktop'], ['structure', 'Cambia struttura'],
-  ['profile', 'Il mio profilo'], ['manual', 'Manuale'], ['feedback', 'Feedback'],
-]
-export const PLACEMENTS = [['bottom', 'Sotto'], ['side', 'Laterale'], ['off', 'Nascosto']]
-export const NAV_KEY = 'role_navigation_v1'
+// Share labels and destinations with the shell; only real menu entries are editable.
+export { ROLE_NAV_KEY as NAV_KEY } from '../role-navigation.js'
+import { ROLE_NAV_ITEMS } from '../role-navigation.js'
+export const NAV_ITEMS = ROLE_NAV_ITEMS.filter(([key]) => key !== 'other' && key !== 'export')
+export const PLACEMENTS = [['bottom', 'Barra e menu'], ['side', 'Solo menu'], ['off', 'Nascosto']]
 export const ALL_HOTEL_IDS = HOTELS.map((h) => h.id)
 export const ROLE_PRIORITY = ['admin','Supremo','Direzione','Direttore Centro Congressi','Portiere Notturno','manutentore','Capo Governante','Governante','Reception','Isola dei Golosi','Ristorante Wine/Jazz','Colazione Jazz','Tecnico esterno']
 export const ACTION_LABELS = permissionLabels()

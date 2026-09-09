@@ -1,3 +1,4 @@
+import { supportsBottomPlacement } from './shell-navigation.js'
 import { supabase } from '../supabase.js'
 
 export const ROLE_NAV_KEY = 'role_navigation_v1'
@@ -77,10 +78,10 @@ const FALLBACK = {
   home: 'bottom',
   issues: 'bottom',
   chat: 'side',
-  interventions: 'side',
+  interventions: 'bottom',
   inventory: 'side',
   supplies: 'side',
-  planning_work: 'side',
+  planning_work: 'bottom',
   housekeeping: 'side',
   temperature: 'side',
   urgent: 'side',
@@ -110,7 +111,8 @@ export function parseRoleNavigation(value) {
 
 export function placementFor(config, role, key) {
   const canonicalKey = key === 'planning_sale' ? 'planning_work' : key
-  return config?.[role]?.[canonicalKey] || FALLBACK[canonicalKey] || 'off'
+  const value = config?.[role]?.[canonicalKey] || FALLBACK[canonicalKey] || 'off'
+  return value === 'bottom' && !supportsBottomPlacement(canonicalKey) ? 'side' : value
 }
 
 export function isNavVisible(config, role, key) {

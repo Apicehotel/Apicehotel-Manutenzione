@@ -239,3 +239,25 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/README-history-2026-09-05.md` — storico esteso delle roadmap e dei blocchi precedenti.
 
 Questo README rappresenta lo **stato corrente** e resta volutamente operativo; i dettagli storici e specialistici vivono nei documenti dedicati.
+
+
+### UI: login compatto e posizioni di navigazione
+
+- Login più compatto, con marchio ridotto e scheda fino a 480 px; campi comodi,
+  safe-area e adattamento alla tastiera restano nel componente esistente.
+- Il collegamento Impostazioni specifica l'accesso riservato agli amministratori;
+  non è più presentato come alternativa al login.
+- Ruoli e permessi usa il catalogo di navigazione della shell e gli stessi valori
+  predefiniti. «Barra e menu» compare solo per le destinazioni supportate.
+- «Solo menu» non aggiunge la voce alla barra. Home conserva la posizione centrale
+  quando abilitata nella barra, Planning la seconda e RandAI l'ultima.
+- La quarta posizione ospita una scorciatoia tra Task, Chat, Magazzino, Rifornimenti,
+  Avvisi urgenti e Housekeeping. Sceglierne una dal pannello sposta la precedente
+  nel menu; configurazioni storiche con più preferenze mantengono il ranking per
+  interessi e permessi. Una voce non autorizzata non viene mostrata.
+- Senza configurazione esplicita, Home, Planning e Task sono proposte in barra.
+  Le configurazioni salvate come «Solo menu» vengono rispettate.
+
+Verifica: `node --test test/navigation-placement.test.js` e suite UI/CI esistenti.
+
+Collaudo UI: PR → workflow RandUI Ocean Preview → verifica reale su Ocean. Vercel resta congelato.

@@ -56,7 +56,7 @@ test('interest ranking changes priority but never introduces unauthorized entrie
 test('bottom navigation preserves Operatività, Planning, Home and RandAI anchors while ranking only slot 4', () => {
   const placements = {
     chat: 'off',
-    planning_work: 'side',
+    planning_work: 'bottom',
     inventory: 'bottom',
     supplies: 'side',
     urgent: 'side',

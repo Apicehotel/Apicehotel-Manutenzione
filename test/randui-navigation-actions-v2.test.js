@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { buildPrimaryBottomNav } from '../src/randapp/shell-navigation.js'
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const shell = read('../src/randapp/Shell.jsx')
@@ -11,8 +12,10 @@ const contextualAdd = read('../src/randapp/contextual-add.js')
 const planningHub = read('../src/randapp/PlanningHub.jsx')
 
 test('bottom navigation prefers Task in slot four and protects it like interventions', () => {
-  assert.match(navigation, /id:\s*'my-work'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
-  assert.match(navigation, /placement\('interventions'\).*viewAllowed\('my-work'\)/s)
+  const config = { interventions: 'bottom', chat: 'bottom' }
+  const build = denied => buildPrimaryBottomNav({ placement: key => config[key] || 'side', viewAllowed: id => id !== denied })
+  assert.equal(build().find(item => item.slot === 4)?.id, 'my-work')
+  assert.equal(build('my-work').find(item => item.slot === 4)?.id, 'chat')
   assert.match(nav, /'my-work':\s*view\('interventions'\)/)
   assert.match(roleNavigation, /'my-work':\s*'interventions'/)
   assert.match(navigation, /view === 'my-work'/)

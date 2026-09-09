@@ -22,7 +22,7 @@ test('RandDesktop nasce nel menu laterale ed è configurabile da Ruoli e permess
   assert.match(roleNavigation, /\['desktop_download', 'RandDesktop'\]/)
   assert.match(roleNavigation, /'desktop-download': 'desktop_download'/)
   assert.match(roleNavigation, /desktop_download: 'side'/)
-  assert.match(settings, /\['desktop_download', 'RandDesktop'\]/)
+  assert.match(settings, /NAV_ITEMS = ROLE_NAV_ITEMS\.filter/)
   assert.match(settings, /\['desktop_download','Download RandDesktop'\]/)
   assert.match(settings, /desktop_download:\['view'\]/)
   assert.match(rolesTab, /Object\.prototype\.hasOwnProperty\.call\(draftPerms,k\)/)

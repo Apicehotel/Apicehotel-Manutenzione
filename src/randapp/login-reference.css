@@ -9,16 +9,16 @@
 }
 
 .rs-auth:has([data-testid='login-submit']) .rs-auth__inner {
-  width: min(100%, 600px);
-  max-width: 600px;
-  gap: clamp(20px, 2.7dvh, 28px);
+  width: min(100%, 480px);
+  max-width: 480px;
+  gap: clamp(16px, 2.2dvh, 22px);
 }
 
 .rs-auth:has([data-testid='login-submit']) .rs-brand { gap: 11px; }
 
 .rs-auth:has([data-testid='login-submit']) .rs-brand__logo {
-  width: clamp(118px, 31vw, 142px);
-  height: clamp(118px, 31vw, 142px);
+  width: clamp(80px, 22vw, 104px);
+  height: clamp(80px, 22vw, 104px);
   border-radius: clamp(29px, 7vw, 36px);
   overflow: hidden;
   background: #081425;
@@ -42,7 +42,7 @@
 }
 
 .rs-auth:has([data-testid='login-submit']) .rs-brand__title {
-  font-size: clamp(2.25rem, 10.4vw, 3.15rem);
+  font-size: clamp(2rem, 8vw, 2.6rem);
   line-height: 1;
   letter-spacing: -.045em;
   text-shadow: 0 10px 34px rgba(16, 145, 230, .16);
@@ -57,7 +57,8 @@
   margin-top: 7px;
   font-size: clamp(.78rem, 3.45vw, .94rem);
   line-height: 1.35;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
 }
 .rs-auth:has([data-testid='login-submit']) .rs-brand__tag .rs-icon { width: 16px; height: 16px; }
 
@@ -110,10 +111,10 @@
 .rs-auth:has([data-testid='login-submit']) .rs-divider::after { background: rgba(88,172,232,.2); }
 
 .rs-auth:has([data-testid='login-submit']) .rs-settings-link {
-  min-height: clamp(68px, 8.9dvh, 80px);
-  padding: 13px clamp(15px, 3.8vw, 20px);
+  min-height: 56px;
+  padding: 10px clamp(15px, 3.8vw, 20px);
   border-radius: clamp(15px, 3.8vw, 18px);
-  background: rgba(14,28,48,.76);
+  background: transparent;
   border-color: rgba(88,172,232,.2);
 }
 .rs-auth:has([data-testid='login-submit']) .rs-settings-link > .rs-icon { width: 22px; height: 22px; }
@@ -245,7 +246,7 @@ html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-inp
 html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-input > .rs-icon,
 html[data-theme='light'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-input > .rs-icon { color: #60738f; }
 html[data-theme='light'] .rs-auth:has([data-testid='login-submit']) .rs-settings-link {
-  background: rgba(247,250,254,.9);
+  background: transparent;
   border-color: rgba(38,86,148,.20);
   color: var(--rs-text);
 }
@@ -330,6 +331,6 @@ html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth
 @media (min-width: 768px) {
   .rs-auth:has([data-testid='login-submit']),
   .rs-auth:has([data-testid='admin-gate-submit']) { justify-content: center; padding-top: max(calc(var(--rs-safe-top) + 36px), 48px); }
-  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner { max-width: 600px; }
+  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner { max-width: 480px; }
   .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { max-width: 560px; }
 }
