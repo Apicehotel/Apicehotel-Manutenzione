@@ -1,0 +1,191 @@
+/* RandUI v2 completion pass.
+   This file is the final shared visual/layout guard for all catalogued RandApp pages.
+   It must not become a second design system: it only normalizes page anatomy,
+   responsive behavior, overflow, action rows and large-UI ergonomics. */
+
+.rs-root,
+.rs-app {
+  min-height: 100dvh;
+}
+
+.rs-content,
+.rs-randui-page,
+.rs-randui-page__body,
+.rs-randui-page__content {
+  min-height: 0;
+  align-content: start;
+}
+
+.rs-randui-page--migrated .rs-randui-page__content > :first-child {
+  margin-top: 0;
+}
+
+.rs-randui-page--migrated .rs-randui-page__content > :last-child {
+  margin-bottom: 0;
+}
+
+.rs-randui-page--migrated :is(
+  .rs-card,
+  .rs-section,
+  .rs-form,
+  .rs-list,
+  .rs-grid,
+  .rs-toolbar,
+  .rs-filterbar,
+  .rs-actions,
+  .rs-form-actions,
+  .rs-table-wrap,
+  .rs-table-container,
+  .rs-scroll-x
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rs-randui-page--migrated :is(.rs-toolbar, .rs-filterbar, .rs-actions, .rs-form-actions) {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--rand-space-2);
+}
+
+.rs-randui-page--migrated :is(.rs-toolbar, .rs-filterbar) > * {
+  min-width: 0;
+}
+
+.rs-randui-page--migrated :is(.rs-table-wrap, .rs-table-container, .rs-scroll-x) {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.rs-randui-page--migrated :is(table, .rs-table) {
+  max-width: 100%;
+}
+
+.rs-randui-page--migrated :is(input, select, textarea, .rs-input, .rs-textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) {
+  min-height: 0;
+  height: auto;
+  align-self: start;
+}
+
+.rs-sidebar__brand-copy,
+.rs-drawer-profile__copy,
+.rs-profile-trigger__name,
+.rs-hotelchip__text {
+  min-width: 0;
+}
+
+.rs-sidebar__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+@media (max-width: 767px) {
+  .rs-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .rs-randui-page {
+    gap: var(--rand-space-3);
+  }
+
+  .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rand-space-2);
+    padding-bottom: var(--rand-space-2);
+  }
+
+  .rs-randui-page--migrated :is(
+    .rs-page-title > :last-child:not(:first-child),
+    .rs-randui-local-header__actions,
+    .rs-randui-page__actions
+  ) {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .rs-randui-page--migrated :is(
+    .rs-page-title > :last-child:not(:first-child),
+    .rs-randui-local-header__actions,
+    .rs-randui-page__actions,
+    .rs-form-actions
+  ) > :is(button, .rs-btn, [role='button']) {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+
+  .rs-randui-page--migrated :is(.rs-toolbar, .rs-filterbar) > :is(.rs-input, input, select, .rs-segmented) {
+    flex: 1 1 min(100%, 180px);
+  }
+
+  .rs-randui-page--migrated :is(.rs-table-wrap, .rs-table-container, .rs-scroll-x) {
+    width: 100%;
+  }
+
+  .rs-randui-page__aside {
+    order: 2;
+  }
+}
+
+@media (max-width: 430px) {
+  .rs-randui-page--migrated :is(
+    .rs-page-title > :last-child:not(:first-child),
+    .rs-randui-local-header__actions,
+    .rs-randui-page__actions,
+    .rs-form-actions
+  ) > :is(button, .rs-btn, [role='button']) {
+    flex-basis: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .rs-randui-page[data-randui-rhythm='compact'] {
+    --randui-visual-gap: var(--rand-space-3);
+  }
+
+  .rs-randui-page--migrated :is(.rs-toolbar, .rs-filterbar) {
+    align-items: flex-end;
+  }
+}
+
+@media (min-width: 1200px) {
+  .rs-sidebar {
+    min-height: 100dvh;
+  }
+
+  .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) {
+    align-items: flex-start;
+  }
+
+  .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) > :last-child:not(:first-child) {
+    margin-left: auto;
+  }
+}
+
+html[data-ui-size='large'] .rs-randui-page {
+  --randui-title-size: clamp(1.55rem, 2.8vw, 2.1rem);
+}
+
+html[data-ui-size='large'] .rs-randui-page--migrated :is(.rs-toolbar, .rs-filterbar, .rs-actions, .rs-form-actions) {
+  gap: var(--rand-space-3);
+}
+
+html[data-ui-size='large'] .rs-randui-page--migrated :is(button, [role='button'], input, select) {
+  min-height: var(--rs-adaptive-touch-min);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-randui-page--migrated * {
+    scroll-behavior: auto !important;
+  }
+}
