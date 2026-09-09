@@ -7,6 +7,7 @@ const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const policy = JSON.parse(read('../evals/randai/plugin-eval-policy.json'))
 const script = read('../scripts/rand-plugin-eval.mjs')
 const pkg = JSON.parse(read('../package.json'))
+const workflow = read('../.github/workflows/randai-group1-security.yml')
 
 test('plugin-eval is adapted as a pattern while Promptfoo remains canonical', () => {
   assert.equal(policy.engine, 'Promptfoo')
@@ -28,4 +29,12 @@ test('governed evaluation has Fix First, before/after comparison and evidence', 
   assert.match(script, /promotionReady/)
   assert.ok(policy.evidence.includes('evals/randai/promptfooconfig.yaml'))
   assert.ok(policy.evidence.includes('test/quality-matrix.json'))
+})
+
+test('Group 1 preserves evidence without turning superseded cancellations red', () => {
+  assert.match(workflow, /Governed plugin evaluation report[\s\S]*if: \$\{\{ !cancelled\(\) \}\}/)
+  assert.match(workflow, /Upload governed evaluation evidence[\s\S]*if: \$\{\{ !cancelled\(\) \}\}/)
+  assert.match(workflow, /retention-days: 14/)
+  assert.match(workflow, /if-no-files-found: error/)
+  assert.doesNotMatch(workflow, /Upload governed evaluation evidence[\s\S]*if: always\(\)/)
 })
