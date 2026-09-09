@@ -12,7 +12,7 @@ La regola resta:
 
 ## Consolidamento PR
 
-La PR finale consolida direttamente su `main` la catena #219 → #222 → #223. Questo evita merge intermedi con una testa storicamente non certificata e forza la CI a verificare l'insieme completo contro `main` prima del merge umano finale.
+La PR consolidata **#224** porta direttamente su `main` l'intera catena #219 → #222 → #223. Questo evita merge intermedi con una testa storicamente non certificata e forza la CI a verificare l'insieme completo contro `main` prima del merge umano finale.
 
 ## Perimetro
 
