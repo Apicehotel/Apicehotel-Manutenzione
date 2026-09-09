@@ -17,6 +17,17 @@ export function createLayoutDocument({ roomKey = null, roomName = '', layoutKey 
   return { schemaVersion: RANDSALE2D_SCHEMA_VERSION, unit: 'cm', room: { width: 1200, height: 800 }, roomKey, roomName, layoutKey, layoutName, pax: pax ? Number(pax) : null, grid: RANDSALE2D_GRID_CM, items: [] }
 }
 
+export function bindLayoutDocument(document, booking = {}) {
+  return normalizeLayoutDocument({
+    ...normalizeLayoutDocument(document),
+    roomKey: booking.roomKey || null,
+    roomName: booking.room || '',
+    layoutKey: booking.layoutKey || null,
+    layoutName: booking.layout || '',
+    pax: booking.pax ? Number(booking.pax) : null,
+  })
+}
+
 export function normalizeLayoutDocument(value, fallback = {}) {
   const base = createLayoutDocument(fallback), source = value && typeof value === 'object' ? value : {}
   const room = { width: clamp(finite(source.room?.width, base.room.width), 300, 5000), height: clamp(finite(source.room?.height, base.room.height), 300, 5000) }

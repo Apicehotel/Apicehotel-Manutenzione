@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { updateBookingRow } from '../../sale-data.js'
-import { Icon, Sheet } from '../ui.jsx'
+import { Button, Icon, Sheet } from '../ui.jsx'
 import { SHIFTS, canManageSalePlanning, norm } from './sale-utils.js'
 import RandSale2D from './RandSale2D.jsx'
 
