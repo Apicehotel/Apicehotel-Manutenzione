@@ -10,6 +10,10 @@ La regola resta:
 
 `completion-v2.css` viene caricato per ultimo ed è il guard condiviso finale. Le feature possono specializzare il contenuto, ma non devono riaprire problemi globali di geometria, overflow, safe-area, toolbar, azioni o modalità Grande.
 
+## Consolidamento PR
+
+La PR finale consolida direttamente su `main` la catena #219 → #222 → #223. Questo evita merge intermedi con una testa storicamente non certificata e forza la CI a verificare l'insieme completo contro `main` prima del merge umano finale.
+
 ## Perimetro
 
 Il contratto si applica alle 24 destinazioni catalogate e ai 14 template RandUI.
