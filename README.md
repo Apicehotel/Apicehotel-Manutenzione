@@ -79,6 +79,16 @@ RandCore governa health, audit, release gate, workers, sicurezza, costi, integra
 
 `Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
 
+## OpenAI Plugins governance + RandFlow
+
+`https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
+
+Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers` → `ADAPT`, GitHub/Supabase/Vercel → `CONNECT`; `codex-security` resta esterno perché proprietario e RandCore continua a essere l'autorità di sicurezza. Figma/Sentry/PostHog restano `WATCH` finché non superano overlap, privacy e stabilità.
+
+RandFlow formalizza il lavoro agente: `DISCOVER → PLAN → IMPLEMENT → TEST → SECURITY → REVIEW → READY_FOR_HUMAN_MERGE`. Branch dedicato, test/security/CI verdi, zero irrisolti e revisione umana sono obbligatori; niente push agente diretto su `main`, merge automatico o deploy produzione prima dell'approvazione.
+
+Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
+
 ## RandAI Group 1 — Guardrails e observability
 
 Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di autorizzazione o logging:
@@ -207,7 +217,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; il primo blocca regressioni su inventario reale, copertura 24/24 pagine, manifest ecosistema, 14 fronti AI, `inventoryRef`, provider multi-source e invarianti di adozione, il secondo protegge il contratto Task/bottom-nav e la semantica dei `+` di Interventi e Planning.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; i primi due proteggono l'intake governato dei plugin e RandFlow, mentre gli altri bloccano regressioni su inventario/capability e navigazione RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
@@ -219,6 +229,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 
 ## Documentazione
 
+- `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
 - `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.
