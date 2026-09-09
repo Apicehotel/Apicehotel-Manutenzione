@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 import { RANDUI_COMPONENT_REGISTRY } from '../src/randapp/randui/component-registry.js'
 import { listRandUiTemplates } from '../src/randapp/randui/template-registry.js'
+import { RANDUI_PAGE_CATALOG } from '../src/randapp/randui/page-catalog.js'
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const VISUAL_COMPONENTS = ['PageTitle', 'Surface', 'Stack', 'Grid', 'Metric']
@@ -51,6 +52,19 @@ test('visual language is owned by the final RandUI foundation', () => {
   for (const selector of ['.rs-randui-surface', '.rs-randui-stack', '.rs-randui-grid', '.rs-randui-metric', '.rs-randui-local-header']) {
     assert.ok(visual.includes(selector), `${selector} missing from visual language`)
   }
+})
+
+test('all 24 catalogued pages inherit the shared no-dead-space vertical contract', () => {
+  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 24)
+  const boundary = read('../src/randapp/randui/PageBoundary.jsx')
+  const layout = read('../src/randapp/randui/layout-v2.css')
+  assert.match(boundary, /import '\.\/layout-v2\.css'/)
+  assert.match(layout, /\.rs-content \.rs-page-title/)
+  assert.match(layout, /min-height: 0 !important/)
+  assert.match(layout, /height: auto !important/)
+  assert.match(layout, /flex: 0 0 auto !important/)
+  assert.match(layout, /\.rs-content \.rs-randui-stack[\s\S]*grid-auto-rows: max-content/)
+  assert.doesNotMatch(layout, /min-height:\s*(?:[3-9]\d\d|\d{4,})px/)
 })
 
 test('planning top-level family no longer owns arbitrary inline geometry', () => {
