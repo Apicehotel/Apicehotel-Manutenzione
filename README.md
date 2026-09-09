@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandArchitecture, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La regola architetturale resta: **un solo proprietario canonico per capacità**. Se una soluzione è nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch o creare un secondo sistema.
 
@@ -198,6 +198,20 @@ Test dedicato: `test/randvisual-block2-sources.test.js`.
 
 Dettaglio: `docs/architecture/RANDVISUAL_BLOCK2.md`.
 
+## RandArchitecture — Blocco 3
+
+RandArchitecture è l'advisor di system design evidence-based dell'ecosistema Rand. Usa `liquidslr/system-design-notes` solo come **SOURCE_ONLY** e non copia né installa il repository nel runtime.
+
+- Catalogo v1: idempotenza, optimistic concurrency/CAS, queue asincrone, transactional outbox, retry con jitter, circuit breaker, rate limiting, observability, cache, notification fan-out e chat delivery.
+- Se un pattern è già implementato, la decisione è `KEEP`: niente framework o servizi duplicati.
+- Se un pattern può servire ma manca evidenza, la decisione è `EVALUATE`: niente auto-provisioning e niente `ADD` automatico.
+- RandCore, Supabase/RLS/RPC, RandMind/RandKnowledge e i bounded domain esistenti restano proprietari canonici.
+- RandArchitecture può alimentare RandAI/RandBrain per valutazioni e RandVisual per diagrammi, senza diventare un secondo RAG o database.
+
+Test dedicato: `test/randarchitecture-block3.test.js`.
+
+Dettaglio: `docs/architecture/RANDARCHITECTURE_BLOCK3.md`.
+
 ## Moduli operativi
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
@@ -249,7 +263,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randvisual-block2-sources.test.js`, `test/randarchitecture-block3.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR, single-evaluator policy, governance visuale/architetturale, inventario/capability e navigazione RandUI.
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
@@ -272,6 +286,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
 - `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
 - `docs/architecture/RANDVISUAL_BLOCK2.md` — RandVisual, sorgenti esterne governate, pipeline immagini e boundary RandUI.
+- `docs/architecture/RANDARCHITECTURE_BLOCK3.md` — advisor system design evidence-based, source governance e anti-zombie policy.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
