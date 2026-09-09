@@ -91,6 +91,23 @@ La CI canonica valida **ogni pull request**, incluse le PR stacked su branch di 
 
 Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
 
+### Rand Foundations — Gruppo 1
+
+Il consolidamento delle fonti PI-Desktop, Superpowers e RandFocus non crea un secondo agent runtime. RandFlow resta il proprietario canonico del lifecycle; `agent-permission-gate.js` aggiunge il boundary `read/propose/write/execute/deploy`, mentre `rand-focus.js` governa il reporting fail-closed dello stato del lavoro.
+
+- un agente può leggere/proporre senza branch di mutazione;
+- write/execute/deploy da agente richiedono branch dedicata e sono vietati sulla base branch (`main` di default);
+- il deploy produzione è human-only e richiede approvazione umana esplicita;
+- RandFocus non può dichiarare `DONE` senza completamento reale, test, security e CI verdi e zero lavoro irrisolto;
+- Superpowers è già adattato nei principi RandFlow (TDD dove utile, debugging sistematico, evidenza prima del completamento, cambio minimo coerente), quindi non viene creato un RandDev parallelo;
+- PI-Desktop resta fonte di pattern e non diventa runtime/dependency di RandApp.
+
+RandVisual (`diagram-design` + `awesome-gpt-image-2`) e RandArchitecture (`system-design-notes`) restano i proprietari già separati e governati dei rispettivi domini.
+
+Test dedicato: `test/rand-foundations-group1.test.js`.
+
+Dettaglio: `docs/architecture/RAND_FOUNDATIONS_GROUP1.md`.
+
 ### Plugin evaluation governata
 
 `plugin-eval` viene adattato come pattern, non installato come secondo evaluator. **Promptfoo + Quality Matrix restano il motore canonico**; `scripts/rand-plugin-eval.mjs` aggiunge una policy versionata con dimensioni obbligatorie, ordinamento `Fix First`, report JSON/Markdown e confronto before/after.
@@ -263,7 +280,7 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randvisual-block2-sources.test.js`, `test/randarchitecture-block3.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR, single-evaluator policy, governance visuale/architetturale, inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randvisual-block2-sources.test.js`, `test/randarchitecture-block3.test.js`, `test/rand-foundations-group1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, permission gate/RandFocus, CI universale delle PR, single-evaluator policy, governance visuale/architetturale, inventario/capability e navigazione RandUI.
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
@@ -275,6 +292,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 ## Documentazione
 
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
+- `docs/architecture/RAND_FOUNDATIONS_GROUP1.md` — consolidamento PI-Desktop/Superpowers/RandFocus, Permission Gate e anti-zombie.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
