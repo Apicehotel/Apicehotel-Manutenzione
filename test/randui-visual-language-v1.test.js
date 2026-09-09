@@ -59,11 +59,9 @@ test('all 24 catalogued pages inherit the shared no-dead-space vertical contract
   const boundary = read('../src/randapp/randui/PageBoundary.jsx')
   const layout = read('../src/randapp/randui/layout-v2.css')
   assert.match(boundary, /import '\.\/layout-v2\.css'/)
-  assert.match(layout, /\.rs-content \.rs-page-title/)
-  assert.match(layout, /min-height: 0 !important/)
-  assert.match(layout, /height: auto !important/)
-  assert.match(layout, /flex: 0 0 auto !important/)
+  assert.match(layout, /\.rs-randui-page--migrated \.rs-randui-page__content > :first-child[\s\S]*min-height: 0;[\s\S]*height: auto;[\s\S]*flex: 0 0 auto;[\s\S]*align-self: start;/)
   assert.match(layout, /\.rs-content \.rs-randui-stack[\s\S]*grid-auto-rows: max-content/)
+  assert.doesNotMatch(layout, /\.rs-page-title/)
   assert.doesNotMatch(layout, /min-height:\s*(?:[3-9]\d\d|\d{4,})px/)
 })
 
