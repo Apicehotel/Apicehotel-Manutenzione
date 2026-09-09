@@ -36,3 +36,11 @@ test('point 5 keeps RandSale 2D inside Planning cards and leaves completion in t
   assert.match(hardening,/has_app_permission\(p_hotel_id, 'planning_sale', 'manage'\)/);assert.match(hardening,/has_app_permission\(hotel_id, 'planning_sale', 'view'\)/)
   assert.match(hardening,/'roomKey', v_booking\.sala_key/);assert.match(hardening,/'layoutKey', v_booking\.allestimento_key/);assert.match(hardening,/'pax', v_booking\.pax/)
 })
+
+test('point 6 keeps append-only history and restores by creating a new version',()=>{
+  const ui=read('../src/randapp/planning/RandSale2D.jsx'),data=read('../src/randsale2d-data.js'),sql=read('../supabase/migrations/20260909140000_randsale2d_history.sql')
+  assert.match(sql,/sale_layout_snapshot_history/);assert.match(sql,/unique \(booking_id, version\)/);assert.match(sql,/after insert or update of document, version/)
+  assert.match(sql,/restore_sale_layout_snapshot/);assert.match(sql,/Ripristino dalla versione/);assert.doesNotMatch(sql,/delete from public\.sale_layout_snapshot_history/i)
+  assert.match(data,/fetchSaleLayoutHistory/);assert.match(data,/save_sale_layout_snapshot_v2/);assert.match(data,/restoreSaleLayoutSnapshot/)
+  assert.match(ui,/Storico versioni/);assert.match(ui,/Motivo modifica/);assert.match(ui,/Ripristina/);assert.match(ui,/expectedVersion:snapshot\.version/)
+})
