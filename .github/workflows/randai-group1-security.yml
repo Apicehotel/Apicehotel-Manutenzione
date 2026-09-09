@@ -6,8 +6,6 @@ on:
       - randai/group1-guardrails-observability
       - main
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
