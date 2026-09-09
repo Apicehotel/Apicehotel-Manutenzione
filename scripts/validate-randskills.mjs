@@ -7,9 +7,9 @@ const requiredHeadings = ['# Scope', '# Permissions', '# Allowed actions', '# Fo
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 function parseFrontmatter(source) {
-  const match = source.match(/^---\n([\s\S]*?)\n---\n/)
+  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/)
   if (!match) return null
-  const fields = Object.fromEntries(match[1].split('\n').map((line) => {
+  const fields = Object.fromEntries(match[1].split(/\r?\n/).map((line) => {
     const index = line.indexOf(':')
     if (index < 0) return [line.trim(), '']
     return [line.slice(0, index).trim(), line.slice(index + 1).trim()]
