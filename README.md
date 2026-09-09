@@ -220,6 +220,17 @@ Warehouse resta bounded domain con ledger, stock/seriali e integrazione con Inte
 
 RandChat riusa identità e autorizzazioni RandApp; gruppi, DM E2EE, Procedure/RandGuide, RandAI e RandMedia restano bounded dai rispettivi gate. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette per Windows/desktop.
 
+### RandSale 2D — punto 4
+
+Planning Sale resta il dominio canonico per prenotazione, sala, allestimento, PAX e stato operativo. RandSale 2D aggiunge una sola rappresentazione versionata per prenotazione (`sale_layout_snapshots`), espressa in centimetri e indipendente dal renderer.
+
+- Il Direttore Centro Congressi usa un editor mobile-first essenziale: oggetti sala, trascinamento touch/mouse, griglia e snap, zoom, selezione, dimensioni, rotazione, undo/redo e vincoli entro la sala.
+- I manutentori aprono una modalità facchini separata e in sola lettura, con pianta, lista quantitativa e conferme `Da finire`/`Fatto` sullo stato della prenotazione già esistente.
+- Il salvataggio passa da una RPC hotel-scoped con controllo di versione ottimistico; i manutentori possono leggere la pianta ma non modificarla.
+- Nessuna libreria CAD, seconda Planning o seconda persistenza offline. Il contratto JSON prepara versioni/storico e future proposte RandAI in linguaggio naturale senza legare i dati a SVG.
+
+Test dedicato: `test/randsale2d-point4.test.js`.
+
 ## Safe-area e target device
 
 Il contratto responsive usa `viewport-fit=cover`, `env(safe-area-inset-*)`, `src/randapp/system-insets.js` e `adaptive-layout.css`. Header e contenuto condividono lo stesso gutter canonico; la safe-area superiore ha un solo proprietario per evitare doppio spazio su iPhone.
