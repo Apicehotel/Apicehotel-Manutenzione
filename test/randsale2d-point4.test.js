@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createRandSale2DProposal, validateRandSale2DProposal } from '../src/randsale2d-ai-proposal.js'
 import { addLayoutItem, bindLayoutDocument, createLayoutDocument, normalizeLayoutDocument, summarizeLayout, updateLayoutItem, validateLayoutDocument } from '../src/randsale2d-model.js'
 
 const read=path=>fs.readFileSync(new URL(path,import.meta.url),'utf8')
@@ -43,4 +44,14 @@ test('point 6 keeps append-only history and restores by creating a new version',
   assert.match(sql,/restore_sale_layout_snapshot/);assert.match(sql,/Ripristino dalla versione/);assert.doesNotMatch(sql,/delete from public\.sale_layout_snapshot_history/i)
   assert.match(data,/fetchSaleLayoutHistory/);assert.match(data,/save_sale_layout_snapshot_v2/);assert.match(data,/restoreSaleLayoutSnapshot/)
   assert.match(ui,/Storico versioni/);assert.match(ui,/Motivo modifica/);assert.match(ui,/Ripristina/);assert.match(ui,/expectedVersion:snapshot\.version/)
+})
+
+test('point 7 creates a human-reviewed RandAI draft without bypassing editor or save',()=>{
+  const proposal=createRandSale2DProposal({booking:{roomKey:'sax',room:'Sax',layoutKey:'platea',layout:'Platea',pax:80},prompt:'80 persone a platea, palco 4x2 sul fondo, tavolo relatori, buffet vicino ingresso e passaggio centrale'})
+  assert.equal(proposal.status,'DRAFT');assert.equal(proposal.authority,'HUMAN_APPROVAL_REQUIRED');assert.equal(validateRandSale2DProposal(proposal),true)
+  assert.equal(proposal.document.roomKey,'sax');assert.equal(proposal.document.layoutKey,'platea');assert.equal(proposal.document.pax,80)
+  assert.ok(proposal.document.items.some(item=>item.type==='stage'));assert.ok(proposal.document.items.some(item=>item.type==='buffet'));assert.ok(proposal.document.items.some(item=>item.type==='chair'))
+  const ui=read('../src/randapp/planning/RandSale2D.jsx')
+  assert.match(ui,/Proposta RandAI/);assert.match(ui,/Genera bozza/);assert.match(ui,/Usa questa bozza nell.editor/);assert.match(ui,/Bozza · non salvata/)
+  assert.doesNotMatch(read('../src/randsale2d-ai-proposal.js'),/saveSaleLayoutSnapshot|supabase\.rpc|updateBookingRow/)
 })
