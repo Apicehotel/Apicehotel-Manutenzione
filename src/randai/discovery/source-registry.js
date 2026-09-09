@@ -2,6 +2,7 @@ export const RepoRadarSourceRole = Object.freeze({
   DISCOVERY: 'DISCOVERY',
   SECURITY_INTELLIGENCE: 'SECURITY_INTELLIGENCE',
   ANALYSIS_PATTERN: 'ANALYSIS_PATTERN',
+  CAPABILITY_CATALOG: 'CAPABILITY_CATALOG',
 })
 
 export const RepoRadarSourceMode = Object.freeze({
@@ -39,6 +40,16 @@ const SOURCES = Object.freeze([
     automaticInstall: false,
     productionExecution: false,
     note: 'Candidate discovery feed only; every downstream repository is re-evaluated by RandRadar.',
+  }),
+  Object.freeze({
+    id: 'openai-plugins',
+    name: 'OpenAI Plugins',
+    repository: 'https://github.com/openai/plugins',
+    role: RepoRadarSourceRole.CAPABILITY_CATALOG,
+    mode: RepoRadarSourceMode.SOURCE_ONLY,
+    automaticInstall: false,
+    productionExecution: false,
+    note: 'Official Codex plugin catalog used for governed capability scouting. No plugin is copied, installed, trusted, or granted production authority automatically.',
   }),
 ])
 
