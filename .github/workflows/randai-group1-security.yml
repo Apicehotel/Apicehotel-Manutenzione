@@ -36,10 +36,11 @@ jobs:
         run: npm run eval:randai:security
 
       - name: Governed plugin evaluation report
+        if: ${{ !cancelled() }}
         run: npm run eval:plugin
 
       - name: Upload governed evaluation evidence
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: rand-plugin-eval-${{ github.sha }}
