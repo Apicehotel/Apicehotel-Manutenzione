@@ -1,10 +1,10 @@
-import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout.js'
+import { rankAuthorizedNavigation } from './adaptive-layout.js'
 
-// RandUI Telegram-inspired primary navigation contract.
-// Five spatial slots stay stable on mobile: Operatività, Planning, Home, a
-// contextual fast destination, RandAI. Home is always the geometric centre and
-// RandAI owns the far-right slot. The complete navigation lives in the profile
-// drawer instead of an "Altro" catch-all tab.
+// RandUI primary mobile navigation contract.
+// Five spatial slots stay stable on mobile: Operatività, Planning, Home, Task,
+// RandAI. Home is always the geometric centre and RandAI owns the far-right
+// slot. Task is the default operational shortcut; role configuration can select
+// another authorized destination without changing the surrounding slots.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
@@ -21,20 +21,33 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
   randai: 5,
 })
 
-function firstContextualDestination({ placement, viewAllowed, interests }) {
-  if (placement('chat') !== 'off' && viewAllowed('chat')) {
-    return { id: 'chat', key: 'chat', icon: 'message', label: 'Chat', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
-  }
+export const CONTEXTUAL_NAV = Object.freeze([
+  Object.freeze({ id: 'my-work', key: 'interventions', icon: 'check', label: 'Task' }),
+  Object.freeze({ id: 'chat', key: 'chat', icon: 'message', label: 'Chat' }),
+  ...PRIMARY_OPERATIONAL_NAV,
+])
 
-  const authorized = PRIMARY_OPERATIONAL_NAV.filter((item) => placement(item.key) !== 'off' && viewAllowed(item.id))
-  const preferred = authorized.filter((item) => placement(item.key) === 'bottom')
-  const secondary = authorized.filter((item) => placement(item.key) !== 'bottom')
-  const configuredInterestTags = preferred.flatMap((item) => interestsForNavItem(item.id))
-  const effectiveInterests = interests.length ? interests : configuredInterestTags
-  const ranked = [
-    ...rankAuthorizedNavigation(preferred, effectiveInterests),
-    ...rankAuthorizedNavigation(secondary, effectiveInterests),
-  ]
+
+export function supportsBottomPlacement(key) {
+  return key === 'home' || key === 'planning_work' || CONTEXTUAL_NAV.some((item) => item.key === key)
+}
+
+// A role can explicitly choose one contextual shortcut. Existing configurations
+// with several preferences retain deterministic, permission-aware ranking.
+export function withNavigationPlacement(config, role, key, value, placement) {
+  const next = { ...config?.[role], [key]: value }
+  if (value === 'bottom' && CONTEXTUAL_NAV.some((item) => item.key === key)) {
+    for (const item of CONTEXTUAL_NAV) {
+      if (item.key !== key && placement(item.key) === 'bottom') next[item.key] = 'side'
+    }
+  }
+  return { ...config, [role]: next }
+}
+
+function firstContextualDestination({ placement, viewAllowed, interests }) {
+  const preferred = CONTEXTUAL_NAV.filter((item) => placement(item.key) === 'bottom' && viewAllowed(item.id))
+  const task = preferred.find((item) => item.id === 'my-work')
+  const ranked = task ? [task] : rankAuthorizedNavigation(preferred, interests)
   return ranked[0] ? { ...ranked[0], slot: TELEGRAM_PRIMARY_SLOTS.contextual } : null
 }
 
@@ -43,8 +56,8 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
 
   const items = []
   const operationsVisible = viewAllowed('operations')
-  const planningVisible = placement('planning_work') !== 'off' && viewAllowed('planning-work')
-  const homeVisible = placement('home') !== 'off' && viewAllowed('home')
+  const planningVisible = placement('planning_work') === 'bottom' && viewAllowed('planning-work')
+  const homeVisible = placement('home') === 'bottom' && viewAllowed('home')
 
   if (operationsVisible) {
     items.push({ slot: TELEGRAM_PRIMARY_SLOTS.operations, id: 'operations', key: 'operations', icon: 'issues', label: 'Operatività' })
@@ -67,5 +80,5 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }

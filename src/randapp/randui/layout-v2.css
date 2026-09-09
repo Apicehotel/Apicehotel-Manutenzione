@@ -1,0 +1,15 @@
+/* RandUI Unified Page v2: page-frame geometry only. Page internals stay owned by their canonical templates. */
+.rs-randui-page {
+  --randui-page-max: var(--rand-content-max);
+  max-width: var(--randui-page-max);
+  margin-inline: auto;
+}
+
+.rs-randui-page[data-randui-width='reading'],
+.rs-randui-page[data-randui-width='center'] {
+  --randui-page-max: var(--rand-reading-max);
+}
+
+@media (max-width: 767px) {
+  .rs-randui-page { --randui-page-max: 100%; }
+}

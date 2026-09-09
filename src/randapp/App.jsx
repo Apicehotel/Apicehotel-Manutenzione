@@ -160,10 +160,9 @@ function Login({ onAuthenticated, onOpenSettings }) {
               {busy ? 'ACCESSO…' : 'ACCEDI'}
             </Button>
           </form>
-          <div className="rs-divider"><span>oppure</span></div>
-          <button className="rs-settings-link" onClick={onOpenSettings} data-testid="open-settings-link">
+          <button type="button" className="rs-settings-link" onClick={onOpenSettings} data-testid="open-settings-link">
             <Icon name="gear" />
-            <span><b>Impostazioni</b><small>Configura l'app e le preferenze</small></span>
+            <span><b>Impostazioni</b><small>Accesso riservato agli amministratori</small></span>
             <i><Icon name="chevronRight" /></i>
           </button>
         </section>

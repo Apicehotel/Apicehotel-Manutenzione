@@ -7,6 +7,7 @@ import { canManageTechnicianDirectory } from '../src/randapp/technician-director
 const all = {
   issue: true,
   urgent: true,
+  intervention: true,
   'planning-work': true,
   'planning-sale': true,
   technician: true,
@@ -16,17 +17,19 @@ test('home keeps only top-level creation choices', () => {
   assert.deepEqual(contextualAddActionIds('home', all), ['issue', 'urgent', 'planning-work', 'planning-sale'])
 })
 
-test('single-purpose pages route the plus directly', () => {
+test('single-purpose pages route the plus directly to their own domain', () => {
   assert.deepEqual(contextualAddActionIds('issues', all), ['issue'])
   assert.deepEqual(contextualAddActionIds('urgent', all), ['urgent'])
-  assert.deepEqual(contextualAddActionIds('interventions', all), ['planning-work'])
-  assert.deepEqual(contextualAddActionIds('my-work', all), ['planning-work'])
+  assert.deepEqual(contextualAddActionIds('interventions', all), ['intervention'])
+  assert.deepEqual(contextualAddActionIds('my-work', all), ['intervention'])
   assert.deepEqual(contextualAddActionIds('technicians', all), ['technician'])
 })
 
-test('planning exposes only allowed planning actions', () => {
-  assert.deepEqual(contextualAddActionIds('planning-work', all), ['planning-work', 'planning-sale'])
-  assert.deepEqual(contextualAddActionIds('planning-work', { ...all, 'planning-sale': false }), ['planning-work'])
+test('planning routes each section plus to its matching object', () => {
+  assert.deepEqual(contextualAddActionIds('planning-work', all), ['planning-work'])
+  assert.deepEqual(contextualAddActionIds('planning-sale', all), ['planning-sale'])
+  assert.deepEqual(contextualAddActionIds('planning-work', { ...all, 'planning-work': false }), [])
+  assert.deepEqual(contextualAddActionIds('planning-sale', { ...all, 'planning-sale': false }), [])
 })
 
 test('local composer and read-only pages do not get a misleading global plus', () => {
@@ -35,6 +38,7 @@ test('local composer and read-only pages do not get a misleading global plus', (
 
 test('capabilities can remove contextual actions', () => {
   assert.deepEqual(contextualAddActionIds('issues', { ...all, issue: false }), [])
+  assert.deepEqual(contextualAddActionIds('interventions', { ...all, intervention: false }), [])
   assert.deepEqual(contextualAddActionIds('technicians', { ...all, technician: false }), [])
 })
 
