@@ -16,6 +16,7 @@ import './randapp/new-issue-form-v2.css'
 import './randapp/new-issue-category-icons.css'
 import './randapp/new-issue-inline-photo.css'
 import './randapp/login-reference.css'
+import './randapp/ios-login-keyboard.css'
 import './randapp/admin-keyboard-fix.css'
 import './randapp/hotel-selector-reference.css'
 import './randapp/theme-coherence.css'
@@ -89,8 +90,6 @@ function afterPageLoad(task) {
 }
 
 if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch) {
-  // PWA registration is intentionally immediate: offline/installability is a bootstrap contract,
-  // unlike authenticated operational services that can remain deferred.
   registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))

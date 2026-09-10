@@ -1,0 +1,34 @@
+/* iOS/Safari login keyboard stability.
+   Keep the auth content anchored and scrollable when the visual viewport shrinks.
+   Avoid JS resize hacks: dynamic viewport handles the keyboard while flex items
+   are prevented from compressing. */
+@media (max-width: 767px) {
+  .rs-auth:has([data-testid='login-submit']) {
+    min-height: 100svh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: max(32px, calc(var(--rs-safe-bottom) + 24px));
+  }
+
+  .rs-auth:has([data-testid='login-submit']) .rs-auth__inner,
+  .rs-auth:has([data-testid='login-submit']) .rs-brand,
+  .rs-auth:has([data-testid='login-submit']) .rs-authcard {
+    flex-shrink: 0;
+  }
+
+  .rs-auth:has([data-testid='login-submit']) .rs-brand__logo {
+    flex: 0 0 auto;
+  }
+
+  /* Safari zooms focused form controls when their computed font is below 16px. */
+  .rs-auth:has([data-testid='login-submit']) .rs-input input {
+    font-size: max(16px, 1rem);
+  }
+
+  .rs-auth:has([data-testid='login-submit']):focus-within {
+    scroll-padding-bottom: max(44dvh, calc(var(--rs-safe-bottom) + 24px));
+  }
+}
