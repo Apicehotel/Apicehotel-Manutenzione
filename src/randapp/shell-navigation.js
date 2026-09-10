@@ -8,7 +8,6 @@ import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
-  Object.freeze({ id: 'supplies', key: 'supplies', icon: 'package', label: 'Rifornimenti' }),
   Object.freeze({ id: 'urgent', key: 'urgent', icon: 'warning', label: 'Urgenti' }),
   Object.freeze({ id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' }),
 ])
