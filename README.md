@@ -19,6 +19,27 @@ La regola architetturale resta: **un solo proprietario canonico per capacità**.
 - Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario, discovery o rollback.
 - Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo, riferimenti e dipendenze.
 
+## RandSpec + RandFlow
+
+RandSpec rende persistente e verificabile il lavoro spec-driven senza creare un secondo lifecycle: **estende RandFlow** con `SPECIFY`, decisione RandRadar nel PLAN, TASKS, change protocol e CONVERGE.
+
+Lifecycle governato:
+
+`DISCOVER → SPECIFY → PLAN → RANDRADAR → TASKS → IMPLEMENT → TEST → SECURITY → CONVERGE → READY_FOR_HUMAN_MERGE`
+
+Ogni modifica sostanziale usa `specs/<id-slug>/{spec.md,plan.md,tasks.md,change-log.md}`. La Constitution vive in `docs/governance/RAND_CONSTITUTION.md`; Spec Kit è adottato come pattern `SOURCE_ONLY/ADAPT`, non come dipendenza runtime o secondo orchestratore.
+
+Comandi:
+
+```bash
+npm run spec:validate
+npm run test:randspec
+```
+
+La CI esegue entrambi prima dei quality/build gate. Il freeze resta invariato: branch dedicata, PR, CI verde e **merge/release umani**; nessun agente può pushare/mergiare/deployare direttamente su `main`.
+
+Dettaglio: `docs/architecture/RANDSPEC_V1.md`.
+
 ## RandRadar Full Evolution v1
 
 `RAND_FULL_EVOLUTION_V1` rende Repo Radar un motore di scouting dell'intero prodotto, non un radar limitato a categorie statiche.
@@ -224,6 +245,8 @@ npm run test:quality
 npm run test:group1
 npm run test:group2
 npm run test:group3
+npm run spec:validate
+npm run test:randspec
 npm run eval:randai:security
 npm run eval:plugin
 npm run test:repo-radar
@@ -236,9 +259,9 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
+`npm test` include anche `test/randspec-governance.test.js`, `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono RandSpec/Constitution, intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
+La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
 
@@ -248,6 +271,8 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 
 ## Documentazione
 
+- `docs/governance/RAND_CONSTITUTION.md` — invarianti di sviluppo, freeze agenti, change protocol e release gate minimo.
+- `docs/architecture/RANDSPEC_V1.md` — RandSpec brownfield sopra RandFlow, template, validator e converge.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
