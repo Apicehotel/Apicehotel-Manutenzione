@@ -3,7 +3,7 @@
 ## Decisione
 GitHub Spec Kit viene adottato come **pattern SOURCE_ONLY**, non come dipendenza runtime o secondo lifecycle. RandApp è brownfield, possiede già RandFlow, RandCore release gate, RandRadar e una Quality Matrix estesa: introdurre una seconda CLI/governance creerebbe overlap.
 
-RandSpec porta nel sistema esistente quattro concetti mancanti o non formalizzati abbastanza: SPECIFY, artefatti persistenti SPEC/PLAN/TASKS, change protocol e CONVERGE.
+**RandSpec estende RandFlow**: non lo sostituisce e non crea una seconda autorità. Porta nel sistema esistente quattro concetti mancanti o non formalizzati abbastanza: SPECIFY, artefatti persistenti SPEC/PLAN/TASKS, change protocol e CONVERGE.
 
 ## Ownership canonica
 - RandFlow: lifecycle di esecuzione e freeze agenti.
