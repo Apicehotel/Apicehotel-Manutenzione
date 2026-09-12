@@ -1,7 +1,7 @@
 # SPEC: 003-randmind-v2 — Verified memory and temporal governance
 
 ## Status
-IMPLEMENTING
+TESTING
 
 ## Problem
 RandMind LIVE possiede già memoria governata, ma manca un bridge canonico da RandAudit verificato, una semantica temporale completa per supersession storica e un workflow esplicito per conflict resolution/retention senza automazioni distruttive.
@@ -12,6 +12,7 @@ RandMind resta l'unico owner della memoria e acquisisce verified audit ingestion
 ## Requirements
 - nessun secondo memory store;
 - solo outcome audit esplicitamente verificati diventano memoria VERIFIED;
+- un semplice task `SUCCEEDED` resta SUGGESTED finché non esiste evidenza verificata;
 - hotel isolation fail-closed;
 - temporal recall current/historical distinto;
 - conflict resolution autorizzata e atomica;
@@ -22,9 +23,9 @@ RandMind resta l'unico owner della memoria e acquisisce verified audit ingestion
 - Group 5 verde;
 - Group 4 governance resta verde;
 - migration v2 preserva schema/store canonici;
-- README/architecture aggiornati;
+- README/architecture/ecosystem aggiornati;
 - CI completa verde;
 - PR stacked e review umana obbligatoria.
 
 ## Security and hotel isolation
-Audit HOTEL può creare solo memoria dello stesso hotel. Conflict resolution usa `can_manage_randai_hotel`; retention planner non esegue forget e l'RPC esistente conserva authorization e legal hold.
+Audit HOTEL può creare solo memoria dello stesso hotel. Conflict resolution usa `can_manage_randai_hotel`; retention planner non esegue forget e l'RPC esistente conserva authorization e legal hold. Nessun task o agente può auto-promuovere il proprio esito a VERIFIED senza evidence esplicita.
