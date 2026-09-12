@@ -193,6 +193,18 @@ Warehouse resta bounded domain con ledger, stock/seriali e integrazione con Inte
 
 RandChat riusa identità e autorizzazioni RandApp; gruppi, DM E2EE, Procedure/RandGuide, RandAI e RandMedia restano bounded dai rispettivi gate. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette per Windows/desktop.
 
+### RandSale 2D — punti 3–5
+
+Planning Sale resta il dominio canonico per prenotazione, sala, allestimento, PAX e stato operativo. RandSale 2D aggiunge una sola rappresentazione versionata per prenotazione (`sale_layout_snapshots`), espressa in centimetri e indipendente dal renderer.
+
+- Il Direttore Centro Congressi usa un editor mobile-first essenziale: oggetti sala, trascinamento touch/mouse, griglia e snap, zoom, selezione, dimensioni, rotazione, undo/redo e vincoli entro la sala.
+- Dalle card giorno/settimana del Planning esistente si apre l'editor per chi ha `planning_sale.edit/manage` o la modalità facchini in sola lettura per chi ha `planning_sale.view`; non esiste una seconda pagina o gestione eventi.
+- La modalità facchini mostra pianta e lista quantitativa. Le conferme `Da finire`/`Fatto` restano sulla card Planning e continuano a usare lo stato, i controlli Audio/Video e il workflow esistenti.
+- Il salvataggio passa da una RPC hotel-scoped con controllo di versione ottimistico e matrice permessi. `hotel_id`, prenotazione, `roomKey`, `layoutKey` e PAX sono riagganciati lato server ai dati Planning autorevoli.
+- Nessuna libreria CAD, seconda Planning o seconda persistenza offline. Il contratto JSON prepara versioni/storico e future proposte RandAI in linguaggio naturale senza legare i dati a SVG.
+
+Test dedicato: `test/randsale2d-point4.test.js`, esteso con i contratti d'integrazione del punto 5.
+
 ## Safe-area e target device
 
 Il contratto responsive usa `viewport-fit=cover`, `env(safe-area-inset-*)`, `src/randapp/system-insets.js` e `adaptive-layout.css`. Header e contenuto condividono lo stesso gutter canonico; la safe-area superiore ha un solo proprietario per evitare doppio spazio su iPhone.
