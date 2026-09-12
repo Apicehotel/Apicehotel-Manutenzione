@@ -261,6 +261,21 @@ npm run test:group4
 
 Workflow dedicato: `.github/workflows/randai-group4-governance.yml`. Dettaglio: `docs/architecture/RAND_GOVERNANCE_V1.md`.
 
+## RandAI Group 7 — Runtime, HITL e Sandbox
+
+Il Punto 6 converge gli owner già esistenti invece di introdurre un secondo orchestratore o approval store:
+
+- **READ_ONLY**: esecuzione automatica dopo autorizzazione canonica;
+- **LOW_RISK**: automatica, con audit per le mutazioni;
+- **MEDIUM_RISK**: preview e conferma esplicita;
+- **HIGH_RISK / WRITE_PROTECTED / ADMIN**: approvazione umana tramite il canonical Action Gateway;
+- **CRITICAL**: bloccato dal runtime;
+- `RandHITLRuntime` è fail-closed se manca l'autorizzazione di Tool Gateway/Autonomy/RandSecure;
+- il sandbox contract vieta sempre unrestricted host execution;
+- AgentRuntime/Coordinator, RandSecure, Action Gateway, DurableRuntime e RandAudit mantengono la propria ownership.
+
+Group 7 esegue i contratti HITL, la regressione autonomia, il boundary Group 1 e RandSpec. Workflow: `.github/workflows/randai-group7-hitl.yml`. Dettaglio: `docs/architecture/RANDAI_RUNTIME_HITL_V1.md`.
+
 ## RandUI
 
 RandUI è il design system canonico. Il flusso è:
@@ -315,6 +330,7 @@ npm run test:group3
 npm run test:group4
 npm run test:group5
 npm run test:group6
+node --test test/randai-group7-hitl-runtime.test.js
 npm run spec:validate
 npm run test:randspec
 npm run eval:randai:security
@@ -331,7 +347,7 @@ npm run test:lts
 
 `npm test` include anche `test/randspec-governance.test.js`, `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono RandSpec/Constitution, intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
-La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1–6 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume, governance rules/audit/doctor/security, RandMind verified-memory/temporal governance e RandResearch evidence/critic/ship-gate; Group 3 include anche i contratti RandCore Runtime v2.
+La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1–7 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume, governance rules/audit/doctor/security, RandMind verified-memory/temporal governance, RandResearch evidence/critic/ship-gate e HITL/risk/sandbox fail-closed; Group 3 include anche i contratti RandCore Runtime v2.
 
 ## Deploy
 
@@ -347,6 +363,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RAND_GOVERNANCE_V1.md` — RandRules, RandAudit, RandDoctor, RandSecure, persistence e boundary Action Gateway.
 - `docs/architecture/RANDMIND_V2.md` — verified-audit ingestion, recall as-of, conflict resolution, retention planner e provenance RandMind 2.0.
 - `docs/architecture/RANDRESEARCH_V1.md` — livelli L0-L4, source provenance/scoring, contradictions/gaps, coordinator, persistence e ship gate RandResearch.
+- `docs/architecture/RANDAI_RUNTIME_HITL_V1.md` — risk policy, HITL, Action Gateway boundary e sandbox fail-closed.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
