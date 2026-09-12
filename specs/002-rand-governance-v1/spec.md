@@ -1,7 +1,7 @@
 # SPEC: 002-rand-governance-v1 — RandRules / RandAudit / RandDoctor / RandSecure
 
 ## Status
-TESTING
+READY_FOR_HUMAN_REVIEW
 
 ## Problem
 RandCore Runtime v2 coordina eventi e job in modo durevole, ma manca ancora un livello canonico che trasformi eventi in intent governati, registri decisioni immutabili e produca diagnosi senza duplicare authorization, health, scheduler o Action Gateway esistenti.
