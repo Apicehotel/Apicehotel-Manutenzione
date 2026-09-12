@@ -17,5 +17,5 @@
 - [DONE] T015 Aggiornare architettura e documentazione del runtime persistente. Evidence: `docs/architecture/RANDCORE_RUNTIME_V2.md`, `README.md`
 - [DONE] T016 Rendere gli eventi persistenti immutabili e bloccare collisioni semantiche di `eventId`. Evidence: `supabase/migrations/20260912114500_randcore_event_immutability.sql`, `src/randai/core/supabase-randcore-store.js`
 - [DONE] T017 Esplicitare privilegi minimi DB e rifiutare claim dirette da worker non registrati. Evidence: `supabase/migrations/20260912115000_randcore_runtime_security_hardening.sql`, `test/randai-group3-randcore-persistence.test.js`
-- [DOING] T018 Ottenere CI completa verde sulla PR dedicata dopo il final hardening. Evidence: GitHub Actions PR #238
-- [TODO] T019 Chiudere Converge con PR pronta a revisione umana, senza merge automatico. Evidence: PR #238
+- [DONE] T018 Ottenere CI completa verde dopo il final hardening. Evidence: commit `a26d79b847262650b1593874fcb0e59840a7336c` — CI, RandAI Group 1 Security e RandAI Group 3 Durable Runtime `success`.
+- [DONE] T019 Chiudere Converge con PR #238 pronta a revisione umana e senza merge automatico. Evidence: PR #238; il passaggio draft → ready viene eseguito solo dopo i gate verdi del commit di chiusura documentale.
