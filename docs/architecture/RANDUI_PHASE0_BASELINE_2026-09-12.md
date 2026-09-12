@@ -16,7 +16,7 @@ La ricognizione remota conferma che RandUI esiste già come sistema canonico: ca
 | Stack applicativo | React 19, Vite 7, Supabase/Postgres; PWA secondo README |
 | Destinazioni RandUI | **24**, enumerate in `src/randapp/randui/page-catalog.js` |
 | Template | **14**, dichiarati in `src/randapp/randui/template-registry.js` e sincronizzati con `design-contract.js` |
-| Componenti registrati | 21, in `src/randapp/randui/component-registry.js` |
+| Componenti registrati | **22**, in `src/randapp/randui/component-registry.js` (incluso `TemplateFrame`) |
 | Test visuali/browser presenti | Playwright è tra le dev dependency; script E2E e device acceptance presenti |
 | Gate UI | `test:randui`, con comandi separati per guard, migration, visual, planning e navigation |
 | Documentazione UI | Core, Guard, Migration, Visual Language e Telegram Navigation sotto `docs/architecture/` |
