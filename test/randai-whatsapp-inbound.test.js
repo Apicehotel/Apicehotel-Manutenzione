@@ -32,11 +32,12 @@ test('inbound pipeline is idempotent and receive-first', () => {
   assert.match(edge, /if \(!channel\.ingestion_enabled\) return twiml\(""\)/)
 })
 
-test('pause never silently creates a RandApp issue', () => {
+test('Twilio never silently creates a RandApp issue', () => {
   const pauseIndex = edge.indexOf('if (!channel.ingestion_enabled) return twiml("")')
-  const issueIndex = edge.indexOf('.from("segnalazioni").insert')
   assert.ok(pauseIndex > 0)
-  assert.ok(issueIndex > pauseIndex)
+  assert.doesNotMatch(edge, /admin\.from\("segnalazioni"\)\.insert/)
+  assert.match(edge, /whatsappGateway\(\)\.handle\(envelope\)/)
+  assert.match(edge, /operational_write:\s*"hitl_required"/)
   assert.match(migration, /ingestion_enabled boolean not null default false/i)
 })
 

@@ -130,9 +130,14 @@ export async function fetchGroupProcedureLinks(groupId) {
 export function subscribeChatGroup(groupId, { onMessage, onMessageChange, onMembershipChange } = {}) {
   if (!supabase || !groupId) return () => {}
   const channel = supabase
-    .channel(`randchat-${groupId}-${Math.random().toString(36).slice(2, 8)}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `group_id=eq.${groupId}` }, (payload) => onMessage?.(payload.new))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `group_id=eq.${groupId}` }, (payload) => onMessageChange?.(payload))
+    .channel(`randchat:group:${groupId}:messages`, { config: { private: true } })
+    .on('broadcast', { event: '*' }, (payload) => {
+      const event = String(payload?.event || payload?.payload?.type || '').toUpperCase()
+      const change = payload?.payload || payload
+      const record = change?.record || change?.new || null
+      if (event === 'INSERT' && record) onMessage?.(record)
+      onMessageChange?.({ ...change, eventType: event, new: record, old: change?.old_record || change?.old || null })
+    })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_group_members', filter: `group_id=eq.${groupId}` }, (payload) => onMembershipChange?.(payload))
     .subscribe()
   return () => { supabase.removeChannel(channel) }
