@@ -32,7 +32,13 @@ const TRANSITIONS = Object.freeze({
 const STORE_METHODS = ['getJob', 'putJob', 'listJobs', 'getWorker', 'putWorker', 'listWorkers', 'putDeadLetter', 'listDeadLetters']
 const clean = (value) => String(value ?? '').trim()
 const clone = (value) => structuredClone(value)
-const frozen = (value) => Object.freeze(clone(value))
+const deepFreeze = (value) => {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value
+  Object.freeze(value)
+  for (const key of Reflect.ownKeys(value)) deepFreeze(value[key])
+  return value
+}
+const frozen = (value) => deepFreeze(clone(value))
 const defaultId = (prefix) => `${prefix}_${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`}`
 
 export function assertRandCoreStore(store) {
@@ -252,17 +258,27 @@ export class RandCoreRuntime {
 
   async startDurable({ jobId, workerId, workflow, input = {}, context = {}, idempotencyKey, maxAttempts = 3 } = {}) {
     const claimed = await this.claim({ jobId, workerId })
-    const run = await this.durableRuntime.start({ workflow, input, context, idempotencyKey, maxAttempts })
-    await this.#bindDurableRun(claimed.id, run)
-    return this.#syncDurableResult(claimed.id, run)
+    try {
+      const run = await this.durableRuntime.start({ workflow, input, context, idempotencyKey, maxAttempts })
+      await this.#bindDurableRun(claimed.id, run)
+      return this.#syncDurableResult(claimed.id, run)
+    } catch (error) {
+      await this.#recordDurableException(claimed.id, error)
+      throw error
+    }
   }
 
   async resumeDurable({ jobId, workflow, context = {} } = {}) {
     const job = await this.#requiredJob(jobId)
     if (job.status !== RandJobStatus.RUNNING) throw new Error(`Durable job cannot resume from ${job.status}`)
     if (!job.durableRunId) throw new Error('Durable run is not bound to job')
-    const run = await this.durableRuntime.resume({ runId: job.durableRunId, workflow, context })
-    return this.#syncDurableResult(job.id, run)
+    try {
+      const run = await this.durableRuntime.resume({ runId: job.durableRunId, workflow, context })
+      return this.#syncDurableResult(job.id, run)
+    } catch (error) {
+      await this.#recordDurableException(job.id, error)
+      throw error
+    }
   }
 
   async snapshot() {
@@ -314,6 +330,15 @@ export class RandCoreRuntime {
     }
     if (run?.status === DurableStatus.CANCELLED) return { job: await this.cancel(jobId), run }
     return { job: frozen(await this.#requiredJob(jobId)), run }
+  }
+
+  async #recordDurableException(jobId, error) {
+    const job = await this.#requiredJob(jobId)
+    if (job.status !== RandJobStatus.RUNNING) return frozen(job)
+    return this.fail(jobId, {
+      retryable: error?.retryable === true,
+      errorCode: clean(error?.code || 'DURABLE_RUNTIME_EXCEPTION')
+    })
   }
 
   async #deadLetter(job, reason) {
