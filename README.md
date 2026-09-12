@@ -94,6 +94,25 @@ RandMind è la memoria canonica governata con provenienza, temporalità, conflit
 
 Principio invariabile: **RandMind può imparare da esiti verificati, ma non può cambiare da solo i confini critici di RandCore**.
 
+### RandMind 2.0 — verified memory e temporal governance
+
+RandMind 2.0 estende lo store esistente: non introduce `Memory2`, un secondo database o un secondo retrieval owner.
+
+- un task `SUCCEEDED` produce al massimo memoria `SUGGESTED`; successo operativo non equivale a verità;
+- una memoria può diventare `VERIFIED` dal bridge RandAudit solo quando l'audit è `ACTION_OUTCOME`, la decisione è `SUCCEEDED` e l'evidenza contiene `OUTCOME_VERIFIED`;
+- `recallAt()` ricostruisce ciò che era utilizzabile a un preciso istante, rispettando `validFrom`, `validUntil`, `supersededAt` e `forgottenAt`;
+- conflict resolution è governata, hotel-scoped e atomica; i perdenti diventano `superseded/outdated`, il vincitore conserva evidence della risoluzione;
+- il retention planner produce soltanto candidati: non esegue cancellazioni autonome e non seleziona mai `legal_hold`;
+- la provenance collega `governance audit → memory → supersession/conflict resolution`.
+
+Comando:
+
+```bash
+npm run test:group5
+```
+
+Workflow dedicato: `.github/workflows/randai-group5-randmind-v2.yml`. Dettaglio: `docs/architecture/RANDMIND_V2.md`.
+
 ## RandCore e Security Intelligence
 
 RandCore governa health, audit, release gate, workers, sicurezza, costi, integrazioni ed evidenze LTS. Le fonti di security intelligence possono segnalare exploit/PoC pubblici e pattern di analisi, ma non possono eseguire exploit nel runtime di produzione né installare codice.
@@ -271,6 +290,7 @@ npm run test:group1
 npm run test:group2
 npm run test:group3
 npm run test:group4
+npm run test:group5
 npm run spec:validate
 npm run test:randspec
 npm run eval:randai:security
@@ -287,7 +307,7 @@ npm run test:lts
 
 `npm test` include anche `test/randspec-governance.test.js`, `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono RandSpec/Constitution, intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
-La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2, Group 3 e Group 4 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume e governance rules/audit/doctor/security; Group 3 include anche i contratti RandCore Runtime v2.
+La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2, Group 3, Group 4 e Group 5 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume, governance rules/audit/doctor/security e RandMind verified-memory/temporal governance; Group 3 include anche i contratti RandCore Runtime v2.
 
 ## Deploy
 
@@ -301,6 +321,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDSPEC_V1.md` — RandSpec brownfield sopra RandFlow, template, validator e converge.
 - `docs/architecture/RANDCORE_RUNTIME_V2.md` — event contract, queue/job lifecycle, worker heartbeat, dead-letter, snapshot e integrazione durable.
 - `docs/architecture/RAND_GOVERNANCE_V1.md` — RandRules, RandAudit, RandDoctor, RandSecure, persistence e boundary Action Gateway.
+- `docs/architecture/RANDMIND_V2.md` — verified-audit ingestion, recall as-of, conflict resolution, retention planner e provenance RandMind 2.0.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
