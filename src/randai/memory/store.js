@@ -15,6 +15,20 @@ export class MemoryStore {
       .map(clone)
   }
   async remove(id) { return this.#items.delete(id) }
+  async resolveConflict({ conflictGroup, winnerId, loserIds = [], reason }) {
+    const group = String(conflictGroup || '').trim(); const why = String(reason || '').trim()
+    if (!group || !winnerId || !loserIds.length || why.length < 3) throw new TypeError('Valid governed conflict resolution is required')
+    if (loserIds.includes(winnerId)) throw new TypeError('Winner cannot be a loser')
+    const winner = this.#items.get(winnerId)
+    if (!winner || winner.conflictGroup !== group || (winner.lifecycleStatus || 'active') !== 'active') throw new TypeError('Conflict winner not found')
+    const losers = loserIds.map((id) => this.#items.get(id))
+    const sameScope = (m) => m && m.conflictGroup === group && (m.lifecycleStatus || 'active') === 'active' && m.scope === winner.scope && (m.hotelId || null) === (winner.hotelId || null) && (m.projectId || null) === (winner.projectId || null) && (m.taskId || null) === (winner.taskId || null)
+    if (!losers.every(sameScope)) throw new TypeError('Conflict scope or state mismatch')
+    const now = new Date().toISOString()
+    for (const loser of losers) this.#items.set(loser.id, clone({ ...loser, lifecycleStatus:'superseded', trust:'outdated', supersededAt:now, validUntil:loser.validUntil || now, updatedAt:now, metadata:{...(loser.metadata || {}), conflictResolutionReason:why, conflictWinnerId:winnerId} }))
+    this.#items.set(winnerId, clone({ ...winner, lastVerifiedAt:now, updatedAt:now, metadata:{...(winner.metadata || {}), conflictResolutionReason:why, conflictResolvedCount:losers.length} }))
+    return { winnerId, supersededCount:losers.length, conflictGroup:group }
+  }
 }
 
 export class SupabaseMemoryStore {
@@ -35,7 +49,7 @@ export class SupabaseMemoryStore {
       metadata: memory.metadata || {}, created_at: memory.createdAt, updated_at: memory.updatedAt,
       lifecycle_status: memory.lifecycleStatus || 'active', retention_class: memory.retentionClass || 'operational',
       valid_from: memory.validFrom || memory.createdAt, valid_until: memory.validUntil || null,
-      last_verified_at: memory.lastVerifiedAt || null, supersedes_id: memory.supersedesId || null,
+      last_verified_at: memory.lastVerifiedAt || null, supersedes_id: memory.supersedesId || null, superseded_at: memory.supersededAt || null,
       conflict_group: memory.conflictGroup || null, content_hash: memory.contentHash || null,
       forgotten_at: memory.forgottenAt || null, forgotten_reason: memory.forgottenReason || null,
     }
@@ -67,6 +81,14 @@ export class SupabaseMemoryStore {
     return data
   }
 
+  async resolveConflict({ conflictGroup, winnerId, loserIds = [], reason }) {
+    const { data, error } = await this.supabase.rpc('randmind_resolve_conflict', {
+      p_conflict_group:String(conflictGroup || '').trim(), p_winner_id:String(winnerId || '').trim(), p_loser_ids:loserIds, p_reason:String(reason || '').trim(),
+    })
+    if (error) throw error
+    return data
+  }
+
   #fromRow(row) {
     return {
       id: row.id, type: row.type, scope: row.scope, trust: row.trust,
@@ -78,7 +100,7 @@ export class SupabaseMemoryStore {
       metadata: row.metadata || {}, createdAt: row.created_at, updatedAt: row.updated_at,
       lifecycleStatus: row.lifecycle_status || 'active', retentionClass: row.retention_class || 'operational',
       validFrom: row.valid_from || row.created_at, validUntil: row.valid_until,
-      lastVerifiedAt: row.last_verified_at, supersedesId: row.supersedes_id,
+      lastVerifiedAt: row.last_verified_at, supersedesId: row.supersedes_id, supersededAt: row.superseded_at,
       conflictGroup: row.conflict_group, contentHash: row.content_hash,
       forgottenAt: row.forgotten_at, forgottenReason: row.forgotten_reason,
     }
