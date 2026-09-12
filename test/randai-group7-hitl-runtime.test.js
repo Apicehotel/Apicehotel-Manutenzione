@@ -5,6 +5,7 @@ import { assertSandboxDescriptor, sandboxPolicyForTool } from '../src/randai/run
 import { RandHITLRuntime } from '../src/randai/runtime/hitl-runtime.js'
 
 const tool = (id, permission, risk) => ({ id, permission, risk })
+const allow = async () => ({ allowed: true, code: 'ALLOW', hotelId: 'gio' })
 
 test('risk policy maps read/low/medium/high/critical deterministically', () => {
   assert.equal(executionPolicyForTool(tool('read','READ','LOW')).riskClass, RiskClass.READ_ONLY)
@@ -20,9 +21,17 @@ test('sandbox never permits unrestricted host execution', () => {
   assert.throws(() => assertSandboxDescriptor({ mode: 'PURE', hostExecution: true }), /UNRESTRICTED_HOST_EXECUTION_DENIED/)
 })
 
+test('HITL runtime fails closed without canonical authorization', async () => {
+  const runtime = new RandHITLRuntime()
+  const prepared = await runtime.prepare({ tool: tool('read','READ','LOW'), context: { hotelId: 'gio' } })
+  assert.equal(prepared.status, 'BLOCKED')
+  await assert.rejects(() => runtime.execute({ prepared }), /ACTION_NOT_AUTHORIZED/)
+})
+
 test('HITL runtime keeps approval behind canonical approval adapter', async () => {
   const preparedIds = []
   const runtime = new RandHITLRuntime({
+    authorize: allow,
     prepareApproval: async ({ tool }) => { preparedIds.push(tool.id); return { approvalId: 'ap_1' } },
     executeApproved: async (approval) => ({ ok: true, approval }),
   })
@@ -35,7 +44,7 @@ test('HITL runtime keeps approval behind canonical approval adapter', async () =
 })
 
 test('medium risk requires preview while critical stays blocked', async () => {
-  const runtime = new RandHITLRuntime()
+  const runtime = new RandHITLRuntime({ authorize: allow })
   const medium = await runtime.prepare({ tool: tool('edit','WRITE','MEDIUM') })
   assert.equal(medium.status, 'PREVIEW_REQUIRED')
   await assert.rejects(() => runtime.execute({ prepared: medium }), /PREVIEW_CONFIRMATION_REQUIRED/)
