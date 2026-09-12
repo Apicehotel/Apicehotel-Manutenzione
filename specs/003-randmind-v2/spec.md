@@ -1,10 +1,10 @@
 # SPEC: 003-randmind-v2 — Verified memory and temporal governance
 
 ## Status
-TESTING
+READY_FOR_HUMAN_REVIEW
 
 ## Problem
-RandMind LIVE possiede già memoria governata, ma manca un bridge canonico da RandAudit verificato, una semantica temporale completa per supersession storica e un workflow esplicito per conflict resolution/retention senza automazioni distruttive.
+RandMind LIVE possiede già memoria governata, ma mancava un bridge canonico da RandAudit verificato, una semantica temporale completa per supersession storica e un workflow esplicito per conflict resolution/retention senza automazioni distruttive.
 
 ## Outcome
 RandMind resta l'unico owner della memoria e acquisisce verified audit ingestion, recall as-of, conflict resolution governata, retention planning non distruttivo e provenance end-to-end.
