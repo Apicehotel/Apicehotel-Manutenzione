@@ -1,0 +1,142 @@
+/* Home dashboard compositor: official Piccolo / Normale / Grande templates.
+   1:1, 1:2 and 1:3 are layout states, never font scaling. */
+.rs-homegrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.rs-homecard {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--rs-line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--rs-surface-2), var(--rs-surface));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--rs-text) 4%, transparent);
+}
+
+.rs-homecard[data-span='1'] { grid-column: span 1; }
+.rs-homecard[data-span='2'] { grid-column: span 2; }
+.rs-homecard[data-span='3'] { grid-column: 1 / -1; }
+
+.rs-homecard__head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rs-homecard__head > div { min-width: 0; }
+.rs-homecard__head span {
+  display: block;
+  color: var(--rs-cyan);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.rs-homecard__head h2 {
+  margin: 2px 0 0;
+  font-family: Sora, sans-serif;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+.rs-homecard__head > button {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 11px;
+  background: var(--rs-surface-3);
+  color: var(--rs-text-2);
+}
+.rs-homecard__head > button .rs-icon { width: 17px; height: 17px; }
+.rs-homecard__body { min-width: 0; display: grid; gap: 9px; }
+
+.rs-homecard__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+.rs-homecard__metrics--compact { grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); }
+.rs-homecard__metric {
+  min-width: 0;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  text-align: left;
+}
+.rs-homecard__metric:disabled { cursor: default; }
+.rs-homecard__metric strong,
+.rs-homecard__countline strong {
+  font-family: Sora, sans-serif;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+.rs-homecard__countline {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--rs-text-2);
+}
+.rs-homecard__countline strong { color: var(--rs-text); }
+.rs-homecard__countline span { font-size: .78rem; }
+
+/* Piccolo: dense packing; content hierarchy stays unchanged. */
+html[data-ui-size='small'] .rs-homegrid { gap: 8px; }
+html[data-ui-size='small'] .rs-homecard { gap: 8px; padding: 10px; border-radius: 16px; }
+html[data-ui-size='small'] .rs-homecard__metric { min-height: 62px; padding: 8px; }
+html[data-ui-size='small'] .rs-homecard__metrics { gap: 6px; }
+html[data-ui-size='small'] .rs-homecard[data-span='1'] .rs-workhome__quick { grid-template-columns: 1fr; }
+
+/* Normale is the reference template. No scale multiplier is applied. */
+html[data-ui-size='normal'] .rs-homegrid { gap: 10px; }
+
+/* Grande: every macro-card receives its own full-width visual row. */
+html[data-ui-size='large'] .rs-homegrid { gap: 14px; }
+html[data-ui-size='large'] .rs-homecard { padding: 16px; gap: 13px; border-radius: 20px; }
+html[data-ui-size='large'] .rs-homecard__metric { min-height: 86px; padding: 12px; }
+html[data-ui-size='large'] .rs-homecard__metric strong,
+html[data-ui-size='large'] .rs-homecard__countline strong { font-size: 2rem; }
+
+/* A 1:1 macro-card intentionally becomes summary-only so it remains readable. */
+.rs-homecard[data-span='1'] .rs-homecard__metrics { grid-template-columns: 1fr; }
+.rs-homecard[data-span='1'] .rs-homecard__metric { min-height: 64px; }
+.rs-homecard[data-span='1'] .rs-homecard__metric .rs-badge { font-size: .58rem; padding: 3px 6px; }
+.rs-homecard[data-span='1'] .rs-randai-priority__main span,
+.rs-homecard[data-span='1'] .rs-randai-priority__head b { display: none; }
+
+@media (max-width: 520px) {
+  .rs-homegrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .rs-homecard { padding: 9px; border-radius: 15px; }
+  .rs-homecard__head h2 { font-size: .92rem; }
+  .rs-homecard__head span { font-size: .58rem; }
+  .rs-homecard__metric { min-height: 62px; padding: 7px; }
+  .rs-homecard__metric strong,
+  .rs-homecard__countline strong { font-size: 1.5rem; }
+  .rs-homecard[data-span='1'] .rs-homecard__head > button { display: none; }
+  .rs-homecard[data-span='1'] .rs-homecard__countline { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .rs-homecard[data-span='1'] .rs-homecard__countline span { font-size: .68rem; }
+  .rs-homecard[data-span='1'] .rs-workhome__quick button { grid-template-columns: 20px minmax(0,1fr); min-height: 46px; padding: 7px; }
+  .rs-homecard[data-span='1'] .rs-workhome__quick button > .rs-icon:last-child { display: none; }
+  .rs-homecard[data-span='1'] .rs-workhome__quick span { font-size: .72rem; overflow: hidden; text-overflow: ellipsis; }
+  html[data-ui-size='large'] .rs-homecard { padding: 13px; }
+}
+
+@media (max-width: 350px) {
+  .rs-homegrid { gap: 5px; }
+  .rs-homecard[data-span='1'] { padding: 7px; }
+  .rs-homecard[data-span='1'] .rs-homecard__head h2 { font-size: .82rem; }
+}
