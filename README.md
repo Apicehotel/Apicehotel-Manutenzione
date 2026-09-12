@@ -260,6 +260,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
 - `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
+- `docs/architecture/RANDUI_PHASE0_BASELINE_2026-09-12.md` — baseline verificabile, inventario 24 destinazioni e limiti di verifica della Fase 0.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
 - `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — visual language.
