@@ -8,6 +8,17 @@ const clean = (value, max = 500) => String(value ?? '').trim().slice(0, max)
 const clone = (value) => value == null ? value : structuredClone(value)
 const uuid = () => globalThis.crypto.randomUUID()
 
+function boundedObject(value, maxBytes, code) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  let serialized
+  try { serialized = JSON.stringify(value) }
+  catch { invalid(code, 'Oggetto envelope non serializzabile') }
+  if (new TextEncoder().encode(serialized).byteLength > maxBytes) {
+    invalid(code, 'Oggetto envelope oltre il limite consentito')
+  }
+  return clone(value)
+}
+
 export class RandEnvelopeError extends Error {
   constructor(code, message, details = {}) {
     super(message)
@@ -40,13 +51,15 @@ function normalizeToolRequest(value) {
   if (!name) invalid('RAND_ENVELOPE_TOOL_REQUIRED', 'Nome tool obbligatorio')
   return Object.freeze({
     name,
-    arguments: clone(value.arguments && typeof value.arguments === 'object' ? value.arguments : {}),
+    arguments: boundedObject(value.arguments, 32_000, 'RAND_ENVELOPE_ARGUMENTS_TOO_LARGE'),
     targetHotelId: clean(value.targetHotelId || value.target_hotel_id, 80) || null,
     approvalId: clean(value.approvalId || value.approval_id, 180) || null,
-    externalAnnotations: clone(
+    externalAnnotations: boundedObject(
       value.externalAnnotations && typeof value.externalAnnotations === 'object'
         ? value.externalAnnotations
         : value.annotations && typeof value.annotations === 'object' ? value.annotations : {},
+      8_000,
+      'RAND_ENVELOPE_ANNOTATIONS_TOO_LARGE',
     ),
   })
 }
@@ -92,7 +105,7 @@ export function createRandEnvelope(input = {}) {
       text: clean(payload.text, 8000) || null,
       attachments: Object.freeze(normalizeAttachments(payload.attachments)),
       toolRequest: normalizeToolRequest(payload.toolRequest || payload.tool_request),
-      metadata: clone(payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}),
+      metadata: boundedObject(payload.metadata, 16_000, 'RAND_ENVELOPE_METADATA_TOO_LARGE'),
     }),
     // An adapter can report identifiers and content, but it cannot grant trust.
     security: Object.freeze({
@@ -109,15 +122,14 @@ export function createRandEnvelope(input = {}) {
   })
 }
 
-export function envelopeIdempotencyKey(envelope) {
+export function envelopeIdempotencyKey(envelope, verifiedSubject = null) {
   const providerId = envelope?.origin?.providerMessageId
   return providerId
     ? [
       envelope.channel,
       envelope.origin.provider,
       envelope.origin.mcpServerId || '-',
-      envelope.actor.hotelId || '-',
-      envelope.conversation.id || '-',
+      verifiedSubject || '-',
       providerId,
     ].join(':')
     : `${envelope.channel}:${envelope.id}`

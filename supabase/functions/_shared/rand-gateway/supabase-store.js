@@ -1,17 +1,17 @@
 export function createSupabaseGatewayStore(admin) {
   if (!admin?.from) throw new TypeError('Supabase admin client is required')
   return Object.freeze({
-    async accept({ envelope, idempotencyKey }) {
+    async accept({ envelope, idempotencyKey, actor = {} }) {
       const row = {
         id: envelope.id,
         trace_id: envelope.traceId,
         envelope_version: envelope.version,
         channel: envelope.channel,
         direction: envelope.direction,
-        actor_auth_user_id: null,
-        actor_external_id: envelope.actor.externalId,
+        actor_auth_user_id: actor.userId || null,
+        actor_external_id: actor.externalSubjectHash || null,
         hotel_id: envelope.actor.hotelId,
-        role_id: null,
+        role_id: actor.roleId || null,
         conversation: envelope.conversation,
         payload: envelope.payload,
         security: envelope.security,

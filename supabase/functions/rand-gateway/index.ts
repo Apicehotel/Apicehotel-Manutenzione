@@ -35,7 +35,9 @@ async function forwardActionGateway(req: Request, body: Record<string, unknown>)
     body: JSON.stringify(body),
   })
   const data = await response.json().catch(() => ({ ok: false, error: 'invalid_action_gateway_response' }))
-  if (!response.ok || !data?.ok) throw new RandGatewayError(data?.error || 'RAND_ACTION_GATEWAY_FAILED', 'Action Gateway non disponibile', data)
+  if (!response.ok || !data?.ok) {
+    throw new RandGatewayError(data?.error || 'RAND_ACTION_GATEWAY_FAILED', 'Action Gateway non disponibile', { ...data, httpStatus: response.status })
+  }
   return data
 }
 
@@ -51,28 +53,26 @@ Deno.serve(async (req: Request) => {
     if (userError || !userData.user) return json({ ok: false, error: 'unauthorized' }, 401)
     const requestedHotel = clean(body?.actor?.hotelId || body?.actor?.hotel_id, 80)
 
-    const identity = {
-      async resolve() {
-        if (!requestedHotel) return { authenticated: false, identityConfidence: 'none' }
-        const [{ data: membership, error: membershipError }, { data: profile }] = await Promise.all([
-          admin.from('hotel_memberships').select('role,active').eq('auth_user_id', userData.user.id).eq('hotel_id', requestedHotel).maybeSingle(),
-          admin.from('profiles').select('active').eq('auth_user_id', userData.user.id).maybeSingle(),
-        ])
-        if (membershipError) throw membershipError
-        if (!membership?.active || profile?.active === false) return { authenticated: false, identityConfidence: 'none' }
-        const { data: permissions, error: permissionError } = await admin.from('role_permissions')
-          .select('module,action,allowed').eq('role', membership.role).eq('allowed', true)
-        if (permissionError) throw permissionError
-        return {
-          userId: userData.user.id,
-          hotelId: requestedHotel,
-          roleId: membership.role,
-          scopes: (permissions || []).map((row: any) => `${row.module}:${row.action}`),
-          authenticated: true,
-          identityConfidence: 'verified_session',
-        }
-      },
-    }
+    if (!requestedHotel) return json({ ok: false, error: 'hotel_required' }, 400)
+    const [{ data: membership, error: membershipError }, { data: profile, error: profileError }] = await Promise.all([
+      admin.from('hotel_memberships').select('role,active').eq('auth_user_id', userData.user.id).eq('hotel_id', requestedHotel).maybeSingle(),
+      admin.from('profiles').select('active').eq('auth_user_id', userData.user.id).maybeSingle(),
+    ])
+    if (membershipError) throw membershipError
+    if (profileError) throw profileError
+    if (!membership?.active || profile?.active === false) return json({ ok: false, error: 'forbidden' }, 403)
+    const { data: permissions, error: permissionError } = await admin.from('role_permissions')
+      .select('module,action,allowed').eq('role', membership.role).eq('allowed', true)
+    if (permissionError) throw permissionError
+    const verifiedIdentity = Object.freeze({
+      userId: userData.user.id,
+      hotelId: requestedHotel,
+      roleId: membership.role,
+      scopes: (permissions || []).map((row: any) => `${row.module}:${row.action}`),
+      authenticated: true,
+      identityConfidence: 'verified_session',
+    })
+    const identity = { async resolve() { return verifiedIdentity } }
 
     const tools = {
       async authorize({ envelope, toolName, hotelId, targetHotelId, grantedScopes }: any) {
@@ -113,8 +113,21 @@ Deno.serve(async (req: Request) => {
         })).plan
         return { ...plan, id: plan?.approval_id || null }
       },
-      async verify({ approvalId }: any) {
-        return { approved: Boolean(clean(approvalId, 180)) }
+      async verify({ approvalId, actor }: any) {
+        const id = clean(approvalId, 180)
+        if (!id || !actor?.userId || !actor?.hotelId) return { approved: false }
+        const { data: approval, error } = await admin.from('randai_action_approvals')
+          .select('status,expires_at,hotel_id,requested_by_auth_user_id')
+          .eq('id', id).maybeSingle()
+        if (error) throw error
+        const pending = approval?.status === 'PENDING'
+        const replay = approval?.status === 'APPROVED'
+        const alive = !approval?.expires_at || new Date(approval.expires_at).getTime() > Date.now()
+        return {
+          approved: Boolean(approval && (pending || replay) && alive
+            && approval.hotel_id === actor.hotelId
+            && approval.requested_by_auth_user_id === actor.userId),
+        }
       },
     }
 
@@ -129,7 +142,14 @@ Deno.serve(async (req: Request) => {
     return json(await gateway.handle(body))
   } catch (error) {
     console.error('rand-gateway', error instanceof Error ? error.message : 'unknown')
-    if (error instanceof RandGatewayError) return json({ ok: false, error: error.code, detail: error.details }, 403)
+    if (error instanceof RandGatewayError) {
+      const reported = Number(error.details?.httpStatus)
+      const status = Number.isInteger(reported) && reported >= 400 && reported <= 599
+        ? reported
+        : String(error.code || '').startsWith('RAND_ENVELOPE_') ? 400 : 403
+      return json({ ok: false, error: error.code, detail: error.details }, status)
+    }
+    if (error instanceof SyntaxError) return json({ ok: false, error: 'invalid_json' }, 400)
     return json({ ok: false, error: 'rand_gateway_unavailable' }, 500)
   }
 })

@@ -46,11 +46,6 @@ export class RandGateway {
       throw error
     }
 
-    const idempotencyKey = envelopeIdempotencyKey(envelope)
-    const accepted = await this.store.accept({ envelope, idempotencyKey })
-    if (accepted?.replayed) return Object.freeze({ ...clone(accepted.result), replayed: true })
-    await this.#audit(envelope, 'ingress', 'accepted', 'RAND_GATEWAY_ACCEPTED', { channel: envelope.channel })
-
     const resolved = await this.identity.resolve(envelope)
     const actor = Object.freeze({
       userId: resolved?.userId || null,
@@ -59,7 +54,12 @@ export class RandGateway {
       scopes: Object.freeze([...(resolved?.scopes || [])]),
       authenticated: resolved?.authenticated === true,
       identityConfidence: resolved?.identityConfidence || 'none',
+      externalSubjectHash: resolved?.externalSubjectHash || null,
     })
+    const idempotencyKey = envelopeIdempotencyKey(envelope, actor.userId || actor.externalSubjectHash)
+    const accepted = await this.store.accept({ envelope, idempotencyKey, actor })
+    if (accepted?.replayed) return Object.freeze({ ...clone(accepted.result), replayed: true })
+    await this.#audit(envelope, 'ingress', 'accepted', 'RAND_GATEWAY_ACCEPTED', { channel: envelope.channel })
     if (envelope.actor.hotelId && actor.hotelId && envelope.actor.hotelId !== actor.hotelId) {
       await this.store.transition(envelope.id, 'rejected', { code: 'RAND_GATEWAY_HOTEL_MISMATCH' })
       await this.#audit(envelope, 'identity', 'denied', 'RAND_GATEWAY_HOTEL_MISMATCH')
@@ -119,7 +119,15 @@ export class RandGateway {
     }
 
     // The adapter never receives an executor. All execution crosses this boundary.
-    const execution = await this.actions.execute({ envelope, actor, decision, approvalId: toolRequest.approvalId })
+    let execution
+    try {
+      execution = await this.actions.execute({ envelope, actor, decision, approvalId: toolRequest.approvalId })
+    } catch (error) {
+      const code = error?.code || 'RAND_GATEWAY_ACTION_FAILED'
+      await this.store.transition(envelope.id, 'failed', { actor, decision, code })
+      await this.#audit(envelope, 'error', 'failed', code, { toolName: toolRequest.name })
+      throw error
+    }
     const result = Object.freeze({ ok: true, status: 'executed', envelopeId: envelope.id, result: clone(execution) })
     await this.store.transition(envelope.id, 'executed', { actor, decision, result })
     await this.#audit(envelope, 'action_gateway', 'executed', 'RAND_GATEWAY_EXECUTED', { toolName: toolRequest.name })

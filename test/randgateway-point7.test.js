@@ -6,15 +6,15 @@ import { createRandEnvelope } from '../supabase/functions/_shared/rand-gateway/e
 import { RandGateway, RandGatewayError } from '../supabase/functions/_shared/rand-gateway/gateway.js'
 
 function fixture({ actor = {}, authorize = null, replay = null } = {}) {
-  const calls = { transitions: [], audits: [], tools: 0, hitlRequest: 0, hitlVerify: 0, actions: 0 }
+  const calls = { accepts: [], transitions: [], audits: [], identity: 0, tools: 0, hitlRequest: 0, hitlVerify: 0, actions: 0 }
   const store = {
-    accept: async () => replay ? { replayed: true, result: replay } : { replayed: false },
+    accept: async (entry) => { calls.accepts.push(entry); return replay ? { replayed: true, result: replay } : { replayed: false } },
     transition: async (...args) => calls.transitions.push(args),
     audit: async (entry) => calls.audits.push(entry),
   }
   const gateway = new RandGateway({
     store,
-    identity: { resolve: async () => actor },
+    identity: { resolve: async () => { calls.identity += 1; return actor } },
     tools: { authorize: async (request) => { calls.tools += 1; return authorize ? authorize(request) : { allowed: true, permission: 'READ', risk: 'LOW' } } },
     hitl: {
       request: async () => { calls.hitlRequest += 1; return { id: 'approval-1' } },
@@ -102,8 +102,47 @@ test('idempotency replay returns stored result without reauthorizing or executin
   const { gateway, calls } = fixture({ actor, replay: { ok: true, status: 'executed', envelopeId: 'old' } })
   const result = await gateway.handle(adaptMcpToolCall({ serverId: 'rand-internal', actor, hotelId: 'hotelgio', request: { name: 'issue.mark_done', requestId: 'same' } }))
   assert.equal(result.replayed, true)
+  assert.equal(calls.identity, 1)
   assert.equal(calls.tools, 0)
   assert.equal(calls.actions, 0)
+})
+
+test('idempotency is bound to the verified actor and external identifiers are not trusted', async () => {
+  const { gateway, calls } = fixture({ actor })
+  const envelope = adaptRandChatMessage({
+    message: { id: 'provider-1', groupId: crypto.randomUUID(), body: 'ciao' },
+    actor: { userId: 'spoofed-user' }, hotelId: 'hotelgio',
+  })
+  await gateway.handle(envelope)
+  assert.match(calls.accepts[0].idempotencyKey, /:user-1:provider-1$/)
+  assert.equal(calls.accepts[0].actor.userId, 'user-1')
+})
+
+test('oversized adapter metadata is rejected before persistence', async () => {
+  const { gateway, calls } = fixture({ actor })
+  await assert.rejects(gateway.handle({
+    channel: 'randchat', actor: { hotelId: 'hotelgio' }, conversation: { type: 'group' },
+    payload: { type: 'message', metadata: { value: 'x'.repeat(20_000) } },
+  }), (error) => error.code === 'RAND_ENVELOPE_METADATA_TOO_LARGE')
+  assert.equal(calls.accepts.length, 0)
+})
+
+test('Action Gateway failure is persisted and audited', async () => {
+  const calls = { transitions: [], audits: [] }
+  const gateway = new RandGateway({
+    store: {
+      accept: async () => ({ replayed: false }),
+      transition: async (...entry) => calls.transitions.push(entry),
+      audit: async (entry) => calls.audits.push(entry),
+    },
+    identity: { resolve: async () => actor },
+    tools: { authorize: async () => ({ allowed: true, permission: 'READ', risk: 'LOW' }) },
+    hitl: { request: async () => null, verify: async () => ({ approved: true }) },
+    actions: { execute: async () => { throw Object.assign(new Error('down'), { code: 'ACTION_DOWN' }) } },
+  })
+  await assert.rejects(gateway.handle(adaptMcpToolCall({ serverId: 'rand-internal', actor, hotelId: 'hotelgio', request: { name: 'read.test', requestId: 'failure' } })))
+  assert.equal(calls.transitions.at(-1)[1], 'failed')
+  assert.equal(calls.audits.at(-1).code, 'ACTION_DOWN')
 })
 
 test('database contract is server-only, append-only and uses private Broadcast membership', () => {
@@ -115,6 +154,15 @@ test('database contract is server-only, append-only and uses private Broadcast m
   assert.match(migration, /chat_group_member/i)
   assert.match(migration, /chat_dm_participant/i)
   assert.match(migration, /realtime\.broadcast_changes/i)
+  assert.match(migration, /\[0-9a-f\]\{8\}.*\[0-9a-f\]\{12\}/i)
+})
+
+test('authenticated RandGateway endpoint requires active hotel membership and verifies HITL ownership', () => {
+  const edge = fs.readFileSync('supabase/functions/rand-gateway/index.ts', 'utf8')
+  assert.match(edge, /if \(!requestedHotel\).*hotel_required/)
+  assert.match(edge, /if \(!membership\?\.active.*forbidden/)
+  assert.match(edge, /requested_by_auth_user_id === actor\.userId/)
+  assert.match(edge, /approval\.hotel_id === actor\.hotelId/)
 })
 
 test('MCP uses the stable official SDK, Streamable HTTP and only the governed RandGateway', () => {
@@ -126,6 +174,8 @@ test('MCP uses the stable official SDK, Streamable HTTP and only the governed Ra
   assert.match(mcp, /mcpServerId:\s*'rand-internal'/)
   assert.doesNotMatch(mcp, /service[_-]?role/i)
   assert.doesNotMatch(mcp, /from\(['"]segnalazioni['"]\)/i)
+  assert.match(mcp, /MCP_ALLOWED_ORIGINS/)
+  assert.match(mcp, /origin_not_allowed/)
 })
 
 test('Twilio inbound source cannot write directly to operational issues after final adapter wiring', () => {
@@ -136,4 +186,7 @@ test('Twilio inbound source cannot write directly to operational issues after fi
   assert.doesNotMatch(edge, /admin\.from\("segnalazioni"\)\.insert/)
   assert.match(retired, /legacy_whatsapp_webhook_retired/)
   assert.doesNotMatch(retired, /from\(["']segnalazioni["']\)/)
+  assert.match(edge, /MAX_MEDIA_BYTES = 8 \* 1024 \* 1024/)
+  assert.match(edge, /quarantine\/whatsapp/)
+  assert.match(edge, /detected !== declared/)
 })

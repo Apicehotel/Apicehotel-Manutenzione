@@ -165,10 +165,10 @@ for select to authenticated using (
   realtime.messages.extension = 'broadcast'
   and (
     (
-      (select realtime.topic()) ~ '^randchat:group:[0-9a-f-]{36}:messages$'
+      (select realtime.topic()) ~ '^randchat:group:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:messages$'
       and public.chat_group_member(split_part((select realtime.topic()),':',3)::uuid,(select auth.uid()))
     ) or (
-      (select realtime.topic()) ~ '^randchat:dm:[0-9a-f-]{36}:messages$'
+      (select realtime.topic()) ~ '^randchat:dm:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:messages$'
       and public.chat_dm_participant(split_part((select realtime.topic()),':',3)::uuid,(select auth.uid()))
     )
   )

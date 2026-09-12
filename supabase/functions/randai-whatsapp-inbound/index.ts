@@ -12,6 +12,7 @@ const INGRESS_SECRET = Deno.env.get("WHATSAPP_INBOUND_SHARED_SECRET") || "";
 const PUBLIC_WEBHOOK_URL = Deno.env.get("WHATSAPP_PUBLIC_WEBHOOK_URL") || "";
 const IDENTITY_PEPPER = Deno.env.get("RAND_EXTERNAL_IDENTITY_PEPPER") || "";
 const DIRECT_URL = `${SUPABASE_URL}/functions/v1/randai-whatsapp-inbound`;
+const MAX_MEDIA_BYTES = 8 * 1024 * 1024;
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
 
 const xmlEscape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
@@ -77,21 +78,21 @@ function whatsappGateway() {
     identity: {
       async resolve(envelope: any) {
         const subjectHash = await externalSubjectHash("whatsapp", normalizeWhatsAppNumber(envelope.actor.externalId || ""));
-        if (!subjectHash) return { authenticated: false, identityConfidence: "none" };
+        if (!subjectHash) return { authenticated: false, identityConfidence: "none", externalSubjectHash: null };
         const { data: identity, error } = await admin.from("rand_gateway_external_identities")
           .select("auth_user_id,hotel_id,active").eq("channel", "whatsapp")
           .eq("external_subject_hash", subjectHash).eq("hotel_id", envelope.actor.hotelId).maybeSingle();
         if (error) throw error;
-        if (!identity?.active) return { authenticated: false, identityConfidence: "none" };
+        if (!identity?.active) return { authenticated: false, identityConfidence: "none", externalSubjectHash: subjectHash };
         const { data: membership } = await admin.from("hotel_memberships").select("role,active")
           .eq("auth_user_id", identity.auth_user_id).eq("hotel_id", identity.hotel_id).maybeSingle();
-        if (!membership?.active) return { authenticated: false, identityConfidence: "none" };
+        if (!membership?.active) return { authenticated: false, identityConfidence: "none", externalSubjectHash: subjectHash };
         const { data: permissions } = await admin.from("role_permissions").select("module,action,allowed")
           .eq("role", membership.role).eq("allowed", true);
         return {
           userId: identity.auth_user_id, hotelId: identity.hotel_id, roleId: membership.role,
           scopes: (permissions || []).map((row: any) => `${row.module}:${row.action}`),
-          authenticated: true, identityConfidence: "verified_external_link",
+          authenticated: true, identityConfidence: "verified_external_link", externalSubjectHash: subjectHash,
         };
       },
     },
@@ -181,15 +182,37 @@ function urgencyFrom(body: string) {
 }
 
 async function preserveImage(hotelId: string, messageSid: string, mediaUrl: string | null, contentType: string | null) {
-  if (!mediaUrl || !contentType?.startsWith("image/") || !TWILIO_SID || !TWILIO_TOKEN) return null;
-  const response = await fetch(mediaUrl, { headers: { authorization: "Basic " + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) } });
-  if (!response.ok) return null;
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const extension = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
-  const path = `${hotelId}/whatsapp/${messageSid}/before.${extension}`;
-  const { error } = await admin.storage.from("maintenance-photos").upload(path, bytes, { contentType, upsert: false });
-  if (error && !String(error.message || "").toLowerCase().includes("already exists")) console.error("whatsapp media upload", error);
-  return path;
+  try {
+    const declared = String(contentType || "").toLowerCase().split(";", 1)[0];
+    if (!mediaUrl || !["image/jpeg", "image/png", "image/webp"].includes(declared) || !TWILIO_SID || !TWILIO_TOKEN) return null;
+    const response = await fetch(mediaUrl, {
+      headers: { authorization: "Basic " + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    const announced = Number(response.headers.get("content-length") || 0);
+    if (announced > MAX_MEDIA_BYTES) return null;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_MEDIA_BYTES) return null;
+    const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const png = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+      && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+    const webp = bytes.length >= 12 && new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF"
+      && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
+    const detected = jpeg ? "image/jpeg" : png ? "image/png" : webp ? "image/webp" : null;
+    if (detected !== declared) return null;
+    const extension = detected === "image/png" ? "png" : detected === "image/webp" ? "webp" : "jpg";
+    const path = `${hotelId}/quarantine/whatsapp/${messageSid}/media.${extension}`;
+    const { error } = await admin.storage.from("maintenance-photos").upload(path, bytes, { contentType: detected, upsert: false });
+    if (error && !String(error.message || "").toLowerCase().includes("already exists")) {
+      console.error("whatsapp media upload", error);
+      return null;
+    }
+    return path;
+  } catch (error) {
+    console.error("whatsapp media quarantine", error instanceof Error ? error.message : "unknown");
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {

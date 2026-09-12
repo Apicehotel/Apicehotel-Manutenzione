@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const publishableKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+const allowedOrigins = new Set(String(process.env.MCP_ALLOWED_ORIGINS || '').split(',').map((value) => value.trim()).filter(Boolean))
 
 function mcpResult(result) {
   return {
@@ -77,6 +78,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Allow', 'GET, POST, DELETE, OPTIONS')
     res.status(204).end()
+    return
+  }
+  const origin = String(req.headers.origin || '').trim()
+  if (origin && !allowedOrigins.has(origin)) {
+    res.status(403).json({ error: 'origin_not_allowed' })
     return
   }
   const authorization = String(req.headers.authorization || '')

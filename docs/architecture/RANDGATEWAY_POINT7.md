@@ -38,7 +38,7 @@ Solo Identity/Tool/HITL Gateway possono cambiarne l'esito. Le annotazioni MCP ri
 
 ## Persistenza e sicurezza
 
-- `rand_gateway_envelopes`: ingressi idempotenti e risultato finale.
+- `rand_gateway_envelopes`: ingressi idempotenti legati all'identità verificata e risultato finale; gli identificativi esterni vengono conservati solo come HMAC.
 - `rand_gateway_audit`: log append-only delle decisioni.
 - `rand_gateway_external_identities`: associazioni esterne tramite hash HMAC, mai autorizzazione basata sul solo numero.
 - `rand_gateway_tool_policies`: allowlist canonica per canale/server/tool.
@@ -68,7 +68,7 @@ Il primo passaggio di una mutazione produce un'approvazione; il secondo deve pre
 
 ## Twilio temporaneo
 
-Twilio è solo transport WhatsApp. La firma `X-Twilio-Signature`, quota, routing numero→hotel, deduplicazione e conservazione media restano attivi. Dopo la validazione, il messaggio entra in RandGateway. Anche con ingestion attiva il webhook non crea più una segnalazione: prepara suggerimenti e lascia la creazione alla revisione protetta già esistente.
+Twilio è solo transport WhatsApp. La firma `X-Twilio-Signature`, quota, routing numero→hotel, deduplicazione e conservazione media restano attivi. Le immagini ammesse hanno limite 8 MiB, MIME verificato tramite magic bytes e percorso di quarantena; restano `pending` e non vengono lette da RandAI. Dopo la validazione, il messaggio entra in RandGateway. Anche con ingestion attiva il webhook non crea più una segnalazione: prepara suggerimenti e lascia la creazione alla revisione protetta già esistente.
 
 Le policy WhatsApp dei tool sono predisposte ma disabilitate. Per abilitarle servono sia un'identità esterna verificata sia il worker di approvazione: nessuna impersonazione service-role dell'utente è ammessa.
 
