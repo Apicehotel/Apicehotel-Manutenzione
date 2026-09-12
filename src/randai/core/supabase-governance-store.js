@@ -7,10 +7,17 @@ const rowToAudit=(r)=>createAuditRecord({auditId:r.audit_id,kind:r.kind,occurred
 export class SupabaseRandGovernanceStore {
   constructor(client){ if(!client?.from) throw new TypeError('Supabase service-role client required'); this.client=client }
   async listRules({eventType,hotelId}={}) {
-    let q=this.client.from('rand_governance_rules').select('*').eq('enabled',true).order('priority',{ascending:false}).order('id',{ascending:true})
-    if(eventType) q=q.eq('event_type',eventType)
-    if(hotelId) q=q.or(`scope.eq.SYSTEM,and(scope.eq.HOTEL,hotel_id.eq.${hotelId})`); else q=q.eq('scope','SYSTEM')
-    const {data,error}=await q; fail(error,'list governance rules'); return (data||[]).map(rowToRule)
+    const build=(scope)=>{
+      let q=this.client.from('rand_governance_rules').select('*').eq('enabled',true).eq('scope',scope)
+      if(eventType) q=q.eq('event_type',eventType)
+      if(scope==='HOTEL') q=q.eq('hotel_id',hotelId)
+      return q.order('priority',{ascending:false}).order('id',{ascending:true})
+    }
+    const queries=[build('SYSTEM')]
+    if(hotelId) queries.push(build('HOTEL'))
+    const responses=await Promise.all(queries); const rows=[]
+    for(const response of responses){ fail(response.error,'list governance rules'); rows.push(...(response.data||[])) }
+    return rows.map(rowToRule).sort((a,b)=>b.priority-a.priority || a.id.localeCompare(b.id))
   }
   async appendAudit(record) {
     const r=createAuditRecord(record); const {data,error}=await this.client.from('rand_governance_audit').insert({audit_id:r.auditId,kind:r.kind,occurred_at:new Date(r.occurredAt).toISOString(),scope:r.scope,hotel_id:r.hotelId,actor_id:r.actorId,event_id:r.eventId,job_id:r.jobId,intent_id:r.intentId,correlation_id:r.correlationId,decision:r.decision,reason_codes:r.reasonCodes,details:r.details}).select('*').single()
