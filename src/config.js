@@ -39,8 +39,8 @@ export const WHATSAPP = Object.freeze({
   }),
 })
 
-// Ricezione Twilio attiva. La creazione automatica delle segnalazioni resta
-// controllata per singola struttura da whatsapp_channel_settings.ingestion_enabled.
+// Ricezione Twilio attiva. L'ingestion inoltra a RandGateway; una scrittura
+// operativa richiede sempre identità/policy/HITL e non parte dal webhook.
 export const TWILIO = Object.freeze({
   enabled: true,
   inboundWebhook: '/api/whatsapp/incoming',

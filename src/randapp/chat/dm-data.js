@@ -169,8 +169,16 @@ export async function linkChatMessageToIssue({ sourceType, sourceId, sourceMessa
 export function subscribeDmThread(threadId, onChange) {
   if (!supabase || !threadId) return () => {}
   const channel = supabase
-    .channel(`randchat-dm-${threadId}-${Math.random().toString(36).slice(2, 8)}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_dm_messages', filter: `thread_id=eq.${threadId}` }, (payload) => onChange?.(payload))
+    .channel(`randchat:dm:${threadId}:messages`, { config: { private: true } })
+    .on('broadcast', { event: '*' }, (payload) => {
+      const change = payload?.payload || payload
+      onChange?.({
+        ...change,
+        eventType: String(payload?.event || change?.type || '').toUpperCase(),
+        new: change?.record || change?.new || null,
+        old: change?.old_record || change?.old || null,
+      })
+    })
     .subscribe()
   return () => { supabase.removeChannel(channel) }
 }

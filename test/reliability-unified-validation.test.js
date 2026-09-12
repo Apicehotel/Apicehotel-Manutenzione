@@ -96,6 +96,9 @@ test('critical data layers wire the common validator before writes', () => {
 
 test('validation layer remains dependency-free', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
-  assert.equal(Boolean(pkg.dependencies?.zod), false)
+  const validation = fs.readFileSync(new URL('../src/reliability/validation-engine.js', import.meta.url), 'utf8')
+  const contracts = fs.readFileSync(new URL('../src/reliability/domain-validation.js', import.meta.url), 'utf8')
+  assert.doesNotMatch(validation + contracts, /from ['"](?:zod|xstate)/)
+  assert.equal(pkg.dependencies?.zod, '4.6.2', 'zod is pinned for the server-only MCP adapter')
   assert.equal(Boolean(pkg.dependencies?.xstate), false)
 })

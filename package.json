@@ -66,6 +66,7 @@
     "lts:attest": "node scripts/rand-lts-attestation.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
     "@opentelemetry/sdk-trace-web": "2.10.0",
@@ -75,7 +76,8 @@
     "dexie": "^4.4.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "4.6.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",

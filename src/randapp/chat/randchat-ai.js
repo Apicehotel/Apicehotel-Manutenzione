@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase.js'
 import { retrieveRandAIGuidance } from '../../randai/randai-data.js'
+import { submitRandGatewayEnvelope } from '../../randgateway-client.js'
 
 const ensureClient = () => {
   if (!supabase) throw new Error('Supabase non configurato')
@@ -28,6 +29,14 @@ export async function askRandAIAboutGroup({ groupId, query }) {
   if (!question) throw new Error('Scrivi cosa vuoi chiedere a RandAI')
   const context = await getAuthorizedGroupAiContext(groupId)
   if (!context?.hotel_id) throw new Error('Contesto gruppo non disponibile')
+  await submitRandGatewayEnvelope({
+    channel: 'randchat',
+    direction: 'inbound',
+    actor: { hotelId: context.hotel_id },
+    conversation: { id: groupId, type: 'group' },
+    payload: { type: 'message', text: question, metadata: { intent: 'randai_group_query' } },
+    origin: { provider: 'randchat', providerMessageId: crypto.randomUUID() },
+  })
   const guidance = await retrieveRandAIGuidance({
     hotelId: context.hotel_id,
     query: question,

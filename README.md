@@ -79,6 +79,14 @@ RandCore governa health, audit, release gate, workers, sicurezza, costi, integra
 
 `Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
 
+## RandGateway — Punto 7
+
+RandGateway è l'unico ingresso per richieste provenienti da RandChat, MCP e Twilio/WhatsApp. Gli adapter producono un envelope canonico ma non decidono identità, hotel, ruolo, rischio o permessi. I comandi seguono sempre `RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`; un adapter non può scrivere direttamente dati operativi.
+
+RandChat conserva lo storico in Postgres e usa Broadcast privato hotel/member-scoped per la consegna live. MCP remoto usa Streamable HTTP con SDK ufficiale stabile e allowlist Rand. Twilio resta il provider WhatsApp temporaneo, dietro l'adapter: riceve e conserva i messaggi, ma la creazione di una segnalazione richiede revisione protetta.
+
+Dettaglio: `docs/architecture/RANDGATEWAY_POINT7.md`.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
@@ -248,6 +256,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 
 ## Documentazione
 
+- `docs/architecture/RANDGATEWAY_POINT7.md` — envelope canonico, adapter RandChat/MCP/Twilio, HITL, audit e anti-bypass.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.

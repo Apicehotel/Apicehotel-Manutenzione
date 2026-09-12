@@ -37,7 +37,7 @@ Le route pubbliche caricano `styles.css` dinamicamente; l'app autenticata usa il
 - `@sentry/react` — telemetria errori opzionale;
 - `@opentelemetry/api`, `@opentelemetry/sdk-trace-web`, `@opentelemetry/exporter-trace-otlp-http` — tracing opzionale.
 
-Dipendenze eliminate nel cleanup finale perché non più usate: `lucide-react`, `react-grid-layout`, `zod`, `zustand`.
+Dal bundle frontend restano eliminate `lucide-react`, `react-grid-layout`, `zod`, `zustand`. Il Punto 7 usa `zod` soltanto nell'endpoint server MCP, con versione fissata: non viene importato da `src` né incluso nei chunk PWA.
 
 Le icone principali della shell sono SVG inline in `src/randapp/ui.jsx`.
 
