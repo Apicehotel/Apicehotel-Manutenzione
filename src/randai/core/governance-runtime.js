@@ -95,7 +95,8 @@ export function createAuditRecord(input={}, {clock=()=>Date.now(),idFactory=idDe
   const kind=clean(input.kind).toUpperCase(); const scope=clean(input.scope || (input.hotelId?'HOTEL':'SYSTEM')).toUpperCase(); const hotelId=clean(input.hotelId)||null
   if (!Object.values(RandAuditKind).includes(kind)) throw new TypeError('Unknown audit kind')
   if (!['HOTEL','SYSTEM'].includes(scope) || (scope==='HOTEL'&&!hotelId) || (scope==='SYSTEM'&&hotelId)) throw new TypeError('Invalid audit scope')
-  return frozen({auditId:clean(input.auditId)||idFactory('audit'),kind,occurredAt:Number(input.occurredAt ?? clock()),scope,hotelId,
+  const occurredAt=Number(input.occurredAt ?? clock()); if (!Number.isFinite(occurredAt)) throw new TypeError('Audit occurredAt must be finite')
+  return frozen({auditId:clean(input.auditId)||idFactory('audit'),kind,occurredAt,scope,hotelId,
     actorId:clean(input.actorId)||null,eventId:clean(input.eventId)||null,jobId:clean(input.jobId)||null,intentId:clean(input.intentId)||null,
     correlationId:clean(input.correlationId)||null,decision:clean(input.decision)||null,reasonCodes:[...new Set((input.reasonCodes||[]).map(clean).filter(Boolean))],
     details:redactAuditDetails(input.details||{})})
@@ -119,5 +120,29 @@ export class RandDoctor {
       else if (check.status === HealthStatus.UNKNOWN) push(FindingSeverity.WARN,'HEALTH_UNKNOWN','Health check senza evidenza sufficiente',{checkId:check.id||check.name||null})
     }
     return frozen({status:findings.some((f)=>f.severity===FindingSeverity.CRITICAL)?'CRITICAL':findings.some((f)=>f.severity===FindingSeverity.HIGH)?'DEGRADED':findings.length?'ATTENTION':'HEALTHY',findings})
+  }
+}
+
+export class RandGovernanceRuntime {
+  constructor({store,secure,doctor=new RandDoctor(),clock=()=>Date.now(),idFactory=idDefault}={}) {
+    if (!store?.listRules || !store?.appendAudit) throw new TypeError('Governance store must implement listRules() and appendAudit()')
+    if (!secure?.decide) throw new TypeError('RandSecure instance required')
+    this.store=store; this.secure=secure; this.doctor=doctor; this.clock=clock; this.idFactory=idFactory
+  }
+  async processEvent(event, actorContext={}) {
+    const rules=await this.store.listRules({eventType:event?.type,hotelId:event?.hotelId||null})
+    const intents=new RandRulesEngine({rules}).evaluate(event,{idFactory:this.idFactory}); const results=[]
+    for (const intent of intents) {
+      await this.store.appendAudit(createAuditRecord({auditId:this.idFactory('audit'),kind:RandAuditKind.RULE_MATCH,occurredAt:this.clock(),scope:intent.scope,hotelId:intent.hotelId,actorId:actorContext.actorId,eventId:intent.eventId,intentId:intent.intentId,correlationId:intent.correlationId,decision:'MATCHED',reasonCodes:['RULE_MATCHED'],details:{ruleId:intent.ruleId,ruleVersion:intent.ruleVersion,actionType:intent.actionType,risk:intent.risk}},{clock:this.clock,idFactory:this.idFactory}))
+      const security=this.secure.decide(intent,actorContext)
+      await this.store.appendAudit(createAuditRecord({auditId:this.idFactory('audit'),kind:RandAuditKind.SECURITY_DECISION,occurredAt:this.clock(),scope:intent.scope,hotelId:intent.hotelId,actorId:actorContext.actorId,eventId:intent.eventId,intentId:intent.intentId,correlationId:intent.correlationId,decision:security.decision,reasonCodes:security.reasons,details:{actionType:intent.actionType,risk:intent.risk,missingScopes:security.missingScopes}},{clock:this.clock,idFactory:this.idFactory}))
+      results.push(frozen({intent,security}))
+    }
+    return frozen({eventId:event.eventId,correlationId:event.correlationId||event.eventId,results})
+  }
+  async diagnose(input,{scope='SYSTEM',hotelId=null,actorId='randdoctor'}={}) {
+    const report=this.doctor.inspect(input,{clock:this.clock,idFactory:this.idFactory})
+    for (const finding of report.findings) await this.store.appendAudit(createAuditRecord({auditId:this.idFactory('audit'),kind:RandAuditKind.DOCTOR_FINDING,occurredAt:finding.detectedAt,scope,hotelId,actorId,decision:report.status,reasonCodes:[finding.code],details:{severity:finding.severity,title:finding.title,...finding.details}},{clock:this.clock,idFactory:this.idFactory}))
+    return report
   }
 }
