@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Group 7 HITL runtime contracts
-        run: npm run test:group7
+        run: node --test test/randai-group7-hitl-runtime.test.js
       - name: Autonomy regression
         run: npm run test:autonomy
       - name: RandAI Group 1 authorization boundary
