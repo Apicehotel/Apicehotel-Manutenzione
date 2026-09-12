@@ -11,6 +11,7 @@ RandCore Runtime v2 è il contratto operativo canonico per eventi, job, worker e
 - claim atomica e lease rinnovabile per impedire doppia esecuzione;
 - recovery deterministico dopo crash/redeploy;
 - source of truth produttiva persistente su Supabase/Postgres;
+- provenance eventi immutabile;
 - snapshot operativo per RandCore Health/Dashboard;
 - collegamento deterministico con `RandDurableRuntime` per start/resume;
 - nessun secondo scheduler, authorization layer, audit system o database parallelo.
@@ -22,6 +23,8 @@ Ogni evento contiene `eventId`, `type`, `source`, `scope`, `hotelId`, `occurredA
 Gli eventi `HOTEL` richiedono `hotelId`. Gli eventi `SYSTEM` non possono portare `hotelId`: la distinzione è esplicita e fail-closed. `correlationId` permette di seguire una catena operativa; `causationId` collega l'evento che ha causato il successivo.
 
 `publish()` persiste prima l'evento e poi effettua fan-out verso una o più route/handler creando job indipendenti ma correlati allo stesso evento.
+
+Un `eventId` è un'ancora di provenance. Il producer può ripresentare lo stesso evento idempotentemente soltanto se il contenuto è identico. `SupabaseRandCoreStore` rilegge l'evento persistito e blocca collisioni semantiche con `RANDCORE_EVENT_ID_COLLISION`; Postgres applica inoltre un trigger `BEFORE UPDATE` che rifiuta mutazioni con `RANDCORE_EVENT_IMMUTABLE`.
 
 ## Job lifecycle
 
@@ -41,7 +44,7 @@ Un errore non retryable termina in `FAILED`. `CANCELLED` è terminale. Le transi
 
 ## Claim, lease e recovery
 
-La produzione usa `randcore_claim_job()` per acquisire un job in modo atomico. La claim incrementa `attempt`, assegna `worker_id` e imposta `lease_expires_at`. Un worker può rinnovare il lease soltanto sul proprio job `RUNNING` tramite `randcore_renew_job_lease()` e soltanto prima della scadenza.
+La produzione usa `randcore_claim_job()` per acquisire un job in modo atomico. La RPC accetta esclusivamente un `worker_id` già registrato, incrementa `attempt`, assegna il worker e imposta `lease_expires_at`. Un worker può rinnovare il lease soltanto sul proprio job `RUNNING` tramite `randcore_renew_job_lease()` e soltanto prima della scadenza.
 
 `randcore_recover_expired_jobs()` usa `FOR UPDATE SKIP LOCKED` per recuperare in sicurezza i lavori abbandonati dopo crash/redeploy:
 
@@ -74,13 +77,19 @@ Tabelle:
 - `randcore_workers` — registry e heartbeat;
 - `randcore_dead_letters` — fallimenti terminali retryable.
 
-Migration: `supabase/migrations/20260912113000_randcore_runtime_v2_persistence.sql`.
+Migration del blocco:
 
-`InMemoryRandCoreStore` resta soltanto implementazione deterministica di riferimento/test. Entrambi implementano lo stesso store contract verificato da `assertRandCoreStore`; il runtime non cambia semantica quando passa dalla memoria a Postgres.
+- `supabase/migrations/20260912113000_randcore_runtime_v2_persistence.sql` — schema, indici, claim/lease/recovery;
+- `supabase/migrations/20260912114500_randcore_event_immutability.sql` — immutabilità DB degli eventi;
+- `supabase/migrations/20260912115000_randcore_runtime_security_hardening.sql` — privilegi minimi espliciti e worker registration check.
+
+`InMemoryRandCoreStore` resta soltanto implementazione deterministica di riferimento/test. Il runtime produttivo usa `SupabaseRandCoreStore`; la source of truth non è la memoria del processo.
 
 ## Sicurezza database
 
-Le quattro tabelle hanno RLS abilitata e non espongono policy di lettura/scrittura ai client. Le RPC di claim, rinnovo lease e recovery revocano esplicitamente `PUBLIC`, `anon` e `authenticated` e concedono `EXECUTE` soltanto a `service_role`.
+Le quattro tabelle hanno RLS abilitata. `anon` e `authenticated` ricevono una revoca esplicita dei privilegi RandCore. I privilegi produttivi sono minimi e assegnati esplicitamente a `service_role`: eventi e dead-letter sono `SELECT/INSERT`; job e worker sono `SELECT/INSERT/UPDATE`.
+
+Le RPC di claim, rinnovo lease e recovery revocano esplicitamente `PUBLIC`, `anon` e `authenticated` e concedono `EXECUTE` soltanto a `service_role`. Anche una chiamata diretta privilegiata a `randcore_claim_job()` non può inventare un worker inesistente.
 
 Di conseguenza `SupabaseRandCoreStore` deve essere istanziato esclusivamente server-side con un client Supabase privilegiato; `service_role` non deve mai raggiungere browser, PWA o modello AI.
 
@@ -97,23 +106,24 @@ Il runtime non concede permessi. Gli eventi HOTEL mantengono il contesto hotel; 
 - retry solo se esplicitamente retryable;
 - tentativi limitati da `maxAttempts`;
 - retry esauriti in dead-letter osservabile;
-- claim atomica con lease finito;
+- claim atomica con worker registrato e lease finito;
 - rinnovo lease owner-bound;
 - recovery dei lease scaduti dopo restart/deploy;
 - worker stale bloccato prima del claim;
 - transizioni illegali bloccate;
+- collisioni/mutazioni della provenance evento bloccate;
 - store non conforme rifiutato in costruzione;
 - niente auto-replay della dead-letter: il replay futuro dovrà essere un'azione governata/auditata.
 
 ## Test e gate
 
-`npm run test:group3` include `test/randai-group3-randcore-runtime.test.js` oltre ai contratti Group 3 esistenti. I test coprono envelope, fan-out, state machine, retry/dead-letter, heartbeat, lease renewal, ownership, recovery dopo sostituzione dell'istanza runtime, idempotenza della dead-letter, integrazione Durable Runtime e contratto/security della migration Supabase.
+`npm run test:group3` include i contratti RandCore Runtime e persistence oltre ai contratti Group 3 esistenti. I test coprono envelope, fan-out, state machine, retry/dead-letter, heartbeat, lease renewal, ownership, recovery dopo sostituzione dell'istanza runtime, idempotenza della dead-letter, integrazione Durable Runtime, immutabilità della provenance e security contract delle migration Supabase.
 
 Il workflow Group 3 viene eseguito su ogni pull request, incluse PR stacked, per impedire bypass del gate cambiando branch base.
 
 ## Connessioni future
 
-- RandRules: consume eventi e produce azioni/job, senza diventare queue owner;
+- RandRules: consuma eventi e produce azioni/job, senza diventare queue owner;
 - RandAudit/Doctor/Secure: leggono snapshot e failure evidence;
 - RandMind/RandResearch: usano correlation/causation per provenance operativa;
 - RandMCP/Gateway/RandChat: inviano lavori attraverso lo stesso contratto;
