@@ -25,9 +25,12 @@ test('sensitive online guard has a stable security error code', () => {
 
 test('login keeps 4-digit user PIN and 6-digit admin PIN while exposing self-service recovery', async () => {
   const app = await source('src/randapp/App.jsx')
+  const loginInput = await source('src/randapp/login-input.js')
   assert.match(app, /slice\(0, 6\)/)
   assert.match(app, /pin\.length < 6/)
-  assert.match(app, /slice\(0, 4\)/)
+  assert.match(app, /sanitizeLoginPin\(e\.target\.value\)/)
+  assert.match(loginInput, /maxDigits = 4/)
+  assert.match(loginInput, /slice\(0, limit\)/)
   assert.match(app, /PIN dimenticato\?/)
   assert.match(app, /PinRecoveryComplete/)
 })
