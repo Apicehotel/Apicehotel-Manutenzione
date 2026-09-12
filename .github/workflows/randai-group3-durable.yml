@@ -4,7 +4,6 @@ on:
   push:
     branches: [randai/group3-durable-runtime, main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
