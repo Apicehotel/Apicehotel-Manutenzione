@@ -149,6 +149,31 @@ async function checkLoginShell(browser, label, contextOptions, theme = 'dark', u
   }
 }
 
+async function assertClipboardPaste(browser) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  try {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    const page = await context.newPage()
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.getByRole('heading', { name: 'Bentornato' }).waitFor({ state: 'visible' })
+
+    const user = page.getByTestId('login-user-input')
+    await page.evaluate((value) => navigator.clipboard.writeText(value), 'RandApp Clipboard Test')
+    await user.focus()
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+V' : 'Control+V')
+    assert.equal(await user.inputValue(), 'RandApp Clipboard Test', 'Il campo Utente deve accettare il nick incollato')
+
+    const pin = page.getByTestId('login-pin-input')
+    assert.equal(await pin.getAttribute('type'), 'password', 'Il PIN deve restare mascherato')
+    await page.evaluate((value) => navigator.clipboard.writeText(value), '12x34-56')
+    await pin.focus()
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+V' : 'Control+V')
+    assert.equal(await pin.inputValue(), '1234', 'Il PIN incollato deve conservare solo quattro cifre')
+  } finally {
+    await context.close()
+  }
+}
+
 const chromiumBrowser = await chromium.launch({ headless: true })
 try {
   for (const viewport of desktopViewports) {
@@ -161,6 +186,7 @@ try {
   await checkLoginShell(chromiumBrowser, 'desktop-small-ui', { viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 }, 'light', 'small', 'light')
   await checkLoginShell(chromiumBrowser, 'system-dark', { viewport: { width: 768, height: 1024 }, deviceScaleFactor: 1, colorScheme: 'dark' }, 'system', 'normal', 'dark')
   await checkLoginShell(chromiumBrowser, 'system-light', { viewport: { width: 768, height: 1024 }, deviceScaleFactor: 1, colorScheme: 'light' }, 'system', 'normal', 'light')
+  await assertClipboardPaste(chromiumBrowser)
 } finally {
   await chromiumBrowser.close()
 }
