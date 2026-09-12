@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { MemoryScope,MemoryTrust } from '../src/randai/memory/contracts.js'
 import { MemoryStore } from '../src/randai/memory/store.js'
-import { RandMind,MemoryLifecycle,RetentionClass } from '../src/randai/memory/randmind.js'
+import { RandMind,MemoryLifecycle,RetentionClass,memoryQuality } from '../src/randai/memory/randmind.js'
 import { memoryFromVerifiedAudit,planRetention,suggestConflictWinner,usableAt } from '../src/randai/memory/evidence.js'
 
 const audit={auditId:'a1',kind:'ACTION_OUTCOME',occurredAt:Date.parse('2026-09-12T06:00:00Z'),scope:'HOTEL',hotelId:'gio',intentId:'i1',correlationId:'c1',decision:'SUCCEEDED',reasonCodes:['OUTCOME_VERIFIED']}
@@ -36,8 +36,10 @@ test('retention planner is non-destructive, policy-driven and never selects lega
 
 test('conflict suggestion is explainable and refuses score ties',()=>{
  const common={type:'episodic',scope:'hotel',hotelId:'gio',source:{kind:'x',id:'y'},importance:.5,lifecycleStatus:'active',retentionClass:'long_term',validFrom:'2026-01-01T00:00:00Z'}
- const result=suggestConflictWinner([{...common,id:'a',trust:'approved',confidence:.95,content:'a'},{...common,id:'b',trust:'draft',confidence:.6,content:'b'}],Date.parse('2026-02-01T00:00:00Z'))
+ const result=suggestConflictWinner([{...common,id:'a',trust:'approved',confidence:.95,content:'a'},{...common,id:'b',trust:'draft',confidence:.6,content:'b'}],Date.parse('2026-02-01T00:00:00Z'),memoryQuality)
  assert.equal(result.winnerId,'a'); assert.equal(result.ambiguous,false); assert.equal(result.ranked[0].id,'a')
+ const tie=suggestConflictWinner([{...common,id:'c',trust:'verified',confidence:.9,content:'c'},{...common,id:'d',trust:'verified',confidence:.9,content:'d'}],Date.parse('2026-02-01T00:00:00Z'),memoryQuality)
+ assert.equal(tie.ambiguous,true); assert.equal(tie.winnerId,null)
 })
 
 test('in-memory governed conflict resolution mirrors production scope rules',async()=>{
