@@ -41,8 +41,8 @@ export class MemoryEngine {
     if (!task || task.status !== 'SUCCEEDED') return []
     const source = { kind: 'task', id: task.id }
     const created = []
-    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 1, tags: ['task-completed'], lastVerifiedAt: nowIso() }))
-    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.9, tags: ['decision', decision.type], lastVerifiedAt: nowIso() }))
+    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.SUGGESTED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 0.7, tags: ['task-completed','unverified-outcome'] }))
+    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.SUGGESTED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.7, tags: ['decision', decision.type, 'unverified-outcome'] }))
     return created
   }
 
