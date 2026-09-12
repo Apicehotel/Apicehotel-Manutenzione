@@ -22,14 +22,7 @@ function harness({ now = 1_000, staleAfter = 100 } = {}) {
 }
 
 test('event envelope is immutable, correlated and hotel-scoped by default', () => {
-  const event = createRandEvent({
-    eventId: 'evt_1',
-    type: 'maintenance.created',
-    source: 'randapp',
-    hotelId: 'gio',
-    occurredAt: 123,
-    payload: { urgent: true }
-  })
+  const event = createRandEvent({ eventId: 'evt_1', type: 'maintenance.created', source: 'randapp', hotelId: 'gio', occurredAt: 123, payload: { urgent: true } })
   assert.equal(event.scope, 'HOTEL')
   assert.equal(event.hotelId, 'gio')
   assert.equal(event.correlationId, 'evt_1')
@@ -41,6 +34,17 @@ test('event envelope fails closed on invalid hotel/system scope', () => {
   assert.throws(() => createRandEvent({ type: 'x', source: 'test', scope: 'HOTEL' }), /hotelId/)
   assert.throws(() => createRandEvent({ type: 'x', source: 'test', scope: 'SYSTEM', hotelId: 'gio' }), /SYSTEM/)
   assert.throws(() => createRandEvent({ source: 'test' }), /type/)
+})
+
+test('publish fans one event out to independent correlated jobs', async () => {
+  const { runtime } = harness()
+  const event = createRandEvent({ eventId: 'evt_fanout', type: 'maintenance.created', source: 'randapp', hotelId: 'gio', occurredAt: 1 })
+  const published = await runtime.publish({ event, routes: [{ handlerId: 'notify-reception' }, { handlerId: 'notify-maintenance', maxAttempts: 5 }] })
+  assert.equal(published.jobs.length, 2)
+  assert.notEqual(published.jobs[0].id, published.jobs[1].id)
+  assert.equal(published.jobs[0].eventId, 'evt_fanout')
+  assert.equal(published.jobs[1].event.correlationId, 'evt_fanout')
+  assert.equal(published.jobs[1].maxAttempts, 5)
 })
 
 test('job lifecycle is explicit and invalid transitions fail closed', async () => {
@@ -114,4 +118,29 @@ test('non-retryable failure is terminal FAILED and does not silently requeue', a
   const failed = await runtime.fail(job.id, { retryable: false, errorCode: 'POLICY_DENIED' })
   assert.equal(failed.status, RandJobStatus.FAILED)
   await assert.rejects(() => runtime.requeue(job.id), /Invalid job transition/)
+})
+
+test('durable start and resume stay synchronized with one RandCore job', async () => {
+  const { runtime } = harness({ staleAfter: 10_000 })
+  await runtime.registerWorker({ workerId: 'durable-worker' })
+  const event = createRandEvent({ eventId: 'evt_durable', type: 'research.run', source: 'randai', hotelId: 'gio', occurredAt: 5 })
+  const job = await runtime.enqueue({ event, handlerId: 'durable' })
+  let calls = 0
+  const workflow = {
+    id: 'research',
+    version: '1',
+    async execute() {
+      calls += 1
+      if (calls === 1) return { wait: true, checkpoint: { step: 1 } }
+      return { output: { complete: true } }
+    }
+  }
+  const context = { actor: { id: 'u1' }, hotelId: 'gio', targetHotelId: 'gio', grantedScopes: ['workflow:execute'] }
+  const started = await runtime.startDurable({ jobId: job.id, workerId: 'durable-worker', workflow, context, idempotencyKey: 'research-1' })
+  assert.equal(started.job.status, RandJobStatus.RUNNING)
+  assert.ok(started.job.durableRunId)
+  const resumed = await runtime.resumeDurable({ jobId: job.id, workflow, context })
+  assert.equal(resumed.job.status, RandJobStatus.SUCCEEDED)
+  assert.deepEqual(resumed.job.output, { complete: true })
+  assert.equal(calls, 2)
 })
