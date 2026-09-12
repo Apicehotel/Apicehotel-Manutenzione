@@ -1,0 +1,21 @@
+# TASKS: 001-randcore-runtime-v2
+
+- [DONE] T001 Inventariare runtime/durable/scheduler/health esistenti senza duplicare owner. Evidence: `docs/architecture/RANDCORE_RUNTIME_V2.md`
+- [DONE] T002 Implementare event envelope HOTEL/SYSTEM con correlation e causation. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T003 Implementare publish fan-out e job lifecycle fail-closed. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T004 Implementare retry bounded e dead-letter. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T005 Implementare worker registry, heartbeat e stale detection. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T006 Integrare start/resume con RandDurableRuntime senza riscriverlo. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T007 Aggiungere snapshot operativo e store contract. Evidence: `src/randai/core/randcore-runtime.js`
+- [DONE] T008 Aggiungere test Group 3. Evidence: `test/randai-group3-randcore-runtime.test.js`
+- [DONE] T009 Documentare ownership, failure model e connessioni future. Evidence: `docs/architecture/RANDCORE_RUNTIME_V2.md`
+- [DONE] T010 Rendere Group 3 eseguibile sulle PR stacked. Evidence: `.github/workflows/randai-group3-durable.yml`
+- [DONE] T011 Aggiungere source of truth Supabase/Postgres per eventi, job, worker e dead-letter. Evidence: `supabase/migrations/20260912113000_randcore_runtime_v2_persistence.sql`, `src/randai/core/supabase-randcore-store.js`
+- [DONE] T012 Rendere claim concorrente atomica con lease owner-bound e rinnovo sicuro. Evidence: `randcore_claim_job`, `randcore_renew_job_lease`
+- [DONE] T013 Implementare recovery restart/redeploy con `FOR UPDATE SKIP LOCKED` e dead-letter idempotente. Evidence: `randcore_recover_expired_jobs`, `test/randai-group3-randcore-runtime.test.js`
+- [DONE] T014 Blindare persistence/RPC ai client e consentire l'esecuzione soltanto a `service_role`. Evidence: migration RandCore Runtime v2 + test Group 3
+- [DONE] T015 Aggiornare architettura e documentazione del runtime persistente. Evidence: `docs/architecture/RANDCORE_RUNTIME_V2.md`, `README.md`
+- [DONE] T016 Rendere gli eventi persistenti immutabili e bloccare collisioni semantiche di `eventId`. Evidence: `supabase/migrations/20260912114500_randcore_event_immutability.sql`, `src/randai/core/supabase-randcore-store.js`
+- [DONE] T017 Esplicitare privilegi minimi DB e rifiutare claim dirette da worker non registrati. Evidence: `supabase/migrations/20260912115000_randcore_runtime_security_hardening.sql`, `test/randai-group3-randcore-persistence.test.js`
+- [DONE] T018 Ottenere CI completa verde dopo il final hardening. Evidence: commit `a26d79b847262650b1593874fcb0e59840a7336c` — CI, RandAI Group 1 Security e RandAI Group 3 Durable Runtime `success`.
+- [DONE] T019 Chiudere Converge con PR #238 pronta a revisione umana e senza merge automatico. Evidence: PR #238; il passaggio draft → ready viene eseguito solo dopo i gate verdi del commit di chiusura documentale.
