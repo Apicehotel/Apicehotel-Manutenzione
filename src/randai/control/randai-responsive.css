@@ -228,3 +228,25 @@ html[data-theme='light'] .rc-embedded .rk-card,html[data-theme='light'] .rc-embe
 
 @media(max-width:760px){.rc-top-actions{justify-content:space-between;align-items:center}.rc-theme{justify-items:start}.rc-theme .rs-segmented button{padding:8px 7px}.rc-top{align-items:flex-end}}
 @media(max-width:430px){.rc-top-actions{width:100%;margin-top:10px}.rc-theme{width:100%}.rc-theme .rs-segmented{width:100%}.rc-theme .rs-segmented button{flex:1}}
+
+/* Health evidence contains long statuses and source labels; keep them inside each card. */
+.rc-health-console,
+.rc-health-console > *,
+.rc-health-console .rc-panel-body,
+.rc-health-console .rc-kpis,
+.rc-health-console .rc-kpi,
+.rc-health-console .rc-chip-row > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rc-health-console p,
+.rc-health-console small,
+.rc-health-console .rc-badge {
+  overflow-wrap: anywhere;
+}
+
+.rc-health-console .rc-kpi .rc-badge {
+  white-space: normal;
+  text-align: center;
+}

@@ -3,6 +3,7 @@ import { supabase } from '../../supabase.js'
 import { HOTELS } from '../../config.js'
 import { changeRandAIPassword, createRandAIUser, isValidRandAIPassword, isValidRandAIUsername, listRandAIUsers, loginRandAI, signOutRandAI } from './randai-auth.js'
 import './randai-auth.css'
+import './randai-auth-layout.css'
 
 const RandAIControlCenter=lazy(()=>import('../control/RandAIControlCenter.jsx'))
 const ALL_HOTELS=HOTELS.map((hotel)=>hotel.id)

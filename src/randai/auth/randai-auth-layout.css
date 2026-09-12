@@ -1,0 +1,22 @@
+/* Keep account controls visible without covering RandAI content or app navigation. */
+.ra-tools {
+  position: relative;
+  inset: auto;
+  z-index: 21;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  background: var(--rc-bg, #090d15);
+  border-bottom: 1px solid var(--rc-line, #27324a);
+}
+
+@media (max-width: 720px) {
+  .ra-tools {
+    gap: 6px;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+}
