@@ -206,12 +206,13 @@ RandApp usa un solo stack offline, già condiviso dai moduli operativi: **Servic
 - directory e collezioni operative già sincronizzate vengono lette dalla cache IndexedDB per hotel, così l'ultimo stato pre-offline resta disponibile;
 - Rifornimenti conserva anche prodotti, richieste recenti e contesti area/piano; le relative scritture restano online-only finché il contratto server non offre idempotenza sufficiente per una coda sicura;
 - Housekeeping mantiene il proprio cache/outbox locale già esistente; non viene duplicato o migrato solo per uniformità cosmetica;
-- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione;
+- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione; su iOS/Safari ogni richiesta intercettata termina con una `Response` valida, anche in assenza sia della rete sia della voce richiesta in cache;
+- il core RandApp resta lazy per rispettare il budget iniziale del bundle. Durante l'attivazione il Service Worker conserva anche la cache della **release immediatamente precedente**: un'installazione che possiede ancora HTML o chunk della release precedente può quindi riaprirsi offline durante il passaggio; le cache RandApp più vecchie vengono eliminate;
 - un errore di chunk/deployment mentre il dispositivo è offline **non può cancellare le cache PWA né forzare un reload distruttivo**: il recovery viene rinviato fino al ritorno della rete;
 - quando la rete ritorna, la normale validazione Supabase/RandCore torna autoritativa; lo stato persistito non diventa un'autorizzazione permanente;
 - operazioni sensibili continuano a richiedere connettività, mentre le mutazioni offline supportate passano dall'outbox governata e dalla successiva sincronizzazione.
 
-I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`, `test/offline-preload-contract.test.js`, dai test della session policy e dell'offline store.
+I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`, `test/deployment-hardening.test.js`, `test/offline-preload-contract.test.js`, dai test della session policy, dell'offline store e dal contratto dell'architettura corrente.
 
 ## Quality Matrix e test
 

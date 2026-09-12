@@ -39,7 +39,12 @@ test('offline bootstrap keeps the last validated access and pre-offline director
   assert.match(offlineStore, /cache:'&key,entity,hotelId,updatedAt'/)
 })
 
-test('deployment recovery is installed before any lazy runtime route can load', () => {
+test('core RandApp remains modular and lazy within the bootstrap bundle budget', () => {
+  assert.match(main, /lazy\(\(\) => import\(['"]\.\/randapp\/App\.jsx['"]\)\)/)
+  assert.match(main, /lazy\(\(\) => import\(['"]\.\/randai\/RandAIAssistant\.jsx['"]\)\)/)
+})
+
+test('deployment recovery is installed before lazy runtime routes can load', () => {
   const installAt = main.indexOf('installDeploymentRecovery()')
   const lazyAt = main.indexOf('lazy(() => import(')
   assert.ok(installAt >= 0)
@@ -53,10 +58,14 @@ test('React render boundary delegates recoverable module failures to centralized
   assert.doesNotMatch(boundary, /randapp-module-recovery:/)
 })
 
-test('service worker refuses invalid stale dynamic assets and supports runtime cache purge', () => {
-  assert.match(serviceWorker, /apicehotel-manutenzione-v14/)
+test('service worker refuses invalid stale assets and bridges one previous release cache', () => {
+  assert.match(serviceWorker, /apicehotel-manutenzione-v15/)
   assert.match(serviceWorker, /PURGE_RUNTIME_CACHES/)
   assert.match(serviceWorker, /isValidDynamicAsset/)
+  assert.match(serviceWorker, /getPreviousAppCache/)
+  assert.match(serviceWorker, /key !== previousCache/)
+  assert.match(serviceWorker, /offlineNavigationResponse/)
+  assert.match(serviceWorker, /offlineAssetResponse/)
   assert.match(serviceWorker, /status:\s*503/)
   assert.match(serviceWorker, /Cache-Control.*no-store/)
 })
