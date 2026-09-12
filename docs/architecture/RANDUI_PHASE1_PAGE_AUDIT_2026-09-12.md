@@ -1,6 +1,6 @@
 # RandUI / RandApp — Fase 1: audit delle destinazioni
 
-**Stato:** audit statico iniziale completato; audit visuale operativo non certificato.  
+**Stato:** audit statico completato e verifica live parziale del pre-accesso desktop; viste autenticate e responsive non certificate.  
 **Data:** 12 settembre 2026  
 **Codice esaminato:** `main` al commit [b29ce65](https://github.com/Apicehotel/Apicehotel-Manutenzione/commit/b29ce65af434fedd6c6426f5f6304dba5db4bda2).  
 **Fase 0:** documentata in [PR #244](https://github.com/Apicehotel/Apicehotel-Manutenzione/pull/244).
@@ -66,7 +66,7 @@ Le due viste Planning e le due viste Temperature/Plants riusano rispettivamente 
 | F1-02 | RandUI avvolge le pagine, ma la migrazione dichiara esplicitamente che il CSS di dominio può restare | Wrapper comune non garantisce gerarchia e densità uniformi nei contenuti interni | Confrontare i render; classificare ogni eccezione come voluta o da convergere |
 | F1-03 | Gli E2E CI coprono login e gate Settings pre-login; gli screenshot non rappresentano le 24 viste autenticate | Il gate verde non certifica l'aspetto e l'uso dei flussi operativi | Pilotare una matrice di screenshot/interaction sulle pagine una volta disponibile test account e browser |
 | F1-04 | `main.jsx` importa un gruppo ampio di CSS di feature; Shell aggiunge fogli mobile/header; PageBoundary importa `layout-v2.css`, Foundation importa adaptive, coherence, visual-language e completion | Il confine tra stile globale, chrome, responsive geometry e pagina è difficile da seguire | Disegnare un grafo degli owner/import e consolidare solo dopo diff screenshot e analisi dei consumer |
-| F1-05 | Nessuna destinazione è stata provata su screenshot leggibile durante questa sessione | Non ci sono evidenze visuali sufficienti per cambiare layout o cancellare CSS | Fermare le rimozioni estetiche finché non esistono baseline per superficie/device |
+| F1-05 | La preview live mostra il pre-accesso desktop, ma non le viste autenticate; il login misura 950 px di altezza documento su viewport 936 px (14 px di overflow verticale, senza overflow orizzontale) | È provata solo la superficie iniziale, non il layout operativo o responsive | Correggere/accettare il piccolo overflow dopo confronto su viewport e poi acquisire baseline autenticate |
 
 ## Zombies: esito prudente
 
@@ -76,15 +76,25 @@ Nessuna pagina o stylesheet è stato rimosso in questa fase. I file CSS laterali
 
 `test/e2e.mjs` esegue viewport 320/375/390/430/768/1024/1440, Chromium, Pixel 7 Chromium e iPhone 13 WebKit, temi e densità; la schermata verificata resta il login con un passaggio sul gate Settings pre-login. `test/device-acceptance.mjs` controlla installabilità/manifest, PIN, rotazione, tastiera e transizione offline sul flusso iniziale.
 
-CI della PR di Fase 0 ha passato browser/device gates e ha caricato gli screenshot nel [run #34688958586](https://github.com/Apicehotel/Apicehotel-Manutenzione/actions/runs/34688958586). In questa sessione l'archivio è stato reperito, ma l'immagine non è ispezionabile nel runtime: i risultati dei test sono quindi evidenza di comportamento automatizzato, non review visiva.
+La CI della PR di Fase 0 ha passato browser/device gates e ha caricato gli screenshot nel [run #34688958586](https://github.com/Apicehotel/Apicehotel-Manutenzione/actions/runs/34688958586). I test sono evidenza di comportamento automatizzato; la review visuale live descritta sotto copre soltanto il pre-accesso desktop.
+
+## Verifica live della preview
+
+La preview [Ocean](https://randapp-b2akx.ondigitalocean.app/) è stata aperta il 12 settembre 2026 e controllata in Chrome a **1363 × 936 px**.
+
+- Il login ha gerarchia leggibile: identità RandApp, campi Utente/PIN, azione primaria e accesso alle impostazioni sono distinti e centrati. Non ho rilevato overflow orizzontale.
+- Il documento misura **950 px** su 936 px di viewport: resta uno scorrimento verticale di **14 px**. È un difetto minore del pre-accesso desktop, da verificare dopo eventuale correzione su altri viewport.
+- Un invio con campi vuoti mostra l'alert accessibile **“Seleziona un utente valido dalla lista”**; non sono state inserite credenziali. Il testo del campo invita a scrivere il nome, perciò sarebbe utile verificare se il controllo utenti è un selettore/autocomplete e rendere l'istruzione più esplicita.
+- Il pulsante Impostazioni apre il gate **“Accesso protetto amministratore”** e richiede un PIN amministratore. Senza credenziale/sessione autorizzata l'audit si ferma qui.
+
+Questa prova non certifica le pagine operative, i ruoli, gli stati di rete o i layout tablet/mobile. Non ho modificato l'app runtime; il rilievo del login va trattato come finding da validare, non come modifica già applicata.
 
 ## Cosa resta per chiudere la Fase 1
 
-1. Rendere disponibile un browser interattivo sulla [preview Ocean](https://randapp-b2akx.ondigitalocean.app); qui il comando `agent-browser` non è installato/esposto.
-2. Fornire una sessione di test autorizzata già configurata; non incollare credenziali o PIN nella conversazione.
-3. Acquisire screenshot desktop, tablet e telefono per le viste catalogate raggiungibili dal ruolo e per gli ingressi/route fuori catalogo.
-4. Verificare azione primaria, stati caricamento/vuoto/errore/offline e navigation back per ogni famiglia; provare almeno un ruolo limitato e uno amministrativo.
-5. Solo allora assegnare priorità estetiche, decidere il pilota (Temperature resta candidato) e classificare eventuali zombie con prove.
+1. Ottenere una sessione di test autorizzata (un ruolo operativo e uno amministrativo) già configurata sulla preview; non inviare PIN o credenziali in chat.
+2. Acquisire e ispezionare desktop, tablet e telefono per le viste catalogate accessibili ai ruoli e per gli ingressi/portali fuori catalogo.
+3. Verificare azione primaria, stati loading/vuoto/errore/offline e ritorno indietro per ogni famiglia di template.
+4. Confrontare il piccolo overflow desktop e la chiarezza del selettore utenti prima di decidere il pilota visuale e classificare eventuali zombie.
 
 ## Fonti nel repository
 
