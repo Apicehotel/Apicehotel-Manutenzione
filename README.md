@@ -185,6 +185,19 @@ La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello
 
 Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
 
+## RandVisual — Blocco 2
+
+RandVisual è il motore visuale governato, separato da RandUI: riusa i contratti/layout/renderer SVG sicuri già presenti e aggiunge la governance delle fonti esterne e della futura pipeline immagini.
+
+- `cathrynlavery/diagram-design` → `ADAPT`: pattern editoriali, gerarchia, leggibilità e accessibilità; nessuna dipendenza runtime o esecuzione remota.
+- `freestylefly/awesome-gpt-image-2` → `SOURCE_ONLY`: tassonomia e riferimenti per prompt visuali; nessuna copia automatica dei prompt di terzi e verifica dei diritti per uso commerciale.
+- I piani immagine richiedono `hotelId`, mantengono provenance, minimizzano/redigono dati sensibili e producono sempre una bozza finché non approvata.
+- RandCore/RLS/RPC restano autorità; RandVisual non crea un secondo sistema di permessi o un secondo design system.
+
+Test dedicato: `test/randvisual-block2-sources.test.js`.
+
+Dettaglio: `docs/architecture/RANDVISUAL_BLOCK2.md`.
+
 ## Moduli operativi
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
@@ -237,7 +250,6 @@ npm run test:lts
 ```
 
 `npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
-
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
 
 ## Deploy
@@ -259,6 +271,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway, Promptfoo, OTLP/Phoenix e boundary ToolHive.
 - `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
 - `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
+- `docs/architecture/RANDVISUAL_BLOCK2.md` — RandVisual, sorgenti esterne governate, pipeline immagini e boundary RandUI.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
