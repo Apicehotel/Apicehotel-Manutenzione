@@ -15,6 +15,12 @@ test('verified governance outcome becomes provenance-bound memory and unverified
  assert.throws(()=>memoryFromVerifiedAudit({...audit,hotelId:'gio'},{content:'x',hotelId:'choco'}),/scope mismatch/)
 })
 
+test('task success alone stays suggested and cannot silently become verified truth',async()=>{
+ const store=new MemoryStore(); const mind=new RandMind({store})
+ const created=await mind.engine.extractFromTask({id:'task-1',status:'SUCCEEDED',objective:'Controllo pompa',metadata:{hotelId:'gio'},decisions:[{type:'RETRY',reason:'Verifica pressione'}]})
+ assert.equal(created.length,2); assert.ok(created.every((m)=>m.trust===MemoryTrust.SUGGESTED)); assert.ok(created.every((m)=>!m.lastVerifiedAt)); assert.ok(created.every((m)=>m.tags.includes('unverified-outcome')))
+})
+
 test('temporal usability preserves historical truth before supersession and forgetting',()=>{
  const base={id:'m1',type:'episodic',scope:'hotel',hotelId:'gio',trust:'verified',content:'old',source:{kind:'test',id:'s'},importance:.5,confidence:.9,createdAt:'2026-01-01T00:00:00Z',validFrom:'2026-01-01T00:00:00Z',validUntil:null,lifecycleStatus:MemoryLifecycle.SUPERSEDED,retentionClass:RetentionClass.LONG_TERM,supersededAt:'2026-06-01T00:00:00Z'}
  assert.equal(usableAt(base,'2026-05-01T00:00:00Z'),true); assert.equal(usableAt(base,'2026-07-01T00:00:00Z'),false)
@@ -25,13 +31,20 @@ test('retention planner is non-destructive, policy-driven and never selects lega
   {id:'t',lifecycleStatus:'active',retentionClass:'transient',updatedAt:'2026-01-01T00:00:00Z'},
   {id:'l',lifecycleStatus:'active',retentionClass:'legal_hold',updatedAt:'2020-01-01T00:00:00Z'},
   {id:'o',lifecycleStatus:'active',retentionClass:'operational',updatedAt:'2026-01-01T00:00:00Z'}]
- const plan=planRetention(items,{transient:7},Date.parse('2026-02-01T00:00:00Z')); assert.deepEqual(plan.candidates.map(x=>x.id),['t'])
+ const plan=planRetention(items,{transient:7},Date.parse('2026-02-01T00:00:00Z')); assert.deepEqual(plan.candidates.map(x=>x.id),['t']); assert.equal(items[0].lifecycleStatus,'active')
 })
 
 test('conflict suggestion is explainable and refuses score ties',()=>{
  const common={type:'episodic',scope:'hotel',hotelId:'gio',source:{kind:'x',id:'y'},importance:.5,lifecycleStatus:'active',retentionClass:'long_term',validFrom:'2026-01-01T00:00:00Z'}
  const result=suggestConflictWinner([{...common,id:'a',trust:'approved',confidence:.95,content:'a'},{...common,id:'b',trust:'draft',confidence:.6,content:'b'}],Date.parse('2026-02-01T00:00:00Z'))
  assert.equal(result.winnerId,'a'); assert.equal(result.ambiguous,false); assert.equal(result.ranked[0].id,'a')
+})
+
+test('in-memory governed conflict resolution mirrors production scope rules',async()=>{
+ const store=new MemoryStore(); const mind=new RandMind({store}); const common={type:'episodic',scope:'hotel',hotelId:'gio',source:{kind:'test',id:'src'},importance:.7,confidence:.9,retentionClass:'long_term',validFrom:'2026-01-01T00:00:00Z',conflictGroup:'pump-state'}
+ await mind.remember({...common,id:'winner',trust:'verified',content:'Pompa operativa'}); await mind.remember({...common,id:'loser',trust:'verified',content:'Pompa guasta'})
+ const out=await mind.resolveConflict({conflictGroup:'pump-state',winnerId:'winner',loserIds:['loser'],reason:'Verifica manutentore'})
+ assert.equal(out.supersededCount,1); const loser=await store.get('loser'); assert.equal(loser.lifecycleStatus,'superseded'); assert.equal(loser.trust,'outdated'); assert.ok(loser.supersededAt)
 })
 
 test('RandMind ingests verified audit and recallAt uses canonical store',async()=>{
