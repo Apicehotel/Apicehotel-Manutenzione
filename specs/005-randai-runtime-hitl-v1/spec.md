@@ -26,3 +26,6 @@ Unificare l'esecuzione governata senza creare owner paralleli, mantenendo Action
 - CI completa verde;
 - README/architecture aggiornati;
 - PR stacked e human review obbligatoria.
+
+## Security and hotel isolation
+Il Punto 6 non concede nuove autorizzazioni. Identità, hotel scope, Tool Gateway, RandSecure, RLS/RPC e Action Gateway restano autoritativi. Il runtime HITL può solo restringere l'esecuzione: preview, richiesta di approvazione o blocco. Gli adapter sandbox non possono abilitare unrestricted host execution; ogni tool mutante resta soggetto agli stessi controlli hotel-scoped e all'audit canonico.
