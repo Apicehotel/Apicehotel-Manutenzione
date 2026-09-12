@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const persistenceSql = fs.readFileSync(new URL('../supabase/migrations/20260912113000_randcore_runtime_v2_persistence.sql', import.meta.url), 'utf8')
 const immutabilitySql = fs.readFileSync(new URL('../supabase/migrations/20260912114500_randcore_event_immutability.sql', import.meta.url), 'utf8')
+const hardeningSql = fs.readFileSync(new URL('../supabase/migrations/20260912115000_randcore_runtime_security_hardening.sql', import.meta.url), 'utf8')
 
 test('RandCore schema persists every runtime owner and indexes claim/recovery paths', () => {
   for (const table of ['randcore_events', 'randcore_jobs', 'randcore_workers', 'randcore_dead_letters']) {
@@ -32,4 +33,18 @@ test('event provenance is immutable at database level, not only by adapter conve
   assert.match(immutabilitySql, /RANDCORE_EVENT_IMMUTABLE/i)
   assert.match(immutabilitySql, /new\.payload is distinct from old\.payload/i)
   assert.match(immutabilitySql, /new\.hotel_id is distinct from old\.hotel_id/i)
+})
+
+test('database privileges are explicit and direct claim rejects unregistered workers', () => {
+  for (const table of ['randcore_events', 'randcore_jobs', 'randcore_workers', 'randcore_dead_letters']) {
+    assert.match(hardeningSql, new RegExp(`revoke all on table public\\.${table} from anon, authenticated`, 'i'))
+  }
+  assert.match(hardeningSql, /grant select, insert on table public\.randcore_events to service_role/i)
+  assert.match(hardeningSql, /grant select, insert, update on table public\.randcore_jobs to service_role/i)
+  assert.match(hardeningSql, /grant select, insert, update on table public\.randcore_workers to service_role/i)
+  assert.match(hardeningSql, /grant select, insert on table public\.randcore_dead_letters to service_role/i)
+  assert.match(hardeningSql, /from public\.randcore_workers[\s\S]*where id = p_worker_id/i)
+  assert.match(hardeningSql, /RANDCORE_WORKER_NOT_REGISTERED/i)
+  assert.match(hardeningSql, /revoke all on function public\.randcore_claim_job[\s\S]*from public, anon, authenticated/i)
+  assert.match(hardeningSql, /grant execute on function public\.randcore_claim_job[\s\S]*to service_role/i)
 })
