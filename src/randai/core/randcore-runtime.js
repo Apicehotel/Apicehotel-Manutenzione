@@ -29,10 +29,18 @@ const TRANSITIONS = Object.freeze({
   [RandJobStatus.CANCELLED]: new Set()
 })
 
+const STORE_METHODS = ['getJob', 'putJob', 'listJobs', 'getWorker', 'putWorker', 'listWorkers', 'putDeadLetter', 'listDeadLetters']
 const clean = (value) => String(value ?? '').trim()
 const clone = (value) => structuredClone(value)
 const frozen = (value) => Object.freeze(clone(value))
 const defaultId = (prefix) => `${prefix}_${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`}`
+
+export function assertRandCoreStore(store) {
+  for (const method of STORE_METHODS) {
+    if (typeof store?.[method] !== 'function') throw new TypeError(`RandCore store must implement ${method}()`)
+  }
+  return store
+}
 
 export function createRandEvent({
   eventId,
@@ -102,11 +110,26 @@ export class RandCoreRuntime {
     idFactory = defaultId,
     workerStaleAfterMs = 60_000
   } = {}) {
-    this.store = store
+    this.store = assertRandCoreStore(store)
     this.durableRuntime = durableRuntime
     this.clock = clock
     this.idFactory = idFactory
     this.workerStaleAfterMs = Math.max(1, Number(workerStaleAfterMs) || 60_000)
+  }
+
+  async publish({ event, routes = [] } = {}) {
+    const normalizedEvent = assertRandEvent(event)
+    if (!Array.isArray(routes) || routes.length === 0) throw new TypeError('At least one event route is required')
+    const jobs = []
+    for (const route of routes) {
+      jobs.push(await this.enqueue({
+        event: normalizedEvent,
+        handlerId: route?.handlerId,
+        maxAttempts: route?.maxAttempts,
+        metadata: route?.metadata ?? {}
+      }))
+    }
+    return frozen({ event: normalizedEvent, jobs })
   }
 
   async enqueue({ event, handlerId, maxAttempts = 3, metadata = {} } = {}) {
@@ -149,8 +172,7 @@ export class RandCoreRuntime {
   }
 
   async heartbeat(workerId) {
-    const id = clean(workerId)
-    const worker = await this.store.getWorker(id)
+    const worker = await this.store.getWorker(clean(workerId))
     if (!worker) throw new Error('Worker not registered')
     worker.lastHeartbeatAt = this.clock()
     await this.store.putWorker(worker)
@@ -231,13 +253,16 @@ export class RandCoreRuntime {
   async startDurable({ jobId, workerId, workflow, input = {}, context = {}, idempotencyKey, maxAttempts = 3 } = {}) {
     const claimed = await this.claim({ jobId, workerId })
     const run = await this.durableRuntime.start({ workflow, input, context, idempotencyKey, maxAttempts })
-    const job = await this.#requiredJob(claimed.id)
-    if (run?.id) job.durableRunId = run.id
-    await this.store.putJob(job)
-    if (run?.status === DurableStatus.SUCCEEDED) return { job: await this.succeed(job.id, run.output ?? null), run }
-    if (run?.status === DurableStatus.FAILED || run?.status === 'DENIED') return { job: await this.fail(job.id, { retryable: false, errorCode: run.errorCode || run.authorization?.code || 'DURABLE_FAILED' }), run }
-    if (run?.status === DurableStatus.CANCELLED) return { job: await this.cancel(job.id), run }
-    return { job: frozen(job), run }
+    await this.#bindDurableRun(claimed.id, run)
+    return this.#syncDurableResult(claimed.id, run)
+  }
+
+  async resumeDurable({ jobId, workflow, context = {} } = {}) {
+    const job = await this.#requiredJob(jobId)
+    if (job.status !== RandJobStatus.RUNNING) throw new Error(`Durable job cannot resume from ${job.status}`)
+    if (!job.durableRunId) throw new Error('Durable run is not bound to job')
+    const run = await this.durableRuntime.resume({ runId: job.durableRunId, workflow, context })
+    return this.#syncDurableResult(job.id, run)
   }
 
   async snapshot() {
@@ -272,6 +297,23 @@ export class RandCoreRuntime {
     if (!allowed?.has(nextStatus)) throw new Error(`Invalid job transition ${job.status} -> ${nextStatus}`)
     job.status = nextStatus
     job.updatedAt = this.clock()
+  }
+
+  async #bindDurableRun(jobId, run) {
+    if (!run?.id) return
+    const job = await this.#requiredJob(jobId)
+    job.durableRunId = run.id
+    job.updatedAt = this.clock()
+    await this.store.putJob(job)
+  }
+
+  async #syncDurableResult(jobId, run) {
+    if (run?.status === DurableStatus.SUCCEEDED) return { job: await this.succeed(jobId, run.output ?? null), run }
+    if (run?.status === DurableStatus.FAILED || run?.status === 'DENIED') {
+      return { job: await this.fail(jobId, { retryable: false, errorCode: run.errorCode || run.authorization?.code || 'DURABLE_FAILED' }), run }
+    }
+    if (run?.status === DurableStatus.CANCELLED) return { job: await this.cancel(jobId), run }
+    return { job: frozen(await this.#requiredJob(jobId)), run }
   }
 
   async #deadLetter(job, reason) {
