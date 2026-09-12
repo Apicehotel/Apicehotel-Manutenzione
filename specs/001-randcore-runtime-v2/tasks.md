@@ -15,5 +15,7 @@
 - [DONE] T013 Implementare recovery restart/redeploy con `FOR UPDATE SKIP LOCKED` e dead-letter idempotente. Evidence: `randcore_recover_expired_jobs`, `test/randai-group3-randcore-runtime.test.js`
 - [DONE] T014 Blindare persistence/RPC ai client e consentire l'esecuzione soltanto a `service_role`. Evidence: migration RandCore Runtime v2 + test Group 3
 - [DONE] T015 Aggiornare architettura e documentazione del runtime persistente. Evidence: `docs/architecture/RANDCORE_RUNTIME_V2.md`, `README.md`
-- [DOING] T016 Ottenere CI completa verde sulla PR dedicata dopo le modifiche persistence. Evidence: GitHub Actions PR #238
-- [TODO] T017 Chiudere Converge con PR pronta a revisione umana, senza merge automatico. Evidence: PR #238
+- [DONE] T016 Rendere gli eventi persistenti immutabili e bloccare collisioni semantiche di `eventId`. Evidence: `supabase/migrations/20260912114500_randcore_event_immutability.sql`, `src/randai/core/supabase-randcore-store.js`
+- [DONE] T017 Esplicitare privilegi minimi DB e rifiutare claim dirette da worker non registrati. Evidence: `supabase/migrations/20260912115000_randcore_runtime_security_hardening.sql`, `test/randai-group3-randcore-persistence.test.js`
+- [DOING] T018 Ottenere CI completa verde sulla PR dedicata dopo il final hardening. Evidence: GitHub Actions PR #238
+- [TODO] T019 Chiudere Converge con PR pronta a revisione umana, senza merge automatico. Evidence: PR #238
