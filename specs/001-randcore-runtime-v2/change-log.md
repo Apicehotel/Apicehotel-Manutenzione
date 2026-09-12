@@ -7,3 +7,9 @@
 - 2026-09-12: collegato il lifecycle job a `RandDurableRuntime` tramite start/resume senza modificare il durable engine esistente.
 - 2026-09-12: aggiunti test Group 3 e documentazione architetturale.
 - 2026-09-12: Group 3 CI reso valido per PR stacked; merge su `main` resta umano.
+- 2026-09-12: verificato che il repository non possedeva una queue/outbox Postgres canonica riutilizzabile; evitata quindi una falsa integrazione con owner inesistenti.
+- 2026-09-12: aggiunto `SupabaseRandCoreStore` come adapter produttivo; `InMemoryRandCoreStore` resta test/reference only.
+- 2026-09-12: aggiunte tabelle persistenti `randcore_events`, `randcore_jobs`, `randcore_workers`, `randcore_dead_letters` con RLS abilitata e accesso runtime server-side.
+- 2026-09-12: aggiunte RPC service-role-only per claim atomica, rinnovo lease owner-bound e recovery concorrente con `FOR UPDATE SKIP LOCKED`.
+- 2026-09-12: aggiunta recovery restart/redeploy; lease scaduto torna `RETRYING` oppure entra in dead-letter persistente/idempotente a tentativi esauriti.
+- 2026-09-12: aggiunti test anti-regressione per lease, restart recovery, dead-letter idempotente e security contract della migration.
