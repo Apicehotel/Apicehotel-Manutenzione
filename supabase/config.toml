@@ -11,3 +11,8 @@ verify_jwt = false
 # edge_function_secrets.randchat_media_cron_secret.
 [functions.randchat-media-cleanup]
 verify_jwt = false
+
+# Webhook Twilio pubblico: non possiede un JWT Supabase. L'endpoint valida
+# firma X-Twilio-Signature e, passando dal proxy Vercel, shared secret + URL.
+[functions.randai-whatsapp-inbound]
+verify_jwt = false
