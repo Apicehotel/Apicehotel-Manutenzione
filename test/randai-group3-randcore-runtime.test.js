@@ -9,11 +9,12 @@ import {
   createRandEvent
 } from '../src/randai/core/randcore-runtime.js'
 
-function harness({ now = 1_000, staleAfter = 100 } = {}) {
+function harness({ now = 1_000, staleAfter = 100, durableRuntime } = {}) {
   let clockValue = now
   let id = 0
   const runtime = new RandCoreRuntime({
     store: new InMemoryRandCoreStore(),
+    ...(durableRuntime ? { durableRuntime } : {}),
     clock: () => clockValue,
     idFactory: (prefix) => `${prefix}_${++id}`,
     workerStaleAfterMs: staleAfter
@@ -21,13 +22,15 @@ function harness({ now = 1_000, staleAfter = 100 } = {}) {
   return { runtime, tick: (ms) => { clockValue += ms } }
 }
 
-test('event envelope is immutable, correlated and hotel-scoped by default', () => {
-  const event = createRandEvent({ eventId: 'evt_1', type: 'maintenance.created', source: 'randapp', hotelId: 'gio', occurredAt: 123, payload: { urgent: true } })
+test('event envelope is deeply immutable, correlated and hotel-scoped by default', () => {
+  const event = createRandEvent({ eventId: 'evt_1', type: 'maintenance.created', source: 'randapp', hotelId: 'gio', occurredAt: 123, payload: { urgent: true, nested: { room: 214 } } })
   assert.equal(event.scope, 'HOTEL')
   assert.equal(event.hotelId, 'gio')
   assert.equal(event.correlationId, 'evt_1')
   assert.equal(event.causationId, null)
   assert.throws(() => { event.type = 'tampered' }, TypeError)
+  assert.throws(() => { event.payload.urgent = false }, TypeError)
+  assert.throws(() => { event.payload.nested.room = 999 }, TypeError)
 })
 
 test('event envelope fails closed on invalid hotel/system scope', () => {
@@ -107,6 +110,7 @@ test('snapshot exposes observable queue and worker health without treating stale
   assert.equal(snapshot.workers.total, 2)
   assert.equal(snapshot.workers.stale, 1)
   assert.equal(snapshot.workers.healthy, 1)
+  assert.throws(() => { snapshot.jobs.counts.QUEUED = 99 }, TypeError)
 })
 
 test('non-retryable failure is terminal FAILED and does not silently requeue', async () => {
@@ -143,4 +147,41 @@ test('durable start and resume stay synchronized with one RandCore job', async (
   assert.equal(resumed.job.status, RandJobStatus.SUCCEEDED)
   assert.deepEqual(resumed.job.output, { complete: true })
   assert.equal(calls, 2)
+})
+
+test('durable start exception cannot strand a job in RUNNING', async () => {
+  const durableRuntime = {
+    async start() {
+      const error = new Error('executor unavailable')
+      error.code = 'EXECUTOR_DOWN'
+      throw error
+    }
+  }
+  const { runtime } = harness({ staleAfter: 10_000, durableRuntime })
+  await runtime.registerWorker({ workerId: 'durable-worker' })
+  const event = createRandEvent({ eventId: 'evt_throw', type: 'research.run', source: 'randai', hotelId: 'gio', occurredAt: 6 })
+  const job = await runtime.enqueue({ event, handlerId: 'durable' })
+  await assert.rejects(() => runtime.startDurable({ jobId: job.id, workerId: 'durable-worker', workflow: {}, idempotencyKey: 'x' }), /executor unavailable/)
+  const snapshot = await runtime.snapshot()
+  assert.equal(snapshot.jobs.counts.RUNNING, 0)
+  assert.equal(snapshot.jobs.counts.FAILED, 1)
+})
+
+test('retryable durable exception moves job to RETRYING instead of stranding it', async () => {
+  const durableRuntime = {
+    async start() {
+      const error = new Error('temporary executor failure')
+      error.code = 'EXECUTOR_TEMPORARY'
+      error.retryable = true
+      throw error
+    }
+  }
+  const { runtime } = harness({ staleAfter: 10_000, durableRuntime })
+  await runtime.registerWorker({ workerId: 'durable-worker' })
+  const event = createRandEvent({ eventId: 'evt_retry_throw', type: 'research.run', source: 'randai', hotelId: 'gio', occurredAt: 7 })
+  const job = await runtime.enqueue({ event, handlerId: 'durable', maxAttempts: 2 })
+  await assert.rejects(() => runtime.startDurable({ jobId: job.id, workerId: 'durable-worker', workflow: {}, idempotencyKey: 'x' }), /temporary executor failure/)
+  const snapshot = await runtime.snapshot()
+  assert.equal(snapshot.jobs.counts.RUNNING, 0)
+  assert.equal(snapshot.jobs.counts.RETRYING, 1)
 })
