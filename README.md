@@ -197,6 +197,28 @@ Workflow dedicato: `.github/workflows/randai-group3-durable.yml`; il gate viene 
 Dettaglio durable: `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md`.
 Dettaglio coordinamento core: `docs/architecture/RANDCORE_RUNTIME_V2.md`.
 
+## RandAI Group 4 — Rules, Audit, Doctor, Secure
+
+Il Punto 3 aggiunge la governance operativa canonica sopra RandCore senza creare nuovi owner paralleli:
+
+- **RandRules** usa regole dichiarative/versionate e hotel-scoped; niente `eval`, script o codice arbitrario;
+- **RandSecure** è un restrittore: controlla allowlist, scope, hotel, permesso già concesso, rischio e approvazione, ma non sostituisce RLS/RPC/RandTool Gateway/Action Gateway;
+- **RandAudit** conserva evidence decisionale append-only su Supabase/Postgres, con redazione ricorsiva dei campi sensibili e immutabilità DB;
+- **RandDoctor** compone snapshot RandCore e health evidence esistenti, producendo findings senza creare `Health2`;
+- **RandGovernanceRuntime** collega `evento → regola → intent → security decision → audit`, senza eseguire direttamente mutazioni.
+
+Pipeline:
+
+`RandCore event → RandRules → action intent → RandSecure → RandAudit → RandCore / Action Gateway`
+
+Comando:
+
+```bash
+npm run test:group4
+```
+
+Workflow dedicato: `.github/workflows/randai-group4-governance.yml`. Dettaglio: `docs/architecture/RAND_GOVERNANCE_V1.md`.
+
 ## RandUI
 
 RandUI è il design system canonico. Il flusso è:
@@ -248,6 +270,7 @@ npm run test:quality
 npm run test:group1
 npm run test:group2
 npm run test:group3
+npm run test:group4
 npm run spec:validate
 npm run test:randspec
 npm run eval:randai:security
@@ -264,7 +287,7 @@ npm run test:lts
 
 `npm test` include anche `test/randspec-governance.test.js`, `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono RandSpec/Constitution, intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
-La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume; Group 3 include ora anche i contratti RandCore Runtime v2.
+La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2, Group 3 e Group 4 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume e governance rules/audit/doctor/security; Group 3 include anche i contratti RandCore Runtime v2.
 
 ## Deploy
 
@@ -277,6 +300,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/governance/RAND_CONSTITUTION.md` — invarianti di sviluppo, freeze agenti, change protocol e release gate minimo.
 - `docs/architecture/RANDSPEC_V1.md` — RandSpec brownfield sopra RandFlow, template, validator e converge.
 - `docs/architecture/RANDCORE_RUNTIME_V2.md` — event contract, queue/job lifecycle, worker heartbeat, dead-letter, snapshot e integrazione durable.
+- `docs/architecture/RAND_GOVERNANCE_V1.md` — RandRules, RandAudit, RandDoctor, RandSecure, persistence e boundary Action Gateway.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
