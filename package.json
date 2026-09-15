@@ -19,6 +19,7 @@
     "test:phase0": "node --test test/phase-zero-foundations.test.js",
     "test:phase1": "node --test test/phase-one-identity-authorization.test.js",
     "test:phase2": "node --test test/phase-two-mobile-randui.test.js test/ui-shell-foundation.test.js test/randui-adaptive-layout.test.js test/randui-planning-mobile-fix.test.js",
+    "test:phase3": "node --test test/phase-three-governed-resolve.test.js test/randai-action-gateway-edge-regression.test.js test/point17-database-security.test.js",
     "test:benchmark": "node --test test/randai-benchmark.test.js",
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",

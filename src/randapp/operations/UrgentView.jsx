@@ -3,16 +3,18 @@ import { fetchUrgents, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } fr
 import { insertIssue } from '../../issues-data.js'
 import { Button, Card, EmptyState, Field, IconButton, Spinner, TextInput } from '../ui.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, URGENCY_META } from '../helpers.js'
+import { canUser } from '../../permissions.js'
 import { PageTitle, StatusPill, fmt } from './view-primitives.jsx'
 
 export default function UrgentView({ hotel, user }) {
   const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[transforming,setTransforming]=useState(null)
+  const canTake=canUser(user,'urgent','take_charge'), canComplete=canUser(user,'urgent','complete'), canTransform=canComplete&&canUser(user,'issues','create')
   const load=useCallback(async()=>{const result=await fetchUrgents(hotel.id);setItems(result.items||[]);setLoading(false)},[hotel.id])
   useEffect(()=>{load();return subscribeUrgents(hotel.id,load)},[hotel.id,load])
   const take=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'presa_in_carico',takenBy:user?.name});load()}
   const done=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'completata',completedBy:user?.name});load()}
   if(transforming)return <TransformUrgentForm urgent={transforming} hotel={hotel} user={user} onCancel={()=>setTransforming(null)} onDone={()=>{setTransforming(null);load()}}/>
-  return <div data-testid="urgent-view"><PageTitle title="Avvisi urgenti" subtitle={`${hotel.name} · ${items.filter(i=>i.status!=='completata').length} attivi`}/>{loading?<Spinner label="Carico avvisi…"/>:!items.length?<EmptyState icon="warning" title="Nessun avviso urgente">La struttura non ha avvisi attivi.</EmptyState>:<div className="rs-migrated-list">{items.map(item=><Card key={item.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{item.location||'Avviso urgente'}</strong><small>{fmt(item.createdAt)} · {item.createdBy||'—'}</small></div><StatusPill status={item.status}/></div><p>{item.note}</p>{item.transformedIssueId&&<small style={{color:'var(--rs-teal)'}}>✓ Trasformato in segnalazione</small>}<div className="rs-op-card__actions">{item.status==='aperta'&&<Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button>}{item.status==='presa_in_carico'&&<Button icon="check" onClick={()=>done(item)}>Completa</Button>}{canSendUrgent(user)&&item.status!=='completata'&&!item.transformed&&<Button variant="ghost" icon="issues" onClick={()=>setTransforming(item)}>Trasforma in segnalazione</Button>}</div></Card>)}</div>}</div>
+  return <div data-testid="urgent-view"><PageTitle title="Avvisi urgenti" subtitle={`${hotel.name} · ${items.filter(i=>i.status!=='completata').length} attivi`}/>{loading?<Spinner label="Carico avvisi…"/>:!items.length?<EmptyState icon="warning" title="Nessun avviso urgente">La struttura non ha avvisi attivi.</EmptyState>:<div className="rs-migrated-list">{items.map(item=><Card key={item.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{item.location||'Avviso urgente'}</strong><small>{fmt(item.createdAt)} · {item.createdBy||'—'}</small></div><StatusPill status={item.status}/></div><p>{item.note}</p>{item.transformedIssueId&&<small style={{color:'var(--rs-teal)'}}>✓ Trasformato in segnalazione</small>}<div className="rs-op-card__actions">{canTake&&item.status==='aperta'&&<Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button>}{canComplete&&item.status==='presa_in_carico'&&<Button icon="check" onClick={()=>done(item)}>Completa</Button>}{canTransform&&item.status!=='completata'&&!item.transformed&&<Button variant="ghost" icon="issues" onClick={()=>setTransforming(item)}>Trasforma in segnalazione</Button>}</div></Card>)}</div>}</div>
 }
 
 function TransformUrgentForm({urgent,hotel,user,onCancel,onDone}){
