@@ -2,7 +2,7 @@
 
 ## Esito
 
-RandGateway è l'ingresso canonico dei canali Rand. RandChat, MCP, Twilio/WhatsApp, email e adapter futuri traducono il proprio formato in un envelope comune, ma non possono concedere identità, permessi, rischio o autorizzazione.
+RandGateway è l'ingresso canonico dei canali Rand. RandApp/Web, RandChat, MCP, Twilio/WhatsApp, email e adapter futuri traducono il proprio formato in un envelope comune, ma non possono concedere identità, permessi, rischio o autorizzazione.
 
 Flusso obbligatorio per un comando:
 
@@ -16,7 +16,8 @@ Un adapter che chiama direttamente Action Gateway o scrive una tabella operativa
 - `supabase/functions/_shared/rand-gateway/adapters.js`: adapter puri RandChat, MCP e Twilio.
 - `supabase/functions/_shared/rand-gateway/gateway.js`: sequenza fail-closed identità → policy → HITL → azione → audit.
 - `supabase/functions/_shared/rand-gateway/supabase-store.js`: persistenza server-only.
-- `supabase/functions/rand-gateway/index.ts`: ingresso autenticato per RandChat e MCP.
+- `supabase/functions/rand-gateway/index.ts`: ingresso autenticato per RandApp/Web, RandChat e MCP.
+- `src/randai/action-gateway.js`: adapter RandApp/Web; prepara, conferma o rifiuta attraverso RandGateway e non invoca più direttamente l'executor.
 - `api/mcp.js`: MCP Streamable HTTP stateless con SDK ufficiale stabile `1.30.0`.
 - `supabase/functions/randai-whatsapp-inbound/index.ts`: verifica firma Twilio, conservazione inbox/media e consegna al gateway; nessuna scrittura diretta in `segnalazioni`.
 - `supabase/functions/whatsapp-webhook/index.ts`: endpoint legacy ritirato con risposta `410`; non conserva più un secondo percorso operativo.
@@ -35,6 +36,8 @@ L'envelope contiene `id`, `traceId`, timestamp, canale, direzione, actor dichiar
 ```
 
 Solo Identity/Tool/HITL Gateway possono cambiarne l'esito. Le annotazioni MCP rimangono in `externalAnnotations` e non modificano la policy Rand.
+
+Le approvazioni sono legate esattamente a tool, risorsa e input approvati. Presentare un `approvalId` con un comando, una risorsa o parametri diversi viene negato prima dell'Action Gateway. Inoltre una policy errata non può disattivare HITL per mutazioni o rischio `HIGH/CRITICAL`.
 
 ## Persistenza e sicurezza
 

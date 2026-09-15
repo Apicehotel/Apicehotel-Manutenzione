@@ -81,7 +81,7 @@ RandCore governa health, audit, release gate, workers, sicurezza, costi, integra
 
 ## RandGateway — Punto 7
 
-RandGateway è l'unico ingresso per richieste provenienti da RandChat, MCP e Twilio/WhatsApp. Gli adapter producono un envelope canonico ma non decidono identità, hotel, ruolo, rischio o permessi. I comandi seguono sempre `RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`; un adapter non può scrivere direttamente dati operativi.
+RandGateway è l'unico ingresso per richieste provenienti da RandApp/Web, RandChat, MCP e Twilio/WhatsApp. Gli adapter producono un envelope canonico ma non decidono identità, hotel, ruolo, rischio o permessi. I comandi seguono sempre `RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`; un adapter non può scrivere direttamente dati operativi.
 
 RandChat conserva lo storico in Postgres e usa Broadcast privato hotel/member-scoped per la consegna live. MCP remoto usa Streamable HTTP con SDK ufficiale stabile e allowlist Rand. Twilio resta il provider WhatsApp temporaneo, dietro l'adapter: riceve e conserva i messaggi, ma la creazione di una segnalazione richiede revisione protetta.
 

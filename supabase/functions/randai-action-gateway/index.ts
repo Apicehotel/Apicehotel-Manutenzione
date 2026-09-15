@@ -262,6 +262,7 @@ async function prepare(req: Request, body: any) {
       expires_at: approval.expires_at,
       idempotency_key: idempotencyKey,
       summary: summarizeAction(action),
+      input: action.input,
       before: preview.before,
       after: preview.after,
     },

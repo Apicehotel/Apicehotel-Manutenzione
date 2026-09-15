@@ -1,4 +1,3 @@
-import { supabase } from '../supabase.js'
 import { assertSensitiveActionOnline } from '../session-policy.js'
 import { assertContextScope } from '../reliability/context-scope-guard.js'
 import { assertActionMayExecute } from '../reliability/execution-policy.js'
@@ -10,6 +9,7 @@ import {
   validationIssue,
 } from '../reliability/validation-engine.js'
 import { getRandAIContext } from './context/envelope.js'
+import { submitRandGatewayEnvelope } from '../randgateway-client.js'
 
 function validatePrepareInput({ hotelId, type, resourceId, input }) {
   const issues = [
@@ -24,18 +24,25 @@ function validatePrepareInput({ hotelId, type, resourceId, input }) {
   if (!result.ok) throw new OperationValidationError(result, 'Azione RandAI non valida')
 }
 
-async function invoke(body) {
+async function invokeGateway({ hotelId, type, resourceId, input = {}, approvalId = null, approvalDecision = 'execute' }) {
   assertSensitiveActionOnline('Le azioni operative RandAI')
-  if (!supabase) throw new Error('Supabase non disponibile')
-  const { data, error } = await supabase.functions.invoke('randai-action-gateway', { body })
-  if (error) throw error
-  if (!data?.ok) {
-    const err = new Error(data?.error || 'action_gateway_unavailable')
-    err.code = data?.error || 'action_gateway_unavailable'
-    err.detail = data
-    throw err
-  }
-  return data
+  return submitRandGatewayEnvelope({
+    channel: 'randapp',
+    direction: 'inbound',
+    actor: { hotelId },
+    conversation: { type: 'system' },
+    payload: {
+      type: 'tool_request',
+      toolRequest: {
+        name: type,
+        targetHotelId: hotelId,
+        arguments: { resourceId, input },
+        approvalId,
+      },
+      metadata: { approvalDecision },
+    },
+    origin: { provider: 'randapp', providerMessageId: crypto.randomUUID() },
+  })
 }
 
 export async function prepareRandAIAction({ hotelId, type, resourceId, input = {}, context = null } = {}) {
@@ -54,22 +61,37 @@ export async function prepareRandAIAction({ hotelId, type, resourceId, input = {
     requireResource: true,
     requireModule: true,
   })
-  return invoke({
-    operation: 'prepare',
-    hotel_id: hotelId,
-    action: { type, resource_id: resourceId, input },
-    context: resolvedContext,
-  })
+  const result = await invokeGateway({ hotelId, type, resourceId, input })
+  return {
+    ok: true,
+    operation: 'prepared',
+    plan: {
+      ...(result.approval || {}),
+      approval_id: result.approvalId,
+      input: result.approval?.input || input,
+    },
+  }
 }
 
-export async function executeRandAIAction({ hotelId, approvalId } = {}) {
-  const result = combineValidation(required(hotelId, 'hotelId'), required(approvalId, 'approvalId'))
+export async function executeRandAIAction({ hotelId, approvalId, type, resourceId, input = {} } = {}) {
+  const result = combineValidation(
+    required(hotelId, 'hotelId'),
+    required(approvalId, 'approvalId'),
+    required(type, 'type'),
+    required(resourceId, 'resourceId'),
+  )
   if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI non valida')
-  return invoke({ operation: 'execute', hotel_id: hotelId, approval_id: approvalId })
+  const response = await invokeGateway({ hotelId, approvalId, type, resourceId, input })
+  return response.result
 }
 
-export async function executeGovernedRandAIAction({ hotelId, approvalId, planValidation, confidenceDecision, permissionGranted = false } = {}) {
-  const result = combineValidation(required(hotelId, 'hotelId'), required(approvalId, 'approvalId'))
+export async function executeGovernedRandAIAction({ hotelId, approvalId, type, resourceId, input = {}, planValidation, confidenceDecision, permissionGranted = false } = {}) {
+  const result = combineValidation(
+    required(hotelId, 'hotelId'),
+    required(approvalId, 'approvalId'),
+    required(type, 'type'),
+    required(resourceId, 'resourceId'),
+  )
   if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI governata non valida')
   assertActionMayExecute({
     hotelId,
@@ -78,10 +100,11 @@ export async function executeGovernedRandAIAction({ hotelId, approvalId, planVal
     permissionGranted,
     approvalPresent: Boolean(approvalId),
   })
-  return executeRandAIAction({ hotelId, approvalId })
+  return executeRandAIAction({ hotelId, approvalId, type, resourceId, input })
 }
 
-export async function rejectRandAIAction({ hotelId, approvalId } = {}) {
-  if (!hotelId || !approvalId) return null
-  return invoke({ operation: 'reject', hotel_id: hotelId, approval_id: approvalId })
+export async function rejectRandAIAction({ hotelId, approvalId, type, resourceId, input = {} } = {}) {
+  if (!hotelId || !approvalId || !type || !resourceId) return null
+  const response = await invokeGateway({ hotelId, approvalId, type, resourceId, input, approvalDecision: 'reject' })
+  return response.result
 }
