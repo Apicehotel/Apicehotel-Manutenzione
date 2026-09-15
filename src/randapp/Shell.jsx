@@ -393,7 +393,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'feedback-received') content = <FeedbackView user={user} hotel={hotel} received />
     if (view === 'feedback') content = <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') content = <PinView user={user} />
-    if (view === 'manual') content = <ManualView />
+    if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>

@@ -3,6 +3,7 @@ import { assertDurableStore } from './durable-store-contract.js'
 
 export const DurableStatus = Object.freeze({ PENDING:'PENDING', RUNNING:'RUNNING', WAITING:'WAITING', SUCCEEDED:'SUCCEEDED', FAILED:'FAILED', CANCELLED:'CANCELLED' })
 const TERMINAL = new Set([DurableStatus.SUCCEEDED, DurableStatus.FAILED, DurableStatus.CANCELLED])
+const DEFAULT_EXECUTION_TIMEOUT_MS = 120_000
 const clean = (v) => String(v || '').trim()
 const freeze = (v) => Object.freeze(v)
 
@@ -24,8 +25,10 @@ export class InMemoryDurableStore {
 }
 
 export class RandDurableRuntime {
-  constructor({store=new InMemoryDurableStore(),clock=()=>Date.now(),reauthorize,refreshKnowledge}={}){
+  constructor({store=new InMemoryDurableStore(),clock=()=>Date.now(),reauthorize,refreshKnowledge,executionTimeoutMs=DEFAULT_EXECUTION_TIMEOUT_MS}={}){
     this.store=assertDurableStore(store);this.clock=clock
+    if(!Number.isFinite(Number(executionTimeoutMs))||Number(executionTimeoutMs)<=0)throw new TypeError('executionTimeoutMs must be greater than zero')
+    this.executionTimeoutMs=Number(executionTimeoutMs)
     this.reauthorize=reauthorize||(async(c)=>authorizeDurableRun(c));this.refreshKnowledge=refreshKnowledge||(async()=>null)
   }
   async start({workflow,input={},context={},idempotencyKey,maxAttempts=3}={}){
@@ -43,9 +46,15 @@ export class RandDurableRuntime {
     if(!auth?.allowed||auth.actorId!==run.actorId)return this.#finish(run,DurableStatus.FAILED,{errorCode:'REAUTHORIZATION_FAILED'})
     const knowledge=await this.refreshKnowledge({run,context:{...context,hotelId:run.hotelId}});run.status=DurableStatus.RUNNING;run.attempt+=1;run.updatedAt=this.clock();await this.store.put(run)
     return traceRandAIOperation('durable.resume',{'rand.hotel_id':run.hotelId,'rand.workflow_id':run.workflowId,'rand.workflow_attempt':run.attempt},async()=>{
-      try{const result=await workflow.execute({input:structuredClone(run.input),checkpoint:structuredClone(run.checkpoint),knowledge,run:freeze({...run})});if(result?.wait===true){run.checkpoint=structuredClone(result.checkpoint??run.checkpoint);return this.#finish(run,DurableStatus.WAITING)}return this.#finish(run,DurableStatus.SUCCEEDED,{output:structuredClone(result?.output??result)})}
+      try{const result=await this.#execute(workflow,{input:structuredClone(run.input),checkpoint:structuredClone(run.checkpoint),knowledge,run:freeze({...run})});if(result?.wait===true){run.checkpoint=structuredClone(result.checkpoint??run.checkpoint);return this.#finish(run,DurableStatus.WAITING)}return this.#finish(run,DurableStatus.SUCCEEDED,{output:structuredClone(result?.output??result)})}
       catch(error){if(run.attempt<run.maxAttempts&&error?.retryable===true){run.checkpoint=structuredClone(error.checkpoint??run.checkpoint);return this.#finish(run,DurableStatus.WAITING,{errorCode:clean(error.code||'RETRYABLE_ERROR')})}return this.#finish(run,DurableStatus.FAILED,{errorCode:clean(error?.code||'WORKFLOW_FAILED')})}
     })
+  }
+  async #execute(workflow,payload){
+    const controller=new AbortController();let timer
+    const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();const error=new Error('Workflow execution timed out');error.code='WORKFLOW_EXECUTION_TIMEOUT';reject(error)},this.executionTimeoutMs);timer?.unref?.()})
+    try{return await Promise.race([Promise.resolve().then(()=>workflow.execute({...payload,signal:controller.signal})),timeout])}
+    finally{clearTimeout(timer)}
   }
   async cancel(runId){const run=await this.store.get(runId);if(!run||TERMINAL.has(run.status))return run;return this.#finish(run,DurableStatus.CANCELLED)}
   async #finish(run,status,extra={}){Object.assign(run,extra,{status,updatedAt:this.clock()});await this.store.put(run);return freeze(structuredClone(run))}
