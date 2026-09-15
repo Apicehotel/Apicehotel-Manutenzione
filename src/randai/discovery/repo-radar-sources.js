@@ -63,7 +63,7 @@ export function summarizeRepoRadarSourceCoverage(sources=REPO_RADAR_SOURCE_CATAL
 export function assertRepoRadarSourcePolicy(sources=REPO_RADAR_SOURCE_CATALOG){
   const coverage=summarizeRepoRadarSourceCoverage(sources)
   if(!coverage.meetsMinimum) throw new Error(`Repo Radar requires at least ${REPO_RADAR_MIN_ECOSYSTEMS} source ecosystems`)
-  if(coverage.automatedCount<4) throw new Error('Repo Radar requires at least four automated discovery sources')
+  if(coverage.automatedCount<8) throw new Error('Repo Radar requires at least eight automated discovery sources')
   if(coverage.familyCount<4) throw new Error('Repo Radar source coverage must span at least four source families')
   return true
 }
