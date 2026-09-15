@@ -4,6 +4,18 @@ export const HOTELS = [
   { id: 'brigantino', short: 'Brigantino', name: 'Hotel Il Brigantino', mark: 'IB', tone: 'blue', card: '/logos/card-brigantino.png' },
 ]
 
+// Ogni struttura espone lo stesso catalogo funzionale; cambiano soltanto
+// anagrafiche locali (camere, zone, sensori e canali esterni).
+export const HOTEL_FEATURES = Object.freeze([
+  'home', 'issues', 'interventions', 'planning_work', 'planning_sale',
+  'housekeeping', 'urgent', 'reminders', 'notifications', 'temperature',
+  'inventory', 'supplies', 'technicians', 'procedures', 'randai',
+])
+export const HOTEL_FEATURE_MATRIX = Object.freeze(Object.fromEntries(
+  HOTELS.map(({ id }) => [id, HOTEL_FEATURES])
+))
+export const hotelHasFeature = (hotelId, feature) => Boolean(HOTEL_FEATURE_MATRIX[hotelId]?.includes(feature))
+
 // Matrice ruoli approvata: i quattro ruoli base seguono il modello Hotel Giò,
 // i ruoli specializzati Multi Hotel restano separati. "Responsabile" è rimosso.
 // "Capo Governante" ha gli stessi permessi operativi di Governante e in più

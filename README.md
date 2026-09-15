@@ -2,6 +2,8 @@
 
 PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target supportati e testati: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
+La parità funzionale è governata da `HOTEL_FEATURE_MATRIX` in `src/config.js`: Giò, Chocohotel e Brigantino condividono lo stesso catalogo di funzioni (segnalazioni, interventi, planning, housekeeping, rifornimenti, notifiche, sensori, magazzino e RandAI). Restano volutamente locali solo dati e configurazioni della struttura, come camere, zone, sensori e numeri dei canali esterni.
+
 ## Stato attuale
 
 RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
@@ -217,6 +219,8 @@ Dettaglio: `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md`.
 ## Gruppo 3 — release readiness e chiusura
 
 Il Gruppo 3 chiude il ciclo di rilascio con un gate ripetibile e senza deploy impliciti. `npm run release:readiness` verifica che qualità, build, audit, E2E, device acceptance, rollback, separazione Ocean/Vercel e revisione umana siano collegati ai contratti del repository. Se manca una prova, l'esito è `BLOCKED` con l'elenco deterministico dei blocchi.
+
+Il punto 10 usa anche `npm run check:legacy`: controlla gli artefatti CSS/runtime ritirati e garantisce che gli alias di compatibilità rimasti puntino all'implementazione canonica. La scansione è conservativa: nessun file viene cancellato se esistono riferimenti o contratti attivi.
 
 La CI continua a eseguire E2E e device acceptance; la validazione su telefoni fisici e la pubblicazione Android/iOS restano attività esterne (account, firma e approvazione dello store). Vercel resta stabile/congelato, Ocean è solo preview. Il freeze funzionale vale: dopo il gate, solo bug, sicurezza e necessità operative.
 
