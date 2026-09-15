@@ -71,15 +71,21 @@ export default function RandAIConsole(){
       const id=selectedId||makeId()
       const keywords=Array.from(new Set(`${form.category} ${form.area} ${form.symptom} ${form.title}`.toLowerCase().split(/[^a-zà-ÿ0-9]+/i).filter((x)=>x.length>2))).slice(0,24)
       const payload={id,hotel_id:form.hotel_id,title:form.title.trim(),category:form.category.trim()||'generale',area:form.area.trim()||null,symptom:form.symptom.trim()||null,summary:form.summary.trim(),keywords,steps:parseSteps(form.steps_text),caution:form.caution.trim()||null,source_label:form.source_label.trim()||'Conoscenza interna RandAI',status,approved_at:status==='approved'?new Date().toISOString():null,updated_at:new Date().toISOString()}
-      const q=selectedId?supabase.from('randai_procedures').update(payload).eq('id',id):supabase.from('randai_procedures').insert(payload)
+      // Approval is deliberately a two-step flow: persist a draft, then let the
+      // server-side RandGuide gate validate, version and publish it.
+      const q=selectedId?supabase.from('randai_procedures').update({...payload,status:status==='approved'?'draft':status}).eq('id',id):supabase.from('randai_procedures').insert({...payload,status:status==='approved'?'draft':status})
       const {error}=await q; if(error) throw error
+      if(status==='approved'){
+        const {error:publishError}=await supabase.rpc('randguide_publish_procedure',{p_procedure_id:id,p_change_note:'Pubblicazione dall’editor RandGuide'})
+        if(publishError) throw publishError
+      }
       if(media){
         const doc={procedure_id:id,hotel_id:form.hotel_id,equipment_id:form.equipment_id||null,title:`${form.title.trim()} — allegato`,source_type:form.source_type,source_label:form.source_label.trim()||'Google Drive',external_url:media,media_kind:form.media_kind,storage_path:null,status,approved_at:status==='approved'?new Date().toISOString():null,updated_at:new Date().toISOString()}
         const {data:existing}=await supabase.from('randai_documents').select('id').eq('procedure_id',id).order('updated_at',{ascending:false}).limit(1).maybeSingle()
         const {error:de}=existing?.id?await supabase.from('randai_documents').update(doc).eq('id',existing.id):await supabase.from('randai_documents').insert(doc)
         if(de) throw de
       }
-      setSelectedId(id);setForm((f)=>({...f,status}));setNotice(status==='approved'?'Conoscenza approvata: RandAI può usarla.':'Bozza salvata.');await load()
+      setSelectedId(id);setForm((f)=>({...f,status}));setNotice(status==='approved'?'Conoscenza approvata tramite gate RandGuide: RandAI può usarla.':'Bozza salvata.');await load()
     }catch(error){setNotice(`Salvataggio non riuscito: ${error?.message||'errore'}`)}finally{setBusy(false)}
   }
 

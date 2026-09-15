@@ -20,3 +20,10 @@ test('invalid timestamps fail closed as missing', () => {
   assert.equal(result.state, HealthCadenceState.MISSING)
   assert.equal(healthCadenceLabel(result), 'Mai eseguito')
 })
+
+test('RandGuide editor publishes only through the versioned server gate', async () => {
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('../src/randai/console/RandAIConsole.jsx', import.meta.url), 'utf8')
+  assert.match(source, /rpc\('randguide_publish_procedure'/)
+  assert.match(source, /status==='approved'\?'draft':status/)
+})
