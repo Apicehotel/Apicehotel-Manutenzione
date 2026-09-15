@@ -78,7 +78,7 @@ test('rifornimenti update through Supabase realtime rather than polling workers'
 })
 
 test('global housekeeping host still exposes the quick portal without changing reception completion alerts', () => {
-  assert.match(host, /SupplyRequestsPortal/)
+  assert.match(host, /lazy\(\(\) => import\('\.\/SupplyRequestsPortal\.jsx'\)\)/)
   assert.match(host, /HousekeepingCompletionAlerts/)
   assert.match(host, /housekeeping-completion-alert/)
 })
