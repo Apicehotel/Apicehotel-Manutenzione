@@ -18,6 +18,7 @@
     "test:production": "node --test test/randai-block12-production-43-46.test.js test/randai-block12bis-production-47-50.test.js",
     "test:phase0": "node --test test/phase-zero-foundations.test.js",
     "test:phase1": "node --test test/phase-one-identity-authorization.test.js",
+    "test:phase2": "node --test test/phase-two-mobile-randui.test.js test/ui-shell-foundation.test.js test/randui-adaptive-layout.test.js test/randui-planning-mobile-fix.test.js",
     "test:benchmark": "node --test test/randai-benchmark.test.js",
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",

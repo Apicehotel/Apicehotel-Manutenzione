@@ -109,6 +109,17 @@ La Fase 1 chiude la regressione storica RandAI/RandApp senza introdurre un secon
 
 Il gate mirato è `npm run test:phase1`. La migrazione `20260915053605_phase1_identity_authorization.sql` conserva l'accesso in lettura già esistente, ma lo rende esplicito e revocabile dalla matrice centrale.
 
+## Fase 2 — RandUI mobile definitiva
+
+La Fase 2 consolida la gabbia mobile comune su iPhone, Android e tablet:
+
+- safe-area e spazio inferiore della navbar sono calcolati dai token RandUI, senza doppio padding sul notch;
+- la navbar primaria mantiene `Operatività · Planning · Home · Task/operativo · RandAI`; **RandChat non occupa più lo slot 4** e resta nel menu completo;
+- Planning usa superfici compatte e leggibili, mentre Operatività presenta solo i flussi autorizzati senza pannelli vuoti;
+- Piccolo/Normale/Grande, tema chiaro/scuro e target touch restano proprietà condivise, non override per singola pagina.
+
+Il gate mirato è `npm run test:phase2`. La Fase 2 non introduce un nuovo sistema di navigazione: corregge il fallback Chat residuo e protegge con test il comportamento mobile già consolidato.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
