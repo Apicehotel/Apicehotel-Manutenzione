@@ -28,7 +28,7 @@ test('Shell imports operational views directly from focused modules', async () =
   assert.match(shell, /data-count="5"/)
   assert.match(shellNavigation, /home:\s*3/)
   assert.match(shellNavigation, /randai:\s*5/)
-  assert.match(shellNavigation, /id:\s*'randai'.*action:\s*'randai'/s)
+  assert.match(shellNavigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
   assert.doesNotMatch(shellNavigation, /label:\s*'Altro'/)
   assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })

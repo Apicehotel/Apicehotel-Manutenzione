@@ -35,6 +35,9 @@ jobs:
       - name: Dependency security audit
         run: npm audit --audit-level=high
 
+      - name: Phase 0 foundation freeze
+        run: npm run test:phase0
+
       - name: Quality matrix
         run: npm run test:matrix
 

@@ -87,6 +87,16 @@ RandChat conserva lo storico in Postgres e usa Broadcast privato hotel/member-sc
 
 Dettaglio: `docs/architecture/RANDGATEWAY_POINT7.md`.
 
+## Fase 0 — fondamenta congelate
+
+La Fase 0 certifica tre invarianti prima delle evoluzioni successive:
+
+- **Punto 7 chiuso:** ogni comando operativo passa da RandGateway, autorizzazione, eventuale HITL, Action Gateway e audit;
+- **RandAI senza duplicazioni:** la navbar apre la pagina completa e protetta `/randai`; il pulsante in testata apre soltanto il popup rapido contestuale;
+- **promozione controllata:** gli agenti lavorano su branch e PR, Vercel Git deploy resta disabilitato e Ocean pubblica solo preview di PR o ref richieste manualmente. Il vecchio deploy automatico di `main` su Ocean è stato rimosso come percorso zombie.
+
+Il gate eseguibile è `npm run test:phase0` ed è obbligatorio nella CI canonica. La protezione server-side di `main` deve inoltre richiedere PR, controlli CI verdi, revisione umana, conversazioni risolte, blocco force-push/cancellazione e nessun bypass agente/app.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
