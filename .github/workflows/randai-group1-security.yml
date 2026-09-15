@@ -33,7 +33,16 @@ jobs:
         run: npm run test:group1
 
       - name: Promptfoo authorization regression gate
-        run: npm run eval:randai:security
+        # npm registries can briefly return 404 while a transitive Promptfoo
+        # package is propagating. Retry the exact same pinned evaluation; a
+        # real regression still fails the job after the bounded attempts.
+        run: |
+          for attempt in 1 2 3; do
+            npm run eval:randai:security && exit 0
+            echo "Promptfoo attempt ${attempt}/3 failed; retrying shortly"
+            sleep 10
+          done
+          exit 1
 
       - name: Governed plugin evaluation report
         if: ${{ !cancelled() }}
