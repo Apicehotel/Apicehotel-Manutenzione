@@ -138,6 +138,12 @@ Il Gruppo 1 mantiene il Punto 7 come unica catena di esecuzione: RandApp, RandCh
 
 Gate: `npm run test:group-one`.
 
+## Gruppo 2 — operatività quotidiana
+
+Le notifiche push non vengono più marcate `sent` quando mancano destinatari o abbonamenti: l’outbox registra `blocked` con causa esplicita, così RandCore può distinguere consegna reale da configurazione incompleta. RandChat, ntfy, Twilio e Repo Radar restano bounded dai rispettivi gate e il radar continua a essere read-only, settimanale e multi-sorgente. L’aggiunta di nuovi canali o tool richiede lo stesso percorso autorizzato del Gruppo 1.
+
+Gate: `npm run test:group-two`.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.

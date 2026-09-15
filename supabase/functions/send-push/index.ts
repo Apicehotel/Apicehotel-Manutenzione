@@ -69,9 +69,9 @@ Deno.serve(async (req: Request) => {
     const { data: outboxRow } = await admin.from("notification_outbox").insert({ channel: "push", hotel_id: hotel, subject: title, body: messageBody, status: "pending", metadata }).select("id").single();
     const { data: recipients } = await admin.from("hotel_memberships").select("auth_user_id").eq("hotel_id", hotel).eq("active", true).in("role", [...RECIPIENT_ROLES]);
     const recipientIds = [...new Set((recipients || []).map((row: any) => row.auth_user_id).filter((id: string) => id && (urgent || id !== userData.user.id)))];
-    if (!recipientIds.length) { if (outboxRow) await admin.from("notification_outbox").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", outboxRow.id); return json({ ok: true, enabled: true, status: "sent", sent: 0, note: "nessun destinatario push" }); }
+    if (!recipientIds.length) { if (outboxRow) await admin.from("notification_outbox").update({ status: "blocked", error: "no_recipient" }).eq("id", outboxRow.id); return json({ ok: true, enabled: true, status: "blocked", sent: 0, note: "nessun destinatario push" }); }
     const { data: subs } = await admin.from("push_subscriptions").select("id,endpoint,p256dh,auth,utente").eq("hotel_id", hotel).in("utente", recipientIds);
-    if (!subs?.length) { if (outboxRow) await admin.from("notification_outbox").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", outboxRow.id); return json({ ok: true, enabled: true, status: "sent", sent: 0, note: "nessun abbonamento push registrato" }); }
+    if (!subs?.length) { if (outboxRow) await admin.from("notification_outbox").update({ status: "blocked", error: "no_subscription" }).eq("id", outboxRow.id); return json({ ok: true, enabled: true, status: "blocked", sent: 0, note: "nessun abbonamento push registrato" }); }
     const uniqueSubs = [...new Map(subs.map((sub: any) => [sub.endpoint, sub])).values()];
     const { data: secrets } = await admin.from("edge_function_secrets").select("key,value").in("key", ["vapid_public", "vapid_private", "vapid_subject"]);
     const secretMap = new Map((secrets || []).map((row: any) => [row.key, row.value]));
