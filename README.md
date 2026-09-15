@@ -120,6 +120,12 @@ La Fase 2 consolida la gabbia mobile comune su iPhone, Android e tablet:
 
 Il gate mirato è `npm run test:phase2`. La Fase 2 non introduce un nuovo sistema di navigazione: corregge il fallback Chat residuo e protegge con test il comportamento mobile già consolidato.
 
+## Fase 3 — azioni operative governate
+
+La Fase 3 chiude il percorso delle azioni operative: i comandi sugli avvisi urgenti vengono mostrati solo quando il ruolo possiede `take_charge`, `complete` e, per la trasformazione, anche `issues:create`. L'esecuzione continua a passare dai mutatori hotel-scoped e dalle policy server-side già esistenti; la UI non concede permessi e non nasconde gli errori del backend. “Risolvi” significa quindi autorizzazione, eventuale conferma, mutazione verificata e audit, non un semplice cambio grafico.
+
+Il gate mirato è `npm run test:phase3`.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
