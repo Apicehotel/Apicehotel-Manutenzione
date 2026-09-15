@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { adaptMcpToolCall, adaptRandChatMessage } from '../supabase/functions/_shared/rand-gateway/adapters.js'
+import { approvalMatchesToolRequest } from '../supabase/functions/_shared/rand-gateway/approval-binding.js'
 import { createRandEnvelope } from '../supabase/functions/_shared/rand-gateway/envelope.js'
 import { RandGateway, RandGatewayError } from '../supabase/functions/_shared/rand-gateway/gateway.js'
 
@@ -78,12 +79,48 @@ test('protected mutations require approval and execute only on the second govern
   const pending = await first.gateway.handle(adaptMcpToolCall({ serverId: 'rand-internal', actor, hotelId: 'hotelgio', request: { name: 'issue.mark_done', requestId: 'r4' } }))
   assert.equal(pending.status, 'pending_approval')
   assert.equal(first.calls.actions, 0)
+  assert.equal(pending.approval.id, 'approval-1')
 
   const second = fixture({ actor, authorize })
   const executed = await second.gateway.handle(adaptMcpToolCall({ serverId: 'rand-internal', actor, hotelId: 'hotelgio', request: { name: 'issue.mark_done', requestId: 'r5', approvalId: 'approval-1' } }))
   assert.equal(executed.status, 'executed')
   assert.equal(second.calls.hitlVerify, 1)
   assert.equal(second.calls.actions, 1)
+})
+
+test('high-risk and mutation tools cannot disable HITL through a bad policy flag', async () => {
+  const { gateway, calls } = fixture({
+    actor,
+    authorize: async () => ({ allowed: true, permission: 'WRITE_PROTECTED', risk: 'HIGH', requiresHitl: false }),
+  })
+  const result = await gateway.handle(adaptMcpToolCall({
+    serverId: 'rand-internal', actor, hotelId: 'hotelgio',
+    request: { name: 'issue.mark_done', requestId: 'forced-hitl', arguments: { resourceId: crypto.randomUUID(), input: {} } },
+  }))
+  assert.equal(result.status, 'pending_approval')
+  assert.equal(calls.actions, 0)
+})
+
+test('an approval is bound to the exact tool, resource and normalized input', () => {
+  const resourceId = crypto.randomUUID()
+  const approval = {
+    action_type: 'issue.update_priority',
+    resource_id: resourceId,
+    payload: { action: { type: 'issue.update_priority', resourceId, input: { priority: 'alta', nested: { b: 2, a: 1 } } } },
+  }
+  assert.equal(approvalMatchesToolRequest(approval, {
+    name: 'issue.update_priority',
+    arguments: { resourceId, input: { nested: { a: 1, b: 2 }, priority: 'alta' } },
+  }), true)
+  assert.equal(approvalMatchesToolRequest(approval, {
+    name: 'issue.mark_done', arguments: { resourceId, input: {} },
+  }), false)
+  assert.equal(approvalMatchesToolRequest(approval, {
+    name: 'issue.update_priority', arguments: { resourceId: crypto.randomUUID(), input: { priority: 'alta' } },
+  }), false)
+  assert.equal(approvalMatchesToolRequest(approval, {
+    name: 'issue.update_priority', arguments: { resourceId, input: { priority: 'bassa' } },
+  }), false)
 })
 
 test('MCP annotations stay untrusted metadata and cannot downgrade Rand policy', async () => {
@@ -163,6 +200,16 @@ test('authenticated RandGateway endpoint requires active hotel membership and ve
   assert.match(edge, /if \(!membership\?\.active.*forbidden/)
   assert.match(edge, /requested_by_auth_user_id === actor\.userId/)
   assert.match(edge, /approval\.hotel_id === actor\.hotelId/)
+  assert.match(edge, /approvalMatchesToolRequest/)
+})
+
+test('RandApp browser actions also use the canonical gateway instead of invoking the executor directly', () => {
+  const client = fs.readFileSync('src/randai/action-gateway.js', 'utf8')
+  const migration = fs.readFileSync('supabase/migrations/20260915041542_randgateway_randapp_ingress.sql', 'utf8')
+  assert.match(client, /submitRandGatewayEnvelope/)
+  assert.match(client, /channel: 'randapp'/)
+  assert.doesNotMatch(client, /functions\.invoke\(['"]randai-action-gateway['"]/)
+  assert.match(migration, /'randapp','internal','issue\.mark_done'/)
 })
 
 test('MCP uses the stable official SDK, Streamable HTTP and only the governed RandGateway', () => {

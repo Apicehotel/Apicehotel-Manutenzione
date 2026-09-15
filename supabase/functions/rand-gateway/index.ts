@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { RandGateway, RandGatewayError } from '../_shared/rand-gateway/gateway.js'
+import { approvalMatchesToolRequest } from '../_shared/rand-gateway/approval-binding.js'
 import { createSupabaseGatewayStore } from '../_shared/rand-gateway/supabase-store.js'
 
 const url = Deno.env.get('SUPABASE_URL')!
@@ -47,7 +48,7 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json()
     const channel = clean(body?.channel, 30).toLowerCase()
-    if (!['randchat', 'mcp'].includes(channel)) return json({ ok: false, error: 'adapter_not_allowed' }, 403)
+    if (!['randapp', 'randchat', 'mcp'].includes(channel)) return json({ ok: false, error: 'adapter_not_allowed' }, 403)
     const client = userClient(req)
     const { data: userData, error: userError } = await client.auth.getUser()
     if (userError || !userData.user) return json({ ok: false, error: 'unauthorized' }, 401)
@@ -117,7 +118,7 @@ Deno.serve(async (req: Request) => {
         const id = clean(approvalId, 180)
         if (!id || !actor?.userId || !actor?.hotelId) return { approved: false }
         const { data: approval, error } = await admin.from('randai_action_approvals')
-          .select('status,expires_at,hotel_id,requested_by_auth_user_id')
+          .select('status,expires_at,hotel_id,requested_by_auth_user_id,action_type,tool_id,resource_id,payload')
           .eq('id', id).maybeSingle()
         if (error) throw error
         const pending = approval?.status === 'PENDING'
@@ -126,7 +127,8 @@ Deno.serve(async (req: Request) => {
         return {
           approved: Boolean(approval && (pending || replay) && alive
             && approval.hotel_id === actor.hotelId
-            && approval.requested_by_auth_user_id === actor.userId),
+            && approval.requested_by_auth_user_id === actor.userId
+            && approvalMatchesToolRequest(approval, envelope.payload.toolRequest)),
         }
       },
     }
@@ -134,7 +136,12 @@ Deno.serve(async (req: Request) => {
     const actions = {
       async execute({ envelope, actor }: any) {
         const request = envelope.payload.toolRequest
-        return forwardActionGateway(req, { operation: 'execute', hotel_id: actor.hotelId, approval_id: request.approvalId })
+        const approvalDecision = envelope.payload.metadata?.approvalDecision === 'reject' ? 'reject' : 'execute'
+        return forwardActionGateway(req, {
+          operation: approvalDecision,
+          hotel_id: actor.hotelId,
+          approval_id: request.approvalId,
+        })
       },
     }
 

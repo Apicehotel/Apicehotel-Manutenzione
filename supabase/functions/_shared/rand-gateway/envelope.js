@@ -1,4 +1,4 @@
-const CHANNELS = new Set(['randchat', 'whatsapp', 'email', 'mcp', 'system'])
+const CHANNELS = new Set(['randapp', 'randchat', 'whatsapp', 'email', 'mcp', 'system'])
 const DIRECTIONS = new Set(['inbound', 'outbound'])
 const CONVERSATION_TYPES = new Set(['dm', 'group', 'event', 'system'])
 const PAYLOAD_TYPES = new Set(['message', 'tool_request', 'tool_result', 'notification', 'system_event'])

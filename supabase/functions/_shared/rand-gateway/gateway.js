@@ -99,13 +99,20 @@ export class RandGateway {
 
     const permission = String(decision.permission || 'READ').toUpperCase()
     const risk = String(decision.risk || 'CRITICAL').toUpperCase()
-    const requiresHitl = decision.requiresHitl !== false
-      && (MUTATION_PERMISSIONS.has(permission) || SENSITIVE_RISKS.has(risk))
+    const requiresHitl = decision.requiresHitl === true
+      || MUTATION_PERMISSIONS.has(permission)
+      || SENSITIVE_RISKS.has(risk)
 
     if (requiresHitl) {
       if (!toolRequest.approvalId) {
         const approval = await this.hitl.request({ envelope, actor, decision, reason: 'SENSITIVE_ACTION_CONFIRMATION_REQUIRED' })
-        const result = Object.freeze({ ok: true, status: 'pending_approval', envelopeId: envelope.id, approvalId: approval?.id || null })
+        const result = Object.freeze({
+          ok: true,
+          status: 'pending_approval',
+          envelopeId: envelope.id,
+          approvalId: approval?.id || null,
+          approval: approval ? clone(approval) : null,
+        })
         await this.store.transition(envelope.id, 'pending', { actor, decision, result })
         await this.#audit(envelope, 'hitl', 'pending', 'RAND_GATEWAY_APPROVAL_REQUIRED', { toolName: toolRequest.name })
         return result

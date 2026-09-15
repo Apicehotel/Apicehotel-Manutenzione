@@ -62,7 +62,13 @@ function ActionGatewayPanel({ issue, onRefresh }) {
     if (!pending?.approval_id) return
     setBusy(true); setNotice('')
     try {
-      await executeRandAIAction({ hotelId: issue.hotelId, approvalId: pending.approval_id })
+      await executeRandAIAction({
+        hotelId: issue.hotelId,
+        approvalId: pending.approval_id,
+        type: pending.action,
+        resourceId: pending.resource_id,
+        input: pending.input || {},
+      })
       setPending(null)
       setNotice('Azione eseguita e verificata dal RandAI Action Gateway.')
       await onRefresh?.()
@@ -74,7 +80,15 @@ function ActionGatewayPanel({ issue, onRefresh }) {
   const reject = async () => {
     if (!pending?.approval_id) { setPending(null); return }
     setBusy(true)
-    try { await rejectRandAIAction({ hotelId: issue.hotelId, approvalId: pending.approval_id }) }
+    try {
+      await rejectRandAIAction({
+        hotelId: issue.hotelId,
+        approvalId: pending.approval_id,
+        type: pending.action,
+        resourceId: pending.resource_id,
+        input: pending.input || {},
+      })
+    }
     catch (error) { setNotice(error?.message || 'Annullamento non riuscito.') }
     finally { setPending(null); setBusy(false) }
   }

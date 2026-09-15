@@ -140,7 +140,13 @@ export default function RandAISuggestion({ issue, hotelId, user = null, onAction
   const cancelPlan = async () => {
     const plan = actionState.plan
     setActionState({ busy: false, plan: null, error: '', success: '' })
-    if (plan?.approval_id) rejectRandAIAction({ hotelId, approvalId: plan.approval_id }).catch(() => {})
+    if (plan?.approval_id) rejectRandAIAction({
+      hotelId,
+      approvalId: plan.approval_id,
+      type: plan.action,
+      resourceId: plan.resource_id,
+      input: plan.input || {},
+    }).catch(() => {})
   }
 
   const confirmPlan = async () => {
@@ -148,7 +154,13 @@ export default function RandAISuggestion({ issue, hotelId, user = null, onAction
     if (!plan?.approval_id || actionState.busy) return
     setActionState((current) => ({ ...current, busy: true, error: '' }))
     try {
-      const result = await executeRandAIAction({ hotelId, approvalId: plan.approval_id })
+      const result = await executeRandAIAction({
+        hotelId,
+        approvalId: plan.approval_id,
+        type: plan.action,
+        resourceId: plan.resource_id,
+        input: plan.input || {},
+      })
       setActionState({ busy: false, plan: null, error: '', success: result.replayed ? 'Azione già eseguita e verificata.' : 'Azione eseguita e verificata.' })
       onActionExecuted?.(result)
     } catch (error) {

@@ -107,7 +107,7 @@ test('RandAI Action Gateway prepare path keeps the scope preflight wired', () =>
   assert.match(source, /recordType: 'issue'/)
   assert.match(source, /requireResource: true/)
   const guardCall = source.lastIndexOf('assertContextScope({')
-  const gatewayCall = source.indexOf('return invoke({', guardCall)
+  const gatewayCall = source.indexOf('await invokeGateway({', guardCall)
   assert.ok(guardCall > -1)
   assert.ok(gatewayCall > guardCall)
 })
