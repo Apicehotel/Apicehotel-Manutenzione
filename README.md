@@ -218,6 +218,8 @@ Dettaglio: `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md`.
 
 Il Gruppo 3 chiude il ciclo di rilascio con un gate ripetibile e senza deploy impliciti. `npm run release:readiness` verifica che qualità, build, audit, E2E, device acceptance, rollback, separazione Ocean/Vercel e revisione umana siano collegati ai contratti del repository. Se manca una prova, l'esito è `BLOCKED` con l'elenco deterministico dei blocchi.
 
+Il punto 10 usa anche `npm run check:legacy`: controlla gli artefatti CSS/runtime ritirati e garantisce che gli alias di compatibilità rimasti puntino all'implementazione canonica. La scansione è conservativa: nessun file viene cancellato se esistono riferimenti o contratti attivi.
+
 La CI continua a eseguire E2E e device acceptance; la validazione su telefoni fisici e la pubblicazione Android/iOS restano attività esterne (account, firma e approvazione dello store). Vercel resta stabile/congelato, Ocean è solo preview. Il freeze funzionale vale: dopo il gate, solo bug, sicurezza e necessità operative.
 
 Comandi:

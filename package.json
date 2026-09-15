@@ -26,6 +26,8 @@
     "test:group-two": "node --test test/group-two-operations.test.js test/issue-push-notifications.test.js test/intervention-assignment-notifications.test.js test/randchat-group-a-foundation.test.js test/randchat-group-b-contract.test.js test/randchat-group-c.test.js test/randai-block14-repo-radar-55-58.test.js",
     "test:group-three": "node --test test/group-three-release-readiness.test.js test/point15-device-acceptance.test.js test/randui-ocean-preview.test.js",
     "release:readiness": "node scripts/check-release-readiness.mjs",
+    "check:legacy": "node scripts/check-legacy-references.mjs",
+    "test:point10": "node --test test/point10-legacy-cleanup.test.js",
     "test:benchmark": "node --test test/randai-benchmark.test.js",
     "test:e2e": "node test/e2e.mjs",
     "test:device": "node test/device-acceptance.mjs",
