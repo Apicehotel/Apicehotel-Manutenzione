@@ -126,6 +126,12 @@ La Fase 3 chiude il percorso delle azioni operative: i comandi sugli avvisi urge
 
 Il gate mirato è `npm run test:phase3`.
 
+## Fase 4 — notifiche e worker osservabili
+
+La Fase 4 completa il controllo operativo dei worker: RandCore distingue un’ultima esecuzione riuscita da un worker realmente aggiornato. Se una cadenza cron supera tre intervalli senza una nuova esecuzione, lo stato diventa `Stale`; gli worker event-driven restano “In attesa evento” e non vengono falsamente segnalati come guasti. Le notifiche continuano a usare gli outbox e i canali già governati, senza introdurre un secondo scheduler.
+
+Il gate mirato è `npm run test:phase4`.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
