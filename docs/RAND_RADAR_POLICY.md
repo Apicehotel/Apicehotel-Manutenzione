@@ -6,31 +6,25 @@ RandRadar non deve limitarsi a GitHub o a un piccolo gruppo di portali. Per ogni
 
 ### Copertura minima
 
-Per ogni scansione significativa, RandRadar deve cercare su almeno 8 ecosistemi differenti quando pertinenti, includendo in modo prioritario:
+Per ogni scansione significativa, RandRadar deve cercare su almeno 8 ecosistemi differenti quando pertinenti. Il runtime automatico usa attualmente **8 provider**: GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX.
 
-- GitHub
-- GitLab
-- Gitee
+Il deep review può e deve allargarsi anche a:
+
 - GitCode
-- Codeberg
 - Bitbucket
 - SourceForge
-- Hugging Face
-- npm
 - PyPI
-- crates.io
 - pub.dev
 - Maven Central / MVN Repository
 - NuGet
 - Docker Hub
 - VS Code Marketplace
-- Open VSX
 - Figma Community
 - registri MCP (es. MCP.so, Glama, Smithery e altri disponibili)
 - Storybook / design-system showcase
 - Replit, StackBlitz, CodeSandbox e altri ambienti pubblici quando contengono sorgenti o demo rilevanti
 
-L’elenco è estensibile: la presenza di una sorgente nuova o più adatta deve ampliare la ricerca, non sostituire automaticamente le altre.
+L’elenco è estensibile: la presenza di una sorgente nuova o più adatta deve ampliare la ricerca, non sostituire automaticamente le altre. GitHub è una sorgente, non “la rete”.
 
 ## Regola di profondità
 
@@ -65,14 +59,14 @@ Ogni classificazione deve includere motivazione, benefici, rischi, maturità, at
 
 ## Licenze e contesto Rand
 
-La versione attuale di RandApp/RandAI è interna e non commerciale. GPL/AGPL non sono quindi motivi automatici di esclusione. RandRadar deve comunque distinguere tra:
+La versione attuale di RandApp/RandAI è interna e non commerciale. GPL/AGPL non sono motivi automatici di esclusione. RandRadar distingue tra:
 
-- studio dei pattern;
-- uso come servizio separato;
-- integrazione diretta del codice;
-- eventuale futura distribuzione pubblica o commerciale.
+- `REFERENCE_ONLY` / studio dei pattern;
+- `INTERNAL_EVALUATION`;
+- `SEPARATE_SERVICE`;
+- `DIRECT_INTEGRATION`.
 
-Quando una licenza può creare obblighi in caso di distribuzione o accesso via rete, il rischio deve essere segnalato senza scartare automaticamente il progetto.
+Le licenze copyleft restano in `WATCH` finché il boundary d'uso non è esplicito e la review licenza non è approvata. Questo evita sia il rifiuto automatico sia l'adozione cieca. In caso di futura distribuzione pubblica/commerciale o accesso via rete, gli obblighi vanno rivalutati.
 
 ## Regola per ricerche Figma / UI
 
@@ -88,6 +82,8 @@ Per Figma e design-to-code, la scansione deve coprire almeno queste famiglie:
 - visual regression contro design Figma;
 - Flutter / React / React Native / SwiftUI / Web Components;
 - accessibilità e design-system linting.
+
+Le famiglie sono anche codificate in `src/randai/discovery/repo-radar-sources.js`, così non possono sparire silenziosamente dalla discovery.
 
 ## Output
 
