@@ -293,6 +293,12 @@ npm run test:device
 npm run test:lts
 ```
 
+### Fase 6 — RandGuide authoring gate
+
+L’editor RandGuide conserva la bozza separata dalla pubblicazione. Il pulsante di approvazione passa dal solo RPC server-side `randguide_publish_procedure`, che verifica completezza, rischio, confidenza della fonte, permessi e crea la versione storica. Una bozza non entra mai nel contesto operativo di RandAI; se il gate rifiuta, resta modificabile senza pubblicazione parziale.
+
+Il contratto è verificato anche da `npm run test:phase5`.
+
 `npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
 La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
