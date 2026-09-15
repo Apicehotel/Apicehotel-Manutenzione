@@ -31,6 +31,20 @@
   grid-auto-rows: max-content;
 }
 
+/* Every normal page must collapse to its real content. The shell reserves the
+   viewport for scrolling and fixed navigation; page frames must not reserve it
+   a second time, which otherwise produces the large blank bands seen on iOS.
+   Centered auth/system-state templates remain intentionally excluded. */
+.rs-content > .rs-randui-page:not([data-randui-width='center']),
+.rs-content > .rs-randui-page:not([data-randui-width='center']) .rs-randui-page__body,
+.rs-content > .rs-randui-page:not([data-randui-width='center']) .rs-randui-page__content,
+.rs-content > .rs-randui-page:not([data-randui-width='center']) .rs-randui-stack {
+  min-height: 0 !important;
+  height: fit-content;
+  align-self: start;
+  align-content: start;
+}
+
 /* Protect old/mixed page roots while migration is still in progress. This does
    not alter dialogs, cards or state panels; it only prevents the first top-level
    view inside a migrated page from stretching a header/content sequence to the

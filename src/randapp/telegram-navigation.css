@@ -176,6 +176,19 @@
   color: var(--rs-blue, var(--rs-cyan));
 }
 
+/* The operations landing page is a short launcher, not a viewport dashboard.
+   Keep every wrapper content-sized so the title flows directly into its two
+   destinations on phones (the shell itself still owns the scroll area). */
+.rs-content .rs-randui-page--operational,
+.rs-content .rs-randui-page--operational .rs-randui-page__body,
+.rs-content .rs-randui-page--operational .rs-randui-page__content,
+.rs-content .rs-randui-page--operational .rs-operations-hub {
+  min-height: 0 !important;
+  height: fit-content;
+  align-self: start;
+  align-content: start;
+}
+
 .rs-operations-hub { width: min(100%, 760px); margin-inline: auto; }
 
 .rs-telegram-list {
