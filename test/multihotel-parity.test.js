@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { HOTEL_FEATURES, HOTEL_FEATURE_MATRIX } from '../src/config.js'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const HOTELS = ['hotelgio', 'chocohotel', 'brigantino']
@@ -52,4 +53,8 @@ test('external integration configuration keeps explicit slots for every hotel', 
   const config = await source('src/config.js')
   const destinationsBlock = config.match(/destinations:\s*Object\.freeze\(\{([\s\S]*?)\}\),\n\s*\}\)/)?.[1] || config
   for (const hotelId of HOTELS) assert.match(destinationsBlock, new RegExp(`${hotelId}:`))
+})
+
+test('all hotels expose the same canonical functional catalog', () => {
+  for (const hotelId of HOTELS) assert.deepEqual(HOTEL_FEATURE_MATRIX[hotelId], HOTEL_FEATURES)
 })
