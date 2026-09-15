@@ -268,6 +268,10 @@ I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`,
 
 ## Quality Matrix e test
 
+### Fase 5 — RandCore health cadence
+
+Il Control Center RandCore espone ora anche lo stato della cadenza del check mensile: `FRESH`, `DUE_SOON`, `OVERDUE` o `MISSING`. La valutazione è fail-closed, usa il timestamp dell’ultimo snapshot e resta separata da autorizzazioni ed esecuzione: il dashboard segnala la scadenza senza trasformarsi in un bypass operativo. Il contratto puro è in `src/randai/core/health-cadence.js` ed è coperto da `npm run test:phase5`.
+
 Comandi principali:
 
 ```bash
