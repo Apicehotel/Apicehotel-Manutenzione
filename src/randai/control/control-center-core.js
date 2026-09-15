@@ -27,10 +27,25 @@ export function nextCronRun(schedule, from = new Date()) {
   return null
 }
 
-export function workerHealth(worker) {
+function expectedIntervalMs(schedule) {
+  const value = String(schedule || '').trim()
+  const minuteStep = value.match(/^\*\/(\d+) \* \* \* \*$/)
+  if (minuteStep) return Math.max(1, Number(minuteStep[1])) * 60_000
+  if (/^\* \* \* \* \*$/.test(value)) return 60_000
+  if (/^0 \* \* \* \*$/.test(value)) return 60 * 60_000
+  if (/^0 [^ ]+ \* \* \*$/.test(value)) return 2 * 60 * 60_000
+  return null
+}
+
+export function workerHealth(worker, { now = Date.now() } = {}) {
   const last = worker?.last_run
   if (!last) return { state: 'warn', label: 'Mai eseguito' }
   if (Number(worker?.recent_failures || 0) > 0 || !['success', 'succeeded'].includes(String(last.status || '').toLowerCase())) return { state: 'bad', label: 'Errore' }
+  if (!worker?.event_driven) {
+    const interval = expectedIntervalMs(worker?.schedule || worker?.expected_schedule)
+    const lastAt = Date.parse(last.start_time || last.started_at || '')
+    if (interval && Number.isFinite(lastAt) && now - lastAt > interval * 3) return { state: 'warn', label: 'Stale' }
+  }
   return { state: 'good', label: 'OK' }
 }
 
