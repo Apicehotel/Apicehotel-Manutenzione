@@ -12,7 +12,7 @@ The boundary adapts current screens to RandUI. It does not create a second navig
 
 ## Coverage
 
-The catalog now covers 23 current destinations, including secondary runtime views that were not in the original 19-page planning list: `my-work`, `pin`, `feedback-received` and `desktop-download`.
+The catalog now covers 24 current destinations, including secondary runtime views that were not in the original 19-page planning list: `my-work`, `pin`, `feedback-received` and `desktop-download`.
 
 Every catalog entry carries `migration: template-boundary-v1`. Unknown destinations fail closed instead of silently rendering outside RandUI.
 
