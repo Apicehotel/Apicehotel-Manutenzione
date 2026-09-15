@@ -1,9 +1,17 @@
 export const RepoRadarDecision = Object.freeze({ KEEP:'KEEP', UPGRADE:'UPGRADE', REPLACE:'REPLACE', ADD:'ADD', REJECT:'REJECT', WATCH:'WATCH' })
 export const RepoRadarGate = Object.freeze({ PASS:'PASS', FAIL:'FAIL', UNKNOWN:'UNKNOWN' })
+export const RepoRadarUsageMode = Object.freeze({
+  DIRECT_INTEGRATION:'DIRECT_INTEGRATION',
+  INTERNAL_EVALUATION:'INTERNAL_EVALUATION',
+  REFERENCE_ONLY:'REFERENCE_ONLY',
+  SEPARATE_SERVICE:'SEPARATE_SERVICE',
+})
 
 const DECISIONS = new Set(Object.values(RepoRadarDecision))
-const ALLOWED_LICENSES = new Set(['MIT','Apache-2.0','BSD-2-Clause','BSD-3-Clause','ISC','MPL-2.0'])
-const SUPPORTED_REPOSITORY_HOSTS = new Set(['github.com','gitlab.com','codeberg.org','gitea.com','code.forgejo.org','bitbucket.org','git.sr.ht'])
+const PERMISSIVE_LICENSES = new Set(['MIT','Apache-2.0','BSD-2-Clause','BSD-3-Clause','ISC','MPL-2.0'])
+const COPYLEFT_LICENSES = new Set(['GPL-2.0','GPL-2.0-only','GPL-2.0-or-later','GPL-3.0','GPL-3.0-only','GPL-3.0-or-later','AGPL-3.0','AGPL-3.0-only','AGPL-3.0-or-later','LGPL-2.1','LGPL-2.1-only','LGPL-2.1-or-later','LGPL-3.0','LGPL-3.0-only','LGPL-3.0-or-later','EUPL-1.2'])
+const REVIEWABLE_COPYLEFT_MODES = new Set([RepoRadarUsageMode.INTERNAL_EVALUATION,RepoRadarUsageMode.REFERENCE_ONLY,RepoRadarUsageMode.SEPARATE_SERVICE])
+const SUPPORTED_REPOSITORY_HOSTS = new Set(['github.com','gitlab.com','codeberg.org','gitea.com','code.forgejo.org','bitbucket.org','git.sr.ht','gitee.com','huggingface.co','open-vsx.org','crates.io','www.npmjs.com','npmjs.com','pypi.org','pub.dev'])
 const WEIGHTS = Object.freeze({ security:.22, maintenance:.14, maturity:.10, tests:.10, compatibility:.14, performance:.08, rollback:.10, maintainability:.12 })
 const clamp = (value) => Math.max(0, Math.min(1, Number(value)))
 const score = (value, fallback=0) => Number.isFinite(Number(value)) ? clamp(value) : fallback
@@ -37,14 +45,25 @@ function incumbentScore(incumbent){
   return weightedScore(normalizeEvidence(incumbent))
 }
 
+function evaluateLicense(candidate){
+  const license=String(candidate.license||'').trim()
+  const usageMode=candidate.usageMode||RepoRadarUsageMode.DIRECT_INTEGRATION
+  if(PERMISSIVE_LICENSES.has(license)) return { license, usageMode, status:'PERMISSIVE', reviewRequired:false, approved:true, blocker:null }
+  if(COPYLEFT_LICENSES.has(license)){
+    if(REVIEWABLE_COPYLEFT_MODES.has(usageMode)) return { license, usageMode, status:'COPYLEFT_REVIEW', reviewRequired:true, approved:candidate.licenseApproved===true, blocker:null }
+    return { license, usageMode, status:'COPYLEFT_BOUNDARY_REQUIRED', reviewRequired:true, approved:false, blocker:'COPYLEFT_LICENSE_REQUIRES_USAGE_BOUNDARY' }
+  }
+  return { license, usageMode, status:'UNKNOWN_OR_UNSUPPORTED', reviewRequired:true, approved:false, blocker:'LICENSE_NOT_ALLOWED_OR_UNKNOWN' }
+}
+
 export function evaluateRepoCandidate(candidate,{incumbent=null,minAddScore=.78,minReplaceDelta=.08}={}){
   validateRepoRadarCandidate(candidate)
   const evidence=normalizeEvidence(candidate)
   const gates={ security:gate(candidate.gates?.security), compatibility:gate(candidate.gates?.compatibility), benchmark:gate(candidate.gates?.benchmark), rollback:gate(candidate.gates?.rollback) }
+  const licenseAssessment=evaluateLicense(candidate)
   const blockers=[]
-  const license=String(candidate.license||'').trim()
   if(candidate.archived===true) blockers.push('ARCHIVED_REPOSITORY')
-  if(!license||!ALLOWED_LICENSES.has(license)) blockers.push('LICENSE_NOT_ALLOWED_OR_UNKNOWN')
+  if(licenseAssessment.blocker) blockers.push(licenseAssessment.blocker)
   if(Number(candidate.criticalVulnerabilities||0)>0) blockers.push('KNOWN_CRITICAL_VULNERABILITY')
   if(candidate.maintained===false) blockers.push('UNMAINTAINED')
   if(gates.security===RepoRadarGate.FAIL) blockers.push('SECURITY_GATE_FAILED')
@@ -52,8 +71,10 @@ export function evaluateRepoCandidate(candidate,{incumbent=null,minAddScore=.78,
   const total=weightedScore(evidence)
   const allPass=Object.values(gates).every((value)=>value===RepoRadarGate.PASS)
   const hasUnknown=Object.values(gates).some((value)=>value===RepoRadarGate.UNKNOWN)
+  const licenseReady=!licenseAssessment.reviewRequired||licenseAssessment.approved
   let decision=RepoRadarDecision.WATCH, reason='PROMISING_BUT_NOT_READY', superiorityDelta=null
   if(blockers.length){ decision=RepoRadarDecision.REJECT; reason=blockers[0] }
+  else if(!licenseReady){ reason='LICENSE_REVIEW_REQUIRED' }
   else if(candidate.incumbent===true){ decision=candidate.upgrades?RepoRadarDecision.UPGRADE:RepoRadarDecision.KEEP; reason=candidate.upgrades?'SAFE_UPGRADE_CANDIDATE':'INCUMBENT_REMAINS_CANONICAL' }
   else if(candidate.replaces){
     if(!incumbent||incumbent.id!==candidate.replaces){ reason='REPLACEMENT_TARGET_NOT_VERIFIED' }
@@ -71,6 +92,11 @@ export function evaluateRepoCandidate(candidate,{incumbent=null,minAddScore=.78,
     gates,
     blockers,
     evidence,
+    license:licenseAssessment.license,
+    licenseStatus:licenseAssessment.status,
+    licenseReviewRequired:licenseAssessment.reviewRequired,
+    licenseApproved:licenseAssessment.approved,
+    usageMode:licenseAssessment.usageMode,
     stars:Number(candidate.stars||0),
     note:candidate.note||'',
     evaluatedAt:candidate.evaluatedAt||null,
@@ -101,6 +127,8 @@ export function buildRepoRadarSnapshot(candidates=[],options={}){
       humanApprovalRequired:true,
       multiSourceDiscovery:true,
       sectorCoverage:true,
+      internalNonCommercialContext:true,
+      copyleftRequiresUsageBoundary:true,
       supportedRepositoryHosts:Object.freeze([...SUPPORTED_REPOSITORY_HOSTS]),
     }),
   })
@@ -110,5 +138,6 @@ export function assertSafeAdoption(report){
   if(!report?.decision) throw new TypeError('Repo Radar report is required')
   if(![RepoRadarDecision.ADD,RepoRadarDecision.REPLACE,RepoRadarDecision.UPGRADE].includes(report.decision)) return false
   if(report.blockers?.length) return false
+  if(report.licenseReviewRequired&&!report.licenseApproved) return false
   return Object.values(report.gates||{}).every((value)=>value===RepoRadarGate.PASS)
 }
