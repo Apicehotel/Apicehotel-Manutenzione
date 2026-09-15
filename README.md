@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La regola architetturale resta: **un solo proprietario canonico per capacità**. Se una soluzione è nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch o creare un secondo sistema.
 
@@ -31,9 +31,9 @@ Il perimetro viene derivato da fonti vive già canoniche:
 
 Ogni elemento produce un `inventoryRef` e almeno un profilo di ricerca. La copertura è **fail-closed**: se una pagina, un modulo o un fronte AI resta senza profilo, lo snapshot non può dichiararsi completo.
 
-Il discovery continua sui provider canonici **GitHub, GitLab, Codeberg e npm**. La precedente matrice specialistica RandUI da **35 settori** resta attiva come approfondimento e non viene rimossa.
+Il discovery automatico usa **8 provider**: GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX. La policy multisorgente mantiene inoltre un catalogo più ampio di forge, package registry, marketplace, registri MCP, Figma Community, Storybook e ambienti live-code per il deep review manuale quando pertinente. GitHub è quindi una sorgente, non “la rete”. La precedente matrice specialistica RandUI da **35 settori** resta attiva come approfondimento e non viene rimossa.
 
-Le candidate vengono deduplicate e selezionate in modo bounded (`MAX_DISCOVERED=80`, massimo 2 per settore). Stelle e popolarità sono soltanto segnali deboli di discovery. L'adozione continua a richiedere licenza ammessa, manutenzione, sicurezza, compatibilità, benchmark e rollback; una sostituzione richiede superiorità misurabile. **Nessuna discovery auto-installa o auto-sostituisce codice.**
+Le candidate vengono deduplicate e selezionate in modo bounded (`MAX_DISCOVERED=80`, massimo 2 per settore). Stelle e popolarità sono soltanto segnali deboli di discovery. L'adozione continua a richiedere manutenzione, sicurezza, compatibilità, benchmark, rollback e verifica licenza. RandApp/RandAI è attualmente interno e non commerciale: GPL/AGPL non vengono scartate automaticamente, ma richiedono un usage boundary esplicito e review licenza prima dell'adozione diretta. **Nessuna discovery auto-installa o auto-sostituisce codice.**
 
 Classificazione concettuale: **Aggiungi / Sostituisci / Ignora / Fonte**. Il runtime interno mantiene anche gli stati governati `KEEP / UPGRADE / REPLACE / ADD / REJECT / WATCH`.
 
@@ -45,7 +45,7 @@ npm run repo:radar
 
 Workflow settimanale: `.github/workflows/repo-radar.yml`.
 
-Dettaglio: `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md`.
+Dettaglio: `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` e policy permanente `docs/RAND_RADAR_POLICY.md`.
 
 ## RandSkills
 
@@ -91,7 +91,7 @@ Dettaglio: `docs/architecture/RANDGATEWAY_POINT7.md`.
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
 
-Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers` → `ADAPT`, GitHub/Supabase/Vercel → `CONNECT`; `codex-security` resta esterno perché proprietario e RandCore continua a essere l'autorità di sicurezza. Figma/Sentry/PostHog restano `WATCH` finché non superano overlap, privacy e stabilità.
+Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers` → `ADAPT`, GitHub/Supabase/Vercel → `CONNECT`; `codex-security` resta esterno perché proprietario e RandCore continua a essere l'autorità di sicurezza. Figma/Sentry/PostHog restano governati dai rispettivi owner e gate.
 
 RandFlow formalizza il lavoro agente: `DISCOVER → PLAN → IMPLEMENT → TEST → SECURITY → REVIEW → READY_FOR_HUMAN_MERGE`. Branch dedicato, test/security/CI verdi, zero irrisolti e revisione umana sono obbligatori; niente push agente diretto su `main`, merge automatico o deploy produzione prima dell'approvazione.
 
@@ -193,6 +193,19 @@ La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello
 
 Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
 
+## RandDesignBridge
+
+RandDesignBridge collega Figma e RandUI senza creare un secondo design system. Il **Figma MCP ufficiale è l'unico bridge primario**; Framelink/context compression e token tooling restano adapter/pattern opzionali, mentre MCP di terze parti con ampia capacità di scrittura e screenshot→layers restano sandbox-only.
+
+Non viene introdotto Storybook soltanto per Figma Sync: la visual regression riusa i gate Playwright/RandUI già canonici. Figma Code Connect resta deferred finché piano/seat e libreria Figma pubblicata non soddisfano i prerequisiti ufficiali. Questo evita dipendenze zombie e mantiene il freeze: qualunque codice generato dal design entra su feature branch, passa test/CI e richiede review umana.
+
+```bash
+npm run design:check
+npm run test:design
+```
+
+Dettaglio: `docs/architecture/RANDDESIGNBRIDGE_V1.md`.
+
 ## Moduli operativi
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
@@ -235,6 +248,8 @@ npm run test:group3
 npm run eval:randai:security
 npm run eval:plugin
 npm run test:repo-radar
+npm run test:design
+npm run design:check
 npm run test:randskills
 npm run test:mind-learning
 npm run test:security-intelligence
@@ -244,9 +259,9 @@ npm run test:device
 npm run test:lts
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
+`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randdesign-bridge-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability, design bridge e navigazione RandUI.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume.
+La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume; `RandDesignBridge` valida anche governance Figma/RandUI e policy multisorgente RandRadar.
 
 ## Deploy
 
@@ -260,6 +275,8 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
+- `docs/RAND_RADAR_POLICY.md` — ricerca multisorgente permanente, profondità, deduplica, licenze e regole Figma/UI.
+- `docs/architecture/RANDDESIGNBRIDGE_V1.md` — Figma↔RandUI, tool ownership, anti-zombie e visual gate.
 - `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
 - `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.
 - `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md` — lifecycle, overlap e zombie policy.
