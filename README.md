@@ -132,6 +132,12 @@ La Fase 4 completa il controllo operativo dei worker: RandCore distingue un’ul
 
 Il gate mirato è `npm run test:phase4`.
 
+## Gruppo 1 — fondamenta e sicurezza
+
+Il Gruppo 1 mantiene il Punto 7 come unica catena di esecuzione: RandApp, RandChat, MCP e Twilio entrano da RandGateway e non chiamano direttamente database o mutatori. Il catalogo MCP canonico è volutamente limitato agli strumenti già governati (`issue.update_priority`, `issue.set_waiting_part`, `issue.mark_done`); aggiungere un tool richiede policy, scope, HITL, executor e test coerenti. RandCore conserva il check mensile e il relativo storico. La protezione tecnica della branch `main` richiede invece permessi amministrativi GitHub, non disponibili al runtime dell’app, e resta una verifica esterna obbligatoria.
+
+Gate: `npm run test:group-one`.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
