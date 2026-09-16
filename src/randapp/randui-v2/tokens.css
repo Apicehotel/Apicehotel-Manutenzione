@@ -1,0 +1,37 @@
+:root {
+  --rui-safe-top: env(safe-area-inset-top, 0px);
+  --rui-safe-right: env(safe-area-inset-right, 0px);
+  --rui-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --rui-safe-left: env(safe-area-inset-left, 0px);
+
+  --rui-space-1: 4px;
+  --rui-space-2: 8px;
+  --rui-space-3: 12px;
+  --rui-space-4: 16px;
+  --rui-space-5: 20px;
+  --rui-space-6: 24px;
+  --rui-space-8: 32px;
+
+  --rui-header-h: 56px;
+  --rui-bottom-nav-h: 64px;
+  --rui-sidebar-w: 264px;
+  --rui-content-max: 1440px;
+  --rui-touch: 44px;
+  --rui-radius: 14px;
+}
+
+html[data-ui-size='small'] {
+  --rui-space-page: 12px;
+  --rui-control-h: 40px;
+}
+
+html:not([data-ui-size]),
+html[data-ui-size='normal'] {
+  --rui-space-page: 16px;
+  --rui-control-h: 44px;
+}
+
+html[data-ui-size='large'] {
+  --rui-space-page: 20px;
+  --rui-control-h: 52px;
+}
