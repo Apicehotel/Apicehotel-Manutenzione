@@ -1,260 +1,114 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
-PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target supportati e testati: **iOS/iPadOS, Android, tablet e Windows/desktop**.
+PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: iOS/iPadOS, Android, tablet e Windows/desktop.
 
-## Stato attuale
+## Stato consolidato — 17 settembre 2026
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+**RandUI rebuild v1 è chiuso e integrato in `main` tramite PR #267.** L'ultimo candidato ha superato CI canonica, browser/device gate, RandAI Group 1/2/3, RandDesignBridge e preview Ocean. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno ora un proprietario unico.
 
-La regola architetturale resta: **un solo proprietario canonico per capacità**. Se una soluzione è nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch o creare un secondo sistema.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
-## Confini architetturali
+Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
+
+### Blocco attivo
+
+Il blocco successivo è **RandAI UI Foundation v1**: popup rapido e Control Center completo restano separati, ma condividono il linguaggio RandUI. Vercel AI Elements, Crafter Elements, Fantastic Admin e i template Flutter valutati da RandRadar sono fonti di pattern/riferimento; non vengono installati come secondo design system nello stack React/Vite attuale.
+
+Dettaglio: `docs/architecture/RANDAI_UI_FOUNDATION_V1.md`.
+
+## Stack canonico
+
+- React 19 + Vite 7 per la PWA.
+- Supabase/Postgres per dati, Auth, RLS/RPC, Realtime e source of truth operativa.
+- RandUI come design system unico.
+- RandGateway come unico ingresso governato per azioni da Web/RandApp, RandChat, MCP e WhatsApp/Twilio.
+- RandCore per health, audit, release gate, workers, sicurezza, costi e integrazioni.
+- DigitalOcean/Ocean per preview e workload esterni/pesanti; Vercel resta la produzione stabile.
+- Node: `.nvmrc` fissa `24.20.0` per sviluppo/CI; `package.json` usa `24.x` per compatibilità buildpack Ocean.
+
+## Confini invariabili
 
 - `hotel_id`, membership e scope hotel sono obbligatori.
-- Supabase RLS/RPC è l'autorità finale; nascondere una funzione nella UI non concede né revoca permessi.
-- RandAI riceve soltanto contesto autorizzato e hotel-scoped.
-- Nessun modello/frontend riceve `service_role`, PIN, refresh token o secret non necessari.
-- Mutazioni protette passano da Safe Write / Action Gateway / audit.
+- Supabase RLS/RPC è l'autorità finale: nascondere una funzione nella UI non concede permessi.
+- RandAI riceve solo contesto autorizzato e hotel-scoped.
+- Nessun frontend/modello riceve `service_role`, PIN, refresh token o secret non necessari.
+- Mutazioni protette passano da Safe Write / Tool Gateway / RandSecure-HITL / Action Gateway / audit.
 - `UNKNOWN` e `STALE` non significano `HEALTHY`.
-- Niente secondi sistemi per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario, discovery o rollback.
-- Una parte viene eliminata come zombie soltanto dopo verifica di utilizzo, riferimenti e dipendenze.
+- Nessun secondo sistema per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario, discovery o rollback.
+- Una parte è zombie soltanto dopo verifica di utilizzo, riferimenti e dipendenze.
+- Nessun agente può pushare/mergiare/deployare direttamente `main`: branch + PR + CI + revisione umana.
 
-## RandRadar Full Evolution v1
+## RandUI
 
-`RAND_FULL_EVOLUTION_V1` rende Repo Radar un motore di scouting dell'intero prodotto, non un radar limitato a categorie statiche.
+Flusso canonico:
 
-Il perimetro viene derivato da fonti vive già canoniche:
+`Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
 
-- **24/24 pagine RandApp** da `src/randapp/randui/page-catalog.js`, con dominio, tipo pagina e capability reali;
-- **moduli governati dell'ecosistema Rand** da `src/randai/core/ecosystem.js`;
-- **14 fronti evolutivi RandAI**: agent runtime, model routing, tool use/MCP, memoria, RAG/retrieval, eval, observability, guardrail, multimodale, voice, coding agent, learning, ottimizzazione costi e context engineering.
+Il catalogo copre **24/24 destinazioni** con 14 template. RandUI Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice responsive copre 320 / 375 / 390 / 430 / 768 / 1024 / 1440 px, Chromium e WebKit.
 
-Ogni elemento produce un `inventoryRef` e almeno un profilo di ricerca. La copertura è **fail-closed**: se una pagina, un modulo o un fronte AI resta senza profilo, lo snapshot non può dichiararsi completo.
+La navigazione mobile conserva Home come ancora centrale e RandAI come ancora finale; la bottom navigation naviga soltanto, mentre il `+` crea esclusivamente l'oggetto del contesto attivo.
 
-Il discovery automatico usa **8 provider**: GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX. La policy multisorgente mantiene inoltre un catalogo più ampio di forge, package registry, marketplace, registri MCP, Figma Community, Storybook e ambienti live-code per il deep review manuale quando pertinente. GitHub è quindi una sorgente, non “la rete”. La precedente matrice specialistica RandUI da **35 settori** resta attiva come approfondimento e non viene rimossa.
+`src/randapp/randui-v2/` **non è zombie** finché `/ui-v2-preview` è ancora usata dal gate Ocean. Verrà eliminata solo quando quel gate sarà sostituito e non resteranno referenze runtime/CI.
 
-Le candidate vengono deduplicate e selezionate in modo bounded (`MAX_DISCOVERED=80`, massimo 2 per settore). Stelle e popolarità sono soltanto segnali deboli di discovery. L'adozione continua a richiedere manutenzione, sicurezza, compatibilità, benchmark, rollback e verifica licenza. RandApp/RandAI è attualmente interno e non commerciale: GPL/AGPL non vengono scartate automaticamente, ma richiedono un usage boundary esplicito e review licenza prima dell'adozione diretta. **Nessuna discovery auto-installa o auto-sostituisce codice.**
+## RandAI
 
-Classificazione concettuale: **Aggiungi / Sostituisci / Ignora / Fonte**. Il runtime interno mantiene anche gli stati governati `KEEP / UPGRADE / REPLACE / ADD / REJECT / WATCH`.
+Le superfici restano intenzionalmente due:
 
-Comando snapshot:
+- **Quick Assistant**: popup contestuale autenticato dentro RandApp.
+- **Control Center `/randai`**: pagina completa protetta, amministrativa e multi-hotel.
+
+La UI Foundation v1 definisce otto primitive AI native e dependency-free: `conversation`, `message`, `source`, `status`, `reasoning`, `plan`, `tool`, `composer`. Queste primitive sono UI: non concedono permessi e non bypassano RandGateway.
+
+### RandRadar — fonti UI recenti
+
+| Fonte | Decisione |
+| --- | --- |
+| `vercel/ai-elements` | `ADOPT_PATTERN` |
+| `crafter-station/elements` | `SOURCE_ONLY` |
+| `fantastic-admin/basic` | `LAYOUT_REFERENCE` |
+| `abuanwar072/E-commerce-Complete-Flutter-UI` | `MOBILE_REFERENCE` |
+
+Regola: **RandUI esistente → adattamento pattern esterno → componente nativo nuovo**. Una nuova dipendenza entra solo se riduce davvero complessità e supera Quality Matrix, security review e rollback review.
+
+## RandAI runtime e knowledge
+
+- **Group 1**: RandTool Gateway, Promptfoo, OpenTelemetry e ToolHive opzionale dietro i gate.
+- **Group 2**: Supabase source of truth, RandMind memoria canonica, Graphiti/LightRAG soltanto projection opzionali ricostruibili, RandKnowledge Gateway per provenance e temporal scope.
+- **Group 3**: RandDurableRuntime per checkpoint/resume/cancel/idempotenza, con re-authorization a ogni resume.
+- RandBrain governa model routing, reasoning graph, autonomia e learning verificato.
+- RandMind può apprendere da esiti verificati ma non può cambiare i confini critici di RandCore.
+
+## RandGateway
+
+Flusso operativo:
+
+`adapter → RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`
+
+Gli adapter Web, RandChat, MCP e Twilio/WhatsApp producono envelope canonici ma non decidono identità, hotel, ruolo, rischio o permessi. Nessun adapter può scrivere direttamente dati operativi.
+
+## RandRadar Full Evolution
+
+Repo Radar deriva il perimetro dalle 24 pagine RandApp, dai moduli governati dell'ecosistema e dai fronti evolutivi RandAI. Il discovery automatico usa GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX; la policy manuale copre anche marketplace, registri MCP, Figma Community, Storybook e altre fonti pertinenti.
+
+Classificazione: **Aggiungi / Sostituisci / Ignora / Fonte**; runtime interno `KEEP / UPGRADE / REPLACE / ADD / REJECT / WATCH`.
+
+Nessuna discovery auto-installa codice. Ogni adozione richiede manutenzione, sicurezza, compatibilità, licenza, benchmark, rollback e ownership chiaro.
 
 ```bash
 npm run repo:radar
 ```
 
-Workflow settimanale: `.github/workflows/repo-radar.yml`.
-
-Dettaglio: `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` e policy permanente `docs/RAND_RADAR_POLICY.md`.
-
-## RandSkills
-
-RandSkills introduce competenze modulari e versionate senza creare un secondo sistema di autorizzazione. Ogni competenza vive in `rand-skills/<name>/SKILL.md`; RandCore/RLS/RPC restano l'autorità finale per permessi e mutazioni.
-
-Skill canoniche: `maintenance`, `housekeeping`, `planning`, `warehouse`, `whatsapp`, `procedures`, `repo-radar`.
-
-Il flusso resta:
-
-`objective → RandSkillRouter → skill APPROVED → permission/tool requirements → autorizzazioni caller → risk bound → RandAgentRuntime`
-
-Il router può restringere capacità, mai concederle. Governance e promotion automatica restano limitate a miglioramenti LOW-risk testati e verificati; cambi di boundary, schema, permessi e operazioni distruttive richiedono review.
-
-Comandi:
-
-```bash
-npm run skills:validate
-npm run test:randskills
-npm run test:randskills:governance
-```
-
-## RandMind / RandBrain / RandAI
-
-RandMind è la memoria canonica governata con provenienza, temporalità, conflitti, retention e forgetting auditabile. RandBrain governa routing, reasoning graph, autonomia e learning verificato. RandAI usa questi proprietari invece di duplicare memoria, tool registry, agent runtime o orchestrazione.
-
-Principio invariabile: **RandMind può imparare da esiti verificati, ma non può cambiare da solo i confini critici di RandCore**.
-
-## RandCore e Security Intelligence
-
-RandCore governa health, audit, release gate, workers, sicurezza, costi, integrazioni ed evidenze LTS. Le fonti di security intelligence possono segnalare exploit/PoC pubblici e pattern di analisi, ma non possono eseguire exploit nel runtime di produzione né installare codice.
-
-`Exploitarium` resta fonte `SECURITY_INTELLIGENCE`; `reverse-skill` resta donatore `ANALYSIS_PATTERN` sandbox-only; fonti di discovery esterne rientrano sempre nei normali gate RandRadar.
-
-## RandGateway — Punto 7
-
-RandGateway è l'unico ingresso per richieste provenienti da RandApp/Web, RandChat, MCP e Twilio/WhatsApp. Gli adapter producono un envelope canonico ma non decidono identità, hotel, ruolo, rischio o permessi. I comandi seguono sempre `RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`; un adapter non può scrivere direttamente dati operativi.
-
-RandChat conserva lo storico in Postgres e usa Broadcast privato hotel/member-scoped per la consegna live. MCP remoto usa Streamable HTTP con SDK ufficiale stabile e allowlist Rand. Twilio resta il provider WhatsApp temporaneo, dietro l'adapter: riceve e conserva i messaggi, ma la creazione di una segnalazione richiede revisione protetta.
-
-Dettaglio: `docs/architecture/RANDGATEWAY_POINT7.md`.
-
-## Fase 0 — fondamenta congelate
-
-La Fase 0 certifica tre invarianti prima delle evoluzioni successive:
-
-- **Punto 7 chiuso:** ogni comando operativo passa da RandGateway, autorizzazione, eventuale HITL, Action Gateway e audit;
-- **RandAI senza duplicazioni:** la navbar apre la pagina completa e protetta `/randai`; il pulsante in testata apre soltanto il popup rapido contestuale;
-- **promozione controllata:** gli agenti lavorano su branch e PR, Vercel Git deploy resta disabilitato e Ocean pubblica solo preview di PR o ref richieste manualmente. Il vecchio deploy automatico di `main` su Ocean è stato rimosso come percorso zombie.
-
-Il gate eseguibile è `npm run test:phase0` ed è obbligatorio nella CI canonica. La protezione server-side di `main` deve inoltre richiedere PR, controlli CI verdi, revisione umana, conversazioni risolte, blocco force-push/cancellazione e nessun bypass agente/app.
-
-## Fase 1 — identità e autorizzazione
-
-La Fase 1 chiude la regressione storica RandAI/RandApp senza introdurre un secondo sistema di sicurezza:
-
-- il login PIN accetta sempre input/incolla di quattro cifre, ma il backend confronta esclusivamente `auth_pin_credentials.pin_hash`; il fallback al PIN in chiaro è stato rimosso dopo aver verificato che tutti gli utenti RandApp attivi sono migrati;
-- lockout, sessione Supabase, membership attiva e isolamento `hotel_id` restano obbligatori;
-- `procedures:view` entra nella matrice centrale `role_permissions`; RandGuide mostra soltanto procedure approvate della struttura e diventa consultabile dal Manuale senza concedere il Control Center amministrativo;
-- `RandDurableRuntime` impone un timeout finito e propaga un `AbortSignal`, così un workflow non responsivo termina con `WORKFLOW_EXECUTION_TIMEOUT` invece di restare `RUNNING` indefinitamente;
-- Model Router, memoria hotel-scoped, Action Gateway, HITL e audit restano le autorità già consolidate e vengono verificati, non duplicati.
-
-Il gate mirato è `npm run test:phase1`. La migrazione `20260915053605_phase1_identity_authorization.sql` conserva l'accesso in lettura già esistente, ma lo rende esplicito e revocabile dalla matrice centrale.
-
-## OpenAI Plugins governance + RandFlow
-
-`https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.
-
-Priorità v1: `build-web-apps` → `ADOPT_PATTERN`, `plugin-eval` e `superpowers` → `ADAPT`, GitHub/Supabase/Vercel → `CONNECT`; `codex-security` resta esterno perché proprietario e RandCore continua a essere l'autorità di sicurezza. Figma/Sentry/PostHog restano governati dai rispettivi owner e gate.
-
-RandFlow formalizza il lavoro agente: `DISCOVER → PLAN → IMPLEMENT → TEST → SECURITY → REVIEW → READY_FOR_HUMAN_MERGE`. Branch dedicato, test/security/CI verdi, zero irrisolti e revisione umana sono obbligatori; niente push agente diretto su `main`, merge automatico o deploy produzione prima dell'approvazione.
-
-La CI canonica valida **ogni pull request**, incluse le PR stacked su branch di lavoro: cambiare la base della PR non può bypassare security audit, Quality Matrix, build, contratti RandApp/RandAI/RandUI, browser/device acceptance o gli altri release gate. I push restano invece limitati alle branch esplicitamente governate. Il contratto è protetto da `test/randai-rand-flow-ci-contract.test.js`.
-
-Dettaglio: `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md`.
-
-### Plugin evaluation governata
-
-`plugin-eval` viene adattato come pattern, non installato come secondo evaluator. **Promptfoo + Quality Matrix restano il motore canonico**; `scripts/rand-plugin-eval.mjs` aggiunge una policy versionata con dimensioni obbligatorie, ordinamento `Fix First`, report JSON/Markdown e confronto before/after.
-
-Le dimensioni minime sono sicurezza, isolamento hotel, permessi, correttezza, regressioni, costi, manutenibilità e rollback. Un finding critico blocca il gate. Anche un `PASS` non abilita merge o deploy automatici: la review umana resta obbligatoria.
-
-Comandi:
-
-```bash
-npm run eval:plugin
-npm run eval:plugin:compare -- before.json after.json
-```
-
-Il workflow Group 1 salva il report come artifact di CI per 14 giorni. Dettaglio: `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md`.
-
-## RandAI Group 1 — Guardrails e observability
-
-Il Gruppo 1 introduce un boundary fail-closed senza creare un secondo sistema di autorizzazione o logging:
-
-- **RandTool Gateway** (`src/randai/core/tool-gateway.js`) filtra i tool prima dell'esposizione al modello e nega tool sconosciuti/disabilitati, caller anonimi, cross-hotel e scope mancanti;
-- **Promptfoo** resta fuori dal bundle runtime e viene usato come regression/evaluation gate CI con versione fissata;
-- **OpenTelemetry** già presente resta il contratto canonico; `ai-observability.js` aggiunge span `randai.*`, mentre Phoenix può essere collegato come backend OTLP opzionale;
-- **ToolHive** resta adapter/runtime MCP opzionale dietro il RandTool Gateway e non può concedere permessi.
-
-Comandi:
-
-```bash
-npm run test:group1
-npm run eval:randai:security
-npm run eval:plugin
-```
-
-Workflow dedicato: `.github/workflows/randai-group1-security.yml`.
-
-Dettaglio: `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md`.
-
-## RandAI Group 2 — Knowledge, memoria e RAG
-
-Il Gruppo 2 separa in modo definitivo dati, memoria e indici di retrieval:
-
-- **Supabase/Postgres** resta la source of truth dei dati operativi e RLS/RPC resta l'autorità finale;
-- **RandMind** resta il proprietario canonico della memoria governata;
-- **Graphiti** è adottato come pattern/adapter opzionale per una proiezione temporale e bi-temporale ricostruibile;
-- **LightRAG** è adottato come pattern/adapter opzionale per una proiezione di retrieval documentale/ibrido ricostruibile;
-- **RandKnowledge Gateway** (`src/randai/core/knowledge-gateway.js`) applica identità, `hotelId`, `knowledge:read`, provenienza canonica e validità temporale prima che il contesto raggiunga RandAI.
-
-Graphiti e LightRAG non entrano nel bundle PWA e non diventano store canonici. Un indice può essere cancellato e rigenerato dalle fonti autorizzate senza perdita della verità operativa. I risultati di projection senza `canonicalRef`, fuori hotel o fuori finestra temporale vengono scartati; un backend esterno indisponibile degrada in sicurezza lasciando RandMind operativo.
-
-Comando:
-
-```bash
-npm run test:group2
-```
-
-Workflow dedicato: `.github/workflows/randai-group2-knowledge.yml`.
-
-Dettaglio: `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md`.
-
-## RandAI Group 3 — Durable runtime
-
-Il Gruppo 3 introduce `RandDurableRuntime` come contratto canonico per workflow lunghi/riprendibili senza creare un secondo orchestratore:
-
-- identità, `hotelId` e `workflow:execute` obbligatori;
-- idempotency key obbligatoria;
-- checkpoint, resume e cancel deterministici;
-- ogni resume rivalida identità/hotel/scope e ricarica conoscenza fresca;
-- `workflowId` + `workflowVersion` impediscono resume incompatibili;
-- retry solo espliciti e bounded;
-- tracing riusa OpenTelemetry del Gruppo 1;
-- recovery engine esistente resta proprietario del recovery locale;
-- Trigger.dev resta executor esterno opzionale, non dipendenza del PWA.
-
-Comando:
-
-```bash
-npm run test:group3
-```
-
-Workflow dedicato: `.github/workflows/randai-group3-durable.yml`.
-
-Dettaglio: `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md`.
-
-## RandUI
-
-RandUI è il design system canonico. Il flusso è:
-
-`Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
-
-Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice principale copre **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Chromium e WebKit.
-
-La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello slot 2, **Home** nello slot 3, **Task** nello slot 4 per i ruoli autorizzati e **RandAI** nello slot 5. Se Task non è autorizzato, lo slot 4 può degradare a una destinazione operativa consentita. Il menu completo vive nel controllo profilo/nome.
-
-Contratto delle azioni RandUI: la bottom navigation **naviga soltanto**; il `+` crea esclusivamente l'oggetto del contesto attivo. Quindi Interventi → `Nuovo intervento`, Planning lavori → `Nuovo lavoro`, Planning sale → `Nuova attività sala`. Le richieste di creazione vengono azzerate quando si naviga per evitare che una vecchia modale si riapra entrando nuovamente nella sezione.
-
-## RandDesignBridge
-
-RandDesignBridge collega Figma e RandUI senza creare un secondo design system. Il **Figma MCP ufficiale è l'unico bridge primario**; Framelink/context compression e token tooling restano adapter/pattern opzionali, mentre MCP di terze parti con ampia capacità di scrittura e screenshot→layers restano sandbox-only.
-
-Non viene introdotto Storybook soltanto per Figma Sync: la visual regression riusa i gate Playwright/RandUI già canonici. Figma Code Connect resta deferred finché piano/seat e libreria Figma pubblicata non soddisfano i prerequisiti ufficiali. Questo evita dipendenze zombie e mantiene il freeze: qualunque codice generato dal design entra su feature branch, passa test/CI e richiede review umana.
-
-```bash
-npm run design:check
-npm run test:design
-```
-
-Dettaglio: `docs/architecture/RANDDESIGNBRIDGE_V1.md`.
-
 ## Moduli operativi
 
-RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, magazzino, urgenze, promemoria, sensori/temperature, utenti/ruoli, guide, feedback, desktop e RandAI.
+RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, warehouse, urgenze, promemoria, sensori/temperature, utenti/ruoli, RandGuide, feedback, RandChat, RandDesktop e RandAI.
 
-Warehouse resta bounded domain con ledger, stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow operativo separato dal Magazzino e non crea quantità o movimenti Warehouse.
+Warehouse mantiene ledger/stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow distinto e non crea quantità o movimenti Warehouse. RandChat riusa identità e autorizzazioni RandApp; DM E2EE e media mantengono i rispettivi boundary. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette.
 
-RandChat riusa identità e autorizzazioni RandApp; gruppi, DM E2EE, Procedure/RandGuide, RandAI e RandMedia restano bounded dai rispettivi gate. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette per Windows/desktop.
+## Offline e device
 
-## Safe-area e target device
+RandApp usa un solo stack offline: Service Worker + sessione locale controllata + Dexie/IndexedDB. L'ultimo accesso validato può essere riutilizzato offline entro il limite definito dalla policy; al ritorno della rete Supabase/RandCore tornano autoritativi.
 
-Il contratto responsive usa `viewport-fit=cover`, `env(safe-area-inset-*)`, `src/randapp/system-insets.js` e `adaptive-layout.css`. Header e contenuto condividono lo stesso gutter canonico; la safe-area superiore ha un solo proprietario per evitare doppio spazio su iPhone.
-
-## Bootstrap e continuità offline
-
-RandApp usa un solo stack offline, già condiviso dai moduli operativi: **Service Worker + sessione locale controllata + Dexie/IndexedDB (`offline-store.js`)**. Non esiste un secondo database offline.
-
-- l'ultimo accesso validato viene conservato localmente e può essere riutilizzato offline per un massimo di **24 ore**;
-- dopo un accesso online valido `offline-preload.js` scalda in background, con TTL di 10 minuti, soltanto i moduli consentiti dai permessi dell'utente: Segnalazioni, Interventi/Planning, Sale, Urgenze e Rifornimenti;
-- directory e collezioni operative già sincronizzate vengono lette dalla cache IndexedDB per hotel, così l'ultimo stato pre-offline resta disponibile;
-- Rifornimenti conserva anche prodotti, richieste recenti e contesti area/piano; le relative scritture restano online-only finché il contratto server non offre idempotenza sufficiente per una coda sicura;
-- Housekeeping mantiene il proprio cache/outbox locale già esistente; non viene duplicato o migrato solo per uniformità cosmetica;
-- il Service Worker mantiene app shell e asset già caricati, oltre al fallback di navigazione;
-- un errore di chunk/deployment mentre il dispositivo è offline **non può cancellare le cache PWA né forzare un reload distruttivo**: il recovery viene rinviato fino al ritorno della rete;
-- quando la rete ritorna, la normale validazione Supabase/RandCore torna autoritativa; lo stato persistito non diventa un'autorizzazione permanente;
-- operazioni sensibili continuano a richiedere connettività, mentre le mutazioni offline supportate passano dall'outbox governata e dalla successiva sincronizzazione.
-
-I contratti anti-regressione sono coperti da `test/deployment-recovery.test.js`, `test/offline-preload-contract.test.js`, dai test della session policy e dell'offline store.
+Safe-area e responsive usano `viewport-fit=cover`, `env(safe-area-inset-*)`, `system-insets.js` e layout adattivo. Header e contenuto condividono il gutter canonico e la safe-area superiore ha un solo proprietario.
 
 ## Quality Matrix e test
 
@@ -264,57 +118,46 @@ Comandi principali:
 npm run build
 npm test
 npm run test:quality
+npm run test:phase0
+npm run test:phase1
 npm run test:group1
 npm run test:group2
 npm run test:group3
-npm run eval:randai:security
-npm run eval:plugin
-npm run test:repo-radar
-npm run test:design
-npm run design:check
-npm run test:randskills
-npm run test:mind-learning
-npm run test:security-intelligence
 npm run test:randui
 npm run test:e2e
 npm run test:device
 npm run test:lts
+npm run skills:validate
+npm run repo:radar
+npm run design:check
 ```
 
-`npm test` include anche `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js`, `test/randdesign-bridge-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability, design bridge e navigazione RandUI.
+La CI canonica verifica dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandApp/RandAI/RandUI/RandBrain/RandAudio, Chromium + WebKit, device acceptance, RandCore health evidence e LTS attestation.
 
-La CI certifica inoltre dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2 e Group 3 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary e durable lifecycle/resume; `RandDesignBridge` valida anche governance Figma/RandUI e policy multisorgente RandRadar.
+Ogni PR deve essere verde prima di poter essere proposta per merge umano.
 
 ## Deploy
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel restano congelati (`deploymentEnabled: false`); **prove e test grafici della nuova UI vanno esclusivamente su DigitalOcean/Ocean** finché non viene decisa esplicitamente la riattivazione.
+- **Produzione stabile:** Vercel.
+- **Preview/test grafici:** DigitalOcean/Ocean.
+- Gli agenti non promuovono automaticamente branch in produzione.
+- `/ui-v2-preview` resta una superficie di verifica finché il workflow Ocean la usa.
 
-## Documentazione
+## Documentazione principale
 
-- `docs/architecture/RANDGATEWAY_POINT7.md` — envelope canonico, adapter RandChat/MCP/Twilio, HITL, audit e anti-bypass.
-- `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
-- `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
-- `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.
-- `docs/RAND_RADAR_POLICY.md` — ricerca multisorgente permanente, profondità, deduplica, licenze e regole Figma/UI.
-- `docs/architecture/RANDDESIGNBRIDGE_V1.md` — Figma↔RandUI, tool ownership, anti-zombie e visual gate.
-- `docs/architecture/RANDSKILLS_V1.md` — formato skill e governance.
-- `docs/architecture/RANDSKILLS_ROUTER_BLOCK1.md` — routing e tool bounding.
-- `docs/architecture/RANDSKILLS_GOVERNANCE_BLOCK2.md` — lifecycle, overlap e zombie policy.
-- `docs/architecture/RANDMIND_LEARNING_BLOCK2.md` — cognitive loop e learning verificato.
-- `docs/architecture/RANDCORE_SECURITY_INTELLIGENCE_BLOCK3.md` — security intelligence e sandbox boundary.
-- `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway, Promptfoo, OTLP/Phoenix e boundary ToolHive.
-- `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — separazione Supabase/RandMind/Graph/RAG, provenance e temporal retrieval.
-- `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
-- `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
-- `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
-- `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
-- `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — visual language.
-- `docs/architecture/RANDUI_TELEGRAM_NAVIGATION_V1.md` — navigazione mobile.
-- `docs/architecture/RANDCHAT.md` — RandChat ed E2EE.
-- `docs/architecture/RANDDESKTOP_PRINTING.md` — RandDesktop e stampa nativa.
-- `docs/architecture/RIFORNIMENTI_INTERNI.md` — Rifornimenti.
-- `docs/README-history-2026-09-05.md` — storico esteso delle roadmap e dei blocchi precedenti.
+- `docs/architecture/RANDAI_UI_FOUNDATION_V1.md` — ownership UI RandAI, primitive native e decisioni RandRadar.
+- `docs/architecture/RANDGATEWAY_POINT7.md` — gateway, adapter, HITL e audit.
+- `docs/architecture/RANDAI_GROUP1_GUARDRAILS_OBSERVABILITY.md` — tool gateway/eval/telemetry.
+- `docs/architecture/RANDAI_GROUP2_KNOWLEDGE_MEMORY_RAG.md` — knowledge, memoria, RAG e provenance.
+- `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — durable runtime e resume.
+- `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` e `docs/RAND_RADAR_POLICY.md` — discovery multisorgente e governance.
+- `docs/architecture/RANDDESIGNBRIDGE_V1.md` — Figma ↔ RandUI e visual gate.
+- `docs/architecture/RANDSKILLS_V1.md` — formato e governance skill.
+- `docs/architecture/RANDCHAT.md` — gruppi, DM E2EE e media.
+- `docs/architecture/RANDDESKTOP_PRINTING.md` — desktop/stampa.
+- `docs/architecture/RIFORNIMENTI_INTERNI.md` — rifornimenti.
+- `docs/README-history-2026-09-05.md` — storico roadmap precedente.
 
-Questo README rappresenta lo **stato corrente** e resta volutamente operativo; i dettagli storici e specialistici vivono nei documenti dedicati.
+Questo README descrive lo **stato operativo corrente**; cronologia e dettagli specialistici restano nei documenti dedicati per evitare duplicazioni e documentazione zombie.
