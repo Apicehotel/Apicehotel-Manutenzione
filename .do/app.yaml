@@ -1,0 +1,16 @@
+name: randui-preview
+region: fra
+static_sites:
+  - name: randui
+    github:
+      repo: Apicehotel/Apicehotel-Manutenzione
+      branch: main
+      deploy_on_push: false
+    source_dir: /
+    environment_slug: node-js
+    build_command: npm ci && npm run build
+    output_dir: dist
+    index_document: index.html
+    catchall_document: index.html
+    routes:
+      - path: /

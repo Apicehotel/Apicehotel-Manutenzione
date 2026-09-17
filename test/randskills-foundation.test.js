@@ -17,12 +17,12 @@ test('RandSkills v1 manifests are valid and complete', () => {
   ])
 })
 
-test('Node toolchain contract is pinned and fail-closed', () => {
+test('Node toolchain contract pins CI while keeping deployment provider compatibility', () => {
   const nvmrc = fs.readFileSync(new URL('../.nvmrc', import.meta.url), 'utf8').trim()
   const npmrc = fs.readFileSync(new URL('../.npmrc', import.meta.url), 'utf8')
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.equal(nvmrc, '24.20.0')
-  assert.equal(pkg.engines.node, '>=24.20.0 <25')
+  assert.equal(pkg.engines.node, '24.x')
   assert.match(npmrc, /^engine-strict=true/m)
 })
 

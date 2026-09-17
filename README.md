@@ -87,6 +87,28 @@ RandChat conserva lo storico in Postgres e usa Broadcast privato hotel/member-sc
 
 Dettaglio: `docs/architecture/RANDGATEWAY_POINT7.md`.
 
+## Fase 0 — fondamenta congelate
+
+La Fase 0 certifica tre invarianti prima delle evoluzioni successive:
+
+- **Punto 7 chiuso:** ogni comando operativo passa da RandGateway, autorizzazione, eventuale HITL, Action Gateway e audit;
+- **RandAI senza duplicazioni:** la navbar apre la pagina completa e protetta `/randai`; il pulsante in testata apre soltanto il popup rapido contestuale;
+- **promozione controllata:** gli agenti lavorano su branch e PR, Vercel Git deploy resta disabilitato e Ocean pubblica solo preview di PR o ref richieste manualmente. Il vecchio deploy automatico di `main` su Ocean è stato rimosso come percorso zombie.
+
+Il gate eseguibile è `npm run test:phase0` ed è obbligatorio nella CI canonica. La protezione server-side di `main` deve inoltre richiedere PR, controlli CI verdi, revisione umana, conversazioni risolte, blocco force-push/cancellazione e nessun bypass agente/app.
+
+## Fase 1 — identità e autorizzazione
+
+La Fase 1 chiude la regressione storica RandAI/RandApp senza introdurre un secondo sistema di sicurezza:
+
+- il login PIN accetta sempre input/incolla di quattro cifre, ma il backend confronta esclusivamente `auth_pin_credentials.pin_hash`; il fallback al PIN in chiaro è stato rimosso dopo aver verificato che tutti gli utenti RandApp attivi sono migrati;
+- lockout, sessione Supabase, membership attiva e isolamento `hotel_id` restano obbligatori;
+- `procedures:view` entra nella matrice centrale `role_permissions`; RandGuide mostra soltanto procedure approvate della struttura e diventa consultabile dal Manuale senza concedere il Control Center amministrativo;
+- `RandDurableRuntime` impone un timeout finito e propaga un `AbortSignal`, così un workflow non responsivo termina con `WORKFLOW_EXECUTION_TIMEOUT` invece di restare `RUNNING` indefinitamente;
+- Model Router, memoria hotel-scoped, Action Gateway, HITL e audit restano le autorità già consolidate e vengono verificati, non duplicati.
+
+Il gate mirato è `npm run test:phase1`. La migrazione `20260915053605_phase1_identity_authorization.sql` conserva l'accesso in lettura già esistente, ma lo rende esplicito e revocabile dalla matrice centrale.
+
 ## OpenAI Plugins governance + RandFlow
 
 `https://github.com/openai/plugins` è registrato in RandRadar come `CAPABILITY_CATALOG` `SOURCE_ONLY`: è una fonte ufficiale di pattern e integrazioni, non una dipendenza monolitica né una trust root. Nessun plugin viene auto-installato e nessun plugin riceve autorità produttiva.

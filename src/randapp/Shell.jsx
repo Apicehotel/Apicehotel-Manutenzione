@@ -393,7 +393,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'feedback-received') content = <FeedbackView user={user} hotel={hotel} received />
     if (view === 'feedback') content = <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') content = <PinView user={user} />
-    if (view === 'manual') content = <ManualView />
+    if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
@@ -415,8 +415,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
-    if (item.action === 'randai') {
-      window.dispatchEvent(new CustomEvent('randai-toggle'))
+    if (item.href) {
+      window.location.assign(item.href)
       return
     }
     if (item.id === 'structure') { setHotelSheet(true); return }
@@ -429,7 +429,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const isBottomActive = (item) => {
-    if (settings !== null || item.action) return false
+    if (settings !== null || item.href) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
     return view === item.id
@@ -478,7 +478,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           {bottomNav.map((item) => {
             const active = isBottomActive(item)
             return (
-              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.action === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
+              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.id === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
                 <Icon name={item.icon} /><small>{item.label}</small>
               </button>
             )
