@@ -1,4 +1,8 @@
-export const RANDUI_VERSION = '1.0.0'
+import { RANDUI_ICON_POLICY } from './icon-contract.js'
+import { RANDUI_MOTION, RANDUI_MOTION_VERSION } from './motion-contract.js'
+import designTokens from './design-tokens.json' with { type: 'json' }
+
+export const RANDUI_VERSION = '1.1.0'
 
 export const RANDUI_BREAKPOINTS = Object.freeze({
   mobileMax: 767,
@@ -15,6 +19,9 @@ export const RANDUI_LAYER_OWNERS = Object.freeze({
   responsiveGeometry: 'src/randapp/adaptive-layout.css',
   interactionAccessibility: 'src/randapp/ui-coherence.css',
   finalFoundation: 'src/randapp/randui/foundation.css',
+  designTokens: 'src/randapp/randui/design-tokens.json',
+  motion: 'src/randapp/randui/motion-contract.js',
+  icons: 'src/randapp/randui/icon-contract.js',
   templates: 'src/randapp/randui/template-registry.js',
   components: 'src/randapp/randui/component-registry.js',
   pageSchema: 'src/randapp/randui/page-schema.js',
@@ -64,16 +71,24 @@ export const RANDUI_DESIGN_CONTRACT = Object.freeze({
   templateIds: RANDUI_TEMPLATE_IDS,
   systemStates: RANDUI_SYSTEM_STATES,
   layerOwners: RANDUI_LAYER_OWNERS,
+  tokens: designTokens,
+  motionVersion: RANDUI_MOTION_VERSION,
+  motion: RANDUI_MOTION,
+  iconPolicy: RANDUI_ICON_POLICY,
   invariants: Object.freeze([
     'one-authenticated-shell',
     'one-responsive-geometry-owner',
     'one-theme-contract',
     'one-density-contract',
+    'one-design-token-contract',
+    'one-motion-contract',
+    'one-icon-runtime-owner',
     'permissions-before-personalization',
     'no-unintended-horizontal-overflow',
     'safe-area-owned-by-shared-chrome',
     'templates-before-page-specific-layout',
     'registered-components-only',
+    'reduced-motion-is-mandatory',
     'guard-before-template-migration',
   ]),
 })
