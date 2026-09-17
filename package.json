@@ -25,6 +25,7 @@
     "test:group3": "node --test test/randai-group3-*.test.js",
     "test:group4": "node --test test/randai-group4-governance.test.js",
     "test:group5": "node --test test/randai-group5-randmind-v2.test.js",
+    "test:group6": "node --test test/randai-group6-randresearch.test.js",
     "eval:randai:security": "npx --yes promptfoo@0.122.2 eval -c evals/randai/promptfooconfig.yaml --no-cache",
     "eval:plugin": "node scripts/rand-plugin-eval.mjs analyze",
     "eval:plugin:compare": "node scripts/rand-plugin-eval.mjs compare",

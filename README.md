@@ -4,7 +4,7 @@ PWA React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target s
 
 ## Stato attuale
 
-RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
+RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandResearch, RandBrain, RandUI, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dell'ecosistema, non applicazioni parallele.
 
 La regola architetturale resta: **un solo proprietario canonico per capacità**. Se una soluzione è nettamente migliore, più semplice e più sicura, sostituisce quella debole invece di accumulare patch o creare un secondo sistema.
 
@@ -88,9 +88,9 @@ npm run test:randskills
 npm run test:randskills:governance
 ```
 
-## RandMind / RandBrain / RandAI
+## RandMind / RandResearch / RandBrain / RandAI
 
-RandMind è la memoria canonica governata con provenienza, temporalità, conflitti, retention e forgetting auditabile. RandBrain governa routing, reasoning graph, autonomia e learning verificato. RandAI usa questi proprietari invece di duplicare memoria, tool registry, agent runtime o orchestrazione.
+RandMind è la memoria canonica governata con provenienza, temporalità, conflitti, retention e forgetting auditabile. RandResearch è l'owner canonico della ricerca approfondita evidence-first. RandBrain governa routing, reasoning graph, autonomia e learning verificato. RandAI usa questi proprietari invece di duplicare memoria, retrieval, tool registry, agent runtime o orchestrazione.
 
 Principio invariabile: **RandMind può imparare da esiti verificati, ma non può cambiare da solo i confini critici di RandCore**.
 
@@ -112,6 +112,29 @@ npm run test:group5
 ```
 
 Workflow dedicato: `.github/workflows/randai-group5-randmind-v2.yml`. Dettaglio: `docs/architecture/RANDMIND_V2.md`.
+
+### RandResearch v1 — evidence-first deep research
+
+RandResearch possiede la pipeline di ricerca approfondita, ma non sostituisce RandKnowledge, RandMind, RandCore o RandAudit.
+
+- livelli **L0–L4** con query canonica e budget bounded;
+- provenance obbligatoria e source quality score spiegabile;
+- contradiction detection e gap detection espliciti;
+- ship gate fail-closed su prompt-injection risk, retraction risk, gap e contraddizioni HIGH/CRITICAL irrisolte;
+- L3/L4 richiedono human review; L4 richiede almeno due fonti di buona qualità e citazioni complete;
+- coordinator same-hotel con `research:execute` + `knowledge:read`;
+- persistence Supabase service-role-only con DB guard contro fonti cross-hotel;
+- i risultati di ricerca non diventano direttamente memoria VERIFIED: devono attraversare il trust boundary RandAudit → RandMind.
+
+RandRadar: Hyperresearch è **ADOPT PATTERNS / non installare runtime**; i wiki agentici sono `SOURCE_ONLY`. Nessuna nuova dipendenza runtime.
+
+Comando:
+
+```bash
+npm run test:group6
+```
+
+Workflow dedicato: `.github/workflows/randai-group6-randresearch.yml`. Dettaglio: `docs/architecture/RANDRESEARCH_V1.md`.
 
 ## RandCore e Security Intelligence
 
@@ -291,6 +314,7 @@ npm run test:group2
 npm run test:group3
 npm run test:group4
 npm run test:group5
+npm run test:group6
 npm run spec:validate
 npm run test:randspec
 npm run eval:randai:security
@@ -307,7 +331,7 @@ npm run test:lts
 
 `npm test` include anche `test/randspec-governance.test.js`, `test/openai-plugin-governance.test.js`, `test/rand-flow-policy.test.js`, `test/randai-rand-flow-ci-contract.test.js`, `test/randai-plugin-eval-adaptation.test.js`, `test/randradar-full-evolution-v1.test.js` e `test/randui-navigation-actions-v2.test.js`; questi contratti proteggono RandSpec/Constitution, intake plugin, RandFlow, CI universale delle PR e single-evaluator policy, oltre a inventario/capability e navigazione RandUI.
 
-La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1, Group 2, Group 3, Group 4 e Group 5 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume, governance rules/audit/doctor/security e RandMind verified-memory/temporal governance; Group 3 include anche i contratti RandCore Runtime v2.
+La CI certifica inoltre RandSpec/RandSkills, dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandBrain/RandUI/RandAudio/Viking/RandAI/RandApp, Chromium + WebKit, device acceptance, RandCore health evidence e Rand Ecosystem LTS attestation. I workflow RandAI Group 1–6 aggiungono rispettivamente tool authorization/evaluation, knowledge provenance/temporal boundary, durable lifecycle/resume, governance rules/audit/doctor/security, RandMind verified-memory/temporal governance e RandResearch evidence/critic/ship-gate; Group 3 include anche i contratti RandCore Runtime v2.
 
 ## Deploy
 
@@ -322,6 +346,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDCORE_RUNTIME_V2.md` — event contract, queue/job lifecycle, worker heartbeat, dead-letter, snapshot e integrazione durable.
 - `docs/architecture/RAND_GOVERNANCE_V1.md` — RandRules, RandAudit, RandDoctor, RandSecure, persistence e boundary Action Gateway.
 - `docs/architecture/RANDMIND_V2.md` — verified-audit ingestion, recall as-of, conflict resolution, retention planner e provenance RandMind 2.0.
+- `docs/architecture/RANDRESEARCH_V1.md` — livelli L0-L4, source provenance/scoring, contradictions/gaps, coordinator, persistence e ship gate RandResearch.
 - `docs/architecture/RAND_OPENAI_PLUGINS_ADOPTION_V1.md` — intake governato OpenAI Plugins, ownership canonica e RandFlow.
 - `docs/architecture/RAND_PLUGIN_EVAL_ADAPTATION_V1.md` — adapter `plugin-eval`, Fix First, evidence e before/after sopra Promptfoo/Quality Matrix.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` — inventario vivo, scouting completo RandApp/RandAI, coverage fail-closed e governance.

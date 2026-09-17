@@ -1,0 +1,29 @@
+name: RandAI Group 6 RandResearch
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: randai-group6-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - run: npm ci
+      - name: RandResearch contracts
+        run: npm run test:group6
+      - name: RandMind v2 boundary
+        run: npm run test:group5
+      - name: Rand governance boundary
+        run: npm run test:group4
+      - name: RandSpec validation
+        run: npm run spec:validate
