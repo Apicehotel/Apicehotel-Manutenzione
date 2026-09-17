@@ -4,6 +4,7 @@ import { getRandEcosystemManifest, summarizeRandEcosystem } from '../src/randai/
 import { buildRepoRadarSnapshot } from '../src/randai/discovery/repo-radar.js'
 import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.js'
 import { buildHealthEvidenceSnapshot } from '../src/randai/core/health-evidence.js'
+import { githubGovernanceFinding, inspectGitHubBranchProtection } from '../src/randai/core/github-governance.js'
 
 const root = process.cwd()
 const generatedAt = new Date().toISOString()
@@ -16,20 +17,30 @@ const directDeps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {})
 const lockPackages = Object.keys(lock.packages || {}).length
 const sha = process.env.GITHUB_SHA || null
 const ref = process.env.GITHUB_REF || null
+const repository = process.env.GITHUB_REPOSITORY || null
+const protectedBranch = process.env.RANDCORE_PROTECTED_BRANCH || 'main'
 
 const pathExists = async (relativePath) => {
   try { await fs.access(path.join(root, relativePath)); return true } catch { return false }
 }
 const buildPresent = await pathExists('dist/index.html')
+const githubGovernance = await inspectGitHubBranchProtection({
+  repository,
+  branch: protectedBranch,
+  token: process.env.GITHUB_TOKEN || null,
+  checkedAt: generatedAt,
+})
 
 const findings = []
 if (summary.counts.ZOMBIE > 0) findings.push({ category:'ecosystem', severity:'WARN', code:'DECLARED_ZOMBIES', title:'Moduli zombie dichiarati', detail:`${summary.counts.ZOMBIE} moduli richiedono pulizia o decisione.`, fingerprint:'ecosystem:zombies' })
 if (summary.unfinished > 0) findings.push({ category:'ecosystem', severity:'INFO', code:'UNFINISHED_MODULES', title:'Moduli ancora da consolidare', detail:`${summary.unfinished} moduli non sono LIVE.`, fingerprint:'ecosystem:unfinished' })
 if (radar.counts.REJECT > 0) findings.push({ category:'repo-radar', severity:'INFO', code:'REJECTED_CANDIDATES', title:'Candidate respinte dal Repo Radar', detail:`${radar.counts.REJECT} candidate restano escluse.`, fingerprint:'repo-radar:rejected' })
+const governanceFinding = githubGovernanceFinding(githubGovernance)
+if (governanceFinding) findings.push(governanceFinding)
 
 const domains = {
   database: {},
-  security: {},
+  security: githubGovernance.status === 'UNKNOWN' ? {} : githubGovernance,
   workers: {},
   deploy: sha && buildPresent ? {
     status:'HEALTHY', score:100, checkedAt:generatedAt, source:'github-actions-build',
@@ -59,10 +70,19 @@ const report = {
   confidence:snapshot.confidence,
   snapshot:{
     ...snapshot,
-    context:{ ecosystem:summary, repo_radar:radar.counts },
+    context:{
+      ecosystem:summary,
+      repo_radar:radar.counts,
+      github_governance:{
+        repository,
+        branch:protectedBranch,
+        status:githubGovernance.status,
+        protected:githubGovernance.evidence?.protected ?? null,
+      },
+    },
   },
   findings,
 }
 await fs.mkdir(path.join(root, 'artifacts'), { recursive:true })
 await fs.writeFile(path.join(root, 'artifacts', 'randcore-full-check.json'), JSON.stringify(report, null, 2))
-console.log(JSON.stringify({ status, score, confidence:snapshot.confidence, coverage:snapshot.coverage, findings:findings.length }, null, 2))
+console.log(JSON.stringify({ status, score, confidence:snapshot.confidence, coverage:snapshot.coverage, findings:findings.length, github_branch_protected:githubGovernance.evidence?.protected ?? null }, null, 2))
