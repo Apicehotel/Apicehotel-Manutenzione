@@ -68,7 +68,9 @@
     "repo:radar": "node scripts/repo-radar-snapshot.mjs",
     "core:health": "node scripts/randcore-full-check.mjs",
     "core:external-evidence": "node scripts/randcore-external-evidence.mjs",
-    "lts:attest": "node scripts/rand-lts-attestation.mjs"
+    "lts:attest": "node scripts/rand-lts-attestation.mjs",
+    "release:check": "node scripts/check-release-readiness.mjs --target=web",
+    "release:check:android": "node scripts/check-release-readiness.mjs --target=android"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.1",
