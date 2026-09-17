@@ -32,6 +32,7 @@ import { installDeploymentRecovery } from './deployment-recovery.js'
 installDeploymentRecovery()
 
 const App = lazy(() => import('./randapp/App.jsx'))
+const RandUiV2Preview = lazy(() => import('./randapp/randui-v2/Preview.jsx'))
 const RandAIAssistant = lazy(() => import('./randai/RandAIAssistant.jsx'))
 const RandAIContextBridge = lazy(() => import('./randai/context/RandAIContextBridge.jsx'))
 const TechnicianPortal = lazy(() => import('./technician-portal.jsx'))
@@ -44,6 +45,7 @@ const technicianDispatchMatch = /^\/tecnici-esterni\/?$/.test(window.location.pa
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
 const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
+const randuiV2PreviewMatch = /^\/ui-v2-preview\/?$/.test(window.location.pathname)
 const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 const SESSION_EVENT = 'apice-session-changed'
 
@@ -73,6 +75,7 @@ createRoot(document.getElementById('root')).render(
       : publicIssueMatch ? <Suspense fallback={<RouteFallback />}><PublicIssueView id={publicIssueMatch[1]} /></Suspense>
       : ntfyShortMatch ? <Suspense fallback={<RouteFallback />}><NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} /></Suspense>
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
+      : randuiV2PreviewMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandUI v2…" />}><RandUiV2Preview /></Suspense>
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
   </AppErrorBoundary></React.StrictMode>,
 )
@@ -88,9 +91,7 @@ function afterPageLoad(task) {
   else window.addEventListener('load', run, { once: true })
 }
 
-if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch) {
-  // PWA registration is intentionally immediate: offline/installability is a bootstrap contract,
-  // unlike authenticated operational services that can remain deferred.
+if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch && !randuiV2PreviewMatch) {
   registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))

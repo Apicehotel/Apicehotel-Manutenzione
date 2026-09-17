@@ -1,0 +1,34 @@
+name: RandDesignBridge
+
+on:
+  pull_request:
+    paths:
+      - 'src/randai/design/**'
+      - 'src/randai/discovery/repo-radar*'
+      - 'src/randapp/randui/**'
+      - 'scripts/rand-design-bridge-check.mjs'
+      - 'scripts/repo-radar-snapshot.mjs'
+      - 'test/randdesign-bridge-v1.test.js'
+      - 'test/randai-block14-repo-radar-55-58.test.js'
+      - 'docs/architecture/RANDDESIGNBRIDGE_V1.md'
+      - 'docs/RAND_RADAR_POLICY.md'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:design
+      - run: npm run test:repo-radar
+      - run: npm run design:check

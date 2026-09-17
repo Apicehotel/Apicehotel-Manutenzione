@@ -1,5 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { normalizeWhatsAppNumber, resolveInboundChannel } from "../_shared/whatsapp-policy.js";
+import { adaptTwilioInbound } from "../_shared/rand-gateway/adapters.js";
+import { RandGateway } from "../_shared/rand-gateway/gateway.js";
+import { createSupabaseGatewayStore } from "../_shared/rand-gateway/supabase-store.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -7,7 +10,9 @@ const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID") || "";
 const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
 const INGRESS_SECRET = Deno.env.get("WHATSAPP_INBOUND_SHARED_SECRET") || "";
 const PUBLIC_WEBHOOK_URL = Deno.env.get("WHATSAPP_PUBLIC_WEBHOOK_URL") || "";
+const IDENTITY_PEPPER = Deno.env.get("RAND_EXTERNAL_IDENTITY_PEPPER") || "";
 const DIRECT_URL = `${SUPABASE_URL}/functions/v1/randai-whatsapp-inbound`;
+const MAX_MEDIA_BYTES = 8 * 1024 * 1024;
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
 
 const xmlEscape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
@@ -58,6 +63,55 @@ function signatureUrl(req: Request) {
 async function sha256(value: string) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function externalSubjectHash(channel: string, value: string) {
+  if (!IDENTITY_PEPPER) return null;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(IDENTITY_PEPPER), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${channel}\u0000${value}`));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function whatsappGateway() {
+  return new RandGateway({
+    store: createSupabaseGatewayStore(admin),
+    identity: {
+      async resolve(envelope: any) {
+        const subjectHash = await externalSubjectHash("whatsapp", normalizeWhatsAppNumber(envelope.actor.externalId || ""));
+        if (!subjectHash) return { authenticated: false, identityConfidence: "none", externalSubjectHash: null };
+        const { data: identity, error } = await admin.from("rand_gateway_external_identities")
+          .select("auth_user_id,hotel_id,active").eq("channel", "whatsapp")
+          .eq("external_subject_hash", subjectHash).eq("hotel_id", envelope.actor.hotelId).maybeSingle();
+        if (error) throw error;
+        if (!identity?.active) return { authenticated: false, identityConfidence: "none", externalSubjectHash: subjectHash };
+        const { data: membership } = await admin.from("hotel_memberships").select("role,active")
+          .eq("auth_user_id", identity.auth_user_id).eq("hotel_id", identity.hotel_id).maybeSingle();
+        if (!membership?.active) return { authenticated: false, identityConfidence: "none", externalSubjectHash: subjectHash };
+        const { data: permissions } = await admin.from("role_permissions").select("module,action,allowed")
+          .eq("role", membership.role).eq("allowed", true);
+        return {
+          userId: identity.auth_user_id, hotelId: identity.hotel_id, roleId: membership.role,
+          scopes: (permissions || []).map((row: any) => `${row.module}:${row.action}`),
+          authenticated: true, identityConfidence: "verified_external_link", externalSubjectHash: subjectHash,
+        };
+      },
+    },
+    tools: {
+      // WhatsApp command execution remains disabled until an explicit tool policy
+      // and a separate approved worker are enabled. The webhook never executes it.
+      async authorize() { return { allowed: false, code: "RAND_WHATSAPP_TOOL_WORKER_REQUIRED", reason: "Comando WhatsApp in attesa di approvazione Rand" }; },
+    },
+    hitl: {
+      async request({ envelope }: any) {
+        await admin.from("rand_gateway_queue").insert({ envelope_id: envelope.id, queue_name: "rand_gateway_hitl" });
+        return { id: `HITL-${envelope.id}` };
+      },
+      async verify() { return { approved: false }; },
+    },
+    actions: {
+      async execute() { throw new Error("RAND_ADAPTER_ACTION_GATEWAY_BYPASS_DENIED"); },
+    },
+  });
 }
 
 async function consumeQuota(hotelId: string, fromNumber: string) {
@@ -128,15 +182,37 @@ function urgencyFrom(body: string) {
 }
 
 async function preserveImage(hotelId: string, messageSid: string, mediaUrl: string | null, contentType: string | null) {
-  if (!mediaUrl || !contentType?.startsWith("image/") || !TWILIO_SID || !TWILIO_TOKEN) return null;
-  const response = await fetch(mediaUrl, { headers: { authorization: "Basic " + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) } });
-  if (!response.ok) return null;
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const extension = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
-  const path = `${hotelId}/whatsapp/${messageSid}/before.${extension}`;
-  const { error } = await admin.storage.from("maintenance-photos").upload(path, bytes, { contentType, upsert: false });
-  if (error && !String(error.message || "").toLowerCase().includes("already exists")) console.error("whatsapp media upload", error);
-  return path;
+  try {
+    const declared = String(contentType || "").toLowerCase().split(";", 1)[0];
+    if (!mediaUrl || !["image/jpeg", "image/png", "image/webp"].includes(declared) || !TWILIO_SID || !TWILIO_TOKEN) return null;
+    const response = await fetch(mediaUrl, {
+      headers: { authorization: "Basic " + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    const announced = Number(response.headers.get("content-length") || 0);
+    if (announced > MAX_MEDIA_BYTES) return null;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_MEDIA_BYTES) return null;
+    const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const png = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+      && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+    const webp = bytes.length >= 12 && new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF"
+      && new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
+    const detected = jpeg ? "image/jpeg" : png ? "image/png" : webp ? "image/webp" : null;
+    if (detected !== declared) return null;
+    const extension = detected === "image/png" ? "png" : detected === "image/webp" ? "webp" : "jpg";
+    const path = `${hotelId}/quarantine/whatsapp/${messageSid}/media.${extension}`;
+    const { error } = await admin.storage.from("maintenance-photos").upload(path, bytes, { contentType: detected, upsert: false });
+    if (error && !String(error.message || "").toLowerCase().includes("already exists")) {
+      console.error("whatsapp media upload", error);
+      return null;
+    }
+    return path;
+  } catch (error) {
+    console.error("whatsapp media quarantine", error instanceof Error ? error.message : "unknown");
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -210,27 +286,32 @@ Deno.serve(async (req: Request) => {
 
   const category = categoryFrom(body);
   const urgency = urgencyFrom(body);
-  const { data: issue, error: issueError } = await admin.from("segnalazioni").insert({
-    hotel_id: channel.hotel_id,
-    camera: location,
-    categoria: category,
-    urgenza: urgency,
-    note: body.slice(0, 500),
-    creato_da: `WhatsApp ${fromNumber}`,
-    stato: "todo",
-    foto_prima: mediaPath,
-    origine: "WhatsApp",
-  }).select("id").single();
-
-  if (issueError) {
-    console.error("issue create", issueError);
-    await admin.from("whatsapp_inbound_messages").update({ processing_status: "error", processed_at: new Date().toISOString(), metadata: { source: "twilio", preserved_media: Boolean(mediaPath), error: "issue_create_failed" } }).eq("id", inbound.id);
-    return twiml("Messaggio ricevuto, ma la segnalazione non è stata creata per un problema tecnico. Riprova tra poco.");
+  const envelope = adaptTwilioInbound({ params, hotelId: channel.hotel_id, mediaPath });
+  try {
+    await whatsappGateway().handle(envelope);
+  } catch (gatewayError) {
+    console.error("whatsapp rand gateway", gatewayError instanceof Error ? gatewayError.message : "unknown");
+    await admin.from("whatsapp_inbound_messages").update({
+      processing_status: "error", processed_at: new Date().toISOString(),
+      metadata: { source: "twilio", preserved_media: Boolean(mediaPath), error: "rand_gateway_failed" },
+    }).eq("id", inbound.id);
+    return twiml("Messaggio ricevuto, ma RandApp non è momentaneamente disponibile. Riprova tra poco.");
   }
 
-  const reply = `Segnalazione creata — ${location} · ${category} · urgenza ${urgency}. Grazie.`;
-  await admin.from("whatsapp_inbound_messages").update({ processing_status: "created", issue_id: issue.id, reply_text: reply, processed_at: new Date().toISOString() }).eq("id", inbound.id);
-  await admin.from("notification_outbox").insert({ channel: "whatsapp_inbound", hotel_id: channel.hotel_id, recipient: fromNumber, body: body || "[foto]", status: "received", sent_at: new Date().toISOString(), metadata: { twilio_sid: messageSid, issue_id: issue.id, inbound_message_id: inbound.id, photo: Boolean(mediaPath) } });
+  const reply = `Messaggio ricevuto — ${location} · ${category} · urgenza suggerita ${urgency}. La segnalazione sarà creata dopo la verifica Rand.`;
+  await admin.from("whatsapp_inbound_messages").update({
+    processing_status: "received", reply_text: reply, processed_at: new Date().toISOString(),
+    metadata: {
+      source: "twilio", preserved_media: Boolean(mediaPath), gateway_envelope_id: envelope.id,
+      suggested_location: location, suggested_category: category, suggested_urgency: urgency,
+      operational_write: "hitl_required",
+    },
+  }).eq("id", inbound.id);
+  await admin.from("notification_outbox").insert({
+    channel: "whatsapp_inbound", hotel_id: channel.hotel_id, recipient: fromNumber,
+    body: body || "[foto]", status: "received", sent_at: new Date().toISOString(),
+    metadata: { twilio_sid: messageSid, inbound_message_id: inbound.id, gateway_envelope_id: envelope.id, photo: Boolean(mediaPath) },
+  });
 
   return twiml(reply);
 });

@@ -9,6 +9,7 @@ const point11 = read('supabase/migrations/20260828141000_point11_multihotel_rela
 const auth = read('src/auth-data.js')
 const users = read('src/users-data.js')
 const pinAuth = read('supabase/functions/pin-auth/index.ts')
+const adminUsers = read('supabase/functions/admin-users/index.ts')
 
 test('point 17 removes anonymous direct SQL access and future default grants', () => {
   assert.match(hardening, /revoke all privileges on all tables in schema public from anon/i)
@@ -59,13 +60,14 @@ test('point 17 global usage stats require administration of every active hotel',
   assert.match(hardening, /raise exception 'Non autorizzato'/i)
 })
 
-test('point 17 PIN auth uses bcrypt, lockout and rotating random Supabase credentials', () => {
-  assert.match(pinAuth, /bcrypt\.hash\(pin,11\)/)
+test('point 17 PIN auth is hash-only, locked out and rotates random Supabase credentials', () => {
+  assert.match(adminUsers, /bcrypt\.hash\(pin,11\)/)
   assert.match(pinAuth, /bcrypt\.compare\(pin,credential\.pin_hash\)/)
+  assert.doesNotMatch(pinAuth, /legacy\.pin/)
   assert.match(pinAuth, /failures>=5/)
   assert.match(pinAuth, /10\*60\*1000/)
   const rotatingPasswords = pinAuth.match(/crypto\.randomUUID\(\)\+crypto\.randomUUID\(\)/g) || []
-  assert.ok(rotatingPasswords.length >= 2)
+  assert.equal(rotatingPasswords.length, 1)
   assert.match(pinAuth, /admin\.auth\.admin\.updateUserById\(authUserId,\{password\}\)/)
 })
 

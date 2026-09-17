@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { REPO_RADAR_CATALOG } from '../src/randai/discovery/repo-radar-catalog.js'
-import { RepoRadarDecision, assertSafeAdoption, buildRepoRadarSnapshot, evaluateRepoCandidate, validateRepoRadarCandidate } from '../src/randai/discovery/repo-radar.js'
+import { RepoRadarDecision, RepoRadarUsageMode, assertSafeAdoption, buildRepoRadarSnapshot, evaluateRepoCandidate, validateRepoRadarCandidate } from '../src/randai/discovery/repo-radar.js'
+import { REPO_RADAR_MIN_ECOSYSTEMS, REPO_RADAR_SOURCE_CATALOG, assertRepoRadarSourcePolicy, summarizeRepoRadarSourceCoverage } from '../src/randai/discovery/repo-radar-sources.js'
 import { getRandEcosystemManifest } from '../src/randai/core/ecosystem.js'
 
 test('55 Repo Radar treats stars as discovery metadata, never as adoption score', () => {
@@ -13,10 +14,15 @@ test('55 Repo Radar treats stars as discovery metadata, never as adoption score'
   assert.equal(low.decision,RepoRadarDecision.ADD)
 })
 
-test('56 deep evaluation rejects hard blockers and watches incomplete evidence', () => {
-  const rejected=evaluateRepoCandidate({id:'bad',name:'Bad',repository:'https://github.com/example/bad',license:'GPL-3.0',maintained:true,gates:{security:true,compatibility:true,benchmark:true,rollback:true},evidence:{security:1,maintenance:1,maturity:1,tests:1,compatibility:1,performance:1,rollback:1,maintainability:1}})
+test('56 deep evaluation rejects hard blockers but keeps copyleft available for governed internal evaluation', () => {
+  const unknown=evaluateRepoCandidate({id:'bad',name:'Bad',repository:'https://github.com/example/bad',license:'Proprietary-Unknown',maintained:true,gates:{security:true,compatibility:true,benchmark:true,rollback:true},evidence:{security:1,maintenance:1,maturity:1,tests:1,compatibility:1,performance:1,rollback:1,maintainability:1}})
+  const copyleft=evaluateRepoCandidate({id:'gpl',name:'GPL Tool',repository:'https://github.com/example/gpl',license:'GPL-3.0',usageMode:RepoRadarUsageMode.INTERNAL_EVALUATION,maintained:true,gates:{security:true,compatibility:true,benchmark:true,rollback:true},evidence:{security:1,maintenance:1,maturity:1,tests:1,compatibility:1,performance:1,rollback:1,maintainability:1}})
   const watch=evaluateRepoCandidate({id:'watch',name:'Watch',repository:'https://github.com/example/watch',license:'MIT',maintained:true,gates:{security:null,compatibility:true,benchmark:null,rollback:true},evidence:{security:.9,maintenance:.9,maturity:.9,tests:.9,compatibility:.9,performance:.9,rollback:.9,maintainability:.9}})
-  assert.equal(rejected.decision,RepoRadarDecision.REJECT)
+  assert.equal(unknown.decision,RepoRadarDecision.REJECT)
+  assert.equal(copyleft.decision,RepoRadarDecision.WATCH)
+  assert.equal(copyleft.reason,'LICENSE_REVIEW_REQUIRED')
+  assert.equal(copyleft.licenseReviewRequired,true)
+  assert.equal(assertSafeAdoption(copyleft),false)
   assert.equal(watch.decision,RepoRadarDecision.WATCH)
 })
 
@@ -39,10 +45,12 @@ test('58 snapshot never auto-installs and catalog spans governed outcomes', () =
   assert.equal(snapshot.policy.humanApprovalRequired,true)
   assert.equal(snapshot.policy.multiSourceDiscovery,true)
   assert.equal(snapshot.policy.sectorCoverage,true)
+  assert.equal(snapshot.policy.internalNonCommercialContext,true)
+  assert.equal(snapshot.policy.copyleftRequiresUsageBoundary,true)
   for(const decision of [RepoRadarDecision.ADD,RepoRadarDecision.WATCH,RepoRadarDecision.REJECT,RepoRadarDecision.KEEP]) assert.ok(snapshot.candidates.some((item)=>item.decision===decision))
 })
 
-test('Repo Radar accepts governed public forge hosts and rejects arbitrary hosts', () => {
+test('Repo Radar accepts governed forge and specialist source hosts and rejects arbitrary hosts', () => {
   for(const repository of [
     'https://github.com/example/repo',
     'https://gitlab.com/example/repo',
@@ -51,11 +59,14 @@ test('Repo Radar accepts governed public forge hosts and rejects arbitrary hosts
     'https://code.forgejo.org/example/repo',
     'https://bitbucket.org/example/repo',
     'https://git.sr.ht/~example/repo',
+    'https://gitee.com/example/repo',
+    'https://huggingface.co/spaces/example/repo',
+    'https://open-vsx.org/extension/example/repo',
   ]) assert.equal(validateRepoRadarCandidate({id:repository,name:'Repo',repository}),true)
   assert.throws(()=>validateRepoRadarCandidate({id:'bad-host',name:'Bad',repository:'https://example.com/repo/code'}),/Unsupported repository URL/)
 })
 
-test('weekly discovery is read-only, bounded, multi-source and RANDUI_100_V1 sector-complete', () => {
+test('weekly discovery is read-only, bounded, multisource and RANDUI_100_V1 sector-complete', () => {
   const workflow=fs.readFileSync('.github/workflows/repo-radar.yml','utf8')
   const runner=fs.readFileSync('scripts/repo-radar-snapshot.mjs','utf8')
   assert.match(workflow,/contents: read/)
@@ -81,10 +92,18 @@ test('weekly discovery is read-only, bounded, multi-source and RANDUI_100_V1 sec
   assert.match(runner,/sectorCoverage/)
   assert.match(runner,/coveredUiSectors/)
   assert.match(runner,/uiSectorCount:RANDUI_SECTORS.length/)
-  assert.match(runner,/GITHUB/)
-  assert.match(runner,/GITLAB/)
-  assert.match(runner,/CODEBERG/)
-  assert.match(runner,/NPM/)
+  for(const provider of ['GITHUB','GITLAB','CODEBERG','GITEE','NPM','CRATES','HUGGINGFACE','OPENVSX']) assert.match(runner,new RegExp(provider))
+})
+
+test('RandRadar source policy is permanently wider than GitHub', () => {
+  assert.equal(assertRepoRadarSourcePolicy(),true)
+  const coverage=summarizeRepoRadarSourceCoverage()
+  assert.ok(coverage.sourceCount>=REPO_RADAR_MIN_ECOSYSTEMS)
+  assert.ok(coverage.automatedCount>=8)
+  assert.ok(coverage.familyCount>=4)
+  assert.ok(REPO_RADAR_SOURCE_CATALOG.some((source)=>source.id==='FIGMA_COMMUNITY'))
+  assert.ok(REPO_RADAR_SOURCE_CATALOG.some((source)=>source.id==='MCP_SO'))
+  assert.ok(REPO_RADAR_SOURCE_CATALOG.some((source)=>source.id==='PYPI'))
 })
 
 test('discovery metadata preserves sector for governed review', () => {

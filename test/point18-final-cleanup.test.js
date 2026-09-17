@@ -19,10 +19,16 @@ test('point 18 keeps package branding and dead dependencies removed from package
   const pkg = JSON.parse(read('package.json'))
   const lock = read('package-lock.json')
   assert.equal(pkg.name, 'randapp-manutenzione')
-  for (const dep of ['lucide-react', 'react-grid-layout', 'zod', 'zustand']) {
+  for (const dep of ['lucide-react', 'react-grid-layout', 'zustand']) {
     assert.equal(pkg.dependencies?.[dep], undefined, `${dep} must stay removed`)
     assert.doesNotMatch(lock, new RegExp(`node_modules/${dep.replaceAll('/', '\\/')}`))
   }
+  assert.equal(pkg.dependencies?.zod, '4.6.2', 'MCP server validation must stay pinned')
+  assert.match(read('api/mcp.js'), /from 'zod'/)
+  const frontendCode = walk(path.join(root, 'src'))
+    .filter((file) => /\.(js|jsx|mjs)$/i.test(file))
+    .map((file) => fs.readFileSync(file, 'utf8')).join('\n')
+  assert.doesNotMatch(frontendCode, /from ['"]zod/)
 })
 
 test('point 18 removes obsolete Emergent and public preview artifacts', () => {
