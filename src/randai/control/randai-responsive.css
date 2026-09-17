@@ -1,3 +1,5 @@
+@import './randui-control-bridge.css';
+
 /* RandAI Control Center: one predictable width model across devices. */
 .rc-shell,
 .rc-shell * {
