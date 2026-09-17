@@ -14,6 +14,7 @@ export function memoryFromVerifiedAudit(audit={},candidate={}){
   const scope=audit.scope==='HOTEL'?MemoryScope.HOTEL:(candidate.scope||MemoryScope.GLOBAL)
   if(scope===MemoryScope.HOTEL && (!audit.hotelId || (candidate.hotelId && candidate.hotelId!==audit.hotelId))) throw new TypeError('Audit/memory hotel scope mismatch')
   const occurredAt=Number(audit.occurredAt); if(!Number.isFinite(occurredAt)) throw new TypeError('Audit occurredAt must be finite')
+  const occurredAtIso=new Date(occurredAt).toISOString()
   return {
     ...candidate,
     type:candidate.type||MemoryType.EPISODIC,
@@ -23,7 +24,8 @@ export function memoryFromVerifiedAudit(audit={},candidate={}){
     content,
     source:{kind:'governance_audit',id:audit.auditId,uri:candidate.source?.uri||null},
     confidence:Math.max(0.6,Math.min(1,Number(candidate.confidence??0.85))),
-    lastVerifiedAt:new Date(occurredAt).toISOString(),
+    validFrom:candidate.validFrom||occurredAtIso,
+    lastVerifiedAt:occurredAtIso,
     metadata:{...(candidate.metadata||{}),governanceCorrelationId:audit.correlationId||null,governanceIntentId:audit.intentId||null,governanceDecision:audit.decision,governanceReasonCodes:[...(audit.reasonCodes||[])]},
   }
 }
