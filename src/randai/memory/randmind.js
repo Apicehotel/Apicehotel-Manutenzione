@@ -1,5 +1,6 @@
 import { MemoryEngine } from './engine.js'
 import { MemoryScope, MemoryTrust, MemoryType, validateMemory } from './contracts.js'
+import { memoryFromVerifiedAudit, planRetention, suggestConflictWinner, usableAt } from './evidence.js'
 
 export const MemoryLifecycle = Object.freeze({ ACTIVE:'active', SUPERSEDED:'superseded', FORGOTTEN:'forgotten' })
 export const RetentionClass = Object.freeze({ TRANSIENT:'transient', OPERATIONAL:'operational', LONG_TERM:'long_term', LEGAL_HOLD:'legal_hold' })
@@ -7,7 +8,7 @@ export const RetentionClass = Object.freeze({ TRANSIENT:'transient', OPERATIONAL
 const clamp01=(v,d=0.5)=>Math.max(0,Math.min(1,Number.isFinite(Number(v))?Number(v):d))
 const dateMs=(v)=>v?Date.parse(v):NaN
 const isFresh=(memory,now=Date.now())=>!memory.validUntil||dateMs(memory.validUntil)>now
-const isUsable=(memory,now=Date.now())=>memory.lifecycleStatus!==MemoryLifecycle.FORGOTTEN&&memory.lifecycleStatus!==MemoryLifecycle.SUPERSEDED&&isFresh(memory,now)&&memory.trust!==MemoryTrust.OUTDATED
+const isUsable=(memory,now=Date.now())=>usableAt(memory,now)
 
 export function normalizeRandMindMemory(input={}){
   const memory={
@@ -22,6 +23,7 @@ export function normalizeRandMindMemory(input={}){
     validUntil:input.validUntil||input.expiresAt||null,
     lastVerifiedAt:input.lastVerifiedAt||null,
     supersedesId:input.supersedesId||null,
+    supersededAt:input.supersededAt||null,
     conflictGroup:input.conflictGroup||null,
     contentHash:input.contentHash||null,
   }
@@ -41,10 +43,10 @@ export function memoryQuality(memory,now=Date.now()){
   return {score,usable:Boolean(lifecycle&&source&&m.confidence>=0.6),fresh:Boolean(freshness),verified:Boolean(verified)}
 }
 
-export function detectMemoryConflicts(items=[]){
+export function detectMemoryConflicts(items=[],now=Date.now()){
   const groups=new Map()
   for(const m of items){if(!m.conflictGroup) continue; const list=groups.get(m.conflictGroup)||[]; list.push(m); groups.set(m.conflictGroup,list)}
-  return [...groups.entries()].filter(([,list])=>list.filter((m)=>isUsable(m)).length>1).map(([group,list])=>({group,ids:list.filter((m)=>isUsable(m)).map((m)=>m.id)}))
+  return [...groups.entries()].filter(([,list])=>list.filter((m)=>isUsable(m,now)).length>1).map(([group,list])=>({group,ids:list.filter((m)=>isUsable(m,now)).map((m)=>m.id)}))
 }
 
 export class RandMind {
@@ -56,13 +58,28 @@ export class RandMind {
     const memory=await this.engine.remember(normalized)
     return {memory,deduplicated:false}
   }
+  async ingestVerifiedAudit(audit,candidate){return this.remember(memoryFromVerifiedAudit(audit,candidate))}
   async recall(query,filters={}){
     const rows=await this.engine.recall(query,filters)
     return rows.filter((m)=>isUsable(m)).map((m)=>({...m,quality:memoryQuality(m)})).filter((m)=>m.quality.usable).sort((a,b)=>(b.quality.score-a.quality.score)||(b.score-a.score))
+  }
+  async recallAt(query,asOf,filters={}){
+    const at=typeof asOf==='number'?asOf:Date.parse(asOf); if(!Number.isFinite(at)) throw new TypeError('recallAt requires a valid asOf timestamp')
+    const rows=await this.engine.recall(query,{...filters,asOf:at})
+    return rows.map((m)=>({...m,quality:memoryQuality(m,at)})).filter((m)=>m.quality.usable).sort((a,b)=>(b.quality.score-a.quality.score)||(b.score-a.score))
   }
   async timeline(filters={}){
     const rows=await this.store.list(filters)
     return rows.slice().sort((a,b)=>dateMs(a.validFrom||a.createdAt)-dateMs(b.validFrom||b.createdAt))
   }
   async conflicts(filters={}){return detectMemoryConflicts(await this.store.list(filters))}
+  async suggestConflict(conflictGroup,filters={},now=Date.now()){
+    const rows=(await this.store.list(filters)).filter((m)=>m.conflictGroup===conflictGroup&&isUsable(m,now))
+    return suggestConflictWinner(rows,now,memoryQuality)
+  }
+  async resolveConflict({conflictGroup,winnerId,loserIds,reason}){
+    if(typeof this.store.resolveConflict!=='function') throw new TypeError('Memory store does not support governed conflict resolution')
+    return this.store.resolveConflict({conflictGroup,winnerId,loserIds,reason})
+  }
+  async retentionPlan(policy,filters={},now=Date.now()){return planRetention(await this.store.list(filters),policy,now)}
 }

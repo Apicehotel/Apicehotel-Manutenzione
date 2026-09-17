@@ -1,0 +1,16 @@
+import { normalizeResearchSource } from './runtime.js'
+
+const clean=(v)=>String(v??'').trim()
+const fail=(error,context)=>{if(error){const e=new Error(`${context}: ${error.message||error}`);e.cause=error;throw e}}
+
+export class SupabaseResearchStore{
+ constructor({supabase}){if(!supabase?.from)throw new TypeError('Supabase service-role client required');this.supabase=supabase}
+ async save(session){
+  const {data,error}=await this.supabase.from('rand_research_sessions').upsert({session_id:session.sessionId,canonical_query:session.canonicalQuery,hotel_id:session.hotelId,level:session.level,requirements:session.requirements||[],budget:session.budget||{},subqueries:session.subqueries||[],status:session.status,contradictions:session.contradictions||[],gaps:session.gaps||[],report:session.report||null,ship_gate:session.shipGate||null,created_at:new Date(session.createdAt).toISOString(),updated_at:new Date(session.updatedAt).toISOString()}).select('*').single();fail(error,'save research session')
+  for(const source of session.sources||[]) await this.#saveSource(session.sessionId,source)
+  return this.#hydrate(data)
+ }
+ async get(sessionId){const id=clean(sessionId);if(!id)throw new TypeError('Research session id required');const {data,error}=await this.supabase.from('rand_research_sessions').select('*').eq('session_id',id).maybeSingle();fail(error,'get research session');if(!data)return null;return this.#hydrate(data)}
+ async #saveSource(sessionId,source){const s=normalizeResearchSource(source,{hotelId:source.hotelId});const {error}=await this.supabase.from('rand_research_sources').upsert({session_id:sessionId,source_id:s.sourceId,hotel_id:s.hotelId,source_kind:s.source.kind,source_uri:s.source.uri,title:s.title,excerpt:s.excerpt,tier:s.tier,published_at:s.publishedAt,fetched_at:s.fetchedAt,claims:s.claims,coverage:s.coverage,directness:s.directness,recency:s.recency,corroboration:s.corroboration,retrieval_confidence:s.retrievalConfidence,quality_score:s.qualityScore,prompt_injection_risk:s.promptInjectionRisk,retraction_risk:s.retractionRisk},{onConflict:'session_id,source_id'});fail(error,'save research source')}
+ async #hydrate(row){const {data,error}=await this.supabase.from('rand_research_sources').select('*').eq('session_id',row.session_id).order('quality_score',{ascending:false});fail(error,'list research sources');return {sessionId:row.session_id,canonicalQuery:row.canonical_query,hotelId:row.hotel_id,level:row.level,requirements:row.requirements||[],budget:row.budget||{},subqueries:row.subqueries||[],status:row.status,contradictions:row.contradictions||[],gaps:row.gaps||[],report:row.report,shipGate:row.ship_gate,createdAt:new Date(row.created_at).getTime(),updatedAt:new Date(row.updated_at).getTime(),sources:(data||[]).map((s)=>normalizeResearchSource({source:{id:s.source_id,kind:s.source_kind,uri:s.source_uri},hotelId:s.hotel_id,title:s.title,excerpt:s.excerpt,tier:s.tier,publishedAt:s.published_at,fetchedAt:s.fetched_at,claims:s.claims||[],coverage:s.coverage||[],directness:s.directness,recency:s.recency,corroboration:s.corroboration,retrievalConfidence:s.retrieval_confidence,promptInjectionRisk:s.prompt_injection_risk,retractionRisk:s.retraction_risk},{hotelId:s.hotel_id}))}}
+}

@@ -47,13 +47,15 @@ test('context engine respects token budget and keeps provenance', async () => {
   assert.equal(context.provenance[0].memoryId, context.sections[0].id)
 })
 
-test('completed durable task becomes episodic and procedural memory', async () => {
+test('completed durable task becomes suggested episodic and procedural memory until outcome verification', async () => {
   const store = new MemoryStore(); const engine = new MemoryEngine({ store })
   const memories = await engine.extractFromTask({ id: 'RND-1', objective: 'Fix auth', status: 'SUCCEEDED', metadata: {}, decisions: [{ type: 'STRATEGY_CHANGE', reason: 'fallback worked' }] })
   assert.equal(memories.length, 2)
   assert.equal(memories[0].type, MemoryType.EPISODIC)
   assert.equal(memories[1].type, MemoryType.PROCEDURAL)
-  assert.equal(memories[1].trust, MemoryTrust.VERIFIED)
+  assert.ok(memories.every((memory) => memory.trust === MemoryTrust.SUGGESTED))
+  assert.ok(memories.every((memory) => memory.lastVerifiedAt == null))
+  assert.ok(memories.every((memory) => memory.tags.includes('unverified-outcome')))
 })
 
 test('expired memory is ignored and near-duplicate can be detected', async () => {

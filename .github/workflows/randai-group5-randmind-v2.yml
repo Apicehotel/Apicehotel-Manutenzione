@@ -1,0 +1,23 @@
+name: RandAI Group 5 RandMind v2
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  randmind-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - run: npm ci
+      - name: RandMind v2 contracts
+        run: npm run test:group5
+      - name: Rand Governance boundary
+        run: npm run test:group4
+      - name: RandSpec validation
+        run: npm run spec:validate

@@ -1,0 +1,20 @@
+name: RandAI Group 4 Governance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci
+      - name: Rand governance contracts
+        run: npm run test:group4
+      - name: RandSpec validation
+        run: npm run spec:validate

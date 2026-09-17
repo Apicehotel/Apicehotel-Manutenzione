@@ -1,4 +1,5 @@
 import { MemoryScope, MemoryTrust, MemoryType, validateMemory } from './contracts.js'
+import { usableAt } from './evidence.js'
 
 const nowIso = () => new Date().toISOString()
 const idOf = () => `MEM-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -28,7 +29,7 @@ export class MemoryEngine {
       expiresAt: input.expiresAt || input.validUntil || null, metadata: input.metadata || {}, createdAt: input.createdAt || nowIso(), updatedAt: nowIso(),
       lifecycleStatus: input.lifecycleStatus || 'active', retentionClass: input.retentionClass || 'operational',
       validFrom: input.validFrom || input.createdAt || nowIso(), validUntil: input.validUntil || input.expiresAt || null,
-      lastVerifiedAt: input.lastVerifiedAt || null, supersedesId: input.supersedesId || null,
+      lastVerifiedAt: input.lastVerifiedAt || null, supersedesId: input.supersedesId || null, supersededAt: input.supersededAt || null,
       conflictGroup: input.conflictGroup || null, contentHash: input.contentHash || null,
       forgottenAt: input.forgottenAt || null, forgottenReason: input.forgottenReason || null,
     }
@@ -40,15 +41,19 @@ export class MemoryEngine {
     if (!task || task.status !== 'SUCCEEDED') return []
     const source = { kind: 'task', id: task.id }
     const created = []
-    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 1, tags: ['task-completed'], lastVerifiedAt: nowIso() }))
-    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.VERIFIED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.9, tags: ['decision', decision.type], lastVerifiedAt: nowIso() }))
+    created.push(await this.remember({ type: MemoryType.EPISODIC, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.SUGGESTED, content: `Task completed: ${task.objective}`, summary: task.objective, source, importance: 0.65, confidence: 0.7, tags: ['task-completed','unverified-outcome'] }))
+    for (const decision of task.decisions || []) created.push(await this.remember({ type: MemoryType.PROCEDURAL, scope: task.metadata?.hotelId ? MemoryScope.HOTEL : MemoryScope.TASK, hotelId: task.metadata?.hotelId || null, taskId: task.metadata?.hotelId ? null : task.id, trust: MemoryTrust.SUGGESTED, content: `Decision ${decision.type}: ${decision.reason || ''}`.trim(), source, importance: 0.75, confidence: 0.7, tags: ['decision', decision.type, 'unverified-outcome'] }))
     return created
   }
 
   async recall(query, filters = {}) {
     if (!scoped(filters)) throw new TypeError('Memory recall requires an explicit hotel, project, task or global scope')
+    const asOf = filters.asOf == null ? null : Number(filters.asOf)
+    if (asOf != null && !Number.isFinite(asOf)) throw new TypeError('Memory recall asOf must be finite')
     const now = Date.now(); const items = await this.store.list(filters)
-    return items.filter(m => (m.lifecycleStatus || 'active') === 'active').filter(m => !m.expiresAt || Date.parse(m.expiresAt) > now).filter(m => !m.validUntil || Date.parse(m.validUntil) > now).filter(m => !filters.types || filters.types.includes(m.type)).filter(m => !filters.trust || filters.trust.includes(m.trust)).map(m => {
+    return items
+      .filter(m => asOf == null ? ((m.lifecycleStatus || 'active') === 'active' && (!m.expiresAt || Date.parse(m.expiresAt) > now) && (!m.validUntil || Date.parse(m.validUntil) > now)) : usableAt(m,asOf))
+      .filter(m => !filters.types || filters.types.includes(m.type)).filter(m => !filters.trust || filters.trust.includes(m.trust)).map(m => {
       const textScore = Math.max(overlap(query, m.content), overlap(query, m.summary || ''))
       const trustScore = m.trust === MemoryTrust.APPROVED ? 1 : m.trust === MemoryTrust.VERIFIED ? 0.85 : m.trust === MemoryTrust.SUGGESTED ? 0.35 : 0.2
       const score = textScore * 0.55 + m.importance * 0.2 + m.confidence * 0.15 + trustScore * 0.1

@@ -6,8 +6,6 @@ on:
       - randai/group2-knowledge-memory-rag
       - main
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:

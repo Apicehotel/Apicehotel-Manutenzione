@@ -32,6 +32,12 @@ jobs:
       - name: Validate RandSkills
         run: npm run skills:validate
 
+      - name: Validate RandSpec
+        run: npm run spec:validate
+
+      - name: RandSpec governance contract
+        run: npm run test:randspec
+
       - name: Dependency security audit
         run: npm audit --audit-level=high
 
