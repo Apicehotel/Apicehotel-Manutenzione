@@ -41,6 +41,9 @@ jobs:
       - name: Bundle budget
         run: node scripts/check-bundle.mjs
       - name: Build RandCore audit snapshot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RANDCORE_PROTECTED_BRANCH: main
         run: node scripts/randcore-full-check.mjs
       - name: Upload RandCore audit snapshot
         uses: actions/upload-artifact@v4
