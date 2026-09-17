@@ -1,0 +1,39 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "RandUI canonical design-token contract. Runtime CSS variables remain the delivery format; this file is the portable source for Penpot/Figma bridges, validation and future native targets.",
+  "space": {
+    "1": { "$type": "dimension", "$value": "4px" },
+    "2": { "$type": "dimension", "$value": "8px" },
+    "3": { "$type": "dimension", "$value": "12px" },
+    "4": { "$type": "dimension", "$value": "16px" },
+    "5": { "$type": "dimension", "$value": "20px" },
+    "6": { "$type": "dimension", "$value": "24px" },
+    "8": { "$type": "dimension", "$value": "32px" },
+    "10": { "$type": "dimension", "$value": "40px" }
+  },
+  "radius": {
+    "sm": { "$type": "dimension", "$value": "12px" },
+    "md": { "$type": "dimension", "$value": "16px" },
+    "lg": { "$type": "dimension", "$value": "20px" },
+    "pill": { "$type": "dimension", "$value": "999px" }
+  },
+  "layout": {
+    "readingMax": { "$type": "dimension", "$value": "1120px" },
+    "contentMax": { "$type": "dimension", "$value": "1560px" },
+    "touchMin": { "$type": "dimension", "$value": "44px" }
+  },
+  "motion": {
+    "duration": {
+      "instant": { "$type": "duration", "$value": "80ms" },
+      "fast": { "$type": "duration", "$value": "160ms" },
+      "standard": { "$type": "duration", "$value": "220ms" },
+      "emphasis": { "$type": "duration", "$value": "320ms" }
+    },
+    "easing": {
+      "standard": { "$type": "cubicBezier", "$value": [0.2, 0, 0, 1] },
+      "enter": { "$type": "cubicBezier", "$value": [0, 0, 0, 1] },
+      "exit": { "$type": "cubicBezier", "$value": [0.3, 0, 1, 1] },
+      "emphasis": { "$type": "cubicBezier", "$value": [0.2, 0.8, 0.2, 1] }
+    }
+  }
+}
