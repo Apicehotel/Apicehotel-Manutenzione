@@ -67,8 +67,9 @@ jobs:
         with:
           ref: ${{ env.PREVIEW_REF }}
 
-      - name: Deploy to DigitalOcean App Platform
+      - name: Deploy PR-specific preview to DigitalOcean App Platform
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           app_name: ${{ vars.DIGITALOCEAN_PREVIEW_APP_NAME || 'randapp' }}
+          deploy_pr_preview: "true"
