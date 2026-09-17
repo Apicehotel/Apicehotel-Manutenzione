@@ -14,7 +14,8 @@ async function read(relativePath) {
 
 test('RandUI has one portable token contract with required foundations', () => {
   const tokens = RANDUI_DESIGN_CONTRACT.tokens
-  assert.equal(RANDUI_DESIGN_CONTRACT.version, '1.1.0')
+  assert.equal(RANDUI_DESIGN_CONTRACT.version, '1.0.0')
+  assert.equal(RANDUI_DESIGN_CONTRACT.standardizationVersion, '1.0.0')
   assert.equal(tokens.space['4'].$value, '16px')
   assert.equal(tokens.radius.md.$value, '16px')
   assert.equal(tokens.layout.touchMin.$value, '44px')
