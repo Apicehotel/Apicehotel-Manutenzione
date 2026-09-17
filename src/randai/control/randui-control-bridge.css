@@ -1,0 +1,227 @@
+/*
+ * RandAI Control Center -> RandUI compatibility bridge.
+ *
+ * `--rc-*` remains temporarily as a local compatibility API for the existing
+ * control-center components, but its values are owned by the canonical
+ * RandUI `--rs-*` theme. New Control Center styles must use `--rs-*` directly.
+ */
+
+html[data-theme] .rc-shell.rc-shell,
+html[data-theme] .rc-gate.rc-gate,
+.rc-shell.rc-shell,
+.rc-gate.rc-gate {
+  --rc-bg: var(--rs-bg);
+  --rc-panel: var(--rs-surface);
+  --rc-panel2: var(--rs-surface-2);
+  --rc-line: var(--rs-line);
+  --rc-text: var(--rs-text);
+  --rc-soft: var(--rs-text-2);
+  --rc-purple: var(--rs-blue);
+  --rc-blue: var(--rs-blue);
+  --rc-good: var(--rs-ok);
+  --rc-warn: var(--rs-warn);
+  --rc-bad: var(--rs-danger);
+  color: var(--rs-text);
+  font-family: inherit;
+}
+
+html[data-theme] .rc-shell.rc-shell {
+  background:
+    radial-gradient(110% 75% at 8% -10%, color-mix(in srgb, var(--rs-cyan) 12%, transparent), transparent 54%),
+    radial-gradient(105% 70% at 108% 4%, color-mix(in srgb, var(--rs-blue) 14%, transparent), transparent 52%),
+    var(--rs-bg);
+}
+
+html[data-theme] .rc-sidebar.rc-sidebar,
+.rc-sidebar.rc-sidebar {
+  background: color-mix(in srgb, var(--rs-bg-2) 92%, transparent);
+  border-color: var(--rs-line);
+}
+
+html[data-theme] .rc-sidebar nav button:hover,
+html[data-theme] .rc-sidebar nav button.active,
+.rc-sidebar nav button:hover,
+.rc-sidebar nav button.active {
+  color: var(--rs-text);
+  background: var(--rs-surface-2);
+}
+
+.rc-sidebar nav button.active {
+  box-shadow: inset 3px 0 var(--rs-blue);
+}
+
+.rc-brand span,
+.rc-top small,
+.rc-drawer > header small {
+  color: var(--rs-cyan);
+}
+
+html[data-theme] .rc-system-bar.rc-system-bar,
+.rc-system-bar.rc-system-bar,
+html[data-theme] .rc-toolbar input,
+html[data-theme] .rc-toolbar select,
+.rc-toolbar input,
+.rc-toolbar select {
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  border-color: var(--rs-line);
+}
+
+html[data-theme] .rc-system-bar > span,
+.rc-system-bar > span {
+  background: var(--rs-surface-2);
+  color: var(--rs-text-2);
+}
+
+html[data-theme] .rc-toolbar button,
+html[data-theme] .rc-drawer button,
+html[data-theme] .rc-gate button,
+.rc-toolbar button,
+.rc-drawer button,
+.rc-gate button {
+  background: var(--rs-surface-3);
+  color: var(--rs-text);
+  border-color: var(--rs-line);
+}
+
+.rc-kpi,
+.rc-panel {
+  border-color: var(--rs-line);
+  background: linear-gradient(180deg, var(--rs-surface-2), var(--rs-surface));
+}
+
+html[data-theme] .rc-row,
+html[data-theme] .rc-row-button,
+html[data-theme] .rc-channel,
+html[data-theme] .rc-table-wrap th,
+.rc-row,
+.rc-row-button,
+.rc-channel,
+.rc-table-wrap th {
+  background: var(--rs-surface);
+  border-color: var(--rs-line);
+  color: var(--rs-text);
+}
+
+html[data-theme] .rc-row-button:hover,
+.rc-row-button:hover {
+  background: var(--rs-surface-2);
+  border-color: var(--rs-line-strong);
+}
+
+.rc-health-list > div,
+.rc-table-wrap td {
+  border-color: var(--rs-line);
+}
+
+.rc-badge {
+  background: var(--rs-surface-3);
+  color: var(--rs-text-2);
+}
+
+.rc-badge.good { color: var(--rs-ok); background: color-mix(in srgb, var(--rs-ok) 12%, transparent); }
+.rc-badge.warn { color: var(--rs-warn); background: color-mix(in srgb, var(--rs-warn) 12%, transparent); }
+.rc-badge.bad { color: var(--rs-danger); background: color-mix(in srgb, var(--rs-danger) 12%, transparent); }
+
+html[data-theme] .rc-drawer.rc-drawer,
+.rc-drawer.rc-drawer {
+  background: var(--rs-bg-2);
+  border-color: var(--rs-line);
+  color: var(--rs-text);
+}
+
+html[data-theme] .rc-gate.rc-gate {
+  background:
+    radial-gradient(circle at 50% 0, color-mix(in srgb, var(--rs-blue) 16%, transparent), transparent 38%),
+    var(--rs-bg);
+}
+
+html[data-theme] .rc-gate > section,
+html[data-theme] .rc-gate > div,
+.rc-gate > section,
+.rc-gate > div {
+  background: var(--rs-surface);
+  border-color: var(--rs-line);
+}
+
+html[data-theme] .rc-theme .rs-segmented,
+.rc-theme .rs-segmented {
+  background: var(--rs-surface);
+  border-color: var(--rs-line);
+}
+
+.rc-theme .rs-segmented button {
+  color: var(--rs-text-2);
+}
+
+.rc-theme .rs-segmented button.active {
+  background: var(--rs-blue);
+  color: #fff;
+}
+
+.rc-theme .rs-segmented button:focus-visible,
+.rc-toolbar input:focus-visible,
+.rc-toolbar select:focus-visible,
+.rc-toolbar button:focus-visible,
+.rc-sidebar button:focus-visible,
+.rc-row-button:focus-visible,
+.rc-drawer button:focus-visible,
+.rc-gate button:focus-visible,
+.rc-quick-actions button:focus-visible,
+.rc-module-open:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--rs-cyan) 38%, transparent);
+  outline-offset: 2px;
+}
+
+.rc-quick-actions button,
+.rc-module-open {
+  min-height: calc(44px * var(--rs-scale, 1));
+  border-color: var(--rs-line);
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+}
+
+.rc-quick-actions button:hover,
+.rc-module-open:hover {
+  background: var(--rs-surface-3);
+  border-color: var(--rs-line-strong);
+}
+
+.rc-sidebar nav button,
+.rc-back,
+.rc-toolbar button,
+.rc-drawer button,
+.rc-gate button,
+.rc-theme .rs-segmented button {
+  min-height: calc(44px * var(--rs-scale, 1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-shell *,
+  .rc-shell *::before,
+  .rc-shell *::after,
+  .rc-gate *,
+  .rc-gate *::before,
+  .rc-gate *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .rc-panel,
+  .rc-kpi,
+  .rc-row,
+  .rc-row-button,
+  .rc-channel,
+  .rc-drawer,
+  .rc-toolbar input,
+  .rc-toolbar select,
+  .rc-toolbar button,
+  .rc-gate > section,
+  .rc-gate > div {
+    border: 1px solid CanvasText;
+  }
+}
