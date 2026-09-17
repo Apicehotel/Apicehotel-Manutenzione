@@ -71,5 +71,7 @@ jobs:
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: ${{ vars.DIGITALOCEAN_PREVIEW_APP_NAME || 'randapp' }}
+          app_spec_location: .do/app.yaml
           deploy_pr_preview: "true"
+          print_build_logs: "true"
+          print_deploy_logs: "true"
