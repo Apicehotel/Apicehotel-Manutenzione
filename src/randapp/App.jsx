@@ -4,6 +4,7 @@ import { loadSession, saveSession, clearSession } from '../session.js'
 import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
 import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
+import { normalizeLoginNick, resolveLoginUser, sanitizeLoginPin } from './login-input.js'
 import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
 
 const Shell = lazy(() => import('./Shell.jsx'))
@@ -69,8 +70,8 @@ function AdminGate({ onBack, onExit }) {
           <header><h1>Impostazioni</h1><p>Accesso protetto amministratore</p></header>
           <form className="rs-authform" onSubmit={submit}>
             <Field label="PIN amministratore">
-              <TextInput icon="lock" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••••" data-testid="admin-pin-input"
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+              <TextInput icon="lock" type="password" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••••" data-testid="admin-pin-input"
+                onChange={(e) => setPin(sanitizeLoginPin(e.target.value, 6))} />
             </Field>
             {error && <p className="rs-error" role="alert">{error}</p>}
             <Button variant="primary" size="lg" className="rs-btn--block" disabled={busy || pin.length < 6} data-testid="admin-gate-submit" iconRight="arrowRight">
@@ -93,11 +94,11 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [open, setOpen] = useState(false)
   const [recovering, setRecovering] = useState(false)
   useEffect(() => { loadDirectoryAll().then(setDirectory).catch(() => setDirectory([])) }, [])
-  const q = normalize(query)
-  const selectedUser = matched || directory.find((u) => normalize(u.name) === q) || null
+  const q = normalizeLoginNick(query)
+  const selectedUser = matched || resolveLoginUser(query, directory)
   const suggestions = useMemo(() => (
     q && !matched
-      ? directory.filter((u) => normalize(u.name).startsWith(q)).slice(0, 6)
+      ? directory.filter((u) => normalizeLoginNick(u.name).startsWith(q)).slice(0, 6)
       : []
   ), [directory, q, matched])
 
@@ -135,10 +136,27 @@ function Login({ onAuthenticated, onOpenSettings }) {
           <form className="rs-authform" onSubmit={submit}>
             <Field label="Utente">
               <div className="rs-autocomplete">
-                <TextInput icon="user" value={query} placeholder="Scrivi il tuo nome" autoComplete="username" data-testid="login-user-input"
+                <TextInput icon="user" value={query} placeholder="Scrivi o incolla il tuo nome" autoComplete="username" data-testid="login-user-input"
                   onFocus={() => setOpen(true)}
                   onBlur={() => setTimeout(() => setOpen(false), 150)}
-                  onChange={(e) => { setQuery(e.target.value); setMatched(null); setError(''); setOpen(true) }} />
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text') || ''
+                    const exactUser = resolveLoginUser(pasted, directory)
+                    if (!exactUser) return
+                    e.preventDefault()
+                    setQuery(exactUser.name)
+                    setMatched(exactUser)
+                    setError('')
+                    setOpen(false)
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const exactUser = resolveLoginUser(value, directory)
+                    setQuery(value)
+                    setMatched(exactUser)
+                    setError('')
+                    setOpen(!exactUser)
+                  }} />
                 {open && suggestions.length > 0 && (
                   <div className="rs-suggest" data-testid="login-suggestions">
                     {suggestions.map((u) => (
@@ -151,8 +169,8 @@ function Login({ onAuthenticated, onOpenSettings }) {
               </div>
             </Field>
             <Field label="PIN">
-              <TextInput icon="lock" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••" data-testid="login-pin-input"
-                onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} />
+              <TextInput icon="lock" type="password" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••" data-testid="login-pin-input"
+                onChange={(e) => { setPin(sanitizeLoginPin(e.target.value)); setError('') }} />
             </Field>
             {selectedUser && <button type="button" className="rs-textback" onClick={() => setRecovering(true)} data-testid="pin-forgot-link">PIN dimenticato?</button>}
             {error && <p className="rs-error" role="alert" data-testid="login-error">{error}</p>}

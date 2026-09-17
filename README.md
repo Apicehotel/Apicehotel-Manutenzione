@@ -179,7 +179,7 @@ RandUI è il design system canonico. Il flusso è:
 
 `Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
 
-Il catalogo copre **24/24 destinazioni correnti** e usa 14 template ufficiali. Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice principale copre **320 / 375 / 390 / 430 / 768 / 1024 / 1440 px**, oltre a Chromium e WebKit.
+Il catalogo RandUI copre **24 destinazioni interne**: 22 viste operative nel `Shell`, `Settings` che usa direttamente `SettingsTemplate` e la console RandAI autonoma. Il numero non include i flussi pre-login (accesso, scelta struttura, recupero PIN, gate amministrativo) né i portali autonomi (`/tecnico/:token`, `/tecnici-esterni`, `/s/:id`, `/n/:alias`). Il Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice browser/device verifica soprattutto il login e il gate Settings pre-login: non certifica il rendering delle 24 viste autenticate; l’audit dettagliato è in `docs/architecture/RANDUI_PHASE1_PAGE_AUDIT_2026-09-12.md`. La verifica live su desktop ha esaminato login e gate amministrativo; ha rilevato 14 px di overflow verticale nel login. La verifica responsive e delle viste autenticate resta aperta; dettagli nell'audit. Il login accetta anche il nick incollato e il PIN di quattro cifre; il PIN resta mascherato.
 
 La navigazione mobile mantiene **Operatività** nello slot 1, **Planning** nello slot 2, **Home** nello slot 3, **Task** nello slot 4 per i ruoli autorizzati e **RandAI** nello slot 5. Se Task non è autorizzato, lo slot 4 può degradare a una destinazione operativa consentita. Il menu completo vive nel controllo profilo/nome.
 
@@ -261,6 +261,7 @@ Produzione stabile: Vercel. Durante l'unificazione RandUI v1 i Git deploy Vercel
 - `docs/architecture/RANDAI_GROUP3_DURABLE_RUNTIME.md` — lifecycle durevole, idempotenza, resume, reauthorization ed executor boundary.
 - `docs/architecture/RANDUI_V1_CORE.md` — RandUI Core.
 - `docs/architecture/RANDUI_PHASE0_BASELINE_2026-09-12.md` — baseline verificabile, inventario 24 destinazioni e limiti di verifica della Fase 0.
+- `docs/architecture/RANDUI_PHASE1_PAGE_AUDIT_2026-09-12.md` — mappa delle 24 viste, route fuori catalogo, template, ownership e gap di copertura visuale.
 - `docs/architecture/RANDUI_V1_GUARD.md` — guard fail-closed.
 - `docs/architecture/RANDUI_V1_MIGRATION.md` — PageBoundary e migrazione.
 - `docs/architecture/RANDUI_VISUAL_LANGUAGE_V1.md` — visual language.
