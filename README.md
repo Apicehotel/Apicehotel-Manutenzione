@@ -6,15 +6,15 @@ PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. 
 
 **RandUI rebuild v1 è chiuso e integrato in `main` tramite PR #267.** L'ultimo candidato ha superato CI canonica, browser/device gate, RandAI Group 1/2/3, RandDesignBridge e preview Ocean. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno ora un proprietario unico.
 
+**RandAI UI Foundation v1 è integrata tramite PR #268.** La PR #270 raccoglie il completamento visuale del Quick Assistant e l'allineamento del Control Center a RandUI: niente Tailwind/shadcn/AI Elements come secondo design system, ma adozione dei pattern migliori dentro le primitive native esistenti.
+
+**RandCore governance hardening è il blocco successivo in revisione.** Il check mensile verifica anche la protezione server-side di `main`; se GitHub espone il branch come non protetto, RandCore produce un finding `HIGH` invece di affidarsi soltanto alla policy documentata.
+
 RandApp è l'app operativa. RandAI è l'assistente e control layer integrato; RandMind, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 
-### Blocco attivo
-
-Il blocco successivo è **RandAI UI Foundation v1**: popup rapido e Control Center completo restano separati, ma condividono il linguaggio RandUI. Vercel AI Elements, Crafter Elements, Fantastic Admin e i template Flutter valutati da RandRadar sono fonti di pattern/riferimento; non vengono installati come secondo design system nello stack React/Vite attuale.
-
-Dettaglio: `docs/architecture/RANDAI_UI_FOUNDATION_V1.md`.
+Dettaglio RandAI UI: `docs/architecture/RANDAI_UI_FOUNDATION_V1.md`.
 
 ## Stack canonico
 
@@ -37,6 +37,7 @@ Dettaglio: `docs/architecture/RANDAI_UI_FOUNDATION_V1.md`.
 - Nessun secondo sistema per navigazione, autorizzazione, memoria, scheduler, logging, health, inventario, discovery o rollback.
 - Una parte è zombie soltanto dopo verifica di utilizzo, riferimenti e dipendenze.
 - Nessun agente può pushare/mergiare/deployare direttamente `main`: branch + PR + CI + revisione umana.
+- RandCore controlla periodicamente anche che la protezione di `main` esista davvero lato GitHub; policy scritta e protezione server-side sono due requisiti distinti.
 
 ## RandUI
 
@@ -58,6 +59,8 @@ Le superfici restano intenzionalmente due:
 - **Control Center `/randai`**: pagina completa protetta, amministrativa e multi-hotel.
 
 La UI Foundation v1 definisce otto primitive AI native e dependency-free: `conversation`, `message`, `source`, `status`, `reasoning`, `plan`, `tool`, `composer`. Queste primitive sono UI: non concedono permessi e non bypassano RandGateway.
+
+Il Control Center mantiene temporaneamente gli alias `--rc-*` come API di compatibilità, ma i valori sono posseduti dai token canonici `--rs-*` di RandUI. I nuovi stili devono usare direttamente RandUI; gli alias vengono rimossi progressivamente, non con un big-bang rewrite.
 
 ### RandRadar — fonti UI recenti
 
@@ -85,6 +88,14 @@ Flusso operativo:
 `adapter → RandGateway → Tool Gateway → RandSecure/HITL → Action Gateway → RandAudit`
 
 Gli adapter Web, RandChat, MCP e Twilio/WhatsApp producono envelope canonici ma non decidono identità, hotel, ruolo, rischio o permessi. Nessun adapter può scrivere direttamente dati operativi.
+
+## RandCore
+
+RandCore produce health evidence e audit snapshot con storico. Il check mensile copre build, dipendenze, Quality Matrix, test completi e stato ecosistema; il dominio security include anche la verifica API del branch protetto configurato (`main` di default).
+
+Se `main` non è protetto, viene emesso `MAIN_BRANCH_UNPROTECTED` con severità `HIGH`. Se l'API GitHub non è interrogabile, il risultato resta `UNKNOWN/INFO`: non viene promosso artificialmente a `HEALTHY`.
+
+La creazione effettiva della ruleset/branch protection resta un'operazione amministrativa GitHub e non viene simulata dal codice applicativo.
 
 ## RandRadar Full Evolution
 
@@ -130,6 +141,7 @@ npm run test:lts
 npm run skills:validate
 npm run repo:radar
 npm run design:check
+npm run core:health
 ```
 
 La CI canonica verifica dependency/security audit, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandApp/RandAI/RandUI/RandBrain/RandAudio, Chromium + WebKit, device acceptance, RandCore health evidence e LTS attestation.
