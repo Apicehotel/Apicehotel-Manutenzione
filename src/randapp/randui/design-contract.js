@@ -2,7 +2,8 @@ import { RANDUI_ICON_POLICY } from './icon-contract.js'
 import { RANDUI_MOTION, RANDUI_MOTION_VERSION } from './motion-contract.js'
 import designTokens from './design-tokens.json' with { type: 'json' }
 
-export const RANDUI_VERSION = '1.1.0'
+export const RANDUI_VERSION = '1.0.0'
+export const RANDUI_STANDARDIZATION_VERSION = '1.0.0'
 
 export const RANDUI_BREAKPOINTS = Object.freeze({
   mobileMax: 767,
@@ -66,6 +67,7 @@ export const RANDUI_TEMPLATE_IDS = Object.freeze([
 
 export const RANDUI_DESIGN_CONTRACT = Object.freeze({
   version: RANDUI_VERSION,
+  standardizationVersion: RANDUI_STANDARDIZATION_VERSION,
   breakpoints: RANDUI_BREAKPOINTS,
   densities: RANDUI_DENSITIES,
   templateIds: RANDUI_TEMPLATE_IDS,
