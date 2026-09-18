@@ -30,3 +30,14 @@ test('RandChat mobile toolbar stays inside RandUI gutters without horizontal cli
   assert.match(chatCss, /@media \(max-width: 430px\)[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/)
   assert.doesNotMatch(chatCss.match(/RandUI mobile chat alignment override[\s\S]*$/)?.[0] || '', /\.rc-head-actions[^}]*overflow:\s*auto/)
 })
+
+
+test('RandChat uses Telegram-style smart auto scroll semantics', () => {
+  assert.match(component, /const messagesRef = useRef\(null\)/)
+  assert.match(component, /const stickToBottomRef = useRef\(true\)/)
+  assert.match(component, /distanceFromBottom <= 96/)
+  assert.match(component, /ownLatest/)
+  assert.match(component, /scrollToLatest\('smooth'\)/)
+  assert.match(component, /className="rc-jump-bottom"/)
+  assert.match(chatCss, /Telegram-style jump-to-latest affordance/)
+})
