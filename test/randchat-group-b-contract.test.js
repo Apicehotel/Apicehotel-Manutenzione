@@ -8,9 +8,7 @@ const hardening = read('supabase/migrations/20260905100100_randchat_group_b_hard
 const cryptoCore = read('src/randapp/chat/dm-crypto-core.js')
 const deviceStore = read('src/randapp/chat/dm-device-store.js')
 const dmData = read('src/randapp/chat/dm-data.js')
-const dmUi = read('src/randapp/chat/DirectMessages.jsx')
-const chatEntry = read('src/randapp/chat/ChatGroups.jsx')
-const groups = read('src/randapp/chat/GroupChats.jsx')
+const chatUi = read('src/randapp/chat/RandChat.jsx')
 const promote = read('src/randapp/chat/PromoteIssueDialog.jsx')
 
 test('DM storage is ciphertext-only with device envelopes', () => {
@@ -28,9 +26,9 @@ test('DM retention is limited to 1, 7 or 15 days and cleanup removes expired cip
   assert.match(migration, /retention_days in \(1, 7, 15\)/i)
   assert.match(migration, /expires_at<=now\(\)/i)
   assert.match(migration, /randchat-dm-retention-hourly/i)
-  assert.match(dmUi, /option value=\{1\}/)
-  assert.match(dmUi, /option value=\{7\}/)
-  assert.match(dmUi, /option value=\{15\}/)
+  assert.match(chatUi, /option value=\{1\}/)
+  assert.match(chatUi, /option value=\{7\}/)
+  assert.match(chatUi, /option value=\{15\}/)
 })
 
 test('server requires a key envelope for every active device of both participants', () => {
@@ -60,7 +58,7 @@ test('messages are signed, verified and decrypted only in the client crypto laye
   assert.match(cryptoCore, /cryptoApi\.verify/)
   assert.match(dmData, /encryptDmPayload/)
   assert.match(dmData, /decryptDmPayload/)
-  assert.match(dmUi, /Firma e cifratura verificate/)
+  assert.match(chatUi, /Firma e cifratura verificate/)
 })
 
 test('promotion to persistent Segnalazione is explicit and stores only a metadata source link', () => {
@@ -70,15 +68,15 @@ test('promotion to persistent Segnalazione is explicit and stores only a metadat
   assert.match(promote, /insertIssue/)
   assert.match(promote, /origin: 'RandChat'/)
   assert.match(promote, /linkChatMessageToIssue/)
-  assert.match(dmUi, /Crea segnalazione/)
-  assert.match(groups, /Crea segnalazione/)
+  assert.match(chatUi, /Crea segnalazione/)
+  assert.match(chatUi, /Crea segnalazione/)
 })
 
-test('Group A shell entrypoint remains stable while RandChat adds a DM tab', () => {
-  assert.match(chatEntry, /GroupChats/)
-  assert.match(chatEntry, /DirectMessages/)
-  assert.match(chatEntry, /Gruppi/)
-  assert.match(chatEntry, /Diretti/)
+test('replacement RandChat runtime keeps groups and encrypted directs in one messenger', () => {
+  assert.match(chatUi, /fetchChatGroups/)
+  assert.match(chatUi, /fetchDmThreads/)
+  assert.match(chatUi, /Gruppi/)
+  assert.match(chatUi, /Diretti/)
 })
 
 test('device registration hardening preserves public-key identity instead of silently rotating it', () => {
