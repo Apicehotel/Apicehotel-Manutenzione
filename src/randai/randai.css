@@ -210,31 +210,12 @@
 
 
 /* Embedded RandAI page: first-class intelligence workspace. */
-.randai.randai--embedded {
-  position: relative;
-  inset: auto;
-  z-index: auto;
+.randai-page-workspace {
   width: 100%;
-  min-height: 0;
-  pointer-events: auto;
-  --randai-panel-max: none;
-}
-
-.randai--embedded .randai__panel {
-  position: relative;
-  inset: auto;
-  width: 100%;
-  max-height: none;
-  min-height: 0;
+  min-width: 0;
   display: grid;
-  grid-template-rows: auto minmax(420px, 1fr) auto auto;
-  background: transparent;
+  gap: 12px;
   color: var(--rand-text-primary);
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  overflow: visible;
-  contain: none;
 }
 
 .randai__embedded-toolbar {
@@ -242,14 +223,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  border: 1px solid var(--rand-border);
-  border-radius: var(--rand-radius-card);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--rand-accent) 8%, transparent), transparent 55%),
-    var(--rand-surface-1);
-  box-shadow: var(--rand-shadow-surface);
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--rand-border);
+  background: transparent;
 }
 
 .randai__status {
@@ -302,7 +278,7 @@
   letter-spacing: .01em;
 }
 
-.randai--embedded .randai__messages {
+.randai-page-workspace .randai__messages {
   min-height: clamp(440px, 58dvh, 760px);
   padding: 14px 0 22px;
   gap: 14px;
@@ -312,14 +288,8 @@
 .randai__welcome--workspace {
   display: grid;
   gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--rand-border);
-  border-radius: calc(var(--rand-radius-card) + 4px);
-  background:
-    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--rand-accent) 11%, transparent), transparent 55%),
-    radial-gradient(80% 100% at 100% 100%, color-mix(in srgb, var(--rand-accent-blue) 8%, transparent), transparent 58%),
-    var(--rand-surface-1);
-  box-shadow: var(--rand-shadow-surface);
+  padding: 8px 0 4px;
+  background: transparent;
 }
 
 .randai__welcome-copy {
@@ -404,24 +374,24 @@
   line-height: 1.35;
 }
 
-.randai--embedded .randai__bubble {
+.randai-page-workspace .randai__bubble {
   max-width: min(84%, 760px);
   padding: 13px 15px;
   border: 1px solid var(--rand-border);
 }
 
-.randai--embedded .randai__bubble--user {
+.randai-page-workspace .randai__bubble--user {
   background: var(--rand-gradient-primary);
   color: var(--rand-on-accent);
   border-color: transparent;
 }
 
-.randai--embedded .randai__bubble--assistant {
+.randai-page-workspace .randai__bubble--assistant {
   background: var(--rand-surface-1);
   box-shadow: var(--rand-shadow-surface);
 }
 
-.randai--embedded .randai__composer {
+.randai-page-workspace .randai__composer {
   position: sticky;
   bottom: calc(var(--rs-bottomnav-h, 74px) + env(safe-area-inset-bottom, 0px));
   z-index: 3;
@@ -429,16 +399,16 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: end;
-  padding: 10px;
+  padding: 10px 0 max(10px, env(safe-area-inset-bottom, 0px));
   margin-top: 4px;
-  border: 1px solid var(--rand-border);
-  border-radius: calc(var(--rand-radius-card) + 2px);
-  background: color-mix(in srgb, var(--rand-surface-1) 94%, transparent);
-  box-shadow: 0 18px 48px -26px rgba(0,0,0,.5);
-  backdrop-filter: blur(18px);
+  border-top: 1px solid var(--rand-border);
+  border-radius: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rand-canvas) 78%, transparent), var(--rand-canvas) 34%);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
 }
 
-.randai--embedded .randai__composer textarea {
+.randai-page-workspace .randai__composer textarea {
   min-height: 48px;
   max-height: 150px;
   padding: 12px 13px;
@@ -447,27 +417,27 @@
   background: var(--rand-surface-2);
 }
 
-.randai--embedded .randai__composer button {
+.randai-page-workspace .randai__composer button {
   height: 48px;
   border-radius: 14px;
 }
 
-.randai--embedded .randai__composer button[type='submit'] {
+.randai-page-workspace .randai__composer button[type='submit'] {
   min-width: 82px;
   background: var(--rand-gradient-primary);
   color: var(--rand-on-accent);
 }
 
-.randai--embedded .randai__audio-notice {
+.randai-page-workspace .randai__audio-notice {
   padding: 8px 4px 0;
   background: transparent;
 }
 
 @media (min-width: 900px) {
-  .randai--embedded .randai__messages {
+  .randai-page-workspace .randai__messages {
     min-height: 560px;
   }
-  .randai--embedded .randai__composer {
+  .randai-page-workspace .randai__composer {
     bottom: 18px;
   }
 }
@@ -483,7 +453,7 @@
   .randai__quick-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .randai--embedded .randai__messages {
+  .randai-page-workspace .randai__messages {
     min-height: calc(100dvh - var(--rs-header-h, 62px) - var(--rs-bottomnav-h, 74px) - 220px);
   }
 }
@@ -495,13 +465,13 @@
   .randai__quick-card {
     min-height: 86px;
   }
-  .randai--embedded .randai__bubble {
+  .randai-page-workspace .randai__bubble {
     max-width: 94%;
   }
-  .randai--embedded .randai__composer {
+  .randai-page-workspace .randai__composer {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  .randai--embedded .randai__composer button[type='submit'] {
+  .randai-page-workspace .randai__composer button[type='submit'] {
     grid-column: 1 / -1;
     width: 100%;
   }
