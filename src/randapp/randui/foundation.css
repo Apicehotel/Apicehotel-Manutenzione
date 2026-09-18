@@ -219,27 +219,33 @@
 }
 
 
-/* Canonical sticky head-nav lock.
-   Foundation is the final RandUI geometry layer, so mobile/tablet chrome is
-   hardened here instead of competing with page or legacy shell CSS. */
-@media (max-width: 1199px) {
-  .rs-root,
-  .rs-app,
-  .rs-app.rs-app--with-side {
-    overflow: visible;
-  }
 
+
+/* Canonical fixed head-nav lock with real DOM spacer.
+   The header is viewport-fixed; the spacer keeps normal-flow geometry so
+   content never hides underneath it, regardless of page CSS. */
+@media (max-width: 1199px) {
   .rs-header.rs-header--operational {
-    position: sticky !important;
+    position: fixed !important;
     top: 0 !important;
-    z-index: 70;
-    align-self: start;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 80;
     width: 100%;
     max-width: 100%;
-    grid-row: 1;
-    isolation: isolate;
     background: var(--rs-header-bg);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
   }
+
+  .rs-header-spacer {
+    display: block;
+    width: 100%;
+    min-height: calc(var(--rs-header-h) + var(--rs-adaptive-safe-top));
+    grid-row: 1;
+  }
+}
+
+@media (min-width: 1200px) {
+  .rs-header-spacer { display: none; }
 }
