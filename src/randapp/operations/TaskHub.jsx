@@ -19,7 +19,7 @@ export default function TaskHub({ canReminders, canUrgent, onOpen }) {
   return (
     <Stack gap="sm" className="rs-task-hub" data-testid="task-hub">
       <PageTitle title="Task" subtitle="Promemoria e avvisi nello stesso punto, separati per funzione." />
-      <Grid columns={visibleCount > 1 ? 2 : 1} gap="sm" className="rs-operational-choice-grid">
+      <Grid columns={visibleCount > 1 ? 2 : 1} gap="sm" className="rs-operational-choice-grid rs-randui-grid--keep-mobile">
         {canReminders && (
           <TaskChoice
             icon="bell"
