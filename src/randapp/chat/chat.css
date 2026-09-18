@@ -1117,3 +1117,62 @@
     width: min(220px, 76vw);
   }
 }
+
+
+/* RandChat v4 — Telegram-X-style composer anchoring.
+   The conversation owns three physical rows: header, scrolling history, composer.
+   No fixed/absolute composer geometry is used. */
+@media (max-width: 760px) {
+  .rc-module--thread-open .rc-conversation {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100% !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .rc-module--thread-open .rc-conversation__head {
+    grid-row: 1;
+    position: relative;
+    min-height: 58px;
+  }
+
+  .rc-module--thread-open .rc-warning,
+  .rc-module--thread-open .rc-error {
+    position: absolute;
+    top: 58px;
+    left: 8px;
+    right: 8px;
+    z-index: 6;
+    margin: 0;
+  }
+
+  .rc-module--thread-open .rc-messages {
+    grid-row: 2;
+    min-height: 0;
+    height: auto;
+    overflow-y: auto;
+    padding-bottom: 12px;
+    scroll-padding-bottom: 12px;
+  }
+
+  .rc-module--thread-open .rc-composer {
+    grid-row: 3;
+    position: relative !important;
+    inset: auto !important;
+    bottom: auto !important;
+    width: 100%;
+    min-width: 0;
+    min-height: 58px;
+    margin: 0;
+    flex: none;
+    box-sizing: border-box;
+    border-top: 1px solid var(--rs-line);
+    background: color-mix(in srgb, var(--rs-surface) 99%, transparent);
+    z-index: 10;
+  }
+
+  .rc-module--thread-open .rc-jump-bottom {
+    bottom: 68px;
+  }
+}
