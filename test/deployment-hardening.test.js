@@ -23,3 +23,8 @@ test('service worker validates MIME before caching dynamic assets', () => {
   assert.match(sw, /Deployment asset no longer available/)
   assert.match(sw, /status:\s*503/)
 })
+
+test('Vercel Git deploys remain enabled after reviewed merges', () => {
+  const config = JSON.parse(vercel)
+  assert.equal(config.git?.deploymentEnabled, true)
+})
