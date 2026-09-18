@@ -36,19 +36,17 @@ test('mobile Home widget grid stays inside its container without negative gutter
 })
 
 
-test('mobile head bar stays fixed and content clears the measured live header height', () => {
-  assert.match(shellCss, /\.rs-header\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?top:\s*0;[\s\S]*?left:\s*0;[\s\S]*?right:\s*0;/)
-  assert.match(shellCss, /--rs-headbar-live-h:\s*calc\(var\(--rs-mobile-headbar-h\) \+ var\(--rs-safe-top\)\)/)
-  assert.match(shellCss, /min-height:\s*var\(--rs-headbar-live-h\)/)
-  assert.match(shellCss, /@media \(max-width: 1023px\)[\s\S]*?\.rs-content\s*\{[\s\S]*?padding-top:\s*calc\(var\(--rs-headbar-live-h\) \+ 20px\)/)
+test('mobile head bar follows the canonical RandUI sticky-header contract', () => {
+  assert.match(shellCss, /\.rs-header\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*0;/)
+  assert.doesNotMatch(shellCss, /--rs-headbar-live-h/)
+  assert.doesNotMatch(shellCss, /padding-top:\s*calc\(var\(--rs-headbar-live-h\)/)
+  assert.match(shellCss, /@media \(max-width: 1023px\)[\s\S]*?\.rs-sidebar\s*\{\s*display:\s*none;/)
 })
 
 
-test('shell measures the real header height instead of relying only on a CSS estimate', async () => {
+test('shell does not measure or duplicate sticky header geometry', async () => {
   const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
-  assert.match(shell, /const headerRef = useRef\(null\)/)
-  assert.match(shell, /new ResizeObserver\(syncHeaderHeight\)/)
-  assert.match(shell, /getBoundingClientRect\(\)\.height/)
-  assert.match(shell, /--rs-headbar-live-h/)
-  assert.match(shell, /<header ref=\{headerRef\} className="rs-header rs-header--operational">/)
+  assert.doesNotMatch(shell, /ResizeObserver/)
+  assert.doesNotMatch(shell, /--rs-headbar-live-h/)
+  assert.match(shell, /<header className="rs-header rs-header--operational">/)
 })
