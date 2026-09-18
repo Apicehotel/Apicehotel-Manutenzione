@@ -143,6 +143,12 @@ export default function RandAIAssistant({ embedded = false }) {
   const issueResource = activeResource?.type === 'issue' ? activeResource : null
   const workspaceProgress = issueWorkspaceProgress(workspace)
   const canDictate = Boolean(audio.current?.capabilities.stt)
+  const quickPrompts = [
+    { id:'priorities', icon:'◎', title:'Priorità adesso', text:'Quali sono le priorità operative adesso nella struttura?' },
+    { id:'technical', icon:'⌁', title:'Problema tecnico', text:'Ho un problema tecnico: aiutami a diagnosticarlo passo passo usando i dati disponibili.' },
+    { id:'patterns', icon:'↻', title:'Ricorrenze', text:'Ci sono problemi ricorrenti o segnali collegati nella struttura?' },
+    { id:'changes', icon:'✦', title:'Cosa è cambiato', text:'Cosa è cambiato oggi tra segnalazioni, interventi, sensori, planning e attività?' },
+  ]
 
   const startDictation = () => {
     if (!canDictate || listening) return
@@ -227,18 +233,40 @@ export default function RandAIAssistant({ embedded = false }) {
     <div className={`randai ${open || embedded ? 'randai--open' : ''} ${embedded ? 'randai--embedded' : ''}`} data-testid={embedded ? "randai-embedded" : "randai-root"}>
       {(open || embedded) && (
         <section className="randai__panel" role={embedded ? "region" : "dialog"} aria-label="RandAI assistente manutenzione">
-          <header className="randai__header">
-            <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
-            {!embedded && <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>}
-          </header>
+          {embedded ? (
+            <div className="randai__embedded-toolbar" data-testid="randai-embedded-toolbar">
+              <div className="randai__status">
+                <span className="randai__status-dot" aria-hidden="true" />
+                <span><strong>Connesso a {hotelLabel}</strong><small>Contesto operativo attivo</small></span>
+              </div>
+              <div className="randai__capabilities" aria-label="Fonti RandAI">
+                <span>Dati live</span><span>Memoria</span><span>Procedure</span><span>Storico</span><span>Manuali</span>
+              </div>
+            </div>
+          ) : (
+            <header className="randai__header">
+              <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
+              <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>
+            </header>
+          )}
 
           <div className="randai__messages" aria-live="polite">
             {messages.length === 0 && (
-              <div className="randai__welcome">
-                <b>Come posso aiutarti?</b>
-                <p>Descrivi il problema. Controllo prima memoria verificata, dati live, procedure, impianti, manuali e storico della struttura.</p>
-                {session.hotelId === 'hotelgio' && <button type="button" onClick={() => setQuery('Camera 125 non fredda')}>Prova: camera 125 non fredda</button>}
-              </div>
+              <section className="randai__welcome randai__welcome--workspace">
+                <div className="randai__welcome-copy">
+                  <span className="randai__eyebrow">INTELLIGENZA OPERATIVA</span>
+                  <h2>Cosa vuoi capire o risolvere?</h2>
+                  <p>RandAI collega dati live, memoria verificata, procedure, impianti, manuali e storico della struttura prima di rispondere.</p>
+                </div>
+                <div className="randai__quick-grid" data-testid="randai-quick-prompts">
+                  {quickPrompts.map((prompt) => (
+                    <button type="button" key={prompt.id} className="randai__quick-card" onClick={() => setQuery(prompt.text)}>
+                      <span className="randai__quick-icon" aria-hidden="true">{prompt.icon}</span>
+                      <span><strong>{prompt.title}</strong><small>{prompt.text}</small></span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             {messages.map((message, index) => message.role === 'user' ? (
@@ -348,7 +376,7 @@ export default function RandAIAssistant({ embedded = false }) {
 
           <form className="randai__composer" onSubmit={submit}>
             {canDictate && <button type="button" className={`randai__dictate ${listening ? 'is-listening' : ''}`} onClick={startDictation} disabled={busy || listening} aria-pressed={listening} aria-label="Detta la domanda">{listening ? '●' : '🎙'}</button>}
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Es. Camera 125 non fredda…" aria-label="Domanda a RandAI" disabled={busy} />
+            <textarea value={query} onChange={(event) => setQuery(event.target.value)} rows="2" placeholder="Chiedi qualsiasi cosa sulla struttura…" aria-label="Domanda a RandAI" disabled={busy} />
             <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Controllo…' : 'Chiedi'}</button>
           </form>
           {audioNotice && <small className="randai__audio-notice" role="status">{audioNotice}</small>}
