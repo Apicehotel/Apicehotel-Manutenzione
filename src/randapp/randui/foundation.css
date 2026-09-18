@@ -4,6 +4,7 @@
    owners together and exposes the page/template primitives used by migration. */
 @import '../adaptive-layout.css';
 @import '../ui-coherence.css';
+@import './theme-tokens.css';
 @import './visual-language.css';
 @import './completion-v2.css';
 
@@ -16,9 +17,9 @@
   --rand-space-6: 24px;
   --rand-space-8: 32px;
   --rand-space-10: 40px;
-  --rand-radius-sm: 12px;
-  --rand-radius-md: 16px;
-  --rand-radius-lg: 20px;
+  --rand-radius-sm: var(--rand-radius-control);
+  --rand-radius-md: var(--rand-radius-surface);
+  --rand-radius-lg: var(--rand-radius-card);
   --rand-reading-max: 1120px;
   --rand-content-max: 1560px;
   --rand-touch-min: var(--rs-adaptive-touch-min, 44px);
@@ -57,7 +58,7 @@
 .rs-randui-page__heading { flex: 1 1 280px; }
 .rs-randui-page__heading h1 {
   margin: 0;
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--rand-font-display);
   font-size: clamp(1.4rem, 2.6vw, 2rem);
   line-height: 1.15;
   color: var(--rs-text);
@@ -159,7 +160,7 @@
 }
 .rs-randui-state__icon .rs-icon { width: 25px; height: 25px; }
 .rs-randui-state__icon.is-busy .rs-icon { animation: rs-spin .9s linear infinite; }
-.rs-randui-state__copy strong { display:block; color:var(--rs-text); font-family:'Sora',system-ui,sans-serif; font-size:1.05rem; }
+.rs-randui-state__copy strong { display:block; color:var(--rs-text); font-family:var(--rand-font-display); font-size:1.05rem; }
 .rs-randui-state__copy p { margin:6px 0 0; color:var(--rs-text-2); line-height:1.5; }
 .rs-randui-state__actions { display:flex; flex-wrap:wrap; justify-content:center; gap:var(--rand-space-2); }
 .rs-randui-state--success .rs-randui-state__icon { color:var(--rs-ok); background:rgba(70,217,154,.10); border-color:rgba(70,217,154,.30); }
