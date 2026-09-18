@@ -358,44 +358,6 @@
   margin: 0;
 }
 
-.randchat-menu-wrap {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.randchat-menu {
-  position: absolute;
-  top: calc(100% + 5px);
-  right: 0;
-  z-index: 40;
-  width: min(240px, 76vw);
-  overflow: hidden;
-  border: 1px solid var(--rs-line);
-  border-radius: 13px;
-  background: var(--rs-surface);
-  box-shadow: 0 16px 42px rgba(0,0,0,.28);
-}
-
-.randchat-menu > button,
-.randchat-menu > label,
-.randchat-menu__note {
-  width: 100%;
-  min-height: 42px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 8px 11px;
-  border: 0;
-  border-bottom: 1px solid var(--rs-line);
-  background: transparent;
-  color: var(--rs-text);
-  font: inherit;
-  font-size: .82rem;
-  text-align: left;
-}
-
 .randchat-menu > button {
   cursor: pointer;
 }
