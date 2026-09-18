@@ -21,7 +21,7 @@ import './header-mobile.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
-const ChatGroups = lazy(() => import('./chat/ChatGroups.jsx'))
+const RandChat = lazy(() => import('./chat/RandChat.jsx'))
 const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
@@ -372,7 +372,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(target) => { if (typeof target === 'string') return pick({ id: target }); if (target?.view) { setOpenItemRequest({ view: target.view, id: target.itemId || null, nonce: Date.now() }); setSettings(null); setView(target.view) } }} />
     if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
     if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} openItemRequest={openItemRequest?.view==='issues'?openItemRequest:null} />
-    if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
+    if (view === 'chat') content = <RandChat user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='interventions'?openItemRequest:null} />
