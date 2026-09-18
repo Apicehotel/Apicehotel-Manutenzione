@@ -59,7 +59,7 @@ jobs:
 
   deploy:
     name: Deploy RandUI preview to Ocean
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.number == 285)
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'feat/randui-edera-theme-engine')
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
