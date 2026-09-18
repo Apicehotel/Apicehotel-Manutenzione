@@ -7,6 +7,7 @@ const mediaHardening = readFileSync(new URL('../supabase/migrations/202609051101
 const procedureDrafts = readFileSync(new URL('../supabase/migrations/20260905110200_randchat_group_c_procedure_drafts.sql', import.meta.url), 'utf8')
 const ciphertextHeadroom = readFileSync(new URL('../supabase/migrations/20260905110300_randchat_dm_ciphertext_headroom.sql', import.meta.url), 'utf8')
 const chatUi = readFileSync(new URL('../src/randapp/chat/RandChat.jsx', import.meta.url), 'utf8')
+const chatThread = readFileSync(new URL('../src/randapp/chat/RandChatThread.jsx', import.meta.url), 'utf8')
 const aiBridge = readFileSync(new URL('../src/randapp/chat/randchat-ai.js', import.meta.url), 'utf8')
 const mediaProvider = readFileSync(new URL('../src/randapp/chat/randmedia.js', import.meta.url), 'utf8')
 const cleanupWorker = readFileSync(new URL('../supabase/functions/randchat-media-cleanup/index.ts', import.meta.url), 'utf8')
@@ -26,7 +27,7 @@ test('group messages can become canonical RandGuide drafts but never auto-publis
   assert.match(procedureDrafts, /revisione umana obbligatoria/i)
   assert.doesNotMatch(procedureDrafts, /'approved'\s*,\s*1/i)
   assert.match(procedureDrafts, /requires_approval/i)
-  assert.match(chatUi, /Bozza procedura/)
+  assert.match(chatThread, /Bozza procedura/)
 })
 
 test('RandAI group context requires both group membership and hotel membership', () => {
