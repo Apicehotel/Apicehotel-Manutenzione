@@ -87,9 +87,9 @@ jobs:
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: randui-preview
           print_build_logs: "true"
           print_deploy_logs: "true"
+          deploy_pr_preview: "true"
 
       - name: RandOps heartbeat success
         if: success()
