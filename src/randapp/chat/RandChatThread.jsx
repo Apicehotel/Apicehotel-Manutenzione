@@ -37,9 +37,12 @@ export default function RandChatThread({
   const [files, setFiles] = useState([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [messageMenuId, setMessageMenuId] = useState(null)
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
   const fileRef = useRef(null)
   const textareaRef = useRef(null)
   const composingRef = useRef(false)
+  const mentionStartRef = useRef(-1)
   const { scrollRef, hitBottom, scrollToBottom, onScroll, followNextMessage } = useRandChatScroll({ threadId, messages })
 
   const title = mode === 'groups' ? activeGroup?.name : activeThread?.other_display_name
@@ -52,6 +55,9 @@ export default function RandChatThread({
     setFiles([])
     setMenuOpen(false)
     setMessageMenuId(null)
+    setMentionOpen(false)
+    setMentionQuery('')
+    mentionStartRef.current = -1
     if (fileRef.current) fileRef.current.value = ''
   }, [threadId])
 
@@ -61,6 +67,91 @@ export default function RandChatThread({
     node.style.height = '0px'
     node.style.height = `${Math.min(node.scrollHeight, 120)}px`
   }, [text])
+
+
+  const mentionOptions = mode === 'groups'
+    ? [
+        { type: 'action', id: 'procedure', label: '@procedura', description: 'Condividi una procedura' },
+        { type: 'action', id: 'randai', label: '@randai', description: 'Apri RandAI per il gruppo' },
+        { type: 'action', id: 'members', label: '@membri', description: 'Apri elenco membri' },
+        ...members
+          .filter((member) => member.auth_user_id !== currentUserId)
+          .map((member) => ({
+            type: 'member',
+            id: member.auth_user_id,
+            label: '@' + String(member.display_name || 'utente').trim().replace(/\s+/g, '_'),
+            displayName: member.display_name || 'Utente',
+            description: member.group_role || 'membro',
+          })),
+      ]
+    : []
+
+  const filteredMentions = mentionOptions.filter((option) => {
+    const needle = mentionQuery.trim().toLowerCase()
+    if (!needle) return true
+    return option.label.toLowerCase().includes('@' + needle)
+      || String(option.displayName || option.description || '').toLowerCase().includes(needle)
+  }).slice(0, 8)
+
+  const updateMentionState = (value, caret) => {
+    if (mode !== 'groups') {
+      setMentionOpen(false)
+      mentionStartRef.current = -1
+      return
+    }
+    const beforeCaret = value.slice(0, caret)
+    const match = beforeCaret.match(/(?:^|\s)@([^\s@]*)$/)
+    if (!match) {
+      setMentionOpen(false)
+      setMentionQuery('')
+      mentionStartRef.current = -1
+      return
+    }
+    const atIndex = beforeCaret.lastIndexOf('@')
+    mentionStartRef.current = atIndex
+    setMentionQuery(match[1] || '')
+    setMentionOpen(true)
+  }
+
+  const chooseMention = (option) => {
+    const node = textareaRef.current
+    const start = mentionStartRef.current
+    const caret = node?.selectionStart ?? text.length
+    if (start < 0) return
+
+    if (option.type === 'action') {
+      const next = text.slice(0, start) + text.slice(caret)
+      setText(next)
+      setMentionOpen(false)
+      setMentionQuery('')
+      mentionStartRef.current = -1
+      requestAnimationFrame(() => node?.focus())
+      if (option.id === 'procedure') onOpenProcedures()
+      if (option.id === 'randai') onOpenAI()
+      if (option.id === 'members') onOpenMembers()
+      return
+    }
+
+    const token = option.label + ' '
+    const next = text.slice(0, start) + token + text.slice(caret)
+    setText(next)
+    setMentionOpen(false)
+    setMentionQuery('')
+    mentionStartRef.current = -1
+    requestAnimationFrame(() => {
+      if (!node) return
+      node.focus()
+      const pos = start + token.length
+      node.setSelectionRange(pos, pos)
+    })
+  }
+
+  const renderMessageText = (body) => {
+    const parts = String(body || '').split(/(@[A-Za-z0-9_À-ÿ.-]+)/g)
+    return parts.map((part, index) => part.startsWith('@')
+      ? <mark className="randchat-mention" key={`${part}-${index}`}>{part}</mark>
+      : <span key={`text-${index}`}>{part}</span>)
+  }
 
   const submit = async (event) => {
     event?.preventDefault?.()
@@ -95,8 +186,6 @@ export default function RandChatThread({
         <button className="randchat-iconbtn" onClick={() => setMenuOpen((v) => !v)} aria-label="Menu conversazione" aria-expanded={menuOpen}>⋯</button>
         {menuOpen && <div className="randchat-menu">
           {mode === 'groups' ? <>
-            <button onClick={() => { setMenuOpen(false); onOpenProcedures() }}>📘 Procedure</button>
-            <button onClick={() => { setMenuOpen(false); onOpenAI() }}>✨ RandAI</button>
             <button onClick={() => { setMenuOpen(false); onOpenMembers() }}>👥 Membri</button>
             {canManageGroup && <label>Storico
               <select value={activeGroup?.retention_days || 30} onChange={(e) => onChangeGroupRetention(Number(e.target.value))} disabled={busy}>
@@ -142,7 +231,7 @@ export default function RandChatThread({
             {message.pinned_at && <span>📌</span>}
             {mode === 'dm' && <span title={message.cryptoState === 'verified' ? 'Firma e cifratura verificate' : 'Messaggio non verificato'}>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span>}
           </div>
-          {message.body && <p>{message.body}</p>}
+          {message.body && <p>{renderMessageText(message.body)}</p>}
           {procedure && <div className="randchat-procedure">
             <b>📘 {procedure.title}</b>
             <small>{procedure.category || 'Generale'} · v{procedureLink.procedure_version}</small>
@@ -175,12 +264,34 @@ export default function RandChatThread({
           maxLength={8000}
           value={text}
           placeholder={mode === 'groups' ? 'Messaggio' : 'Messaggio privato'}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKeyDown}
+          onChange={(e) => {
+            setText(e.target.value)
+            updateMentionState(e.target.value, e.target.selectionStart ?? e.target.value.length)
+          }}
+          onClick={(e) => updateMentionState(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
+          onKeyUp={(e) => {
+            if (['ArrowUp', 'ArrowDown', 'Escape', 'Enter'].includes(e.key)) return
+            updateMentionState(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && mentionOpen) {
+              e.preventDefault()
+              setMentionOpen(false)
+              return
+            }
+            onKeyDown(e)
+          }}
           onCompositionStart={() => { composingRef.current = true }}
           onCompositionEnd={() => { composingRef.current = false }}
         />
         {!!files.length && <small>{files.length} allegat{files.length === 1 ? 'o' : 'i'}</small>}
+        {mentionOpen && <div className="randchat-mention-picker" role="listbox" aria-label="Comandi e menzioni">
+          {filteredMentions.map((option) => <button type="button" key={`${option.type}-${option.id}`} onMouseDown={(e) => e.preventDefault()} onClick={() => chooseMention(option)}>
+            <b>{option.label}</b>
+            <small>{option.type === 'member' ? option.displayName : option.description}</small>
+          </button>)}
+          {!filteredMentions.length && <span>Nessun risultato</span>}
+        </div>}
       </div>
       <button className="randchat-send" disabled={busy || (!text.trim() && !files.length) || (mode === 'dm' && !dmRecipientHasDevice)}>Invia</button>
     </form>
