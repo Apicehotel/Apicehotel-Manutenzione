@@ -217,6 +217,35 @@
 }
 .rs-randui-choice__chevron { margin-left: auto; color: var(--rs-text-3); font-size: 1.2rem; line-height: 1; }
 
+.rs-operations-hub,
+.rs-task-hub {
+  width: 100%;
+}
+
+.rs-operational-choice-grid {
+  width: 100%;
+}
+
+.rs-operational-choice {
+  min-height: 122px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.rs-operational-choice__description {
+  margin: 2px 0 0;
+  color: var(--rs-text-2);
+  font-size: .78rem;
+  line-height: 1.42;
+}
+
+@media (max-width: 380px) {
+  .rs-operational-choice-grid.rs-randui-grid--2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .rs-planning-today {
   overflow: hidden;
   padding: 0;
