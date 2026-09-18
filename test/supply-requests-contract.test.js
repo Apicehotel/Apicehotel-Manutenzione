@@ -77,8 +77,11 @@ test('rifornimenti update through Supabase realtime rather than polling workers'
   assert.doesNotMatch(data, /setInterval|setTimeout/)
 })
 
-test('global housekeeping host still exposes the quick portal without changing reception completion alerts', () => {
-  assert.match(host, /SupplyRequestsPortal/)
-  assert.match(host, /HousekeepingCompletionAlerts/)
+test('Rifornimenti no longer exposes a global floating launcher through housekeeping host', () => {
+  assert.doesNotMatch(host, /SupplyRequestsPortal/)
   assert.match(host, /housekeeping-completion-alert/)
+  assert.match(shell, /view === 'supplies'/)
+  assert.match(shell, /SupplyRequestsPortal user=\{user\} hotel=\{hotel\} standalone/)
+  assert.doesNotMatch(portal, /data-testid="supply-launcher"/)
+  assert.doesNotMatch(portal, /rs-supply-launcher/)
 })
