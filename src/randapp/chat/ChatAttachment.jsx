@@ -34,15 +34,15 @@ export default function ChatAttachment({ attachment, encrypted = false }) {
     finally { setBusy(false) }
   }
 
-  const visual = url && type.startsWith('image/') ? <img className="rc-media-preview" src={url} alt={name} />
-    : url && type.startsWith('video/') ? <video className="rc-media-preview" src={url} controls playsInline />
+  const visual = url && type.startsWith('image/') ? <img className="randchat-media-preview" src={url} alt={name} />
+    : url && type.startsWith('video/') ? <video className="randchat-media-preview" src={url} controls playsInline />
       : url && type.startsWith('audio/') ? <audio src={url} controls /> : null
 
-  return <div className="rc-attachment">
+  return <div className="randchat-attachment">
     <div><b>{encrypted ? '🔒 ' : '📎 '}{name}</b><small>{formatBytes(size)} · {type}</small></div>
     {!url && <button type="button" onClick={open} disabled={busy}>{busy ? 'Apro…' : 'Apri'}</button>}
     {visual}
     {url && !visual && <a href={url} target="_blank" rel="noreferrer">Apri file</a>}
-    {error && <small className="rc-error">{error}</small>}
+    {error && <small className="randchat-inline-error">{error}</small>}
   </div>
 }
