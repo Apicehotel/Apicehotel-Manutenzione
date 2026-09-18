@@ -444,3 +444,10 @@
 @media (max-width: 767px) {
   .rs-operational-preview-grid.rs-randui-grid--2 { grid-template-columns: minmax(0,1fr); }
 }
+
+
+.rs-reminder-card.is-targeted,
+.rs-op-card.is-targeted {
+  border-color: var(--rand-accent-line);
+  box-shadow: 0 0 0 3px var(--rand-accent-soft), var(--rand-shadow-surface);
+}
