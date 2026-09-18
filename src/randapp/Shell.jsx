@@ -8,7 +8,7 @@ import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV
 import { buildPrimaryBottomNav } from './shell-navigation.js'
 import { resolveUserInterests } from './adaptive-layout.js'
 import { initSystemInsetsBridge } from './system-insets.js'
-import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
+import { contextualAddActions } from './contextual-add.js'
 import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
@@ -351,11 +351,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const contextualActions = useMemo(() => contextualAddActions(view, addCapabilities), [view, addCapabilities])
   const contextualActionIds = useMemo(() => settings !== null ? [] : contextualActions.map((action) => action.id), [settings, contextualActions])
-  const fabLabel = contextualAddLabel(contextualActions)
-  const openContextualAdd = () => {
-    if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
-    if (contextualActionIds.length > 1) setInsertOpen(true)
-  }
 
   const handlePlanningSectionChange = useCallback((section) => {
     setView(section === 'sale' ? 'planning-sale' : 'planning-work')
@@ -488,7 +483,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             )
           })}
         </nav>
-        {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
