@@ -130,3 +130,10 @@ test('resolved theme aliases outrank legacy material accents', () => {
     assert.ok(application.includes(alias), `${alias} missing from resolved theme bridge`)
   }
 })
+
+
+test('mobile page headings collapse desktop flex basis', () => {
+  const completion = read('../src/randapp/randui/completion-v2.css')
+  assert.match(completion, /@media \(max-width: 767px\)[\s\S]*\.rs-page-title > div:first-child,[\s\S]*flex:\s*0 1 auto/)
+  assert.match(completion, /\.rs-randui-local-header__copy[\s\S]*min-height:\s*0/)
+})
