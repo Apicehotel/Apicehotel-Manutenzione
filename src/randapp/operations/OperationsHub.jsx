@@ -22,7 +22,7 @@ export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
         title="Operatività"
         subtitle="Segnalazioni e interventi nello stesso punto, con flussi separati e coerenti."
       />
-      <Grid columns={visibleCount > 1 ? 2 : 1} gap="sm" className="rs-operational-choice-grid">
+      <Grid columns={visibleCount > 1 ? 2 : 1} gap="sm" className="rs-operational-choice-grid rs-randui-grid--keep-mobile">
         {canIssues && (
           <OperationalChoice
             icon="issues"
