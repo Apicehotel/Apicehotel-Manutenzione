@@ -10,6 +10,7 @@ body.rs-randchat-active {
 .rs-content.rs-content--randchat {
   min-height: 0;
   height: 100%;
+  box-sizing: border-box;
   overflow: hidden;
 }
 
