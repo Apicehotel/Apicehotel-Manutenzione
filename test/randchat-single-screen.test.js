@@ -2,16 +2,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const component = readFileSync(new URL('../src/randapp/chat/ChatGroups.jsx', import.meta.url), 'utf8')
+const entry = readFileSync(new URL('../src/randapp/chat/ChatGroups.jsx', import.meta.url), 'utf8')
+const groups = readFileSync(new URL('../src/randapp/chat/GroupChats.jsx', import.meta.url), 'utf8')
+const dms = readFileSync(new URL('../src/randapp/chat/DirectMessages.jsx', import.meta.url), 'utf8')
+const scrollEngine = readFileSync(new URL('../src/randapp/chat/useChatThreadScroll.js', import.meta.url), 'utf8')
 const viewportCss = readFileSync(new URL('../src/randapp/chat/chat-viewport.css', import.meta.url), 'utf8')
 const chatCss = readFileSync(new URL('../src/randapp/chat/chat.css', import.meta.url), 'utf8')
 
 test('RandChat inherits the canonical RandUI content viewport instead of measuring window geometry', () => {
-  assert.doesNotMatch(component, /window\.visualViewport/)
-  assert.doesNotMatch(component, /--rc-viewport-h/)
-  assert.doesNotMatch(component, /window\.scrollTo/)
-  assert.match(component, /classList\.add\('rs-content--randchat'\)/)
-  assert.match(component, /import '\.\/chat\.css'\s*\nimport '\.\/chat-viewport\.css'/)
+  assert.doesNotMatch(entry, /window\.visualViewport/)
+  assert.doesNotMatch(entry, /--rc-viewport-h/)
+  assert.doesNotMatch(entry, /window\.scrollTo/)
+  assert.match(entry, /classList\.add\('rs-content--randchat'\)/)
   assert.match(viewportCss, /\.rs-content\.rs-content--randchat\s*\{[^}]*height:\s*100%/is)
   assert.match(viewportCss, /\.rc-module\s*\{[^}]*height:\s*100%/is)
 })
@@ -23,21 +25,22 @@ test('RandChat leaves scrolling to message and thread areas inside the shell vie
   assert.match(viewportCss, /overscroll-behavior:\s*contain/i)
 })
 
-test('RandChat mobile toolbar stays inside RandUI gutters without horizontal clipping', () => {
-  assert.match(chatCss, /RandUI mobile chat alignment override/)
+test('RandChat v2 uses one canonical responsive layout without horizontal action clipping', () => {
+  assert.match(chatCss, /RandChat v2/)
   assert.match(chatCss, /\.rc-conversation__head\s*\{[\s\S]*?display:\s*grid;/)
   assert.match(chatCss, /\.rc-head-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(chatCss, /@media \(max-width: 430px\)[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/)
-  assert.doesNotMatch(chatCss.match(/RandUI mobile chat alignment override[\s\S]*$/)?.[0] || '', /\.rc-head-actions[^}]*overflow:\s*auto/)
+  assert.doesNotMatch(chatCss, /\.rc-head-actions[^}]*overflow:\s*auto/)
 })
 
-
-test('RandChat uses Telegram-style smart auto scroll semantics', () => {
-  assert.match(component, /const messagesRef = useRef\(null\)/)
-  assert.match(component, /const stickToBottomRef = useRef\(true\)/)
-  assert.match(component, /distanceFromBottom <= 96/)
-  assert.match(component, /ownLatest/)
-  assert.match(component, /scrollToLatest\('smooth'\)/)
-  assert.match(component, /className="rc-jump-bottom"/)
-  assert.match(chatCss, /Telegram-style jump-to-latest affordance/)
+test('Telegram-style smart thread scrolling is shared by groups and encrypted DMs', () => {
+  assert.match(scrollEngine, /distanceFromBottom <= 96/)
+  assert.match(scrollEngine, /ownLatest/)
+  assert.match(scrollEngine, /scrollToLatest/)
+  assert.match(scrollEngine, /markOutgoing/)
+  assert.match(groups, /useChatThreadScroll/)
+  assert.match(dms, /useChatThreadScroll/)
+  assert.match(groups, /className="rc-jump-bottom"/)
+  assert.match(dms, /className="rc-jump-bottom"/)
+  assert.match(chatCss, /\.rc-jump-bottom\s*\{/)
 })
