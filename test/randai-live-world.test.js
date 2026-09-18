@@ -32,3 +32,27 @@ test('RandAILive stays inside RandApp and uses the RandAI access gate',()=>{
   assert.match(gate,/mode==='live'/)
   assert.match(gate,/RandAILive/)
 })
+
+test('RandAILive v2 maps real hotel issues to scoped client NPCs',()=>{
+  const live=fs.readFileSync('src/randai/live/RandAILive.jsx','utf8')
+  const engine=fs.readFileSync('src/randai/live/world-engine.js','utf8')
+  const css=fs.readFileSync('src/randai/live/randai-live.css','utf8')
+  assert.match(live,/from\('segnalazioni'\)/)
+  assert.match(live,/\.eq\('hotel_id',hotelId\)/)
+  assert.match(live,/filter:\`hotel_id=eq\.\$\{hotelId\}\`/)
+  assert.match(live,/SALA ATTESA/)
+  assert.match(live,/ClientNpc/)
+  assert.match(engine,/clientState/)
+  assert.match(engine,/issueIcon/)
+  assert.match(engine,/WANDER/)
+  assert.match(css,/rl-waiting/)
+  assert.match(css,/rl-client/)
+})
+
+test('RandAILive v2 keeps every canonical Rand identity visible in the game world',()=>{
+  const live=fs.readFileSync('src/randai/live/RandAILive.jsx','utf8')
+  const engine=fs.readFileSync('src/randai/live/world-engine.js','utf8')
+  for(const id of ['randai','randbrain','randcore','randmind','randradar','randresearch','randsecure','randtest','randops','randui']){
+    assert.match(live+engine,new RegExp(id))
+  }
+})
