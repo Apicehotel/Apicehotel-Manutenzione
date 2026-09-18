@@ -10,12 +10,12 @@ const roleNavigation = read('../src/randapp/role-navigation.js')
 const contextualAdd = read('../src/randapp/contextual-add.js')
 const planningHub = read('../src/randapp/PlanningHub.jsx')
 
-test('bottom navigation prefers Task in slot four and protects it like interventions', () => {
-  assert.match(navigation, /id:\s*'my-work'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
-  assert.match(navigation, /placement\('interventions'\).*viewAllowed\('my-work'\)/s)
-  assert.match(nav, /'my-work':\s*view\('interventions'\)/)
-  assert.match(roleNavigation, /'my-work':\s*'interventions'/)
-  assert.match(navigation, /view === 'my-work'/)
+test('bottom navigation keeps Task in slot four as reminders and alerts hub', () => {
+  assert.match(navigation, /id:\s*'task'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
+  assert.match(navigation, /viewAllowed\('task'\)/)
+  assert.match(nav, /task:\s*canSeeTask/)
+  assert.match(nav, /canUser\(user, 'reminders', 'view'\).*canUser\(user, 'urgent', 'view'\)/)
+  assert.match(navigation, /view === 'task'/)
 })
 
 test('contextual plus creates only the object owned by the active page', () => {
@@ -41,9 +41,9 @@ test('Planning navigation is navigation-only and stale create requests are clear
   assert.match(planningHub, /onCreateRequestConsumed\?\.\(createRequest\.kind\)/)
 })
 
-test('Planning legacy intervention bridge is gone and Task has an independent active state', () => {
+test('Planning legacy intervention bridge is gone and Task owns reminders plus alerts', () => {
   assert.doesNotMatch(planningHub, /randapp\.insert-source/)
   assert.doesNotMatch(planningHub, /PlannedCreateSheet/)
-  assert.doesNotMatch(shell, /\['operations', 'issues', 'interventions', 'my-work'\]/)
-  assert.match(shell, /\['operations', 'issues', 'interventions'\]\.includes\(view\)/)
+  assert.match(shell, /item\.id === 'task'[\s\S]*\['task', 'urgent', 'reminders'\]\.includes\(view\)/)
+  assert.match(shell, /view === 'task'[\s\S]*<TaskHub/)
 })
