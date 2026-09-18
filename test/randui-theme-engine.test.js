@@ -115,3 +115,18 @@ test('RandUI visual language no longer hardcodes Sora typography', () => {
   assert.doesNotMatch(visual, /['"]Sora['"]/)
   assert.match(visual, /var\(--rand-font-display\)/)
 })
+
+
+test('resolved theme aliases outrank legacy material accents', () => {
+  const application = read('../src/randapp/randui/theme-application.css')
+  assert.match(application, /html\[data-theme='light'\],[\s\S]*html\[data-theme='dark'\]/)
+  for (const alias of [
+    '--rs-accent: var(--rand-accent)',
+    '--rs-grad-primary: var(--rand-gradient-primary)',
+    '--rs-bg: var(--rand-canvas)',
+    '--rs-surface: var(--rand-surface-1)',
+    '--rs-line: var(--rand-border)',
+  ]) {
+    assert.ok(application.includes(alias), `${alias} missing from resolved theme bridge`)
+  }
+})
