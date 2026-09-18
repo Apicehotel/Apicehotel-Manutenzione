@@ -59,3 +59,14 @@ test('Telegram visual layer is runtime-owned while navigation logic stays side-e
   assert.match(css, /focus-visible/)
   assert.match(css, /@media \(max-width: 360px\)/)
 })
+
+
+test('Task hub groups reminders and alerts while keeping child flows separate', () => {
+  const taskHub = fs.readFileSync(new URL('../src/randapp/operations/TaskHub.jsx', import.meta.url), 'utf8')
+  assert.match(taskHub, /title="Task"/)
+  assert.match(taskHub, /title="Promemoria"/)
+  assert.match(taskHub, /title="Avvisi"/)
+  assert.match(taskHub, /onOpen\('reminders'\)/)
+  assert.match(taskHub, /onOpen\('urgent'\)/)
+  assert.match(catalog, /task: page\(/)
+})
