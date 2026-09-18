@@ -28,6 +28,7 @@ import ProcedureDraftDialog from './ProcedureDraftDialog.jsx'
 import ProcedurePicker from './ProcedurePicker.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
 import RandChatAI from './RandChatAI.jsx'
+import useChatThreadScroll from './useChatThreadScroll.js'
 import './chat.css'
 
 const roleRank = { owner: 0, admin: 1, member: 2 }
@@ -39,10 +40,6 @@ const displayHotels = (ids = []) => ids.map((id) => hotelById(id)?.name || id).j
 export default function GroupChats({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
   const fileRef = useRef(null)
-  const messagesRef = useRef(null)
-  const messagesEndRef = useRef(null)
-  const lastMessageCountRef = useRef(0)
-  const stickToBottomRef = useRef(true)
   const [groups, setGroups] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [messages, setMessages] = useState([])
@@ -62,8 +59,6 @@ export default function GroupChats({ user, hotel }) {
   const [inviteId, setInviteId] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
   const [draftMessage, setDraftMessage] = useState(null)
-  const [showJumpBottom, setShowJumpBottom] = useState(false)
-  const [unreadBelow, setUnreadBelow] = useState(0)
 
   const selected = useMemo(() => groups.find((g) => g.id === selectedId) || null, [groups, selectedId])
   const me = useMemo(() => members.find((m) => m.auth_user_id === currentUserId) || null, [members, currentUserId])
@@ -78,6 +73,15 @@ export default function GroupChats({ user, hotel }) {
     return map
   }, [attachments])
   const procedureByMessage = useMemo(() => new Map(procedureLinks.map((item) => [item.group_message_id, item])), [procedureLinks])
+  const {
+    scrollerRef: messagesRef,
+    endRef: messagesEndRef,
+    showJumpBottom,
+    unreadBelow,
+    scrollToLatest,
+    onScroll: handleMessagesScroll,
+    markOutgoing,
+  } = useChatThreadScroll({ threadId: selectedId, messages, currentUserId })
 
   const loadGroups = useCallback(async () => {
     if (!user?.chat_enabled) return
@@ -102,53 +106,6 @@ export default function GroupChats({ user, hotel }) {
 
   useEffect(() => { loadGroups().catch((e) => setError(e.message || 'Errore caricamento chat')) }, [loadGroups])
   useEffect(() => { loadSelected().catch((e) => setError(e.message || 'Errore caricamento gruppo')) }, [loadSelected])
-  const scrollToLatest = useCallback((behavior = 'auto') => {
-    stickToBottomRef.current = true
-    setShowJumpBottom(false)
-    setUnreadBelow(0)
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ block: 'end', behavior })
-    })
-  }, [])
-
-  useEffect(() => {
-    lastMessageCountRef.current = 0
-    stickToBottomRef.current = true
-    setShowJumpBottom(false)
-    setUnreadBelow(0)
-  }, [selectedId])
-
-  useEffect(() => {
-    if (!selectedId) return
-    const previousCount = lastMessageCountRef.current
-    const added = Math.max(0, messages.length - previousCount)
-    const lastMessage = messages[messages.length - 1]
-    const ownLatest = lastMessage?.sender_user_id === currentUserId
-    const shouldFollow = previousCount === 0 || stickToBottomRef.current || ownLatest
-
-    lastMessageCountRef.current = messages.length
-
-    if (shouldFollow) {
-      scrollToLatest(previousCount === 0 ? 'auto' : 'smooth')
-      return
-    }
-
-    if (added > 0) {
-      setUnreadBelow((count) => count + added)
-      setShowJumpBottom(true)
-    }
-  }, [selectedId, messages, currentUserId, scrollToLatest])
-
-  const handleMessagesScroll = useCallback(() => {
-    const node = messagesRef.current
-    if (!node) return
-    const distanceFromBottom = node.scrollHeight - node.scrollTop - node.clientHeight
-    const nearBottom = distanceFromBottom <= 96
-    stickToBottomRef.current = nearBottom
-    setShowJumpBottom(!nearBottom)
-    if (nearBottom) setUnreadBelow(0)
-  }, [])
-
   useEffect(() => {
     if (!selectedId) return undefined
     const unsubscribeChat = subscribeChatGroup(selectedId, {
@@ -182,7 +139,7 @@ export default function GroupChats({ user, hotel }) {
     const body = text.trim()
     const selectedFiles = Array.from(files || [])
     if ((!body && !selectedFiles.length) || !selectedId || busy) return
-    stickToBottomRef.current = true
+    markOutgoing()
     setBusy(true); setError('')
     let message = null
     let uploaded = []
