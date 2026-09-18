@@ -1,25 +1,50 @@
-# RandChat single-screen viewport contract
+# RandChat viewport contract
 
-RandChat usa un runtime unico e sostitutivo.
+RandChat è un workspace interno della shell RandUI e usa un'architettura composta, non una pagina standard.
 
-## Runtime corrente
+## Runtime
 
-- `RandChat.jsx` contiene lista conversazioni, thread, invio, Gruppi e Diretti.
-- `randchat-next.css` contiene l'intero layout chat.
-- La vecchia UI è stata cancellata.
+- `RandChat.jsx`: orchestrazione dati e permessi.
+- `RandChatList.jsx`: lista Gruppi / Diretti.
+- `RandChatThread.jsx`: conversazione e input panel.
+- `useRandChatScroll.js`: auto-scroll, detach e ritorno agli ultimi.
+- `randchat.css`: layout unico.
+- `rs-content--chat`: viewport centrale dedicato della shell.
 
-## Contratto mobile
+## Mobile
 
-Quando nessun thread è aperto, RandChat mostra la lista conversazioni e i tab Gruppi / Diretti.
+Quando nessuna conversazione è aperta viene mostrata la lista.
 
-Quando un thread è aperto:
+Quando un thread è aperto, la lista viene sostituita da:
 
-1. header conversazione;
-2. area messaggi scrollabile;
-3. composer sempre presente in fondo.
+`header → avvisi → messaggi scrollabili → composer`
 
-Solo la cronologia messaggi scorre. Il composer non usa un posizionamento fixed/absolute rispetto al browser: è una riga fisica del layout del thread e quindi resta nello spazio RandUI sopra la bottom navigation.
+Solo la cronologia messaggi scorre. Il composer è una riga fisica del thread e resta sopra la bottom navigation.
 
-L'apertura del thread parte dagli ultimi messaggi disponibili. Se l'utente è vicino al fondo, i nuovi messaggi vengono seguiti automaticamente; se sta leggendo lo storico, viene preservata la posizione e viene mostrato il comando per tornare agli ultimi messaggi.
+## Desktop
 
-Telegram X è un riferimento comportamentale. Nessun suo codice GPL viene incorporato nel runtime RandChat.
+RandChat usa una split view:
+
+`lista conversazioni | thread`
+
+La lista e il thread possiedono ciascuno il proprio scroll interno.
+
+## Scroll
+
+Il comportamento segue il modello usato come riferimento da NextChat e Telegram X:
+
+- il thread aperto parte dall'area più recente;
+- se l'utente è al fondo, i nuovi messaggi vengono seguiti;
+- se risale nello storico, l'auto-scroll si disattiva;
+- compare il comando per tornare agli ultimi messaggi;
+- l'invio riaggancia il fondo.
+
+## Composer
+
+- textarea auto-grow fino al limite previsto;
+- Enter invia;
+- Shift+Enter va a capo;
+- composizione IME/Safari non viene interpretata come invio;
+- allegati integrati nello stesso input panel.
+
+RandChat è per uso interno/non commerciale. NextChat è un riferimento React/layout con licenza MIT; Telegram X resta un riferimento comportamentale mobile. Il codice RandChat è implementazione RandUI originale.
