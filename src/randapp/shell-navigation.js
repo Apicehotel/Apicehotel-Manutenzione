@@ -63,9 +63,8 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // RandAI is a primary assistant action, not a navigation detour.
-  // Slot 5 opens the contextual assistant directly from every app screen.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI', action: 'assistant' })
+  // RandAI is a first-class RandUI page in slot 5, alongside the other primary destinations.
+  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
 
   return items
 }
