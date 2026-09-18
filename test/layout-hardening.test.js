@@ -50,3 +50,13 @@ test('shell does not measure or duplicate sticky header geometry', async () => {
   assert.doesNotMatch(shell, /--rs-headbar-live-h/)
   assert.match(shell, /<header className="rs-header rs-header--operational">/)
 })
+
+
+test('final RandUI layer hardens sticky head navigation on mobile and tablet', async () => {
+  const foundation = await readFile(new URL('../src/randapp/randui/foundation.css', import.meta.url), 'utf8')
+  assert.match(foundation, /Canonical sticky head-nav lock/)
+  assert.match(foundation, /@media \(max-width: 1199px\)/)
+  assert.match(foundation, /\.rs-header\.rs-header--operational\s*\{[\s\S]*?position:\s*sticky !important;[\s\S]*?top:\s*0 !important;/)
+  assert.match(foundation, /align-self:\s*start/)
+  assert.match(foundation, /\.rs-root,[\s\S]*?overflow:\s*visible/)
+})
