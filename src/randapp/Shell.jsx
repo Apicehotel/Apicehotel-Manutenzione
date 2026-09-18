@@ -13,7 +13,6 @@ import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
-import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
@@ -418,6 +417,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
+    if (item.id === 'randai' || item.action === 'assistant') {
+      window.dispatchEvent(new CustomEvent('randai-toggle'))
+      return
+    }
     if (item.href) {
       window.location.assign(item.href)
       return
@@ -471,7 +474,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
           </div>
         </header>
 
