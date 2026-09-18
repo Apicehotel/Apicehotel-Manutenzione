@@ -86,3 +86,14 @@ test('melonJS boot race is guarded before viewport and world exist',()=>{
   assert.match(game,/if\(!this\.app\)return/)
   assert.match(game,/this\.syncClients\(\)\n  this\.applyFollow\(\)/)
 })
+
+test('melonJS canvas uses fit scaling instead of shrinking to a thumbnail',()=>{
+  const game=fs.readFileSync('src/randai/live/game/MelonHotelGame.js','utf8')
+  const css=fs.readFileSync('src/randai/live/randai-live.css','utf8')
+  assert.match(game,/scale:1/)
+  assert.match(game,/scaleMethod:'fit'/)
+  assert.match(game,/scaleTarget:this\.parent/)
+  assert.match(css,/width:100%!important/)
+  assert.match(css,/height:100%!important/)
+  assert.match(css,/object-fit:contain/)
+})

@@ -84,7 +84,7 @@ export class RandMelonHotel{
   const res=await fetch('/randailive/maps/hotel-main.json',{cache:'no-store'});this.map=await res.json()
   const ground=this.map.layers.find(l=>l.name==='ground')
   ground.data.forEach((v,i)=>{if(v===2)this.blocked.add(key(i%this.map.width,Math.floor(i/this.map.width)))})
-  this.app=new Application(W,H,{parent:this.parent,scale:'auto',backgroundColor:'#081526'})
+  this.app=new Application(W,H,{parent:this.parent,scale:1,scaleMethod:'fit',scaleTarget:this.parent,backgroundColor:'#081526'})
   await this.app.init()
   this.app.world.addChild(new HotelMap(this.map),0)
   for(const [id,name] of [['randai','RandAI'],['randbrain','RandBrain'],['randcore','RandCore'],['randmind','RandMind'],['randradar','RandRadar'],['randresearch','RandResearch'],['randsecure','RandSecure'],['randtest','RandTest'],['randops','RandOps'],['randui','RandUI']]){
