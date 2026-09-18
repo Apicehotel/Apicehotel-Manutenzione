@@ -448,8 +448,6 @@ export default function RandChat({ user, hotel }) {
         onOpenProcedures={() => setShowProcedures(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenMembers={() => setShowMembers(true)}
-        onChangeGroupRetention={changeGroupRetention}
-        onChangeDmRetention={changeDmRetention}
         onPromote={setPromoteMessage}
         onDraftProcedure={setDraftMessage}
         onTogglePin={togglePin}
