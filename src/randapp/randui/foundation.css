@@ -272,3 +272,26 @@
     scroll-behavior: smooth;
   }
 }
+
+
+/* RandChat full-shell content mode.
+   Chat bypasses PageBoundary and owns the entire central shell viewport. */
+@media (max-width: 1199px) {
+  .rs-content.rs-content--chat {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .rs-content.rs-content--chat > * {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+}
