@@ -494,3 +494,26 @@
   .rnc-modal-backdrop { place-items: center; padding: 16px; }
   .rnc-modal { width: min(560px, 100%); border-radius: 18px; }
 }
+
+
+.rnc-menu-setting {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 11px;
+  color: var(--rs-text);
+  font-size: .82rem;
+}
+
+.rnc-menu-setting select {
+  min-width: 96px;
+  border: 1px solid var(--rs-line);
+  border-radius: 9px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  padding: 6px 8px;
+}
