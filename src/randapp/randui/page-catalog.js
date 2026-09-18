@@ -16,6 +16,7 @@ export const RANDUI_PAGE_CATALOG = Object.freeze({
   supplies: page({ id:'supplies', domain:'supplies', pageType:'operational', mobilePriority:true, capabilities:['area-floor-context','request-list','delivery-state'] }),
   interventions: page({ id:'interventions', domain:'maintenance', pageType:'list-detail', capabilities:['filters','detail','resolution'] }),
   inventory: page({ id:'inventory', domain:'warehouse', pageType:'management', capabilities:['catalog','stock','movements','audit'] }),
+  task: page({ id:'task', domain:'operations', pageType:'operational', mobilePriority:true, capabilities:['reminders','alerts'] }),
   'my-work': page({ id:'my-work', domain:'operations', pageType:'operational', mobilePriority:true, capabilities:['assigned-work','status','resolution'] }),
   'planning-work': page({ id:'planning-work', domain:'planning', pageType:'planning', capabilities:['timeline','create','detail'] }),
   'planning-sale': page({ id:'planning-sale', domain:'planning', pageType:'planning', capabilities:['timeline','create','detail'] }),
