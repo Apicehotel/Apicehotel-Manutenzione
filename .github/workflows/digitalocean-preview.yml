@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch, tag or commit to deploy to Ocean preview'
+        description: 'Branch to deploy to the fixed Ocean preview app'
         required: true
         default: 'main'
 
@@ -22,6 +22,7 @@ concurrency:
 
 env:
   PREVIEW_REF: ${{ github.event.pull_request.head.sha || inputs.ref }}
+  OCEAN_PREVIEW_BRANCH: ${{ github.head_ref || inputs.ref }}
 
 jobs:
   verify:
@@ -84,13 +85,12 @@ jobs:
       - name: RandOps heartbeat start
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
-      - name: Deploy controlled preview to existing DigitalOcean app
+      - name: Deploy fixed RandUI preview app
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           print_build_logs: "true"
           print_deploy_logs: "true"
-          deploy_pr_preview: "true"
 
       - name: RandOps heartbeat success
         if: success()
