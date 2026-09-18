@@ -36,27 +36,22 @@ test('mobile Home widget grid stays inside its container without negative gutter
 })
 
 
-test('mobile head bar follows the canonical RandUI sticky-header contract', () => {
-  assert.match(shellCss, /\.rs-header\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*0;/)
-  assert.doesNotMatch(shellCss, /--rs-headbar-live-h/)
-  assert.doesNotMatch(shellCss, /padding-top:\s*calc\(var\(--rs-headbar-live-h\)/)
-  assert.match(shellCss, /@media \(max-width: 1023px\)[\s\S]*?\.rs-sidebar\s*\{\s*display:\s*none;/)
-})
 
 
-test('shell does not measure or duplicate sticky header geometry', async () => {
+
+
+
+
+test('mobile head bar is viewport-fixed with a measured DOM spacer', async () => {
   const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
-  assert.doesNotMatch(shell, /ResizeObserver/)
-  assert.doesNotMatch(shell, /--rs-headbar-live-h/)
-  assert.match(shell, /<header className="rs-header rs-header--operational">/)
-})
-
-
-test('final RandUI layer hardens sticky head navigation on mobile and tablet', async () => {
   const foundation = await readFile(new URL('../src/randapp/randui/foundation.css', import.meta.url), 'utf8')
-  assert.match(foundation, /Canonical sticky head-nav lock/)
-  assert.match(foundation, /@media \(max-width: 1199px\)/)
-  assert.match(foundation, /\.rs-header\.rs-header--operational\s*\{[\s\S]*?position:\s*sticky !important;[\s\S]*?top:\s*0 !important;/)
-  assert.match(foundation, /align-self:\s*start/)
-  assert.match(foundation, /\.rs-root,[\s\S]*?overflow:\s*visible/)
+  assert.match(shell, /const headerRef = useRef\(null\)/)
+  assert.match(shell, /const \[headerHeight, setHeaderHeight\] = useState\(0\)/)
+  assert.match(shell, /new ResizeObserver\(sync\)/)
+  assert.match(shell, /<header ref=\{headerRef\} className="rs-header rs-header--operational">/)
+  assert.match(shell, /className="rs-header-spacer"/)
+  assert.match(shell, /style=\{\{ height: headerHeight \|\| undefined \}\}/)
+  assert.match(foundation, /Canonical fixed head-nav lock with real DOM spacer/)
+  assert.match(foundation, /position:\s*fixed !important/)
+  assert.match(foundation, /\.rs-header-spacer\s*\{[\s\S]*?min-height:/)
 })
