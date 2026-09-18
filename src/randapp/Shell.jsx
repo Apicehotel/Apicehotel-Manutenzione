@@ -37,6 +37,7 @@ const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
 const TaskHub = lazy(() => import('./operations/TaskHub.jsx'))
+const RandAIPage = lazy(() => import('./RandAIPage.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
@@ -225,7 +226,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'operations', 'task', 'planning-work', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'task', 'planning-work', 'randai', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -383,6 +384,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='interventions'?openItemRequest:null} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
+    if (view === 'randai') content = <RandAIPage />
     if (view === 'task') content = <TaskHub hotel={hotel} user={user} canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
@@ -417,10 +419,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
-    if (item.id === 'randai' || item.action === 'assistant') {
-      window.dispatchEvent(new CustomEvent('randai-toggle'))
-      return
-    }
     if (item.href) {
       window.location.assign(item.href)
       return
