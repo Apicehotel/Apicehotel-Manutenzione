@@ -159,23 +159,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
-  const headerRef = useRef(null)
-  const [headerHeight, setHeaderHeight] = useState(0)
   useEffect(() => initSystemInsetsBridge(), [])
-
-  useEffect(() => {
-    const header = headerRef.current
-    if (!header || typeof ResizeObserver === 'undefined') return undefined
-    const sync = () => setHeaderHeight(Math.ceil(header.getBoundingClientRect().height))
-    sync()
-    const observer = new ResizeObserver(sync)
-    observer.observe(header)
-    window.addEventListener('resize', sync)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', sync)
-    }
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -470,7 +454,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
         </aside>
 
-        <header ref={headerRef} className="rs-header rs-header--operational">
+        <header className="rs-header rs-header--operational">
           <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
             <img src={logoFor(hotel.id)} alt={hotel.name} />
             <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
@@ -484,7 +468,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
           </div>
         </header>
-        <div className="rs-header-spacer" aria-hidden="true" style={{ height: headerHeight || undefined }} />
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
         <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
