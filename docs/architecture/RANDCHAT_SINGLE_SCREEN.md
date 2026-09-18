@@ -1,14 +1,34 @@
 # RandChat single-screen viewport contract
 
-RandChat on phone/tablet must not make the RandApp document scroll vertically.
+RandChat on phone/tablet lives inside the canonical RandUI content viewport.
 
-The visible workspace is measured at runtime from the top edge of `rc-module` to the top edge of the fixed bottom navigation (or to the visual viewport bottom when the bottom navigation is hidden). This avoids hard-coded offsets that break with iPhone safe areas, Dynamic Island, UI-size scaling, orientation changes and the software keyboard.
+## Current contract
+
+The RandApp shell owns the device viewport. RandChat **does not** measure `window.innerHeight`, `visualViewport`, header height or bottom-nav geometry.
 
 While RandChat is mounted:
 
-- document scrolling is disabled;
-- `rs-content` drops its normal bottom navigation clearance;
-- tabs, conversation header, composer and RandApp bottom navigation stay on-screen;
-- only thread/group lists and the message history may scroll internally;
-- `visualViewport` resize/scroll events recompute the available height for keyboard/orientation changes;
-- leaving RandChat restores normal RandApp page scrolling.
+- document-level scrolling remains disabled by the RandUI shell;
+- `.rs-content` is the RandUI scroll/workspace owner;
+- RandChat fills `.rs-content` at 100% height;
+- tabs stay above the messenger workspace;
+- conversation header and composer stay inside the workspace and do not scroll away;
+- only the conversation list and message history scroll internally;
+- groups and encrypted DMs use the same shared thread-scroll engine;
+- opening a thread anchors to the latest message;
+- outgoing messages follow the bottom;
+- incoming messages auto-follow only when the user is already near the bottom;
+- when the user is reading older history, position is preserved and a “jump to latest” control is shown.
+
+## Why
+
+The previous RandChat implementation independently measured the browser viewport and bottom navigation. That became incorrect after RandUI changed the mobile/tablet shell so only the central content area owns scrolling.
+
+The current model removes competing geometry and matches the mature chat behavior used as reference from Telegram X without copying Telegram X source code.
+
+## Ownership
+
+- `src/randapp/chat/ChatGroups.jsx` — messenger mode switch and RandUI workspace binding.
+- `src/randapp/chat/useChatThreadScroll.js` — shared thread position / auto-follow behavior.
+- `src/randapp/chat/chat-viewport.css` — workspace geometry.
+- `src/randapp/chat/chat.css` — canonical RandChat v2 visual layout.
