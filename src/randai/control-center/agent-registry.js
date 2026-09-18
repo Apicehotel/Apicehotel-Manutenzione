@@ -8,16 +8,42 @@ export const AgentRuntimeStatus = Object.freeze({
   IDLE: 'IDLE',
 })
 
-export const RAND_AGENTS = Object.freeze([
-  { id: 'randai', name: 'RandAI', role: 'Coordinatore', autonomy: 'YELLOW' },
-  { id: 'randradar', name: 'RandRadar', role: 'Ricerca e valutazione repository', autonomy: 'GREEN' },
-  { id: 'randui', name: 'RandUI', role: 'Interfaccia e accessibilità', autonomy: 'YELLOW' },
-  { id: 'randtest', name: 'RandTest', role: 'Test e quality gate', autonomy: 'GREEN' },
-  { id: 'randsecure', name: 'RandSecure', role: 'Sicurezza e policy', autonomy: 'GREEN' },
-  { id: 'randops', name: 'RandOps', role: 'Deploy, worker e operazioni', autonomy: 'YELLOW' },
-  { id: 'randcore', name: 'RandCore', role: 'Governance e supervisione', autonomy: 'YELLOW' },
-  { id: 'randmind', name: 'RandMind', role: 'Memoria e conoscenza condivisa', autonomy: 'GREEN' },
+export const RAND_ECOSYSTEM_COMPONENTS = Object.freeze([
+  { id: 'randai', name: 'RandAI', kind: 'agent', runtime: true, role: 'Coordinatore', autonomy: 'YELLOW' },
+  { id: 'randbrain', name: 'RandBrain', kind: 'agent', runtime: true, role: 'Ragionamento e pianificazione', autonomy: 'YELLOW' },
+  { id: 'randcore', name: 'RandCore', kind: 'agent', runtime: true, role: 'Governance e supervisione', autonomy: 'YELLOW' },
+  { id: 'randmind', name: 'RandMind', kind: 'agent', runtime: true, role: 'Memoria e conoscenza condivisa', autonomy: 'GREEN' },
+  { id: 'randradar', name: 'RandRadar', kind: 'agent', runtime: true, role: 'Ricerca e valutazione repository', autonomy: 'GREEN' },
+  { id: 'randresearch', name: 'RandResearch', kind: 'agent', runtime: true, role: 'Ricerca e verifica fonti', autonomy: 'GREEN' },
+  { id: 'randsecure', name: 'RandSecure', kind: 'agent', runtime: true, role: 'Sicurezza e policy', autonomy: 'GREEN' },
+  { id: 'randtest', name: 'RandTest', kind: 'agent', runtime: true, role: 'Test e quality gate', autonomy: 'GREEN' },
+  { id: 'randops', name: 'RandOps', kind: 'agent', runtime: true, role: 'Deploy, worker e operazioni', autonomy: 'YELLOW' },
+  { id: 'randui', name: 'RandUI', kind: 'service', runtime: true, role: 'Interfaccia e accessibilità', autonomy: 'YELLOW' },
+
+  { id: 'randguide', name: 'RandGuide', kind: 'capability', runtime: false, role: 'Guide e procedure' },
+  { id: 'randaudio', name: 'RandAudio', kind: 'capability', runtime: false, role: 'Voce e audio' },
+  { id: 'randskills', name: 'RandSkills', kind: 'capability', runtime: false, role: 'Skill e routing capacità' },
+  { id: 'randcontrol', name: 'RandControl', kind: 'interface', runtime: false, role: 'Controllo amministrativo' },
+  { id: 'randcontext', name: 'RandContext', kind: 'service', runtime: false, role: 'Contesto operativo' },
+  { id: 'randvisual', name: 'RandVisual', kind: 'capability', runtime: false, role: 'Analisi e supporto visuale' },
+  { id: 'randarchitecture', name: 'RandArchitecture', kind: 'capability', runtime: false, role: 'Architettura e spazi' },
+  { id: 'randchat', name: 'RandChat', kind: 'adapter', runtime: false, role: 'Canale chat' },
+  { id: 'randgateway', name: 'RandGateway', kind: 'service', runtime: false, role: 'Ingresso canonico e routing' },
+  { id: 'randmcp', name: 'RandMCP', kind: 'adapter', runtime: false, role: 'Adapter MCP' },
+  { id: 'randeye', name: 'RandEye', kind: 'integration', runtime: false, role: 'Integrazione Eye; runtime dedicato non ancora rilevato' },
 ])
+
+export const RAND_AGENTS = Object.freeze(
+  RAND_ECOSYSTEM_COMPONENTS.filter((component) => component.runtime),
+)
+
+export const RAND_MODULES = Object.freeze(
+  RAND_ECOSYSTEM_COMPONENTS.filter((component) => !component.runtime),
+)
+
+export function getRandComponent(componentId) {
+  return RAND_ECOSYSTEM_COMPONENTS.find((component) => component.id === String(componentId || '').trim().toLowerCase()) || null
+}
 
 export function getAgentDefinition(agentId) {
   return RAND_AGENTS.find((agent) => agent.id === String(agentId || '').trim().toLowerCase()) || null
@@ -42,7 +68,7 @@ export function deriveAgentRuntimeStatus(runtime = {}, now = Date.now()) {
 
 export function normalizeAgentRuntime(runtime = {}, now = Date.now()) {
   const definition = getAgentDefinition(runtime.agentId || runtime.agent_id)
-  if (!definition) throw new TypeError('Unknown Rand agent')
+  if (!definition) throw new TypeError('Unknown Rand runtime unit')
 
   return {
     ...definition,
