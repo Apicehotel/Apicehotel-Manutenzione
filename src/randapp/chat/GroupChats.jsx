@@ -39,6 +39,8 @@ const displayHotels = (ids = []) => ids.map((id) => hotelById(id)?.name || id).j
 export default function GroupChats({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
   const fileRef = useRef(null)
+  const messagesEndRef = useRef(null)
+  const lastMessageCountRef = useRef(0)
   const [groups, setGroups] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [messages, setMessages] = useState([])
@@ -96,6 +98,20 @@ export default function GroupChats({ user, hotel }) {
 
   useEffect(() => { loadGroups().catch((e) => setError(e.message || 'Errore caricamento chat')) }, [loadGroups])
   useEffect(() => { loadSelected().catch((e) => setError(e.message || 'Errore caricamento gruppo')) }, [loadSelected])
+  useEffect(() => {
+    lastMessageCountRef.current = 0
+  }, [selectedId])
+
+  useEffect(() => {
+    const shouldScroll = Boolean(selectedId) && (lastMessageCountRef.current === 0 || messages.length >= lastMessageCountRef.current)
+    lastMessageCountRef.current = messages.length
+    if (!shouldScroll) return
+    const frame = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [selectedId, messages.length])
+
   useEffect(() => {
     if (!selectedId) return undefined
     const unsubscribeChat = subscribeChatGroup(selectedId, {
@@ -240,6 +256,7 @@ export default function GroupChats({ user, hotel }) {
               </article>
             })}
             {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
+            <div ref={messagesEndRef} className="rc-messages__end" aria-hidden="true" />
           </div>
           <form className="rc-composer rc-composer--media" onSubmit={send}>
             <label className="rc-file-button" title="Allega foto, video, audio o documento">＋<input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} /></label>
