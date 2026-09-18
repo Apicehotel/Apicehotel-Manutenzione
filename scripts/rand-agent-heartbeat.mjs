@@ -1,9 +1,9 @@
-const AGENTS = new Set(['randai','randradar','randui','randtest','randsecure','randops','randcore','randmind'])
+const AGENTS = new Set(['randai','randbrain','randcore','randmind','randradar','randresearch','randsecure','randtest','randops','randui'])
 
 export async function writeAgentHeartbeat({ supabase, agentId, status = 'IDLE', taskId = null, activity = null, detail = null, hotelId = null, metadata = {} } = {}) {
   const id = String(agentId || '').trim().toLowerCase()
   if (!supabase?.from) throw new TypeError('Supabase client is required')
-  if (!AGENTS.has(id)) throw new TypeError('Unknown Rand agent')
+  if (!AGENTS.has(id)) throw new TypeError('Unknown Rand runtime unit')
   if (!['RUNNING','WAITING_APPROVAL','ERROR','OFFLINE','IDLE'].includes(status)) throw new TypeError('Invalid agent status')
   const now = new Date().toISOString()
   const { data: current, error: readError } = await supabase.from('randcore_agent_runtime').select('desired_state').eq('agent_id', id).maybeSingle()
