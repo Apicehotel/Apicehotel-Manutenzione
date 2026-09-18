@@ -15,7 +15,7 @@ import {
   saveSupplyProduct,
   subscribeSupplyRequests,
 } from '../supply-data.js'
-import { Button, Icon, Sheet } from './ui.jsx'
+import { Button, Icon } from './ui.jsx'
 import './supply-requests.css'
 
 const CATEGORY_LABEL = { minibar: 'Minibar', consumo: 'Consumo' }
