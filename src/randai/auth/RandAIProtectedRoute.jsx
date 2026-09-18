@@ -5,6 +5,7 @@ import { changeRandAIPassword, createRandAIUser, isValidRandAIPassword, isValidR
 import './randai-auth.css'
 
 const RandAIControlCenter=lazy(()=>import('../control/RandAIControlCenter.jsx'))
+const RandAILive=lazy(()=>import('../live/RandAILive.jsx'))
 const ALL_HOTELS=HOTELS.map((hotel)=>hotel.id)
 
 function Login({onReady}){
@@ -26,7 +27,7 @@ function AccessManager({open,onClose,currentUser}){
   return <div className="ra-modal-backdrop" onMouseDown={(e)=>{if(e.target===e.currentTarget)onClose()}}><section className="ra-modal"><header><div><small>ACCESSI RANDAI</small><h2>Utenti autorizzati</h2></div><button onClick={onClose} aria-label="Chiudi">×</button></header><div className="ra-columns"><div><h3>Nuovo utente</h3><form onSubmit={create} className="ra-form"><label>Nome<input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Nome visualizzato"/></label><label>Username<input autoComplete="off" value={username} onChange={(e)=>setUsername(e.target.value.replace(/[^A-Za-z0-9._-]/g,'').slice(0,32))} placeholder="es. mario"/></label><label>Password iniziale<input type="password" autoComplete="new-password" value={password} onChange={(e)=>setPassword(e.target.value.replace(/[^A-Za-z0-9]/g,'').slice(0,12))}/><span>6–12 caratteri alfanumerici. Non viene proposta alcuna password predefinita.</span></label><fieldset><legend>Strutture</legend>{HOTELS.map((hotel)=><label className="ra-check" key={hotel.id}><input type="checkbox" checked={hotels.includes(hotel.id)} onChange={()=>toggleHotel(hotel.id)}/>{hotel.name}</label>)}</fieldset><button className="ra-primary" disabled={busy}>Crea utente RandAI</button></form><h3>La mia password</h3><form onSubmit={change} className="ra-form"><label>Nuova password<input type="password" autoComplete="new-password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value.replace(/[^A-Za-z0-9]/g,'').slice(0,12))} placeholder="6–12 caratteri"/></label><button disabled={busy||!newPassword}>Cambia password</button></form></div><div><h3>Utenti attivi</h3><div className="ra-users">{users.map((user)=><article key={user.id}><div><strong>{user.name}</strong><span>@{user.username}</span></div><small>{(user.hotels||[]).map((id)=>HOTELS.find((h)=>h.id===id)?.short||id).join(' · ')}</small>{user.must_change_password&&<em>Password iniziale</em>}</article>)}{!busy&&!users.length&&<p>Nessun utente RandAI disponibile.</p>}</div><div className="ra-current">Sessione: <strong>{currentUser?.name||'RandAI'}</strong></div></div></div>{notice&&<div className="ra-notice">{notice}</div>}</section></div>
 }
 
-export default function RandAIProtectedRoute(){
+export default function RandAIProtectedRoute({mode='control'}){
   const [state,setState]=useState({loading:true,allowed:false,user:null}),[manage,setManage]=useState(false)
   const check=useCallback(async()=>{if(!supabase){setState({loading:false,allowed:false,user:null});return}const {data}=await supabase.auth.getUser();const user=data?.user;if(!user){setState({loading:false,allowed:false,user:null});return}const {data:memberships}=await supabase.from('hotel_memberships').select('hotel_id,role,active,can_access_admin').eq('auth_user_id',user.id).eq('active',true).eq('role','RandAI').eq('can_access_admin',true);if(!memberships?.length){setState({loading:false,allowed:false,user:null});return}const {data:profile}=await supabase.from('profiles').select('display_name').eq('auth_user_id',user.id).maybeSingle();setState({loading:false,allowed:true,user:{id:user.id,name:profile?.display_name||'RandAI',hotels:memberships.map((x)=>x.hotel_id)}})},[])
   useEffect(()=>{check()},[check])
@@ -34,5 +35,6 @@ export default function RandAIProtectedRoute(){
   const logout=async()=>{await signOutRandAI();setState({loading:false,allowed:false,user:null})}
   if(state.loading)return <div className="ra-gate"><div className="ra-loading">Controllo credenziali RandAI…</div></div>
   if(!state.allowed)return <Login onReady={ready}/>
-  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">Caricamento Control Center…</div></div>}><RandAIControlCenter/></Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
+  const live=mode==='live'
+  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">{live?'Caricamento RandAILive…':'Caricamento Control Center…'}</div></div>}>{live?<RandAILive/>:<RandAIControlCenter/>}</Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
 }

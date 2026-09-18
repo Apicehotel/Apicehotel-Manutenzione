@@ -22,3 +22,13 @@ test('RandAILive contains all ten canonical runtime agents',()=>{
   const live=fs.readFileSync('src/randai/live/RandAILive.jsx','utf8')
   for(const id of ['randai','randbrain','randcore','randmind','randradar','randresearch','randsecure','randtest','randops','randui']) assert.match(live,new RegExp(id))
 })
+
+test('RandAILive stays inside RandApp and uses the RandAI access gate',()=>{
+  const main=fs.readFileSync('src/main.jsx','utf8')
+  const gate=fs.readFileSync('src/randai/auth/RandAIProtectedRoute.jsx','utf8')
+  assert.match(main,/RandAIProtectedRoute mode="live"/)
+  assert.doesNotMatch(main,/lazy\(\(\) => import\('\.\/randai\/live\/RandAILive\.jsx'\)\)/)
+  assert.match(gate,/mode='control'/)
+  assert.match(gate,/mode==='live'/)
+  assert.match(gate,/RandAILive/)
+})

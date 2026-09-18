@@ -40,7 +40,6 @@ const TechnicianDispatchPortal = lazy(() => import('./randapp/TechnicianDispatch
 const PublicIssueView = lazy(() => import('./public-issue-view.jsx'))
 const NtfyShortLink = lazy(() => import('./randapp/ntfy/NtfyShortLink.jsx'))
 const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
-const RandAILive = lazy(() => import('./randai/live/RandAILive.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const technicianDispatchMatch = /^\/tecnici-esterni\/?$/.test(window.location.pathname)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
@@ -77,7 +76,7 @@ createRoot(document.getElementById('root')).render(
       : publicIssueMatch ? <Suspense fallback={<RouteFallback />}><PublicIssueView id={publicIssueMatch[1]} /></Suspense>
       : ntfyShortMatch ? <Suspense fallback={<RouteFallback />}><NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} /></Suspense>
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
-      : randaiLiveMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAILive…" dark />}><RandAILive /></Suspense>
+      : randaiLiveMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAILive…" dark />}><RandAIProtectedRoute mode="live" /></Suspense>
       : randuiV2PreviewMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandUI v2…" />}><RandUiV2Preview /></Suspense>
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
   </AppErrorBoundary></React.StrictMode>,
