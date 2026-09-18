@@ -2,68 +2,45 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const entry = readFileSync(new URL('../src/randapp/chat/ChatGroups.jsx', import.meta.url), 'utf8')
-const groups = readFileSync(new URL('../src/randapp/chat/GroupChats.jsx', import.meta.url), 'utf8')
-const dms = readFileSync(new URL('../src/randapp/chat/DirectMessages.jsx', import.meta.url), 'utf8')
-const scrollEngine = readFileSync(new URL('../src/randapp/chat/useChatThreadScroll.js', import.meta.url), 'utf8')
-const viewportCss = readFileSync(new URL('../src/randapp/chat/chat-viewport.css', import.meta.url), 'utf8')
-const chatCss = readFileSync(new URL('../src/randapp/chat/chat.css', import.meta.url), 'utf8')
+const chat = readFileSync(new URL('../src/randapp/chat/RandChat.jsx', import.meta.url), 'utf8')
+const css = readFileSync(new URL('../src/randapp/chat/randchat-next.css', import.meta.url), 'utf8')
+const shell = readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
 const chatData = readFileSync(new URL('../src/randapp/chat/chat-data.js', import.meta.url), 'utf8')
 
-test('RandChat inherits the canonical RandUI viewport without measuring window geometry', () => {
-  assert.doesNotMatch(entry, /window\.visualViewport/)
-  assert.doesNotMatch(entry, /--rc-viewport-h/)
-  assert.doesNotMatch(entry, /window\.scrollTo/)
-  assert.match(entry, /classList\.add\('rs-content--randchat'\)/)
-  assert.match(viewportCss, /\.rs-content\.rs-content--randchat\s*\{[^}]*height:\s*100%/is)
-  assert.match(viewportCss, /\.rc-module\s*\{[^}]*height:\s*100%/is)
+test('Shell mounts only the replacement RandChat runtime', () => {
+  assert.match(shell, /import\('\.\/chat\/RandChat\.jsx'\)/)
+  assert.doesNotMatch(shell, /ChatGroups\.jsx/)
 })
 
-test('mobile RandChat reserves bottom navigation space so the composer stays visible', () => {
-  assert.match(viewportCss, /padding-bottom:\s*calc\(var\(--rs-nav-h\) \+ var\(--rs-adaptive-safe-bottom\) \+ 8px\)\s*!important/i)
-  assert.match(viewportCss, /\.rc-module \.rc-messages,[\s\S]*?overflow-y:\s*auto/is)
-  assert.match(viewportCss, /overscroll-behavior:\s*contain/i)
+test('replacement messenger separates conversation list and thread', () => {
+  assert.match(chat, /rnc-root--thread/)
+  assert.match(chat, /rnc-list-screen/)
+  assert.match(chat, /rnc-thread/)
+  assert.match(chat, /backToList/)
 })
 
-test('opening a conversation removes list tabs and switches RandChat into thread mode', () => {
-  assert.match(entry, /const \[threadOpen, setThreadOpen\] = useState\(false\)/)
-  assert.match(entry, /rc-module--thread-open/)
-  assert.match(entry, /!threadOpen && <nav className="rc-module-tabs"/)
-  assert.match(groups, /onConversationOpenChange\?\.\(Boolean\(selected\)\)/)
-  assert.match(dms, /onConversationOpenChange\?\.\(Boolean\(selected\)\)/)
+test('thread is a physical header-history-composer grid', () => {
+  assert.match(css, /\.rnc-thread\s*\{[\s\S]*?grid-template-rows:\s*auto auto minmax\(0, 1fr\) auto;/)
+  assert.match(css, /\.rnc-messages\s*\{[\s\S]*?grid-row:\s*3;[\s\S]*?overflow-y:\s*auto;/)
+  assert.match(css, /\.rnc-composer\s*\{[\s\S]*?grid-row:\s*4;/)
 })
 
-test('thread chrome and message actions are contextual instead of permanent toolbars', () => {
-  assert.match(groups, /rc-thread-menu-trigger/)
-  assert.match(groups, /rc-message-menu-trigger/)
-  assert.match(dms, /rc-thread-menu-trigger/)
-  assert.match(dms, /rc-message-menu-trigger/)
-  assert.match(chatCss, /RandChat v3/)
-  assert.match(chatCss, /\.rc-thread-menu\s*\{/)
-  assert.match(chatCss, /\.rc-message-menu\s*\{/)
+test('message and thread actions are contextual', () => {
+  assert.match(chat, /rnc-message-menu-trigger/)
+  assert.match(chat, /rnc-message-menu/)
+  assert.match(chat, /rnc-menu-wrap/)
+  assert.match(chat, /rnc-menu/)
 })
 
-test('Telegram-style smart thread scrolling is shared by groups and encrypted DMs', () => {
-  assert.match(scrollEngine, /distanceFromBottom <= 96/)
-  assert.match(scrollEngine, /ownLatest/)
-  assert.match(scrollEngine, /scrollToLatest/)
-  assert.match(scrollEngine, /markOutgoing/)
-  assert.match(groups, /useChatThreadScroll/)
-  assert.match(dms, /useChatThreadScroll/)
-  assert.match(groups, /className="rc-jump-bottom"/)
-  assert.match(dms, /className="rc-jump-bottom"/)
-  assert.match(chatCss, /\.rc-jump-bottom\s*\{/)
+test('replacement runtime keeps groups and E2EE directs', () => {
+  assert.match(chat, /fetchChatGroups/)
+  assert.match(chat, /fetchDmMessages/)
+  assert.match(chat, /sendChatMessage/)
+  assert.match(chat, /sendDmMessage/)
+  assert.match(chat, /ensureRegisteredDmDevice/)
 })
 
-test('group message window is the latest chronological block', () => {
+test('group message window loads latest messages then restores chronological order', () => {
   assert.match(chatData, /order\('created_at', \{ ascending: false \}\)/)
   assert.match(chatData, /return \(data \|\| \[\]\)\.reverse\(\)/)
-})
-
-
-test('mobile composer is a physical third conversation row and cannot scroll away', () => {
-  assert.match(chatCss, /RandChat v4/)
-  assert.match(chatCss, /\.rc-module--thread-open \.rc-conversation\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/)
-  assert.match(chatCss, /\.rc-module--thread-open \.rc-messages\s*\{[\s\S]*?grid-row:\s*2;[\s\S]*?overflow-y:\s*auto;/)
-  assert.match(chatCss, /\.rc-module--thread-open \.rc-composer\s*\{[\s\S]*?grid-row:\s*3;[\s\S]*?position:\s*relative !important;/)
 })
