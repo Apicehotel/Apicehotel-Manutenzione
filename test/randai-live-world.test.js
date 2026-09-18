@@ -77,3 +77,12 @@ test('React shell retains follow selection while melonJS owns camera follow',()=
   assert.match(game,/viewport\.follow/)
   assert.match(game,/viewport\.unfollow/)
 })
+
+test('melonJS boot race is guarded before viewport and world exist',()=>{
+  const game=fs.readFileSync('src/randai/live/game/MelonHotelGame.js','utf8')
+  assert.match(game,/setIssues\(v\)\{this\.issues=v\|\|\[\];if\(this\.app\)this\.syncClients\(\)\}/)
+  assert.match(game,/setFollow\(id\)\{this\.followId=id\|\|null;if\(this\.app\)this\.applyFollow\(\)\}/)
+  assert.match(game,/if\(!this\.app\?\.viewport\)return/)
+  assert.match(game,/if\(!this\.app\)return/)
+  assert.match(game,/this\.syncClients\(\)\n  this\.applyFollow\(\)/)
+})
