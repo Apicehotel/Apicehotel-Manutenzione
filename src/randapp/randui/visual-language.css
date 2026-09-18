@@ -371,3 +371,76 @@
 @media (prefers-reduced-motion: reduce) {
   .rs-randui-choice { transition: none; }
 }
+
+
+.rs-operational-choice__count {
+  margin-left: auto;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--rand-surface-3);
+  color: var(--rand-text-primary);
+  font-size: .78rem;
+  font-weight: 800;
+}
+.rs-operational-choice__count + .rs-randui-choice__chevron { margin-left: 0; }
+
+.rs-operational-preview-grid {
+  width: 100%;
+}
+.rs-operational-preview {
+  padding: 0;
+  overflow: hidden;
+}
+.rs-operational-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px 8px;
+}
+.rs-operational-preview__head > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.rs-operational-preview__head .rs-icon { color: var(--rand-accent); }
+.rs-operational-preview__head small { color: var(--rand-text-muted); }
+.rs-operational-preview__list { display: grid; }
+.rs-operational-preview__row {
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 12px;
+  border: 0;
+  border-top: 1px solid var(--rand-border);
+  background: transparent;
+  color: var(--rand-text-primary);
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 18px;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+}
+.rs-operational-preview__row > .rs-icon { color: var(--rand-text-muted); }
+.rs-operational-preview__copy { min-width: 0; display: grid; gap: 2px; }
+.rs-operational-preview__copy strong,
+.rs-operational-preview__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-operational-preview__copy small { color: var(--rand-text-secondary); font-size: .73rem; }
+.rs-operational-preview__empty {
+  margin: 0;
+  padding: 12px;
+  border-top: 1px solid var(--rand-border);
+  color: var(--rand-text-muted);
+  font-size: .78rem;
+}
+@media (max-width: 767px) {
+  .rs-operational-preview-grid.rs-randui-grid--2 { grid-template-columns: minmax(0,1fr); }
+}
