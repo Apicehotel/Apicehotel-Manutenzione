@@ -137,3 +137,12 @@ test('mobile page headings collapse desktop flex basis', () => {
   assert.match(completion, /@media \(max-width: 767px\)[\s\S]*\.rs-page-title > div:first-child,[\s\S]*flex:\s*0 1 auto/)
   assert.match(completion, /\.rs-randui-local-header__copy[\s\S]*min-height:\s*0/)
 })
+
+
+test('all migrated page headers are globally content-sized on mobile', () => {
+  const layout = read('../src/randapp/randui/layout-v2.css')
+  assert.match(layout, /Global compact-header invariant/)
+  assert.match(layout, /flex:\s*0 0 auto !important/)
+  assert.match(layout, /justify-content:\s*flex-start !important/)
+  assert.match(layout, /\.rs-randui-local-header__copy[\s\S]*height:\s*auto !important/)
+})
