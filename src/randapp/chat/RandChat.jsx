@@ -62,6 +62,7 @@ export default function RandChat({ user, hotel }) {
   const [cryptoReady, setCryptoReady] = useState(false)
   const [showNewGroup, setShowNewGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupRetention, setNewGroupRetention] = useState(30)
   const [newRecipient, setNewRecipient] = useState('')
   const [showMembers, setShowMembers] = useState(false)
   const [inviteId, setInviteId] = useState('')
@@ -233,8 +234,9 @@ export default function RandChat({ user, hotel }) {
     setBusy(true)
     setError('')
     try {
-      const id = await createChatGroup({ hotelId: hotel.id, name, retentionDays: 30 })
+      const id = await createChatGroup({ hotelId: hotel.id, name, retentionDays: newGroupRetention })
       setNewGroupName('')
+      setNewGroupRetention(30)
       setShowNewGroup(false)
       await loadLists()
       setMode('groups')
@@ -407,6 +409,8 @@ export default function RandChat({ user, hotel }) {
       onToggleNewGroup={() => setShowNewGroup((value) => !value)}
       newGroupName={newGroupName}
       onNewGroupName={setNewGroupName}
+      newGroupRetention={newGroupRetention}
+      onNewGroupRetention={setNewGroupRetention}
       onCreateGroup={createGroupNow}
       cryptoReady={cryptoReady}
       directory={dmDirectory}
