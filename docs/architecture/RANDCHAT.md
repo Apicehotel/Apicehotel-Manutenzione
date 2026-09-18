@@ -71,8 +71,10 @@ Il composer è una riga fisica del thread. Non usa `position: fixed` rispetto al
 - invio con Enter protetto da composizione IME/Safari;
 - allegati;
 - menu contestuale messaggio;
-- Gruppi: Procedure, RandAI, Membri, retention 30/60 giorni, pin/conservazione;
-- Diretti: E2EE per dispositivo e retention 1/7/15 giorni.
+- Gruppi: `@procedura`, `@randai`, `@membri`, mention `@Nome_Membro`, pin/conservazione e gestione membri;
+- il menu `⋯` globale in alto nel thread è rimosso; restano solo azioni contestuali sui messaggi;
+- retention gruppi 30/60 giorni e DM 1/7/15 giorni restano contratti dati/backend, indipendenti dalla presenza del vecchio menu UI;
+- Diretti: E2EE per dispositivo.
 
 ## Stato
 
