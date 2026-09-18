@@ -264,7 +264,6 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
   const canCreate = canUser(user, 'supplies', 'create') || CREATE_ROLES.has(role)
   const canComplete = canUser(user, 'supplies', 'complete') || COMPLETE_ROLES.has(role)
   const canManage = canUser(user, 'supplies', 'manage') || role === 'admin'
-  const [open, setOpen] = useState(false)
   const [products, setProducts] = useState([])
   const [requests, setRequests] = useState([])
   const [floorContexts, setFloorContexts] = useState([])
@@ -320,7 +319,6 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
     return subscribeSupplyRequests(hotel.id, refresh)
   }, [canView, hotel?.id, refresh])
 
-  const pendingCount = useMemo(() => requests.reduce((total, request) => total + (request.supply_request_items || []).filter((item) => item.status === 'pending').length, 0), [requests])
   const resolve = async (itemId, status) => {
     setError('')
     try { await resolveSupplyItem(itemId, status); await refresh() }
@@ -343,13 +341,5 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
   )
 
   if (standalone) return content
-
-  return (
-    <>
-      <button type="button" className="rs-supply-launcher" onClick={() => setOpen(true)} data-testid="supply-launcher">
-        <Icon name="package" /><span>Rifornimenti</span>{pendingCount > 0 && <b>{pendingCount}</b>}
-      </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Rifornimenti">{content}</Sheet>
-    </>
-  )
+  return null
 }
