@@ -37,7 +37,7 @@ const fmtTime = (value) => {
 }
 const displayHotels = (ids = []) => ids.map((id) => hotelById(id)?.name || id).join(' · ')
 
-export default function GroupChats({ user, hotel }) {
+export default function GroupChats({ user, hotel, onConversationOpenChange }) {
   const currentUserId = user?.auth_user_id || user?.id
   const fileRef = useRef(null)
   const [groups, setGroups] = useState([])
@@ -59,6 +59,8 @@ export default function GroupChats({ user, hotel }) {
   const [inviteId, setInviteId] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
   const [draftMessage, setDraftMessage] = useState(null)
+  const [showThreadMenu, setShowThreadMenu] = useState(false)
+  const [actionMessageId, setActionMessageId] = useState(null)
 
   const selected = useMemo(() => groups.find((g) => g.id === selectedId) || null, [groups, selectedId])
   const me = useMemo(() => members.find((m) => m.auth_user_id === currentUserId) || null, [members, currentUserId])
@@ -87,7 +89,7 @@ export default function GroupChats({ user, hotel }) {
     if (!user?.chat_enabled) return
     const rows = await fetchChatGroups()
     setGroups(rows)
-    setSelectedId((current) => current && rows.some((g) => g.id === current) ? current : rows[0]?.id || null)
+    setSelectedId((current) => current && rows.some((g) => g.id === current) ? current : null)
   }, [user?.chat_enabled])
 
   const loadSelected = useCallback(async () => {
@@ -106,6 +108,7 @@ export default function GroupChats({ user, hotel }) {
 
   useEffect(() => { loadGroups().catch((e) => setError(e.message || 'Errore caricamento chat')) }, [loadGroups])
   useEffect(() => { loadSelected().catch((e) => setError(e.message || 'Errore caricamento gruppo')) }, [loadSelected])
+  useEffect(() => { onConversationOpenChange?.(Boolean(selected)) }, [selected, onConversationOpenChange])
   useEffect(() => {
     if (!selectedId) return undefined
     const unsubscribeChat = subscribeChatGroup(selectedId, {
@@ -226,9 +229,16 @@ export default function GroupChats({ user, hotel }) {
       <div className="rc-conversation">
         {!selected ? <div className="rc-empty"><h2>Seleziona un gruppo</h2><p>I gruppi sono aziendali, protetti da membership e permessi RandApp.</p></div> : <>
           <header className="rc-conversation__head">
-            <button className="rc-back" onClick={() => setSelectedId(null)}>‹</button>
-            <div><h2>{selected.name}</h2><small>{hotelById(selected.hotel_id)?.name || selected.hotel_id} · testo conservato {selected.retention_days} giorni</small></div>
-            <div className="rc-head-actions"><button onClick={() => setShowProcedures(true)}>📘 Procedura</button><button onClick={() => setShowAI(true)}>✨ RandAI</button><button className="rc-members-btn" onClick={openMembers}>{members.length || ''} membri</button></div>
+            <button className="rc-back" onClick={() => { setShowThreadMenu(false); setSelectedId(null) }}>‹</button>
+            <div className="rc-thread-title"><h2>{selected.name}</h2><small>{hotelById(selected.hotel_id)?.name || selected.hotel_id} · {members.length || 0} membri</small></div>
+            <div className="rc-thread-menu-wrap">
+              <button type="button" className="rc-thread-menu-trigger" aria-label="Azioni conversazione" aria-expanded={showThreadMenu} onClick={() => setShowThreadMenu((value) => !value)}>⋯</button>
+              {showThreadMenu && <div className="rc-thread-menu" role="menu">
+                <button type="button" onClick={() => { setShowThreadMenu(false); setShowProcedures(true) }}>📘 Procedure</button>
+                <button type="button" onClick={() => { setShowThreadMenu(false); setShowAI(true) }}>✨ RandAI</button>
+                <button type="button" onClick={() => { setShowThreadMenu(false); openMembers() }}>👥 Membri</button>
+              </div>}
+            </div>
           </header>
           {error && <div className="rc-error" role="alert">{error}</div>}
           <div ref={messagesRef} className="rc-messages" onScroll={handleMessagesScroll}>
@@ -244,9 +254,12 @@ export default function GroupChats({ user, hotel }) {
                 {procedure && <div className="rc-procedure-card"><b>📘 {procedure.title}</b><small>{procedure.category || 'Generale'} · v{procedureLink.procedure_version} · rischio {procedure.risk_level || 'normal'}</small><p>{procedure.summary}</p>{procedure.caution && <small>⚠️ {procedure.caution}</small>}</div>}
                 {media.map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} />)}
                 <div className="rc-message__actions">
-                  <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>
-                  {!procedure && message.body && <button className="rc-message__pin" onClick={() => setDraftMessage(message)}>Bozza procedura</button>}
-                  {canManage && <button className="rc-message__pin" onClick={() => togglePin(message)}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
+                  <button type="button" className="rc-message-menu-trigger" aria-label="Azioni messaggio" onClick={() => setActionMessageId((id) => id === message.id ? null : message.id)}>⋯</button>
+                  {actionMessageId === message.id && <div className="rc-message-menu">
+                    <button type="button" onClick={() => { setActionMessageId(null); setPromoteMessage(message) }}>Crea segnalazione</button>
+                    {!procedure && message.body && <button type="button" onClick={() => { setActionMessageId(null); setDraftMessage(message) }}>Bozza procedura</button>}
+                    {canManage && <button type="button" onClick={() => { setActionMessageId(null); togglePin(message) }}>{message.pinned_at ? 'Sblocca' : 'Conserva'}</button>}
+                  </div>}
                 </div>
               </article>
             })}
