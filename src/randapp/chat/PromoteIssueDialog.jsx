@@ -88,8 +88,8 @@ export default function PromoteIssueDialog({ open, onClose, user, hotel, source,
       {!canCreate && <div className="randchat-inline-error">Non hai il permesso di creare segnalazioni in questa struttura.</div>}
       <form className="randchat-form" onSubmit={submit}>
         <label>Camera o zona
-          <input list="rc-promote-locations" value={draft.location} placeholder="Es. 214 oppure Hall" onChange={(event) => setDraft((current) => ({ ...current, location: event.target.value }))} />
-          <datalist id="rc-promote-locations">{choices.map((item) => <option key={`${item.kind}-${item.value}`} value={item.value}>{item.kind}</option>)}</datalist>
+          <input list="randchat-promote-locations" value={draft.location} placeholder="Es. 214 oppure Hall" onChange={(event) => setDraft((current) => ({ ...current, location: event.target.value }))} />
+          <datalist id="randchat-promote-locations">{choices.map((item) => <option key={`${item.kind}-${item.value}`} value={item.value}>{item.kind}</option>)}</datalist>
         </label>
         {draft.location && !selectedLocation && <small className="randchat-inline-error">Scegli una camera o zona riconosciuta.</small>}
         <label>Descrizione
