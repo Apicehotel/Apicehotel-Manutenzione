@@ -10,11 +10,6 @@ Telegram X (`TGX-Android/Telegram-X`) viene usato esclusivamente come **riferime
 
 ### Architettura UI v2
 
-- `ChatGroups.jsx` possiede il passaggio Gruppi / Diretti.
-- `GroupChats.jsx` e `DirectMessages.jsx` mantengono i rispettivi contratti dati e sicurezza.
-- `useChatThreadScroll.js` è il motore condiviso per il comportamento thread stile Telegram.
-- `chat-viewport.css` aggancia RandChat al viewport canonico di RandUI senza misurare `window` o `visualViewport`.
-- `chat.css` è il solo layout visuale RandChat v2; i vecchi override stratificati sono stati sostituiti.
 - Il thread è l'unica area che scorre; header conversazione e composer restano nel workspace.
 - Gruppi e DM condividono lo stesso comportamento di scorrimento, incluso il pulsante “vai agli ultimi”.
 - Un messaggio inviato dall'utente porta al fondo; un messaggio ricevuto segue automaticamente solo se l'utente è già vicino al fondo. Se sta leggendo lo storico, la posizione viene preservata.
@@ -31,6 +26,29 @@ Il rebuild non modifica:
 - procedure e relative approvazioni;
 - collegamento esplicito Chat → Segnalazione;
 - policy RandAI sui gruppi e divieto di leggere automaticamente i DM E2EE.
+
+## Replacement runtime — 18 settembre 2026
+
+La precedente UI RandChat è stata **rimossa dal runtime e cancellata dal repository**. Non viene più caricata da RandApp.
+
+Runtime canonico attuale:
+
+- `src/randapp/chat/RandChat.jsx` — unica UI RandChat;
+- `src/randapp/chat/randchat-next.css` — unico layout visuale RandChat;
+- `src/randapp/chat/chat-data.js` — contratti dati gruppi;
+- `src/randapp/chat/dm-data.js` + moduli crypto — contratti DM E2EE;
+- componenti ausiliari Procedure/RandAI/Segnalazioni restano riusati dal nuovo runtime.
+
+File legacy rimossi:
+
+- `ChatGroups.jsx`
+- `GroupChats.jsx`
+- `DirectMessages.jsx`
+- `chat.css`
+- `chat-viewport.css`
+- `useChatThreadScroll.js`
+
+La nuova UI è stata riscritta da zero come messenger: lista conversazioni separata dal thread, header compatto, storico scrollabile, composer come riga fisica del thread e menu contestuali. Telegram X resta solo un riferimento di comportamento; il codice RandChat è originale.
 
 ## Stato
 
