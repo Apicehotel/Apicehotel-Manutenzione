@@ -54,14 +54,15 @@ test('visual language is owned by the final RandUI foundation', () => {
   }
 })
 
-test('all 24 catalogued pages inherit the shared no-dead-space vertical contract', () => {
-  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 24)
+test('all 25 catalogued pages inherit the shared no-dead-space vertical contract', () => {
+  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 25)
   const boundary = read('../src/randapp/randui/PageBoundary.jsx')
   const layout = read('../src/randapp/randui/layout-v2.css')
   assert.match(boundary, /import '\.\/layout-v2\.css'/)
   assert.match(layout, /\.rs-randui-page--migrated \.rs-randui-page__content > :first-child[\s\S]*min-height: 0;[\s\S]*height: auto;[\s\S]*flex: 0 0 auto;[\s\S]*align-self: start;/)
   assert.match(layout, /\.rs-content \.rs-randui-stack[\s\S]*grid-auto-rows: max-content/)
-  assert.doesNotMatch(layout, /\.rs-page-title/)
+  assert.match(layout, /Global compact-header invariant/)
+  assert.match(layout, /\.rs-page-title[\s\S]*flex:\s*0 0 auto !important/)
   assert.doesNotMatch(layout, /min-height:\s*(?:[3-9]\d\d|\d{4,})px/)
 })
 
