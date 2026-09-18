@@ -858,3 +858,262 @@
     max-width: 94%;
   }
 }
+
+
+/* RandChat v3 — chat-first mobile reconstruction.
+   List and thread are separate surfaces; an open thread behaves like a messenger,
+   not like an operational dashboard. */
+
+.rc-module--thread-open {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+
+.rc-thread-title {
+  min-width: 0;
+}
+
+.rc-thread-menu-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.rc-thread-menu-trigger,
+.rc-message-menu-trigger {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--rs-text);
+  cursor: pointer;
+}
+
+.rc-thread-menu-trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.rc-thread-menu-trigger:hover,
+.rc-thread-menu-trigger[aria-expanded='true'] {
+  background: var(--rs-surface-2);
+}
+
+.rc-thread-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: min(230px, 72vw);
+  overflow: hidden;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface);
+  box-shadow: 0 18px 44px rgba(0,0,0,.26);
+}
+
+.rc-thread-menu > button,
+.rc-thread-menu > label {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--rs-line);
+  background: transparent;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: .86rem;
+  text-align: left;
+}
+
+.rc-thread-menu > button {
+  cursor: pointer;
+}
+
+.rc-thread-menu > :last-child {
+  border-bottom: 0;
+}
+
+.rc-thread-menu .rc-dm-retention {
+  border: 0;
+  border-radius: 0;
+}
+
+.rc-thread-menu .rc-dm-retention select {
+  margin-left: auto;
+  color: var(--rs-text);
+}
+
+.rc-message {
+  position: relative;
+  padding-right: 30px;
+}
+
+.rc-message__meta {
+  padding-right: 2px;
+}
+
+.rc-message__actions {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  margin: 0;
+  display: block;
+}
+
+.rc-message-menu-trigger {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--rs-text-2);
+  font-size: 1rem;
+}
+
+.rc-message-menu-trigger:hover,
+.rc-message-menu-trigger:focus-visible {
+  background: color-mix(in srgb, var(--rs-surface-3) 70%, transparent);
+}
+
+.rc-message-menu {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  z-index: 12;
+  width: max-content;
+  min-width: 150px;
+  overflow: hidden;
+  border: 1px solid var(--rs-line);
+  border-radius: 12px;
+  background: var(--rs-surface);
+  box-shadow: 0 14px 34px rgba(0,0,0,.24);
+}
+
+.rc-message-menu button {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--rs-line);
+  background: transparent;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: .78rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rc-message-menu button:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .rc-module--thread-open {
+    height: 100%;
+  }
+
+  .rc-module--thread-open .rc-shell,
+  .rc-module--thread-open .rc-dm {
+    height: 100% !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .rc-module--thread-open .rc-conversation {
+    height: 100%;
+    display: flex;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .rc-conversation__head {
+    min-height: 58px;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .rc-thread-title h2 {
+    font-size: .98rem;
+  }
+
+  .rc-thread-title small {
+    font-size: .7rem;
+  }
+
+  .rc-messages {
+    flex: 1 1 0;
+    min-height: 0;
+    padding: 10px 8px 12px;
+    gap: 6px;
+  }
+
+  .rc-message {
+    max-width: 84%;
+    padding: 7px 30px 7px 10px;
+    border-radius: 15px 15px 15px 5px;
+    box-shadow: none;
+  }
+
+  .rc-message.own {
+    border-radius: 15px 15px 5px 15px;
+  }
+
+  .rc-message p {
+    margin-top: 3px;
+    font-size: .92rem;
+    line-height: 1.32;
+  }
+
+  .rc-message__meta {
+    font-size: .67rem;
+  }
+
+  .rc-composer {
+    position: relative;
+    z-index: 7;
+    min-height: 58px;
+    flex: 0 0 auto;
+    padding: 7px 8px;
+    background: color-mix(in srgb, var(--rs-surface) 98%, transparent);
+  }
+
+  .rc-composer__body textarea {
+    min-height: 40px;
+    max-height: 104px;
+    border-radius: 20px;
+    padding: 9px 12px;
+  }
+
+  .rc-file-button {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .rc-composer > button {
+    min-width: 54px;
+    min-height: 40px;
+    border-radius: 20px;
+    padding-inline: 11px;
+  }
+
+  .rc-jump-bottom {
+    right: 10px;
+    bottom: 66px;
+  }
+
+  .rc-thread-menu {
+    right: 0;
+    width: min(220px, 76vw);
+  }
+}
