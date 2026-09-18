@@ -48,3 +48,17 @@ Il comportamento segue il modello usato come riferimento da NextChat e Telegram 
 - allegati integrati nello stesso input panel.
 
 RandChat è per uso interno/non commerciale. NextChat è un riferimento React/layout con licenza MIT; Telegram X resta un riferimento comportamentale mobile. Il codice RandChat è implementazione RandUI originale.
+
+
+## Comandi e mention
+
+Nel composer dei gruppi:
+
+- `@procedura` apre il selettore Procedure;
+- `@randai` apre RandAI;
+- `@membri` apre la gestione membri;
+- `@Nome_Membro` inserisce una mention membro.
+
+Digitando `@` compare un picker contestuale sopra il composer. I tag inviati vengono evidenziati nelle bolle.
+
+Il menu `⋯` globale della testata conversazione è stato rimosso. I `⋯` sui singoli messaggi restano per le azioni contestuali.
