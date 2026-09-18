@@ -39,8 +39,10 @@ const displayHotels = (ids = []) => ids.map((id) => hotelById(id)?.name || id).j
 export default function GroupChats({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
   const fileRef = useRef(null)
+  const messagesRef = useRef(null)
   const messagesEndRef = useRef(null)
   const lastMessageCountRef = useRef(0)
+  const stickToBottomRef = useRef(true)
   const [groups, setGroups] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [messages, setMessages] = useState([])
@@ -60,6 +62,8 @@ export default function GroupChats({ user, hotel }) {
   const [inviteId, setInviteId] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
   const [draftMessage, setDraftMessage] = useState(null)
+  const [showJumpBottom, setShowJumpBottom] = useState(false)
+  const [unreadBelow, setUnreadBelow] = useState(0)
 
   const selected = useMemo(() => groups.find((g) => g.id === selectedId) || null, [groups, selectedId])
   const me = useMemo(() => members.find((m) => m.auth_user_id === currentUserId) || null, [members, currentUserId])
@@ -98,19 +102,52 @@ export default function GroupChats({ user, hotel }) {
 
   useEffect(() => { loadGroups().catch((e) => setError(e.message || 'Errore caricamento chat')) }, [loadGroups])
   useEffect(() => { loadSelected().catch((e) => setError(e.message || 'Errore caricamento gruppo')) }, [loadSelected])
+  const scrollToLatest = useCallback((behavior = 'auto') => {
+    stickToBottomRef.current = true
+    setShowJumpBottom(false)
+    setUnreadBelow(0)
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ block: 'end', behavior })
+    })
+  }, [])
+
   useEffect(() => {
     lastMessageCountRef.current = 0
+    stickToBottomRef.current = true
+    setShowJumpBottom(false)
+    setUnreadBelow(0)
   }, [selectedId])
 
   useEffect(() => {
-    const shouldScroll = Boolean(selectedId) && (lastMessageCountRef.current === 0 || messages.length >= lastMessageCountRef.current)
+    if (!selectedId) return
+    const previousCount = lastMessageCountRef.current
+    const added = Math.max(0, messages.length - previousCount)
+    const lastMessage = messages[messages.length - 1]
+    const ownLatest = lastMessage?.sender_user_id === currentUserId
+    const shouldFollow = previousCount === 0 || stickToBottomRef.current || ownLatest
+
     lastMessageCountRef.current = messages.length
-    if (!shouldScroll) return
-    const frame = requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [selectedId, messages.length])
+
+    if (shouldFollow) {
+      scrollToLatest(previousCount === 0 ? 'auto' : 'smooth')
+      return
+    }
+
+    if (added > 0) {
+      setUnreadBelow((count) => count + added)
+      setShowJumpBottom(true)
+    }
+  }, [selectedId, messages, currentUserId, scrollToLatest])
+
+  const handleMessagesScroll = useCallback(() => {
+    const node = messagesRef.current
+    if (!node) return
+    const distanceFromBottom = node.scrollHeight - node.scrollTop - node.clientHeight
+    const nearBottom = distanceFromBottom <= 96
+    stickToBottomRef.current = nearBottom
+    setShowJumpBottom(!nearBottom)
+    if (nearBottom) setUnreadBelow(0)
+  }, [])
 
   useEffect(() => {
     if (!selectedId) return undefined
@@ -145,6 +182,7 @@ export default function GroupChats({ user, hotel }) {
     const body = text.trim()
     const selectedFiles = Array.from(files || [])
     if ((!body && !selectedFiles.length) || !selectedId || busy) return
+    stickToBottomRef.current = true
     setBusy(true); setError('')
     let message = null
     let uploaded = []
@@ -236,7 +274,7 @@ export default function GroupChats({ user, hotel }) {
             <div className="rc-head-actions"><button onClick={() => setShowProcedures(true)}>📘 Procedura</button><button onClick={() => setShowAI(true)}>✨ RandAI</button><button className="rc-members-btn" onClick={openMembers}>{members.length || ''} membri</button></div>
           </header>
           {error && <div className="rc-error" role="alert">{error}</div>}
-          <div className="rc-messages">
+          <div ref={messagesRef} className="rc-messages" onScroll={handleMessagesScroll}>
             {messages.map((message) => {
               const sender = memberById.get(message.sender_user_id)
               const own = message.sender_user_id === currentUserId
@@ -258,6 +296,7 @@ export default function GroupChats({ user, hotel }) {
             {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
             <div ref={messagesEndRef} className="rc-messages__end" aria-hidden="true" />
           </div>
+          {showJumpBottom && <button type="button" className="rc-jump-bottom" onClick={() => scrollToLatest('smooth')} aria-label="Vai agli ultimi messaggi">↓{unreadBelow > 0 && <span>{unreadBelow > 99 ? '99+' : unreadBelow}</span>}</button>}
           <form className="rc-composer rc-composer--media" onSubmit={send}>
             <label className="rc-file-button" title="Allega foto, video, audio o documento">＋<input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} /></label>
             <div className="rc-composer__body"><textarea value={text} maxLength={8000} rows={1} placeholder={`Scrivi in #${selected.name}`} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !files.length) { e.preventDefault(); send(e) } }} />{files.length > 0 && <small>{files.length} allegat{files.length === 1 ? 'o' : 'i'} · max 20 MB ciascuno <button type="button" onClick={clearFiles}>Rimuovi</button></small>}</div>
