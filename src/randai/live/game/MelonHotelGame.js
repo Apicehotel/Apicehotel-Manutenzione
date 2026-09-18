@@ -91,11 +91,24 @@ export class RandMelonHotel{
    const [x,y]=HOMES[id];const a=new Agent(id,name,x+.5,y+.5,this.onAgent);this.agents.set(id,a);this.app.world.addChild(a,20)
   }
   this.app.world.addChild(new Controller(this),100)
+  this.syncClients()
+  this.applyFollow()
  }
  setRuntime(v){this.runtime=v||[]}
- setIssues(v){this.issues=v||[];this.syncClients()}
- setFollow(id){this.followId=id||null;for(const [aid,a] of this.agents)a.follow=aid===this.followId;if(this.followId){const a=this.agents.get(this.followId);if(a)this.app.viewport.follow(a,this.app.viewport.AXIS.BOTH)}else this.app.viewport.unfollow()}
+ setIssues(v){this.issues=v||[];if(this.app)this.syncClients()}
+ setFollow(id){this.followId=id||null;if(this.app)this.applyFollow()}
+ applyFollow(){
+  if(!this.app?.viewport)return
+  for(const [aid,a] of this.agents)a.follow=aid===this.followId
+  if(this.followId){
+   const a=this.agents.get(this.followId)
+   if(a)this.app.viewport.follow(a,this.app.viewport.AXIS.BOTH,0.1)
+  }else{
+   this.app.viewport.unfollow()
+  }
+ }
  syncClients(){
+  if(!this.app)return
   const ids=new Set(this.issues.map(i=>String(i.id)))
   for(const [id,c] of this.clients)if(!ids.has(id)){this.app.world.removeChild(c);c.destroy();this.clients.delete(id)}
   this.issues.forEach((issue,index)=>{const id=String(issue.id);let c=this.clients.get(id);if(!c){const zone=String(issue.stato)==='waiting'?'waiting':String(issue.stato)==='tecnico'?'service':'reception';const [x,y]=ZONES[zone];c=new Client(issue,x+(index%3),y+Math.floor(index/3)%2,this.onIssue);this.clients.set(id,c);this.app.world.addChild(c,15)}else c.issue=issue})
