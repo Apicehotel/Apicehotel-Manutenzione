@@ -1,4 +1,5 @@
 name: RandUI Ocean Preview
+# RandUI preview retry after shared concurrency lane cleared
 
 on:
   pull_request:
