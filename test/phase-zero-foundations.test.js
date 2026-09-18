@@ -19,17 +19,18 @@ test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   assert.match(architecture, /RandGateway.*Tool Gateway.*RandSecure.*HITL.*Action Gateway.*RandAudit/s)
 })
 
-test('Phase 0 separates the complete RandAI page from the quick header popup', () => {
+test('Phase 0 keeps the protected RandAI console separate from the in-app assistant action', () => {
   const main = read('src/main.jsx')
   const navigation = read('src/randapp/shell-navigation.js')
   const shell = read('src/randapp/Shell.jsx')
 
   assert.match(main, /randaiConsoleMatch/)
   assert.match(main, /<RandAIProtectedRoute \/>/)
-  assert.match(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
-  assert.match(shell, /window\.location\.assign\(item\.href\)/)
-  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(navigation, /id:\s*'randai'.*action:\s*'assistant'/s)
+  assert.doesNotMatch(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
+  assert.match(shell, /item\.id === 'randai' \|\| item\.action === 'assistant'/)
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+  assert.doesNotMatch(shell, /data-testid="header-randai"/)
 })
 
 test('Phase 0 freezes automatic production deploys and keeps Ocean preview-only', () => {
