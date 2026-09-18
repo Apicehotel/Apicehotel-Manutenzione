@@ -94,3 +94,25 @@ test('RandAILive v3 uses the chosen game stack without changing RandApp ownershi
   assert.equal(map.orientation,'orthogonal')
   assert.equal(map.layers.some((layer)=>layer.name==='zones'&&layer.type==='objectgroup'),true)
 })
+
+test('RandAILive follow drives the Phaser camera and mobile frame matches the game ratio',()=>{
+  const live=fs.readFileSync('src/randai/live/RandAILive.jsx','utf8')
+  const wrapper=fs.readFileSync('src/randai/live/game/RandAILiveGame.jsx','utf8')
+  const scene=fs.readFileSync('src/randai/live/game/RandHotelScene.js','utf8')
+  const css=fs.readFileSync('src/randai/live/randai-live.css','utf8')
+  assert.match(live,/selectedAgent={selectedAgent}/)
+  assert.match(wrapper,/randFollowAgent/)
+  assert.match(scene,/startFollow\(target/)
+  assert.match(scene,/stopFollow\(\)/)
+  assert.match(scene,/setZoom\(mobile\?1\.55:1\.18\)/)
+  assert.match(css,/\.rl-game-frame\{aspect-ratio:15\/11/)
+  assert.doesNotMatch(wrapper,/GRID ENGINE/)
+})
+
+test('RandAILive visual polish removes debug boxes and adds hotel atmosphere',()=>{
+  const scene=fs.readFileSync('src/randai/live/game/RandHotelScene.js','utf8')
+  assert.match(scene,/Reception desk with warm lamps/)
+  assert.match(scene,/Decorative plants and lounge lamps/)
+  assert.match(scene,/fillRoundedRect/)
+  assert.match(scene,/followRing/)
+})
