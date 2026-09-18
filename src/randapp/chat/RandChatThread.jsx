@@ -27,15 +27,12 @@ export default function RandChatThread({
   onOpenProcedures,
   onOpenAI,
   onOpenMembers,
-  onChangeGroupRetention,
-  onChangeDmRetention,
   onPromote,
   onDraftProcedure,
   onTogglePin,
 }) {
   const [text, setText] = useState('')
   const [files, setFiles] = useState([])
-  const [menuOpen, setMenuOpen] = useState(false)
   const [messageMenuId, setMessageMenuId] = useState(null)
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
@@ -53,7 +50,6 @@ export default function RandChatThread({
   useEffect(() => {
     setText('')
     setFiles([])
-    setMenuOpen(false)
     setMessageMenuId(null)
     setMentionOpen(false)
     setMentionQuery('')
@@ -182,29 +178,7 @@ export default function RandChatThread({
         <h2>{title}</h2>
         <small>{subtitle}</small>
       </div>
-      <div className="randchat-menu-wrap">
-        <button className="randchat-iconbtn" onClick={() => setMenuOpen((v) => !v)} aria-label="Menu conversazione" aria-expanded={menuOpen}>⋯</button>
-        {menuOpen && <div className="randchat-menu">
-          {mode === 'groups' ? <>
-            <button onClick={() => { setMenuOpen(false); onOpenMembers() }}>👥 Membri</button>
-            {canManageGroup && <label>Storico
-              <select value={activeGroup?.retention_days || 30} onChange={(e) => onChangeGroupRetention(Number(e.target.value))} disabled={busy}>
-                <option value={30}>30 giorni</option>
-                <option value={60}>60 giorni</option>
-              </select>
-            </label>}
-          </> : <>
-            <span className="randchat-menu__note">🔒 Firma e cifratura verificate sul dispositivo</span>
-            <label>Storico
-              <select value={activeThread?.retention_days || 7} onChange={(e) => onChangeDmRetention(Number(e.target.value))} disabled={busy}>
-                <option value={1}>1 giorno</option>
-                <option value={7}>7 giorni</option>
-                <option value={15}>15 giorni</option>
-              </select>
-            </label>
-          </>}
-        </div>}
-      </div>
+
     </header>
 
     <div className="randchat-thread__notices">
