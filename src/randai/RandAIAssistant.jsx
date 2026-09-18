@@ -98,9 +98,9 @@ function ProjectIntelligencePanel({ intelligence }) {
   )
 }
 
-export default function RandAIAssistant() {
+export default function RandAIAssistant({ embedded = false }) {
   const [session, setSession] = useState(loadSession())
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(embedded)
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState([])
   const [busy, setBusy] = useState(false)
@@ -120,7 +120,7 @@ export default function RandAIAssistant() {
   }, [])
 
   useEffect(() => {
-    setOpen(false)
+    setOpen(embedded)
     setMessages([])
     setQuery('')
     setBusy(false)
@@ -128,13 +128,14 @@ export default function RandAIAssistant() {
     audio.current?.stopSpeaking()
     setListening(false)
     setAudioNotice('')
-  }, [session?.hotelId, session?.userId])
+  }, [session?.hotelId, session?.userId, embedded])
 
   useEffect(() => {
+    if (embedded) return undefined
     const toggle = () => setOpen((value) => !value)
     window.addEventListener(OPEN_EVENT, toggle)
     return () => window.removeEventListener(OPEN_EVENT, toggle)
-  }, [])
+  }, [embedded])
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
@@ -223,12 +224,12 @@ export default function RandAIAssistant() {
   }
 
   return (
-    <div className={`randai ${open ? 'randai--open' : ''}`} data-testid="randai-root">
-      {open && (
-        <section className="randai__panel" role="dialog" aria-label="RandAI assistente manutenzione">
+    <div className={`randai ${open || embedded ? 'randai--open' : ''} ${embedded ? 'randai--embedded' : ''}`} data-testid={embedded ? "randai-embedded" : "randai-root"}>
+      {(open || embedded) && (
+        <section className="randai__panel" role={embedded ? "region" : "dialog"} aria-label="RandAI assistente manutenzione">
           <header className="randai__header">
             <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
-            <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>
+            {!embedded && <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>}
           </header>
 
           <div className="randai__messages" aria-live="polite">
