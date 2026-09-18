@@ -10,7 +10,6 @@ body.rs-randchat-active {
 .rs-content.rs-content--randchat {
   min-height: 0;
   height: 100%;
-  padding-bottom: 0 !important;
   overflow: hidden;
 }
 
@@ -67,6 +66,7 @@ body.rs-randchat-active {
     padding-top: var(--rs-page-pad-top);
     padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
     padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
+    padding-bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 8px) !important;
   }
 
   .rc-module,
@@ -80,5 +80,13 @@ body.rs-randchat-active {
 
   .rc-module .rc-messages {
     flex: 1 1 auto;
+  }
+}
+
+
+@media (max-width: 760px) {
+  .rc-module--thread-open {
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
   }
 }
