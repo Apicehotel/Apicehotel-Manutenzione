@@ -159,27 +159,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
-  const headerRef = useRef(null)
-
   useEffect(() => initSystemInsetsBridge(), [])
-
-  useEffect(() => {
-    const header = headerRef.current
-    if (!header || typeof ResizeObserver === 'undefined') return undefined
-    const syncHeaderHeight = () => {
-      const height = Math.ceil(header.getBoundingClientRect().height)
-      if (height > 0) document.documentElement.style.setProperty('--rs-headbar-live-h', `${height}px`)
-    }
-    syncHeaderHeight()
-    const observer = new ResizeObserver(syncHeaderHeight)
-    observer.observe(header)
-    window.addEventListener('resize', syncHeaderHeight)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', syncHeaderHeight)
-      document.documentElement.style.removeProperty('--rs-headbar-live-h')
-    }
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -474,7 +454,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
         </aside>
 
-        <header ref={headerRef} className="rs-header rs-header--operational">
+        <header className="rs-header rs-header--operational">
           <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
             <img src={logoFor(hotel.id)} alt={hotel.name} />
             <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
