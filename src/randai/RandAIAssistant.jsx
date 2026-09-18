@@ -229,10 +229,8 @@ export default function RandAIAssistant({ embedded = false }) {
     }
   }
 
-  return (
-    <div className={`randai ${open || embedded ? 'randai--open' : ''} ${embedded ? 'randai--embedded' : ''}`} data-testid={embedded ? "randai-embedded" : "randai-root"}>
-      {(open || embedded) && (
-        <section className="randai__panel" role={embedded ? "region" : "dialog"} aria-label="RandAI assistente manutenzione">
+  const assistantContent = (
+    <>
           {embedded ? (
             <div className="randai__embedded-toolbar" data-testid="randai-embedded-toolbar">
               <div className="randai__status">
@@ -380,6 +378,23 @@ export default function RandAIAssistant({ embedded = false }) {
             <button type="submit" disabled={!query.trim() || busy}>{busy ? 'Controllo…' : 'Chiedi'}</button>
           </form>
           {audioNotice && <small className="randai__audio-notice" role="status">{audioNotice}</small>}
+
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div className="randai-page-workspace" data-testid="randai-embedded">
+        {assistantContent}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`randai ${open ? 'randai--open' : ''}`} data-testid="randai-root">
+      {open && (
+        <section className="randai__panel" role="dialog" aria-label="RandAI assistente manutenzione">
+          {assistantContent}
         </section>
       )}
     </div>
