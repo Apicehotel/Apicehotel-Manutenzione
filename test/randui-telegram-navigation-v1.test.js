@@ -14,7 +14,7 @@ test('mobile primary navigation keeps Home central and RandAI far right', () => 
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /randai:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
-  assert.match(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
+  assert.match(navigation, /id:\s*'randai'.*action:\s*'assistant'/s)
   assert.doesNotMatch(navigation, /label:\s*'Altro'/)
   assert.match(css, /data-slot='3'/)
   assert.match(css, /data-slot='5'/)
@@ -43,12 +43,12 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('RandAI navbar opens the complete page while the header owns the quick popup', () => {
-  assert.match(shell, /if \(item\.href\)/)
-  assert.match(shell, /window\.location\.assign\(item\.href\)/)
-  assert.match(shell, /data-testid="header-randai"/)
+test('RandAI navbar opens the assistant directly and the duplicate header action is removed', () => {
+  assert.match(shell, /item\.id === 'randai' \|\| item\.action === 'assistant'/)
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
-  assert.match(css, /rs-header__randai--desktop/)
+  assert.doesNotMatch(shell, /data-testid="header-randai"/)
+  assert.doesNotMatch(shell, /CyberCatOrb/)
+  assert.doesNotMatch(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
 })
 
 test('Telegram visual layer is runtime-owned while navigation logic stays side-effect free', () => {
