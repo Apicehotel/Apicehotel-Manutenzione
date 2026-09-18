@@ -34,3 +34,10 @@ test('mobile Home widget grid stays inside its container without negative gutter
   assert.doesNotMatch(home, /rs-widget-grid-shell\{margin-inline:-/)
   assert.doesNotMatch(home, /rs-widget-grid-shell\{[^}]*width:calc\(100%\s*\+/)
 })
+
+
+test('mobile head bar stays fixed and content clears it including safe area', () => {
+  assert.match(shellCss, /\.rs-header\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?top:\s*0;[\s\S]*?left:\s*0;[\s\S]*?right:\s*0;/)
+  assert.match(shellCss, /min-height:\s*calc\(var\(--rs-header-h\) \+ var\(--rs-safe-top\)\)/)
+  assert.match(shellCss, /@media \(max-width: 1023px\)[\s\S]*?\.rs-content\s*\{[\s\S]*?padding-top:\s*calc\(var\(--rs-header-h\) \+ var\(--rs-safe-top\) \+ 16px\)/)
+})
