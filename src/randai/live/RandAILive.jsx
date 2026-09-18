@@ -82,7 +82,7 @@ export default function RandAILive({currentUser}){
 
     <section className="rl-layout">
       <div className="rl-world-wrap">
-        <RandAILiveGame runtime={board} issues={issues} onAgentSelect={setSelectedAgent} onIssueSelect={setSelectedIssue}/>
+        <RandAILiveGame runtime={board} issues={issues} selectedAgent={selectedAgent} onAgentSelect={setSelectedAgent} onIssueSelect={setSelectedIssue}/>
         <div className="rl-legend"><span>CLIENTI = segnalazioni reali</span><span>WANDER = vita libera</span><span>WORK = task reale</span><span>DONE = il cliente lascia l’hotel</span></div>
       </div>
 
