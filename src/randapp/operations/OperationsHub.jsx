@@ -1,30 +1,30 @@
 import { Icon } from '../ui.jsx'
-import { PageTitle, Stack, Surface } from '../randui/visual-primitives.jsx'
+import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 
-function DestinationRow({ icon, title, description, onClick, testId }) {
+function OperationalChoice({ icon, title, description, onClick, testId }) {
   return (
-    <button type="button" className="rs-telegram-destination" onClick={onClick} data-testid={testId}>
-      <span className="rs-telegram-destination__icon" aria-hidden="true"><Icon name={icon} /></span>
-      <span className="rs-telegram-destination__copy">
-        <b>{title}</b>
-        <small>{description}</small>
-      </span>
-      <span className="rs-telegram-destination__chevron" aria-hidden="true"><Icon name="chevronRight" /></span>
+    <button type="button" className="rs-randui-choice rs-operational-choice" onClick={onClick} data-testid={testId}>
+      <div className="rs-randui-choice__head">
+        <span className="rs-randui-choice__icon" aria-hidden="true"><Icon name={icon} /></span>
+        <strong>{title}</strong>
+        <span className="rs-randui-choice__chevron" aria-hidden="true">›</span>
+      </div>
+      <p className="rs-operational-choice__description">{description}</p>
     </button>
   )
 }
 
 export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
+  const visibleCount = Number(Boolean(canIssues)) + Number(Boolean(canInterventions))
   return (
-    <Stack gap="md" className="rs-operations-hub">
+    <Stack gap="sm" className="rs-operations-hub" data-testid="operations-hub">
       <PageTitle
-        eyebrow="RandApp"
         title="Operatività"
-        subtitle="Segnalazioni e interventi nello stesso punto, senza mescolare i relativi flussi."
+        subtitle="Segnalazioni e interventi nello stesso punto, con flussi separati e coerenti."
       />
-      <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
+      <Grid columns={visibleCount > 1 ? 2 : 1} gap="sm" className="rs-operational-choice-grid">
         {canIssues && (
-          <DestinationRow
+          <OperationalChoice
             icon="issues"
             title="Segnalazioni"
             description="Apri, filtra e crea segnalazioni operative."
@@ -33,7 +33,7 @@ export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
           />
         )}
         {canInterventions && (
-          <DestinationRow
+          <OperationalChoice
             icon="wrench"
             title="Interventi"
             description="Consulta assegnazioni, stato lavori e risoluzioni."
@@ -41,8 +41,7 @@ export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
             testId="operations-open-interventions"
           />
         )}
-      </Surface>
-      <p className="rs-telegram-hint">Il menu completo resta disponibile dal profilo in alto. Ogni voce continua a rispettare i permessi del ruolo.</p>
+      </Grid>
     </Stack>
   )
 }
