@@ -89,7 +89,7 @@
     "react-dom": "^19.1.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "4.6.2",
-    "melonjs": "20.7.0"
+    "melonjs": "20.6.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
