@@ -60,6 +60,42 @@ RandUI non può cambiare senza PR separata:
 
 Le pagine di dominio non devono creare una seconda shell, una seconda navbar o propri offset globali.
 
+
+### Eccezione canonica: RandChat
+
+RandChat non è una pagina standard RandUI: è un workspace interattivo a viewport pieno. Per questo la Shell applica un'eccezione esplicita e governata:
+
+- `view === 'chat'` bypassa `RandUiPageBoundary`;
+- `.rs-content--chat` possiede l'intero viewport centrale;
+- la shell riserva lo spazio della bottom nav;
+- RandChat gestisce internamente lista, thread e scroll;
+- nessun'altra pagina deve copiare questa eccezione senza una decisione architetturale separata.
+
+Runtime UI canonico RandChat:
+
+- `RandChat.jsx` — orchestrazione;
+- `RandChatList.jsx` — lista conversazioni;
+- `RandChatThread.jsx` — thread e composer;
+- `useRandChatScroll.js` — auto-scroll / detach / ritorno al fondo;
+- `randchat.css` — unico layout visuale.
+
+Layout:
+
+- desktop: `lista conversazioni | thread`;
+- mobile/tablet: `lista conversazioni → thread`;
+- thread: `header → avvisi → messaggi scrollabili → composer`.
+
+Il composer è una riga fisica del thread: non usa `fixed` o `absolute` rispetto al browser e non può scorrere via. Solo la cronologia messaggi possiede lo scroll interno.
+
+Comandi chat:
+
+- `@procedura` → Procedure;
+- `@randai` → RandAI;
+- `@membri` → membri;
+- `@Nome_Membro` → mention di un membro.
+
+Il menu `⋯` globale della testata thread non fa più parte del contratto RandUI; le azioni restano contestuali ai singoli messaggi.
+
 ## Navigazione primaria corrente
 
 La bottom nav operativa usa cinque destinazioni stabili:
@@ -197,6 +233,9 @@ I test RandUI devono proteggere almeno:
 - modalità Grande;
 - assenza di launcher globali rimossi;
 - RandAI page-native;
+- RandChat full-shell (`rs-content--chat`), lista/thread, composer persistente e scroll interno;
+- comandi `@procedura`, `@randai`, `@membri` e mention membri;
+- assenza del menu `⋯` globale della testata RandChat;
 - Chromium e WebKit.
 
 La CI generale resta il gate prima del merge.
