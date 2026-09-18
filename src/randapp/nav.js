@@ -11,6 +11,7 @@ const placementAllows = (config, user, itemId, wanted = null) => {
 const view = (module) => (user) => canUser(user, module, 'view')
 const create = (module) => (user) => canUser(user, module, 'create')
 const canSeeOperations = (user) => canUser(user, 'issues', 'view') || canUser(user, 'interventions', 'view')
+const canSeeTask = (user) => canUser(user, 'reminders', 'view') || canUser(user, 'urgent', 'view')
 
 export function buildNav(user, hotel, navigationConfig = null, placement = null) {
   if (!user) return []
@@ -26,6 +27,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'operativita', label: 'Operatività', items: [
         { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: canUser(user, 'issues', 'view') },
         { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: canUser(user, 'issues', 'create') },
+        { id: 'task', icon: 'check', label: 'Task', show: canSeeTask(user) },
         { id: 'my-work', icon: 'check', label: 'I miei lavori', show: canUser(user, 'interventions', 'view') },
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canUser(user, 'urgent', 'view') },
@@ -88,6 +90,7 @@ export const VIEW_GUARDS = {
   issues: view('issues'),
   chat: (u) => Boolean(u?.chat_enabled),
   interventions: view('interventions'),
+  task: canSeeTask,
   'my-work': view('interventions'),
   inventory: view('inventory'),
   supplies: view('supplies'),
