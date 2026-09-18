@@ -72,3 +72,14 @@ test('chat bypasses PageBoundary and owns the full shell viewport above bottom n
   assert.match(foundation, /RandChat full-shell content mode/)
   assert.match(foundation, /\.rs-content\.rs-content--chat\s*\{[\s\S]*?height:\s*100%;[\s\S]*?padding:\s*0 0 calc\(var\(--rs-nav-h\) \+ var\(--rs-adaptive-safe-bottom\)\) !important;/)
 })
+
+
+test('composer exposes @ commands and member tags instead of permanent procedure/AI toolbar actions', () => {
+  assert.match(thread, /@procedura/)
+  assert.match(thread, /@randai/)
+  assert.match(thread, /@membri/)
+  assert.match(thread, /replace\(\/\\s\+\/g, '_'\)/)
+  assert.match(thread, /randchat-mention-picker/)
+  assert.match(thread, /randchat-mention/)
+  assert.doesNotMatch(thread, />📘 Procedure<\/button>[\s\S]*?>✨ RandAI<\/button>/)
+})
