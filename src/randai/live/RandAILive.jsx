@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../supabase.js'
 import { HOTELS } from '../../config.js'
 import { buildAgentRuntimeBoard, agentStatusLabel } from '../control-center/agent-registry.js'
-import { clientState, issueIcon, zoneState } from './world-engine.js'
+import { zoneState } from './world-engine.js'
+import RandAILiveGame from './game/RandAILiveGame.jsx'
 import './randai-live.css'
 
 const TONES={randai:'#56b7ff',randbrain:'#b981ff',randcore:'#ffad42',randmind:'#64d98b',randradar:'#ff5c62',randresearch:'#7fc8ff',randsecure:'#ff6464',randtest:'#e8d84b',randops:'#4fdbe8',randui:'#ff74d3'}
@@ -12,36 +13,6 @@ function fmtTime(value){
   if(!value)return'—'
   const d=new Date(value)
   return Number.isNaN(d.getTime())?'—':d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
-}
-
-function RandSprite({agent,onSelect,selected}){
-  const p=agent.life
-  const tone=TONES[agent.id]||'#7dd3fc'
-  return <button className={`rl-agent rl-agent--${agent.status.toLowerCase()} rl-agent--${p.mode.toLowerCase()} ${selected?'is-selected':''}`}
-    style={{'--x':p.x+'%','--y':p.y+'%','--tone':tone}} onClick={()=>onSelect(agent.id)} aria-label={agent.name}>
-    <span className="rl-agent__bubble"><b>{p.action}</b><small>{p.label}</small></span>
-    <span className={`rl-avatar rl-avatar--${agent.id}`} aria-hidden="true">
-      <i className="rl-avatar__halo"/>
-      <i className="rl-avatar__head"><b/><b/></i>
-      <i className="rl-avatar__body">{GLYPHS[agent.id]}</i>
-      <i className="rl-avatar__arm a"/>
-      <i className="rl-avatar__arm b"/>
-      <i className="rl-avatar__leg a"/>
-      <i className="rl-avatar__leg b"/>
-    </span>
-    <span className="rl-agent__tag"><strong>{agent.name}</strong><small>{p.action}</small></span>
-  </button>
-}
-
-function ClientNpc({issue,index,onSelect}){
-  const p=clientState(issue,index)
-  const urgent=p.urgency==='alta'
-  return <button className={`rl-client rl-client--${p.urgency} rl-client--${String(issue.stato||'todo').toLowerCase()}`}
-    style={{'--x':p.x+'%','--y':p.y+'%'}} onClick={()=>onSelect(issue)}>
-    <span className="rl-client__bubble">{issueIcon(issue)}</span>
-    <span className="rl-client__person"><i/><b/><em/></span>
-    <span className="rl-client__label">{issue.camera||issue.categoria||'Segnalazione'}{urgent&&<b>URGENTE</b>}</span>
-  </button>
 }
 
 function useIssues(hotelId){
@@ -111,33 +82,7 @@ export default function RandAILive({currentUser}){
 
     <section className="rl-layout">
       <div className="rl-world-wrap">
-        <div className="rl-world">
-          <div className="rl-wall rl-wall--left"/>
-          <div className="rl-wall rl-wall--right"/>
-          <div className="rl-zone rl-brain"><b>RandBrain</b><small>PLAN · REASON</small></div>
-          <div className="rl-zone rl-cafe"><b>COFFEE</b><small>PAUSA · INCONTRI</small></div>
-          <div className="rl-elevators"><b>ELEVATORS</b><i/><i/><i/></div>
-          <div className="rl-zone rl-knowledge"><b>RandMind</b><small>KNOWLEDGE</small></div>
-          <div className="rl-zone rl-research"><b>RandResearch</b><small>EXPLORE · ANALYZE</small></div>
-          <div className="rl-zone rl-reception"><b>RECEPTION</b><small>NUOVE SEGNALAZIONI</small></div>
-          <div className="rl-core"><b>RandCore Hub</b><span>●</span><small>ORCHESTRATE · CONNECT</small></div>
-          <div className="rl-zone rl-secure"><b>RandSecure</b><small>PROTECT · MONITOR</small></div>
-          <div className="rl-zone rl-ops"><b>RandOps</b><small>OPERATE · SCALE</small></div>
-          <div className="rl-zone rl-ui"><b>RandUI</b><small>DESIGN · DELIGHT</small></div>
-          <div className="rl-zone rl-radar"><b>RandRadar</b><small>SCAN · DISCOVER</small></div>
-          <div className="rl-zone rl-test"><b>RandTest</b><small>VERIFY · IMPROVE</small></div>
-          <div className="rl-zone rl-service"><b>SERVICE</b><small>MANUTENZIONE</small></div>
-          <div className="rl-waiting">
-            <header><b>SALA ATTESA</b><small>SEGNALAZIONI IN ATTESA · {hotel?.name||hotelId}</small></header>
-            <div className="rl-sofas"><i/><i/><i/><i/><i/><i/><i/><i/></div>
-            <div className="rl-tables"><i/><i/><i/><i/></div>
-          </div>
-          <div className="rl-entrance"><b>INGRESSO</b></div>
-          <div className="rl-exit"><b>USCITA</b></div>
-
-          {issues.map((issue,index)=><ClientNpc key={issue.id} issue={issue} index={index} onSelect={setSelectedIssue}/>)}
-          {board.map(agent=><RandSprite key={agent.id} agent={agent} selected={selectedAgent===agent.id} onSelect={setSelectedAgent}/>)}
-        </div>
+        <RandAILiveGame runtime={board} issues={issues} onAgentSelect={setSelectedAgent} onIssueSelect={setSelectedIssue}/>
         <div className="rl-legend"><span>CLIENTI = segnalazioni reali</span><span>WANDER = vita libera</span><span>WORK = task reale</span><span>DONE = il cliente lascia l’hotel</span></div>
       </div>
 
