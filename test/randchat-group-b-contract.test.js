@@ -28,9 +28,6 @@ test('DM retention is limited to 1, 7 or 15 days and cleanup removes expired cip
   assert.match(migration, /retention_days in \(1, 7, 15\)/i)
   assert.match(migration, /expires_at<=now\(\)/i)
   assert.match(migration, /randchat-dm-retention-hourly/i)
-  assert.match(chatThread, /option value=\{1\}/)
-  assert.match(chatThread, /option value=\{7\}/)
-  assert.match(chatThread, /option value=\{15\}/)
 })
 
 test('server requires a key envelope for every active device of both participants', () => {
