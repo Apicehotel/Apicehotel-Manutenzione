@@ -2,6 +2,36 @@
 
 RandChat è il modulo di messaggistica interno di RandApp. Riusa identità, hotel e autorizzazione già esistenti: non introduce un secondo account utente.
 
+## RandChat v2 UI rebuild — 18 settembre 2026
+
+RandChat resta un modulo **interno all'organizzazione e non commerciale**. Il rebuild UI non cambia questo perimetro e non introduce una distribuzione esterna o un prodotto venduto.
+
+Telegram X (`TGX-Android/Telegram-X`) viene usato esclusivamente come **riferimento comportamentale** per le interazioni mature di una chat: ancoraggio all'ultimo messaggio, conservazione della posizione quando si legge lo storico, ritorno agli ultimi messaggi, composer persistente e separazione tra lista conversazioni e thread. Il codice GPL di Telegram X non viene copiato o incorporato: RandChat mantiene implementazione originale React/RandUI e i contratti dati esistenti.
+
+### Architettura UI v2
+
+- `ChatGroups.jsx` possiede il passaggio Gruppi / Diretti.
+- `GroupChats.jsx` e `DirectMessages.jsx` mantengono i rispettivi contratti dati e sicurezza.
+- `useChatThreadScroll.js` è il motore condiviso per il comportamento thread stile Telegram.
+- `chat-viewport.css` aggancia RandChat al viewport canonico di RandUI senza misurare `window` o `visualViewport`.
+- `chat.css` è il solo layout visuale RandChat v2; i vecchi override stratificati sono stati sostituiti.
+- Il thread è l'unica area che scorre; header conversazione e composer restano nel workspace.
+- Gruppi e DM condividono lo stesso comportamento di scorrimento, incluso il pulsante “vai agli ultimi”.
+- Un messaggio inviato dall'utente porta al fondo; un messaggio ricevuto segue automaticamente solo se l'utente è già vicino al fondo. Se sta leggendo lo storico, la posizione viene preservata.
+
+### Invarianti del rebuild
+
+Il rebuild non modifica:
+
+- RLS/RPC;
+- membership hotel o gruppo;
+- E2EE dei DM;
+- retention;
+- RandMedia;
+- procedure e relative approvazioni;
+- collegamento esplicito Chat → Segnalazione;
+- policy RandAI sui gruppi e divieto di leggere automaticamente i DM E2EE.
+
 ## Stato
 
 Il core RandChat è completato **9/9** nei Group A, B e C.
