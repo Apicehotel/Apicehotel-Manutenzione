@@ -19,14 +19,16 @@ test('context bridge publishes hotel actor and active screen without overwriting
   assert.match(bridge, /aria-current/)
 })
 
-test('RandAI stays a dedicated header action and is not mixed into contextual creation', async () => {
+test('RandAI stays a dedicated bottom assistant action and is not mixed into contextual creation', async () => {
   const launcher = await source('src/randapp/InsertLauncher.jsx')
   const shell = await source('src/randapp/Shell.jsx')
+  const navigation = await source('src/randapp/shell-navigation.js')
   const actions = await source('src/randapp/contextual-add.js')
   assert.doesNotMatch(launcher, /Chiedi a RandAI/)
   assert.doesNotMatch(actions, /id:\s*'randai'/)
-  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(navigation, /id:\s*'randai'.*action:\s*'assistant'/s)
   assert.match(shell, /randai-toggle/)
+  assert.doesNotMatch(shell, /header-randai/)
 })
 
 test('guidance backend consumes the published operational context', async () => {
