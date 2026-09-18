@@ -14,7 +14,6 @@ import {
   setChatGroupMemberRole,
   setChatMessagePinned,
   subscribeChatGroup,
-  updateChatGroup,
 } from './chat-data.js'
 import {
   ensureRegisteredDmDevice,
@@ -24,7 +23,6 @@ import {
   fetchDmThreads,
   openDmThread,
   sendDmMessage,
-  setDmRetention,
   subscribeDmThread,
 } from './dm-data.js'
 import {
@@ -304,33 +302,6 @@ export default function RandChat({ user, hotel }) {
     }
   }
 
-  const changeGroupRetention = async (days) => {
-    if (!activeGroup || !canManageGroup || busy) return
-    setBusy(true)
-    setError('')
-    try {
-      await updateChatGroup(activeGroup.id, { retentionDays: days })
-      await loadLists()
-    } catch (reason) {
-      setError(reason?.message || 'Storico gruppo non aggiornato')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const changeDmRetention = async (days) => {
-    if (!activeThread || busy) return
-    setBusy(true)
-    setError('')
-    try {
-      await setDmRetention(activeThread.id, days)
-      await loadLists()
-    } catch (reason) {
-      setError(reason?.message || 'Storico diretto non aggiornato')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const togglePin = async (message) => {
     if (!canManageGroup) return
