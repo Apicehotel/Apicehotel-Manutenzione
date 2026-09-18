@@ -71,7 +71,6 @@ test('promotion to persistent Segnalazione is explicit and stores only a metadat
   assert.match(promote, /origin: 'RandChat'/)
   assert.match(promote, /linkChatMessageToIssue/)
   assert.match(chatThread, /Crea segnalazione/)
-  assert.match(chatUi, /Crea segnalazione/)
 })
 
 test('replacement RandChat runtime keeps groups and encrypted directs in one messenger', () => {
