@@ -10,7 +10,7 @@ const dateMs=(v)=>v?Date.parse(v):NaN
 const isFresh=(memory,now=Date.now())=>!memory.validUntil||dateMs(memory.validUntil)>now
 const isUsable=(memory,now=Date.now())=>usableAt(memory,now)
 
-export function normalizeRandMindMemory(input={}){
+export function normalizeRandMindMemory(input={},now=Date.now()){
   const memory={
     ...input,
     type:input.type||MemoryType.EPISODIC,
@@ -19,7 +19,7 @@ export function normalizeRandMindMemory(input={}){
     confidence:clamp01(input.confidence), importance:clamp01(input.importance),
     lifecycleStatus:input.lifecycleStatus||MemoryLifecycle.ACTIVE,
     retentionClass:input.retentionClass||RetentionClass.OPERATIONAL,
-    validFrom:input.validFrom||input.createdAt||new Date().toISOString(),
+    validFrom:input.validFrom||input.createdAt||new Date(now).toISOString(),
     validUntil:input.validUntil||input.expiresAt||null,
     lastVerifiedAt:input.lastVerifiedAt||null,
     supersedesId:input.supersedesId||null,
@@ -34,7 +34,7 @@ export function normalizeRandMindMemory(input={}){
 }
 
 export function memoryQuality(memory,now=Date.now()){
-  const m=normalizeRandMindMemory(memory)
+  const m=normalizeRandMindMemory(memory,now)
   const source=m.source?.kind&&m.source?.id?1:0
   const verified=[MemoryTrust.VERIFIED,MemoryTrust.APPROVED].includes(m.trust)?1:0
   const freshness=isFresh(m,now)?1:0
