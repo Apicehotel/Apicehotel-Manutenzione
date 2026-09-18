@@ -25,6 +25,16 @@ Quelle restano nel catalogo RandRadar e non devono essere confuse con le dipende
 - `ci_tool`: strumento di test/eval/quality gate.
 - `github_action`: action invocata dai workflow.
 
+## Profondità di adozione
+
+- `full`: usata direttamente come componente/dipendenza principale per quella funzione.
+- `partial`: usata solo in alcune parti o con integrazione limitata.
+- `concept`: adottati pattern, architettura o idee, senza usare il progetto intero.
+- `tooling`: usata come strumento di build, test, CI, deploy o valutazione.
+- `reference_only`: studiata come riferimento, senza integrazione eseguibile.
+
+Ogni voce deve anche indicare `randTargets`, cioè quali moduli Rand dipendono o beneficiano di quella repository.
+
 ## Repository registrate
 
 Il registro iniziale include:
