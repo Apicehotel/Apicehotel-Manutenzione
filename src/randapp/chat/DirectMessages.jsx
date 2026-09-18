@@ -18,7 +18,7 @@ const fmtTime = (value) => {
   try { return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(value)) } catch { return '' }
 }
 
-export default function DirectMessages({ user, hotel }) {
+export default function DirectMessages({ user, hotel, onConversationOpenChange }) {
   const currentUserId = user?.auth_user_id || user?.id
   const fileRef = useRef(null)
   const [threads, setThreads] = useState([])
@@ -33,6 +33,8 @@ export default function DirectMessages({ user, hotel }) {
   const [cryptoReady, setCryptoReady] = useState(false)
   const [newRecipient, setNewRecipient] = useState('')
   const [promoteMessage, setPromoteMessage] = useState(null)
+  const [showThreadMenu, setShowThreadMenu] = useState(false)
+  const [actionMessageId, setActionMessageId] = useState(null)
 
   const selected = useMemo(() => threads.find((thread) => thread.id === selectedId) || null, [threads, selectedId])
   const directoryOptions = useMemo(() => directory.filter((entry) => entry.auth_user_id !== currentUserId), [directory, currentUserId])
@@ -84,6 +86,7 @@ export default function DirectMessages({ user, hotel }) {
   }, [currentUserId])
 
   useEffect(() => { loadSelected().catch((err) => setError(err?.message || 'DM non disponibili')) }, [loadSelected])
+  useEffect(() => { onConversationOpenChange?.(Boolean(selected)) }, [selected, onConversationOpenChange])
   useEffect(() => {
     if (!selectedId) return undefined
     return subscribeDmThread(selectedId, () => {
@@ -157,9 +160,18 @@ export default function DirectMessages({ user, hotel }) {
     <div className="rc-conversation">
       {!selected ? <div className="rc-empty"><h2>DM privati</h2><p>Il server conserva solo testo e allegati cifrati. Scegli una persona per iniziare.</p>{error && <div className="rc-error">{error}</div>}</div> : <>
         <header className="rc-conversation__head">
-          <button className="rc-back" onClick={() => setSelectedId(null)}>‹</button>
-          <div><h2>{selected.other_display_name}</h2><small>🔒 E2EE · cancellazione {selected.retention_days} giorni</small></div>
-          <label className="rc-dm-retention">Storico <select value={selected.retention_days} onChange={(event) => changeRetention(event.target.value)} disabled={busy}><option value={1}>1 g</option><option value={7}>7 gg</option><option value={15}>15 gg</option></select></label>
+          <button className="rc-back" onClick={() => { setShowThreadMenu(false); setSelectedId(null) }}>‹</button>
+          <div className="rc-thread-title"><h2>{selected.other_display_name}</h2><small>🔒 E2EE per dispositivo</small></div>
+          <div className="rc-thread-menu-wrap">
+            <button type="button" className="rc-thread-menu-trigger" aria-label="Azioni conversazione" aria-expanded={showThreadMenu} onClick={() => setShowThreadMenu((value) => !value)}>⋯</button>
+            {showThreadMenu && <div className="rc-thread-menu" role="menu">
+              <label className="rc-dm-retention">Storico
+                <select value={selected.retention_days} onChange={(event) => changeRetention(event.target.value)} disabled={busy}>
+                  <option value={1}>1 giorno</option><option value={7}>7 giorni</option><option value={15}>15 giorni</option>
+                </select>
+              </label>
+            </div>}
+          </div>
         </header>
         {!recipientHasDevice && <div className="rc-warning">Il destinatario deve aprire RandChat almeno una volta su un dispositivo prima di poter ricevere nuovi DM E2EE.</div>}
         {error && <div className="rc-error" role="alert">{error}</div>}
@@ -170,7 +182,12 @@ export default function DirectMessages({ user, hotel }) {
               <div className="rc-message__meta"><b>{own ? 'Tu' : selected.other_display_name}</b><time>{fmtTime(message.created_at)}</time><span title={message.cryptoState === 'verified' ? 'Firma e cifratura verificate' : 'Messaggio non verificato'}>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span></div>
               {message.body && <p>{message.body}</p>}
               {(message.attachments || []).map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} encrypted />)}
-              {message.cryptoState === 'verified' && <button className="rc-message__pin" onClick={() => setPromoteMessage(message)}>Crea segnalazione</button>}
+              {message.cryptoState === 'verified' && <div className="rc-message__actions">
+                <button type="button" className="rc-message-menu-trigger" aria-label="Azioni messaggio" onClick={() => setActionMessageId((id) => id === message.id ? null : message.id)}>⋯</button>
+                {actionMessageId === message.id && <div className="rc-message-menu">
+                  <button type="button" onClick={() => { setActionMessageId(null); setPromoteMessage(message) }}>Crea segnalazione</button>
+                </div>}
+              </div>}
             </article>
           })}
           {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
