@@ -1,15 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { hotelById } from '../helpers.js'
 import {
   addChatGroupMember,
   createChatGroup,
+  deleteChatMessage,
   fetchChatDirectory,
   fetchChatGroupMembers,
   fetchChatGroups,
   fetchChatMessages,
   fetchGroupProcedureLinks,
+  removeChatGroupMember,
   sendChatMessage,
+  setChatGroupMemberRole,
+  setChatMessagePinned,
   subscribeChatGroup,
+  updateChatGroup,
 } from './chat-data.js'
 import {
   ensureRegisteredDmDevice,
@@ -29,69 +34,123 @@ import {
   subscribeChatAttachments,
   uploadGroupMediaFiles,
 } from './randmedia.js'
-import ChatAttachment from './ChatAttachment.jsx'
 import ProcedureDraftDialog from './ProcedureDraftDialog.jsx'
 import ProcedurePicker from './ProcedurePicker.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
 import RandChatAI from './RandChatAI.jsx'
-import './randchat-next.css'
+import RandChatList from './RandChatList.jsx'
+import RandChatThread from './RandChatThread.jsx'
+import './randchat.css'
 
-const fmtTime = (value) => {
-  try { return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(new Date(value)) } catch { return '' }
-}
+const roleRank = { owner: 0, admin: 1, member: 2 }
 
 export default function RandChat({ user, hotel }) {
   const currentUserId = user?.auth_user_id || user?.id
   const [mode, setMode] = useState('groups')
   const [groups, setGroups] = useState([])
   const [threads, setThreads] = useState([])
-  const [directory, setDirectory] = useState([])
+  const [groupDirectory, setGroupDirectory] = useState([])
+  const [dmDirectory, setDmDirectory] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [messages, setMessages] = useState([])
   const [members, setMembers] = useState([])
   const [devices, setDevices] = useState([])
   const [attachments, setAttachments] = useState([])
   const [procedureLinks, setProcedureLinks] = useState([])
-  const [text, setText] = useState('')
-  const [files, setFiles] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [cryptoReady, setCryptoReady] = useState(false)
-  const [newRecipient, setNewRecipient] = useState('')
   const [showNewGroup, setShowNewGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
-  const [showThreadMenu, setShowThreadMenu] = useState(false)
-  const [messageMenuId, setMessageMenuId] = useState(null)
+  const [newRecipient, setNewRecipient] = useState('')
   const [showMembers, setShowMembers] = useState(false)
   const [inviteId, setInviteId] = useState('')
   const [showProcedures, setShowProcedures] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [promoteMessage, setPromoteMessage] = useState(null)
   const [draftMessage, setDraftMessage] = useState(null)
-  const [showJump, setShowJump] = useState(false)
-  const fileRef = useRef(null)
-  const messagesRef = useRef(null)
-  const endRef = useRef(null)
-  const followBottomRef = useRef(true)
 
-  const activeGroup = useMemo(() => mode === 'groups' ? groups.find((g) => g.id === activeId) || null : null, [mode, groups, activeId])
-  const activeThread = useMemo(() => mode === 'dm' ? threads.find((t) => t.id === activeId) || null : null, [mode, threads, activeId])
+  const activeGroup = useMemo(
+    () => mode === 'groups' ? groups.find((item) => item.id === activeId) || null : null,
+    [mode, groups, activeId],
+  )
+  const activeThread = useMemo(
+    () => mode === 'dm' ? threads.find((item) => item.id === activeId) || null : null,
+    [mode, threads, activeId],
+  )
   const active = activeGroup || activeThread
-  const isThreadOpen = Boolean(activeId && active)
-  const memberById = useMemo(() => new Map(members.map((m) => [m.auth_user_id, m])), [members])
-  const procedureByMessage = useMemo(() => new Map(procedureLinks.map((x) => [x.group_message_id, x])), [procedureLinks])
+
+  const me = useMemo(
+    () => members.find((member) => member.auth_user_id === currentUserId) || null,
+    [members, currentUserId],
+  )
+  const canManageGroup = Boolean(me && (me.group_role === 'owner' || me.group_role === 'admin'))
+  const canCreateGroup = Boolean(user?.chat_can_create_groups || user?.can_admin)
+
+  const memberById = useMemo(() => new Map(members.map((member) => [member.auth_user_id, member])), [members])
+  const procedureByMessage = useMemo(
+    () => new Map(procedureLinks.map((item) => [item.group_message_id, item])),
+    [procedureLinks],
+  )
   const attachmentsByMessage = useMemo(() => {
     const map = new Map()
     attachments.forEach((item) => map.set(item.group_message_id, [...(map.get(item.group_message_id) || []), item]))
     return map
   }, [attachments])
 
+  const groupsForList = useMemo(
+    () => groups.map((group) => ({ ...group, hotel_label: hotelById(group.hotel_id)?.name || group.hotel_id })),
+    [groups],
+  )
+
   const loadLists = useCallback(async () => {
     if (!user?.chat_enabled) return
-    const [groupRows, threadRows] = await Promise.all([fetchChatGroups(), fetchDmThreads().catch(() => [])])
+    const [groupRows, threadRows] = await Promise.all([
+      fetchChatGroups(),
+      fetchDmThreads().catch(() => []),
+    ])
     setGroups(groupRows)
     setThreads(threadRows)
   }, [user?.chat_enabled])
+
+  const loadThread = useCallback(async () => {
+    if (!activeId) {
+      setMessages([])
+      setMembers([])
+      setDevices([])
+      setAttachments([])
+      setProcedureLinks([])
+      return
+    }
+
+    if (mode === 'groups') {
+      const [messageRows, memberRows, mediaRows, procedureRows] = await Promise.all([
+        fetchChatMessages(activeId),
+        fetchChatGroupMembers(activeId),
+        fetchGroupAttachments(activeId),
+        fetchGroupProcedureLinks(activeId),
+      ])
+      setMessages(messageRows)
+      setMembers(memberRows.sort((a, b) =>
+        (roleRank[a.group_role] ?? 9) - (roleRank[b.group_role] ?? 9)
+        || String(a.display_name || '').localeCompare(String(b.display_name || ''), 'it'),
+      ))
+      setAttachments(mediaRows)
+      setProcedureLinks(procedureRows)
+      setDevices([])
+      return
+    }
+
+    const [{ messages: messageRows }, deviceRows] = await Promise.all([
+      fetchDmMessages(activeId, currentUserId),
+      fetchDmDevices(activeId),
+    ])
+    setMessages(messageRows)
+    setDevices(deviceRows)
+    setMembers([])
+    setAttachments([])
+    setProcedureLinks([])
+  }, [activeId, mode, currentUserId])
 
   useEffect(() => {
     if (!user?.chat_enabled) return
@@ -99,158 +158,89 @@ export default function RandChat({ user, hotel }) {
     ;(async () => {
       try {
         await ensureRegisteredDmDevice(currentUserId)
-        const [groupRows, threadRows, dirRows] = await Promise.all([
+        const [groupRows, threadRows, groupDirRows, dmDirRows] = await Promise.all([
           fetchChatGroups(),
           fetchDmThreads(),
+          fetchChatDirectory(),
           fetchDmDirectory(),
         ])
         if (!alive) return
         setGroups(groupRows)
         setThreads(threadRows)
-        setDirectory(dirRows)
+        setGroupDirectory(groupDirRows)
+        setDmDirectory(dmDirRows)
         setCryptoReady(true)
-      } catch (e) {
-        if (alive) setError(e?.message || 'RandChat non disponibile')
+      } catch (reason) {
+        if (alive) setError(reason?.message || 'RandChat non disponibile')
       }
     })()
     return () => { alive = false }
   }, [currentUserId, user?.chat_enabled])
 
-  const loadThread = useCallback(async () => {
-    if (!activeId) {
-      setMessages([]); setMembers([]); setDevices([]); setAttachments([]); setProcedureLinks([])
-      return
-    }
-    if (mode === 'groups') {
-      const [msg, mem, media, procedures] = await Promise.all([
-        fetchChatMessages(activeId),
-        fetchChatGroupMembers(activeId),
-        fetchGroupAttachments(activeId),
-        fetchGroupProcedureLinks(activeId),
-      ])
-      setMessages(msg); setMembers(mem); setAttachments(media); setProcedureLinks(procedures); setDevices([])
-    } else {
-      const [{ messages: msg }, deviceRows] = await Promise.all([
-        fetchDmMessages(activeId, currentUserId),
-        fetchDmDevices(activeId),
-      ])
-      setMessages(msg); setDevices(deviceRows); setMembers([]); setAttachments([]); setProcedureLinks([])
-    }
-  }, [activeId, mode, currentUserId])
-
-  useEffect(() => { loadThread().catch((e) => setError(e?.message || 'Conversazione non disponibile')) }, [loadThread])
+  useEffect(() => {
+    loadThread().catch((reason) => setError(reason?.message || 'Conversazione non disponibile'))
+  }, [loadThread])
 
   useEffect(() => {
     if (!activeId) return undefined
+
     if (mode === 'groups') {
-      const unsubChat = subscribeChatGroup(activeId, {
+      const unsubscribeChat = subscribeChatGroup(activeId, {
         onMessage: () => loadThread().catch(() => {}),
         onMessageChange: () => loadThread().catch(() => {}),
         onMembershipChange: () => loadThread().catch(() => {}),
       })
-      const unsubMedia = subscribeChatAttachments(activeId, () => loadThread().catch(() => {}))
-      return () => { unsubChat(); unsubMedia() }
+      const unsubscribeMedia = subscribeChatAttachments(activeId, () => loadThread().catch(() => {}))
+      return () => {
+        unsubscribeChat()
+        unsubscribeMedia()
+      }
     }
+
     return subscribeDmThread(activeId, () => {
       loadThread().catch(() => {})
       loadLists().catch(() => {})
     })
   }, [activeId, mode, loadThread, loadLists])
 
-  const scrollToBottom = useCallback((behavior = 'auto') => {
-    followBottomRef.current = true
-    setShowJump(false)
-    requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior, block: 'end' }))
-  }, [])
-
-  useEffect(() => {
-    if (!activeId || !messages.length) return
-    if (followBottomRef.current) scrollToBottom(messages.length > 1 ? 'smooth' : 'auto')
-    else setShowJump(true)
-  }, [activeId, messages, scrollToBottom])
-
-  const handleScroll = () => {
-    const node = messagesRef.current
-    if (!node) return
-    const nearBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 96
-    followBottomRef.current = nearBottom
-    setShowJump(!nearBottom)
+  const switchMode = (nextMode) => {
+    setMode(nextMode)
+    setActiveId(null)
+    setMessages([])
+    setError('')
+    setShowMembers(false)
+    setShowProcedures(false)
+    setShowAI(false)
   }
 
   const openConversation = (id) => {
-    followBottomRef.current = true
-    setShowJump(false)
-    setShowThreadMenu(false)
-    setMessageMenuId(null)
+    setError('')
     setActiveId(id)
   }
 
-  const backToList = () => {
+  const closeConversation = () => {
     setActiveId(null)
     setMessages([])
-    setShowThreadMenu(false)
-    setMessageMenuId(null)
-  }
-
-  const switchMode = (next) => {
-    backToList()
-    setMode(next)
-  }
-
-  const send = async (event) => {
-    event.preventDefault()
-    const body = text.trim()
-    const selectedFiles = Array.from(files || [])
-    if ((!body && !selectedFiles.length) || !activeId || busy) return
-    followBottomRef.current = true
-    setBusy(true); setError('')
-    try {
-      if (mode === 'groups') {
-        const message = await sendChatMessage(activeId, currentUserId, body || `📎 ${selectedFiles.length} allegati`)
-        let uploaded = []
-        try {
-          if (selectedFiles.length) {
-            uploaded = await uploadGroupMediaFiles(selectedFiles, { groupId: activeId, messageId: message.id })
-            for (const attachment of uploaded) await registerGroupAttachment({ groupId: activeId, messageId: message.id, attachment })
-          }
-        } catch (e) {
-          await cleanupRandMediaUploads(uploaded)
-          throw e
-        }
-      } else {
-        await sendDmMessage({ threadId: activeId, userId: currentUserId, body, files: selectedFiles })
-      }
-      setText(''); setFiles([])
-      if (fileRef.current) fileRef.current.value = ''
-      await loadThread(); await loadLists()
-      scrollToBottom('smooth')
-    } catch (e) {
-      setError(e?.message || 'Invio non riuscito')
-    } finally {
-      setBusy(false)
-    }
+    setError('')
+    setShowMembers(false)
+    setShowProcedures(false)
+    setShowAI(false)
   }
 
   const createGroupNow = async () => {
     const name = newGroupName.trim()
-    if (!name || busy) return
+    if (!name || busy || !canCreateGroup) return
     setBusy(true)
+    setError('')
     try {
       const id = await createChatGroup({ hotelId: hotel.id, name, retentionDays: 30 })
-      setNewGroupName(''); setShowNewGroup(false)
-      await loadLists(); setMode('groups'); openConversation(id)
-    } catch (e) { setError(e?.message || 'Creazione gruppo non riuscita') }
-    finally { setBusy(false) }
-  }
-
-  const changeDmRetention = async (days) => {
-    if (!activeThread || busy) return
-    setBusy(true); setError('')
-    try {
-      await setDmRetention(activeThread.id, Number(days))
+      setNewGroupName('')
+      setShowNewGroup(false)
       await loadLists()
-    } catch (e) {
-      setError(e?.message || 'Retention DM non aggiornata')
+      setMode('groups')
+      setActiveId(id)
+    } catch (reason) {
+      setError(reason?.message || 'Creazione gruppo non riuscita')
     } finally {
       setBusy(false)
     }
@@ -259,159 +249,264 @@ export default function RandChat({ user, hotel }) {
   const startDm = async () => {
     if (!newRecipient || busy) return
     setBusy(true)
+    setError('')
     try {
       const id = await openDmThread(newRecipient)
       setNewRecipient('')
-      await loadLists(); setMode('dm'); openConversation(id)
-    } catch (e) { setError(e?.message || 'Impossibile aprire il diretto') }
-    finally { setBusy(false) }
+      await loadLists()
+      setMode('dm')
+      setActiveId(id)
+    } catch (reason) {
+      setError(reason?.message || 'Impossibile aprire il diretto')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const send = async (body, selectedFiles) => {
+    if (!activeId || busy) return false
+    setBusy(true)
+    setError('')
+    try {
+      if (mode === 'groups') {
+        let message = null
+        let uploaded = []
+        try {
+          message = await sendChatMessage(
+            activeId,
+            currentUserId,
+            body || `📎 ${selectedFiles.length} allegat${selectedFiles.length === 1 ? 'o' : 'i'}`,
+          )
+          if (selectedFiles.length) {
+            uploaded = await uploadGroupMediaFiles(selectedFiles, { groupId: activeId, messageId: message.id })
+            for (const attachment of uploaded) {
+              await registerGroupAttachment({ groupId: activeId, messageId: message.id, attachment })
+            }
+          }
+        } catch (reason) {
+          if (message?.id) await deleteChatMessage(message.id).catch(() => {})
+          await cleanupRandMediaUploads(uploaded)
+          throw reason
+        }
+      } else {
+        await sendDmMessage({ threadId: activeId, userId: currentUserId, body, files: selectedFiles })
+      }
+
+      await Promise.all([loadThread(), loadLists()])
+      return true
+    } catch (reason) {
+      setError(reason?.message || 'Invio non riuscito')
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const changeGroupRetention = async (days) => {
+    if (!activeGroup || !canManageGroup || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await updateChatGroup(activeGroup.id, { retentionDays: days })
+      await loadLists()
+    } catch (reason) {
+      setError(reason?.message || 'Storico gruppo non aggiornato')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const changeDmRetention = async (days) => {
+    if (!activeThread || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await setDmRetention(activeThread.id, days)
+      await loadLists()
+    } catch (reason) {
+      setError(reason?.message || 'Storico diretto non aggiornato')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const togglePin = async (message) => {
+    if (!canManageGroup) return
+    try {
+      await setChatMessagePinned(message.id, !message.pinned_at)
+      await loadThread()
+    } catch (reason) {
+      setError(reason?.message || 'Impossibile aggiornare il messaggio')
+    }
   }
 
   const inviteMember = async () => {
-    if (!inviteId || !activeId || busy) return
+    if (!inviteId || !activeGroup || !canManageGroup || busy) return
     setBusy(true)
+    setError('')
     try {
-      await addChatGroupMember(activeId, inviteId, 'member')
+      await addChatGroupMember(activeGroup.id, inviteId, 'member')
       setInviteId('')
       await loadThread()
-    } catch (e) { setError(e?.message || 'Invito non riuscito') }
-    finally { setBusy(false) }
+    } catch (reason) {
+      setError(reason?.message || 'Invito non riuscito')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const changeMemberRole = async (member, role) => {
+    if (!activeGroup || !canManageGroup || busy) return
+    setBusy(true)
+    try {
+      await setChatGroupMemberRole(activeGroup.id, member.auth_user_id, role)
+      await loadThread()
+    } catch (reason) {
+      setError(reason?.message || 'Ruolo non aggiornato')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeMember = async (member) => {
+    if (!activeGroup || !canManageGroup || member.group_role === 'owner' || busy) return
+    if (!window.confirm(`Rimuovere ${member.display_name} dal gruppo?`)) return
+    setBusy(true)
+    try {
+      await removeChatGroupMember(activeGroup.id, member.auth_user_id)
+      await loadThread()
+    } catch (reason) {
+      setError(reason?.message || 'Membro non rimosso')
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (!user?.chat_enabled) {
-    return <section className="rnc-empty"><h2>RandChat non abilitata</h2><p>Un amministratore può abilitarla dal pannello Utenti.</p></section>
+    return <section className="randchat-empty"><h2>RandChat non abilitata</h2><p>Un amministratore può abilitarla dal pannello Utenti.</p></section>
   }
 
-  const listItems = mode === 'groups' ? groups : threads
-  const dmRecipientHasDevice = mode !== 'dm' || !activeThread || devices.some((d) => d.auth_user_id === activeThread.other_user_id)
+  const dmRecipientHasDevice = mode !== 'dm'
+    || !activeThread
+    || devices.some((device) => device.auth_user_id === activeThread.other_user_id)
 
-  return <section className={`rnc-root ${isThreadOpen ? 'rnc-root--thread' : 'rnc-root--list'}`} data-testid="randchat-next">
-    {!isThreadOpen ? <div className="rnc-list-screen">
-      <header className="rnc-list-header">
-        <div><h1>RandChat</h1><small>Messaggistica interna</small></div>
-        {mode === 'groups' && <button className="rnc-round" onClick={() => setShowNewGroup((v) => !v)} aria-label="Nuovo gruppo">＋</button>}
-      </header>
+  const inviteOptions = groupDirectory.filter(
+    (candidate) => !members.some((member) => member.auth_user_id === candidate.auth_user_id),
+  )
 
-      <nav className="rnc-tabs" aria-label="Tipo conversazione">
-        <button className={mode === 'groups' ? 'active' : ''} onClick={() => switchMode('groups')}>Gruppi</button>
-        <button className={mode === 'dm' ? 'active' : ''} onClick={() => switchMode('dm')}>🔒 Diretti</button>
-      </nav>
+  return <section className={`randchat ${active ? 'randchat--thread-open' : ''}`} data-testid="randchat">
+    <RandChatList
+      mode={mode}
+      onModeChange={switchMode}
+      groups={groupsForList}
+      threads={threads}
+      activeId={activeId}
+      onOpen={openConversation}
+      canCreateGroup={canCreateGroup}
+      showNewGroup={showNewGroup}
+      onToggleNewGroup={() => setShowNewGroup((value) => !value)}
+      newGroupName={newGroupName}
+      onNewGroupName={setNewGroupName}
+      onCreateGroup={createGroupNow}
+      cryptoReady={cryptoReady}
+      directory={dmDirectory}
+      currentUserId={currentUserId}
+      newRecipient={newRecipient}
+      onNewRecipient={setNewRecipient}
+      onStartDm={startDm}
+      busy={busy}
+      error={!active ? error : ''}
+    />
 
-      {mode === 'groups' && showNewGroup && <div className="rnc-new-row">
-        <input value={newGroupName} placeholder="Nome gruppo" onChange={(e) => setNewGroupName(e.target.value)} autoFocus />
-        <button onClick={createGroupNow} disabled={!newGroupName.trim() || busy}>Crea</button>
-      </div>}
+    <main className="randchat-stage">
+      {!active ? <div className="randchat-stage__empty">
+        <div className="randchat-stage__mark">💬</div>
+        <h2>Apri una conversazione</h2>
+        <p>Scegli un gruppo o un diretto dalla lista.</p>
+      </div> : <RandChatThread
+        mode={mode}
+        threadId={activeId}
+        activeGroup={activeGroup}
+        activeThread={activeThread}
+        hotelLabel={mode === 'groups' ? hotelById(activeGroup?.hotel_id)?.name || activeGroup?.hotel_id : ''}
+        members={members}
+        messages={messages}
+        currentUserId={currentUserId}
+        memberById={memberById}
+        procedureByMessage={procedureByMessage}
+        attachmentsByMessage={attachmentsByMessage}
+        busy={busy}
+        error={error}
+        dmRecipientHasDevice={dmRecipientHasDevice}
+        canManageGroup={canManageGroup}
+        onBack={closeConversation}
+        onSend={send}
+        onOpenProcedures={() => setShowProcedures(true)}
+        onOpenAI={() => setShowAI(true)}
+        onOpenMembers={() => setShowMembers(true)}
+        onChangeGroupRetention={changeGroupRetention}
+        onChangeDmRetention={changeDmRetention}
+        onPromote={setPromoteMessage}
+        onDraftProcedure={setDraftMessage}
+        onTogglePin={togglePin}
+      />}
+    </main>
 
-      {mode === 'dm' && <div className="rnc-new-row">
-        <select value={newRecipient} onChange={(e) => setNewRecipient(e.target.value)} disabled={!cryptoReady || busy}>
-          <option value="">Nuovo diretto…</option>
-          {directory.filter((x) => x.auth_user_id !== currentUserId).map((x) => <option key={x.auth_user_id} value={x.auth_user_id}>{x.display_name}</option>)}
-        </select>
-        <button onClick={startDm} disabled={!newRecipient || busy}>Apri</button>
-      </div>}
-
-      {error && <div className="rnc-banner rnc-banner--error">{error}</div>}
-
-      <div className="rnc-conversation-list">
-        {listItems.map((item) => {
-          const title = mode === 'groups' ? item.name : item.other_display_name
-          const subtitle = mode === 'groups'
-            ? `${hotelById(item.hotel_id)?.name || item.hotel_id} · ${item.retention_days} gg`
-            : `🔒 E2EE · ${item.retention_days} gg`
-          return <button key={item.id} className="rnc-list-item" onClick={() => openConversation(item.id)}>
-            <span className="rnc-avatar">{mode === 'groups' ? '#' : '🔒'}</span>
-            <span><b>{title}</b><small>{subtitle}</small></span>
-            <span className="rnc-chevron">›</span>
-          </button>
-        })}
-        {!listItems.length && <div className="rnc-empty">Nessuna conversazione.</div>}
-      </div>
-    </div> : <div className="rnc-thread">
-      <header className="rnc-thread-header">
-        <button className="rnc-back" onClick={backToList} aria-label="Indietro">‹</button>
-        <div className="rnc-thread-title">
-          <h2>{mode === 'groups' ? activeGroup?.name : activeThread?.other_display_name}</h2>
-          <small>{mode === 'groups' ? `${hotelById(activeGroup?.hotel_id)?.name || activeGroup?.hotel_id} · ${members.length} membri` : '🔒 E2EE per dispositivo'}</small>
-        </div>
-        <div className="rnc-menu-wrap">
-          <button className="rnc-round" onClick={() => setShowThreadMenu((v) => !v)} aria-label="Menu conversazione">⋯</button>
-          {showThreadMenu && <div className="rnc-menu">
-            {mode === 'groups' && <>
-              <button onClick={() => { setShowThreadMenu(false); setShowProcedures(true) }}>📘 Procedure</button>
-              <button onClick={() => { setShowThreadMenu(false); setShowAI(true) }}>✨ RandAI</button>
-              <button onClick={() => { setShowThreadMenu(false); setShowMembers(true) }}>👥 Membri</button>
-            </>}
-            {mode === 'dm' && <>
-              <span className="rnc-menu-note">🔒 Messaggi cifrati end-to-end</span>
-              <label className="rnc-menu-setting">Storico
-                <select value={activeThread?.retention_days || 7} onChange={(e) => changeDmRetention(e.target.value)} disabled={busy}>
-                  <option value={1}>1 giorno</option>
-                  <option value={7}>7 giorni</option>
-                  <option value={15}>15 giorni</option>
-                </select>
-              </label>
-            </>}
-          </div>}
-        </div>
-      </header>
-
-      {error && <div className="rnc-banner rnc-banner--error">{error}</div>}
-      {mode === 'dm' && !dmRecipientHasDevice && <div className="rnc-banner">Il destinatario deve aprire RandChat almeno una volta su un dispositivo.</div>}
-
-      <div className="rnc-messages" ref={messagesRef} onScroll={handleScroll}>
-        {messages.map((message) => {
-          const own = message.sender_user_id === currentUserId
-          const sender = mode === 'groups' ? memberById.get(message.sender_user_id)?.display_name || 'Utente' : activeThread?.other_display_name
-          const procedureLink = mode === 'groups' ? procedureByMessage.get(message.id) : null
-          const procedure = procedureLink?.procedure_snapshot
-          const media = mode === 'groups' ? attachmentsByMessage.get(message.id) || [] : message.attachments || []
-          return <article key={message.id} className={`rnc-bubble ${own ? 'own' : ''}`}>
-            <div className="rnc-meta"><b>{own ? 'Tu' : sender}</b><time>{fmtTime(message.created_at)}</time>{mode === 'dm' && <span title={message.cryptoState === 'verified' ? 'Firma e cifratura verificate' : 'Messaggio non verificato'}>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span>}</div>
-            {message.body && <p>{message.body}</p>}
-            {procedure && <div className="rnc-procedure"><b>📘 {procedure.title}</b><p>{procedure.summary}</p></div>}
-            {media.map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} encrypted={mode === 'dm'} />)}
-            <button className="rnc-message-menu-trigger" onClick={() => setMessageMenuId((id) => id === message.id ? null : message.id)} aria-label="Azioni messaggio">⋯</button>
-            {messageMenuId === message.id && <div className="rnc-message-menu">
-              <button onClick={() => { setMessageMenuId(null); setPromoteMessage(message) }}>Crea segnalazione</button>
-              {mode === 'groups' && !procedure && message.body && <button onClick={() => { setMessageMenuId(null); setDraftMessage(message) }}>Bozza procedura</button>}
-            </div>}
-          </article>
-        })}
-        {!messages.length && <div className="rnc-empty">Ancora nessun messaggio.</div>}
-        <div ref={endRef} className="rnc-end" aria-hidden="true" />
-      </div>
-
-      {showJump && <button className="rnc-jump" onClick={() => scrollToBottom('smooth')} aria-label="Vai agli ultimi messaggi">↓</button>}
-
-      <form className="rnc-composer" onSubmit={send}>
-        <label className="rnc-attach" aria-label="Allega file">＋
-          <input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
-        </label>
-        <div className="rnc-input-wrap">
-          <textarea rows={1} maxLength={8000} value={text} placeholder={mode === 'groups' ? 'Messaggio' : 'Messaggio privato'} onChange={(e) => setText(e.target.value)} />
-          {!!files.length && <small>{files.length} allegat{files.length === 1 ? 'o' : 'i'}</small>}
-        </div>
-        <button className="rnc-send" disabled={busy || (!text.trim() && !files.length) || (mode === 'dm' && !dmRecipientHasDevice)}>Invia</button>
-      </form>
-    </div>}
-
-    {showMembers && mode === 'groups' && activeGroup && <div className="rnc-modal-backdrop" onClick={() => setShowMembers(false)}>
-      <section className="rnc-modal" onClick={(e) => e.stopPropagation()}>
-        <header><h3>Membri · {activeGroup.name}</h3><button onClick={() => setShowMembers(false)}>×</button></header>
-        <div className="rnc-members">{members.map((m) => <div key={m.auth_user_id}><b>{m.display_name}</b><small>{m.group_role}</small></div>)}</div>
-        <div className="rnc-new-row">
-          <select value={inviteId} onChange={(e) => setInviteId(e.target.value)}>
+    {showMembers && mode === 'groups' && activeGroup && <div className="randchat-modal-backdrop" onClick={() => setShowMembers(false)}>
+      <section className="randchat-modal" onClick={(event) => event.stopPropagation()}>
+        <header>
+          <div><h3>Membri · {activeGroup.name}</h3><small>{members.length} membri</small></div>
+          <button onClick={() => setShowMembers(false)} aria-label="Chiudi">×</button>
+        </header>
+        {canManageGroup && <div className="randchat-member-add">
+          <select value={inviteId} onChange={(event) => setInviteId(event.target.value)}>
             <option value="">Aggiungi utente…</option>
-            {directory.filter((x) => !members.some((m) => m.auth_user_id === x.auth_user_id)).map((x) => <option key={x.auth_user_id} value={x.auth_user_id}>{x.display_name}</option>)}
+            {inviteOptions.map((candidate) => <option key={candidate.auth_user_id} value={candidate.auth_user_id}>{candidate.display_name}</option>)}
           </select>
           <button onClick={inviteMember} disabled={!inviteId || busy}>Aggiungi</button>
+        </div>}
+        <div className="randchat-members">
+          {members.map((member) => <div className="randchat-member" key={member.auth_user_id}>
+            <span><b>{member.display_name}</b><small>{member.group_role}</small></span>
+            {canManageGroup && member.group_role !== 'owner' && <span className="randchat-member__actions">
+              <select value={member.group_role} onChange={(event) => changeMemberRole(member, event.target.value)} disabled={busy}>
+                <option value="member">Membro</option>
+                <option value="admin">Admin gruppo</option>
+              </select>
+              <button onClick={() => removeMember(member)} disabled={busy}>Rimuovi</button>
+            </span>}
+          </div>)}
         </div>
       </section>
     </div>}
 
-    <ProcedurePicker open={showProcedures && mode === 'groups' && Boolean(activeGroup)} groupId={activeId} onClose={() => setShowProcedures(false)} onShared={() => loadThread().catch(() => {})} />
-    <ProcedureDraftDialog open={Boolean(draftMessage && activeGroup)} groupId={activeId} hotelId={activeGroup?.hotel_id} message={draftMessage} onClose={() => setDraftMessage(null)} />
-    <RandChatAI open={showAI && mode === 'groups' && Boolean(activeGroup)} groupId={activeId} groupName={activeGroup?.name} onClose={() => setShowAI(false)} />
-    <PromoteIssueDialog open={Boolean(promoteMessage)} onClose={() => setPromoteMessage(null)} user={user} hotel={hotel} text={promoteMessage?.body || ''} source={promoteMessage ? { type: mode === 'groups' ? 'group' : 'dm', id: activeId, messageId: promoteMessage.id } : null} onPromoted={() => setPromoteMessage(null)} />
+    <ProcedurePicker
+      open={showProcedures && mode === 'groups' && Boolean(activeGroup)}
+      groupId={activeId}
+      onClose={() => setShowProcedures(false)}
+      onShared={() => loadThread().catch(() => {})}
+    />
+    <ProcedureDraftDialog
+      open={Boolean(draftMessage && activeGroup)}
+      groupId={activeId}
+      hotelId={activeGroup?.hotel_id}
+      message={draftMessage}
+      onClose={() => setDraftMessage(null)}
+    />
+    <RandChatAI
+      open={showAI && mode === 'groups' && Boolean(activeGroup)}
+      groupId={activeId}
+      groupName={activeGroup?.name}
+      onClose={() => setShowAI(false)}
+    />
+    <PromoteIssueDialog
+      open={Boolean(promoteMessage)}
+      onClose={() => setPromoteMessage(null)}
+      user={user}
+      hotel={hotel}
+      text={promoteMessage?.body || ''}
+      source={promoteMessage ? { type: mode === 'groups' ? 'group' : 'dm', id: activeId, messageId: promoteMessage.id } : null}
+      onPromoted={() => setPromoteMessage(null)}
+    />
   </section>
 }
