@@ -8,6 +8,7 @@ const dms = readFileSync(new URL('../src/randapp/chat/DirectMessages.jsx', impor
 const scrollEngine = readFileSync(new URL('../src/randapp/chat/useChatThreadScroll.js', import.meta.url), 'utf8')
 const viewportCss = readFileSync(new URL('../src/randapp/chat/chat-viewport.css', import.meta.url), 'utf8')
 const chatCss = readFileSync(new URL('../src/randapp/chat/chat.css', import.meta.url), 'utf8')
+const chatData = readFileSync(new URL('../src/randapp/chat/chat-data.js', import.meta.url), 'utf8')
 
 test('RandChat inherits the canonical RandUI content viewport instead of measuring window geometry', () => {
   assert.doesNotMatch(entry, /window\.visualViewport/)
@@ -43,4 +44,10 @@ test('Telegram-style smart thread scrolling is shared by groups and encrypted DM
   assert.match(groups, /className="rc-jump-bottom"/)
   assert.match(dms, /className="rc-jump-bottom"/)
   assert.match(chatCss, /\.rc-jump-bottom\s*\{/)
+})
+
+
+test('group message window is the latest chronological block', () => {
+  assert.match(chatData, /order\('created_at', \{ ascending: false \}\)/)
+  assert.match(chatData, /return \(data \|\| \[\]\)\.reverse\(\)/)
 })
