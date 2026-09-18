@@ -10,6 +10,8 @@ export default function RandChatList({
   onToggleNewGroup,
   newGroupName,
   onNewGroupName,
+  newGroupRetention,
+  onNewGroupRetention,
   onCreateGroup,
   cryptoReady,
   directory,
@@ -39,8 +41,12 @@ export default function RandChatList({
     </nav>
 
     {mode === 'groups' && showNewGroup && (
-      <div className="randchat-create">
+      <div className="randchat-create randchat-create--group">
         <input value={newGroupName} onChange={(e) => onNewGroupName(e.target.value)} placeholder="Nome gruppo" autoFocus />
+        <select value={newGroupRetention} onChange={(e) => onNewGroupRetention(Number(e.target.value))} aria-label="Conservazione messaggi">
+          <option value={30}>30 gg</option>
+          <option value={60}>60 gg</option>
+        </select>
         <button onClick={onCreateGroup} disabled={busy || !newGroupName.trim()}>Crea</button>
       </div>
     )}
