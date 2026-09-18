@@ -47,7 +47,7 @@ const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus })
 const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
   default: ({ hotel, user }) => <div data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
 })))
-const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
+const TechnicianDirectoryView = lazy(() => import('./TechnicianDirectoryView.jsx'))
 const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
 const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
 const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
