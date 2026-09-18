@@ -152,6 +152,10 @@
   gap: 8px;
 }
 
+.randchat-create--group {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .randchat-create input,
 .randchat-create select,
 .randchat-create button,
@@ -877,5 +881,16 @@
   .randchat-send {
     min-width: 52px;
     padding-inline: 9px;
+  }
+}
+
+
+@media (max-width: 430px) {
+  .randchat-create--group {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .randchat-create--group > button {
+    grid-column: 1 / -1;
   }
 }
