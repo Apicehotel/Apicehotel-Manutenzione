@@ -19,6 +19,7 @@ import {
   fetchDmThreads,
   openDmThread,
   sendDmMessage,
+  setDmRetention,
   subscribeDmThread,
 } from './dm-data.js'
 import {
@@ -242,6 +243,19 @@ export default function RandChat({ user, hotel }) {
     finally { setBusy(false) }
   }
 
+  const changeDmRetention = async (days) => {
+    if (!activeThread || busy) return
+    setBusy(true); setError('')
+    try {
+      await setDmRetention(activeThread.id, Number(days))
+      await loadLists()
+    } catch (e) {
+      setError(e?.message || 'Retention DM non aggiornata')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const startDm = async () => {
     if (!newRecipient || busy) return
     setBusy(true)
@@ -327,7 +341,16 @@ export default function RandChat({ user, hotel }) {
               <button onClick={() => { setShowThreadMenu(false); setShowAI(true) }}>✨ RandAI</button>
               <button onClick={() => { setShowThreadMenu(false); setShowMembers(true) }}>👥 Membri</button>
             </>}
-            {mode === 'dm' && <span className="rnc-menu-note">🔒 Messaggi cifrati end-to-end</span>}
+            {mode === 'dm' && <>
+              <span className="rnc-menu-note">🔒 Messaggi cifrati end-to-end</span>
+              <label className="rnc-menu-setting">Storico
+                <select value={activeThread?.retention_days || 7} onChange={(e) => changeDmRetention(e.target.value)} disabled={busy}>
+                  <option value={1}>1 giorno</option>
+                  <option value={7}>7 giorni</option>
+                  <option value={15}>15 giorni</option>
+                </select>
+              </label>
+            </>}
           </div>}
         </div>
       </header>
@@ -343,7 +366,7 @@ export default function RandChat({ user, hotel }) {
           const procedure = procedureLink?.procedure_snapshot
           const media = mode === 'groups' ? attachmentsByMessage.get(message.id) || [] : message.attachments || []
           return <article key={message.id} className={`rnc-bubble ${own ? 'own' : ''}`}>
-            <div className="rnc-meta"><b>{own ? 'Tu' : sender}</b><time>{fmtTime(message.created_at)}</time>{mode === 'dm' && <span>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span>}</div>
+            <div className="rnc-meta"><b>{own ? 'Tu' : sender}</b><time>{fmtTime(message.created_at)}</time>{mode === 'dm' && <span title={message.cryptoState === 'verified' ? 'Firma e cifratura verificate' : 'Messaggio non verificato'}>{message.cryptoState === 'verified' ? '🔒' : '⚠️'}</span>}</div>
             {message.body && <p>{message.body}</p>}
             {procedure && <div className="rnc-procedure"><b>📘 {procedure.title}</b><p>{procedure.summary}</p></div>}
             {media.map((attachment) => <ChatAttachment key={attachment.id} attachment={attachment} encrypted={mode === 'dm'} />)}
