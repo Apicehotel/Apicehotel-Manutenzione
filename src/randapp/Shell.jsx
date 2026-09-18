@@ -394,6 +394,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
+    if (view === 'chat') return content
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
   }
 
@@ -470,7 +471,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
-        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
+        <main className={`rs-content ${view === 'chat' ? 'rs-content--chat' : ''}`} data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
         <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => {
