@@ -20,13 +20,18 @@ const partStatusLabel = { requested: 'Richiesto', reserved: 'Prenotato', consume
 const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'success', released: 'default', cancelled: 'default' }
 const qty = (value) => Number(value || 0).toLocaleString('it-IT', { maximumFractionDigits: 3 })
 
-export default function InterventionsView({ hotel, user }) {
+export default function InterventionsView({ hotel, user, openItemRequest = null }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
   const load = useCallback(async () => { const result = await fetchPlanned(hotel.id); setItems(result.items || []); setLoading(false) }, [hotel.id])
   useEffect(() => { load(); return subscribePlanned(hotel.id, load) }, [hotel.id, load])
+  useEffect(() => {
+    if (!openItemRequest?.id || !items.length) return
+    const target = items.find((item) => String(item.id) === String(openItemRequest.id))
+    if (target) setSelected(target)
+  }, [openItemRequest?.id, openItemRequest?.nonce, items])
   const visible = useMemo(() => items.filter((item) => filter === 'all' || (filter === 'done' ? item.status === 'done' : item.status !== 'done')), [items, filter])
   const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load() } }
   const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); await load() }

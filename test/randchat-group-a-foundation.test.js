@@ -48,7 +48,7 @@ test('group access is enforced by RLS and group membership', () => {
 test('RandChat groups are mounted only for chat-enabled users', () => {
   assert.match(nav, /id: 'chat'[\s\S]*show: Boolean\(user\.chat_enabled\)/)
   assert.match(nav, /chat: \(u\) => Boolean\(u\?\.chat_enabled\)/)
-  assert.match(shell, /import\('\.\/chat\/ChatGroups\.jsx'\)/)
+  assert.match(shell, /import\('\.\/chat\/RandChat\.jsx'\)/)
   assert.match(shell, /view === 'chat'/)
   assert.match(chatData, /chat_create_group/)
   assert.match(chatData, /chat_add_group_member/)

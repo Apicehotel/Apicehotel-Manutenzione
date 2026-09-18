@@ -33,7 +33,6 @@ installDeploymentRecovery()
 
 const App = lazy(() => import('./randapp/App.jsx'))
 const RandUiV2Preview = lazy(() => import('./randapp/randui-v2/Preview.jsx'))
-const RandAIAssistant = lazy(() => import('./randai/RandAIAssistant.jsx'))
 const RandAIContextBridge = lazy(() => import('./randai/context/RandAIContextBridge.jsx'))
 const TechnicianPortal = lazy(() => import('./technician-portal.jsx'))
 const TechnicianDispatchPortal = lazy(() => import('./randapp/TechnicianDispatchPortal.jsx'))
@@ -66,7 +65,7 @@ function AuthenticatedRandAI() {
     return () => window.removeEventListener(SESSION_EVENT, refresh)
   }, [])
   if (!active) return null
-  return <Suspense fallback={null}><RandAIContextBridge /><RandAIAssistant /></Suspense>
+  return <Suspense fallback={null}><RandAIContextBridge /></Suspense>
 }
 
 createRoot(document.getElementById('root')).render(

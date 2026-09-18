@@ -10,7 +10,7 @@ test('RandRadar Full Evolution derives coverage from the live app inventory',()=
   const pages=listRandUiPages()
   assert.equal(inventory.contract,'RAND_FULL_EVOLUTION_V1')
   assert.equal(inventory.pages.length,pages.length)
-  assert.equal(inventory.pages.length,24)
+  assert.equal(inventory.pages.length,25)
   assert.deepEqual(new Set(inventory.pages.map((item)=>item.id)),new Set(pages.map((item)=>item.id)))
   for(const id of ['issues','chat','housekeeping','supplies','interventions','inventory','planning-work','planning-sale','urgent','temperature','plants','settings','desktop-download','randai']) assert.ok(inventory.pages.some((item)=>item.id===id),`missing page ${id}`)
 })

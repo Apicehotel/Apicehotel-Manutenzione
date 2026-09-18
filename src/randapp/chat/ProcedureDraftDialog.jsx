@@ -34,18 +34,18 @@ export default function ProcedureDraftDialog({ open, groupId, hotelId, message, 
     finally { setBusy(false) }
   }
 
-  return <div className="rc-modal-backdrop" onClick={onClose}>
-    <section className="rc-modal rc-promote" onClick={(e) => e.stopPropagation()}>
-      <header><div><h2>Bozza procedura</h2><small>Il contenuto entra in RandGuide come bozza. Nessuna pubblicazione automatica.</small></div><button className="rc-icon" onClick={onClose}>×</button></header>
-      {!created ? <form className="rc-promote__form" onSubmit={submit}>
+  return <div className="randchat-modal-backdrop" onClick={onClose}>
+    <section className="randchat-modal randchat-modal--form" onClick={(e) => e.stopPropagation()}>
+      <header><div><h2>Bozza procedura</h2><small>Il contenuto entra in RandGuide come bozza. Nessuna pubblicazione automatica.</small></div><button className="randchat-iconbtn" onClick={onClose}>×</button></header>
+      {!created ? <form className="randchat-form" onSubmit={submit}>
         <label>Titolo opzionale<input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} placeholder="Se vuoto viene ricavato dal messaggio" /></label>
         <label>Categoria<input value={category} maxLength={80} onChange={(e) => setCategory(e.target.value)} /></label>
         <label>Area opzionale<input value={area} maxLength={120} onChange={(e) => setArea(e.target.value)} placeholder="Es. camere, cucina, impianti" /></label>
         <label>Testo sorgente<textarea rows={6} value={message.body || ''} readOnly /></label>
-        {error && <div className="rc-error" role="alert">{error}</div>}
-        <div className="rc-promote__actions"><button type="button" onClick={onClose}>Annulla</button><button disabled={busy}>{busy ? 'Creo…' : 'Crea bozza RandGuide'}</button></div>
-      </form> : <div className="rc-ai-result">
-        <div className="rc-procedure-card"><b>✅ Bozza creata</b><p>{created.draft.title}</p><small>ID {created.id}</small></div>
+        {error && <div className="randchat-inline-error" role="alert">{error}</div>}
+        <div className="randchat-form__actions"><button type="button" onClick={onClose}>Annulla</button><button disabled={busy}>{busy ? 'Creo…' : 'Crea bozza RandGuide'}</button></div>
+      </form> : <div className="randchat-result">
+        <div className="randchat-procedure"><b>✅ Bozza creata</b><p>{created.draft.title}</p><small>ID {created.id}</small></div>
         <p>Resta in stato <b>draft</b> e richiede revisione/approvazione RandGuide prima di diventare procedura operativa.</p>
         <button onClick={onClose}>Chiudi</button>
       </div>}

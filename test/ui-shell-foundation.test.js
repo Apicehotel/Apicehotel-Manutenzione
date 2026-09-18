@@ -18,7 +18,7 @@ test('adaptive primary mobile navigation keeps five structural slots with Home i
   assert.equal(nav.find((item) => item.id === 'operations')?.slot, 1)
   assert.equal(nav.find((item) => item.id === 'planning-work')?.slot, 2)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
-  assert.equal(nav.find((item) => item.id === 'chat')?.slot, 4)
+  assert.equal(nav.find((item) => item.id === 'task')?.slot, 4)
   assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
 

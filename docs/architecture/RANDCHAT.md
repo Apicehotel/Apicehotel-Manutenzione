@@ -2,6 +2,80 @@
 
 RandChat è il modulo di messaggistica interno di RandApp. Riusa identità, hotel e autorizzazione già esistenti: non introduce un secondo account utente.
 
+## RandChat v2 UI rebuild — 18 settembre 2026
+
+RandChat resta un modulo **interno all'organizzazione e non commerciale**. Il rebuild UI non cambia questo perimetro e non introduce una distribuzione esterna o un prodotto venduto.
+
+Telegram X (`TGX-Android/Telegram-X`) viene usato esclusivamente come **riferimento comportamentale** per le interazioni mature di una chat: ancoraggio all'ultimo messaggio, conservazione della posizione quando si legge lo storico, ritorno agli ultimi messaggi, composer persistente e separazione tra lista conversazioni e thread. Il codice GPL di Telegram X non viene copiato o incorporato: RandChat mantiene implementazione originale React/RandUI e i contratti dati esistenti.
+
+### Architettura UI v2
+
+- Il thread è l'unica area che scorre; header conversazione e composer restano nel workspace.
+- Gruppi e DM condividono lo stesso comportamento di scorrimento, incluso il pulsante “vai agli ultimi”.
+- Un messaggio inviato dall'utente porta al fondo; un messaggio ricevuto segue automaticamente solo se l'utente è già vicino al fondo. Se sta leggendo lo storico, la posizione viene preservata.
+
+### Invarianti del rebuild
+
+Il rebuild non modifica:
+
+- RLS/RPC;
+- membership hotel o gruppo;
+- E2EE dei DM;
+- retention;
+- RandMedia;
+- procedure e relative approvazioni;
+- collegamento esplicito Chat → Segnalazione;
+- policy RandAI sui gruppi e divieto di leggere automaticamente i DM E2EE.
+
+## Rebuild completo RandChat — 18 settembre 2026
+
+RandChat è un modulo **interno all'organizzazione e non commerciale**.
+
+La UI precedente è stata rimossa e sostituita da un'architettura nuova. Il rebuild mantiene i contratti esistenti di Supabase/RLS, gruppi, DM E2EE, retention, RandMedia, Procedure, RandAI e promozione a Segnalazione.
+
+### Riferimenti
+
+- **NextChat** (`ChatGPTNextWeb/NextChat`, licenza MIT) è usato come riferimento per composizione web React, separazione lista/thread, input panel, auto-grow e comportamento di scroll.
+- **Telegram X** è usato come riferimento comportamentale mobile: thread centrato sugli ultimi messaggi, storico verso l'alto, ritorno agli ultimi, composer persistente e azioni contestuali.
+- Il codice RandChat resta originale e adattato a RandUI; non viene incorporato codice Telegram X GPL.
+
+### Runtime canonico
+
+- `src/randapp/chat/RandChat.jsx` — orchestrazione dati, stato, permessi e modali.
+- `src/randapp/chat/RandChatList.jsx` — lista Gruppi/Diretti e creazione/apertura conversazioni.
+- `src/randapp/chat/RandChatThread.jsx` — header thread, messaggi, azioni contestuali e composer.
+- `src/randapp/chat/useRandChatScroll.js` — auto-scroll / detach / ritorno al fondo.
+- `src/randapp/chat/randchat.css` — unico foglio visuale RandChat.
+- `chat-data.js`, `dm-data.js`, moduli crypto e RandMedia — contratti dati/sicurezza preservati.
+
+### Contratto layout
+
+Desktop:
+`lista conversazioni | thread`
+
+Mobile:
+`lista conversazioni → thread`
+
+Nel thread:
+`header → avvisi → cronologia scrollabile → input panel`
+
+Il composer è una riga fisica del thread. Non usa `position: fixed` rispetto al browser e non dipende dalla pagina esterna. RandChat bypassa `RandUiPageBoundary` e usa `rs-content--chat` per possedere l'intero viewport centrale della shell sopra la bottom navigation.
+
+### Comportamento thread
+
+- apertura conversazione sull'area più recente;
+- auto-scroll finché l'utente resta vicino al fondo;
+- detach automatico quando l'utente legge lo storico;
+- pulsante per tornare agli ultimi;
+- textarea auto-grow;
+- invio con Enter protetto da composizione IME/Safari;
+- allegati;
+- menu contestuale messaggio;
+- Gruppi: `@procedura`, `@randai`, `@membri`, mention `@Nome_Membro`, pin/conservazione e gestione membri;
+- il menu `⋯` globale in alto nel thread è rimosso; restano solo azioni contestuali sui messaggi;
+- retention gruppi 30/60 giorni e DM 1/7/15 giorni restano contratti dati/backend, indipendenti dalla presenza del vecchio menu UI;
+- Diretti: E2EE per dispositivo.
+
 ## Stato
 
 Il core RandChat è completato **9/9** nei Group A, B e C.

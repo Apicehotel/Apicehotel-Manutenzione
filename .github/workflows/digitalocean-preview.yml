@@ -1,4 +1,5 @@
 name: RandUI Ocean Preview
+# RandUI preview retry after shared concurrency lane cleared
 
 on:
   pull_request:
@@ -7,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch, tag or commit to deploy to Ocean preview'
+        description: 'Branch to deploy to the fixed Ocean preview app'
         required: true
         default: 'main'
 
@@ -21,6 +22,7 @@ concurrency:
 
 env:
   PREVIEW_REF: ${{ github.event.pull_request.head.sha || inputs.ref }}
+  OCEAN_PREVIEW_BRANCH: ${{ github.head_ref || inputs.ref }}
 
 jobs:
   verify:
@@ -59,7 +61,7 @@ jobs:
 
   deploy:
     name: Deploy RandUI preview to Ocean
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'feat/randui-edera-theme-engine')
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
@@ -83,11 +85,10 @@ jobs:
       - name: RandOps heartbeat start
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
-      - name: Deploy controlled preview to existing DigitalOcean app
+      - name: Deploy fixed RandUI preview app
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: randui-preview
           print_build_logs: "true"
           print_deploy_logs: "true"
 

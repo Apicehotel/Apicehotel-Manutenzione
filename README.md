@@ -2,7 +2,7 @@
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 17 settembre 2026
+## Stato consolidato — 18 settembre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
@@ -54,6 +54,31 @@ Il catalogo copre **24/24 destinazioni** con 14 template. RandUI Guard è fail-c
 
 La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatamente token portabili, motion con reduced-motion fail-safe e adapter semantico delle icone. `src/randapp/randui-v2/` non è zombie finché `/ui-v2-preview` è usata dal gate Ocean.
 
+
+### RandChat dentro RandUI
+
+RandChat usa un workspace dedicato della shell e non viene trattata come una pagina standard. Quando `view === 'chat'`, la Shell bypassa `RandUiPageBoundary` e applica `rs-content--chat`, così la chat possiede l'intero viewport centrale sopra la bottom navigation.
+
+Contratto:
+
+- desktop: `lista conversazioni | thread`;
+- mobile/tablet: `lista conversazioni → thread`;
+- thread: `header → avvisi → cronologia scrollabile → composer`;
+- solo la cronologia scorre;
+- il composer è una riga fisica del thread e resta sempre sopra la bottom nav;
+- nessun offset locale o `position: fixed` del composer rispetto al browser.
+
+La UI RandChat è stata ricostruita da zero con implementazione originale React/RandUI, usando **NextChat** come riferimento web/layout (MIT) e **Telegram X** come riferimento comportamentale mobile. I contratti Supabase/RLS, gruppi, DM E2EE, retention, RandMedia, Procedure, RandAI e Segnalazioni restano invariati.
+
+Nel composer gruppi sono disponibili i comandi/mention:
+
+- `@procedura` → apre il selettore Procedure;
+- `@randai` → apre RandAI sul gruppo;
+- `@membri` → apre l'elenco membri;
+- `@Nome_Membro` → tagga un membro.
+
+Il menu `⋯` globale in alto a destra del thread è stato rimosso perché ridondante; restano soltanto le azioni contestuali sui singoli messaggi.
+
 ## RandAI, RandMind e RandResearch
 
 Le superfici RandAI restano due: **Quick Assistant** dentro RandApp e **Control Center `/randai`** protetto e multi-hotel.
@@ -88,7 +113,7 @@ npm run repo:radar
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, warehouse, urgenze, promemoria, sensori/temperature, utenti/ruoli, RandGuide, feedback, RandChat, RandDesktop e RandAI.
 
-Warehouse mantiene ledger/stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow distinto e non crea quantità o movimenti Warehouse. RandChat riusa identità e autorizzazioni RandApp; DM E2EE e media mantengono i rispettivi boundary. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette.
+Warehouse mantiene ledger/stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow distinto e non crea quantità o movimenti Warehouse. RandChat riusa identità e autorizzazioni RandApp; DM E2EE e media mantengono i rispettivi boundary. La UI RandChat canonica è composta da `RandChat.jsx`, `RandChatList.jsx`, `RandChatThread.jsx`, `useRandChatScroll.js` e `randchat.css`. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette.
 
 ## Offline e device
 

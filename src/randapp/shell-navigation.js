@@ -3,8 +3,8 @@ import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout
 // RandUI primary mobile navigation contract.
 // Five spatial slots stay stable on mobile: Operatività, Planning, Home, Task,
 // RandAI. Home is always the geometric centre and RandAI owns the far-right
-// slot. Task is the preferred operational destination; contextual fallbacks are
-// used only for roles that cannot access interventions/my-work.
+// slot. Task is a stable hub for Promemoria + Avvisi; contextual fallbacks are
+// used only for roles that cannot access either task function.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
@@ -22,8 +22,8 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
 })
 
 function firstContextualDestination({ placement, viewAllowed, interests }) {
-  if (placement('interventions') !== 'off' && viewAllowed('my-work')) {
-    return { id: 'my-work', key: 'interventions', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
+  if (viewAllowed('task')) {
+    return { id: 'task', key: 'task', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
   }
 
   if (placement('chat') !== 'off' && viewAllowed('chat')) {
@@ -63,13 +63,12 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // The primary navigation opens the complete, independently protected RandAI
-  // workspace. The header keeps ownership of the lightweight contextual popup.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI', href: '/randai' })
+  // RandAI is a first-class RandUI page in slot 5, alongside the other primary destinations.
+  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
 
   return items
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'task' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }

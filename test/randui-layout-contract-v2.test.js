@@ -7,9 +7,9 @@ import { RANDUI_LAYOUT_CONTRACT_VERSION, RANDUI_LAYOUT_VIEWPORTS, auditRandUiLay
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
-test('Point 2 binds all 24 pages to one measurable layout contract', () => {
+test('Point 2 binds all 25 pages to one measurable layout contract', () => {
   assert.equal(RANDUI_LAYOUT_CONTRACT_VERSION, '2.0.0')
-  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 24)
+  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 25)
   assert.deepEqual(RANDUI_LAYOUT_VIEWPORTS, [320,375,390,430,768,1024,1440])
   assert.deepEqual(auditRandUiLayoutCatalog(), [])
   for (const pageId of Object.keys(RANDUI_PAGE_CATALOG)) {
@@ -40,7 +40,8 @@ test('Unified Page v2 stays a thin boundary layer', () => {
   assert.match(css, /--randui-page-max: var\(--rand-content-max\)/)
   assert.match(css, /data-randui-width='reading'/)
   assert.match(css, /margin-inline: auto/)
-  assert.doesNotMatch(css, /\.rs-card|\.rs-page-title|\.rs-bottomnav/)
+  assert.doesNotMatch(css, /\.rs-card|\.rs-bottomnav/)
+  assert.match(css, /Global compact-header invariant/)
 })
 
 test('Point 2 does not create a second design system', () => {

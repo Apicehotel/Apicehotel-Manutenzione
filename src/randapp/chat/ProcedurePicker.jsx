@@ -29,17 +29,17 @@ export default function ProcedurePicker({ open, groupId, onClose, onShared }) {
     finally { setBusy(false) }
   }
 
-  return <div className="rc-modal-backdrop" onClick={onClose}>
-    <section className="rc-modal" onClick={(e) => e.stopPropagation()}>
-      <header><div><h2>Condividi procedura</h2><small>Solo procedure approvate della struttura del gruppo.</small></div><button className="rc-icon" onClick={onClose}>×</button></header>
+  return <div className="randchat-modal-backdrop" onClick={onClose}>
+    <section className="randchat-modal" onClick={(e) => e.stopPropagation()}>
+      <header><div><h2>Condividi procedura</h2><small>Solo procedure approvate della struttura del gruppo.</small></div><button className="randchat-iconbtn" onClick={onClose}>×</button></header>
       <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca procedura…" autoFocus />
-      {error && <div className="rc-error" role="alert">{error}</div>}
-      <div className="rc-member-list">
-        {rows.map((procedure) => <div className="rc-member" key={procedure.id}>
+      {error && <div className="randchat-inline-error" role="alert">{error}</div>}
+      <div className="randchat-picker-list">
+        {rows.map((procedure) => <div className="randchat-picker-row" key={procedure.id}>
           <span><b>{procedure.title}</b><small>{procedure.category || 'Generale'} · v{procedure.version} · rischio {procedure.risk_level || 'normal'}</small><small>{procedure.summary}</small></span>
           <button disabled={busy} onClick={() => share(procedure)}>Condividi</button>
         </div>)}
-        {!rows.length && !error && <p className="rc-muted">Nessuna procedura approvata disponibile.</p>}
+        {!rows.length && !error && <p className="randchat-muted">Nessuna procedura approvata disponibile.</p>}
       </div>
     </section>
   </div>

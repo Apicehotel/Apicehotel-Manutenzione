@@ -8,12 +8,11 @@ import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV
 import { buildPrimaryBottomNav } from './shell-navigation.js'
 import { resolveUserInterests } from './adaptive-layout.js'
 import { initSystemInsetsBridge } from './system-insets.js'
-import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
+import { contextualAddActions } from './contextual-add.js'
 import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
-import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
@@ -22,7 +21,7 @@ import './header-mobile.css'
 
 const Settings = lazy(() => import('./Settings.jsx'))
 const Issues = lazy(() => import('./Issues.jsx'))
-const ChatGroups = lazy(() => import('./chat/ChatGroups.jsx'))
+const RandChat = lazy(() => import('./chat/RandChat.jsx'))
 const InventoryView = lazy(() => import('./InventoryView.jsx'))
 const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
 const Profile = lazy(() => import('./Profile.jsx'))
@@ -37,6 +36,8 @@ const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
 const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
+const TaskHub = lazy(() => import('./operations/TaskHub.jsx'))
+const RandAIPage = lazy(() => import('./RandAIPage.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
@@ -46,7 +47,7 @@ const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus })
 const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
   default: ({ hotel, user }) => <div data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
 })))
-const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
+const TechnicianDirectoryView = lazy(() => import('./TechnicianDirectoryView.jsx'))
 const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
 const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
 const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
@@ -141,6 +142,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [openItemRequest, setOpenItemRequest] = useState(null)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [interventionCreateOpen, setInterventionCreateOpen] = useState(false)
@@ -157,7 +159,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
-
   useEffect(() => initSystemInsetsBridge(), [])
 
   useEffect(() => {
@@ -224,7 +225,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'task', 'planning-work', 'randai', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -349,11 +350,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const contextualActions = useMemo(() => contextualAddActions(view, addCapabilities), [view, addCapabilities])
   const contextualActionIds = useMemo(() => settings !== null ? [] : contextualActions.map((action) => action.id), [settings, contextualActions])
-  const fabLabel = contextualAddLabel(contextualActions)
-  const openContextualAdd = () => {
-    if (contextualActionIds.length === 1) { pickInsert(contextualActionIds[0]); return }
-    if (contextualActionIds.length > 1) setInsertOpen(true)
-  }
 
   const handlePlanningSectionChange = useCallback((section) => {
     setView(section === 'sale' ? 'planning-sale' : 'planning-work')
@@ -373,19 +369,21 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
 
     let content = null
-    if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'operations') content = <OperationsHub canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
-    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
-    if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
+    if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(target) => { if (typeof target === 'string') return pick({ id: target }); if (target?.view) { setOpenItemRequest({ view: target.view, id: target.itemId || null, nonce: Date.now() }); setSettings(null); setView(target.view) } }} />
+    if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
+    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} openItemRequest={openItemRequest?.view==='issues'?openItemRequest:null} />
+    if (view === 'chat') content = <RandChat user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
-    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
+    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='interventions'?openItemRequest:null} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
+    if (view === 'randai') content = <RandAIPage />
+    if (view === 'task') content = <TaskHub hotel={hotel} user={user} canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
-    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
-    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
+    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='urgent'?openItemRequest:null} />
+    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='reminders'?openItemRequest:null} />
     if (view === 'temperature') content = <TemperatureView hotel={hotel} />
     if (view === 'plants') content = <PlantView hotel={hotel} />
     if (view === 'housekeeping') content = <HousekeepingView user={user} hotel={hotel} />
@@ -396,6 +394,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
+    if (view === 'chat') return content
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
   }
 
@@ -432,6 +431,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (settings !== null || item.href) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
+    if (item.id === 'task') return ['task', 'urgent', 'reminders'].includes(view)
     return view === item.id
   }
 
@@ -467,12 +467,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
           </div>
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
-        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
+        <main className={`rs-content ${view === 'chat' ? 'rs-content--chat' : ''}`} data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
 
         <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => {
@@ -484,7 +483,6 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             )
           })}
         </nav>
-        {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
