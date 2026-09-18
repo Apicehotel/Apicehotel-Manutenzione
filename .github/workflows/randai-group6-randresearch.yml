@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 concurrency:
   group: randai-group6-${{ github.ref }}
   cancel-in-progress: true
@@ -12,8 +16,7 @@ jobs:
   research:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
