@@ -25,8 +25,8 @@
 
 .randchat-list {
   height: 100%;
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding: 12px;
   overflow: hidden;
@@ -221,6 +221,8 @@
 }
 
 .randchat-list__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   border: 1px solid var(--rs-line);
   border-radius: 14px;
@@ -337,9 +339,19 @@
   backdrop-filter: blur(14px);
 }
 
-.randchat-thread > .randchat-banner {
+.randchat-thread__notices {
   grid-row: 2;
-  margin: 6px 8px 0;
+  display: grid;
+  gap: 6px;
+  padding: 6px 8px 0;
+}
+
+.randchat-thread__notices:empty {
+  display: none;
+}
+
+.randchat-thread__notices .randchat-banner {
+  margin: 0;
 }
 
 .randchat-menu-wrap {
