@@ -66,7 +66,7 @@ test('Repo Radar accepts governed forge and specialist source hosts and rejects 
   assert.throws(()=>validateRepoRadarCandidate({id:'bad-host',name:'Bad',repository:'https://example.com/repo/code'}),/Unsupported repository URL/)
 })
 
-test('weekly discovery is read-only, bounded, multisource and RANDUI_100_V1 sector-complete', () => {
+test('fortnightly discovery is read-only, bounded, multisource and RANDUI_100_V1 sector-complete', () => {
   const workflow=fs.readFileSync('.github/workflows/repo-radar.yml','utf8')
   const runner=fs.readFileSync('scripts/repo-radar-snapshot.mjs','utf8')
   assert.match(workflow,/contents: read/)
@@ -77,6 +77,10 @@ test('weekly discovery is read-only, bounded, multisource and RANDUI_100_V1 sect
   assert.match(runner,/gates:\{security:null,compatibility:null,benchmark:null,rollback:null\}/)
   assert.match(runner,/MAX_DISCOVERED=80/)
   assert.match(runner,/MAX_PER_SECTOR=2/)
+  assert.match(runner,/MIN_ACCEPTABLE_COVERAGE=0\.80/)
+  assert.match(runner,/SCAN_BUDGET_MS=18\*60\*1000/)
+  assert.match(runner,/operationalSuccess/)
+  assert.match(runner,/stoppedByBudget/)
   assert.match(runner,/RANDUI_COVERAGE_CONTRACT='RANDUI_100_V1'/)
   assert.match(runner,/RANDUI_SECTORS/)
   const sectors=[
