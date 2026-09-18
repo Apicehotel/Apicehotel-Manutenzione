@@ -36,5 +36,5 @@ export default function RandAIProtectedRoute({mode='control'}){
   if(state.loading)return <div className="ra-gate"><div className="ra-loading">Controllo credenziali RandAI…</div></div>
   if(!state.allowed)return <Login onReady={ready}/>
   const live=mode==='live'
-  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">{live?'Caricamento RandAILive…':'Caricamento Control Center…'}</div></div>}>{live?<RandAILive/>:<RandAIControlCenter/>}</Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
+  return <><div className="ra-tools"><button onClick={()=>setManage(true)}>Accessi RandAI</button><button onClick={logout}>Esci</button></div><Suspense fallback={<div className="ra-gate"><div className="ra-loading">{live?'Caricamento RandAILive…':'Caricamento Control Center…'}</div></div>}>{live?<RandAILive currentUser={state.user}/>:<RandAIControlCenter/>}</Suspense><AccessManager open={manage} onClose={()=>setManage(false)} currentUser={state.user}/></>
 }
