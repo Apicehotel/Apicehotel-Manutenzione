@@ -4,10 +4,12 @@ import { readFile } from 'node:fs/promises'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('main keeps standalone routes and RandAI out of the static entry graph', async () => {
+test('main keeps standalone routes and RandAI assistant out of the static entry graph', async () => {
   const main = await source('src/main.jsx')
+  const shell = await source('src/randapp/Shell.jsx')
   assert.match(main, /const App = lazy\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
-  assert.match(main, /const RandAIAssistant = lazy\(\(\) => import\('\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(main, /const RandAIContextBridge = lazy\(\(\) => import\('\.\/randai\/context\/RandAIContextBridge\.jsx'\)\)/)
+  assert.match(shell, /const RandAIPage = lazy\(\(\) => import\('\.\/RandAIPage\.jsx'\)\)/)
   assert.match(main, /const TechnicianPortal = lazy\(\(\) => import\('\.\/technician-portal\.jsx'\)\)/)
   assert.match(main, /const PublicIssueView = lazy\(\(\) => import\('\.\/public-issue-view\.jsx'\)\)/)
   assert.match(main, /const NtfyShortLink = lazy\(\(\) => import\('\.\/randapp\/ntfy\/NtfyShortLink\.jsx'\)\)/)
@@ -15,7 +17,7 @@ test('main keeps standalone routes and RandAI out of the static entry graph', as
   assert.doesNotMatch(main, /import RandAIAssistant from/)
 })
 
-test('RandAI assistant is loaded only for an authenticated RandApp session', async () => {
+test('RandAI context is mounted only for an authenticated RandApp session', async () => {
   const main = await source('src/main.jsx')
   assert.match(main, /function AuthenticatedRandAI\(\)/)
   assert.match(main, /useState\(\(\) => Boolean\(loadSession\(\)\)\)/)
