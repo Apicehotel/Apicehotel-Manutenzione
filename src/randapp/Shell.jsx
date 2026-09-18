@@ -142,6 +142,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [openItemRequest, setOpenItemRequest] = useState(null)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [interventionCreateOpen, setInterventionCreateOpen] = useState(false)
@@ -374,13 +375,13 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (!viewAllowed(view)) return <EmptyState icon="lock" title="Accesso non consentito">Questa funzione è disattivata per il ruolo {user?.role || ''}.</EmptyState>
 
     let content = null
-    if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'operations') content = <OperationsHub canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
-    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(target) => { if (typeof target === 'string') return pick({ id: target }); if (target?.view) { setOpenItemRequest({ view: target.view, id: target.itemId || null, nonce: Date.now() }); setSettings(null); setView(target.view) } }} />
+    if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
+    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} openItemRequest={openItemRequest?.view==='issues'?openItemRequest:null} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
-    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
+    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='interventions'?openItemRequest:null} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
     if (view === 'task') content = <TaskHub canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id) => pick({ id })} />
