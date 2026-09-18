@@ -88,27 +88,84 @@ class RandHotelScene extends Phaser.Scene{
     for(const [id] of AGENTS)this.brains.set(id,new HotelAgentBrain(this,id))
     this.registry.events.on('changedata-randRuntime',this.syncRuntime,this)
     this.registry.events.on('changedata-randIssues',this.syncIssues,this)
+    this.registry.events.on('changedata-randFollowAgent',this.syncFollow,this)
     this.syncRuntime()
     this.syncIssues()
+    this.syncFollow()
 
-    this.scale.on('resize',()=>this.cameras.main.centerOn(GAME_W/2,GAME_H/2))
+    this.scale.on('resize',()=>{if(!this.registry.get('randFollowAgent'))this.resetCamera()})
     this.cameras.main.setBackgroundColor('#081526')
-    this.cameras.main.centerOn(GAME_W/2,GAME_H/2)
+    this.resetCamera()
   }
 
   shutdown(){
     this.registry.events.off('changedata-randRuntime',this.syncRuntime,this)
     this.registry.events.off('changedata-randIssues',this.syncIssues,this)
+    this.registry.events.off('changedata-randFollowAgent',this.syncFollow,this)
   }
 
   update(){
     for(const brain of this.brains.values())brain.update()
   }
 
+  resetCamera(){
+    const cam=this.cameras.main
+    cam.stopFollow()
+    cam.setZoom(1)
+    cam.centerOn(GAME_W/2,GAME_H/2)
+  }
+
+  syncFollow(){
+    const id=this.registry.get('randFollowAgent')
+    for(const [agentId,container] of this.agentContainers){
+      const ring=container.getData('followRing')
+      if(ring)ring.setVisible(Boolean(id&&agentId===id))
+    }
+    if(!id){this.resetCamera();return}
+    const target=this.agentContainers.get(id)
+    if(!target){this.resetCamera();return}
+    const mobile=typeof window!=='undefined'&&window.matchMedia?.('(max-width: 720px)').matches
+    this.cameras.main.startFollow(target,true,.09,.09)
+    this.cameras.main.setZoom(mobile?1.55:1.18)
+  }
+
   drawEnvironment(map){
     const g=this.add.graphics()
     g.setDepth(1)
     const zones=map.getObjectLayer('zones')?.objects||[]
+
+    // Hotel atmosphere: warm central rug, corridor runners and soft wall glow.
+    g.fillStyle(0x0b1d31,.72).fillRect(32,32,GAME_W-64,92)
+    g.fillStyle(0x183a5c,.9).fillRect(42,42,GAME_W-84,72)
+    g.fillStyle(0x7e5634,.8).fillRoundedRect(286,176,388,90,14)
+    g.fillStyle(0xa87845,.72).fillRoundedRect(304,190,352,62,12)
+    g.fillStyle(0x8f2548,.7).fillRoundedRect(314,300,332,72,12)
+    g.fillStyle(0xc79a57,.35).fillRoundedRect(330,316,300,40,10)
+
+    // Reception desk with warm lamps.
+    g.fillStyle(0x17293b,1).fillRoundedRect(74,236,186,44,7)
+    g.fillStyle(0x9f7548,1).fillRect(84,246,166,14)
+    g.fillStyle(0xe6b866,.95).fillCircle(98,224,6).fillCircle(236,224,6)
+
+    // Elevator bank.
+    for(let i=0;i<3;i++){
+      const x=420+i*52
+      g.fillStyle(0x26394d,1).fillRoundedRect(x,64,40,78,4)
+      g.lineStyle(2,0xb79a63,.85).strokeRoundedRect(x,64,40,78,4)
+      g.fillStyle(0xd6b35d,1).fillCircle(x+32,102,2)
+    }
+
+    // Decorative plants and lounge lamps.
+    const plants=[[48,180],[900,180],[270,412],[690,412],[60,610],[890,610]]
+    for(const [x,y] of plants){
+      g.fillStyle(0x6a452c,1).fillRect(x-7,y+10,14,11)
+      g.fillStyle(0x2f7b54,1).fillCircle(x-7,y+4,8).fillCircle(x+7,y+2,9).fillCircle(x,y-5,9)
+    }
+    const lamps=[[280,288],[680,288],[284,558],[676,558]]
+    for(const [x,y] of lamps){
+      g.fillStyle(0xf0c76b,.95).fillCircle(x,y,5)
+      g.fillStyle(0xffd987,.15).fillCircle(x,y,18)
+    }
     for(const zone of zones){
       const cx=zone.x+zone.width/2, cy=zone.y+zone.height/2
       this.zones.set(zone.name,{x:Math.floor(cx/TILE),y:Math.floor(cy/TILE)})
@@ -138,8 +195,9 @@ class RandHotelScene extends Phaser.Scene{
     for(const zone of zones){
       const meta=labels[zone.name]
       if(!meta)continue
-      g.lineStyle(2,meta[1],.85).strokeRect(zone.x+4,zone.y+4,zone.width-8,zone.height-8)
-      this.add.text(zone.x+zone.width/2,zone.y+10,meta[0],{fontFamily:'monospace',fontSize:'11px',fontStyle:'bold',color:'#dff4ff'}).setOrigin(.5,0).setDepth(3)
+      g.fillStyle(meta[1],.075).fillRoundedRect(zone.x+6,zone.y+6,zone.width-12,zone.height-12,8)
+      const sign=this.add.text(zone.x+zone.width/2,zone.y+10,meta[0],{fontFamily:'monospace',fontSize:'11px',fontStyle:'bold',color:'#eaf7ff',backgroundColor:'#07101dcc',padding:{x:5,y:3}}).setOrigin(.5,0).setDepth(3)
+      sign.setAlpha(.9)
     }
   }
 
@@ -152,8 +210,10 @@ class RandHotelScene extends Phaser.Scene{
     const eye1=this.add.rectangle(-7,-22,4,4,tone)
     const eye2=this.add.rectangle(7,-22,4,4,tone)
     const mark=this.add.text(0,4,glyph,{fontFamily:'monospace',fontSize:glyph.length>1?'8px':'12px',fontStyle:'bold',color:'#0b1622'}).setOrigin(.5)
+    const followRing=this.add.ellipse(0,2,62,78).setStrokeStyle(3,tone,.95).setVisible(false)
     const tag=this.add.text(0,31,name,{fontFamily:'monospace',fontSize:'9px',fontStyle:'bold',color:'#ffffff',backgroundColor:'#07101ddd',padding:{x:3,y:2}}).setOrigin(.5,0)
-    body.add([shadow,torso,head,visor,eye1,eye2,mark,tag])
+    body.add([shadow,followRing,torso,head,visor,eye1,eye2,mark,tag])
+    body.setData('followRing',followRing)
     body.setSize(56,78)
     body.setDepth(20)
 
