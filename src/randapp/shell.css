@@ -41,8 +41,6 @@
   --rs-fab-h: calc(58px * var(--rs-scale));
   --rs-content-bottom-clearance: calc(var(--rs-nav-h) + var(--rs-safe-bottom) + var(--rs-fab-h) + 36px * var(--rs-scale));
   --rs-header-h: calc(62px * var(--rs-scale));
-  --rs-mobile-headbar-h: calc(78px * var(--rs-scale));
-  --rs-headbar-live-h: calc(var(--rs-mobile-headbar-h) + var(--rs-safe-top));
   --rs-max: 1180px;
   font-synthesis: none;
 }
@@ -103,12 +101,9 @@ a { color: var(--rs-cyan); }
 
 /* ---------- Header ---------- */
 .rs-header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  min-height: var(--rs-headbar-live-h);
+  z-index: 30;
   padding: calc(var(--rs-safe-top) + 8px) 14px 10px;
   display: flex;
   align-items: center;
@@ -680,16 +675,6 @@ a { color: var(--rs-cyan); }
 }
 @media (max-width: 1023px) {
   .rs-sidebar { display: none; }
-
-  /* Fixed mobile header clearance: content always starts below the head bar. */
-  .rs-app {
-    padding-top: 0;
-  }
-
-  .rs-content {
-    padding-top: calc(var(--rs-headbar-live-h) + 20px);
-    scroll-padding-top: calc(var(--rs-headbar-live-h) + 20px);
-  }
 }
 @media (min-width: 1280px) {
   .rs-list--grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
