@@ -118,10 +118,12 @@ export default function RandChatThread({
       </div>
     </header>
 
-    {error && <div className="randchat-banner randchat-banner--error">{error}</div>}
-    {mode === 'dm' && !dmRecipientHasDevice && (
-      <div className="randchat-banner">Il destinatario deve aprire RandChat almeno una volta su un dispositivo.</div>
-    )}
+    <div className="randchat-thread__notices">
+      {error && <div className="randchat-banner randchat-banner--error">{error}</div>}
+      {mode === 'dm' && !dmRecipientHasDevice && (
+        <div className="randchat-banner">Il destinatario deve aprire RandChat almeno una volta su un dispositivo.</div>
+      )}
+    </div>
 
     <div className="randchat-messages" ref={scrollRef} onScroll={onScroll}>
       {messages.map((message) => {
