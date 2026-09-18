@@ -6,8 +6,8 @@ export default function RandAIPage() {
     <Stack gap="sm" className="rs-randai-page" data-testid="randai-page">
       <PageTitle
         eyebrow="RANDAI"
-        title="Assistente"
-        subtitle="Parla con RandAI usando il contesto della struttura, dati live, memoria, procedure e storico operativo."
+        title="RandAI"
+        subtitle="Intelligenza operativa della struttura: osserva, collega, ricorda e ti aiuta a decidere cosa controllare dopo."
       />
       <RandAIAssistant embedded />
     </Stack>
