@@ -19,17 +19,16 @@ test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   assert.match(architecture, /RandGateway.*Tool Gateway.*RandSecure.*HITL.*Action Gateway.*RandAudit/s)
 })
 
-test('Phase 0 keeps the protected RandAI console separate from the in-app assistant action', () => {
+test('Phase 0 keeps the protected RandAI console separate from the in-app RandAI page', () => {
   const main = read('src/main.jsx')
   const navigation = read('src/randapp/shell-navigation.js')
   const shell = read('src/randapp/Shell.jsx')
 
   assert.match(main, /randaiConsoleMatch/)
   assert.match(main, /<RandAIProtectedRoute \/>/)
-  assert.match(navigation, /id:\s*'randai'.*action:\s*'assistant'/s)
-  assert.doesNotMatch(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
-  assert.match(shell, /item\.id === 'randai' \|\| item\.action === 'assistant'/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/s)
+  assert.doesNotMatch(navigation, /id:\s*'randai'.*(?:href|action):/s)
+  assert.match(shell, /view === 'randai'[\s\S]*<RandAIPage/)
   assert.doesNotMatch(shell, /data-testid="header-randai"/)
 })
 
