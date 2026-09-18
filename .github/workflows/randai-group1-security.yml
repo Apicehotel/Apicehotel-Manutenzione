@@ -15,6 +15,9 @@ concurrency:
 jobs:
   guardrails:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -28,6 +31,10 @@ jobs:
 
       - name: Install application dependencies
         run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randsecure --status RUNNING --activity "Security checks"
 
       - name: RandTool Gateway contracts
         run: npm run test:group1
@@ -47,3 +54,10 @@ jobs:
           path: artifacts/rand-plugin-eval/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randsecure --status IDLE --activity "Security checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randsecure --status ERROR --activity "Security checks" --detail "Workflow failed"
