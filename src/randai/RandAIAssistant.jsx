@@ -98,6 +98,12 @@ function ProjectIntelligencePanel({ intelligence }) {
   )
 }
 
+const procedureStepText = (step) => {
+  if (typeof step === 'string' || typeof step === 'number') return String(step)
+  if (step && typeof step === 'object') return String(step.text ?? step.label ?? step.title ?? '')
+  return ''
+}
+
 export default function RandAIAssistant({ embedded = false }) {
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(embedded)
@@ -171,7 +177,7 @@ export default function RandAIAssistant({ embedded = false }) {
   }
 
   const readMessage = (message) => {
-    const text = message.text || [message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || [])].filter(Boolean).join('. ')
+    const text = message.text || [message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || []).map(procedureStepText)].filter(Boolean).join('. ')
     if (!text) return
     try { audio.current?.speak(text) } catch { setAudioNotice('Lettura vocale non disponibile su questo dispositivo.') }
   }
@@ -331,7 +337,7 @@ export default function RandAIAssistant({ embedded = false }) {
                     <span className="randai__source">Procedura interna · v{message.procedure.version || 1}</span>
                     <h3>{message.procedure.title}</h3>
                     <p>{message.procedure.summary}</p>
-                    <ol>{(message.procedure.steps || []).map((step) => <li key={step}>{step}</li>)}</ol>
+                    <ol>{(message.procedure.steps || []).map((step, stepIndex) => { const text = procedureStepText(step); return text ? <li key={`${step?.order ?? stepIndex}-${text}`}>{text}</li> : null })}</ol>
                   </>
                 )}
                 {message.equipment?.length > 0 && (
