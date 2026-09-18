@@ -1,0 +1,220 @@
+/* RandUI Theme Engine v1
+   Inspired by the design-token approach used by mature theming systems.
+   This is an original RandUI token contract: no third-party theme code is copied.
+
+   Ownership:
+   - semantic color, surface, typography, radius and elevation tokens live here;
+   - shell/layout geometry stays in adaptive-layout.css + foundation.css;
+   - existing --rs-* variables remain compatibility aliases during migration.
+*/
+
+:root {
+  /* Typography: local/system stack, no font download required by RandUI. */
+  --rand-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --rand-font-display: var(--rand-font-sans);
+
+  /* Geometry */
+  --rand-radius-control: 12px;
+  --rand-radius-surface: 16px;
+  --rand-radius-card: 20px;
+  --rand-radius-panel: 22px;
+  --rand-radius-round: 999px;
+
+  /* Dark is the historical fallback before theme.js resolves data-theme. */
+  --rand-canvas: #060a13;
+  --rand-canvas-subtle: #08101f;
+  --rand-surface-1: #0e1727;
+  --rand-surface-2: #121d31;
+  --rand-surface-3: #172439;
+
+  --rand-text-primary: #eef4ff;
+  --rand-text-secondary: #9db0cf;
+  --rand-text-muted: #6c7f9e;
+
+  --rand-border: rgba(90, 170, 230, 0.14);
+  --rand-border-strong: rgba(96, 200, 240, 0.30);
+
+  --rand-accent: #22d3ee;
+  --rand-accent-secondary: #2dd4bf;
+  --rand-accent-blue: #3b82f6;
+  --rand-accent-strong: #2563eb;
+
+  /* Semantic states: meaning first, page-specific color second. */
+  --rand-info: #22d3ee;
+  --rand-success: #46d99a;
+  --rand-warning: #f7b955;
+  --rand-danger: #f6607d;
+  --rand-inactive: #6c7f9e;
+
+  --rand-info-soft: rgba(34, 211, 238, 0.10);
+  --rand-success-soft: rgba(70, 217, 154, 0.10);
+  --rand-warning-soft: rgba(247, 185, 85, 0.10);
+  --rand-danger-soft: rgba(246, 96, 125, 0.10);
+
+  --rand-gradient-primary: linear-gradient(135deg, #34e3e8 0%, #3b82f6 100%);
+  --rand-shadow-surface: 0 18px 46px -22px rgba(0, 0, 0, 0.85);
+  --rand-shadow-focus: 0 0 0 1px var(--rand-border), 0 20px 50px -30px rgba(40, 180, 246, 0.5);
+
+  --rand-chart-1: #22d3ee;
+  --rand-chart-2: #2dd4bf;
+  --rand-chart-3: #3b82f6;
+  --rand-chart-4: #8b5cf6;
+  --rand-chart-5: #ec4899;
+  --rand-chart-6: #f6607d;
+  --rand-chart-7: #f7b955;
+  --rand-chart-8: #84cc16;
+
+  /* Compatibility bridge. Existing components keep working while RandUI migrates. */
+  --rs-bg: var(--rand-canvas);
+  --rs-bg-2: var(--rand-canvas-subtle);
+  --rs-surface: var(--rand-surface-1);
+  --rs-surface-2: var(--rand-surface-2);
+  --rs-surface-3: var(--rand-surface-3);
+  --rs-line: var(--rand-border);
+  --rs-line-strong: var(--rand-border-strong);
+  --rs-text: var(--rand-text-primary);
+  --rs-text-2: var(--rand-text-secondary);
+  --rs-text-3: var(--rand-text-muted);
+  --rs-cyan: var(--rand-accent);
+  --rs-teal: var(--rand-accent-secondary);
+  --rs-blue: var(--rand-accent-blue);
+  --rs-blue-deep: var(--rand-accent-strong);
+  --rs-grad-primary: var(--rand-gradient-primary);
+  --rs-danger: var(--rand-danger);
+  --rs-warn: var(--rand-warning);
+  --rs-ok: var(--rand-success);
+  --rs-shadow: var(--rand-shadow-surface);
+  --rs-glow: var(--rand-shadow-focus);
+}
+
+html[data-theme='light'] {
+  /* Warm-neutral light hierarchy: distinct canvas/surfaces without visual noise. */
+  --rand-canvas: #f5f7fa;
+  --rand-canvas-subtle: #eef2f6;
+  --rand-surface-1: #ffffff;
+  --rand-surface-2: #f7f8f6;
+  --rand-surface-3: #edf1ef;
+
+  --rand-text-primary: #17211d;
+  --rand-text-secondary: #4d5d55;
+  --rand-text-muted: #78877f;
+
+  --rand-border: rgba(40, 67, 54, 0.13);
+  --rand-border-strong: rgba(28, 107, 79, 0.28);
+
+  --rand-accent: #147d68;
+  --rand-accent-secondary: #238b75;
+  --rand-accent-blue: #39789f;
+  --rand-accent-strong: #0f6856;
+
+  --rand-info: #39789f;
+  --rand-success: #34825f;
+  --rand-warning: #ad741f;
+  --rand-danger: #b64f4b;
+  --rand-inactive: #78877f;
+
+  --rand-info-soft: rgba(57, 120, 159, 0.10);
+  --rand-success-soft: rgba(52, 130, 95, 0.10);
+  --rand-warning-soft: rgba(173, 116, 31, 0.10);
+  --rand-danger-soft: rgba(182, 79, 75, 0.10);
+
+  --rand-gradient-primary: linear-gradient(135deg, #238b75 0%, #39789f 100%);
+  --rand-shadow-surface: 0 14px 34px -24px rgba(36, 59, 48, 0.28);
+  --rand-shadow-focus: 0 0 0 1px var(--rand-border), 0 18px 42px -30px rgba(35, 139, 117, 0.34);
+
+  --rand-chart-1: #39789f;
+  --rand-chart-2: #238b75;
+  --rand-chart-3: #6b7f3f;
+  --rand-chart-4: #8268a8;
+  --rand-chart-5: #a85d7f;
+  --rand-chart-6: #b64f4b;
+  --rand-chart-7: #ad741f;
+  --rand-chart-8: #5f8a44;
+}
+
+html[data-theme='dark'] {
+  /* Layered graphite dark surfaces; intentionally not pure black. */
+  --rand-canvas: #111212;
+  --rand-canvas-subtle: #151716;
+  --rand-surface-1: #181a19;
+  --rand-surface-2: #202221;
+  --rand-surface-3: #292c2a;
+
+  --rand-text-primary: #f1f4f2;
+  --rand-text-secondary: #b7c0bb;
+  --rand-text-muted: #818b86;
+
+  --rand-border: #343735;
+  --rand-border-strong: #4a504c;
+
+  --rand-accent: #58bca1;
+  --rand-accent-secondary: #69c7ae;
+  --rand-accent-blue: #6ca5c4;
+  --rand-accent-strong: #8bd2be;
+
+  --rand-info: #6ca5c4;
+  --rand-success: #69bd91;
+  --rand-warning: #d6a557;
+  --rand-danger: #d87870;
+  --rand-inactive: #818b86;
+
+  --rand-info-soft: rgba(108, 165, 196, 0.12);
+  --rand-success-soft: rgba(105, 189, 145, 0.12);
+  --rand-warning-soft: rgba(214, 165, 87, 0.12);
+  --rand-danger-soft: rgba(216, 120, 112, 0.12);
+
+  --rand-gradient-primary: linear-gradient(135deg, #58bca1 0%, #6ca5c4 100%);
+  --rand-shadow-surface: 0 18px 42px -24px rgba(0, 0, 0, 0.72);
+  --rand-shadow-focus: 0 0 0 1px var(--rand-border), 0 18px 44px -30px rgba(88, 188, 161, 0.36);
+}
+
+/* Canonical RandUI semantic helpers. Feature pages should prefer these tones
+   rather than inventing new success/warning/error colors. */
+.rs-randui-page {
+  font-family: var(--rand-font-sans);
+}
+
+.rs-randui-page h1,
+.rs-randui-page h2,
+.rs-randui-page h3,
+.rs-randui-page strong,
+.rs-randui-page b {
+  font-family: var(--rand-font-display);
+}
+
+.rs-randui-tone--info { color: var(--rand-info); }
+.rs-randui-tone--success { color: var(--rand-success); }
+.rs-randui-tone--warning { color: var(--rand-warning); }
+.rs-randui-tone--danger { color: var(--rand-danger); }
+.rs-randui-tone--inactive { color: var(--rand-inactive); }
+
+.rs-randui-status {
+  border: 1px solid var(--rand-border);
+  border-radius: var(--rand-radius-control);
+  color: var(--rand-text-secondary);
+  background: var(--rand-surface-2);
+}
+
+.rs-randui-status[data-tone='info'] {
+  color: var(--rand-info);
+  border-color: color-mix(in srgb, var(--rand-info) 34%, transparent);
+  background: var(--rand-info-soft);
+}
+
+.rs-randui-status[data-tone='success'] {
+  color: var(--rand-success);
+  border-color: color-mix(in srgb, var(--rand-success) 34%, transparent);
+  background: var(--rand-success-soft);
+}
+
+.rs-randui-status[data-tone='warning'] {
+  color: var(--rand-warning);
+  border-color: color-mix(in srgb, var(--rand-warning) 34%, transparent);
+  background: var(--rand-warning-soft);
+}
+
+.rs-randui-status[data-tone='danger'] {
+  color: var(--rand-danger);
+  border-color: color-mix(in srgb, var(--rand-danger) 34%, transparent);
+  background: var(--rand-danger-soft);
+}
