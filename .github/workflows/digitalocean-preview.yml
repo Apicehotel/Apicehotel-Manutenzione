@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: randui-ocean-preview
@@ -63,7 +64,6 @@ jobs:
     environment: preview
     env:
       SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Checkout preview ref
         uses: actions/checkout@v4
