@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../supabase.js'
-import { agentStatusLabel, buildAgentRuntimeBoard } from '../control-center/agent-registry.js'
+import { agentStatusLabel, buildAgentRuntimeBoard, RAND_MODULES } from '../control-center/agent-registry.js'
 import './agent-control.css'
 
 const STATUS_TONE = {
@@ -101,6 +101,10 @@ export default function AgentControlPanel() {
     <div className="rac-head"><div><small>RUNTIME RANDAI</small><h2>Agenti IA</h2><p>Stati derivati da heartbeat reali. Se non arriva un heartbeat per 5 minuti l'agente risulta offline.</p></div><button type="button" onClick={load} disabled={loading}>{loading ? 'Aggiorno…' : 'Aggiorna'}</button></div>
     {error && <div className="rac-error">{error}</div>}
     <div className="rac-grid">{board.map((agent) => <AgentCard key={agent.id} agent={agent} onToggle={toggle} busyId={busyId} />)}</div>
+    <section className="rac-modules" aria-labelledby="rac-modules-title">
+      <div className="rac-head"><div><small>ECOSISTEMA RAND</small><h2 id="rac-modules-title">Moduli e capacità</h2><p>Componenti reali del progetto che non hanno un processo autonomo: non ricevono heartbeat e non vengono marcati Offline.</p></div></div>
+      <div className="rac-grid">{RAND_MODULES.map((module) => <article className="rac-agent rac-agent--neutral" key={module.id} data-rand-component={module.id}><header><div><div><strong>{module.name}</strong><small>{module.role}</small></div></div><span className="rac-status">{module.kind}</span></header></article>)}</div>
+    </section>
     <p className="rac-note">Pausa/Riprendi imposta lo stato desiderato nel registro centrale. I worker devono rispettarlo prima di iniziare nuovi task; non vengono interrotti processi già in fase critica.</p>
   </div>
 }
