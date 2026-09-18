@@ -447,7 +447,7 @@ function compareIssueRooms(a, b) {
   return left.text.localeCompare(right.text, 'it', { numeric: true, sensitivity: 'base' })
 }
 
-export default function Issues({ user, hotel, users, createSignal }) {
+export default function Issues({ user, hotel, users, createSignal, openItemRequest = null }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
   const [filter, setFilter] = useState('todo')
@@ -472,6 +472,12 @@ export default function Issues({ user, hotel, users, createSignal }) {
     return () => unsub?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotel.id])
+
+  useEffect(() => {
+    if (!openItemRequest?.id || !issues.length) return
+    const target = issues.find((item) => String(item.id) === String(openItemRequest.id))
+    if (target) setSelected(target)
+  }, [openItemRequest?.id, openItemRequest?.nonce, issues])
 
   const counts = useMemo(() => issues.reduce((acc, i) => ({ ...acc, [i.status]: (acc[i.status] || 0) + 1 }), {}), [issues])
   const filtered = useMemo(() => {
