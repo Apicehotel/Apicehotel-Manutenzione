@@ -4,10 +4,13 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('RandAI contextual bridge is mounted only with an authenticated assistant', async () => {
+test('RandAI contextual bridge stays global while assistant renders inside RandAI page', async () => {
   const main = await source('src/main.jsx')
+  const page = await source('src/randapp/RandAIPage.jsx')
   assert.match(main, /RandAIContextBridge/)
-  assert.match(main, /<RandAIContextBridge\s*\/><RandAIAssistant\s*\/>/)
+  assert.match(main, /<RandAIContextBridge\s*\/>/)
+  assert.doesNotMatch(main, /<RandAIAssistant\s*\/>/)
+  assert.match(page, /<RandAIAssistant embedded\s*\/>/)
 })
 
 test('context bridge publishes hotel actor and active screen without overwriting an issue resource', async () => {
@@ -19,15 +22,15 @@ test('context bridge publishes hotel actor and active screen without overwriting
   assert.match(bridge, /aria-current/)
 })
 
-test('RandAI stays a dedicated bottom assistant action and is not mixed into contextual creation', async () => {
+test('RandAI stays a dedicated bottom page and is not mixed into contextual creation', async () => {
   const launcher = await source('src/randapp/InsertLauncher.jsx')
   const shell = await source('src/randapp/Shell.jsx')
   const navigation = await source('src/randapp/shell-navigation.js')
   const actions = await source('src/randapp/contextual-add.js')
   assert.doesNotMatch(launcher, /Chiedi a RandAI/)
   assert.doesNotMatch(actions, /id:\s*'randai'/)
-  assert.match(navigation, /id:\s*'randai'.*action:\s*'assistant'/s)
-  assert.match(shell, /randai-toggle/)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/s)
+  assert.match(shell, /view === 'randai'[\s\S]*<RandAIPage/)
   assert.doesNotMatch(shell, /header-randai/)
 })
 
