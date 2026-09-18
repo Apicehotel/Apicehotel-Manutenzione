@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createRandHotelGame } from './RandHotelScene.js'
 
-export default function RandAILiveGame({runtime,issues,onAgentSelect,onIssueSelect}){
+export default function RandAILiveGame({runtime,issues,selectedAgent,onAgentSelect,onIssueSelect}){
   const hostRef=useRef(null)
   const gameRef=useRef(null)
   const issuesRef=useRef(issues)
@@ -37,8 +37,13 @@ export default function RandAILiveGame({runtime,issues,onAgentSelect,onIssueSele
     if(game)game.registry.set('randIssues',issues||[])
   },[issues])
 
+  useEffect(()=>{
+    const game=gameRef.current
+    if(game)game.registry.set('randFollowAgent',selectedAgent||null)
+  },[selectedAgent])
+
   return <div className="rl-game-frame">
     <div ref={hostRef} className="rl-game-canvas" aria-label="RandAILive hotel game world"/>
-    <div className="rl-game-tech"><span>PHASER</span><span>GRID ENGINE</span><span>YUKA</span><span>TILED</span></div>
+    <div className="rl-game-tip">{selectedAgent?`Seguo ${selectedAgent}`:'Tocca un Rand per seguirlo'}</div>
   </div>
 }
