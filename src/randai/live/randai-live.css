@@ -31,3 +31,6 @@
   .rl-game-frame{aspect-ratio:15/11;border-radius:8px}
   .rl-game-tip{left:6px;bottom:5px;font-size:6px;padding:4px 6px}
 }
+
+.rl-game-overlay{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:#06101dcc;color:#dff4ff;font-size:12px;letter-spacing:.04em}
+.rl-game-overlay--error{background:#2b0f16e8;color:#ff9aa6}
