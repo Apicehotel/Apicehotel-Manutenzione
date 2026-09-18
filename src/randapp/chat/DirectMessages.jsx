@@ -12,6 +12,7 @@ import {
 } from './dm-data.js'
 import ChatAttachment from './ChatAttachment.jsx'
 import PromoteIssueDialog from './PromoteIssueDialog.jsx'
+import useChatThreadScroll from './useChatThreadScroll.js'
 
 const fmtTime = (value) => {
   try { return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(value)) } catch { return '' }
@@ -35,6 +36,16 @@ export default function DirectMessages({ user, hotel }) {
 
   const selected = useMemo(() => threads.find((thread) => thread.id === selectedId) || null, [threads, selectedId])
   const directoryOptions = useMemo(() => directory.filter((entry) => entry.auth_user_id !== currentUserId), [directory, currentUserId])
+  const {
+    scrollerRef: messagesRef,
+    endRef: messagesEndRef,
+    showJumpBottom,
+    unreadBelow,
+    scrollToLatest,
+    onScroll: handleMessagesScroll,
+    markOutgoing,
+  } = useChatThreadScroll({ threadId: selectedId, messages, currentUserId })
+
   const recipientHasDevice = useMemo(() => {
     if (!selected) return false
     return devices.some((device) => device.auth_user_id === selected.other_user_id)
@@ -103,6 +114,7 @@ export default function DirectMessages({ user, hotel }) {
     const body = text.trim()
     const selectedFiles = Array.from(files || [])
     if ((!body && !selectedFiles.length) || !selectedId || busy) return
+    markOutgoing()
     setBusy(true); setError('')
     try {
       await sendDmMessage({ threadId: selectedId, userId: currentUserId, body, files: selectedFiles })
@@ -151,7 +163,7 @@ export default function DirectMessages({ user, hotel }) {
         </header>
         {!recipientHasDevice && <div className="rc-warning">Il destinatario deve aprire RandChat almeno una volta su un dispositivo prima di poter ricevere nuovi DM E2EE.</div>}
         {error && <div className="rc-error" role="alert">{error}</div>}
-        <div className="rc-messages">
+        <div ref={messagesRef} className="rc-messages" onScroll={handleMessagesScroll}>
           {messages.map((message) => {
             const own = message.sender_user_id === currentUserId
             return <article key={message.id} className={`rc-message ${own ? 'own' : ''} rc-message--${message.cryptoState}`}>
@@ -162,7 +174,9 @@ export default function DirectMessages({ user, hotel }) {
             </article>
           })}
           {!messages.length && <p className="rc-muted rc-center">Ancora nessun messaggio.</p>}
+          <div ref={messagesEndRef} className="rc-messages__end" aria-hidden="true" />
         </div>
+        {showJumpBottom && <button type="button" className="rc-jump-bottom" onClick={() => scrollToLatest('smooth')} aria-label="Vai agli ultimi messaggi">↓{unreadBelow > 0 && <span>{unreadBelow > 99 ? '99+' : unreadBelow}</span>}</button>}
         <form className="rc-composer rc-composer--media" onSubmit={send}>
           <label className="rc-file-button" title="Allega file cifrato">＋<input ref={fileRef} type="file" multiple accept="image/*,video/*,audio/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} /></label>
           <div className="rc-composer__body"><textarea value={text} maxLength={8000} rows={1} placeholder={`Messaggio privato a ${selected.other_display_name}`} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !files.length) { event.preventDefault(); send(event) } }} />{files.length > 0 && <small>🔒 {files.length} allegat{files.length === 1 ? 'o' : 'i'} cifrat{files.length === 1 ? 'o' : 'i'} · max 20 MB <button type="button" onClick={clearFiles}>Rimuovi</button></small>}</div>
