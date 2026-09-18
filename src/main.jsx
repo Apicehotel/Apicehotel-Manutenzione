@@ -40,11 +40,13 @@ const TechnicianDispatchPortal = lazy(() => import('./randapp/TechnicianDispatch
 const PublicIssueView = lazy(() => import('./public-issue-view.jsx'))
 const NtfyShortLink = lazy(() => import('./randapp/ntfy/NtfyShortLink.jsx'))
 const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
+const RandAILive = lazy(() => import('./randai/live/RandAILive.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const technicianDispatchMatch = /^\/tecnici-esterni\/?$/.test(window.location.pathname)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
 const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
+const randaiLiveMatch = /^\/randailive\/?$/.test(window.location.pathname)
 const randuiV2PreviewMatch = /^\/ui-v2-preview\/?$/.test(window.location.pathname)
 const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 const SESSION_EVENT = 'apice-session-changed'
@@ -75,6 +77,7 @@ createRoot(document.getElementById('root')).render(
       : publicIssueMatch ? <Suspense fallback={<RouteFallback />}><PublicIssueView id={publicIssueMatch[1]} /></Suspense>
       : ntfyShortMatch ? <Suspense fallback={<RouteFallback />}><NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} /></Suspense>
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
+      : randaiLiveMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAILive…" dark />}><RandAILive /></Suspense>
       : randuiV2PreviewMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandUI v2…" />}><RandUiV2Preview /></Suspense>
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
   </AppErrorBoundary></React.StrictMode>,
@@ -91,7 +94,7 @@ function afterPageLoad(task) {
   else window.addEventListener('load', run, { once: true })
 }
 
-if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch && !randuiV2PreviewMatch) {
+if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch && !randaiLiveMatch && !randuiV2PreviewMatch) {
   registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))
