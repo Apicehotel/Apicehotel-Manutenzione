@@ -37,7 +37,7 @@ function ClientNpc({issue,index,onSelect}){
   const p=clientState(issue,index)
   const urgent=p.urgency==='alta'
   return <button className={`rl-client rl-client--${p.urgency} rl-client--${String(issue.stato||'todo').toLowerCase()}`}
-    style={{'--x':p.x+'%','--y':p.y+'%','--offset':((index%7)-3)*18+'px'}} onClick={()=>onSelect(issue)}>
+    style={{'--x':p.x+'%','--y':p.y+'%'}} onClick={()=>onSelect(issue)}>
     <span className="rl-client__bubble">{issueIcon(issue)}</span>
     <span className="rl-client__person"><i/><b/><em/></span>
     <span className="rl-client__label">{issue.camera||issue.categoria||'Segnalazione'}{urgent&&<b>URGENTE</b>}</span>
