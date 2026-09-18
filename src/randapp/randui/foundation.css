@@ -7,6 +7,7 @@
 @import './theme-tokens.css';
 @import './visual-language.css';
 @import './completion-v2.css';
+@import './theme-application.css';
 
 :root {
   --rand-space-1: 4px;
