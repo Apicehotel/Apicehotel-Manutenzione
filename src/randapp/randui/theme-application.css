@@ -30,6 +30,41 @@ body {
   --rs-overlay-bg: var(--rand-overlay);
 }
 
+/* Re-assert compatibility aliases at resolved-theme specificity.
+   This intentionally outranks the historical ui-material-glass theme blocks. */
+html[data-theme='light'],
+html[data-theme='dark'] {
+  --rs-bg: var(--rand-canvas);
+  --rs-bg-2: var(--rand-canvas-subtle);
+  --rs-surface: var(--rand-surface-1);
+  --rs-surface-2: var(--rand-surface-2);
+  --rs-surface-3: var(--rand-surface-3);
+  --rs-line: var(--rand-border);
+  --rs-line-strong: var(--rand-border-strong);
+  --rs-text: var(--rand-text-primary);
+  --rs-text-2: var(--rand-text-secondary);
+  --rs-text-3: var(--rand-text-muted);
+  --rs-cyan: var(--rand-accent);
+  --rs-teal: var(--rand-accent-secondary);
+  --rs-blue: var(--rand-accent-blue);
+  --rs-blue-deep: var(--rand-accent-strong);
+  --rs-accent: var(--rand-accent);
+  --rs-accent-strong: var(--rand-accent-strong);
+  --rs-accent-soft: var(--rand-accent-soft);
+  --rs-accent-line: var(--rand-accent-line);
+  --rs-on-accent: var(--rand-on-accent);
+  --rs-grad-primary: var(--rand-gradient-primary);
+  --rs-danger: var(--rand-danger);
+  --rs-warn: var(--rand-warning);
+  --rs-ok: var(--rand-success);
+  --rs-shadow: var(--rand-shadow-surface);
+  --rs-glow: var(--rand-shadow-focus);
+  --rs-header-bg: linear-gradient(180deg, var(--rand-chrome-strong), color-mix(in srgb, var(--rand-chrome) 78%, transparent) 72%, transparent);
+  --rs-nav-bg: linear-gradient(180deg, color-mix(in srgb, var(--rand-chrome) 72%, transparent), var(--rand-chrome-strong));
+  --rs-chrome-solid: var(--rand-chrome);
+  --rs-overlay-bg: var(--rand-overlay);
+}
+
 /* Typography */
 .rs-brand__title,
 .rs-hotelchip__text b,
@@ -113,7 +148,11 @@ body {
 }
 
 .rs-btn--primary,
+html[data-theme='light'] .rs-btn--primary,
+html[data-theme='dark'] .rs-btn--primary,
 .rs-navfab,
+html[data-theme='light'] .rs-navfab,
+html[data-theme='dark'] .rs-navfab,
 .rs-segmented button.active .rs-segmented__count,
 .rs-randui-calendar__day[data-today='true'] .rs-randui-calendar__day-number {
   background: var(--rand-gradient-primary);
