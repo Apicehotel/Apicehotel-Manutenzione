@@ -59,3 +59,11 @@ test('group message window is the latest chronological block', () => {
   assert.match(chatData, /order\('created_at', \{ ascending: false \}\)/)
   assert.match(chatData, /return \(data \|\| \[\]\)\.reverse\(\)/)
 })
+
+
+test('mobile composer is a physical third conversation row and cannot scroll away', () => {
+  assert.match(chatCss, /RandChat v4/)
+  assert.match(chatCss, /\.rc-module--thread-open \.rc-conversation\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/)
+  assert.match(chatCss, /\.rc-module--thread-open \.rc-messages\s*\{[\s\S]*?grid-row:\s*2;[\s\S]*?overflow-y:\s*auto;/)
+  assert.match(chatCss, /\.rc-module--thread-open \.rc-composer\s*\{[\s\S]*?grid-row:\s*3;[\s\S]*?position:\s*relative !important;/)
+})
