@@ -67,15 +67,37 @@ export function zoneState(agent,now=Date.now()){
  return{...WORLD_ZONES[life.zone],...life}
 }
 
+const CLIENT_SLOTS=Object.freeze({
+ reception:[
+  {x:14,y:43},{x:19,y:43},{x:24,y:43},{x:29,y:43},
+  {x:14,y:49},{x:19,y:49},{x:24,y:49},{x:29,y:49},
+  {x:10,y:55},{x:15,y:55},{x:20,y:55},{x:25,y:55}
+ ],
+ waiting:[
+  {x:27,y:63},{x:38,y:63},{x:49,y:63},{x:60,y:63},{x:71,y:63},
+  {x:27,y:76},{x:38,y:76},{x:49,y:76},{x:60,y:76},{x:71,y:76},
+  {x:32,y:69},{x:44,y:69},{x:56,y:69},{x:68,y:69}
+ ],
+ service:[
+  {x:8,y:68},{x:13,y:68},{x:8,y:76},{x:13,y:76},{x:17,y:72}
+ ],
+ entrance:[
+  {x:45,y:88},{x:50,y:88},{x:55,y:88}
+ ],
+ exit:[
+  {x:88,y:84},{x:92,y:84}
+ ]
+})
+
 export function clientState(issue,index=0){
  const stato=String(issue?.stato||'todo').toLowerCase()
  const urgency=String(issue?.urgenza||'media').toLowerCase()
- const bank=index%3
- const zone=stato==='waiting'?(bank===0?'waitingA':bank===1?'waitingB':'waitingC')
-   :stato==='tecnico'?'service'
-   :stato==='done'?'exit'
-   :'reception'
- return{zone,urgency,...WORLD_ZONES[zone]}
+ const pool=stato==='waiting'?CLIENT_SLOTS.waiting
+   :stato==='tecnico'?CLIENT_SLOTS.service
+   :stato==='done'?CLIENT_SLOTS.exit
+   :CLIENT_SLOTS.reception
+ const slot=pool[index%pool.length]
+ return{zone:stato==='waiting'?'waiting':stato==='tecnico'?'service':stato==='done'?'exit':'reception',urgency,...slot}
 }
 
 export function issueIcon(issue){
