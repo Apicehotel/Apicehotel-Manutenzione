@@ -44,3 +44,12 @@ test('group message window loads latest messages then restores chronological ord
   assert.match(chatData, /order\('created_at', \{ ascending: false \}\)/)
   assert.match(chatData, /return \(data \|\| \[\]\)\.reverse\(\)/)
 })
+
+
+test('chat bypasses PageBoundary and owns the full shell content viewport', () => {
+  const foundation = readFileSync(new URL('../src/randapp/randui/foundation.css', import.meta.url), 'utf8')
+  assert.match(shell, /if \(view === 'chat'\) return content/)
+  assert.match(shell, /rs-content--chat/)
+  assert.match(foundation, /RandChat full-shell content mode/)
+  assert.match(foundation, /\.rs-content\.rs-content--chat\s*\{[\s\S]*?height:\s*100%;[\s\S]*?padding:\s*0 0 calc\(var\(--rs-nav-h\) \+ var\(--rs-adaptive-safe-bottom\)\) !important;/)
+})
