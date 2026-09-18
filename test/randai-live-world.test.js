@@ -20,11 +20,11 @@ test('RandAILive route stays protected and driven by real runtime data',()=>{
 test('RandAILive uses melonJS and removes the superseded Phaser stack from dependencies',()=>{
   const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
   const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'))
-  assert.equal(pkg.dependencies.melonjs,'20.7.0')
+  assert.equal(pkg.dependencies.melonjs,'20.6.0')
   assert.equal(pkg.dependencies.phaser,undefined)
   assert.equal(pkg.dependencies['grid-engine'],undefined)
   assert.equal(pkg.dependencies.yuka,undefined)
-  assert.equal(lock.packages['node_modules/melonjs']?.version,'20.7.0')
+  assert.equal(lock.packages['node_modules/melonjs']?.version,'20.6.0')
 })
 
 test('melon hotel loads the Tiled map and converts collision tiles into navigable A* space',()=>{
