@@ -58,3 +58,16 @@ test('RandAILive v2 keeps every canonical Rand identity visible in the game worl
     assert.match(live+engine,new RegExp(id))
   }
 })
+
+test('RandAILive v2.1 keeps mobile game canvas fitted and clients spatially separated',()=>{
+  const live=fs.readFileSync('src/randai/live/RandAILive.jsx','utf8')
+  const engine=fs.readFileSync('src/randai/live/world-engine.js','utf8')
+  const css=fs.readFileSync('src/randai/live/randai-live.css','utf8')
+  const auth=fs.readFileSync('src/randai/auth/randai-auth.css','utf8')
+  assert.match(engine,/CLIENT_SLOTS/)
+  assert.match(engine,/waiting:\[/)
+  assert.doesNotMatch(live,/--offset/)
+  assert.match(css,/aspect-ratio:10\/13/)
+  assert.match(css,/min-width:0/)
+  assert.match(auth,/ra-tools--live\{display:none\}/)
+})
