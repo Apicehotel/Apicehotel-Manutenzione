@@ -28,9 +28,7 @@ test('RandAI is a native shell page and no longer a floating or header launcher'
   assert.match(panelCss, /\.randai-page-workspace\{/)
 })
 
-test('global add action remains the only floating action button', () => {
-  const globalCss = compact(shellCss)
-  assert.match(shell, /className="rs-navfab"/)
-  assert.match(shell, /data-testid="fab-new"/)
-  assert.match(globalCss, /\.rs-navfab\{[^}]*position:fixed;[^}]*right:18px/)
+test('global floating add action is removed from the shell', () => {
+  assert.doesNotMatch(shell, /className="rs-navfab"/)
+  assert.doesNotMatch(shell, /data-testid="fab-new"/)
 })
