@@ -1,0 +1,869 @@
+/* RandChat canonical UI
+   NextChat-inspired web composition + Telegram-style mobile behavior.
+   Internal RandApp implementation, original code and RandUI tokens. */
+
+.randchat,
+.randchat-list,
+.randchat-stage,
+.randchat-thread,
+.randchat-messages,
+.randchat-list__scroll {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.randchat {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(270px, 330px) minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--rs-bg);
+  color: var(--rs-text);
+}
+
+.randchat-list {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  overflow: hidden;
+  border-right: 1px solid var(--rs-line);
+  background: var(--rs-surface);
+}
+
+.randchat-list__head,
+.randchat-thread__head,
+.randchat-modal header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.randchat-list__head > div,
+.randchat-thread__title,
+.randchat-modal header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.randchat-list__head h1,
+.randchat-thread__title h2,
+.randchat-modal h3,
+.randchat-modal h2 {
+  margin: 0;
+  color: var(--rs-text);
+  font-family: 'Sora', system-ui, sans-serif;
+}
+
+.randchat-list__head h1 {
+  font-size: 1.05rem;
+}
+
+.randchat-thread__title h2 {
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.randchat-list__head small,
+.randchat-thread__title small,
+.randchat-row small,
+.randchat-member small,
+.randchat-modal header small {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--rs-text-2);
+  font-size: .74rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.randchat-iconbtn,
+.randchat-back,
+.randchat-attach,
+.randchat-to-bottom {
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: var(--rs-text);
+  cursor: pointer;
+}
+
+.randchat-iconbtn,
+.randchat-back {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.randchat-iconbtn {
+  font-size: 1.35rem;
+}
+
+.randchat-back {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.randchat-iconbtn:hover,
+.randchat-back:hover,
+.randchat-iconbtn[aria-expanded='true'] {
+  background: var(--rs-surface-2);
+}
+
+.randchat-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface-2);
+}
+
+.randchat-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rs-text-2);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.randchat-tabs button.active {
+  background: color-mix(in srgb, var(--rs-cyan) 18%, var(--rs-surface));
+  color: var(--rs-text);
+}
+
+.randchat-create,
+.randchat-member-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.randchat-create input,
+.randchat-create select,
+.randchat-create button,
+.randchat-member-add select,
+.randchat-member-add button,
+.randchat-menu select,
+.randchat-form input,
+.randchat-form textarea,
+.randchat-form select,
+.randchat-ai-form textarea,
+.randchat-ai-form button,
+.randchat-send,
+.randchat-input-panel textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid var(--rs-line);
+  border-radius: 12px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  font: inherit;
+}
+
+.randchat-create input,
+.randchat-create select,
+.randchat-member-add select,
+.randchat-form input,
+.randchat-form textarea,
+.randchat-form select,
+.randchat-ai-form textarea,
+.randchat-input-panel textarea {
+  padding: 9px 11px;
+}
+
+.randchat-create button,
+.randchat-member-add button,
+.randchat-ai-form button,
+.randchat-send {
+  min-height: 42px;
+  padding: 8px 12px;
+  border-color: transparent;
+  background: var(--rs-grad-primary);
+  color: var(--rs-on-accent, #fff);
+  font-weight: 800;
+}
+
+.randchat-create button:disabled,
+.randchat-member-add button:disabled,
+.randchat-ai-form button:disabled,
+.randchat-send:disabled {
+  opacity: .46;
+}
+
+.randchat-banner,
+.randchat-inline-error {
+  padding: 8px 10px;
+  border: 1px solid var(--rs-line);
+  border-radius: 10px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text-2);
+  font-size: .78rem;
+}
+
+.randchat-banner--error,
+.randchat-inline-error {
+  border-color: color-mix(in srgb, var(--rs-danger) 35%, var(--rs-line));
+  color: var(--rs-danger);
+}
+
+.randchat-list__scroll {
+  overflow-y: auto;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.randchat-row {
+  width: 100%;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--rs-line);
+  background: transparent;
+  color: var(--rs-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.randchat-row:last-child {
+  border-bottom: 0;
+}
+
+.randchat-row:hover,
+.randchat-row.active {
+  background: color-mix(in srgb, var(--rs-cyan) 8%, transparent);
+}
+
+.randchat-row__copy {
+  min-width: 0;
+}
+
+.randchat-row__copy b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.randchat-row__chevron {
+  color: var(--rs-text-2);
+  font-size: 1.4rem;
+}
+
+.randchat-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rs-cyan) 14%, var(--rs-surface-2));
+  color: var(--rs-cyan);
+  font-weight: 850;
+}
+
+.randchat-stage {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--rs-bg);
+}
+
+.randchat-stage__empty,
+.randchat-empty {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  padding: 24px;
+  color: var(--rs-text-2);
+  text-align: center;
+}
+
+.randchat-stage__empty h2,
+.randchat-empty h2 {
+  margin: 0;
+  color: var(--rs-text);
+}
+
+.randchat-stage__empty p,
+.randchat-empty p {
+  margin: 0;
+}
+
+.randchat-stage__mark {
+  font-size: 2rem;
+}
+
+.randchat-thread {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 55% at 20% 0%, color-mix(in srgb, var(--rs-cyan) 5%, transparent), transparent 65%),
+    var(--rs-bg);
+}
+
+.randchat-thread__head {
+  grid-row: 1;
+  min-height: 58px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--rs-line);
+  background: color-mix(in srgb, var(--rs-surface) 96%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.randchat-thread > .randchat-banner {
+  grid-row: 2;
+  margin: 6px 8px 0;
+}
+
+.randchat-menu-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.randchat-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 40;
+  width: min(240px, 76vw);
+  overflow: hidden;
+  border: 1px solid var(--rs-line);
+  border-radius: 13px;
+  background: var(--rs-surface);
+  box-shadow: 0 16px 42px rgba(0,0,0,.28);
+}
+
+.randchat-menu > button,
+.randchat-menu > label,
+.randchat-menu__note {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 0;
+  border-bottom: 1px solid var(--rs-line);
+  background: transparent;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: .82rem;
+  text-align: left;
+}
+
+.randchat-menu > button {
+  cursor: pointer;
+}
+
+.randchat-menu > :last-child {
+  border-bottom: 0;
+}
+
+.randchat-menu > label {
+  justify-content: space-between;
+}
+
+.randchat-menu select {
+  min-width: 96px;
+  padding: 5px 7px;
+}
+
+.randchat-menu__note {
+  color: var(--rs-text-2);
+}
+
+.randchat-messages {
+  grid-row: 3;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px 14px;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.randchat-bubble {
+  position: relative;
+  align-self: flex-start;
+  max-width: min(76%, 700px);
+  padding: 8px 31px 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--rs-line) 86%, transparent);
+  border-radius: 16px 16px 16px 5px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.randchat-bubble.own {
+  align-self: flex-end;
+  border-radius: 16px 16px 5px 16px;
+  background: color-mix(in srgb, var(--rs-cyan) 11%, var(--rs-surface));
+}
+
+.randchat-bubble.pinned {
+  border-color: color-mix(in srgb, var(--rs-warn) 45%, var(--rs-line));
+}
+
+.randchat-bubble__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 7px;
+  color: var(--rs-text-2);
+  font-size: .68rem;
+}
+
+.randchat-bubble__meta b {
+  color: var(--rs-text);
+}
+
+.randchat-bubble p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: .93rem;
+  line-height: 1.34;
+}
+
+.randchat-message-menu-trigger {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--rs-text-2);
+  cursor: pointer;
+}
+
+.randchat-message-menu {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  overflow: hidden;
+  border: 1px solid var(--rs-line);
+  border-radius: 12px;
+  background: var(--rs-surface);
+  box-shadow: 0 14px 34px rgba(0,0,0,.24);
+}
+
+.randchat-message-menu button {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--rs-line);
+  background: transparent;
+  color: var(--rs-text);
+  font: inherit;
+  font-size: .78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.randchat-message-menu button:last-child {
+  border-bottom: 0;
+}
+
+.randchat-procedure {
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--rs-cyan) 24%, var(--rs-line));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--rs-cyan) 6%, var(--rs-surface-2));
+}
+
+.randchat-procedure > b,
+.randchat-procedure > small {
+  display: block;
+}
+
+.randchat-procedure > small {
+  margin-top: 3px;
+  color: var(--rs-text-2);
+  font-size: .72rem;
+}
+
+.randchat-input-panel {
+  grid-row: 4;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding: 8px 9px;
+  border-top: 1px solid var(--rs-line);
+  background: color-mix(in srgb, var(--rs-surface) 99%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.randchat-attach {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid var(--rs-line);
+  border-radius: 50%;
+  background: var(--rs-surface-2);
+  font-size: 1.2rem;
+}
+
+.randchat-attach input {
+  display: none;
+}
+
+.randchat-input-wrap {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.randchat-input-panel textarea {
+  width: 100%;
+  min-height: 40px;
+  max-height: 120px;
+  resize: none;
+  border-radius: 20px;
+  line-height: 1.32;
+  overflow-y: auto;
+}
+
+.randchat-input-wrap small {
+  color: var(--rs-text-2);
+  font-size: .68rem;
+}
+
+.randchat-send {
+  min-width: 56px;
+  min-height: 40px;
+  border-radius: 20px;
+  padding-inline: 11px;
+}
+
+.randchat-to-bottom {
+  position: absolute;
+  right: 12px;
+  bottom: 66px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--rs-line);
+  border-radius: 50%;
+  background: var(--rs-surface);
+  box-shadow: 0 8px 22px rgba(0,0,0,.22);
+  font-size: 1.08rem;
+}
+
+.randchat-attachment {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--rs-line);
+  border-radius: 10px;
+  background: var(--rs-surface-2);
+}
+
+.randchat-attachment > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.randchat-attachment small {
+  color: var(--rs-text-2);
+  font-size: .72rem;
+}
+
+.randchat-attachment > button,
+.randchat-attachment > a {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--rs-line);
+  border-radius: 8px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  font: inherit;
+  font-size: .76rem;
+  text-decoration: none;
+}
+
+.randchat-media-preview {
+  display: block;
+  max-width: min(100%, 560px);
+  max-height: 420px;
+  margin-top: 8px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #000;
+}
+
+.randchat-attachment audio {
+  max-width: 100%;
+  margin-top: 8px;
+}
+
+.randchat-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0,0,0,.52);
+}
+
+.randchat-modal {
+  width: min(680px, 100%);
+  max-height: min(760px, 90dvh);
+  overflow: auto;
+  border: 1px solid var(--rs-line);
+  border-radius: 18px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  box-shadow: 0 24px 70px rgba(0,0,0,.34);
+}
+
+.randchat-modal--ai {
+  width: min(720px, 100%);
+}
+
+.randchat-modal--form {
+  width: min(620px, 100%);
+}
+
+.randchat-modal header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rs-line);
+}
+
+.randchat-modal header button {
+  border: 0;
+  background: transparent;
+}
+
+.randchat-member-add {
+  padding: 12px;
+  border-bottom: 1px solid var(--rs-line);
+}
+
+.randchat-members,
+.randchat-picker-list {
+  padding: 0 12px 12px;
+}
+
+.randchat-member,
+.randchat-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--rs-line);
+}
+
+.randchat-member > span:first-child,
+.randchat-picker-row > span:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.randchat-member__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.randchat-member__actions select,
+.randchat-member__actions button,
+.randchat-picker-row button {
+  min-height: 36px;
+  border: 1px solid var(--rs-line);
+  border-radius: 9px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  font: inherit;
+}
+
+.randchat-member__actions button {
+  color: var(--rs-danger);
+}
+
+.randchat-picker-row button {
+  padding: 6px 9px;
+}
+
+.randchat-modal > input {
+  width: calc(100% - 24px);
+  margin: 12px;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--rs-line);
+  border-radius: 12px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  font: inherit;
+}
+
+.randchat-form,
+.randchat-ai-form,
+.randchat-result {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.randchat-form label {
+  display: grid;
+  gap: 6px;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.randchat-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.randchat-form__actions button,
+.randchat-result button {
+  min-height: 40px;
+  padding: 7px 11px;
+  border: 1px solid var(--rs-line);
+  border-radius: 10px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  font: inherit;
+}
+
+.randchat-result ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.randchat-muted {
+  margin: 0;
+  color: var(--rs-text-2);
+  font-size: .8rem;
+}
+
+@media (max-width: 760px) {
+  .randchat {
+    display: block;
+  }
+
+  .randchat-list,
+  .randchat-stage {
+    width: 100%;
+    height: 100%;
+  }
+
+  .randchat-list {
+    border-right: 0;
+    padding: 10px;
+  }
+
+  .randchat-stage {
+    display: none;
+  }
+
+  .randchat--thread-open .randchat-list {
+    display: none;
+  }
+
+  .randchat--thread-open .randchat-stage {
+    display: block;
+  }
+
+  .randchat-thread__head {
+    padding: 6px 8px;
+  }
+
+  .randchat-messages {
+    padding: 10px 8px 12px;
+    gap: 6px;
+  }
+
+  .randchat-bubble {
+    max-width: 88%;
+    padding: 7px 30px 7px 10px;
+    box-shadow: none;
+  }
+
+  .randchat-input-panel {
+    padding: 7px 8px;
+  }
+
+  .randchat-modal-backdrop {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .randchat-modal {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .randchat-member {
+    align-items: flex-start;
+  }
+
+  .randchat-member__actions {
+    flex-direction: column;
+  }
+
+  .randchat-form__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .randchat-media-preview {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 430px) {
+  .randchat-bubble {
+    max-width: 93%;
+  }
+
+  .randchat-send {
+    min-width: 52px;
+    padding-inline: 9px;
+  }
+}
