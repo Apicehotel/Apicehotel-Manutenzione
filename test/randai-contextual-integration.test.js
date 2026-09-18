@@ -39,3 +39,19 @@ test('guidance backend consumes the published operational context', async () => 
   assert.match(data, /operationalContext\s*\|\|\s*getRandAIContext\(\)/)
   assert.match(data, /context,\s*\n\s*}/)
 })
+
+
+test('embedded RandAI workspace stays structure-agnostic and page-native', async () => {
+  const assistant = await source('src/randai/RandAIAssistant.jsx')
+  const css = await source('src/randai/randai.css')
+  const page = await source('src/randapp/RandAIPage.jsx')
+  assert.match(assistant, /randai__embedded-toolbar/)
+  assert.match(assistant, /randai__quick-grid/)
+  assert.match(assistant, /Priorità adesso/)
+  assert.match(assistant, /Cosa è cambiato/)
+  assert.doesNotMatch(assistant, /Prova: camera 125 non fredda/)
+  assert.doesNotMatch(assistant, /placeholder="Es\. Camera 125 non fredda/)
+  assert.match(css, /first-class intelligence workspace/)
+  assert.match(css, /\.randai--embedded \.randai__panel[\s\S]*border:\s*0/)
+  assert.match(page, /title="RandAI"/)
+})
