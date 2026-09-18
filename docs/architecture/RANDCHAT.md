@@ -27,28 +27,52 @@ Il rebuild non modifica:
 - collegamento esplicito Chat → Segnalazione;
 - policy RandAI sui gruppi e divieto di leggere automaticamente i DM E2EE.
 
-## Replacement runtime — 18 settembre 2026
+## Rebuild completo RandChat — 18 settembre 2026
 
-La precedente UI RandChat è stata **rimossa dal runtime e cancellata dal repository**. Non viene più caricata da RandApp.
+RandChat è un modulo **interno all'organizzazione e non commerciale**.
 
-Runtime canonico attuale:
+La UI precedente è stata rimossa e sostituita da un'architettura nuova. Il rebuild mantiene i contratti esistenti di Supabase/RLS, gruppi, DM E2EE, retention, RandMedia, Procedure, RandAI e promozione a Segnalazione.
 
-- `src/randapp/chat/RandChat.jsx` — unica UI RandChat;
-- `src/randapp/chat/randchat-next.css` — unico layout visuale RandChat;
-- `src/randapp/chat/chat-data.js` — contratti dati gruppi;
-- `src/randapp/chat/dm-data.js` + moduli crypto — contratti DM E2EE;
-- componenti ausiliari Procedure/RandAI/Segnalazioni restano riusati dal nuovo runtime.
+### Riferimenti
 
-File legacy rimossi:
+- **NextChat** (`ChatGPTNextWeb/NextChat`, licenza MIT) è usato come riferimento per composizione web React, separazione lista/thread, input panel, auto-grow e comportamento di scroll.
+- **Telegram X** è usato come riferimento comportamentale mobile: thread centrato sugli ultimi messaggi, storico verso l'alto, ritorno agli ultimi, composer persistente e azioni contestuali.
+- Il codice RandChat resta originale e adattato a RandUI; non viene incorporato codice Telegram X GPL.
 
-- `ChatGroups.jsx`
-- `GroupChats.jsx`
-- `DirectMessages.jsx`
-- `chat.css`
-- `chat-viewport.css`
-- `useChatThreadScroll.js`
+### Runtime canonico
 
-La nuova UI è stata riscritta da zero come messenger: lista conversazioni separata dal thread, header compatto, storico scrollabile, composer come riga fisica del thread e menu contestuali. Telegram X resta solo un riferimento di comportamento; il codice RandChat è originale.
+- `src/randapp/chat/RandChat.jsx` — orchestrazione dati, stato, permessi e modali.
+- `src/randapp/chat/RandChatList.jsx` — lista Gruppi/Diretti e creazione/apertura conversazioni.
+- `src/randapp/chat/RandChatThread.jsx` — header thread, messaggi, azioni contestuali e composer.
+- `src/randapp/chat/useRandChatScroll.js` — auto-scroll / detach / ritorno al fondo.
+- `src/randapp/chat/randchat.css` — unico foglio visuale RandChat.
+- `chat-data.js`, `dm-data.js`, moduli crypto e RandMedia — contratti dati/sicurezza preservati.
+
+### Contratto layout
+
+Desktop:
+`lista conversazioni | thread`
+
+Mobile:
+`lista conversazioni → thread`
+
+Nel thread:
+`header → avvisi → cronologia scrollabile → input panel`
+
+Il composer è una riga fisica del thread. Non usa `position: fixed` rispetto al browser e non dipende dalla pagina esterna. RandChat bypassa `RandUiPageBoundary` e usa `rs-content--chat` per possedere l'intero viewport centrale della shell sopra la bottom navigation.
+
+### Comportamento thread
+
+- apertura conversazione sull'area più recente;
+- auto-scroll finché l'utente resta vicino al fondo;
+- detach automatico quando l'utente legge lo storico;
+- pulsante per tornare agli ultimi;
+- textarea auto-grow;
+- invio con Enter protetto da composizione IME/Safari;
+- allegati;
+- menu contestuale messaggio;
+- Gruppi: Procedure, RandAI, Membri, retention 30/60 giorni, pin/conservazione;
+- Diretti: E2EE per dispositivo e retention 1/7/15 giorni.
 
 ## Stato
 
