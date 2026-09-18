@@ -15,6 +15,9 @@ concurrency:
 jobs:
   knowledge-boundary:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -29,6 +32,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status RUNNING --activity "Knowledge and memory checks"
+
       - name: RandMind production contracts
         run: npm run test:randmind
 
@@ -37,3 +44,10 @@ jobs:
 
       - name: Group 2 knowledge boundary
         run: npm run test:group2
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status IDLE --activity "Knowledge checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status ERROR --activity "Knowledge and memory checks" --detail "Workflow failed"
