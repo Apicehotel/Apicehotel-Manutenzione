@@ -1,0 +1,307 @@
+/* RandUI canonical application layer.
+   Loaded last by foundation.css so semantic tokens override legacy visual literals
+   without duplicating page-specific design systems. Geometry and behavior stay owned
+   by their existing files; this layer owns theme/color/elevation/typography only. */
+
+html,
+body {
+  background: var(--rand-canvas);
+  color: var(--rand-text-primary);
+  font-family: var(--rand-font-sans);
+}
+
+body {
+  background:
+    radial-gradient(120% 80% at 8% -8%, color-mix(in srgb, var(--rand-accent) 12%, transparent), transparent 55%),
+    radial-gradient(110% 70% at 108% 6%, color-mix(in srgb, var(--rand-accent-blue) 11%, transparent), transparent 52%),
+    radial-gradient(90% 60% at 50% 118%, color-mix(in srgb, var(--rand-accent-secondary) 7%, transparent), transparent 60%),
+    var(--rand-canvas);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--rand-accent) 28%, transparent);
+  color: var(--rand-text-primary);
+}
+
+:root {
+  --rs-header-bg: linear-gradient(180deg, var(--rand-chrome-strong), color-mix(in srgb, var(--rand-chrome) 78%, transparent) 72%, transparent);
+  --rs-nav-bg: linear-gradient(180deg, color-mix(in srgb, var(--rand-chrome) 72%, transparent), var(--rand-chrome-strong));
+  --rs-chrome-solid: var(--rand-chrome);
+  --rs-overlay-bg: var(--rand-overlay);
+}
+
+/* Typography */
+.rs-brand__title,
+.rs-hotelchip__text b,
+.rs-empty strong,
+.rs-sheet__head h3,
+.rs-modal__head h3,
+.rs-drawer__head b,
+.rs-page-title h1,
+.rs-form__head h2,
+.rs-issue__room,
+.rs-detail-room,
+.rs-settings-head__brand b,
+.rs-role-group__head b,
+.rs-perm-card strong,
+.rs-profile-head strong,
+.rs-sidebar__brand b,
+.rs-randui-page h1,
+.rs-randui-page h2,
+.rs-randui-page h3,
+.rs-randui-page strong,
+.rs-randui-page b {
+  font-family: var(--rand-font-display);
+}
+
+/* Canonical surfaces */
+.rs-card,
+.rs-sheet,
+.rs-modal,
+.rs-issue,
+.rs-authcard,
+.rs-randui-surface {
+  background: var(--rand-surface-1);
+  border-color: var(--rand-border);
+  box-shadow: var(--rand-shadow-surface);
+}
+
+.rs-sheet,
+.rs-modal {
+  background: linear-gradient(180deg, var(--rand-surface-2), var(--rand-surface-1));
+}
+
+.rs-drawer,
+.rs-sidebar {
+  background: linear-gradient(200deg, var(--rand-surface-1), var(--rand-canvas-subtle));
+  border-color: var(--rand-border);
+}
+
+.rs-header,
+.rs-bottomnav,
+.rs-settings-head,
+.rs-settings-nav {
+  border-color: var(--rand-border);
+}
+
+/* Interactive controls */
+.rs-hotelchip,
+.rs-iconbtn,
+.rs-btn--ghost,
+.rs-input,
+.rs-textarea,
+.rs-select,
+.rs-chip,
+.rs-segmented,
+.rs-meta-grid > div,
+.rs-photo-action,
+.rs-detail-photo-button,
+.rs-photo-unavailable,
+.rs-note,
+.rs-role-group__head,
+.rs-hotel-toggle,
+.rs-navseg button {
+  background-color: var(--rand-surface-2);
+  border-color: var(--rand-border);
+  color: var(--rand-text-primary);
+}
+
+.rs-input:focus-within,
+.rs-textarea:focus {
+  border-color: var(--rand-accent-line);
+  box-shadow: 0 0 0 3px var(--rand-accent-soft);
+}
+
+.rs-btn--primary,
+.rs-navfab,
+.rs-segmented button.active .rs-segmented__count,
+.rs-randui-calendar__day[data-today='true'] .rs-randui-calendar__day-number {
+  background: var(--rand-gradient-primary);
+  color: var(--rand-on-accent);
+}
+
+.rs-btn--primary,
+.rs-navfab {
+  box-shadow: 0 12px 30px -16px color-mix(in srgb, var(--rand-accent) 58%, transparent);
+}
+
+.rs-btn--outline {
+  color: var(--rand-accent);
+  border-color: var(--rand-accent-line);
+}
+
+.rs-chip.active,
+.rs-hotel-toggle.on,
+.rs-navseg button.active,
+.rs-sidebar__item.active,
+.rs-drawer__switch,
+.rs-sidebar__switch,
+.rs-issue-filter-scroll > .rs-segmented > button.active {
+  background: var(--rand-accent-soft);
+  border-color: var(--rand-accent-line);
+  color: var(--rand-text-primary);
+}
+
+.rs-navbtn.active,
+.rs-drawer__item .rs-icon,
+.rs-drawer__switch .rs-icon,
+.rs-sidebar__switch .rs-icon,
+.rs-settings-head__brand .rs-icon,
+.rs-pref__label .rs-icon,
+.rs-photo-action .rs-icon,
+.rs-randui-choice__icon,
+.rs-planning-today__icon,
+.rs-randui-calendar__day[data-today='true'] .rs-randui-calendar__weekday {
+  color: var(--rand-accent);
+}
+
+.rs-navbtn.active::before {
+  background: var(--rand-gradient-primary);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rand-accent) 48%, transparent);
+}
+
+/* Semantic feedback */
+.rs-btn--danger,
+.rs-badge--high,
+.rs-note--danger,
+.rs-chip.active.high {
+  color: var(--rand-danger);
+  border-color: color-mix(in srgb, var(--rand-danger) 35%, transparent);
+  background: var(--rand-danger-soft);
+}
+
+.rs-badge--waiting,
+.rs-badge--mid,
+.rs-note--waiting,
+.rs-chip.active.mid {
+  color: var(--rand-warning);
+  border-color: color-mix(in srgb, var(--rand-warning) 35%, transparent);
+  background: var(--rand-warning-soft);
+}
+
+.rs-badge--done,
+.rs-note--done,
+.rs-chip.active.low {
+  color: var(--rand-success);
+  border-color: color-mix(in srgb, var(--rand-success) 35%, transparent);
+  background: var(--rand-success-soft);
+}
+
+.rs-badge--todo,
+.rs-badge--accent {
+  color: var(--rand-info);
+  border-color: color-mix(in srgb, var(--rand-info) 35%, transparent);
+  background: var(--rand-info-soft);
+}
+
+.rs-badge--tecnico,
+.rs-note--tecnico {
+  color: var(--rand-chart-4);
+  border-color: color-mix(in srgb, var(--rand-chart-4) 35%, transparent);
+  background: color-mix(in srgb, var(--rand-chart-4) 11%, transparent);
+}
+
+.rs-issue__accent.high { background: var(--rand-danger); }
+.rs-issue__accent.mid { background: var(--rand-warning); }
+.rs-issue__accent.low { background: var(--rand-success); }
+
+/* Logo/image wells remain neutral in both themes. */
+.rs-hotelchip img,
+.rs-drawer__head img,
+.rs-hotelrow img,
+.rs-hotel-option img,
+.rs-sidebar__brand img,
+.rs-profile-head img {
+  background: var(--rand-logo-surface);
+}
+
+/* Login + admin gate: remove the old navy lock and inherit RandUI surfaces. */
+.rs-auth {
+  color: var(--rand-text-primary);
+}
+
+.rs-auth:has([data-testid='login-submit']) .rs-brand__logo,
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-brand__logo {
+  background: var(--rand-surface-1);
+  border-color: var(--rand-accent-line);
+  box-shadow: 0 18px 46px -26px color-mix(in srgb, var(--rand-accent) 34%, transparent);
+}
+
+.rs-auth:has([data-testid='login-submit']) .rs-authcard,
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-authcard {
+  background: var(--rand-surface-1);
+  border-color: var(--rand-border);
+  box-shadow: var(--rand-shadow-surface);
+}
+
+.rs-auth:has([data-testid='login-submit']) .rs-field__label,
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-field__label {
+  color: var(--rand-text-secondary);
+}
+
+.rs-auth:has([data-testid='login-submit']) .rs-input,
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-input,
+.rs-auth:has([data-testid='login-submit']) .rs-settings-link {
+  background: var(--rand-surface-2);
+  border-color: var(--rand-border);
+  color: var(--rand-text-primary);
+}
+
+.rs-auth:has([data-testid='login-submit']) .rs-input > .rs-icon,
+.rs-auth:has([data-testid='admin-gate-submit']) .rs-input > .rs-icon {
+  color: var(--rand-text-muted);
+}
+
+.rs-auth:has([data-testid='login-submit']) [data-testid='login-submit'],
+.rs-auth:has([data-testid='admin-gate-submit']) [data-testid='admin-gate-submit'] {
+  box-shadow: 0 16px 34px -20px color-mix(in srgb, var(--rand-accent) 50%, transparent);
+}
+
+.rs-auth .rs-divider::before,
+.rs-auth .rs-divider::after {
+  background: var(--rand-border);
+}
+
+.rs-auth .rs-suggest {
+  background: var(--rand-surface-1);
+  border-color: var(--rand-border);
+  box-shadow: var(--rand-shadow-surface);
+}
+
+/* RandUI shared states: no fixed RGB semantic colors. */
+.rs-randui-state__icon {
+  color: var(--rand-info);
+  background: var(--rand-info-soft);
+  border-color: color-mix(in srgb, var(--rand-info) 34%, transparent);
+}
+.rs-randui-state--success .rs-randui-state__icon {
+  color: var(--rand-success);
+  background: var(--rand-success-soft);
+  border-color: color-mix(in srgb, var(--rand-success) 34%, transparent);
+}
+.rs-randui-state--warning .rs-randui-state__icon {
+  color: var(--rand-warning);
+  background: var(--rand-warning-soft);
+  border-color: color-mix(in srgb, var(--rand-warning) 34%, transparent);
+}
+.rs-randui-state--danger .rs-randui-state__icon {
+  color: var(--rand-danger);
+  background: var(--rand-danger-soft);
+  border-color: color-mix(in srgb, var(--rand-danger) 34%, transparent);
+}
+
+/* Theme-specific browser chrome follows the same canonical canvas. */
+html[data-theme='light'] { color-scheme: light; }
+html[data-theme='dark'] { color-scheme: dark; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-btn,
+  .rs-iconbtn,
+  .rs-hotelchip,
+  .rs-chip,
+  .rs-navfab,
+  .rs-issue,
+  .rs-randui-choice {
+    transition: none !important;
+  }
+}
