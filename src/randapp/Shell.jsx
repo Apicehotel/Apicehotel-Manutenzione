@@ -384,11 +384,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='interventions'?openItemRequest:null} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
-    if (view === 'task') content = <TaskHub canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id) => pick({ id })} />
+    if (view === 'task') content = <TaskHub hotel={hotel} user={user} canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id,itemId=null) => { if (itemId) setOpenItemRequest({ view:id, id:itemId, nonce:Date.now() }); pick({ id }) }} />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
-    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
-    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
+    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='urgent'?openItemRequest:null} />
+    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} openItemRequest={openItemRequest?.view==='reminders'?openItemRequest:null} />
     if (view === 'temperature') content = <TemperatureView hotel={hotel} />
     if (view === 'plants') content = <PlantView hotel={hotel} />
     if (view === 'housekeeping') content = <HousekeepingView user={user} hotel={hotel} />
