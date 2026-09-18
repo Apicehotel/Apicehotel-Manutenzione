@@ -52,14 +52,16 @@ test('legacy rs variables bridge to RandUI tokens instead of duplicating theme o
   }
 })
 
-test('foundation loads tokens before visual and completion layers', () => {
+test('foundation loads tokens before visual/completion and canonical application last', () => {
   const foundation = read('../src/randapp/randui/foundation.css')
   const tokenImport = foundation.indexOf("@import './theme-tokens.css';")
   const visualImport = foundation.indexOf("@import './visual-language.css';")
   const completionImport = foundation.indexOf("@import './completion-v2.css';")
   assert.ok(tokenImport >= 0, 'theme token import missing')
   assert.ok(visualImport > tokenImport, 'visual language must load after tokens')
-  assert.ok(completionImport > visualImport, 'completion layer must remain last')
+  const applicationImport = foundation.indexOf("@import './theme-application.css';")
+  assert.ok(completionImport > visualImport, 'completion layer must load after visual language')
+  assert.ok(applicationImport > completionImport, 'canonical theme application must load last')
   assert.match(foundation, /--rand-radius-sm:\s*var\(--rand-radius-control\)/)
   assert.match(foundation, /--rand-radius-md:\s*var\(--rand-radius-surface\)/)
   assert.match(foundation, /--rand-radius-lg:\s*var\(--rand-radius-card\)/)
@@ -80,4 +82,36 @@ test('theme engine is original RandUI code and carries no runtime UI dependency'
   assert.doesNotMatch(tokens, /@mui|antd|chakra|bootstrap|tailwind|styled-components/i)
   assert.doesNotMatch(tokens, /@import\s+url/i)
   assert.match(tokens, /no third-party theme code is copied/i)
+})
+
+
+test('canonical application layer governs shell, auth and semantic states', () => {
+  const application = read('../src/randapp/randui/theme-application.css')
+  for (const selector of [
+    '.rs-card',
+    '.rs-drawer',
+    '.rs-sidebar',
+    '.rs-btn--primary',
+    ".rs-auth:has([data-testid='login-submit']) .rs-authcard",
+    '.rs-randui-state--success .rs-randui-state__icon',
+  ]) {
+    assert.ok(application.includes(selector), `${selector} missing from canonical application layer`)
+  }
+  for (const token of [
+    'var(--rand-surface-1)',
+    'var(--rand-border)',
+    'var(--rand-gradient-primary)',
+    'var(--rand-accent-soft)',
+    'var(--rand-danger-soft)',
+    'var(--rand-success-soft)',
+    'var(--rand-font-display)',
+  ]) {
+    assert.ok(application.includes(token), `${token} not consumed by canonical application layer`)
+  }
+})
+
+test('RandUI visual language no longer hardcodes Sora typography', () => {
+  const visual = read('../src/randapp/randui/visual-language.css')
+  assert.doesNotMatch(visual, /['"]Sora['"]/)
+  assert.match(visual, /var\(--rand-font-display\)/)
 })
