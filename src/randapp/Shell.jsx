@@ -37,6 +37,7 @@ const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
 const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
+const TaskHub = lazy(() => import('./operations/TaskHub.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
@@ -224,7 +225,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }, [directoryState, user, hotel, placement])
 
   const safeView = useMemo(() => {
-    const order = ['home', 'operations', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'planning-work', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
+    const order = ['home', 'operations', 'task', 'planning-work', 'issues', 'chat', 'housekeeping', 'supplies', 'interventions', 'my-work', 'inventory', 'urgent', 'reminders', 'temperature', 'plants', 'desktop-download', 'profile', 'manual', 'feedback']
     return order.find((candidate) => viewAllowed(candidate)) || 'home'
   }, [viewAllowed])
 
@@ -382,6 +383,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
+    if (view === 'task') content = <TaskHub canReminders={viewAllowed('reminders')} canUrgent={viewAllowed('urgent')} onOpen={(id) => pick({ id })} />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
@@ -432,6 +434,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (settings !== null || item.href) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
+    if (item.id === 'task') return ['task', 'urgent', 'reminders'].includes(view)
     return view === item.id
   }
 
