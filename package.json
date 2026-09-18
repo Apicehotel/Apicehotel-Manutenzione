@@ -88,7 +88,10 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "4.6.2"
+    "zod": "4.6.2",
+    "grid-engine": "2.52.1",
+    "phaser": "4.0.0",
+    "yuka": "0.7.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
