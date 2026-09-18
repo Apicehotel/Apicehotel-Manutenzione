@@ -16,6 +16,9 @@ jobs:
   build-test-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: RandTest heartbeat start
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randtest --status RUNNING --activity "CI quality gates"
 
       - name: Validate RandSkills
         run: npm run skills:validate
@@ -65,8 +71,19 @@ jobs:
       - name: Bundle budget
         run: node scripts/check-bundle.mjs
 
+      - name: RandBrain heartbeat start
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randbrain --status RUNNING --activity "Production contract checks"
+
       - name: RandBrain production contracts
         run: npm run test:randbrain
+
+      - name: RandBrain heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randbrain --status IDLE --activity "Production contracts complete"
+
+      - name: RandBrain heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randbrain --status ERROR --activity "Production contract checks" --detail "RandBrain contract gate failed"
 
       - name: RandUI visual quality contracts
         run: npm run test:randui
@@ -221,3 +238,11 @@ jobs:
       - name: Preview server log on failure
         if: failure()
         run: cat /tmp/apice-vite.log || true
+
+      - name: RandTest heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randtest --status IDLE --activity "CI quality gates complete"
+
+      - name: RandTest heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randtest --status ERROR --activity "CI quality gates" --detail "CI workflow failed"

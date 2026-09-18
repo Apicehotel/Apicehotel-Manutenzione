@@ -21,6 +21,9 @@ permissions:
 jobs:
   governance:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +32,17 @@ jobs:
           node-version: '24.20.0'
           cache: npm
       - run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randui --status RUNNING --activity "Design and UI governance checks"
       - run: npm run test:design
       - run: npm run test:repo-radar
       - run: npm run design:check
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randui --status IDLE --activity "Design and UI checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randui --status ERROR --activity "Design and UI governance checks" --detail "Workflow failed"

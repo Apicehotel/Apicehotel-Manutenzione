@@ -11,6 +11,9 @@ permissions:
 jobs:
   radar:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -22,6 +25,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randradar --status RUNNING --activity "Repository radar scan"
       - name: Validate RandSkills
         run: npm run skills:validate
       - name: Build Repo Radar snapshot
@@ -34,3 +41,10 @@ jobs:
           name: repo-radar-${{ github.run_id }}
           path: artifacts/repo-radar/latest.json
           retention-days: 90
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randradar --status IDLE --activity "Repository radar scan complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randradar --status ERROR --activity "Repository radar scan" --detail "Workflow failed"

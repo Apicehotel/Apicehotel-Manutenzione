@@ -13,6 +13,9 @@ concurrency:
 jobs:
   durable-runtime:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +24,10 @@ jobs:
           node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randai --status RUNNING --activity "Durable runtime checks"
       - name: Group 1 authorization boundary
         run: npm run test:group1
       - name: Group 2 knowledge boundary
@@ -29,3 +36,10 @@ jobs:
         run: npm run test:recovery
       - name: Group 3 durable runtime
         run: npm run test:group3
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randai --status IDLE --activity "Durable runtime checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randai --status ERROR --activity "Durable runtime checks" --detail "Workflow failed"

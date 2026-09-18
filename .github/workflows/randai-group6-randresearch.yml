@@ -11,6 +11,9 @@ concurrency:
 jobs:
   research:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +22,10 @@ jobs:
           node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randresearch --status RUNNING --activity "Research governance checks"
       - name: RandResearch contracts
         run: npm run test:group6
       - name: RandMind v2 boundary
@@ -27,3 +34,10 @@ jobs:
         run: npm run test:group4
       - name: RandSpec validation
         run: npm run spec:validate
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randresearch --status IDLE --activity "Research checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randresearch --status ERROR --activity "Research governance checks" --detail "Workflow failed"

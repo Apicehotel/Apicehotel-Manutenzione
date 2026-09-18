@@ -7,6 +7,9 @@ permissions:
 jobs:
   randmind-v2:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +18,20 @@ jobs:
           node-version-file: '.nvmrc'
           cache: npm
       - run: npm ci
+
+      - name: Rand heartbeat start
+        id: rand_heartbeat
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status RUNNING --activity "RandMind v2 checks"
       - name: RandMind v2 contracts
         run: npm run test:group5
       - name: Rand Governance boundary
         run: npm run test:group4
       - name: RandSpec validation
         run: npm run spec:validate
+
+      - name: Rand heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status IDLE --activity "RandMind v2 checks complete"
+      - name: Rand heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randmind --status ERROR --activity "RandMind v2 checks" --detail "Workflow failed"

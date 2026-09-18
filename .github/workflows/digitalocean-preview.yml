@@ -61,11 +61,26 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Checkout preview ref
         uses: actions/checkout@v4
         with:
           ref: ${{ env.PREVIEW_REF }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install runtime dependencies
+        run: npm ci --omit=dev
+
+      - name: RandOps heartbeat start
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
       - name: Deploy PR-specific preview to DigitalOcean App Platform
         uses: digitalocean/app_action/deploy@v2
@@ -75,3 +90,11 @@ jobs:
           deploy_pr_preview: "true"
           print_build_logs: "true"
           print_deploy_logs: "true"
+
+      - name: RandOps heartbeat success
+        if: success()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status IDLE --activity "DigitalOcean preview deploy complete"
+
+      - name: RandOps heartbeat failure
+        if: failure()
+        run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status ERROR --activity "DigitalOcean preview deploy" --detail "DigitalOcean deploy failed"
