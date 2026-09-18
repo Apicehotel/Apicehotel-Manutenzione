@@ -57,3 +57,12 @@ test('embedded RandAI workspace stays structure-agnostic and page-native', async
   assert.doesNotMatch(assistant, /<section className="randai__panel" role=\{embedded/)
   assert.match(page, /title="RandAI"/)
 })
+
+
+test('structured procedure steps never render as raw objects', async () => {
+  const assistant = await source('src/randai/RandAIAssistant.jsx')
+  assert.match(assistant, /const procedureStepText/)
+  assert.match(assistant, /step\.text \?\? step\.label \?\? step\.title/)
+  assert.match(assistant, /\.map\(procedureStepText\)/)
+  assert.doesNotMatch(assistant, /<li key=\{step\}>\{step\}<\/li>/)
+})
