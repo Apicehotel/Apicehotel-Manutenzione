@@ -92,3 +92,7 @@ Per richieste ampie, RandRadar deve prima raccogliere un insieme più grande di 
 ## Governance
 
 Questa policy è una regola permanente di RandRadar. Modifiche future devono passare da branch dedicata + Pull Request e revisione umana; nessun agente deve modificare `main` direttamente.
+
+## Osservabilità runtime
+
+Le esecuzioni automatiche di RandRadar e i gate RandDesignBridge devono pubblicare heartbeat reali nel registro RandCore quando dispongono dell'identità GitHub OIDC. L'assenza di un heartbeat non deve essere sostituita da uno stato online artificiale.

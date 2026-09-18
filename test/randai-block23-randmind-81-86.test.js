@@ -37,6 +37,12 @@ test('84: quality fails closed and conflicts are explicit',()=>{
   assert.deepEqual(conflicts,[{group:'room-1101-temp',ids:['a','b']}])
 })
 
+test('84b: quality clock is deterministic for newly normalized memories',()=>{
+  const now=Date.parse('2026-09-18T02:55:20.000Z')
+  const q=memoryQuality({...base,id:'q-clock',content:'Dato verificato',lifecycleStatus:'active',retentionClass:'operational'},now)
+  assert.equal(q.usable,true)
+})
+
 test('85: retention and forgetting semantics are fail closed',()=>{
   const forgotten={...base,id:'f',content:'Vecchio dato',lifecycleStatus:MemoryLifecycle.FORGOTTEN,retentionClass:RetentionClass.OPERATIONAL,forgottenAt:'2026-09-03T20:00:00.000Z'}
   assert.equal(memoryQuality(forgotten).usable,false)

@@ -12,6 +12,9 @@ const requestHeaders={'User-Agent':'Rand-Repo-Radar/4.0'}
 const githubHeaders={...requestHeaders,Accept:'application/vnd.github+json',...(token?{Authorization:`Bearer ${token}`}:{})}
 const MAX_DISCOVERED=80
 const MAX_PER_SECTOR=2
+const MIN_ACCEPTABLE_COVERAGE=0.80
+const SCAN_BUDGET_MS=18*60*1000
+const scanStartedAt=Date.now()
 const RANDUI_COVERAGE_CONTRACT='RANDUI_100_V1'
 const RAND_STACK_TERMS=['react','typescript','next','next.js','vite','shadcn','tailwind','storybook','playwright','supabase','zod','postgres','pwa','node','llm','agent','mcp','figma','flutter','swiftui']
 
@@ -209,7 +212,10 @@ async function discover(){
   const known=new Set(REPO_RADAR_CATALOG.map((item)=>canonicalUrl(item.repository)))
   const found=new Map()
   const providerStats=Object.fromEntries(PROVIDERS.map((provider)=>[provider.id,{queries:0,results:0,errors:0}]))
+  let completedProfiles=0
+  let stoppedByBudget=false
   for(const profile of SEARCH_PROFILES){
+    if(Date.now()-scanStartedAt>=SCAN_BUDGET_MS){stoppedByBudget=true;break}
     const settled=await Promise.allSettled(PROVIDERS.map(async(provider)=>{providerStats[provider.id].queries++;const results=await provider.search(profile);providerStats[provider.id].results+=results.length;return results}))
     settled.forEach((result,index)=>{
       const provider=PROVIDERS[index]
@@ -222,13 +228,15 @@ async function discover(){
         if(!previous||candidate.discoveryScore>previous.discoveryScore) found.set(url,candidate)
       }
     })
+    completedProfiles++
   }
-  return {candidates:boundedSelection(found),providerStats}
+  const profileCoverage=SEARCH_PROFILES.length?completedProfiles/SEARCH_PROFILES.length:1
+  return {candidates:boundedSelection(found),providerStats,completedProfiles,totalProfiles:SEARCH_PROFILES.length,profileCoverage,stoppedByBudget}
 }
 
 const enriched=[]
 for(const candidate of REPO_RADAR_CATALOG) enriched.push(await enrich(candidate))
-const {candidates:discovered,providerStats}=await discover()
+const {candidates:discovered,providerStats,completedProfiles,totalProfiles,profileCoverage,stoppedByBudget}=await discover()
 const snapshot=buildRepoRadarSnapshot([...enriched,...discovered])
 const sectorCoverage=Object.fromEntries(RANDUI_SECTORS.map((sector)=>[sector.id,discovered.filter((item)=>item.sector===sector.id).length]))
 const coveredUiSectors=Object.values(sectorCoverage).filter((count)=>count>0).length
@@ -237,5 +245,10 @@ if(!evolutionCoverage.complete) throw new Error(`Repo Radar ${EVOLUTION_COVERAGE
 const sourceCoverage=summarizeRepoRadarSourceCoverage()
 const outDir=path.resolve('artifacts/repo-radar')
 await fs.mkdir(outDir,{recursive:true})
-await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{coverageContract:EVOLUTION_COVERAGE_CONTRACT,legacyUiCoverageContract:RANDUI_COVERAGE_CONTRACT,profiles:SEARCH_PROFILES.length,evolutionProfiles:EVOLUTION_SEARCH_PROFILES.length,inventory:evolutionCoverage,uiSectors:RANDUI_SECTORS.map((item)=>item.id),uiSectorCount:RANDUI_SECTORS.length,coveredUiSectors,sectorCoverage,providers:PROVIDERS.map((item)=>item.id),providerStats,sourceCoverage,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerSector:MAX_PER_SECTOR}},null,2)+'\n')
+const operationalCoverage=Number(profileCoverage.toFixed(4))
+const operationalSuccess=operationalCoverage>=MIN_ACCEPTABLE_COVERAGE
+await fs.writeFile(path.join(outDir,'latest.json'),JSON.stringify({...snapshot,discovery:{coverageContract:EVOLUTION_COVERAGE_CONTRACT,legacyUiCoverageContract:RANDUI_COVERAGE_CONTRACT,profiles:SEARCH_PROFILES.length,evolutionProfiles:EVOLUTION_SEARCH_PROFILES.length,inventory:evolutionCoverage,uiSectors:RANDUI_SECTORS.map((item)=>item.id),uiSectorCount:RANDUI_SECTORS.length,coveredUiSectors,sectorCoverage,providers:PROVIDERS.map((item)=>item.id),providerStats,sourceCoverage,discovered:discovered.length,maxDiscovered:MAX_DISCOVERED,maxPerSector:MAX_PER_SECTOR,completedProfiles,totalProfiles,operationalCoverage,minAcceptableCoverage:MIN_ACCEPTABLE_COVERAGE,stoppedByBudget,operationalSuccess}},null,2)+'\n')
 console.log(`Repo Radar ${EVOLUTION_COVERAGE_CONTRACT}: ${snapshot.candidates.length} candidate (${discovered.length} discovered / ${evolutionCoverage.pageCount} app pages / ${evolutionCoverage.moduleCount} ecosystem modules / ${evolutionCoverage.aiEvolutionCount} AI evolution fronts / ${PROVIDERS.length} automated providers); `+Object.entries(snapshot.counts).map(([k,v])=>`${k}=${v}`).join(' '))
+
+if(stoppedByBudget) console.warn(`Repo Radar budget reached: ${(operationalCoverage*100).toFixed(1)}% coverage (${completedProfiles}/${totalProfiles} profiles)`)
+if(!operationalSuccess) throw new Error(`Repo Radar coverage ${(operationalCoverage*100).toFixed(1)}% is below required ${(MIN_ACCEPTABLE_COVERAGE*100).toFixed(0)}%`)
