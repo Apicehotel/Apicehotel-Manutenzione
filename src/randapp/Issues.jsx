@@ -294,7 +294,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
         </div>
       ) : (
         <>
-          <h2 className="rs-detail-room">{issue.room}</h2>
+          <h2 className="rs-detail-room">{issue.ticketCode ? `${issue.ticketCode} · ` : ""}{issue.room}</h2>
           <p className="rs-detail-desc">{issue.title}</p>
           <p className="rs-detail-origin">Da {issue.origin || 'App'}{issue.createdByName ? ` · ${issue.createdByName}` : ''} · {issue.date}</p>
           <dl className="rs-meta-grid">
@@ -482,7 +482,7 @@ export default function Issues({ user, hotel, users, createSignal }) {
     .filter((i) => urgencyFilter === 'all' || i.urgency === urgencyFilter)
     .filter((i) => categoryFilter === 'all' || i.category === categoryFilter)
     .filter((i) => locationFilter === 'all' || (locationFilter === 'camera' ? /^Camera\s*·/i.test(i.room || '') : !/^Camera\s*·/i.test(i.room || '')))
-    .filter((i) => !q || `${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
+    .filter((i) => !q || `${i.ticketCode || ''} ${i.room} ${i.title} ${i.category}`.toLowerCase().includes(q))
     .sort((a, b) => {
       if (sortBy === 'room') return compareIssueRooms(a, b) * direction
       if (sortBy === 'urgency') return ((URGENCY_SORT[a.urgency] || 0) - (URGENCY_SORT[b.urgency] || 0)) * direction
@@ -512,7 +512,7 @@ const resetExtraFilters = () => {
       </div>
       <div className="rs-toolbar">
   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'center' }}>
-    <TextInput icon="search" value={search} placeholder="Cerca camera, problema, categoria…" data-testid="issue-search" onChange={(e) => setSearch(e.target.value)} />
+    <TextInput icon="search" value={search} placeholder="Cerca ticket, camera, problema, categoria…" data-testid="issue-search" onChange={(e) => setSearch(e.target.value)} />
     <Button variant={extraFilterCount ? 'primary' : 'ghost'} icon="filter" onClick={() => setSortOpen(true)} data-testid="issue-sort-filter">Filtra{extraFilterCount ? ` · ${extraFilterCount}` : ''}</Button>
   </div>
   <div className="rs-issue-filter-scroll" data-testid="issue-filters">
@@ -532,7 +532,7 @@ const resetExtraFilters = () => {
               <span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} />
               <span className="rs-issue__main">
                 <span className="rs-issue__top">
-                  <span className="rs-issue__room">{issue.room}</span>
+                  <span className="rs-issue__room">{issue.ticketCode ? `${issue.ticketCode} · ` : ""}{issue.room}</span>
                   <Badge tone={ISSUE_STATUS_META[issue.status]?.tone}>{ISSUE_STATUS_META[issue.status]?.label || issue.status}</Badge>
                 </span>
                 <span className="rs-issue__title">{issue.title}</span>
