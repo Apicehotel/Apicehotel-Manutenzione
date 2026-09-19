@@ -21,12 +21,17 @@ const roomTag = (room: string) => {
   return match ? "#camera" + match[1] : "";
 };
 
+const TOPIC_ENV: Record<string, { issue: string; intervention: string }> = {
+  HG: { issue: "TELEGRAM_TOPIC_HG_SEGNALAZIONI", intervention: "TELEGRAM_TOPIC_HG_INTERVENTI" },
+  HC: { issue: "TELEGRAM_TOPIC_HC_SEGNALAZIONI", intervention: "TELEGRAM_TOPIC_HC_INTERVENTI" },
+  HB: { issue: "TELEGRAM_TOPIC_HB_SEGNALAZIONI", intervention: "TELEGRAM_TOPIC_HB_INTERVENTI" },
+};
+
 function topicFor(hotelId: string, kind: "issue" | "intervention") {
   const code = HOTEL_CODE[hotelId];
-  if (!code) return null;
-  const suffix = kind === "issue" ? "SEGNALAZIONI" : "INTERVENTI";
-  const raw = Deno.env.get(`TELEGRAM_TOPIC_${code}_${suffix}`);
-  const id = Number(raw);
+  const envName = code ? TOPIC_ENV[code]?.[kind] : null;
+  if (!envName) return null;
+  const id = Number(Deno.env.get(envName));
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
