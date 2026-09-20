@@ -1,0 +1,20 @@
+/* Shared visual refinements validated against the desktop/mobile acceptance matrix. */
+.rs-sale-card--finish { border-color: color-mix(in srgb, var(--rs-warn) 58%, var(--rs-line)); }
+.rs-sale-card--done { border-color: color-mix(in srgb, var(--rs-ok) 58%, var(--rs-line)); }
+.rs-randai-next { border: 1px solid color-mix(in srgb, var(--rs-accent, #8b5cf6) 32%, transparent); }
+.rs-randui-calendar__event { border-color: color-mix(in srgb, var(--rs-cyan) 38%, var(--rs-line)); }
+.rs-diag-overall { border: 1px solid var(--rs-line); border-radius: 14px; }
+.rs-diag-overall--ok { border-color: color-mix(in srgb, #2f9e6f 58%, var(--rs-line)); }
+.rs-diag-overall--warning,
+.rs-diag-overall--unknown { border-color: color-mix(in srgb, #c88a22 58%, var(--rs-line)); }
+.rs-diag-overall--problem { border-color: color-mix(in srgb, #c34d40 58%, var(--rs-line)); }
+
+/* Keep state legible without a heavy vertical stripe on narrow screens. */
+@media (max-width: 720px) {
+  .rs-legacy.rs-legacy--planning .work-event.pending,
+  .rs-legacy.rs-legacy--planning .sale-event.pending,
+  .rs-legacy.rs-legacy--planning .work-event.da_finire,
+  .rs-legacy.rs-legacy--planning .sale-event.da_finire,
+  .rs-legacy.rs-legacy--planning .work-event.done,
+  .rs-legacy.rs-legacy--planning .sale-event.done { border-left-width: 1px !important; }
+}

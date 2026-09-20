@@ -6,6 +6,7 @@
 @import '../ui-coherence.css';
 @import './theme-tokens.css';
 @import './visual-language.css';
+@import './impeccable-polish.css';
 @import './completion-v2.css';
 
 :root {
