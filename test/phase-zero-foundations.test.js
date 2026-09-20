@@ -32,11 +32,11 @@ test('Phase 0 separates the complete RandAI page from the quick header popup', (
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
 })
 
-test('Phase 0 allows reviewed Vercel production deploys and keeps Ocean preview-only', () => {
+test('Phase 0 keeps Vercel Git deploys paused and Ocean preview-only', () => {
   const vercel = JSON.parse(read('vercel.json'))
   const preview = read('.github/workflows/digitalocean-preview.yml')
 
-  assert.equal(vercel.git?.deploymentEnabled, true)
+  assert.equal(vercel.git?.deploymentEnabled, false)
   assert.equal(existsSync(new URL('../.github/workflows/digitalocean-deploy.yml', import.meta.url)), false)
   assert.match(preview, /pull_request:/)
   assert.match(preview, /workflow_dispatch:/)
