@@ -4,7 +4,7 @@ static_sites:
   - name: randui
     github:
       repo: Apicehotel/Apicehotel-Manutenzione
-      branch: main
+      branch: ${OCEAN_GITHUB_BRANCH}
       deploy_on_push: false
     source_dir: /
     environment_slug: node-js
