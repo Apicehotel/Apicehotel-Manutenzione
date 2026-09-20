@@ -7,8 +7,8 @@ import { listRandUiTemplates } from '../src/randapp/randui/template-registry.js'
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 
-test('RandUI v2 completion remains global for all 24 catalogued pages', () => {
-  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 24)
+test('RandUI v2 completion remains global for all 25 catalogued pages', () => {
+  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 25)
   assert.equal(listRandUiTemplates().length, 14)
 
   const foundation = read('../src/randapp/randui/foundation.css')

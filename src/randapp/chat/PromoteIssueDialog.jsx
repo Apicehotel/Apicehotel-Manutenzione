@@ -82,16 +82,16 @@ export default function PromoteIssueDialog({ open, onClose, user, hotel, source,
     finally { setBusy(false) }
   }
 
-  return <div className="rc-modal-backdrop" onClick={() => !busy && onClose?.()}>
-    <section className="rc-modal rc-promote" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Promuovi a segnalazione">
-      <header><div><h2>Promuovi a segnalazione</h2><small>{hotel.name} · il testo diventa dato operativo persistente</small></div><button className="rc-icon" onClick={() => !busy && onClose?.()}>×</button></header>
-      {!canCreate && <div className="rc-error">Non hai il permesso di creare segnalazioni in questa struttura.</div>}
-      <form className="rc-promote__form" onSubmit={submit}>
+  return <div className="randchat-modal-backdrop" onClick={() => !busy && onClose?.()}>
+    <section className="randchat-modal randchat-modal--form" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Promuovi a segnalazione">
+      <header><div><h2>Promuovi a segnalazione</h2><small>{hotel.name} · il testo diventa dato operativo persistente</small></div><button className="randchat-iconbtn" onClick={() => !busy && onClose?.()}>×</button></header>
+      {!canCreate && <div className="randchat-inline-error">Non hai il permesso di creare segnalazioni in questa struttura.</div>}
+      <form className="randchat-form" onSubmit={submit}>
         <label>Camera o zona
-          <input list="rc-promote-locations" value={draft.location} placeholder="Es. 214 oppure Hall" onChange={(event) => setDraft((current) => ({ ...current, location: event.target.value }))} />
-          <datalist id="rc-promote-locations">{choices.map((item) => <option key={`${item.kind}-${item.value}`} value={item.value}>{item.kind}</option>)}</datalist>
+          <input list="randchat-promote-locations" value={draft.location} placeholder="Es. 214 oppure Hall" onChange={(event) => setDraft((current) => ({ ...current, location: event.target.value }))} />
+          <datalist id="randchat-promote-locations">{choices.map((item) => <option key={`${item.kind}-${item.value}`} value={item.value}>{item.kind}</option>)}</datalist>
         </label>
-        {draft.location && !selectedLocation && <small className="rc-error">Scegli una camera o zona riconosciuta.</small>}
+        {draft.location && !selectedLocation && <small className="randchat-inline-error">Scegli una camera o zona riconosciuta.</small>}
         <label>Descrizione
           <textarea rows="4" maxLength={8000} value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} />
         </label>
@@ -101,8 +101,8 @@ export default function PromoteIssueDialog({ open, onClose, user, hotel, source,
         <label>Categoria
           <select value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}>{ISSUE_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}</select>
         </label>
-        {error && <div className="rc-error" role="alert">{error}</div>}
-        <div className="rc-promote__actions"><button type="button" onClick={() => !busy && onClose?.()}>Annulla</button>{createdIssue ? <button type="button" disabled={busy} onClick={retryLink}>{busy ? 'Collego…' : 'Riprova collegamento'}</button> : <button disabled={!valid || busy}>{busy ? 'Creo…' : 'Crea segnalazione'}</button>}</div>
+        {error && <div className="randchat-inline-error" role="alert">{error}</div>}
+        <div className="randchat-form__actions"><button type="button" onClick={() => !busy && onClose?.()}>Annulla</button>{createdIssue ? <button type="button" disabled={busy} onClick={retryLink}>{busy ? 'Collego…' : 'Riprova collegamento'}</button> : <button disabled={!valid || busy}>{busy ? 'Creo…' : 'Crea segnalazione'}</button>}</div>
       </form>
     </section>
   </div>

@@ -44,10 +44,10 @@ export async function fetchChatMessages(groupId, limit = 120) {
   const { data, error } = await client.from('chat_messages')
     .select('*')
     .eq('group_id', groupId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(Math.min(Math.max(Number(limit) || 120, 1), 300))
   if (error) throw error
-  return data || []
+  return (data || []).reverse()
 }
 
 export async function sendChatMessage(groupId, senderUserId, body) {

@@ -45,3 +45,28 @@
 @media (max-width: 767px) {
   .rs-randui-page { --randui-page-max: 100%; }
 }
+
+
+/* Global compact-header invariant.
+   Local page headers must always size to their content. This protects every
+   catalogued page from inherited flex/grid growth creating dead vertical space. */
+.rs-content .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) {
+  min-height: 0 !important;
+  height: auto !important;
+  flex: 0 0 auto !important;
+  align-self: stretch;
+  align-content: start;
+}
+
+@media (max-width: 767px) {
+  .rs-content .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) {
+    justify-content: flex-start !important;
+  }
+
+  .rs-content .rs-randui-page--migrated .rs-page-title > div:first-child,
+  .rs-content .rs-randui-page--migrated .rs-randui-local-header__copy {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+}

@@ -34,3 +34,23 @@ test('mobile Home widget grid stays inside its container without negative gutter
   assert.doesNotMatch(home, /rs-widget-grid-shell\{margin-inline:-/)
   assert.doesNotMatch(home, /rs-widget-grid-shell\{[^}]*width:calc\(100%\s*\+/)
 })
+
+
+
+
+
+
+
+
+
+
+test('mobile shell keeps chrome static while content owns vertical scrolling', async () => {
+  const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
+  const foundation = await readFile(new URL('../src/randapp/randui/foundation.css', import.meta.url), 'utf8')
+  assert.doesNotMatch(shell, /ResizeObserver/)
+  assert.doesNotMatch(shell, /rs-header-spacer/)
+  assert.match(foundation, /Mobile\/tablet shell scroll ownership/)
+  assert.match(foundation, /@media \(max-width: 1199px\)[\s\S]*?\.rs-root\s*\{[\s\S]*?height:\s*100dvh;[\s\S]*?overflow:\s*hidden;/)
+  assert.match(foundation, /\.rs-header\.rs-header--operational\s*\{[\s\S]*?position:\s*relative !important;/)
+  assert.match(foundation, /\.rs-content\s*\{[\s\S]*?overflow-y:\s*auto;/)
+})

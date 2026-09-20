@@ -6,8 +6,8 @@ const integration = readFileSync(new URL('../supabase/migrations/20260905110000_
 const mediaHardening = readFileSync(new URL('../supabase/migrations/20260905110100_randchat_group_c_media_hardening.sql', import.meta.url), 'utf8')
 const procedureDrafts = readFileSync(new URL('../supabase/migrations/20260905110200_randchat_group_c_procedure_drafts.sql', import.meta.url), 'utf8')
 const ciphertextHeadroom = readFileSync(new URL('../supabase/migrations/20260905110300_randchat_dm_ciphertext_headroom.sql', import.meta.url), 'utf8')
-const groupUi = readFileSync(new URL('../src/randapp/chat/GroupChats.jsx', import.meta.url), 'utf8')
-const dmUi = readFileSync(new URL('../src/randapp/chat/DirectMessages.jsx', import.meta.url), 'utf8')
+const chatUi = readFileSync(new URL('../src/randapp/chat/RandChat.jsx', import.meta.url), 'utf8')
+const chatThread = readFileSync(new URL('../src/randapp/chat/RandChatThread.jsx', import.meta.url), 'utf8')
 const aiBridge = readFileSync(new URL('../src/randapp/chat/randchat-ai.js', import.meta.url), 'utf8')
 const mediaProvider = readFileSync(new URL('../src/randapp/chat/randmedia.js', import.meta.url), 'utf8')
 const cleanupWorker = readFileSync(new URL('../supabase/functions/randchat-media-cleanup/index.ts', import.meta.url), 'utf8')
@@ -27,16 +27,16 @@ test('group messages can become canonical RandGuide drafts but never auto-publis
   assert.match(procedureDrafts, /revisione umana obbligatoria/i)
   assert.doesNotMatch(procedureDrafts, /'approved'\s*,\s*1/i)
   assert.match(procedureDrafts, /requires_approval/i)
-  assert.match(groupUi, /Bozza procedura/)
+  assert.match(chatThread, /Bozza procedura/)
 })
 
 test('RandAI group context requires both group membership and hotel membership', () => {
   assert.match(procedureDrafts, /chat_group_member\(p_group_id,v_user\)/i)
   assert.match(procedureDrafts, /is_hotel_member\(v_group\.hotel_id,v_user\)/i)
   assert.match(aiBridge, /chat_group_ai_context/)
-  assert.match(groupUi, /RandChatAI/)
-  assert.doesNotMatch(dmUi, /RandChatAI/)
-  assert.doesNotMatch(dmUi, /chat_group_ai_context/)
+  assert.match(chatUi, /RandChatAI/)
+  assert.match(chatUi, /RandChatAI/)
+  assert.doesNotMatch(chatUi, /chat_group_ai_context/)
 })
 
 test('RandMedia keeps provider APIs behind one abstraction and DM media encrypted', () => {

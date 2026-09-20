@@ -1,0 +1,63 @@
+.rs-technicians-page{width:100%}
+.rs-technician-stats{width:100%}
+.rs-technician-stats>.rs-randui-surface{display:grid;gap:3px;min-height:92px;padding:12px}
+.rs-technician-stats small{color:var(--rand-text-muted);font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.rs-technician-stats strong{font-size:1.65rem;line-height:1}
+.rs-technician-stats span{color:var(--rand-text-secondary);font-size:.72rem}
+.rs-technician-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px}
+.rs-technician-search{min-height:46px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--rand-border);border-radius:14px;background:var(--rand-surface-2)}
+.rs-technician-search>.rs-icon{color:var(--rand-text-muted)}
+.rs-technician-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--rand-text-primary);font:inherit}
+.rs-technician-filters{display:flex;gap:8px}
+.rs-technician-filters select{min-height:46px;border:1px solid var(--rand-border);border-radius:14px;padding:0 12px;background:var(--rand-surface-2);color:var(--rand-text-primary)}
+.rs-technician-grid{width:100%}
+.rs-technician-card{width:100%;min-width:0;padding:14px;border:1px solid var(--rand-border);border-radius:var(--rand-radius-card);background:var(--rand-surface-1);color:var(--rand-text-primary);display:grid;gap:12px;text-align:left;box-shadow:var(--rand-shadow-surface)}
+.rs-technician-card:hover,.rs-technician-card:focus-visible{border-color:var(--rand-accent-line);background:color-mix(in srgb,var(--rand-surface-1) 92%,var(--rand-accent-soft))}
+.rs-technician-card.is-inactive{opacity:.64}
+.rs-technician-card__top{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center}
+.rs-technician-card__avatar{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--rand-accent-soft);color:var(--rand-accent);font-weight:900;font-size:1.05rem}
+.rs-technician-card__identity{min-width:0;display:grid;gap:2px}
+.rs-technician-card__identity strong{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-technician-card__identity small{color:var(--rand-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-technician-card__state{padding:5px 8px;border-radius:999px;font-size:.66rem;font-weight:850;border:1px solid var(--rand-border)}
+.rs-technician-card__state.is-on{color:var(--rand-success);background:var(--rand-success-soft);border-color:color-mix(in srgb,var(--rand-success) 30%,var(--rand-border))}
+.rs-technician-card__state.is-off{color:var(--rand-text-muted);background:var(--rand-surface-2)}
+.rs-technician-card__skills{display:flex;flex-wrap:wrap;gap:6px}
+.rs-technician-card__skills span,.rs-technician-detail__chips span{padding:5px 8px;border-radius:999px;background:var(--rand-accent-soft);color:var(--rand-text-secondary);font-size:.69rem;font-weight:750}
+.rs-technician-card__meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rs-technician-card__meta span{display:flex;align-items:center;gap:6px;color:var(--rand-text-secondary);font-size:.75rem;min-width:0}
+.rs-technician-card__meta .rs-icon{color:var(--rand-accent)}
+.rs-technician-card__actions{display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--rand-border)}
+.rs-technician-card__actions a,.rs-technician-card__actions>span{display:inline-flex;align-items:center;gap:5px;color:var(--rand-text-secondary);font-size:.72rem;text-decoration:none}
+.rs-technician-card__actions>span{margin-left:auto}
+.rs-technician-card__actions .rs-icon{width:16px;height:16px}
+.rs-technician-message{width:fit-content}
+.rs-technician-detail{display:grid;gap:16px}
+.rs-technician-detail__hero{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center}
+.rs-technician-detail__hero .rs-technician-card__avatar{width:52px;height:52px}
+.rs-technician-detail__hero>div{display:grid;gap:3px}
+.rs-technician-detail__hero strong{font-size:1.1rem}
+.rs-technician-detail__hero small{color:var(--rand-text-secondary)}
+.rs-technician-detail__contacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rs-technician-detail__contacts a{min-height:58px;padding:10px;border:1px solid var(--rand-border);border-radius:14px;background:var(--rand-surface-2);display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--rand-text-primary)}
+.rs-technician-detail__contacts a>.rs-icon{color:var(--rand-accent)}
+.rs-technician-detail__contacts span{min-width:0;display:grid}
+.rs-technician-detail__contacts small{color:var(--rand-text-muted)}
+.rs-technician-detail__contacts strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-technician-detail section{display:grid;gap:8px;padding-top:4px}
+.rs-technician-detail section>small{color:var(--rand-text-muted);font-size:.67rem;font-weight:850;letter-spacing:.08em}
+.rs-technician-detail__chips{display:flex;flex-wrap:wrap;gap:6px}
+.rs-technician-detail__activity{display:grid;gap:4px;padding:10px;border:1px solid var(--rand-border);border-radius:14px;background:var(--rand-surface-2)}
+.rs-technician-detail__activity span,.rs-technician-detail__activity small{color:var(--rand-text-secondary)}
+.rs-technician-active-toggle{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--rand-border);border-radius:14px;background:var(--rand-surface-2)}
+@media(max-width:767px){
+ .rs-technician-stats.rs-randui-grid--4{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .rs-technician-toolbar{grid-template-columns:1fr}
+ .rs-technician-filters{display:grid;grid-template-columns:1fr 1fr}
+ .rs-technician-grid.rs-randui-grid--2{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:430px){
+ .rs-technician-card__meta{grid-template-columns:1fr}
+ .rs-technician-detail__contacts{grid-template-columns:1fr}
+ .rs-technician-filters{grid-template-columns:1fr}
+}

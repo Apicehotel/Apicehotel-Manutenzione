@@ -206,3 +206,273 @@
 .randai__project-signals span { padding:4px 7px; border-radius:999px; background:color-mix(in srgb,var(--rs-card,#fff) 72%,transparent); font-size:11px; }
 .randai__project-hypothesis { display:grid; gap:2px; padding:8px; border-radius:9px; background:rgba(245,158,11,.12); }
 .randai__project-hypothesis strong, .randai__project-hypothesis small { font-size:12px; }
+
+
+
+/* Embedded RandAI page: first-class intelligence workspace. */
+.randai-page-workspace {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  color: var(--rand-text-primary);
+}
+
+.randai__embedded-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--rand-border);
+  background: transparent;
+}
+
+.randai__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.randai__status > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.randai__status strong {
+  font-size: .9rem;
+  line-height: 1.15;
+}
+
+.randai__status small {
+  color: var(--rand-text-muted);
+  font-size: .72rem;
+}
+
+.randai__status-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--rand-success);
+  box-shadow: 0 0 0 5px var(--rand-success-soft);
+}
+
+.randai__capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.randai__capabilities span {
+  padding: 6px 9px;
+  border: 1px solid var(--rand-border);
+  border-radius: 999px;
+  background: var(--rand-surface-2);
+  color: var(--rand-text-secondary);
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .01em;
+}
+
+.randai-page-workspace .randai__messages {
+  min-height: clamp(440px, 58dvh, 760px);
+  padding: 14px 0 22px;
+  gap: 14px;
+  overflow: visible;
+}
+
+.randai__welcome--workspace {
+  display: grid;
+  gap: 16px;
+  padding: 8px 0 4px;
+  background: transparent;
+}
+
+.randai__welcome-copy {
+  display: grid;
+  gap: 7px;
+  max-width: 720px;
+}
+
+.randai__eyebrow {
+  color: var(--rand-accent);
+  font-size: .67rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.randai__welcome--workspace h2 {
+  margin: 0;
+  font-family: var(--rand-font-display);
+  font-size: clamp(1.45rem, 4.5vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.randai__welcome--workspace p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--rand-text-secondary);
+  line-height: 1.52;
+}
+
+.randai__quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.randai__quick-card {
+  min-height: 96px;
+  padding: 12px;
+  border: 1px solid var(--rand-border);
+  border-radius: var(--rand-radius-card);
+  background: color-mix(in srgb, var(--rand-surface-2) 88%, transparent);
+  color: var(--rand-text-primary);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  text-align: left;
+}
+
+.randai__quick-card:hover,
+.randai__quick-card:focus-visible {
+  border-color: var(--rand-accent-line);
+  background: var(--rand-accent-soft);
+}
+
+.randai__quick-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--rand-accent-soft);
+  color: var(--rand-accent);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.randai__quick-card > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.randai__quick-card strong {
+  font-size: .88rem;
+}
+
+.randai__quick-card small {
+  color: var(--rand-text-secondary);
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.randai-page-workspace .randai__bubble {
+  max-width: min(84%, 760px);
+  padding: 13px 15px;
+  border: 1px solid var(--rand-border);
+}
+
+.randai-page-workspace .randai__bubble--user {
+  background: var(--rand-gradient-primary);
+  color: var(--rand-on-accent);
+  border-color: transparent;
+}
+
+.randai-page-workspace .randai__bubble--assistant {
+  background: var(--rand-surface-1);
+  box-shadow: var(--rand-shadow-surface);
+}
+
+.randai-page-workspace .randai__composer {
+  position: sticky;
+  bottom: calc(var(--rs-bottomnav-h, 74px) + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px 0 max(10px, env(safe-area-inset-bottom, 0px));
+  margin-top: 4px;
+  border-top: 1px solid var(--rand-border);
+  border-radius: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rand-canvas) 78%, transparent), var(--rand-canvas) 34%);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+.randai-page-workspace .randai__composer textarea {
+  min-height: 48px;
+  max-height: 150px;
+  padding: 12px 13px;
+  border-color: var(--rand-border);
+  border-radius: 14px;
+  background: var(--rand-surface-2);
+}
+
+.randai-page-workspace .randai__composer button {
+  height: 48px;
+  border-radius: 14px;
+}
+
+.randai-page-workspace .randai__composer button[type='submit'] {
+  min-width: 82px;
+  background: var(--rand-gradient-primary);
+  color: var(--rand-on-accent);
+}
+
+.randai-page-workspace .randai__audio-notice {
+  padding: 8px 4px 0;
+  background: transparent;
+}
+
+@media (min-width: 900px) {
+  .randai-page-workspace .randai__messages {
+    min-height: 560px;
+  }
+  .randai-page-workspace .randai__composer {
+    bottom: 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  .randai__embedded-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .randai__capabilities {
+    justify-content: flex-start;
+  }
+  .randai__quick-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .randai-page-workspace .randai__messages {
+    min-height: calc(100dvh - var(--rs-header-h, 62px) - var(--rs-bottomnav-h, 74px) - 220px);
+  }
+}
+
+@media (max-width: 430px) {
+  .randai__welcome--workspace {
+    padding: 14px;
+  }
+  .randai__quick-card {
+    min-height: 86px;
+  }
+  .randai-page-workspace .randai__bubble {
+    max-width: 94%;
+  }
+  .randai-page-workspace .randai__composer {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .randai-page-workspace .randai__composer button[type='submit'] {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

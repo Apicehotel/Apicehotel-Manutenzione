@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { RANDUI_PAGE_CATALOG } from '../src/randapp/randui/page-catalog.js'
 import { RANDUI_PAGE_AUDIT_V2, RANDUI_AUDIT_STATUS, auditRandUiPageCoverage } from '../src/randapp/randui/page-audit-v2.js'
 
-test('Point 2 audit covers all 24 RandUI pages exactly once', () => {
+test('Point 2 audit covers all 25 RandUI pages exactly once', () => {
   const coverage = auditRandUiPageCoverage()
-  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 24)
-  assert.equal(Object.keys(RANDUI_PAGE_AUDIT_V2).length, 24)
+  assert.equal(Object.keys(RANDUI_PAGE_CATALOG).length, 25)
+  assert.equal(Object.keys(RANDUI_PAGE_AUDIT_V2).length, 25)
   assert.equal(coverage.complete, true)
 })
 

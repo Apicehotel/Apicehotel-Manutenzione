@@ -14,7 +14,7 @@ test('mobile primary navigation keeps Home central and RandAI far right', () => 
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /randai:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
-  assert.match(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/s)
   assert.doesNotMatch(navigation, /label:\s*'Altro'/)
   assert.match(css, /data-slot='3'/)
   assert.match(css, /data-slot='5'/)
@@ -43,12 +43,11 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('RandAI navbar opens the complete page while the header owns the quick popup', () => {
-  assert.match(shell, /if \(item\.href\)/)
-  assert.match(shell, /window\.location\.assign\(item\.href\)/)
-  assert.match(shell, /data-testid="header-randai"/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
-  assert.match(css, /rs-header__randai--desktop/)
+test('RandAI navbar opens a first-class embedded page and duplicate header action is removed', () => {
+  assert.match(shell, /view === 'randai'[\s\S]*<RandAIPage/)
+  assert.doesNotMatch(navigation, /id:\s*'randai'.*(?:href|action):/s)
+  assert.doesNotMatch(shell, /data-testid="header-randai"/)
+  assert.doesNotMatch(shell, /CyberCatOrb/)
 })
 
 test('Telegram visual layer is runtime-owned while navigation logic stays side-effect free', () => {
@@ -58,4 +57,15 @@ test('Telegram visual layer is runtime-owned while navigation logic stays side-e
   assert.match(css, /min-height:\s*54px/)
   assert.match(css, /focus-visible/)
   assert.match(css, /@media \(max-width: 360px\)/)
+})
+
+
+test('Task hub groups reminders and alerts while keeping child flows separate', () => {
+  const taskHub = fs.readFileSync(new URL('../src/randapp/operations/TaskHub.jsx', import.meta.url), 'utf8')
+  assert.match(taskHub, /title="Task"/)
+  assert.match(taskHub, /title="Promemoria"/)
+  assert.match(taskHub, /title="Avvisi"/)
+  assert.match(taskHub, /onOpen\('reminders'\)/)
+  assert.match(taskHub, /onOpen\('urgent'\)/)
+  assert.match(catalog, /task: page\(/)
 })
