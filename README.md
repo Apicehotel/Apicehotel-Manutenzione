@@ -1,5 +1,9 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## RandAILive — punto 4
+
+La hall ufficiale (`/randailive`) usa il runtime MelonJS e una collisione data-driven: il contratto Tiled legge `ge_collide=true` dal tileset e costruisce gli ostacoli per A*. Muri, porte, uffici e arredi non dipendono da un GID numerico hardcoded; il movimento blocca anche eventuali percorsi diventati non validi.
+
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
 ## Stato consolidato — 17 settembre 2026
