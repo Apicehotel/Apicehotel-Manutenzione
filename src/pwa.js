@@ -3,7 +3,7 @@ export function registerPwa() {
 
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      const registration = await navigator.serviceWorker.register('/sw.js?v=14', { updateViaCache: 'none' })
       await registration.update()
     } catch (error) {
       console.error('Registrazione PWA non riuscita', error)
