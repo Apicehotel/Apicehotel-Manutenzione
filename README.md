@@ -156,3 +156,8 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — rifornimenti.
 
 Questo README descrive lo **stato operativo corrente**. Cronologia e dettagli specialistici restano nei documenti dedicati per evitare documentazione zombie.
+## Governed design and PR review tools
+
+RandApp uses Impeccable as a development-only UI design and audit layer, and agent-reviews as a controlled PR review-bot triage aid. They never run in the production runtime and never bypass the branch/PR/human-review policy.
+
+See [docs/integrations/BAKAUS_TOOLS.md](docs/integrations/BAKAUS_TOOLS.md), [.impeccable/PRODUCT.md](.impeccable/PRODUCT.md), and [.impeccable/DESIGN.md](.impeccable/DESIGN.md).
