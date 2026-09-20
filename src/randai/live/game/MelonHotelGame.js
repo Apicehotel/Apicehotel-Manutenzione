@@ -8,16 +8,6 @@ const SOCIAL={randai:['reception','waiting','cafe','core'],randbrain:['brain','c
 
 const key=(x,y)=>x+','+y
 const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y)
-const mapProperty=(map,name,fallback)=>map.properties?.find(p=>p.name===name)?.value||fallback
-export function buildCollisionSet(map){
- const propertyName=mapProperty(map,'collision_tile_property','ge_collide'),collidable=new Set()
- for(const tileset of map.tilesets||[])for(const tile of tileset.tiles||[]){
-  if(tile.properties?.some(p=>p.name===propertyName&&p.value===true))collidable.add(tileset.firstgid+tile.id)
- }
- const ground=map.layers?.find(l=>l.name==='ground'),blocked=new Set()
- ground?.data?.forEach((gid,i)=>{if(collidable.has(gid))blocked.add(key(i%map.width,Math.floor(i/map.width)))})
- return blocked
-}
 function astar(blocked,start,goal,w,h){
  const open=[start], came=new Map(), g=new Map([[key(start.x,start.y),0]])
  const closed=new Set()
@@ -58,11 +48,11 @@ class HotelMap extends Renderable{
 }
 
 class Agent extends Renderable{
- constructor(id,name,x,y,onClick,isWalkable){super(x*TILE,y*TILE,48,64);this.anchorPoint.set(.5,.5);this.id=id;this.name=name;this.path=[];this.speed=.11;this.t=0;this.status='IDLE';this.follow=false;this.onClick=onClick;this.isWalkable=isWalkable;input.registerPointerEvent('pointerdown',this,()=>{onClick(id);return false})}
+ constructor(id,name,x,y,onClick){super(x*TILE,y*TILE,48,64);this.anchorPoint.set(.5,.5);this.id=id;this.name=name;this.path=[];this.speed=.11;this.t=0;this.status='IDLE';this.follow=false;this.onClick=onClick;input.registerPointerEvent('pointerdown',this,()=>{onClick(id);return false})}
  setPath(path){this.path=path.slice(1)}
  update(dt){
   this.t+=dt
-  if(this.path.length){const p=this.path[0];if(this.isWalkable&&!this.isWalkable(p.x,p.y)){this.path=[];return false}const tx=p.x*TILE+TILE/2,ty=p.y*TILE+TILE/2,dx=tx-this.pos.x,dy=ty-this.pos.y,d=Math.hypot(dx,dy);const step=Math.max(1,dt*this.speed);if(d<=step){this.pos.set(tx,ty);this.path.shift()}else{this.pos.x+=dx/d*step;this.pos.y+=dy/d*step}return true}return false
+  if(this.path.length){const p=this.path[0],tx=p.x*TILE+TILE/2,ty=p.y*TILE+TILE/2,dx=tx-this.pos.x,dy=ty-this.pos.y,d=Math.hypot(dx,dy);const step=Math.max(1,dt*this.speed);if(d<=step){this.pos.set(tx,ty);this.path.shift()}else{this.pos.x+=dx/d*step;this.pos.y+=dy/d*step}return true}return false
  }
  draw(r){
   const tone=COLORS[this.id]||'#7dd3fc'
@@ -92,12 +82,13 @@ export class RandMelonHotel{
  constructor(parent,{onAgent,onIssue}){this.parent=parent;this.onAgent=onAgent;this.onIssue=onIssue;this.app=null;this.map=null;this.blocked=new Set();this.agents=new Map();this.clients=new Map();this.runtime=[];this.issues=[];this.followId=null;this.lastWander=0}
  async init(){
   const res=await fetch('/randailive/maps/hotel-main.json',{cache:'no-store'});this.map=await res.json()
-  this.blocked=buildCollisionSet(this.map)
+  const ground=this.map.layers.find(l=>l.name==='ground')
+  ground.data.forEach((v,i)=>{if(v===2)this.blocked.add(key(i%this.map.width,Math.floor(i/this.map.width)))})
   this.app=new Application(W,H,{parent:this.parent,scale:1,scaleMethod:'fit',scaleTarget:this.parent,backgroundColor:'#081526'})
   await this.app.init()
   this.app.world.addChild(new HotelMap(this.map),0)
   for(const [id,name] of [['randai','RandAI'],['randbrain','RandBrain'],['randcore','RandCore'],['randmind','RandMind'],['randradar','RandRadar'],['randresearch','RandResearch'],['randsecure','RandSecure'],['randtest','RandTest'],['randops','RandOps'],['randui','RandUI']]){
-   const [x,y]=HOMES[id];const a=new Agent(id,name,x+.5,y+.5,this.onAgent,(tx,ty)=>this.isWalkable(tx,ty));this.agents.set(id,a);this.app.world.addChild(a,20)
+   const [x,y]=HOMES[id];const a=new Agent(id,name,x+.5,y+.5,this.onAgent);this.agents.set(id,a);this.app.world.addChild(a,20)
   }
   this.app.world.addChild(new Controller(this),100)
   this.syncClients()
@@ -106,7 +97,6 @@ export class RandMelonHotel{
  setRuntime(v){this.runtime=v||[]}
  setIssues(v){this.issues=v||[];if(this.app)this.syncClients()}
  setFollow(id){this.followId=id||null;if(this.app)this.applyFollow()}
- isWalkable(x,y){return x>=1&&y>=1&&x<this.map.width-1&&y<this.map.height-1&&!this.blocked.has(key(x,y))}
  applyFollow(){
   if(!this.app?.viewport)return
   for(const [aid,a] of this.agents)a.follow=aid===this.followId
@@ -125,7 +115,7 @@ export class RandMelonHotel{
  }
  moveAgent(id,zone){
   const a=this.agents.get(id),target=ZONES[zone];if(!a||!target)return
-  const sx=Math.floor(a.pos.x/TILE),sy=Math.floor(a.pos.y/TILE),goal={x:target[0],y:target[1]};if(!this.isWalkable(goal.x,goal.y))return
+  const sx=Math.floor(a.pos.x/TILE),sy=Math.floor(a.pos.y/TILE),goal={x:target[0],y:target[1]}
   const path=astar(this.blocked,{x:sx,y:sy},goal,this.map.width,this.map.height)
   if(path.length)a.setPath(path)
  }
