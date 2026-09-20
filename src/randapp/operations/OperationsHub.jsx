@@ -1,5 +1,6 @@
 import { Icon } from '../ui.jsx'
 import { PageTitle, Stack, Surface } from '../randui/visual-primitives.jsx'
+import PlanningCountCards from '../planning/PlanningCountCards.jsx'
 
 function DestinationRow({ icon, title, description, onClick, testId }) {
   return (
@@ -14,7 +15,7 @@ function DestinationRow({ icon, title, description, onClick, testId }) {
   )
 }
 
-export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
+export default function OperationsHub({ canIssues, canInterventions, hotel, user, onOpen }) {
   return (
     <Stack gap="md" className="rs-operations-hub">
       <PageTitle
@@ -22,6 +23,7 @@ export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
         title="Operatività"
         subtitle="Segnalazioni e interventi nello stesso punto, senza mescolare i relativi flussi."
       />
+      <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} />
       <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
         {canIssues && (
           <DestinationRow
