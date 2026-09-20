@@ -18,6 +18,14 @@ export function buildCollisionSet(map){
  ground?.data?.forEach((gid,i)=>{if(collidable.has(gid))blocked.add(key(i%map.width,Math.floor(i/map.width)))})
  return blocked
 }
+function nearestWalkable(point,blocked,w,h){
+ if(point&&point.length===2&&!blocked.has(key(point[0],point[1])))return{x:point[0],y:point[1]}
+ for(let radius=1;radius<Math.max(w,h);radius++)for(let y=point[1]-radius;y<=point[1]+radius;y++)for(let x=point[0]-radius;x<=point[0]+radius;x++){
+  if(x<1||y<1||x>=w-1||y>=h-1||blocked.has(key(x,y)))continue
+  return{x,y}
+ }
+ return{x:1,y:1}
+}
 function astar(blocked,start,goal,w,h){
  const open=[start], came=new Map(), g=new Map([[key(start.x,start.y),0]])
  const closed=new Set()
@@ -44,6 +52,8 @@ class HotelMap extends Renderable{
   r.setColor('#17334f');r.fillRect(32,32,W-64,140)
   r.setColor('#8f2548');r.fillRect(300,290,360,82)
   r.setColor('#d1b07b');r.fillRect(320,300,320,62)
+  r.setColor('#6f513d')
+  for(const cell of buildCollisionSet(this.map)){const [x,y]=cell.split(',').map(Number);r.fillRect(x*TILE,y*TILE,TILE,TILE)}
   const zones=this.map.layers.find(l=>l.name==='zones')?.objects||[]
   for(const z of zones){
    const c={reception:'#2c6d96',waiting:'#315f85',service:'#4b6070',core:'#a66a24',brain:'#6b4290',cafe:'#8b6a35',knowledge:'#39845d',research:'#3f769b',secure:'#893641',ops:'#2f8188',design:'#974a80',qa:'#8b8538',radar:'#8f3b40'}[z.name]||'#596979'
@@ -97,7 +107,7 @@ export class RandMelonHotel{
   await this.app.init()
   this.app.world.addChild(new HotelMap(this.map),0)
   for(const [id,name] of [['randai','RandAI'],['randbrain','RandBrain'],['randcore','RandCore'],['randmind','RandMind'],['randradar','RandRadar'],['randresearch','RandResearch'],['randsecure','RandSecure'],['randtest','RandTest'],['randops','RandOps'],['randui','RandUI']]){
-   const [x,y]=HOMES[id];const a=new Agent(id,name,x+.5,y+.5,this.onAgent,(tx,ty)=>this.isWalkable(tx,ty));this.agents.set(id,a);this.app.world.addChild(a,20)
+   const {x,y}=nearestWalkable(HOMES[id],this.blocked,this.map.width,this.map.height);const a=new Agent(id,name,x+.5,y+.5,this.onAgent,(tx,ty)=>this.isWalkable(tx,ty));this.agents.set(id,a);this.app.world.addChild(a,20)
   }
   this.app.world.addChild(new Controller(this),100)
   this.syncClients()
@@ -125,7 +135,7 @@ export class RandMelonHotel{
  }
  moveAgent(id,zone){
   const a=this.agents.get(id),target=ZONES[zone];if(!a||!target)return
-  const sx=Math.floor(a.pos.x/TILE),sy=Math.floor(a.pos.y/TILE),goal={x:target[0],y:target[1]};if(!this.isWalkable(goal.x,goal.y))return
+  const sx=Math.floor(a.pos.x/TILE),sy=Math.floor(a.pos.y/TILE),goal=nearestWalkable(target,this.blocked,this.map.width,this.map.height);if(!this.isWalkable(goal.x,goal.y))return
   const path=astar(this.blocked,{x:sx,y:sy},goal,this.map.width,this.map.height)
   if(path.length)a.setPath(path)
  }
