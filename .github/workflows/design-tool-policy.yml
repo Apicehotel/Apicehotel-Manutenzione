@@ -1,0 +1,32 @@
+name: Design tool policy
+
+on:
+  pull_request:
+    paths:
+      - ".impeccable/**"
+      - ".agents/skills/impeccable/**"
+      - "docs/integrations/BAKAUS_TOOLS.md"
+      - "src/**"
+      - "public/**"
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Validate design-tool boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject production runtime imports
+        run: |
+          if rg -n --hidden --glob '!node_modules/**' --glob '!package-lock.json'             "from ['\"]impeccable|require\(['\"]impeccable|from ['\"]agent-reviews|require\(['\"]agent-reviews"             src api desktop public; then
+            echo "Design tools must remain development-only."
+            exit 1
+          fi
+      - name: Check required governance files
+        run: |
+          test -s .impeccable/PRODUCT.md
+          test -s .impeccable/DESIGN.md
+          test -s .agents/skills/impeccable/SKILL.md
+          test -s .agents/skills/resolve-agent-reviews/SKILL.md
