@@ -9,3 +9,17 @@ test/artifacts
 
 # Preview launcher for Emergent supervisor (not part of the app)
 /frontend
+
+# Impeccable ephemeral output (shared design artifacts remain tracked)
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/hook.pending.json
+.impeccable/*.png
+.impeccable/review/
+.impeccable/questions/
+.impeccable/live/server.json
+.impeccable/live/sessions/
+.impeccable/live/previews/
+.impeccable/live/annotations/
+.impeccable/live/cache/
+.impeccable/live/*.png
