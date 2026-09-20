@@ -98,3 +98,35 @@ jobs:
       - name: RandOps heartbeat failure
         if: failure()
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status ERROR --activity "DigitalOcean preview deploy" --detail "DigitalOcean deploy failed"
+
+  browser-visual-gate:
+    name: Browser visual gate on Ocean
+    if: github.event_name == 'workflow_dispatch'
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      E2E_BASE_URL: https://randui-preview-67ena.ondigitalocean.app
+    steps:
+      - name: Checkout preview ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PREVIEW_REF }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Cross-platform browser gate on Ocean
+        run: npm run test:e2e
+
+      - name: Device acceptance on Ocean
+        run: npm run test:device
