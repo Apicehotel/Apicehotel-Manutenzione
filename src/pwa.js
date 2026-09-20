@@ -5,8 +5,13 @@ export function registerPwa() {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js?v=14', { updateViaCache: 'none' })
       await registration.update()
-    } catch (error) {
-      console.error('Registrazione PWA non riuscita', error)
+    } catch {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+        await registration.update()
+      } catch (error) {
+        console.warn('Registrazione PWA non riuscita; continuo in modalità web', error)
+      }
     }
   })
 }
