@@ -7,6 +7,9 @@ const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const visual = read('../src/randapp/randui/visual-language.css')
 const hub = read('../src/randapp/PlanningHub.jsx')
 const overview = read('../src/randapp/planning/PlanningOverview.jsx')
+const planningCounts = read('../src/randapp/planning/PlanningCountCards.jsx')
+const operations = read('../src/randapp/operations/OperationsHub.jsx')
+const myWork = read('../src/randapp/operations/MyWorkView.jsx')
 const onboarding = read('../src/notification-onboarding.js')
 const onboardingCss = read('../src/randapp/notification-onboarding.css')
 
@@ -30,6 +33,15 @@ test('Planning overview is compact and uses one today summary instead of duplica
 test('Planning mobile keeps cards readable and removes the stretched header divider', () => {
   assert.match(visual, /\.rs-randui-page--planning\s+\.rs-randui-local-header\s*\{[^}]*border-bottom:\s*0;/s)
   assert.match(visual, /@media \(max-width:\s*380px\)[\s\S]*\.rs-planning-choice-grid\.rs-randui-grid--2\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/)
+})
+
+test('Planning counts are shared with Operatività and Task', () => {
+  assert.match(planningCounts, /PlanningChoice/)
+  assert.match(planningCounts, /data-testid="planning-count-cards"/)
+  assert.match(planningCounts, /fetchPlanningWork/)
+  assert.match(planningCounts, /fetchBookings/)
+  assert.match(operations, /PlanningCountCards/)
+  assert.match(myWork, /PlanningCountCards/)
 })
 
 test('notification onboarding no longer traps iPhone users over page content', () => {
