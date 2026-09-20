@@ -59,6 +59,8 @@ jobs:
 
   deploy:
     name: Deploy RandUI preview to Ocean
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.app && fromJson(steps.deploy.outputs.app).live_url }}
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
@@ -83,11 +85,12 @@ jobs:
       - name: RandOps heartbeat start
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
-      - name: Deploy controlled preview to existing DigitalOcean app
+      - name: Deploy controlled PR preview to DigitalOcean
+        id: deploy
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: randui-preview
+          deploy_pr_preview: "true"
           print_build_logs: "true"
           print_deploy_logs: "true"
 
@@ -106,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      E2E_BASE_URL: https://randui-preview-67ena.ondigitalocean.app
+      E2E_BASE_URL: ${{ needs.deploy.outputs.preview_url }}
     steps:
       - name: Checkout preview ref
         uses: actions/checkout@v4
