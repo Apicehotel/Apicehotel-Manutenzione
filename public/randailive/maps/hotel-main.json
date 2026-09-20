@@ -872,11 +872,6 @@
   ],
   "properties": [
     {
-      "name": "collision_tile_property",
-      "type": "string",
-      "value": "ge_collide"
-    },
-    {
       "name": "collision_contract",
       "type": "string",
       "value": "walls+doors+offices+furniture"
