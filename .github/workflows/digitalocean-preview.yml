@@ -65,7 +65,6 @@ jobs:
     environment: preview
     env:
       SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
-      OCEAN_GITHUB_BRANCH: ${{ github.head_ref || inputs.ref || 'main' }}
     steps:
       - name: Checkout preview ref
         uses: actions/checkout@v4
@@ -84,10 +83,11 @@ jobs:
       - name: RandOps heartbeat start
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
-      - name: Deploy checked-out PR ref to existing DigitalOcean app
+      - name: Deploy controlled preview to existing DigitalOcean app
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_name: randui-preview
           print_build_logs: "true"
           print_deploy_logs: "true"
 
