@@ -181,6 +181,13 @@
 /* Planning family: shared choice, calendar and overview anatomy. */
 .rs-planning-hub { width: 100%; }
 .rs-planning-choice-grid { margin-bottom: 0; }
+.rs-planning-counts { display: grid; gap: 8px; }
+.rs-planning-counts__head { display: grid; gap: 2px; padding-inline: 2px; }
+.rs-planning-counts__head span { color: var(--rs-text-3); font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.rs-planning-counts__head strong { color: var(--rs-text); font-family: 'Sora', system-ui, sans-serif; font-size: .96rem; }
+.rs-planning-counts__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rs-planning-counts .rs-randui-choice { padding: 10px; }
+.rs-planning-counts .rs-randui-choice__icon { width: 32px; height: 32px; }
 .rs-randui-choice {
   min-width: 0;
   width: 100%;
@@ -341,4 +348,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rs-randui-choice { transition: none; }
+}
+
+@media (max-width: 767px) {
+  .rs-planning-counts__grid { grid-template-columns: minmax(0, 1fr); }
 }
