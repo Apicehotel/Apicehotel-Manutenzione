@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v14'
+const CACHE_NAME = 'apicehotel-manutenzione-v15'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -27,6 +27,18 @@ const getValidCachedDynamicAsset = async (request) => {
   const cached = await caches.match(request)
   return isValidDynamicAsset(request, cached) ? cached : null
 }
+
+const isImmutableAsset = (request) => {
+  const pathname = new URL(request.url).pathname
+  return pathname.startsWith('/assets/') && /-[a-z0-9_-]{8,}\\.(?:js|css|woff2?)$/i.test(pathname)
+}
+
+const refreshCachedDynamicAsset = (request) => fetch(request, { cache: 'no-store' })
+  .then((response) => {
+    if (!isValidDynamicAsset(request, response)) return
+    return caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))
+  })
+  .catch(() => {})
 
 const missingDynamicAssetResponse = () => new Response('Deployment asset no longer available', {
   status: 503,
@@ -98,6 +110,11 @@ self.addEventListener('fetch', (event) => {
   const dynamicAsset = ['script', 'style', 'worker'].includes(request.destination)
   if (dynamicAsset) {
     event.respondWith((async () => {
+      const cached = await getValidCachedDynamicAsset(request)
+      if (cached && isImmutableAsset(request)) {
+        event.waitUntil(refreshCachedDynamicAsset(request))
+        return cached
+      }
       try {
         const response = await fetch(request, { cache: 'no-store' })
         if (isValidDynamicAsset(request, response)) {
@@ -105,9 +122,9 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
           return response
         }
-        return (await getValidCachedDynamicAsset(request)) || missingDynamicAssetResponse()
+        return cached || missingDynamicAssetResponse()
       } catch {
-        return (await getValidCachedDynamicAsset(request)) || missingDynamicAssetResponse()
+        return cached || missingDynamicAssetResponse()
       }
     })())
     return
