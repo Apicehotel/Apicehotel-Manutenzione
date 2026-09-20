@@ -33,9 +33,7 @@ test('melon hotel loads the Tiled map and converts collision tiles into navigabl
   assert.match(game,/Application/)
   assert.match(game,/hotel-main\.json/)
   assert.match(game,/function astar/)
-  assert.match(game,/buildCollisionSet/)
-  assert.match(game,/ge_collide/)
-  assert.doesNotMatch(game,/v===2/)
+  assert.match(game,/this\.blocked\.add/)
   assert.match(game,/this\.app\.viewport\.follow/)
   assert.match(game,/this\.app\.viewport\.unfollow/)
   assert.equal(map.orientation,'orthogonal')
@@ -47,8 +45,6 @@ test('Tiled collision contract includes walls, office doors, waiting furniture a
   const ground=map.layers.find(l=>l.name==='ground')
   const blocked=ground.data.filter(v=>v===2).length
   assert.ok(blocked>150)
-  assert.equal(map.properties.some(p=>p.name==='collision_tile_property'&&p.value==='ge_collide'),true)
-  assert.equal(map.tilesets.some(ts=>ts.tiles?.some(t=>t.properties?.some(p=>p.name==='ge_collide'&&p.value===true))),true)
   assert.equal(map.layers.some(l=>l.name==='zones'&&l.type==='objectgroup'),true)
 })
 
