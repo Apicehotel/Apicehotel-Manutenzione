@@ -34,6 +34,7 @@ test('melon hotel loads the Tiled map and converts collision tiles into navigabl
   assert.match(game,/hotel-main\.json/)
   assert.match(game,/function astar/)
   assert.match(game,/buildCollisionSet/)
+  assert.match(game,/nearestWalkable/)
   assert.match(game,/ge_collide/)
   assert.doesNotMatch(game,/v===2/)
   assert.match(game,/this\.app\.viewport\.follow/)
