@@ -59,7 +59,7 @@ jobs:
 
   deploy:
     name: Deploy RandUI preview to Ocean
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
@@ -101,7 +101,7 @@ jobs:
 
   browser-visual-gate:
     name: Browser visual gate on Ocean
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 35
