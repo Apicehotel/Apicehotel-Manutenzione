@@ -54,9 +54,11 @@ test('React render boundary delegates recoverable module failures to centralized
 })
 
 test('service worker refuses invalid stale dynamic assets and supports runtime cache purge', () => {
-  assert.match(serviceWorker, /apicehotel-manutenzione-v14/)
+  assert.match(serviceWorker, /apicehotel-manutenzione-v15/)
   assert.match(serviceWorker, /PURGE_RUNTIME_CACHES/)
-  assert.match(serviceWorker, /isValidDynamicAsset/)
+  assert.match(serviceWorker, /isValidDynamicAsset/) 
+  assert.match(serviceWorker, /isImmutableAsset/) 
+  assert.match(serviceWorker, /event\.waitUntil\(refreshCachedDynamicAsset/)
   assert.match(serviceWorker, /status:\s*503/)
   assert.match(serviceWorker, /Cache-Control.*no-store/)
 })
