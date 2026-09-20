@@ -2,7 +2,7 @@
 
 ## RandAILive — punto 4
 
-La hall ufficiale (`/randailive`) usa il runtime MelonJS e una collisione data-driven: il contratto Tiled legge `ge_collide=true` dal tileset e costruisce gli ostacoli per A*. Muri, porte, uffici e arredi non dipendono da un GID numerico hardcoded; il movimento blocca anche eventuali percorsi diventati non validi.
+La hall ufficiale (`/randailive`) usa il runtime MelonJS e una collisione data-driven: il contratto Tiled legge `ge_collide=true` dal tileset, visualizza gli stessi ostacoli e costruisce lo spazio navigabile per A*. Muri, porte, uffici e arredi non dipendono da un GID numerico hardcoded; spawn e destinazioni vengono ricondotti a celle percorribili e il movimento interrompe percorsi diventati non validi.
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
