@@ -51,6 +51,16 @@ test('Operatività and Task flush title above content without stretched dead spa
   assert.match(visual, /\.rs-operations-hub\.rs-ops-surface[\s\S]*?grid-auto-rows:\s*max-content;/s)
   assert.match(visual, /\.rs-my-work\.rs-ops-surface[\s\S]*?align-content:\s*start;/s)
   assert.match(visual, /\.rs-ops-surface\s*>\s*\.rs-page-title[\s\S]*?margin:\s*0;/s)
+  // Mobile column titles must not keep the desktop 280px flex-basis (it becomes height).
+  assert.match(
+    visual,
+    /@media \(max-width:\s*767px\)[\s\S]*\.rs-randui-local-header__copy[\s\S]*?flex:\s*0\s+0\s+auto;/s,
+  )
+  const completion = read('../src/randapp/randui/completion-v2.css')
+  assert.match(
+    completion,
+    /@media \(max-width:\s*767px\)[\s\S]*\.rs-randui-local-header__copy[\s\S]*?flex:\s*0\s+0\s+auto;/s,
+  )
 })
 
 test('notification onboarding no longer traps iPhone users over page content', () => {

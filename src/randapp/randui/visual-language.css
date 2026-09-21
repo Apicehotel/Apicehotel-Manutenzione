@@ -371,6 +371,15 @@
 @media (max-width: 767px) {
   .rs-randui-local-header,
   .rs-randui-page--migrated .rs-page-title { flex-direction: column; }
+  /* Row layout uses flex-basis 280px for the copy. In column mode that basis
+     becomes height and opens a ~280px dead band under the title (border floats
+     mid-gap). Keep the copy content-sized on mobile. */
+  .rs-randui-local-header__copy,
+  .rs-randui-page--migrated .rs-page-title > div:first-child {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+  }
   .rs-randui-local-header__actions,
   .rs-randui-page--migrated .rs-page-title > :last-child:not(:first-child) { width: 100%; }
   .rs-randui-local-header__actions > *,
