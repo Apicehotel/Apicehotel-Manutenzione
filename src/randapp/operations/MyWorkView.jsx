@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchIssues, subscribeIssues } from '../../issues-data.js'
-import { fetchPlanned, subscribePlanned } from '../../planned-data.js'
+import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
+import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
 import { fetchUrgents, subscribeUrgents } from '../../urgents-data.js'
 import { fetchReminders, subscribeReminders } from '../reminders/reminder-data.js'
 import { isToday } from '../helpers.js'
@@ -66,44 +66,60 @@ export default function MyWorkView({
   const [planned, setPlanned] = useState([])
   const [urgents, setUrgents] = useState([])
   const [reminders, setReminders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [listLoading, setListLoading] = useState(true)
   const [q, setQ] = useState('')
   const [showMyWork, setShowMyWork] = useState(true)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const refresh = useCallback(async () => {
     try {
       const [issuesRes, plannedRes, urgentsRes, remindersRes] = await Promise.all([
-        fetchIssues(hotel.id),
-        fetchPlanned(hotel.id),
+        fetchIssuesForHub(hotel.id),
+        fetchPlannedForHub(hotel.id),
         canUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
         canReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
       ])
-      setIssues(issuesRes.issues || issuesRes.items || [])
+      setIssues(issuesRes.issues || [])
       setPlanned(plannedRes.items || [])
       setUrgents(urgentsRes.items || [])
       setReminders(Array.isArray(remindersRes) ? remindersRes : remindersRes.items || [])
     } catch (error) {
       console.warn('Caricamento Task fallito', error)
-      setIssues([])
-      setPlanned([])
-      setUrgents([])
-      setReminders([])
     } finally {
-      setLoading(false)
+      setListLoading(false)
     }
   }, [hotel.id, canUrgent, canReminders])
 
   useEffect(() => {
-    load()
+    let cancelled = false
+    setListLoading(true)
+
+    ;(async () => {
+      try {
+        const [cachedIssues, cachedPlanned] = await Promise.all([
+          peekCachedIssues(hotel.id),
+          peekCachedPlanned(hotel.id),
+        ])
+        if (cancelled) return
+        if (cachedIssues.length) setIssues(cachedIssues)
+        if (cachedPlanned.length) setPlanned(cachedPlanned)
+        if (cachedIssues.length || cachedPlanned.length) setListLoading(false)
+      } catch {
+        /* cache miss is fine */
+      }
+      if (!cancelled) await refresh()
+    })()
+
     const offs = [
-      subscribeIssues(hotel.id, load),
-      subscribePlanned(hotel.id, load),
+      subscribeIssues(hotel.id, () => { void refresh() }),
+      subscribePlanned(hotel.id, () => { void refresh() }),
     ]
-    if (canUrgent) offs.push(subscribeUrgents(hotel.id, load))
-    if (canReminders) offs.push(subscribeReminders(hotel.id, load))
-    return () => offs.forEach((off) => off?.())
-  }, [hotel.id, load, canUrgent, canReminders])
+    if (canUrgent) offs.push(subscribeUrgents(hotel.id, () => { void refresh() }))
+    if (canReminders) offs.push(subscribeReminders(hotel.id, () => { void refresh() }))
+    return () => {
+      cancelled = true
+      offs.forEach((off) => off?.())
+    }
+  }, [hotel.id, refresh, canUrgent, canReminders])
 
   const name = String(user?.name || '').trim().toLowerCase()
   const myDoneIssues = useMemo(
@@ -192,109 +208,105 @@ export default function MyWorkView({
         title="Task"
         subtitle={`${hotel.name} · avvisi, promemoria e i tuoi lavori`}
       />
-      {loading ? (
-        <Spinner label="Carico…" />
-      ) : (
-        <>
-          <Grid columns={previewColumns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
-            {previewCards.map((card) => (
-              <HubChoice
-                key={card.key}
-                icon={card.icon}
-                title={card.title}
-                kind={card.key}
-                metrics={card.metrics}
-                active={card.active}
-                onClick={card.onClick}
-                testId={card.testId}
-              />
-            ))}
-          </Grid>
-          <p className="rs-telegram-hint">Avvisi e promemoria aprono l’elenco completo. “I miei lavori” apre l’anteprima personale sotto.</p>
+      <Grid columns={previewColumns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
+        {previewCards.map((card) => (
+          <HubChoice
+            key={card.key}
+            icon={card.icon}
+            title={card.title}
+            kind={card.key}
+            metrics={card.metrics}
+            active={card.active}
+            onClick={card.onClick}
+            testId={card.testId}
+          />
+        ))}
+      </Grid>
+      <p className="rs-telegram-hint">Avvisi e promemoria aprono l’elenco completo. “I miei lavori” apre l’anteprima personale sotto.</p>
 
-          {showMyWork && (
-            <Stack gap="sm" className="rs-task-my-work" data-testid="task-my-work-section">
-              <div className="rs-ops-toolbar">
-                <TextInput
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Cerca per camera o testo…"
-                  aria-label="Cerca i miei lavori"
-                />
-              </div>
-              {total === 0 ? (
-                <EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState>
-              ) : (
-                <>
-                  {!!filtPending.length && (
-                    <section className="rs-ops-section" aria-label="Da fare">
-                      <p className="rs-actions-heading">Da fare ({filtPending.length})</p>
-                      <div className="rs-migrated-list">
-                        {filtPending.map((p) => (
-                          <WorkCard
-                            key={p.id}
-                            title={p.location || 'Intervento'}
-                            meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
-                            status={p.status}
-                            body={p.notes}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                  {!!filtInProgress.length && (
-                    <section className="rs-ops-section" aria-label="In corso">
-                      <p className="rs-actions-heading">In corso ({filtInProgress.length})</p>
-                      <div className="rs-migrated-list">
-                        {filtInProgress.map((p) => (
-                          <WorkCard
-                            key={p.id}
-                            title={p.location || 'Intervento'}
-                            meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
-                            status={p.status}
-                            body={p.notes}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                  {!!filtPlannedDone.length && (
-                    <section className="rs-ops-section" aria-label="Interventi completati">
-                      <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
-                      <div className="rs-migrated-list">
-                        {filtPlannedDone.map((p) => (
-                          <WorkCard
-                            key={p.id}
-                            title={p.location || 'Intervento'}
-                            meta={fmt(p.completedAt)}
-                            status={p.status}
-                            body={p.notes}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                  {!!filtIssuesDone.length && (
-                    <section className="rs-ops-section" aria-label="Segnalazioni completate">
-                      <p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p>
-                      <div className="rs-migrated-list">
-                        {filtIssuesDone.map((i) => (
-                          <WorkCard
-                            key={i.id}
-                            title={i.room || 'Segnalazione'}
-                            meta={`${i.category || 'Manutenzione'} · ${fmt(i.completedAt)}`}
-                            status={i.status}
-                            body={i.title}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </>
+      {showMyWork && (
+        <Stack gap="sm" className="rs-task-my-work" data-testid="task-my-work-section">
+          <div className="rs-ops-toolbar">
+            <TextInput
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cerca per camera o testo…"
+              aria-label="Cerca i miei lavori"
+            />
+          </div>
+          {listLoading ? (
+            <Spinner label="Carico i tuoi lavori…" />
+          ) : total === 0 ? (
+            <EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState>
+          ) : (
+            <>
+              {!!filtPending.length && (
+                <section className="rs-ops-section" aria-label="Da fare">
+                  <p className="rs-actions-heading">Da fare ({filtPending.length})</p>
+                  <div className="rs-migrated-list">
+                    {filtPending.map((p) => (
+                      <WorkCard
+                        key={p.id}
+                        title={p.location || 'Intervento'}
+                        meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
+                        status={p.status}
+                        body={p.notes}
+                      />
+                    ))}
+                  </div>
+                </section>
               )}
-            </Stack>
+              {!!filtInProgress.length && (
+                <section className="rs-ops-section" aria-label="In corso">
+                  <p className="rs-actions-heading">In corso ({filtInProgress.length})</p>
+                  <div className="rs-migrated-list">
+                    {filtInProgress.map((p) => (
+                      <WorkCard
+                        key={p.id}
+                        title={p.location || 'Intervento'}
+                        meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
+                        status={p.status}
+                        body={p.notes}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {!!filtPlannedDone.length && (
+                <section className="rs-ops-section" aria-label="Interventi completati">
+                  <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
+                  <div className="rs-migrated-list">
+                    {filtPlannedDone.map((p) => (
+                      <WorkCard
+                        key={p.id}
+                        title={p.location || 'Intervento'}
+                        meta={fmt(p.completedAt)}
+                        status={p.status}
+                        body={p.notes}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {!!filtIssuesDone.length && (
+                <section className="rs-ops-section" aria-label="Segnalazioni completate">
+                  <p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p>
+                  <div className="rs-migrated-list">
+                    {filtIssuesDone.map((i) => (
+                      <WorkCard
+                        key={i.id}
+                        title={i.room || 'Segnalazione'}
+                        meta={`${i.category || 'Manutenzione'} · ${fmt(i.completedAt)}`}
+                        status={i.status}
+                        body={i.title}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           )}
-        </>
+        </Stack>
       )}
     </Stack>
   )

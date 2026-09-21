@@ -52,6 +52,22 @@ async function fetchAll(hotelId){
 async function fetchSection(hotelId,section){const result=await fetchAll(hotelId);return{...result,items:filterSection(result.items,section)}}
 export async function fetchPlanned(hotelId){return fetchSection(hotelId,SECTION_INTERVENTION)}
 export async function fetchPlanning(hotelId){return fetchSection(hotelId,SECTION_PLANNING)}
+/** Lean hub/list preview: no photo hydration, does not overwrite the full planned cache. */
+const HUB_PLANNED_COLUMNS='id,hotel_id,sezione,camera,categoria,note,programmato_dal,assegnatari,stato,creato_da,creato_il,updated_at,completato_da,completato_il'
+export async function peekCachedPlanned(hotelId,section=SECTION_INTERVENTION){
+  return filterSection(await getCachedCollection(ENTITY,hotelId),section)
+}
+export async function fetchPlannedForHub(hotelId,section=SECTION_INTERVENTION){
+  const cached=await peekCachedPlanned(hotelId,section)
+  if(!supabase||!onlineNow())return{items:cached,ok:false,offline:true}
+  try{
+    const{data,error}=await supabase.from('interventi').select(HUB_PLANNED_COLUMNS).eq('hotel_id',hotelId).order('creato_il',{ascending:false})
+    if(error)throw error
+    return{items:filterSection((data||[]).map(fromRow),section),ok:true}
+  }catch(error){
+    return{items:cached,ok:false,offline:isTransientNetworkError(error)}
+  }
+}
 
 export async function insertPlanned(item){const nextItem={section:SECTION_INTERVENTION,...item,clientMutationId:item.clientMutationId||makeClientMutationId()};if(!supabase||!onlineNow()){const tempId=makeOfflineId('offline-planned'),payload={...nextItem,createdAt:nextItem.createdAt||Date.now()},queued=await stageForOffline(payload);return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:queued,cachePayload:payload,tempId})}try{const created=await dbInsert(nextItem);await cacheRemoteCollection(ENTITY,nextItem.hotelId,[created,...(await getCachedCollection(ENTITY,nextItem.hotelId)).filter(x=>x.id!==created.id)]);operationSaved(created.section===SECTION_PLANNING?'Pianificazione salvata':'Intervento salvato');return created}catch(error){if(isTransientNetworkError(error)){const tempId=makeOfflineId('offline-planned'),payload={...nextItem,createdAt:nextItem.createdAt||Date.now()},queued=await stageForOffline(payload);return enqueueMutation({entity:ENTITY,hotelId:nextItem.hotelId,action:'create',payload:queued,cachePayload:payload,tempId})}operationFailed(error,'Intervento non salvato');throw error}}
 export async function insertPlanning(item){return insertPlanned({...item,section:SECTION_PLANNING})}
