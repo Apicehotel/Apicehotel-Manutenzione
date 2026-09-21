@@ -162,6 +162,21 @@
   line-height: 1.35;
   background: var(--rs-surface);
 }
+
+.rs-workhome__you {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--rs-line-strong, var(--rs-line));
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(34, 211, 238, 0.08), var(--rs-surface-2));
+}
+.rs-workhome__you .rs-workhome__sectionhead { margin-top: 0; }
+.rs-workhome__you-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+}
 .rs-workhome__colleague {
   width: 100%;
   min-height: 56px;

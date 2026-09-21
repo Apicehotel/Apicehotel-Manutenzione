@@ -15,7 +15,7 @@ Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` +
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
-La Home operativa combina: conteggi deep-link, meteo sempre visibile, sync solo se serve, **Chi c’è ora** (Libero/Impegnato), coda priorità, **I miei lavori**, prossimo impegno e scorciatoie sempre in Focus.
+La Home operativa apre su conteggi, meteo, presenza e blocco **Per te** (i tuoi lavori + prossimo impegno) prima della coda priorità hotel; sync solo se serve; scorciatoie anche in Focus.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 
