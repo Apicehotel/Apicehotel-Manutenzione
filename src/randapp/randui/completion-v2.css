@@ -105,6 +105,13 @@
     padding-bottom: var(--rand-space-2);
   }
 
+  .rs-randui-page--migrated :is(.rs-page-title, .rs-randui-local-header) > :first-child,
+  .rs-randui-local-header__copy {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+  }
+
   .rs-randui-page--migrated :is(
     .rs-page-title > :last-child:not(:first-child),
     .rs-randui-local-header__actions,
