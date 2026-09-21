@@ -63,9 +63,9 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // The primary navigation opens the complete, independently protected RandAI
-  // workspace. The header keeps ownership of the lightweight contextual popup.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI', href: '/randai' })
+  // Bottom-nav RandAI opens the in-app chat (randai-toggle). Control Center
+  // /randai stays a protected URL, not a primary-nav destination.
+  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
 
   return items
 }

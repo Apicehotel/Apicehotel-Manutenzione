@@ -415,6 +415,10 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
+    if (item.id === 'randai') {
+      window.dispatchEvent(new CustomEvent('randai-toggle'))
+      return
+    }
     if (item.href) {
       window.location.assign(item.href)
       return
@@ -429,7 +433,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const isBottomActive = (item) => {
-    if (settings !== null || item.href) return false
+    if (settings !== null || item.href || item.id === 'randai') return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'my-work') return ['my-work', 'urgent', 'reminders'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
