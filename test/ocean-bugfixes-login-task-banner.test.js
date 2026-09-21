@@ -4,10 +4,14 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('Task/MyWork reads fetchIssues.issues and always clears loading', async () => {
+test('Task/MyWork uses lean hub fetches and always clears list loading', async () => {
   const view = await source('src/randapp/operations/MyWorkView.jsx')
-  assert.match(view, /issuesRes\.issues\s*\|\|\s*issuesRes\.items/)
-  assert.match(view, /finally\s*\{\s*setLoading\(false\)/)
+  assert.match(view, /fetchIssuesForHub/)
+  assert.match(view, /fetchPlannedForHub/)
+  assert.match(view, /setIssues\(issuesRes\.issues\s*\|\|\s*\[\]\)/)
+  assert.match(view, /finally\s*\{\s*setListLoading\(false\)/)
+  assert.doesNotMatch(view, /fetchIssues\(/)
+  assert.doesNotMatch(view, /fetchPlanned\(/)
 })
 
 test('login submit is wired on both form submit and ACCEDI click', async () => {
