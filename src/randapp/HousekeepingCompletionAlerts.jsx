@@ -3,7 +3,6 @@ import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchDirectory } from '../users-data.js'
 import { loadSession } from '../session.js'
 import { hotelById } from './helpers.js'
-import SupplyRequestsPortal from './SupplyRequestsPortal.jsx'
 
 const SESSION_EVENT = 'apice-session-changed'
 const isReception = (user) => user?.role === 'Reception' || user?.department === 'Reception'
@@ -106,7 +105,6 @@ export default function HousekeepingCompletionAlerts() {
   return (
     <>
       {completionAlert}
-      {user && hotel && <SupplyRequestsPortal user={user} hotel={hotel} />}
     </>
   )
 }

@@ -381,7 +381,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'desktop-download') content = <RandDesktopDownload />
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
-    if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
+    if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} />
     if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
