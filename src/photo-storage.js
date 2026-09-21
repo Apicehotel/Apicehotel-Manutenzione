@@ -76,12 +76,22 @@ export async function signedPhotoUrl(value) {
     return row?.blob ? URL.createObjectURL(row.blob) : null
   }
   if (!supabase) return null
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(value, SIGNED_TTL)
-  if (error) {
-    console.error('signedPhotoUrl', error)
+  try {
+    const signed = supabase.storage.from(BUCKET).createSignedUrl(value, SIGNED_TTL)
+    const timeout = new Promise((_, reject) => {
+      const timer = setTimeout(() => reject(new Error('signed-url-timeout')), 2500)
+      if (typeof timer?.unref === 'function') timer.unref()
+    })
+    const { data, error } = await Promise.race([signed, timeout])
+    if (error) {
+      console.error('signedPhotoUrl', error)
+      return null
+    }
+    return data?.signedUrl || null
+  } catch (error) {
+    if (error?.message !== 'signed-url-timeout') console.error('signedPhotoUrl', error)
     return null
   }
-  return data?.signedUrl || null
 }
 
 export async function hydrateIssuePhotos(item) {

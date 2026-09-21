@@ -29,4 +29,5 @@ test('login reference keeps authentication behavior unchanged', async () => {
   assert.match(app, /loadDirectoryAll\(\)/)
   assert.match(app, /resolveLoginUser\(/)
   assert.match(app, /type="submit"/)
+  assert.match(app, /onClick=\{\(e\) => \{ e\.preventDefault\(\); void submit\(e\) \}\}/)
 })

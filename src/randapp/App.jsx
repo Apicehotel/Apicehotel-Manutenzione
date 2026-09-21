@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { loadSession, saveSession, clearSession } from '../session.js'
 import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
@@ -92,6 +92,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [matched, setMatched] = useState(null)
   const [pin, setPin] = useState('')
   const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
   const [recovering, setRecovering] = useState(false)
@@ -128,8 +129,8 @@ function Login({ onAuthenticated, onOpenSettings }) {
   }
 
   const submit = async (e) => {
-    e.preventDefault()
-    if (busy) return
+    e?.preventDefault?.()
+    if (busyRef.current) return
     setError('')
     const user = resolveLoginUser(directory, query, matched)
     if (!user) {
@@ -145,6 +146,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     if (pin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
     const hotels = Array.from(new Set(user.hotels || [])).filter(Boolean)
     if (!hotels.length) return setError('Nessuna struttura abilitata per questo utente')
+    busyRef.current = true
     setBusy(true)
     let lastError = null
     for (const hotelId of hotels) {
@@ -159,6 +161,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     console.warn('Login RandApp fallito', lastError)
     const detail = String(lastError?.message || lastError?.context?.body?.error || '').trim()
     setError(detail && /pin|utente|struttura|tentativi|temporaneo|sessione|configurato/i.test(detail) ? detail : 'Utente o PIN non validi')
+    busyRef.current = false
     setBusy(false)
   }
 
@@ -211,7 +214,17 @@ function Login({ onAuthenticated, onOpenSettings }) {
             </Field>
             {selectedUser && <button type="button" className="rs-textback" onClick={() => setRecovering(true)} data-testid="pin-forgot-link">PIN dimenticato?</button>}
             {error && <p className="rs-error" role="alert" data-testid="login-error">{error}</p>}
-            <Button type="submit" variant="primary" size="lg" className="rs-btn--block" disabled={busy} aria-busy={busy || undefined} data-testid="login-submit" iconRight="arrowRight">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="rs-btn--block"
+              disabled={busy}
+              aria-busy={busy || undefined}
+              data-testid="login-submit"
+              iconRight="arrowRight"
+              onClick={(e) => { e.preventDefault(); void submit(e) }}
+            >
               {busy ? 'ACCESSO…' : 'ACCEDI'}
             </Button>
           </form>

@@ -3,5 +3,19 @@
 .rs-notification-onboarding__copy{min-width:0;display:grid;gap:2px}.rs-notification-onboarding__copy b{font-size:13px;line-height:1.15}.rs-notification-onboarding__copy small{font-size:11px;line-height:1.28;color:var(--rs-text-3)}
 .rs-notification-onboarding__action{min-height:40px;padding:0 13px;border:0;border-radius:12px;background:var(--rs-cyan);color:#041317;font-weight:800;font-size:12px}.rs-notification-onboarding__action:disabled{opacity:.6}
 .rs-notification-onboarding__close{width:36px;height:36px;min-width:36px;min-height:36px;padding:0;border:0;border-radius:999px;display:grid;place-items:center;background:transparent;color:var(--rs-text-3);font:700 22px/1 system-ui;cursor:pointer}.rs-notification-onboarding__close:hover{background:var(--rs-surface-2);color:var(--rs-text)}
-@media(max-width:520px){.rs-notification-onboarding{left:10px;right:10px;width:auto;transform:none;bottom:calc(var(--rs-nav-h,var(--rs-bottom-nav-h,72px)) + env(safe-area-inset-bottom) + 6px);grid-template-columns:auto minmax(0,1fr) auto}.rs-notification-onboarding__action{grid-column:2/-1;width:100%}.rs-notification-onboarding__close{grid-column:3;grid-row:1}}
-@media(min-width:900px){.rs-notification-onboarding{bottom:24px}}
+html[data-notification-onboarding='1']{
+  --rs-notification-onboarding-h:96px;
+}
+html[data-notification-onboarding='1'] .rs-content{
+  padding-bottom:calc(var(--rs-content-bottom-clearance, calc(var(--rs-nav-h,72px) + env(safe-area-inset-bottom,0px) + 36px)) + var(--rs-notification-onboarding-h));
+}
+@media(max-width:520px){
+  .rs-notification-onboarding{left:10px;right:10px;width:auto;transform:none;bottom:calc(var(--rs-nav-h,var(--rs-bottom-nav-h,72px)) + env(safe-area-inset-bottom) + 6px);grid-template-columns:auto minmax(0,1fr) auto}
+  .rs-notification-onboarding__action{grid-column:2/-1;width:100%}
+  .rs-notification-onboarding__close{grid-column:3;grid-row:1}
+  html[data-notification-onboarding='1']{--rs-notification-onboarding-h:118px}
+}
+@media(min-width:900px){
+  .rs-notification-onboarding{bottom:24px}
+  html[data-notification-onboarding='1']{--rs-notification-onboarding-h:88px}
+}
