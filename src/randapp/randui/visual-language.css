@@ -260,7 +260,15 @@
   box-shadow: var(--rs-glow);
 }
 .rs-randui-choice__head { display: flex; align-items: center; gap: var(--rand-space-2); margin-bottom: var(--rand-space-2); }
-.rs-randui-choice__head strong { min-width: 0; font-family: 'Sora', system-ui, sans-serif; font-size: .92rem; }
+.rs-randui-choice__head strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Sora', system-ui, sans-serif;
+  font-size: .92rem;
+}
 .rs-randui-choice__icon {
   width: 36px;
   height: 36px;
@@ -271,7 +279,20 @@
   color: var(--rs-cyan);
   background: var(--rs-surface-2);
 }
-.rs-randui-choice__chevron { margin-left: auto; color: var(--rs-text-3); font-size: 1.2rem; line-height: 1; }
+.rs-randui-choice__chevron {
+  flex: none;
+  margin-left: auto;
+  color: var(--rs-text-3);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Operatività/Task hubs: match Planning compact density on mobile two-up cards */
+@media (max-width: 720px) {
+  .rs-ops-choice-grid .rs-randui-choice { padding: 10px; }
+  .rs-ops-choice-grid .rs-randui-choice__icon { width: 32px; height: 32px; }
+  .rs-ops-choice-grid .rs-randui-metric--compact { min-height: 50px; }
+}
 
 .rs-planning-today {
   overflow: hidden;
