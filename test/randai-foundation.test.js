@@ -15,11 +15,14 @@ test('RandAI never reuses Hotel Giò knowledge in another hotel', () => {
   assert.equal(findInternalProcedure({ hotelId: 'brigantino', query: 'condizionatori Jazz non freddano' }), null)
 })
 
-test('RandAI is lazy and mounted only for an authenticated normal RandApp runtime', async () => {
-  const source = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
-  assert.match(source, /const RandAIAssistant = lazy\(\(\) => import\('\.\/randai\/RandAIAssistant\.jsx'\)\)/)
-  assert.match(source, /function AuthenticatedRandAI\(\)/)
-  assert.match(source, /useState\(\(\) => Boolean\(loadSession\(\)\)\)/)
-  assert.match(source, /if \(!active\) return null/)
-  assert.match(source, /<App \/><AuthenticatedRandAI \/>/)
+test('RandAI chat page is lazy and mounted inside the authenticated Shell', async () => {
+  const main = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
+  const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
+  assert.match(shell, /const RandAIAssistant = lazy\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(shell, /variant="page"/)
+  assert.doesNotMatch(main, /RandAIAssistant/)
+  assert.match(main, /function AuthenticatedRandAI\(\)/)
+  assert.match(main, /useState\(\(\) => Boolean\(loadSession\(\)\)\)/)
+  assert.match(main, /if \(!active\) return null/)
+  assert.match(main, /<App \/><AuthenticatedRandAI \/>/)
 })

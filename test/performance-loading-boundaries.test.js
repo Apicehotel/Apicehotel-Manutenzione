@@ -6,21 +6,23 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8'
 
 test('main keeps standalone routes and RandAI out of the static entry graph', async () => {
   const main = await source('src/main.jsx')
+  const shell = await source('src/randapp/Shell.jsx')
   assert.match(main, /const App = lazy\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
-  assert.match(main, /const RandAIAssistant = lazy\(\(\) => import\('\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(shell, /const RandAIAssistant = lazy\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.doesNotMatch(main, /RandAIAssistant/)
   assert.match(main, /const TechnicianPortal = lazy\(\(\) => import\('\.\/technician-portal\.jsx'\)\)/)
   assert.match(main, /const PublicIssueView = lazy\(\(\) => import\('\.\/public-issue-view\.jsx'\)\)/)
   assert.match(main, /const NtfyShortLink = lazy\(\(\) => import\('\.\/randapp\/ntfy\/NtfyShortLink\.jsx'\)\)/)
   assert.doesNotMatch(main, /import App from '\.\/randapp\/App\.jsx'/)
-  assert.doesNotMatch(main, /import RandAIAssistant from/)
 })
 
-test('RandAI assistant is loaded only for an authenticated RandApp session', async () => {
+test('RandAI context bridge is loaded only for an authenticated RandApp session', async () => {
   const main = await source('src/main.jsx')
   assert.match(main, /function AuthenticatedRandAI\(\)/)
   assert.match(main, /useState\(\(\) => Boolean\(loadSession\(\)\)\)/)
   assert.match(main, /window\.addEventListener\(SESSION_EVENT, refresh\)/)
   assert.match(main, /if \(!active\) return null/)
+  assert.match(main, /RandAIContextBridge/)
 })
 
 test('PWA registration remains immediate while authenticated operational services stay deferred', async () => {

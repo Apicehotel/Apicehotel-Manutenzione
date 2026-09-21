@@ -63,7 +63,7 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // Bottom-nav RandAI opens the in-app chat (randai-toggle). Control Center
+  // Bottom-nav RandAI opens the dedicated in-app chat page. Control Center
   // /randai stays a protected URL, not a primary-nav destination.
   items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
 
@@ -71,5 +71,5 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || view === 'randai' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }

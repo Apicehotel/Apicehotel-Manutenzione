@@ -10,25 +10,27 @@ const shellCss = await readFile(new URL('../src/randapp/shell.css', import.meta.
 
 const compact = (value) => value.replace(/\s+/g, '')
 
-test('RandAI is a native header action and no longer a floating launcher', () => {
-  const assistantSource = compact(assistant)
+test('RandAI is a native header action that opens the dedicated chat page', () => {
   const panelCss = compact(randaiCss)
   const toolbarCss = compact(headerCss)
 
   assert.match(shell, /data-testid="header-randai"/)
   assert.match(shell, /className="rs-header__actions"/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+  assert.match(shell, /openRandAIPage/)
+  assert.match(shell, /variant="page"/)
   assert.match(shell, /CyberCatOrb/)
   assert.match(shell, /className="rs-cyber-cat-orb"/)
   assert.doesNotMatch(shell, /randai-cat\.webp/)
 
-  assert.match(assistant, /const OPEN_EVENT = 'randai-toggle'/)
-  assert.match(assistant, /window\.addEventListener\(OPEN_EVENT, toggle\)/)
+  assert.match(assistant, /variant = 'overlay'/)
+  assert.match(assistant, /variant === 'page'/)
+  assert.match(assistant, /data-testid=\{isPage \? 'randai-page' : 'randai-root'\}/)
   assert.doesNotMatch(assistant, /data-testid="randai-fab"/)
   assert.doesNotMatch(assistant, /className="randai__fab"/)
 
   assert.doesNotMatch(panelCss, /\.randai__fab/)
   assert.match(panelCss, /\.randai\{position:fixed;inset:0;[^}]*pointer-events:none/)
+  assert.match(panelCss, /\.randai--page\{/)
   assert.match(panelCss, /\.randai__panel\{position:fixed;[^}]*pointer-events:auto/)
 
   assert.match(toolbarCss, /\.rs-header__actions\{[^}]*display:flex;[^}]*align-items:center/)

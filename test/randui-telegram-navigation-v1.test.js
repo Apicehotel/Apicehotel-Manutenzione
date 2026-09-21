@@ -44,9 +44,10 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('RandAI navbar and header both open the in-app chat; Control Center stays at /randai', () => {
-  assert.match(shell, /if \(item\.id === 'randai'\)/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+test('RandAI navbar and header open the dedicated chat page; Control Center stays at /randai', () => {
+  assert.match(shell, /openRandAIPage/)
+  assert.match(shell, /variant="page"/)
+  assert.match(shell, /view === 'randai'/)
   assert.match(shell, /data-testid="header-randai"/)
   assert.match(main, /randaiConsoleMatch/)
   assert.match(main, /<RandAIProtectedRoute \/>/)

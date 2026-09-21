@@ -37,6 +37,7 @@ const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
 const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
 const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
+const RandAIAssistant = lazy(() => import('../randai/RandAIAssistant.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
@@ -237,6 +238,18 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     }
   }, [user, view, viewAllowed, safeView])
 
+  const openRandAIPage = useCallback(() => {
+    setPlanningCreateRequest(null)
+    setInterventionCreateOpen(false)
+    setSettings(null)
+    setView('randai')
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('randai-toggle', openRandAIPage)
+    return () => window.removeEventListener('randai-toggle', openRandAIPage)
+  }, [openRandAIPage])
+
   const pick = (item) => {
     setDrawer(false)
     const target = NAV_TARGET[item.id]
@@ -394,6 +407,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'feedback') content = <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') content = <PinView user={user} />
     if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
+    if (view === 'randai') content = <RandAIAssistant variant="page" />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
@@ -415,15 +429,15 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
-    if (item.id === 'randai') {
-      window.dispatchEvent(new CustomEvent('randai-toggle'))
-      return
-    }
     if (item.href) {
       window.location.assign(item.href)
       return
     }
     if (item.id === 'structure') { setHotelSheet(true); return }
+    if (item.id === 'randai') {
+      openRandAIPage()
+      return
+    }
     if (viewAllowed(item.id)) {
       setPlanningCreateRequest(null)
       setInterventionCreateOpen(false)
@@ -433,7 +447,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   }
 
   const isBottomActive = (item) => {
-    if (settings !== null || item.href || item.id === 'randai') return false
+    if (settings !== null || item.href) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
     if (item.id === 'my-work') return ['my-work', 'urgent', 'reminders'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
@@ -472,7 +486,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={() => window.dispatchEvent(new CustomEvent('randai-toggle'))} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
+            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
           </div>
         </header>
 

@@ -101,6 +101,7 @@ export const VIEW_GUARDS = {
   technicians: view('technicians'),
   'feedback-received': (u) => canUser(u, 'app_settings', 'manage'),
   'desktop-download': view('desktop_download'),
+  randai: () => true,
 }
 
 export const CREATE_GUARDS = {
