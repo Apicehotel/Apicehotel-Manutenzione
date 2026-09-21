@@ -56,7 +56,10 @@
 .rs-randui-local-header__copy,
 .rs-randui-page--migrated .rs-page-title > div:first-child {
   min-width: 0;
-  flex: 1 1 280px;
+  /* Grow horizontally in row headers. Never use a large px flex-basis: when the
+     header stacks to column on mobile that basis becomes HEIGHT and opens a
+     dead band under the title on every page that shares this anatomy. */
+  flex: 1 1 auto;
 }
 
 .rs-randui-page--migrated .rs-page-title h1,
@@ -196,8 +199,20 @@
   margin-bottom: var(--rand-space-2);
   padding-bottom: var(--rand-space-2);
 }
+/* Every migrated page title shares the flush invariant — not only Ops/Task. */
+.rs-randui-page--migrated > .rs-randui-page__body .rs-page-title,
+.rs-randui-page--migrated > .rs-randui-page__body .rs-randui-local-header,
+.rs-randui-page--migrated .rs-randui-page__content > .rs-page-title,
+.rs-randui-page--migrated .rs-randui-page__content > .rs-randui-local-header,
+.rs-randui-page--migrated .rs-randui-page__content > .rs-ops-surface > .rs-page-title,
+.rs-randui-page--migrated .rs-randui-page__content > .rs-ops-surface > .rs-randui-local-header {
+  align-self: start;
+  height: auto;
+  min-height: 0;
+}
 .rs-operations-hub.rs-ops-surface,
-.rs-my-work.rs-ops-surface {
+.rs-my-work.rs-ops-surface,
+.rs-planning-hub.rs-ops-surface {
   /* Title must sit flush above the first useful block — no stretched dead band. */
   grid-auto-rows: max-content;
   align-content: start;
