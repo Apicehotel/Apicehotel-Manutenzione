@@ -33,6 +33,7 @@ test('push client soft-fails with human-readable Italian messages', async () => 
   assert.match(push, /export function humanizePushError/)
   assert.match(push, /servizio push del dispositivo ha rifiutato/)
   assert.match(push, /app resta utilizzabile/)
+  assert.match(push, /vapid_keys_missing/)
 })
 
 test('push subscription backend binds one device to the person and mirrors active memberships only for routing', async () => {

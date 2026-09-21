@@ -41,8 +41,8 @@ export function humanizePushError(error) {
   if (/network|failed to fetch|offline|timeout|503|502|500/.test(lower)) {
     return 'Attivazione push non riuscita per un problema di rete o del server. Riprova quando la connessione è stabile.'
   }
-  if (/supabase non configurato|notifiche non attive sul server/.test(lower)) {
-    return 'Le notifiche push non sono disponibili in questo ambiente. L’operatività continua senza push.'
+  if (/supabase non configurato|notifiche non attive sul server|vapid_keys_missing|vapid/.test(lower)) {
+    return 'Le notifiche push non sono disponibili in questo ambiente (chiavi server assenti o servizio non attivo). L’operatività continua senza push.'
   }
   return raw
 }
