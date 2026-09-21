@@ -203,3 +203,8 @@ img { max-width: 100%; }
     --rs-line-strong: rgba(10, 92, 156, .64);
   }
 }
+
+/* Compact fetch honesty banner above operational lists. */
+.rs-list-fetch-notice { margin: 0 0 12px; }
+.rs-list-fetch-notice .rs-randui-state { width: 100%; }
+.rs-list-fetch-notice .rs-randui-state--compact { margin-bottom: 0; }

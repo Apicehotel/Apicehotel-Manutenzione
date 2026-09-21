@@ -3,6 +3,7 @@ import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
+import ListFetchNotice from './ListFetchNotice.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
@@ -450,6 +451,8 @@ function compareIssueRooms(a, b) {
 export default function Issues({ user, hotel, users, createSignal }) {
   const [loading, setLoading] = useState(true)
   const [issues, setIssues] = useState([])
+  const [fetchOk, setFetchOk] = useState(true)
+  const [fetchOffline, setFetchOffline] = useState(false)
   const [filter, setFilter] = useState('todo')
   const [search, setSearch] = useState('')
   const [sortOpen, setSortOpen] = useState(false)
@@ -463,7 +466,17 @@ export default function Issues({ user, hotel, users, createSignal }) {
 
   useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) setCreating(true) }, [createSignal])
 
-  const reload = () => fetchIssues(hotel.id).then(({ issues: list }) => setIssues(list || [])).catch(() => {}).finally(() => setLoading(false))
+  const reload = () => fetchIssues(hotel.id)
+    .then((result) => {
+      setIssues(result.issues || [])
+      setFetchOk(result.ok !== false)
+      setFetchOffline(Boolean(result.offline))
+    })
+    .catch(() => {
+      setFetchOk(false)
+      setFetchOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false)
+    })
+    .finally(() => setLoading(false))
 
   useEffect(() => {
     setLoading(true)
@@ -521,27 +534,33 @@ const resetExtraFilters = () => {
         </div>
       </div>
 
-      {loading ? <Spinner label="Carico le segnalazioni…" /> : filtered.length === 0 ? (
-        <EmptyState icon="issues" title="Nessuna segnalazione">
-          {filter === 'all' ? `Non ci sono ancora segnalazioni per ${hotel.name}.` : 'Nessuna segnalazione con questo filtro.'}
-        </EmptyState>
-      ) : (
-        <div className="rs-list rs-list--grid" data-testid="issues-list">
-          {filtered.map((issue) => (
-            <Card as="button" key={issue.id} className="rs-issue" onClick={() => setSelected(issue)} data-testid={`issue-${issue.id}`}>
-              <span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} />
-              <span className="rs-issue__main">
-                <span className="rs-issue__top">
-                  <span className="rs-issue__room">{issue.ticketCode ? `${issue.ticketCode} · ` : ""}{issue.room}</span>
-                  <Badge tone={ISSUE_STATUS_META[issue.status]?.tone}>{ISSUE_STATUS_META[issue.status]?.label || issue.status}</Badge>
-                </span>
-                <span className="rs-issue__title">{issue.title}</span>
-                <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}{issue.status === 'done' && issue.completedBy && <span>· Risolta da <strong>{issue.completedBy}</strong></span>}</span>
-              </span>
-              {issue.photoData && <img className="rs-issue__photo" src={issue.photoData} alt="" />}
-            </Card>
-          ))}
-        </div>
+      {loading ? <Spinner label="Carico le segnalazioni…" /> : (
+        <>
+          <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={issues.length > 0} onRetry={reload} resourceLabel="lista segnalazioni" />
+          {!(!fetchOk && !issues.length) && filtered.length === 0 ? (
+            <EmptyState icon="issues" title="Nessuna segnalazione">
+              {filter === 'all' ? `Non ci sono ancora segnalazioni per ${hotel.name}.` : 'Nessuna segnalazione con questo filtro.'}
+            </EmptyState>
+          ) : null}
+          {filtered.length > 0 ? (
+            <div className="rs-list rs-list--grid" data-testid="issues-list">
+              {filtered.map((issue) => (
+                <Card as="button" key={issue.id} className="rs-issue" onClick={() => setSelected(issue)} data-testid={`issue-${issue.id}`}>
+                  <span className={`rs-issue__accent ${URGENCY_META[issue.urgency]?.tone || 'mid'}`} />
+                  <span className="rs-issue__main">
+                    <span className="rs-issue__top">
+                      <span className="rs-issue__room">{issue.ticketCode ? `${issue.ticketCode} · ` : ""}{issue.room}</span>
+                      <Badge tone={ISSUE_STATUS_META[issue.status]?.tone}>{ISSUE_STATUS_META[issue.status]?.label || issue.status}</Badge>
+                    </span>
+                    <span className="rs-issue__title">{issue.title}</span>
+                    <span className="rs-issue__meta"><span><Icon name="clock" /> {issue.date}</span>{issue.category && <span>· {issue.category}</span>}{issue.status === 'done' && issue.completedBy && <span>· Risolta da <strong>{issue.completedBy}</strong></span>}</span>
+                  </span>
+                  {issue.photoData && <img className="rs-issue__photo" src={issue.photoData} alt="" />}
+                </Card>
+              ))}
+            </div>
+          ) : null}
+        </>
       )}
 
       <Sheet open={sortOpen} onClose={() => setSortOpen(false)} title="Filtra e ordina" className="rs-issue-filter-sheet">
