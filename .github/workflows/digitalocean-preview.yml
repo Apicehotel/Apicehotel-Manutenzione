@@ -125,6 +125,24 @@ jobs:
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
 
+      - name: Wait for Ocean preview service worker
+        run: |
+          set -euo pipefail
+          url="${E2E_BASE_URL%/}/sw.js"
+          for attempt in $(seq 1 36); do
+            headers="$(curl -sI "$url" || true)"
+            status="$(printf '%s\n' "$headers" | awk 'NR==1 {print $2}')"
+            ctype="$(printf '%s\n' "$headers" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type"{print tolower($2); exit}')"
+            if [ "$status" = "200" ] && printf '%s' "$ctype" | grep -Eq 'javascript|ecmascript'; then
+              echo "Preview SW ready (attempt ${attempt}): ${ctype}"
+              exit 0
+            fi
+            echo "Waiting for SW javascript (${attempt}/36): status=${status:-none} type=${ctype:-none}"
+            sleep 5
+          done
+          echo "Ocean preview /sw.js did not become a javascript asset in time"
+          exit 1
+
       - name: Cross-platform browser gate on Ocean
         run: npm run test:e2e
 

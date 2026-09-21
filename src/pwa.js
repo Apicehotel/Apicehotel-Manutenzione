@@ -6,7 +6,8 @@ export function registerPwa() {
       const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
       await registration.update()
     } catch (error) {
-      console.error('Registrazione PWA non riuscita', error)
+      // Caught registration races (preview CDN/SW propagate) are non-fatal for the shell.
+      console.warn('Registrazione PWA non riuscita', error)
     }
   })
 }
