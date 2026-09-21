@@ -65,7 +65,8 @@ La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatame
 
 Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al centro).
 
-- **Operatività** e **Task** mostrano prima le azioni utili (destinazioni / lavori aperti); i conteggi Planning restano scorciatoie secondarie e compatte.
+- **Operatività** e **Task** mostrano prima le azioni utili (destinazioni / lavori aperti e completati); i conteggi Planning restano **scorciatoie secondarie** in fondo, mai in mezzo alle liste.
+- In Operatività/Task l’etichetta scorciatoia è **Scorciatoie planning**; il tab Planning resta l’hub completo (panoramica + calendario).
 - I conteggi Planning restano a **due colonne** su telefono fino a ~380px; sotto quella soglia stackano.
 - Ritmo condiviso `rs-ops-surface` su Operatività, Task, Planning, Interventi e Urgenti (owner: `visual-language.css` + `telegram-navigation.css`, senza nuovi `*-fix.css`).
 

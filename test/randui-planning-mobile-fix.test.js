@@ -53,15 +53,26 @@ test('Operatività and Task put useful work before planning shortcuts', () => {
   assert.ok(opsIssues < opsCounts)
   assert.match(operations, /rs-ops-surface/)
   assert.match(operations, /rs-planning-counts--compact/)
+  assert.match(operations, /scorciatoie planning/i)
 
   const taskPending = myWork.indexOf('Da fare / in attesa')
-  const taskCounts = myWork.indexOf('<PlanningCountCards')
-  assert.ok(taskPending >= 0 && taskCounts >= 0)
-  assert.ok(taskPending < taskCounts)
+  const taskDoneIssues = myWork.indexOf('Segnalazioni completate da me')
+  const taskCounts = myWork.lastIndexOf('<PlanningCountCards')
+  assert.ok(taskPending >= 0 && taskDoneIssues >= 0 && taskCounts >= 0)
+  assert.ok(taskPending < taskCounts, 'planning shortcuts come after open work')
+  assert.ok(taskDoneIssues < taskCounts, 'planning shortcuts come after completed personal work')
+  assert.equal((myWork.match(/<PlanningCountCards/g) || []).length, 1, 'Task mounts planning shortcuts once')
   assert.match(myWork, /eyebrow="Task"/)
   assert.match(myWork, /rs-ops-toolbar/)
   assert.match(visual, /\.rs-ops-surface/)
   assert.match(visual, /\.rs-planning-counts--compact/)
+})
+
+test('Planning count cards stay visible while loading and use shortcut labeling', () => {
+  assert.match(planningCounts, /Scorciatoie planning/)
+  assert.match(planningCounts, /aria-busy=\{loading/)
+  assert.doesNotMatch(planningCounts, /\|\|\s*loading\)\s*return null/)
+  assert.match(planningCounts, /loading \? \{ today: 0, finish: 0, done: 0 \}/)
 })
 
 test('notification onboarding no longer traps iPhone users over page content', () => {
