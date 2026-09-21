@@ -141,7 +141,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const presencePreview=presenceRows.slice(0,4)
   const presenceMore=Math.max(0, presenceRows.length - presencePreview.length)
 
-  return <section className="rs-workhome rs-workhome--desk" data-testid="home-view">
+  return <section className="rs-home rs-workhome rs-workhome--desk" data-testid="home-view">
     <header className="rs-workhome__hero">
       <div>
         <span className="rs-workhome__role">{roleLabel(user)} · Scrivania</span>

@@ -15,7 +15,7 @@ Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` +
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
-La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire” per la coda hotel.
+La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 
