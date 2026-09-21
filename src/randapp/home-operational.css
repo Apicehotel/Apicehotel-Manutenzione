@@ -77,7 +77,8 @@
   line-height: 1;
 }
 
-.rs-workhome__weather {
+.rs-workhome__weather,
+.rs-workhome__sync {
   width: 100%;
   min-height: 62px;
   padding: 10px 12px;
@@ -90,11 +91,62 @@
   gap: 10px;
   text-align: left;
 }
-.rs-workhome__weather.is-danger { border-color: rgba(246,96,125,.55); background: rgba(246,96,125,.12); }
-.rs-workhome__weather.is-warning { border-color: rgba(247,185,85,.5); background: rgba(247,185,85,.09); }
-.rs-workhome__weather > .rs-icon { width: 24px; height: 24px; }
-.rs-workhome__weather span { display: grid; gap: 2px; }
-.rs-workhome__weather small { color: var(--rs-text-2); }
+.rs-workhome__sync { cursor: pointer; }
+.rs-workhome__weather.is-danger,
+.rs-workhome__sync.is-blocked { border-color: rgba(246,96,125,.55); background: rgba(246,96,125,.12); }
+.rs-workhome__weather.is-warning,
+.rs-workhome__sync.is-pending,
+.rs-workhome__sync.is-offline { border-color: rgba(247,185,85,.5); background: rgba(247,185,85,.09); }
+.rs-workhome__weather.is-ok { border-color: var(--rs-line); background: var(--rs-surface); }
+.rs-workhome__weather > .rs-icon,
+.rs-workhome__sync > .rs-icon { width: 24px; height: 24px; flex: none; }
+.rs-workhome__weather span,
+.rs-workhome__sync span { display: grid; gap: 2px; min-width: 0; }
+.rs-workhome__weather small,
+.rs-workhome__sync small { color: var(--rs-text-2); }
+
+.rs-workhome__mywork {
+  display: grid;
+  gap: 6px;
+}
+.rs-workhome__mywork-row,
+.rs-workhome__next {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--rs-surface-2), var(--rs-surface));
+  color: var(--rs-text);
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.rs-workhome__mywork-row > .rs-icon:last-child,
+.rs-workhome__next > .rs-icon:last-child { color: var(--rs-text-3); }
+.rs-workhome__mywork-row .rs-workhome__colleague-body span,
+.rs-workhome__next .rs-workhome__colleague-body span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rs-text-2);
+  font-size: .74rem;
+}
+.rs-workhome__mywork-all {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px dashed var(--rs-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--rs-cyan);
+  font-weight: 700;
+  font-size: .84rem;
+  cursor: pointer;
+}
 
 .rs-workhome__presence {
   display: grid;

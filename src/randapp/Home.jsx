@@ -5,6 +5,13 @@ import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
 import { fetchOperationalWeather } from '../weather-data.js'
 import { buildColleaguePresenceRows, fetchPeopleInStructure } from '../home-presence.js'
+import {
+  buildMyWorkPreview,
+  buildNextCommitment,
+  syncStatusMessage,
+  weatherSummary,
+} from '../home-widgets-logic.js'
+import { drainOfflineQueue, getOfflineStatus } from '../offline-store.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
@@ -21,7 +28,7 @@ const weekdayKey = (date) => ['sun','mon','tue','wed','thu','fri','sat'][date.ge
 const monthDay = (date) => date.getDate()
 const timeLabel = (ms) => ms ? new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)) : ''
 
-function reminderDueToday(item, user, now = new Date()) {
+export function reminderDueToday(item, user, now = new Date()) {
   if (!item?.active || !(item.target_roles || []).includes(user?.role)) return false
   const today = dateKey(now)
   if (item.start_date && today < item.start_date) return false
@@ -54,12 +61,21 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const queryClient = useQueryClient()
   const [focusOnly,setFocusOnly]=useState(readFocus)
   const [preferencesOpen,setPreferencesOpen]=useState(false)
+  const [offlineStatus,setOfflineStatus]=useState(null)
   useEffect(()=>{ if(personalizeSignal>0) setPreferencesOpen(true) },[personalizeSignal])
+  useEffect(()=>{
+    let alive=true
+    getOfflineStatus().then((status)=>{ if(alive) setOfflineStatus(status) }).catch(()=>{})
+    const onStatus=(event)=>{ setOfflineStatus(event.detail||null) }
+    window.addEventListener('apice-offline-status', onStatus)
+    return ()=>{ alive=false; window.removeEventListener('apice-offline-status', onStatus) }
+  },[])
   const canIssues = canUser(user, 'issues', 'view')
   const canCreateIssues = canUser(user, 'issues', 'create')
   const canUrgent = canUser(user, 'urgent', 'view')
   const canInterventions = canUser(user, 'interventions', 'view')
   const canReminders = canUser(user, 'reminders', 'view')
+  const canInventory = canUser(user, 'inventory', 'view')
   const issuesQuery=useQuery({queryKey:['home13',hotel.id,'issues'],queryFn:()=>fetchIssues(hotel.id),enabled:canIssues})
   const urgentsQuery=useQuery({queryKey:['home13',hotel.id,'urgents'],queryFn:()=>fetchUrgents(hotel.id),enabled:canUrgent})
   const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>fetchPlanned(hotel.id),enabled:canInterventions})
@@ -82,19 +98,39 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const openIssues=issues.filter((item)=>item.status!=='done'), openUrgents=urgents.filter((item)=>item.status!=='completata')
   const todayInterventions=planned.filter((item)=>item.status!=='done'&&(isToday(item.scheduledAt)||(item.scheduledAt&&item.scheduledUntil&&item.scheduledAt<=Date.now()&&item.scheduledUntil>=Date.now())))
   const weather=weatherQuery.data
+  const weatherCard=weatherSummary(weather)
+  const syncCard=syncStatusMessage(offlineStatus)
   const presenceRows=useMemo(()=>buildColleaguePresenceRows({
     people:presenceQuery.data?.people||[],
     urgents:canUrgent?openUrgents:[],
   }),[presenceQuery.data?.people,openUrgents,canUrgent])
   const busyCount=presenceRows.filter((row)=>row.busy).length
   const presenceOk=presenceQuery.data?.ok!==false
+  const myWorkRows=useMemo(()=>buildMyWorkPreview({
+    user,
+    planned:canInterventions?planned:[],
+    urgents:canUrgent?openUrgents:[],
+  }),[user,planned,openUrgents,canInterventions,canUrgent])
+  const nextCommitment=useMemo(()=>buildNextCommitment({
+    user,
+    planned:canInterventions?planned:[],
+    reminders:canReminders?reminders:[],
+    reminderDueToday,
+  }),[user,planned,reminders,canInterventions,canReminders])
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
   const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,7):priorities.slice(0,10)
   const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
   const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null].filter(Boolean)
-  const quick=[canCreateIssues?['new-issue','plus','Nuova segnalazione']:null,canInterventions?['interventions','wrench','Interventi']:null,canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','Housekeeping']:null,canReminders?['reminders','bell','Promemoria']:null].filter(Boolean).slice(0,4)
+  const quick=[
+    canCreateIssues?['new-issue','plus','Nuova segnalazione']:null,
+    canInterventions?['interventions','wrench','Interventi']:null,
+    canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','Housekeeping']:null,
+    canInventory?['inventory','package','Magazzino']:null,
+    canReminders?['reminders','bell','Promemoria']:null,
+  ].filter(Boolean).slice(0,4)
   const setMode=(focus)=>{setFocusOnly(focus);writeFocus(focus)}
   const openPresenceTarget=()=>{ if(canUrgent) onNavigate?.('urgent') }
+  const retrySync=()=>{ drainOfflineQueue().catch(()=>{}) }
 
   return <section className="rs-workhome" data-testid="home-view">
     <header className="rs-workhome__hero">
@@ -107,15 +143,34 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
     {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; puoi scegliere quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
     {loading?<Spinner label="Preparo le priorità della giornata…"/>:<>
       <div className="rs-workhome__stats" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
-      {(weather?.level==='danger'||weather?.level==='warning')&&<button type="button" className={`rs-workhome__weather is-${weather.level}`} onClick={()=>{}} data-testid="weather-widget"><Icon name="warning"/><span><strong>{weather.level==='danger'?'Allarme meteo':'Attenzione meteo'}</strong><small>{weather.message||'Controllare gli esterni'}</small></span></button>}
+      {syncCard&&<button type="button" className={`rs-workhome__sync is-${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
+      {weatherCard&&<div className={`rs-workhome__weather is-${weatherCard.level}`} data-testid="weather-widget" role="status"><Icon name={weatherCard.level==='ok'?'thermometer':'warning'}/><span><strong>{weatherCard.title}</strong><small>{weatherCard.detail}</small></span></div>}
       <div className="rs-workhome__sectionhead"><div><span>IN STRUTTURA</span><h2>Chi c&apos;è ora</h2></div><small>{presenceQuery.isLoading?'…':`${presenceRows.length} present${presenceRows.length===1?'e':'i'}${busyCount?` · ${busyCount} impegnat${busyCount===1?'o':'i'}`:''}`}</small></div>
       <div className="rs-workhome__presence" data-testid="home-presence">
         {presenceQuery.isLoading?<p className="rs-workhome__presence-empty">Controllo chi è in struttura…</p>:!presenceOk&&!presenceRows.length?<p className="rs-workhome__presence-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}.</p>:!presenceRows.length?<p className="rs-workhome__presence-empty">Nessun collega risulta in struttura.</p>:presenceRows.map((row)=><button key={row.id} type="button" className={`rs-workhome__colleague${row.busy?' is-busy':''}`} onClick={openPresenceTarget} disabled={!canUrgent} aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}><span className="rs-workhome__colleague-dot" data-busy={row.busy?'true':'false'} aria-hidden="true"/><span className="rs-workhome__colleague-body"><strong>{row.name}</strong><small>{row.detail}</small></span><Badge tone={row.busy?'waiting':'done'}>{row.busy?'Impegnato':'Libero'}</Badge></button>)}
       </div>
       <div className="rs-workhome__sectionhead"><div><span>PRIORITÀ</span><h2>Cosa fare adesso</h2></div><small>{visiblePriorities.length} attività rilevanti</small></div>
       {visiblePriorities.length===0?<EmptyState icon="check" title="Nessuna priorità immediata">Non risultano attività urgenti o pianificate per adesso.</EmptyState>:<div className="rs-workhome__queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
-      {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>} 
-      {!focusOnly&&<><div className="rs-workhome__sectionhead"><div><span>SCORCIATOIE</span><h2>Vai al lavoro</h2></div></div><div className="rs-workhome__quick">{quick.map(([route,icon,label])=><button key={route} type="button" onClick={()=>onNavigate?.(route)}><Icon name={icon}/><span>{label}</span><Icon name="chevronRight"/></button>)}</div></>}
+      {(canInterventions||canUrgent)&&<>
+        <div className="rs-workhome__sectionhead"><div><span>I MIEI LAVORI</span><h2>Assegnati a te</h2></div><small>{myWorkRows.length?`${myWorkRows.length} attivi`:'nessuno'}</small></div>
+        <div className="rs-workhome__mywork" data-testid="home-my-work">
+          {!myWorkRows.length?<p className="rs-workhome__presence-empty">Nessun lavoro assegnato a te adesso.</p>:myWorkRows.map((row)=><button key={row.id} type="button" className="rs-workhome__mywork-row" onClick={()=>onNavigate?.(row.route)}><span className="rs-workhome__taskicon"><Icon name={row.kind==='urgent'?'warning':'wrench'}/></span><span className="rs-workhome__colleague-body"><strong>{row.title}</strong><small>{row.meta}</small></span><Icon name="chevronRight"/></button>)}
+          {canInterventions&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('my-work')}>Apri i miei lavori</button>}
+        </div>
+      </>}
+      {nextCommitment&&<>
+        <div className="rs-workhome__sectionhead"><div><span>PROSSIMO</span><h2>Prossimo impegno</h2></div></div>
+        <button type="button" className="rs-workhome__next" data-testid="home-next-commitment" onClick={()=>onNavigate?.(nextCommitment.route)}>
+          <span className="rs-workhome__taskicon"><Icon name={nextCommitment.kind==='promemoria'?'bell':'wrench'}/></span>
+          <span className="rs-workhome__colleague-body"><small>{nextCommitment.eyebrow}</small><strong>{nextCommitment.title}</strong><span>{nextCommitment.meta}</span></span>
+          <Icon name="chevronRight"/>
+        </button>
+      </>}
+      {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>}
+      {!!quick.length&&<>
+        <div className="rs-workhome__sectionhead"><div><span>SCORCIATOIE</span><h2>Vai al lavoro</h2></div></div>
+        <div className="rs-workhome__quick" data-testid="home-shortcuts">{quick.map(([route,icon,label])=><button key={route} type="button" onClick={()=>onNavigate?.(route)}><Icon name={icon}/><span>{label}</span><Icon name="chevronRight"/></button>)}</div>
+      </>}
     </>}
   </section>
 }
