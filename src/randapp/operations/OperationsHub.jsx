@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
 import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 import HubChoice from './HubChoice.jsx'
 import { interventionPreviewMetrics, issuePreviewMetrics } from './hub-preview-stats.js'
 
+const SOFT_REFRESH_MS = 2500
+
 export default function OperationsHub({ hotel, canIssues, canInterventions, onOpen }) {
   const [issues, setIssues] = useState([])
   const [planned, setPlanned] = useState([])
+  const softTimer = useRef(0)
 
   const refresh = useCallback(async () => {
     if (!hotel?.id || (!canIssues && !canInterventions)) return
@@ -22,6 +25,14 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
       console.warn('Anteprima Operatività non disponibile', error)
     }
   }, [hotel?.id, canIssues, canInterventions])
+
+  const scheduleSoftRefresh = useCallback(() => {
+    if (softTimer.current) window.clearTimeout(softTimer.current)
+    softTimer.current = window.setTimeout(() => {
+      softTimer.current = 0
+      void refresh()
+    }, SOFT_REFRESH_MS)
+  }, [refresh])
 
   useEffect(() => {
     let cancelled = false
@@ -43,13 +54,14 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
     })()
 
     const offs = []
-    if (canIssues && hotel?.id) offs.push(subscribeIssues(hotel.id, () => { void refresh() }))
-    if (canInterventions && hotel?.id) offs.push(subscribePlanned(hotel.id, () => { void refresh() }))
+    if (canIssues && hotel?.id) offs.push(subscribeIssues(hotel.id, scheduleSoftRefresh))
+    if (canInterventions && hotel?.id) offs.push(subscribePlanned(hotel.id, scheduleSoftRefresh))
     return () => {
       cancelled = true
+      if (softTimer.current) window.clearTimeout(softTimer.current)
       offs.forEach((off) => off?.())
     }
-  }, [hotel?.id, canIssues, canInterventions, refresh])
+  }, [hotel?.id, canIssues, canInterventions, refresh, scheduleSoftRefresh])
 
   const issueMetrics = useMemo(() => issuePreviewMetrics(issues), [issues])
   const interventionMetrics = useMemo(() => interventionPreviewMetrics(planned), [planned])

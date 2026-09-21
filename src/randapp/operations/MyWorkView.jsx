@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
-import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { fetchIssuesForHub, peekCachedIssues } from '../../issues-data.js'
+import { fetchPlannedForHub, peekCachedPlanned } from '../../planned-data.js'
 import { fetchUrgents, subscribeUrgents } from '../../urgents-data.js'
 import { fetchReminders, subscribeReminders } from '../reminders/reminder-data.js'
 import { isToday } from '../helpers.js'
@@ -8,11 +8,9 @@ import { Card, EmptyState, Spinner, TextInput } from '../ui.jsx'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 import { StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
 import HubChoice from './HubChoice.jsx'
-import {
-  myWorkPreviewMetrics,
-  reminderPreviewMetrics,
-  urgentPreviewMetrics,
-} from './hub-preview-stats.js'
+import { reminderPreviewMetrics, urgentPreviewMetrics } from './hub-preview-stats.js'
+
+const SOFT_REFRESH_MS = 2500
 
 function dateKey(value = new Date()) {
   return value.toISOString().slice(0, 10)
@@ -68,9 +66,10 @@ export default function MyWorkView({
   const [reminders, setReminders] = useState([])
   const [listLoading, setListLoading] = useState(true)
   const [q, setQ] = useState('')
-  const [showMyWork, setShowMyWork] = useState(true)
+  const softTimer = useRef(0)
+  const softBusy = useRef(false)
 
-  const refresh = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     try {
       const [issuesRes, plannedRes, urgentsRes, remindersRes] = await Promise.all([
         fetchIssuesForHub(hotel.id),
@@ -89,6 +88,32 @@ export default function MyWorkView({
     }
   }, [hotel.id, canUrgent, canReminders])
 
+  /** Soft refresh only Avvisi/Promemoria metrics — never blank the page. */
+  const softRefreshCards = useCallback(async () => {
+    if (softBusy.current) return
+    softBusy.current = true
+    try {
+      const [urgentsRes, remindersRes] = await Promise.all([
+        canUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
+        canReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
+      ])
+      setUrgents(urgentsRes.items || [])
+      setReminders(Array.isArray(remindersRes) ? remindersRes : remindersRes.items || [])
+    } catch (error) {
+      console.warn('Aggiornamento anteprima Task fallito', error)
+    } finally {
+      softBusy.current = false
+    }
+  }, [hotel.id, canUrgent, canReminders])
+
+  const scheduleSoftRefresh = useCallback(() => {
+    if (softTimer.current) window.clearTimeout(softTimer.current)
+    softTimer.current = window.setTimeout(() => {
+      softTimer.current = 0
+      void softRefreshCards()
+    }, SOFT_REFRESH_MS)
+  }, [softRefreshCards])
+
   useEffect(() => {
     let cancelled = false
     setListLoading(true)
@@ -106,20 +131,19 @@ export default function MyWorkView({
       } catch {
         /* cache miss is fine */
       }
-      if (!cancelled) await refresh()
+      if (!cancelled) await loadAll()
     })()
 
-    const offs = [
-      subscribeIssues(hotel.id, () => { void refresh() }),
-      subscribePlanned(hotel.id, () => { void refresh() }),
-    ]
-    if (canUrgent) offs.push(subscribeUrgents(hotel.id, () => { void refresh() }))
-    if (canReminders) offs.push(subscribeReminders(hotel.id, () => { void refresh() }))
+    // Only card metrics listen to realtime, and only debounced — no full-page reload loop.
+    const offs = []
+    if (canUrgent) offs.push(subscribeUrgents(hotel.id, scheduleSoftRefresh))
+    if (canReminders) offs.push(subscribeReminders(hotel.id, scheduleSoftRefresh))
     return () => {
       cancelled = true
+      if (softTimer.current) window.clearTimeout(softTimer.current)
       offs.forEach((off) => off?.())
     }
-  }, [hotel.id, refresh, canUrgent, canReminders])
+  }, [hotel.id, loadAll, canUrgent, canReminders, scheduleSoftRefresh])
 
   const name = String(user?.name || '').trim().toLowerCase()
   const myDoneIssues = useMemo(
@@ -138,10 +162,7 @@ export default function MyWorkView({
   const myPlannedPending = myPlanned.filter((p) => p.status !== 'done' && p.status !== 'in_progress' && p.status !== 'waiting' && p.status !== 'tecnico')
   const myPlannedInProgress = myPlanned.filter((p) => ['in_progress', 'waiting', 'tecnico', 'da_finire'].includes(p.status))
   const myPlannedDone = myPlanned.filter((p) => p.status === 'done')
-  const myDoneToday = [
-    ...myPlannedDone.filter((p) => isToday(p.completedAt)),
-    ...myDoneIssues.filter((i) => isToday(i.completedAt)),
-  ]
+
   const dueReminders = useMemo(
     () => reminders.filter((item) => reminderDueToday(item, user)),
     [reminders, user],
@@ -162,14 +183,6 @@ export default function MyWorkView({
     () => reminderPreviewMetrics(reminders, dueReminders),
     [reminders, dueReminders],
   )
-  const myWorkMetrics = useMemo(
-    () => myWorkPreviewMetrics({
-      pending: myPlannedPending,
-      inProgress: myPlannedInProgress,
-      doneToday: myDoneToday,
-    }),
-    [myPlannedPending, myPlannedInProgress, myDoneToday],
-  )
 
   const previewCards = [
     canUrgent && {
@@ -188,15 +201,6 @@ export default function MyWorkView({
       onClick: () => onOpen?.('reminders'),
       testId: 'task-open-reminders',
     },
-    {
-      key: 'my-work',
-      icon: 'check',
-      title: 'I miei lavori',
-      metrics: myWorkMetrics,
-      active: showMyWork,
-      onClick: () => setShowMyWork((value) => !value),
-      testId: 'task-toggle-my-work',
-    },
   ].filter(Boolean)
 
   const previewColumns = previewCards.length >= 2 ? 2 : 1
@@ -208,106 +212,108 @@ export default function MyWorkView({
         title="Task"
         subtitle={`${hotel.name} · avvisi, promemoria e i tuoi lavori`}
       />
-      <Grid columns={previewColumns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
-        {previewCards.map((card) => (
-          <HubChoice
-            key={card.key}
-            icon={card.icon}
-            title={card.title}
-            kind={card.key}
-            metrics={card.metrics}
-            active={card.active}
-            onClick={card.onClick}
-            testId={card.testId}
-          />
-        ))}
-      </Grid>
-      <p className="rs-telegram-hint">Avvisi e promemoria aprono l’elenco completo. “I miei lavori” apre l’anteprima personale sotto.</p>
-
-      {showMyWork && (
-        <Stack gap="sm" className="rs-task-my-work" data-testid="task-my-work-section">
-          <div className="rs-ops-toolbar">
-            <TextInput
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Cerca per camera o testo…"
-              aria-label="Cerca i miei lavori"
+      {previewCards.length > 0 && (
+        <Grid columns={previewColumns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
+          {previewCards.map((card) => (
+            <HubChoice
+              key={card.key}
+              icon={card.icon}
+              title={card.title}
+              kind={card.key}
+              metrics={card.metrics}
+              onClick={card.onClick}
+              testId={card.testId}
             />
-          </div>
-          {listLoading ? (
-            <Spinner label="Carico i tuoi lavori…" />
-          ) : total === 0 ? (
-            <EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState>
-          ) : (
-            <>
-              {!!filtPending.length && (
-                <section className="rs-ops-section" aria-label="Da fare">
-                  <p className="rs-actions-heading">Da fare ({filtPending.length})</p>
-                  <div className="rs-migrated-list">
-                    {filtPending.map((p) => (
-                      <WorkCard
-                        key={p.id}
-                        title={p.location || 'Intervento'}
-                        meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
-                        status={p.status}
-                        body={p.notes}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-              {!!filtInProgress.length && (
-                <section className="rs-ops-section" aria-label="In corso">
-                  <p className="rs-actions-heading">In corso ({filtInProgress.length})</p>
-                  <div className="rs-migrated-list">
-                    {filtInProgress.map((p) => (
-                      <WorkCard
-                        key={p.id}
-                        title={p.location || 'Intervento'}
-                        meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
-                        status={p.status}
-                        body={p.notes}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-              {!!filtPlannedDone.length && (
-                <section className="rs-ops-section" aria-label="Interventi completati">
-                  <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
-                  <div className="rs-migrated-list">
-                    {filtPlannedDone.map((p) => (
-                      <WorkCard
-                        key={p.id}
-                        title={p.location || 'Intervento'}
-                        meta={fmt(p.completedAt)}
-                        status={p.status}
-                        body={p.notes}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-              {!!filtIssuesDone.length && (
-                <section className="rs-ops-section" aria-label="Segnalazioni completate">
-                  <p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p>
-                  <div className="rs-migrated-list">
-                    {filtIssuesDone.map((i) => (
-                      <WorkCard
-                        key={i.id}
-                        title={i.room || 'Segnalazione'}
-                        meta={`${i.category || 'Manutenzione'} · ${fmt(i.completedAt)}`}
-                        status={i.status}
-                        body={i.title}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
-          )}
-        </Stack>
+          ))}
+        </Grid>
       )}
+      {previewCards.length > 0 && (
+        <p className="rs-telegram-hint">Tap sulla card per aprire l’elenco completo. Sotto restano i tuoi lavori.</p>
+      )}
+
+      <Stack gap="sm" className="rs-task-my-work" data-testid="task-my-work-section">
+        <p className="rs-actions-heading">I miei lavori</p>
+        <div className="rs-ops-toolbar">
+          <TextInput
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Cerca per camera o testo…"
+            aria-label="Cerca i miei lavori"
+          />
+        </div>
+        {listLoading ? (
+          <Spinner label="Carico i tuoi lavori…" />
+        ) : total === 0 ? (
+          <EmptyState icon="check" title="Nessun lavoro">Non hai interventi assegnati né segnalazioni completate.</EmptyState>
+        ) : (
+          <>
+            {!!filtPending.length && (
+              <section className="rs-ops-section" aria-label="Da fare">
+                <p className="rs-actions-heading">Da fare ({filtPending.length})</p>
+                <div className="rs-migrated-list">
+                  {filtPending.map((p) => (
+                    <WorkCard
+                      key={p.id}
+                      title={p.location || 'Intervento'}
+                      meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
+                      status={p.status}
+                      body={p.notes}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {!!filtInProgress.length && (
+              <section className="rs-ops-section" aria-label="In corso">
+                <p className="rs-actions-heading">In corso ({filtInProgress.length})</p>
+                <div className="rs-migrated-list">
+                  {filtInProgress.map((p) => (
+                    <WorkCard
+                      key={p.id}
+                      title={p.location || 'Intervento'}
+                      meta={`${p.category || 'Manutenzione'} · ${fmt(p.scheduledAt)}`}
+                      status={p.status}
+                      body={p.notes}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {!!filtPlannedDone.length && (
+              <section className="rs-ops-section" aria-label="Interventi completati">
+                <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
+                <div className="rs-migrated-list">
+                  {filtPlannedDone.map((p) => (
+                    <WorkCard
+                      key={p.id}
+                      title={p.location || 'Intervento'}
+                      meta={fmt(p.completedAt)}
+                      status={p.status}
+                      body={p.notes}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {!!filtIssuesDone.length && (
+              <section className="rs-ops-section" aria-label="Segnalazioni completate">
+                <p className="rs-actions-heading">Segnalazioni completate da me ({filtIssuesDone.length})</p>
+                <div className="rs-migrated-list">
+                  {filtIssuesDone.map((i) => (
+                    <WorkCard
+                      key={i.id}
+                      title={i.room || 'Segnalazione'}
+                      meta={`${i.category || 'Manutenzione'} · ${fmt(i.completedAt)}`}
+                      status={i.status}
+                      body={i.title}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </Stack>
     </Stack>
   )
 }

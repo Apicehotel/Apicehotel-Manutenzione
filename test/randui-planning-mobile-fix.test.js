@@ -48,7 +48,7 @@ test('Operatività and Task do not embed Planning shortcuts', () => {
   assert.match(myWork, /title="Task"/)
   assert.match(myWork, /task-open-urgent/)
   assert.match(myWork, /task-open-reminders/)
-  assert.match(myWork, /task-toggle-my-work/)
+  assert.doesNotMatch(myWork, /task-toggle-my-work/)
   assert.match(myWork, /rs-ops-toolbar/)
   assert.match(visual, /\.rs-ops-surface/)
 })
@@ -62,6 +62,14 @@ test('Operatività and Task hubs use Planning-style preview cards', () => {
   assert.match(myWork, /Avvisi/)
   assert.match(myWork, /Promemoria/)
   assert.match(myWork, /I miei lavori/)
+  assert.doesNotMatch(myWork, /task-toggle-my-work/)
+  assert.doesNotMatch(myWork, /myWorkPreviewMetrics/)
+})
+
+test('Task hub does not live-reload the whole page on every realtime event', () => {
+  assert.match(myWork, /scheduleSoftRefresh|SOFT_REFRESH_MS/)
+  assert.doesNotMatch(myWork, /subscribeIssues/)
+  assert.doesNotMatch(myWork, /subscribePlanned/)
 })
 
 test('Operatività and Task hubs paint cards without blocking on full photo hydration', () => {

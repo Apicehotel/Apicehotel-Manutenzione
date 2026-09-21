@@ -17,7 +17,7 @@ export const RANDUI_PAGE_AUDIT_V2 = Object.freeze({
   supplies: audit('unify','high',['preservare cache e boundary online-write','uniformare contesto area/piano e richieste']),
   interventions: audit('unify','medium',['lista densa allineata a Task e Operatività']),
   inventory: audit('unify','high',['struttura a funzioni riutilizzabile','spazio verticale e bottom-nav da non duplicare']),
-  'my-work': audit('unify','medium',['hub Task: Avvisi + Promemoria + I miei lavori','niente scorciatoie Planning']),
+  'my-work': audit('unify','medium',['hub Task: Avvisi + Promemoria; lista I miei lavori sotto','niente scorciatoie Planning']),
   'planning-work': audit('unify','medium',['conteggi planning affiancati su mobile','rimuovere spazio improduttivo e mantenere CTA contestuale']),
   'planning-sale': audit('unify','medium',['preservare planning sale','CTA deve restare Nuova attività sala']),
   urgent: audit('unify','high',['priorità e stato devono emergere prima del contenuto ordinario']),
