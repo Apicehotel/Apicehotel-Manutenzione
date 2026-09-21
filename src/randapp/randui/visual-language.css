@@ -188,6 +188,57 @@
 .rs-planning-counts__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .rs-planning-counts .rs-randui-choice { padding: 10px; }
 .rs-planning-counts .rs-randui-choice__icon { width: 32px; height: 32px; }
+.rs-planning-counts--compact { gap: 6px; }
+.rs-planning-counts--compact .rs-planning-counts__head strong { font-size: .9rem; }
+.rs-planning-counts--compact .rs-randui-choice { padding: 8px; }
+.rs-planning-counts--compact .rs-randui-choice__head { margin-bottom: 6px; }
+.rs-planning-counts--compact .rs-randui-metric--compact { min-height: 44px; padding: 6px 4px; }
+
+/* Operatività / Task / Planning shared density surface. */
+.rs-ops-surface {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+.rs-ops-surface > .rs-page-title,
+.rs-ops-surface > .rs-randui-local-header {
+  margin-bottom: var(--rand-space-2);
+  padding-bottom: var(--rand-space-2);
+}
+.rs-ops-toolbar {
+  display: grid;
+  gap: var(--rand-space-2);
+  min-width: 0;
+}
+.rs-ops-toolbar .rs-input,
+.rs-ops-toolbar input {
+  width: 100%;
+  min-width: 0;
+}
+.rs-ops-section {
+  display: grid;
+  gap: var(--rand-space-2);
+  min-width: 0;
+}
+.rs-ops-section .rs-actions-heading {
+  margin: 0;
+}
+.rs-ops-surface .rs-migrated-list {
+  margin-top: 0;
+  gap: var(--rand-space-2);
+}
+.rs-ops-surface .rs-op-card {
+  gap: 8px;
+  padding: 12px 14px;
+}
+.rs-ops-surface .rs-op-card__head {
+  gap: 10px;
+}
+.rs-ops-surface .rs-op-card__head > div {
+  gap: 2px;
+}
+.rs-ops-surface .rs-migrated-tabs {
+  margin-bottom: var(--rand-space-2);
+}
 .rs-randui-choice {
   min-width: 0;
   width: 100%;
@@ -329,6 +380,8 @@
   .rs-randui-grid--2:not(.rs-randui-grid--keep-mobile),
   .rs-randui-grid--3:not(.rs-randui-grid--keep-mobile) { grid-template-columns: minmax(0, 1fr); }
   .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Keep planning count cards side-by-side on phone; stack only on very narrow. */
+  .rs-planning-counts__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rs-randui-page--planning .rs-randui-local-header {
     padding-bottom: var(--rand-space-2);
     border-bottom: 0;
@@ -340,16 +393,17 @@
   .rs-planning-today__items { grid-template-columns: minmax(0, 1fr); }
   .rs-planning-today__item + .rs-planning-today__item { border-left: 0; border-top: 1px solid var(--rs-line); }
   .rs-randui-calendar__day { grid-template-columns: 54px minmax(0, 1fr); }
+  .rs-ops-surface > .rs-page-title h1,
+  .rs-ops-surface > .rs-randui-local-header h1 {
+    font-size: clamp(1.22rem, 5.2vw, 1.55rem);
+  }
 }
 
 @media (max-width: 380px) {
   .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: minmax(0, 1fr); }
+  .rs-planning-counts__grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rs-randui-choice { transition: none; }
-}
-
-@media (max-width: 767px) {
-  .rs-planning-counts__grid { grid-template-columns: minmax(0, 1fr); }
 }

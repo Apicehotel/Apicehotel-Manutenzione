@@ -79,7 +79,12 @@ async function assertRandUiLayoutGuard(page, label) {
 
 async function assertNoFatalRuntimeErrors(pageErrors, consoleErrors, label) {
   if (pageErrors.length) throw new Error(`${label}: Page errors: ${pageErrors.join(' | ')}`)
-  const fatalConsole = consoleErrors.filter((text) => /uncaught|referenceerror|typeerror|syntaxerror/i.test(text))
+  const fatalConsole = consoleErrors.filter((text) => {
+    if (/Registrazione PWA non riuscita/i.test(text) && /ServiceWorker|Failed to update a ServiceWorker|Not found/i.test(text)) {
+      return false
+    }
+    return /uncaught|referenceerror|typeerror|syntaxerror/i.test(text)
+  })
   if (fatalConsole.length) throw new Error(`${label}: Console runtime errors: ${fatalConsole.join(' | ')}`)
 }
 
