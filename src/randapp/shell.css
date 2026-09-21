@@ -106,6 +106,8 @@ a { color: var(--rs-cyan); }
   display: flex; align-items: center; gap: 10px;
   background: var(--rs-header-bg);
   backdrop-filter: blur(16px);
+  /* Phone/tablet: adaptive-layout locks the app viewport and scrolls `.rs-content`
+     so the header stays put without relying on document sticky. */
 }
 .rs-hotelchip {
   flex: 1; min-width: 0;
