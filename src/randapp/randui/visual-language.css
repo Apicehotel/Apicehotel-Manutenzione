@@ -181,28 +181,26 @@
 /* Planning family: shared choice, calendar and overview anatomy. */
 .rs-planning-hub { width: 100%; }
 .rs-planning-choice-grid { margin-bottom: 0; }
-.rs-planning-counts { display: grid; gap: 8px; }
-.rs-planning-counts__head { display: grid; gap: 2px; padding-inline: 2px; }
-.rs-planning-counts__head span { color: var(--rs-text-3); font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
-.rs-planning-counts__head strong { color: var(--rs-text); font-family: 'Sora', system-ui, sans-serif; font-size: .96rem; }
-.rs-planning-counts__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.rs-planning-counts .rs-randui-choice { padding: 10px; }
-.rs-planning-counts .rs-randui-choice__icon { width: 32px; height: 32px; }
-.rs-planning-counts--compact { gap: 6px; }
-.rs-planning-counts--compact .rs-planning-counts__head strong { font-size: .9rem; }
-.rs-planning-counts--compact .rs-randui-choice { padding: 8px; }
-.rs-planning-counts--compact .rs-randui-choice__head { margin-bottom: 6px; }
-.rs-planning-counts--compact .rs-randui-metric--compact { min-height: 44px; padding: 6px 4px; }
 
 /* Operatività / Task / Planning shared density surface. */
 .rs-ops-surface {
   width: min(100%, 760px);
   margin-inline: auto;
+  min-height: 0;
+  height: auto;
+  align-content: start;
 }
 .rs-ops-surface > .rs-page-title,
 .rs-ops-surface > .rs-randui-local-header {
+  margin: 0;
   margin-bottom: var(--rand-space-2);
   padding-bottom: var(--rand-space-2);
+}
+.rs-operations-hub.rs-ops-surface,
+.rs-my-work.rs-ops-surface {
+  /* Title must sit flush above the first useful block — no stretched dead band. */
+  grid-auto-rows: max-content;
+  align-content: start;
 }
 .rs-ops-toolbar {
   display: grid;
@@ -380,8 +378,6 @@
   .rs-randui-grid--2:not(.rs-randui-grid--keep-mobile),
   .rs-randui-grid--3:not(.rs-randui-grid--keep-mobile) { grid-template-columns: minmax(0, 1fr); }
   .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Keep planning count cards side-by-side on phone; stack only on very narrow. */
-  .rs-planning-counts__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rs-randui-page--planning .rs-randui-local-header {
     padding-bottom: var(--rand-space-2);
     border-bottom: 0;
@@ -401,7 +397,6 @@
 
 @media (max-width: 380px) {
   .rs-planning-choice-grid.rs-randui-grid--2 { grid-template-columns: minmax(0, 1fr); }
-  .rs-planning-counts__grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

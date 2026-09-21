@@ -10,14 +10,14 @@ const audit = (status, priority, notes) => Object.freeze({ status, priority, not
 
 export const RANDUI_PAGE_AUDIT_V2 = Object.freeze({
   home: audit('unify','medium',['dashboard utile ma da portare nella stessa gabbia e ritmo delle pagine operative']),
-  operations: audit('unify','medium',['destinazioni operative prima dei conteggi planning','densità mobile condivisa con Task']),
+  operations: audit('unify','medium',['solo destinazioni Segnalazioni/Interventi','niente scorciatoie Planning','densità mobile condivisa con Task']),
   issues: audit('unify','medium',['preservare workflow e filtri','uniformare header, spazi e azioni']),
   chat: audit('unify','medium',['preservare master/detail','uniformare chrome e densità']),
   housekeeping: audit('unify','high',['preservare motore locale/cache','uniformare contesto piano e gerarchia']),
   supplies: audit('unify','high',['preservare cache e boundary online-write','uniformare contesto area/piano e richieste']),
   interventions: audit('unify','medium',['lista densa allineata a Task e Operatività']),
   inventory: audit('unify','high',['struttura a funzioni riutilizzabile','spazio verticale e bottom-nav da non duplicare']),
-  'my-work': audit('unify','medium',['Task mostra prima i lavori aperti','planning counts secondari e compatti']),
+  'my-work': audit('unify','medium',['Task mostra solo lavori personali','niente scorciatoie Planning']),
   'planning-work': audit('unify','medium',['conteggi planning affiancati su mobile','rimuovere spazio improduttivo e mantenere CTA contestuale']),
   'planning-sale': audit('unify','medium',['preservare planning sale','CTA deve restare Nuova attività sala']),
   urgent: audit('unify','high',['priorità e stato devono emergere prima del contenuto ordinario']),

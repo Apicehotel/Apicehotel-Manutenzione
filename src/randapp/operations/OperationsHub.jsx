@@ -1,6 +1,5 @@
 import { Icon } from '../ui.jsx'
 import { PageTitle, Stack, Surface } from '../randui/visual-primitives.jsx'
-import PlanningCountCards from '../planning/PlanningCountCards.jsx'
 
 function DestinationRow({ icon, title, description, onClick, testId }) {
   return (
@@ -15,12 +14,12 @@ function DestinationRow({ icon, title, description, onClick, testId }) {
   )
 }
 
-export default function OperationsHub({ canIssues, canInterventions, hotel, user, onOpen }) {
+export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
   return (
     <Stack gap="sm" className="rs-operations-hub rs-ops-surface">
       <PageTitle
         title="Operatività"
-        subtitle="Segnalazioni e interventi adesso. Sotto: scorciatoie planning."
+        subtitle="Segnalazioni e interventi adesso."
       />
       <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
         {canIssues && (
@@ -42,7 +41,6 @@ export default function OperationsHub({ canIssues, canInterventions, hotel, user
           />
         )}
       </Surface>
-      <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} className="rs-planning-counts--compact" />
       <p className="rs-telegram-hint">Il menu completo resta dal profilo in alto. Ogni voce rispetta i permessi del ruolo.</p>
     </Stack>
   )

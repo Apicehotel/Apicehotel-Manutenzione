@@ -4,7 +4,6 @@ import { fetchPlanned, subscribePlanned } from '../../planned-data.js'
 import { Card, EmptyState, Spinner, TextInput } from '../ui.jsx'
 import { Stack } from '../randui/visual-primitives.jsx'
 import { PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
-import PlanningCountCards from '../planning/PlanningCountCards.jsx'
 
 function WorkCard({ title, meta, status, body }) {
   return (
@@ -21,7 +20,7 @@ function WorkCard({ title, meta, status, body }) {
   )
 }
 
-export default function MyWorkView({ hotel, user, onOpen }) {
+export default function MyWorkView({ hotel, user }) {
   const [issues, setIssues] = useState([])
   const [planned, setPlanned] = useState([])
   const [loading, setLoading] = useState(true)
@@ -139,10 +138,6 @@ export default function MyWorkView({ hotel, user, onOpen }) {
             </section>
           )}
         </>
-      )}
-      {/* Planning stays a secondary shortcut after personal work, never between list sections. */}
-      {!loading && (
-        <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} className="rs-planning-counts--compact" />
       )}
     </Stack>
   )
