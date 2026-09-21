@@ -45,7 +45,8 @@ test('Governante and Capo Governante have an actual Rifornimenti menu route', ()
   assert.match(roleNav, /\['supplies', 'Rifornimenti'\]/)
   assert.match(roleNav, /supplies: 'side'/)
   assert.match(shell, /view === 'supplies'/)
-  assert.match(shell, /SupplyRequestsPortal user=\{user\} hotel=\{hotel\} standalone/)
+  assert.match(shell, /<SupplyRequestsPortal user=\{user\} hotel=\{hotel\} \/>/)
+  assert.doesNotMatch(shell, /SupplyRequestsPortal user=\{user\} hotel=\{hotel\} standalone/)
 })
 
 test('request creation validates active products and item resolution accepts only delivered or missing', () => {
@@ -77,8 +78,12 @@ test('rifornimenti update through Supabase realtime rather than polling workers'
   assert.doesNotMatch(data, /setInterval|setTimeout/)
 })
 
-test('global housekeeping host still exposes the quick portal without changing reception completion alerts', () => {
-  assert.match(host, /SupplyRequestsPortal/)
+test('rifornimenti live on the dedicated nav page, not a floating launcher', () => {
+  assert.doesNotMatch(host, /SupplyRequestsPortal/)
   assert.match(host, /HousekeepingCompletionAlerts/)
   assert.match(host, /housekeeping-completion-alert/)
+  assert.doesNotMatch(portal, /supply-launcher/)
+  assert.doesNotMatch(portal, /rs-supply-launcher/)
+  assert.match(portal, /data-testid="supply-portal"/)
+  assert.match(shell, /view === 'supplies'/)
 })

@@ -15,7 +15,7 @@ import {
   saveSupplyProduct,
   subscribeSupplyRequests,
 } from '../supply-data.js'
-import { Button, Icon, Sheet } from './ui.jsx'
+import { Button, Icon } from './ui.jsx'
 import { PageTitle } from './randui/visual-primitives.jsx'
 import './supply-requests.css'
 
@@ -259,13 +259,12 @@ function RequestsList({ requests, canComplete, onResolve }) {
   )
 }
 
-export default function SupplyRequestsPortal({ user, hotel, standalone = false }) {
+export default function SupplyRequestsPortal({ user, hotel }) {
   const role = user?.role
   const canView = canUser(user, 'supplies', 'view') || VIEW_ROLES.has(role)
   const canCreate = canUser(user, 'supplies', 'create') || CREATE_ROLES.has(role)
   const canComplete = canUser(user, 'supplies', 'complete') || COMPLETE_ROLES.has(role)
   const canManage = canUser(user, 'supplies', 'manage') || role === 'admin'
-  const [open, setOpen] = useState(false)
   const [products, setProducts] = useState([])
   const [requests, setRequests] = useState([])
   const [floorContexts, setFloorContexts] = useState([])
@@ -321,7 +320,6 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
     return subscribeSupplyRequests(hotel.id, refresh)
   }, [canView, hotel?.id, refresh])
 
-  const pendingCount = useMemo(() => requests.reduce((total, request) => total + (request.supply_request_items || []).filter((item) => item.status === 'pending').length, 0), [requests])
   const resolve = async (itemId, status) => {
     setError('')
     try { await resolveSupplyItem(itemId, status); await refresh() }
@@ -330,39 +328,21 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
 
   if (!canView || !hotel) return null
 
-  const content = (
-    <div className={`rs-supply-sheet${standalone ? ' rs-ops-surface' : ''}`} data-testid="supply-portal">
-      {standalone ? (
-        <PageTitle
-          title="Rifornimenti"
-          subtitle={`Minibar e Consumo · ${hotel.name}${floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}`}
-          action={(
-            <Button variant="outline" size="sm" onClick={refreshAll} disabled={loading || contextLoading}>
-              Aggiorna
-            </Button>
-          )}
-        />
-      ) : (
-        <header className="rs-supply-sheet__head">
-          <div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}{floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}</p></div>
-          <button type="button" onClick={refreshAll} disabled={loading || contextLoading}>Aggiorna</button>
-        </header>
-      )}
+  return (
+    <div className="rs-supply-sheet rs-ops-surface" data-testid="supply-portal">
+      <PageTitle
+        title="Rifornimenti"
+        subtitle={`Minibar e Consumo · ${hotel.name}${floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}`}
+        action={(
+          <Button variant="outline" size="sm" onClick={refreshAll} disabled={loading || contextLoading}>
+            Aggiorna
+          </Button>
+        )}
+      />
       {error && <p className="rs-supply-error">{error}</p>}
       {canCreate && <RequestComposer hotel={hotel} products={products} floorContexts={floorContexts} floorContext={floorContext} onFloorContextChange={changeFloorContext} contextLoading={contextLoading} onCreated={refresh} />}
       <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
       {canManage && <ProductManager hotel={hotel} products={products} onChanged={refresh} />}
     </div>
-  )
-
-  if (standalone) return content
-
-  return (
-    <>
-      <button type="button" className="rs-supply-launcher" onClick={() => setOpen(true)} data-testid="supply-launcher">
-        <Icon name="package" /><span>Rifornimenti</span>{pendingCount > 0 && <b>{pendingCount}</b>}
-      </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Rifornimenti">{content}</Sheet>
-    </>
   )
 }
