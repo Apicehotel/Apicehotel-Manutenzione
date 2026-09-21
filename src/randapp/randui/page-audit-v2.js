@@ -32,7 +32,7 @@ export const RANDUI_PAGE_AUDIT_V2 = Object.freeze({
   'feedback-received': audit('unify','medium',['lista amministrativa, uniformare filtri/stati']),
   'desktop-download': audit('keep','low',['system-state centrato è coerente con il template']),
   settings: audit('unify','medium',['conservare struttura amministrativa','evitare secondo chrome e uniformare sezioni']),
-  randai: audit('unify','medium',['pannello overlay resta configurabile','chrome allineato a shell senza diventare app parallela']),
+  randai: audit('unify','medium',['pannello overlay resta configurabile','niente rs-ops-surface sul panel (classe page-surface; come supply sheet non-standalone)','chrome overlay nativo allineato a shell senza diventare app parallela']),
 })
 
 export function auditRandUiPageCoverage() {
