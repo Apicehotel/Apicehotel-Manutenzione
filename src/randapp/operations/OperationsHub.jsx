@@ -17,19 +17,17 @@ function DestinationRow({ icon, title, description, onClick, testId }) {
 
 export default function OperationsHub({ canIssues, canInterventions, hotel, user, onOpen }) {
   return (
-    <Stack gap="md" className="rs-operations-hub">
+    <Stack gap="sm" className="rs-operations-hub rs-ops-surface">
       <PageTitle
-        eyebrow="RandApp"
         title="Operatività"
-        subtitle="Segnalazioni e interventi nello stesso punto, senza mescolare i relativi flussi."
+        subtitle="Segnalazioni e interventi adesso. Planning resta sotto come scorciatoia."
       />
-      <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} />
       <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
         {canIssues && (
           <DestinationRow
             icon="issues"
             title="Segnalazioni"
-            description="Apri, filtra e crea segnalazioni operative."
+            description="Apri, filtra e crea segnalazioni."
             onClick={() => onOpen('issues')}
             testId="operations-open-issues"
           />
@@ -38,13 +36,14 @@ export default function OperationsHub({ canIssues, canInterventions, hotel, user
           <DestinationRow
             icon="wrench"
             title="Interventi"
-            description="Consulta assegnazioni, stato lavori e risoluzioni."
+            description="Assegnazioni, stato lavori e risoluzioni."
             onClick={() => onOpen('interventions')}
             testId="operations-open-interventions"
           />
         )}
       </Surface>
-      <p className="rs-telegram-hint">Il menu completo resta disponibile dal profilo in alto. Ogni voce continua a rispettare i permessi del ruolo.</p>
+      <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} className="rs-planning-counts--compact" />
+      <p className="rs-telegram-hint">Il menu completo resta dal profilo in alto. Ogni voce rispetta i permessi del ruolo.</p>
     </Stack>
   )
 }
