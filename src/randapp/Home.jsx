@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchIssues } from '../issues-data.js'
 import { fetchUrgents } from '../urgents-data.js'
 import { fetchPlanned } from '../planned-data.js'
 import { fetchOperationalWeather } from '../weather-data.js'
+import { buildColleaguePresenceRows, fetchPeopleInStructure } from '../home-presence.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
@@ -50,6 +51,7 @@ export function buildPriorityItems({ user, openUrgents, openIssues, todayInterve
 }
 
 function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
+  const queryClient = useQueryClient()
   const [focusOnly,setFocusOnly]=useState(readFocus)
   const [preferencesOpen,setPreferencesOpen]=useState(false)
   useEffect(()=>{ if(personalizeSignal>0) setPreferencesOpen(true) },[personalizeSignal])
@@ -63,17 +65,36 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>fetchPlanned(hotel.id),enabled:canInterventions})
   const remindersQuery=useQuery({queryKey:['home13',hotel.id,'reminders',user?.role],queryFn:()=>fetchReminders(hotel.id),enabled:canReminders})
   const weatherQuery=useQuery({queryKey:['home13',hotel.id,'weather'],queryFn:({signal})=>fetchOperationalWeather(hotel.id,{signal}),refetchInterval:5*60_000})
+  const presenceQuery=useQuery({queryKey:['home13',hotel.id,'presence'],queryFn:()=>fetchPeopleInStructure(hotel.id),refetchInterval:60_000})
+  useEffect(()=>{
+    const refreshPresence=()=>{ queryClient.invalidateQueries({ queryKey:['home13',hotel.id,'presence'] }) }
+    window.addEventListener('apice-presence-changed', refreshPresence)
+    window.addEventListener('focus', refreshPresence)
+    window.addEventListener('online', refreshPresence)
+    return ()=>{
+      window.removeEventListener('apice-presence-changed', refreshPresence)
+      window.removeEventListener('focus', refreshPresence)
+      window.removeEventListener('online', refreshPresence)
+    }
+  },[queryClient,hotel.id])
   const loading=[issuesQuery,urgentsQuery,plannedQuery,remindersQuery].some((q)=>q.isLoading)
   const issues=issuesQuery.data?.issues||[], urgents=urgentsQuery.data?.items||[], planned=plannedQuery.data?.items||[], reminders=remindersQuery.data||[]
   const openIssues=issues.filter((item)=>item.status!=='done'), openUrgents=urgents.filter((item)=>item.status!=='completata')
   const todayInterventions=planned.filter((item)=>item.status!=='done'&&(isToday(item.scheduledAt)||(item.scheduledAt&&item.scheduledUntil&&item.scheduledAt<=Date.now()&&item.scheduledUntil>=Date.now())))
   const weather=weatherQuery.data
+  const presenceRows=useMemo(()=>buildColleaguePresenceRows({
+    people:presenceQuery.data?.people||[],
+    urgents:canUrgent?openUrgents:[],
+  }),[presenceQuery.data?.people,openUrgents,canUrgent])
+  const busyCount=presenceRows.filter((row)=>row.busy).length
+  const presenceOk=presenceQuery.data?.ok!==false
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
   const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,7):priorities.slice(0,10)
   const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
   const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null].filter(Boolean)
   const quick=[canCreateIssues?['new-issue','plus','Nuova segnalazione']:null,canInterventions?['interventions','wrench','Interventi']:null,canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','Housekeeping']:null,canReminders?['reminders','bell','Promemoria']:null].filter(Boolean).slice(0,4)
   const setMode=(focus)=>{setFocusOnly(focus);writeFocus(focus)}
+  const openPresenceTarget=()=>{ if(canUrgent) onNavigate?.('urgent') }
 
   return <section className="rs-workhome" data-testid="home-view">
     <header className="rs-workhome__hero">
@@ -87,6 +108,10 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
     {loading?<Spinner label="Preparo le priorità della giornata…"/>:<>
       <div className="rs-workhome__stats" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
       {(weather?.level==='danger'||weather?.level==='warning')&&<button type="button" className={`rs-workhome__weather is-${weather.level}`} onClick={()=>{}} data-testid="weather-widget"><Icon name="warning"/><span><strong>{weather.level==='danger'?'Allarme meteo':'Attenzione meteo'}</strong><small>{weather.message||'Controllare gli esterni'}</small></span></button>}
+      <div className="rs-workhome__sectionhead"><div><span>IN STRUTTURA</span><h2>Chi c&apos;è ora</h2></div><small>{presenceQuery.isLoading?'…':`${presenceRows.length} present${presenceRows.length===1?'e':'i'}${busyCount?` · ${busyCount} impegnat${busyCount===1?'o':'i'}`:''}`}</small></div>
+      <div className="rs-workhome__presence" data-testid="home-presence">
+        {presenceQuery.isLoading?<p className="rs-workhome__presence-empty">Controllo chi è in struttura…</p>:!presenceOk&&!presenceRows.length?<p className="rs-workhome__presence-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}.</p>:!presenceRows.length?<p className="rs-workhome__presence-empty">Nessun collega risulta in struttura.</p>:presenceRows.map((row)=><button key={row.id} type="button" className={`rs-workhome__colleague${row.busy?' is-busy':''}`} onClick={openPresenceTarget} disabled={!canUrgent} aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}><span className="rs-workhome__colleague-dot" data-busy={row.busy?'true':'false'} aria-hidden="true"/><span className="rs-workhome__colleague-body"><strong>{row.name}</strong><small>{row.detail}</small></span><Badge tone={row.busy?'waiting':'done'}>{row.busy?'Impegnato':'Libero'}</Badge></button>)}
+      </div>
       <div className="rs-workhome__sectionhead"><div><span>PRIORITÀ</span><h2>Cosa fare adesso</h2></div><small>{visiblePriorities.length} attività rilevanti</small></div>
       {visiblePriorities.length===0?<EmptyState icon="check" title="Nessuna priorità immediata">Non risultano attività urgenti o pianificate per adesso.</EmptyState>:<div className="rs-workhome__queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
       {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>} 

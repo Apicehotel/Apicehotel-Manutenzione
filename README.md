@@ -15,6 +15,8 @@ Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` +
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
+La Home mostra il widget **Chi c’è ora**: colleghi in struttura (presenza hotel-scoped) con stato Libero / Impegnato in base agli avvisi urgenti in `presa_in_carico`.
+
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 
 **README:** ogni PR sostanziale aggiorna questo file allo stato operativo corrente (niente documentazione zombie; la cronologia resta nei docs dedicati).
