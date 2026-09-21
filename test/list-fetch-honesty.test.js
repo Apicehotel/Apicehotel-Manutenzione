@@ -33,8 +33,20 @@ test('Interventions keep cache on failure and surface ListFetchNotice', () => {
 
 test('UrgentView keeps cache on failure and surfaces ListFetchNotice', () => {
   assert.match(urgent, /ListFetchNotice/)
-  assert.match(urgent, /setFetchOk\(result\.ok!==false\)/)
+  assert.match(urgent, /setFetchOk\(result\.ok !== false\)/)
   assert.match(urgent, /setFetchOffline\(Boolean\(result\.offline\)\)/)
   assert.doesNotMatch(urgent, /setItems\(\[\]\)/)
-  assert.match(urgent, /showEmpty=!loading&&!\(!fetchOk&&!items\.length\)&&!items\.length/)
+  assert.match(urgent, /showEmpty = !loading && !\(!fetchOk && !items\.length\) && !items\.length/)
+  assert.match(urgent, /STATUS_RANK/)
+  assert.match(urgent, /StatusPill status=\{item\.status\}/)
+})
+
+test('Temperature sensors keep last-known cache and surface ListFetchNotice', () => {
+  const temperature = fs.readFileSync(new URL('../src/temperature.jsx', import.meta.url), 'utf8')
+  assert.match(temperature, /ListFetchNotice/)
+  assert.match(temperature, /readSensorCache/)
+  assert.match(temperature, /writeSensorCache/)
+  assert.match(temperature, /setOk\(false\)/)
+  assert.match(temperature, /setOffline/)
+  assert.doesNotMatch(temperature, /setSensors\(\[\]\)\s*\n\s*setOk/)
 })

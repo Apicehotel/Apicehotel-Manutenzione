@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { changeOwnPin, getOwnNotificationCode, saveOwnNotificationCode, updateOwnProfile } from '../auth-data.js'
-import { getPushSubscriptionState, getPushSupportInfo, subscribeToPush, unsubscribeFromPush } from '../push.js'
+import { getPushSubscriptionState, getPushSupportInfo, humanizePushError, subscribeToPush, unsubscribeFromPush } from '../push.js'
 import { Button, Card, Field, Icon, TextInput, ThemeControl, UiSizeControl } from './ui.jsx'
 import { hotelById, logoFor } from './helpers.js'
 import { buildNotificationAlias, normalizeNotificationCode } from './notification-alias.js'
@@ -113,7 +113,7 @@ export default function Profile({ user, hotel }) {
       setPushInfo(getPushSupportInfo())
       const state=await getPushSubscriptionState().catch(()=>null)
       if(state)setPushState(state)
-      setPushError(err?.message||'Attivazione notifiche push non riuscita')
+      setPushError(humanizePushError(err))
     } finally { setPushBusy(false) }
   }
 
@@ -123,7 +123,7 @@ export default function Profile({ user, hotel }) {
       await unsubscribeFromPush()
       setPushState(await getPushSubscriptionState())
       setPushMessage('Notifiche push RandApp disattivate per il tuo profilo su questo dispositivo.')
-    } catch(err){ setPushError(err?.message||'Disattivazione notifiche push non riuscita') }
+    } catch(err){ setPushError(humanizePushError(err) || 'Disattivazione notifiche push non riuscita') }
     finally { setPushBusy(false) }
   }
 

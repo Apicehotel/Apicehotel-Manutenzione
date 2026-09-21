@@ -240,7 +240,7 @@ export function Housekeeping({ user, hotel }) {
     await cache.failures.clear();await loadLocal();drain()
   }
 
-  return <section className="hk2-page" data-testid="housekeeping-v2">
+  return <section className="hk2-page rs-ops-surface" data-testid="housekeeping-v2">
     <header className="hk2-head">
       <div><h1>Housekeeping</h1><p><span className={blocked?'hk2-dot blocked':pending?'hk2-dot pending':'hk2-dot synced'}/>{blocked?`${blocked} modifiche da verificare`:pending?`${pending} modifiche in attesa`:'Sincronizzato'}</p></div>
       <div className="hk2-head-actions">

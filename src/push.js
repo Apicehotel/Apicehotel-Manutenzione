@@ -21,6 +21,32 @@ export function getPushSupportInfo() {
   return { supported, platform: ios ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop', standalone, requiresHomeScreen: ios && !standalone }
 }
 
+/** Map raw browser/edge errors to a short Italian soft-fail message for the Profile UI. */
+export function humanizePushError(error) {
+  const raw = String(error?.message || error || '').trim()
+  const lower = raw.toLowerCase()
+  if (!raw) return 'Attivazione notifiche push non riuscita. Puoi riprovare più tardi senza perdere i dati operativi.'
+  if (/homescreen|schermata home|standalone/.test(lower)) {
+    return 'Su iPhone/iPad aggiungi prima RandApp alla schermata Home, poi aprila da lì per attivare le notifiche.'
+  }
+  if (/permission|permesso|denied|not granted|concesso/.test(lower)) {
+    return 'Permesso notifiche non concesso. Controlla le impostazioni del browser o del dispositivo, poi riprova.'
+  }
+  if (/not supported|non sono supportate|unsupported/.test(lower)) {
+    return 'Le notifiche push non sono supportate su questo dispositivo o browser.'
+  }
+  if (/vapid|applicationServerKey|push service|abortError|notallowederror/.test(lower)) {
+    return 'Il servizio push del dispositivo ha rifiutato l’attivazione. Riprova più tardi; l’app resta utilizzabile.'
+  }
+  if (/network|failed to fetch|offline|timeout|503|502|500/.test(lower)) {
+    return 'Attivazione push non riuscita per un problema di rete o del server. Riprova quando la connessione è stabile.'
+  }
+  if (/supabase non configurato|notifiche non attive sul server/.test(lower)) {
+    return 'Le notifiche push non sono disponibili in questo ambiente. L’operatività continua senza push.'
+  }
+  return raw
+}
+
 export function isPushSupported() {
   return getPushSupportInfo().supported
 }
