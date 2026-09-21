@@ -23,3 +23,6 @@ test/artifacts
 .impeccable/live/annotations/
 .impeccable/live/cache/
 .impeccable/live/*.png
+
+# Local agent scratch / mockups
+tmp/
