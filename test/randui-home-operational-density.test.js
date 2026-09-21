@@ -6,7 +6,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Home puts the operational queue before RandAI recommendation', async () => {
   const home = await read('src/randapp/Home.jsx')
-  const queueHeading = home.indexOf('<h2>Cosa fare adesso</h2>')
+  const queueHeading = home.indexOf('<h2>Da smaltire</h2>')
   const randai = home.indexOf('<RandAIPriorityCard')
   assert.ok(queueHeading >= 0)
   assert.ok(randai >= 0)

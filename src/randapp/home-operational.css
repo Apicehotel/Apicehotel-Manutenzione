@@ -425,3 +425,246 @@ html[data-ui-size='large'] .rs-randai-priority { padding: 13px; }
   .rs-workhome__stat { padding: 7px 6px; }
   .rs-workhome__stat .rs-badge { font-size: .54rem; letter-spacing: 0; }
 }
+
+/* Mini-desk Home: personal work surface before hotel inbox tray. */
+.rs-workhome--desk { gap: 12px; }
+.rs-workhome__stats--strip .rs-workhome__stat {
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rs-workhome__stats--strip .rs-workhome__stat strong {
+  font-size: 1.25rem;
+}
+
+.rs-workhome__desk {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--rs-line-strong, var(--rs-line));
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.1), transparent 42%),
+    var(--rs-surface-2);
+}
+.rs-workhome__desk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rs-workhome__desk-head span {
+  color: var(--rs-cyan);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.rs-workhome__desk-head h2 {
+  margin: 1px 0 0;
+  font-family: Sora, sans-serif;
+  font-size: 1.12rem;
+}
+.rs-workhome__desk-meteo {
+  flex: none;
+  max-width: 46%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--rs-line);
+  background: var(--rs-surface);
+  color: var(--rs-text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+}
+.rs-workhome__desk-meteo.is-warning,
+.rs-workhome__desk-meteo.is-danger {
+  color: var(--rs-text);
+}
+.rs-workhome__desk-meteo.is-warning { border-color: rgba(247,185,85,.5); background: rgba(247,185,85,.09); }
+.rs-workhome__desk-meteo.is-danger { border-color: rgba(246,96,125,.55); background: rgba(246,96,125,.12); }
+.rs-workhome__desk-meteo .rs-icon { width: 16px; height: 16px; }
+.rs-workhome__desk-meteo small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-workhome__desk-next {
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+}
+.rs-workhome__desk-next.is-empty { cursor: default; opacity: .92; }
+.rs-workhome__desk-kicker {
+  color: var(--rs-cyan);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.rs-workhome__desk-next strong {
+  font-family: Sora, sans-serif;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+.rs-workhome__desk-next small { color: var(--rs-text-2); font-size: .78rem; }
+
+.rs-workhome__desk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.rs-workhome__desk-pane {
+  min-height: 132px;
+  padding: 10px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 8px;
+}
+.rs-workhome__desk-panehead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.rs-workhome__desk-panehead strong { font-size: .84rem; }
+.rs-workhome__desk-panehead small { color: var(--rs-text-3); font-size: .7rem; }
+.rs-workhome__desk-empty {
+  margin: 0;
+  color: var(--rs-text-2);
+  font-size: .78rem;
+  line-height: 1.35;
+  align-self: center;
+}
+.rs-workhome__desk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.rs-workhome__desk-list button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rs-text);
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  text-align: left;
+  cursor: pointer;
+}
+.rs-workhome__desk-list strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .82rem;
+}
+.rs-workhome__desk-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rs-text-2);
+  font-size: .7rem;
+}
+.rs-workhome__desk-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: start;
+}
+.rs-workhome__desk-chip {
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--rs-line);
+  border-radius: 12px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+  cursor: pointer;
+}
+.rs-workhome__desk-chip:disabled { cursor: default; }
+.rs-workhome__desk-chip.is-busy { border-color: rgba(247, 185, 85, .45); }
+.rs-workhome__desk-chip strong {
+  display: block;
+  font-size: .78rem;
+  line-height: 1.1;
+}
+.rs-workhome__desk-chip small {
+  display: block;
+  color: var(--rs-text-2);
+  font-size: .66rem;
+}
+.rs-workhome__desk-more {
+  align-self: center;
+  color: var(--rs-text-3);
+  font-size: .74rem;
+  font-weight: 700;
+}
+
+.rs-workhome__toolrow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+}
+.rs-workhome__toolrow button {
+  min-height: 64px;
+  padding: 8px 6px;
+  border: 1px solid var(--rs-line);
+  border-radius: 14px;
+  background: var(--rs-surface-2);
+  color: var(--rs-text);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rs-workhome__toolrow .rs-icon { color: var(--rs-cyan); width: 22px; height: 22px; }
+
+.rs-workhome__tray {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+html[data-ui-size='large'] .rs-workhome__stats--strip .rs-workhome__stat { min-height: 66px; }
+html[data-ui-size='large'] .rs-workhome__desk-next { min-height: 80px; }
+html[data-ui-size='large'] .rs-workhome__toolrow button { min-height: 72px; }
+
+@media (max-width: 520px) {
+  .rs-workhome__stats--strip .rs-workhome__stat { min-height: 52px; padding: 7px 8px; }
+  .rs-workhome__stats--strip .rs-workhome__stat strong { font-size: 1.12rem; }
+  .rs-workhome__desk { padding: 10px; }
+  .rs-workhome__desk-grid { grid-template-columns: 1fr; }
+  .rs-workhome__desk-pane { min-height: 0; }
+  .rs-workhome__desk-meteo { max-width: 52%; }
+  .rs-workhome__tray .rs-workhome__sectionhead > small { display: inline; }
+}
