@@ -9,6 +9,52 @@
   --randai-radius: 22px;
 }
 
+/* Dedicated shell page (bottom-nav / header): fill content, not a floating dialog. */
+html.rs-randai-page-active,
+body.rs-randai-page-active {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.rs-content.rs-content--randai {
+  min-height: 0;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.randai--page {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  pointer-events: auto;
+  height: var(--randai-viewport-h, calc(100dvh - 210px));
+  max-height: var(--randai-viewport-h, calc(100dvh - 210px));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.randai--page .randai__panel {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  top: auto;
+  width: 100%;
+  max-height: none;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: 0;
+  flex: 1 1 auto;
+}
+
+.randai--page .randai__composer {
+  padding-bottom: 12px;
+}
+
 .randai__panel {
   position: fixed;
   left: 24px;

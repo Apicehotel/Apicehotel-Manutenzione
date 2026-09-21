@@ -1,7 +1,9 @@
 export const RANDAI_UI_FOUNDATION_VERSION = '1.0.0'
 
 export const RANDAI_SURFACES = Object.freeze({
-  QUICK_ASSISTANT: 'quick-assistant',
+  CHAT_PAGE: 'chat-page',
+  /** @deprecated use CHAT_PAGE — kept for older call sites */
+  QUICK_ASSISTANT: 'chat-page',
   CONTROL_CENTER: 'control-center',
 })
 
@@ -28,7 +30,7 @@ export const RANDAI_UI_SOURCES = Object.freeze({
 })
 
 export function resolveRandAISurface({ fullPage = false } = {}) {
-  return fullPage ? RANDAI_SURFACES.CONTROL_CENTER : RANDAI_SURFACES.QUICK_ASSISTANT
+  return fullPage ? RANDAI_SURFACES.CONTROL_CENTER : RANDAI_SURFACES.CHAT_PAGE
 }
 
 export function assertRandAIPrimitive(name) {

@@ -21,11 +21,13 @@ test('RandAI UI foundation keeps RandUI as the only canonical visual owner', () 
   assert.throws(() => assertRandAIPrimitive('second-design-system'), { code: 'RANDAI_UI_UNKNOWN_PRIMITIVE' })
 })
 
-test('quick assistant and full RandAI control center remain separate surfaces', () => {
+test('dedicated chat page and full RandAI control center remain separate surfaces', () => {
   const main = read('src/main.jsx')
-  assert.equal(resolveRandAISurface(), RANDAI_SURFACES.QUICK_ASSISTANT)
+  const shell = read('src/randapp/Shell.jsx')
+  assert.equal(resolveRandAISurface(), RANDAI_SURFACES.CHAT_PAGE)
   assert.equal(resolveRandAISurface({ fullPage: true }), RANDAI_SURFACES.CONTROL_CENTER)
-  assert.match(main, /RandAIAssistant/)
+  assert.match(shell, /RandAIAssistant/)
+  assert.match(shell, /variant="page"/)
   assert.match(main, /RandAIProtectedRoute/)
   assert.match(main, /randaiConsoleMatch/)
 })

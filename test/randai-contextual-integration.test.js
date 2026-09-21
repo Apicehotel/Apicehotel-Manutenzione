@@ -4,10 +4,11 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('RandAI contextual bridge is mounted only with an authenticated assistant', async () => {
+test('RandAI contextual bridge is mounted only with an authenticated session', async () => {
   const main = await source('src/main.jsx')
   assert.match(main, /RandAIContextBridge/)
-  assert.match(main, /<RandAIContextBridge\s*\/><RandAIAssistant\s*\/>/)
+  assert.match(main, /<RandAIContextBridge\s*\/>/)
+  assert.doesNotMatch(main, /<RandAIAssistant/)
 })
 
 test('context bridge publishes hotel actor and active screen without overwriting an issue resource', async () => {
@@ -26,7 +27,8 @@ test('RandAI stays a dedicated header action and is not mixed into contextual cr
   assert.doesNotMatch(launcher, /Chiedi a RandAI/)
   assert.doesNotMatch(actions, /id:\s*'randai'/)
   assert.match(shell, /data-testid="header-randai"/)
-  assert.match(shell, /randai-toggle/)
+  assert.match(shell, /openRandAIPage/)
+  assert.match(shell, /variant="page"/)
 })
 
 test('guidance backend consumes the published operational context', async () => {

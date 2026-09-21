@@ -19,7 +19,7 @@ test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   assert.match(architecture, /RandGateway.*Tool Gateway.*RandSecure.*HITL.*Action Gateway.*RandAudit/s)
 })
 
-test('Phase 0 keeps Control Center at /randai while primary nav opens the chat', () => {
+test('Phase 0 keeps Control Center at /randai while primary nav opens the chat page', () => {
   const main = read('src/main.jsx')
   const navigation = read('src/randapp/shell-navigation.js')
   const shell = read('src/randapp/Shell.jsx')
@@ -28,9 +28,9 @@ test('Phase 0 keeps Control Center at /randai while primary nav opens the chat',
   assert.match(main, /<RandAIProtectedRoute \/>/)
   assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/)
   assert.doesNotMatch(navigation, /href:\s*'\/randai'/)
-  assert.match(shell, /if \(item\.id === 'randai'\)/)
+  assert.match(shell, /variant="page"/)
+  assert.match(shell, /openRandAIPage/)
   assert.match(shell, /data-testid="header-randai"/)
-  assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
 })
 
 test('Phase 0 allows reviewed Vercel production deploys and keeps Ocean preview-only', () => {

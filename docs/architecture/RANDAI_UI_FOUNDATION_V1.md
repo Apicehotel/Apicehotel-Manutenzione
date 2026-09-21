@@ -10,7 +10,7 @@ Evolvere l'interfaccia di RandAI senza creare un secondo design system e senza c
 
 Le due superfici restano intenzionalmente separate:
 
-- `quick-assistant`: popup contestuale autenticato dentro RandApp;
+- `chat-page`: pagina chat dedicata autenticata dentro RandApp (tab RandAI + header);
 - `control-center`: pagina completa e protetta `/randai`.
 
 Condividono linguaggio visuale e primitive, ma non vengono fuse in una singola schermata.

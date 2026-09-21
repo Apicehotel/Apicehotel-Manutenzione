@@ -31,7 +31,7 @@ export const RANDUI_PAGE_CATALOG = Object.freeze({
   'feedback-received': page({ id:'feedback-received', domain:'administration', pageType:'list', permissions:['admin'], capabilities:['feedback-review'] }),
   'desktop-download': page({ id:'desktop-download', domain:'desktop', pageType:'system-state', capabilities:['download','desktop-detection'] }),
   settings: page({ id:'settings', domain:'administration', pageType:'settings', permissions:['admin'], capabilities:['users','roles','sensors','usage','diagnostics'] }),
-  randai: page({ id:'randai', domain:'intelligence', pageType:'monitor', capabilities:['assistant','health','controls','guides'] }),
+  randai: page({ id:'randai', domain:'intelligence', pageType:'master-detail', mobilePriority:true, capabilities:['assistant','chat','guidance'] }),
 })
 
 export const RANDUI_MIGRATED_PAGE_IDS = Object.freeze(Object.keys(RANDUI_PAGE_CATALOG))

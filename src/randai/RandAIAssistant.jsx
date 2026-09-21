@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { loadSession } from '../session.js'
 import { retrieveRandAIGuidance } from './randai-data.js'
 import { getIssueWorkspace, startIssueWorkspace, confirmIssueWorkspaceStep, prepareIssueCompletionSummary, issueWorkspaceProgress } from './issue-workspace.js'
@@ -98,9 +98,69 @@ function ProjectIntelligencePanel({ intelligence }) {
   )
 }
 
-export default function RandAIAssistant() {
+function useRandAIPageViewport(enabled) {
+  const ref = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!enabled) return undefined
+    const node = ref.current
+    if (!node) return undefined
+
+    const content = node.closest('.rs-content')
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    content?.classList.add('rs-content--randai')
+    document.documentElement.classList.add('rs-randai-page-active')
+    document.body.classList.add('rs-randai-page-active')
+
+    let frame = 0
+    const sync = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        if (!ref.current) return
+        const top = ref.current.getBoundingClientRect().top
+        const visual = window.visualViewport
+        const viewportBottom = visual ? visual.offsetTop + visual.height : window.innerHeight
+        const bottomNav = document.querySelector('.rs-bottomnav')
+        const navVisible = bottomNav && window.getComputedStyle(bottomNav).display !== 'none'
+        const navTop = navVisible ? bottomNav.getBoundingClientRect().top : viewportBottom
+        const bottom = Math.min(viewportBottom, navTop)
+        const height = Math.max(220, Math.floor(bottom - top))
+        ref.current.style.setProperty('--randai-viewport-h', `${height}px`)
+      })
+    }
+
+    sync()
+    window.addEventListener('resize', sync)
+    window.addEventListener('orientationchange', sync)
+    window.visualViewport?.addEventListener('resize', sync)
+    window.visualViewport?.addEventListener('scroll', sync)
+
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(sync) : null
+    const header = document.querySelector('.rs-header')
+    const nav = document.querySelector('.rs-bottomnav')
+    if (header) observer?.observe(header)
+    if (nav) observer?.observe(nav)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      window.removeEventListener('resize', sync)
+      window.removeEventListener('orientationchange', sync)
+      window.visualViewport?.removeEventListener('resize', sync)
+      window.visualViewport?.removeEventListener('scroll', sync)
+      content?.classList.remove('rs-content--randai')
+      document.documentElement.classList.remove('rs-randai-page-active')
+      document.body.classList.remove('rs-randai-page-active')
+    }
+  }, [enabled])
+
+  return ref
+}
+
+export default function RandAIAssistant({ variant = 'overlay' } = {}) {
+  const isPage = variant === 'page'
   const [session, setSession] = useState(loadSession())
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(isPage)
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState([])
   const [busy, setBusy] = useState(false)
@@ -110,6 +170,7 @@ export default function RandAIAssistant() {
   const [listening, setListening] = useState(false)
   const [audioNotice, setAudioNotice] = useState('')
   const audio = useRef(null)
+  const pageRef = useRandAIPageViewport(isPage)
 
   if (!audio.current && typeof window !== 'undefined') audio.current = createBrowserRandAudio(window)
 
@@ -120,7 +181,7 @@ export default function RandAIAssistant() {
   }, [])
 
   useEffect(() => {
-    setOpen(false)
+    if (!isPage) setOpen(false)
     setMessages([])
     setQuery('')
     setBusy(false)
@@ -128,13 +189,14 @@ export default function RandAIAssistant() {
     audio.current?.stopSpeaking()
     setListening(false)
     setAudioNotice('')
-  }, [session?.hotelId, session?.userId])
+  }, [session?.hotelId, session?.userId, isPage])
 
   useEffect(() => {
+    if (isPage) return undefined
     const toggle = () => setOpen((value) => !value)
     window.addEventListener(OPEN_EVENT, toggle)
     return () => window.removeEventListener(OPEN_EVENT, toggle)
-  }, [])
+  }, [isPage])
 
   const hotelLabel = useMemo(() => ({ hotelgio: 'Hotel Giò', chocohotel: 'Chocohotel', brigantino: 'Il Brigantino' }[session?.hotelId] || 'struttura attiva'), [session?.hotelId])
   if (!session?.hotelId) return null
@@ -142,6 +204,7 @@ export default function RandAIAssistant() {
   const issueResource = activeResource?.type === 'issue' ? activeResource : null
   const workspaceProgress = issueWorkspaceProgress(workspace)
   const canDictate = Boolean(audio.current?.capabilities.stt)
+  const visible = isPage || open
 
   const startDictation = () => {
     if (!canDictate || listening) return
@@ -167,11 +230,6 @@ export default function RandAIAssistant() {
     const text = message.text || [message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || [])].filter(Boolean).join('. ')
     if (!text) return
     try { audio.current?.speak(text) } catch { setAudioNotice('Lettura vocale non disponibile su questo dispositivo.') }
-  }
-
-  const refreshWorkspace = async (issueId = issueResource?.id) => {
-    if (!issueId) return
-    try { setWorkspace(await getIssueWorkspace({ hotelId: session.hotelId, issueId })) } catch (error) { console.error('RandAI workspace load failed', error) }
   }
 
   const beginGuidedProcedure = async (procedureId) => {
@@ -223,12 +281,16 @@ export default function RandAIAssistant() {
   }
 
   return (
-    <div className={`randai ${open ? 'randai--open' : ''}`} data-testid="randai-root">
-      {open && (
-        <section className="randai__panel" role="dialog" aria-label="RandAI assistente manutenzione">
+    <div
+      ref={isPage ? pageRef : undefined}
+      className={`randai ${isPage ? 'randai--page' : ''} ${!isPage && open ? 'randai--open' : ''}`}
+      data-testid={isPage ? 'randai-page' : 'randai-root'}
+    >
+      {visible && (
+        <section className="randai__panel" role={isPage ? 'region' : 'dialog'} aria-label="RandAI assistente manutenzione">
           <header className="randai__header">
             <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
-            <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>
+            {!isPage && <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>}
           </header>
 
           <div className="randai__messages" aria-live="polite">
@@ -294,7 +356,7 @@ export default function RandAIAssistant() {
                         <strong>{item.symptom}</strong>
                         {item.cause && <span>Causa confermata: {item.cause}</span>}
                         <small>Soluzione: {item.solution}</small>
-                        <small>{item.confirmationCount || 1} conferma/e · {item.sourceLabel}</small>
+                        <small>{item.confirmationCount || 1} conferma/e · {item.sourceLabel}</small>}
                       </div>
                     ))}
                   </div>

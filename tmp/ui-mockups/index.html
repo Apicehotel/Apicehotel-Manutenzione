@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="light" data-hotel="hotelgio">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RandApp UI — mockup RandUI attuale</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* Token da ui-material-glass + theme-tokens light + hotelgio */
+:root {
+  --rs-bg: #f5f7fa;
+  --rs-bg-2: #eef2f6;
+  --rs-surface: #ffffff;
+  --rs-surface-2: #f8fafc;
+  --rs-surface-3: #eef2f7;
+  --rs-line: rgba(32, 45, 64, .10);
+  --rs-line-strong: rgba(32, 45, 64, .18);
+  --rs-text: #172033;
+  --rs-text-2: #596579;
+  --rs-text-3: #7b8798;
+  --rs-accent: #6d5bd0;
+  --rs-accent-strong: #5847bd;
+  --rs-accent-soft: rgba(109, 91, 208, .11);
+  --rs-accent-line: rgba(109, 91, 208, .25);
+  --rs-danger: #b64f4b;
+  --rs-warn: #ad741f;
+  --rs-ok: #34825f;
+  --rs-header-bg: rgba(247, 249, 252, .78);
+  --rs-nav-bg: rgba(250, 251, 253, .82);
+  --font: Manrope, system-ui, sans-serif;
+  --display: Sora, Manrope, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--rs-text);
+  background:
+    radial-gradient(80% 56% at 8% -10%, color-mix(in srgb, var(--rs-accent) 8%, transparent), transparent 62%),
+    radial-gradient(70% 48% at 104% 2%, rgba(122, 144, 170, .08), transparent 60%),
+    var(--rs-bg);
+  padding: 28px 20px 60px;
+}
+h1,h2,h3 { font-family: var(--display); margin: 0; }
+.page { max-width: 1180px; margin: 0 auto; }
+.badge {
+  display: inline-flex; gap: 6px; align-items: center;
+  padding: 4px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700;
+  border: 1px solid var(--rs-accent-line); color: var(--rs-accent);
+  background: var(--rs-accent-soft); margin-bottom: 10px;
+}
+.page > header p { margin: 8px 0 0; color: var(--rs-text-2); max-width: 70ch; line-height: 1.5; }
+.note {
+  margin: 14px 0 0; padding: 12px 14px; border-radius: 14px;
+  border: 1px solid var(--rs-line); background: var(--rs-surface);
+  color: var(--rs-text-2); font-size: .86rem; line-height: 1.45;
+}
+.section { margin-top: 40px; }
+.section h2 { font-size: 1.15rem; margin-bottom: 6px; }
+.lead { color: var(--rs-text-2); margin: 0 0 16px; font-size: .9rem; }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .compare { grid-template-columns: 1fr; } }
+.col-label {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+}
+.col-label.before { color: var(--rs-danger); }
+.col-label.after { color: var(--rs-ok); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+.phone {
+  max-width: 390px; margin: 0 auto;
+  border-radius: 34px; overflow: hidden;
+  border: 1px solid rgba(32,45,64,.12);
+  background: #111;
+  box-shadow: 0 24px 50px -28px rgba(28,39,56,.45);
+}
+.phone__bezel { background: var(--rs-bg); min-height: 740px; display: grid; grid-template-rows: auto 1fr auto; }
+.phone__status {
+  height: 26px; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 2px; font-size: .62rem; font-weight: 700; color: var(--rs-text-3);
+}
+
+.hdr {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 8px;
+  background: var(--rs-header-bg);
+  backdrop-filter: blur(18px) saturate(125%);
+  border-bottom: 1px solid var(--rs-line);
+}
+.hotel {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 10px; border-radius: 999px;
+  background: var(--rs-surface); border: 1px solid var(--rs-line);
+}
+.hotel .logo {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: linear-gradient(145deg, #fff, #ece8ff);
+  border: 1px solid var(--rs-line);
+  color: var(--rs-accent); display: grid; place-items: center;
+  font: 800 .68rem var(--display);
+}
+.hotel strong { display:block; font-size: .82rem; }
+.hotel small { color: var(--rs-text-2); font-size: .68rem; }
+.profile {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 3px 8px 3px 4px; border-radius: 999px;
+  border: 1px solid var(--rs-line); background: var(--rs-surface-2);
+  min-height: 40px;
+}
+.profile .av {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff;
+  background: linear-gradient(145deg, var(--rs-accent), var(--rs-accent-strong));
+  font: 800 .68rem var(--display);
+}
+.profile span { font-size: .72rem; font-weight: 700; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.hdr-actions { display:flex; align-items:center; gap:4px; flex:none; }
+.presence {
+  width: 42px; height: 42px; border-radius: 50%; border: 0; background: transparent;
+  display: grid; place-items: center; padding: 0; cursor: default;
+}
+.presence .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent), 0 2px 8px color-mix(in srgb, currentColor 20%, transparent);
+  color: #94a3b8; background: #94a3b8;
+}
+.presence[data-presence='in'][data-here='true'] .dot { color:#22c55e; background:#22c55e; }
+.presence[data-presence='in'][data-here='false'] .dot { color:#f59e0b; background:#f59e0b; }
+.bell {
+  width: 42px; height: 42px; border-radius: 13px; border: 1px solid var(--rs-line);
+  background: var(--rs-surface); display: grid; place-items: center; color: var(--rs-text-2); font-size: 1rem;
+  position: relative;
+}
+.bell .badge {
+  position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:50%;
+  background: var(--rs-danger); border: 1.5px solid var(--rs-surface);
+}
+.profile {
+  width: 42px; height: 42px; min-height: 42px; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; display: grid; place-items: center; box-shadow: none;
+}
+.profile .av { width: 34px; height: 34px; }
+.profile span { display:none; }
+.presence-legend {
+  display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:10px; margin: 14px 0 8px;
+}
+.presence-legend .cell {
+  border:1px solid var(--rs-line); border-radius:16px; background:var(--rs-surface);
+  padding:14px 12px; text-align:center;
+}
+.presence-legend .cell strong { display:block; margin-top:8px; font-size:.84rem; }
+.presence-legend .cell small { color:var(--rs-text-2); font-size:.72rem; line-height:1.35; }
+
+
+.content { padding: 10px 14px 16px; }
+.nav {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+  padding: 6px 6px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--rs-nav-bg);
+  backdrop-filter: blur(18px) saturate(125%);
+  border-top: 1px solid var(--rs-line);
+}
+.navbtn {
+  min-height: 54px; border-radius: 14px;
+  display: grid; place-items: center; gap: 2px;
+  color: var(--rs-text-3); font-size: .58rem; font-weight: 700;
+  padding: 4px 0;
+}
+.navbtn .ico { font-size: 1.05rem; line-height: 1; }
+.navbtn.active {
+  color: var(--rs-accent);
+  background: color-mix(in srgb, var(--rs-accent) 9%, transparent);
+}
+.navbtn.randai { color: var(--rs-accent); }
+
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; border-radius: 999px; font-size: .66rem; font-weight: 800;
+  border: 1px solid var(--rs-line); background: var(--rs-surface-3); color: var(--rs-text-2);
+}
+.pill.warn { color: var(--rs-warn); border-color: rgba(173,116,31,.28); background: rgba(173,116,31,.1); }
+.pill.danger { color: var(--rs-danger); border-color: rgba(182,79,75,.28); background: rgba(182,79,75,.1); }
+.pill.ok { color: var(--rs-ok); border-color: rgba(52,130,95,.28); background: rgba(52,130,95,.1); }
+.pill.accent { color: var(--rs-accent); border-color: var(--rs-accent-line); background: var(--rs-accent-soft); }
+
+.title { margin-bottom: 12px; }
+.title h3 { font-size: 1.18rem; }
+.title p { margin: 3px 0 0; color: var(--rs-text-2); font-size: .8rem; }
+
+.card {
+  border: 1px solid var(--rs-line); border-radius: 16px;
+  background: linear-gradient(160deg, var(--rs-surface-2), var(--rs-surface));
+  padding: 12px 13px; margin-bottom: 8px;
+  box-shadow: 0 10px 28px -24px rgba(28,39,56,.28);
+}
+.card strong { display: block; font-size: .92rem; }
+.card .meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.card p { margin: 7px 0 0; color: var(--rs-text-2); font-size: .82rem; line-height: 1.4; }
+
+.empty-fake { text-align: center; padding: 52px 18px; color: var(--rs-text-2); }
+.empty-fake .bubble {
+  width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 16px;
+  display: grid; place-items: center; font-size: 1.3rem;
+  background: var(--rs-accent-soft); border: 1px solid var(--rs-accent-line); color: var(--rs-accent);
+}
+.empty-fake strong { display:block; color: var(--rs-text); margin-bottom: 4px; }
+.empty-fake small { color: var(--rs-text-3); font-size: .76rem; }
+
+.state {
+  border: 1px solid rgba(173,116,31,.28); border-radius: 16px;
+  background: var(--rs-surface); padding: 12px;
+  display: grid; grid-template-columns: 42px 1fr; gap: 10px;
+  margin-bottom: 10px; box-shadow: 0 10px 28px -24px rgba(28,39,56,.25);
+}
+.state .ico {
+  width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center;
+  background: rgba(173,116,31,.1); border: 1px solid rgba(173,116,31,.28); color: var(--rs-warn); font-size: 1.05rem;
+}
+.state strong { display:block; font-family: var(--display); font-size: .9rem; }
+.state p { margin: 3px 0 0; color: var(--rs-text-2); font-size: .76rem; line-height: 1.4; }
+.actions { display:flex; gap:8px; margin-top: 9px; grid-column: 2; }
+.btn {
+  border: 0; border-radius: 14px; font: 800 .8rem var(--font);
+  padding: 0 14px; min-height: 44px; color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--rs-accent) 82%, white), var(--rs-accent-strong));
+}
+.btn.ghost { background: var(--rs-surface-2); color: var(--rs-text); border: 1px solid var(--rs-line); }
+.btn.danger { background: linear-gradient(135deg, #c86a66, var(--rs-danger)); }
+.btn.sm { min-height: 34px; font-size: .72rem; padding: 0 10px; }
+.cache-note { font-size: .7rem; color: var(--rs-warn); margin: 0 0 8px; }
+
+.hero h3 { font-size: 1.45rem; line-height: 1.12; }
+.hero .role { color: var(--rs-accent); font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.hero p { margin: 2px 0 0; color: var(--rs-text-2); font-size: .82rem; }
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 12px 0 14px; }
+.stat {
+  min-height: 72px; padding: 10px; border: 1px solid var(--rs-line); border-radius: 15px;
+  background: linear-gradient(160deg, var(--rs-surface-2), var(--rs-surface));
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.stat strong { font: 800 1.55rem/1 var(--display); }
+.stat small { color: var(--rs-text-3); font-size: .62rem; font-weight: 800; letter-spacing: .04em; }
+
+.task {
+  min-height: 68px; padding: 8px 10px; margin-bottom: 7px;
+  border: 1px solid var(--rs-line); border-radius: 15px;
+  background: linear-gradient(160deg, var(--rs-surface-2), var(--rs-surface));
+  display: grid; grid-template-columns: 26px 38px minmax(0,1fr) 18px;
+  align-items: center; gap: 8px;
+}
+.task.high { border-color: rgba(182,79,75,.35); }
+.rank {
+  width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--rs-surface-3); color: var(--rs-text-2); font-weight: 800; font-size: .7rem;
+}
+.ticon {
+  width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--rs-accent-soft); color: var(--rs-accent); font-size: .95rem;
+}
+.task.high .ticon { background: rgba(182,79,75,.12); color: var(--rs-danger); }
+.tbody { min-width: 0; display: grid; gap: 1px; }
+.tbody small { color: var(--rs-text-3); font-size: .64rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.tbody strong { font-size: .9rem; line-height: 1.2; }
+.tbody span { color: var(--rs-text-2); font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chev { color: var(--rs-text-3); }
+.hint {
+  margin-top: 8px; padding: 10px 12px; border-radius: 12px;
+  background: var(--rs-accent-soft); border: 1px dashed var(--rs-accent-line);
+  color: var(--rs-text-2); font-size: .74rem; line-height: 1.4;
+}
+
+.urgent {
+  border: 1px solid rgba(182,79,75,.28); border-radius: 16px;
+  background: rgba(182,79,75,.08); padding: 13px; margin-bottom: 12px;
+}
+.urgent strong { color: var(--rs-danger); }
+.urgent p { margin: 6px 0 0; color: var(--rs-text-2); font-size: .86rem; line-height: 1.4; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.row-actions.after { flex-direction: column; }
+.row-actions.after .split { display: flex; gap: 8px; }
+.row-actions.after .split .btn { flex: 1; min-height: 48px; }
+.row-actions.after > .btn { min-height: 48px; }
+.measure { margin-top: 10px; font-size: .7rem; color: var(--rs-text-3); }
+.measure b { color: var(--rs-text-2); }
+
+.work {
+  border: 1px solid var(--rs-line); border-radius: 16px; background: var(--rs-surface);
+  padding: 13px; margin-bottom: 8px;
+}
+.work.after { border-color: color-mix(in srgb, var(--rs-accent) 35%, var(--rs-line)); }
+.work .foot {
+  margin-top: 10px; display: flex; justify-content: space-between; align-items: center;
+  color: var(--rs-accent); font-size: .78rem; font-weight: 800;
+}
+.dead { color: var(--rs-text-3); font-size: .72rem; margin-top: 8px; font-style: italic; }
+.caption { margin-top: 10px; text-align: center; color: var(--rs-text-3); font-size: .74rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="badge">Mockup · RandUI attuale · light + Hotel Giò</div>
+    <h1>Migliorie UI (stile corrente)</h1>
+    <p>Token live + chrome reale: hotel chip, <b>PresenceChip</b> (sono in struttura), campanella, profilo · nav Telegram 5 slot.</p>
+    <div class="note">Prima versione dei mockup usava lo shell dark storico (<code>#060a13</code> + cyan). Questa è allineata a <code>ui-material-glass.css</code> + <code>telegram-navigation.css</code>.</div>
+  </header>
+
+  
+  <section class="section" id="m0">
+    <h2>0. Tasto presenza · Sono in struttura</h2>
+    <p class="lead">In header mobile: pallino presenza → campanella → profilo. Non è un label “Sono in struttura”: è il toggle <code>PresenceChip</code> (manutentore / Portiere Notturno / admin).</p>
+    <div class="presence-legend">
+      <div class="cell">
+        <button class="presence" type="button" data-presence="out" data-here="false" style="margin:0 auto"><span class="dot"></span></button>
+        <strong>Fuori</strong>
+        <small>Grigio · non sei segnato in nessuna struttura. Tap → entri nell’hotel attivo.</small>
+      </div>
+      <div class="cell">
+        <button class="presence" type="button" data-presence="in" data-here="true" style="margin:0 auto"><span class="dot"></span></button>
+        <strong>In questa struttura</strong>
+        <small>Verde · presente nell’hotel del chip (es. Giò). Tap → fuori.</small>
+      </div>
+      <div class="cell">
+        <button class="presence" type="button" data-presence="in" data-here="false" style="margin:0 auto"><span class="dot"></span></button>
+        <strong>In un’altra struttura</strong>
+        <small>Ambra · presente altrove (es. CHO mentre guardi Brigantino). Tap → sposti qui.</small>
+      </div>
+    </div>
+    <div class="compare" style="margin-top:18px">
+      <div>
+        <div class="col-label before"><span class="dot"></span>Mockup precedente — mancava</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Home operativa</small></div></div>
+                <div class="hdr-actions">
+                  <div class="bell">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="hint">Header incompleto: niente PresenceChip. Staff non può segnarsi in struttura dal chrome.</div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn active"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="col-label after"><span class="dot"></span>Header reale RandUI</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Home operativa</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura"><span class="dot"></span></button>
+                  <div class="bell">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="hint">Ordine mobile: <b>presenza → campanella → profilo</b>. Pallino verde = Sono in questa struttura.</div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn active"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="m1">
+    <h2>1. Stati onesti sulle liste</h2>
+    <p class="lead">Fetch fallito ≠ “Nessun intervento”.</p>
+    <div class="compare">
+      <div>
+        <div class="col-label before"><span class="dot"></span>Oggi — falso empty</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Interventi</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="title"><h3>Interventi</h3><p>Lavori pianificati e assegnati</p></div>
+              <div class="empty-fake">
+                <div class="bubble">✓</div>
+                <strong>Nessun intervento</strong>
+                <small>Tutto in ordine per oggi.</small>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="navbtn active"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+        <p class="caption">Staff crede che non ci sia lavoro — ma la rete è fallita</p>
+      </div>
+      <div>
+        <div class="col-label after"><span class="dot"></span>Proposto — stale + cache</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Interventi</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="title"><h3>Interventi</h3><p>Lavori pianificati e assegnati</p></div>
+              <div class="state">
+                <div class="ico">⏱</div>
+                <div>
+                  <strong>Dati non aggiornati</strong>
+                  <p>Ultima sync 14:02. Mostrati i dati in cache.</p>
+                </div>
+                <div class="actions">
+                  <button class="btn" type="button">Riprova</button>
+                  <button class="btn ghost" type="button">Dettagli</button>
+                </div>
+              </div>
+              <p class="cache-note">⚠ lista dalla cache · 2 elementi</p>
+              <div class="card">
+                <div style="display:flex;justify-content:space-between;gap:8px"><strong>Camera 214 · rubinetto</strong><span class="pill warn">In corso</span></div>
+                <div class="meta"><span class="pill accent">Idraulica</span><span style="color:var(--rs-text-2);font-size:.72rem">Assegnato a Marco</span></div>
+              </div>
+              <div class="card">
+                <div style="display:flex;justify-content:space-between;gap:8px"><strong>Hall · faretti LED</strong><span class="pill">Pianificato</span></div>
+                <div class="meta"><span class="pill accent">Elettrico</span><span style="color:var(--rs-text-2);font-size:.72rem">Oggi 16:30</span></div>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="navbtn active"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+        <p class="caption">SystemState + cache + Riprova</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="m2">
+    <h2>2. Home → item diretto</h2>
+    <p class="lead">Coda priorità come oggi (rank · icon · body · chevron), ma con deep-link.</p>
+    <div class="compare">
+      <div>
+        <div class="col-label before"><span class="dot"></span>Oggi — apre la sezione</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Home operativa</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="hero"><div class="role">Manutenzione</div><h3>Buongiorno, Luca</h3><p>Vista Focus</p></div>
+              <div class="stats">
+                <div class="stat"><strong>3</strong><small>PRIORITÀ</small></div>
+                <div class="stat"><strong>1</strong><small>URGENTI</small></div>
+                <div class="stat"><strong>5</strong><small>APERTE</small></div>
+              </div>
+              <div class="task high">
+                <div class="rank">1</div>
+                <div class="ticon">!</div>
+                <div class="tbody"><small>Segnalazioni</small><strong>Camera 214 · perdita acqua</strong><span>Alta · da 18 min</span></div>
+                <div class="chev">›</div>
+              </div>
+              <div class="hint">Tap → lista Segnalazioni. Devi cercare di nuovo Camera 214.</div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn active"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="col-label after"><span class="dot"></span>Proposto — deep-link</div>
+        <div class="phone">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">G</div><div><strong>Hotel Giò</strong><small>Home operativa</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="hero"><div class="role">Manutenzione</div><h3>Buongiorno, Luca</h3><p>Vista Focus</p></div>
+              <div class="stats">
+                <div class="stat"><strong>3</strong><small>PRIORITÀ</small></div>
+                <div class="stat"><strong>1</strong><small>URGENTI</small></div>
+                <div class="stat"><strong>5</strong><small>APERTE</small></div>
+              </div>
+              <div class="task high">
+                <div class="rank">1</div>
+                <div class="ticon">!</div>
+                <div class="tbody"><small>Segnalazione · #4821</small><strong>Camera 214 · perdita acqua</strong><span>Alta · da 18 min · apri dettaglio</span></div>
+                <div class="chev" style="color:var(--rs-accent)">›</div>
+              </div>
+              <div class="hint">Tap → apre direttamente il foglio Camera 214.</div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn active"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="m3">
+    <h2>3. CTA urgenti ≥ 44px</h2>
+    <p class="lead">Accent Chocohotel sul dettaglio urgente.</p>
+    <div class="compare">
+      <div>
+        <div class="col-label before"><span class="dot"></span>Oggi — target ~34px</div>
+        <div class="phone" style="--rs-accent:#9a6538;--rs-accent-strong:#7d4f2d;--rs-accent-soft:rgba(154,101,56,.11);--rs-accent-line:rgba(154,101,56,.25)">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">C</div><div><strong>Chocohotel</strong><small>Avviso urgente</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="urgent">
+                <strong>Urgenza · Reception</strong>
+                <p>Odore di bruciato vicino al Quadro elettrico piano −1. Ospite in check-in.</p>
+              </div>
+              <div class="row-actions">
+                <button class="btn sm" type="button">Prendi in carico</button>
+                <button class="btn ghost sm" type="button">Trasforma</button>
+                <button class="btn danger sm" type="button">Chiudi</button>
+              </div>
+              <p class="measure">Altezza CTA: <b>~34px</b> · miss-tap con guanti</p>
+            </div>
+            <div class="nav">
+              <div class="navbtn active"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="col-label after"><span class="dot"></span>Proposto — 48px stack</div>
+        <div class="phone" style="--rs-accent:#9a6538;--rs-accent-strong:#7d4f2d;--rs-accent-soft:rgba(154,101,56,.11);--rs-accent-line:rgba(154,101,56,.25)">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">C</div><div><strong>Chocohotel</strong><small>Avviso urgente</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="urgent">
+                <strong>Urgenza · Reception</strong>
+                <p>Odore di bruciato vicino al Quadro elettrico piano −1. Ospite in check-in.</p>
+              </div>
+              <div class="row-actions after">
+                <button class="btn" type="button">Prendi in carico</button>
+                <div class="split">
+                  <button class="btn ghost" type="button">Trasforma</button>
+                  <button class="btn danger" type="button">Chiudi</button>
+                </div>
+              </div>
+              <p class="measure">Altezza CTA: <b>48px</b> · primario a tutta larghezza</p>
+            </div>
+            <div class="nav">
+              <div class="navbtn active"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="m4">
+    <h2>4. I miei lavori cliccabili</h2>
+    <p class="lead">Accent Brigantino · slot Task attivo.</p>
+    <div class="compare">
+      <div>
+        <div class="col-label before"><span class="dot"></span>Oggi — sola lettura</div>
+        <div class="phone" style="--rs-accent:#176b87;--rs-accent-strong:#10566e;--rs-accent-soft:rgba(23,107,135,.11);--rs-accent-line:rgba(23,107,135,.25)">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">B</div><div><strong>Il Brigantino</strong><small>I miei lavori</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="title"><h3>I miei lavori</h3><p>Assegnati a te</p></div>
+              <div class="work">
+                <div style="display:flex;justify-content:space-between"><strong>Suite 12 · AC rumoroso</strong><span class="pill warn">Assegnato</span></div>
+                <p style="margin:8px 0 0;color:var(--rs-text-2);font-size:.84rem">Cliente riposa · intervento silenzioso</p>
+                <div class="dead">Nessuna azione · card non apribile</div>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn active"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="col-label after"><span class="dot"></span>Proposto — apri dettaglio</div>
+        <div class="phone" style="--rs-accent:#176b87;--rs-accent-strong:#10566e;--rs-accent-soft:rgba(23,107,135,.11);--rs-accent-line:rgba(23,107,135,.25)">
+          <div class="phone__bezel">
+            <div>
+              <div class="phone__status">9:41</div>
+              <div class="hdr">
+                <div class="hotel"><div class="logo">B</div><div><strong>Il Brigantino</strong><small>I miei lavori</small></div></div>
+                <div class="hdr-actions">
+                  <button class="presence" type="button" data-presence="in" data-here="true" title="In struttura · Hotel Giò" aria-label="In struttura"><span class="dot"></span></button>
+                  <div class="bell" aria-label="Notifiche">🔔<span class="badge"></span></div>
+                  <div class="profile"><div class="av">L</div><span>Luca</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="title"><h3>I miei lavori</h3><p>Assegnati a te</p></div>
+              <div class="work after">
+                <div style="display:flex;justify-content:space-between"><strong>Suite 12 · AC rumoroso</strong><span class="pill warn">Assegnato</span></div>
+                <p style="margin:8px 0 0;color:var(--rs-text-2);font-size:.84rem">Cliente riposa · intervento silenzioso</p>
+                <div class="foot"><span>Apri intervento</span><span>›</span></div>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="navbtn"><span class="ico">☰</span>Operatività</div>
+              <div class="navbtn"><span class="ico">▦</span>Planning</div>
+              <div class="navbtn"><span class="ico">⌂</span>Home</div>
+              <div class="navbtn active"><span class="ico">✓</span>Task</div>
+              <div class="navbtn randai"><span class="ico">✦</span>RandAI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
