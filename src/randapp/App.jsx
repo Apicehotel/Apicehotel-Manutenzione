@@ -4,6 +4,7 @@ import { loadSession, saveSession, clearSession } from '../session.js'
 import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
 import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
+import { resolveLoginUser } from './login-resolve.js'
 import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
 
 const Shell = lazy(() => import('./Shell.jsx'))
@@ -73,7 +74,7 @@ function AdminGate({ onBack, onExit }) {
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} />
             </Field>
             {error && <p className="rs-error" role="alert">{error}</p>}
-            <Button variant="primary" size="lg" className="rs-btn--block" disabled={busy || pin.length < 6} data-testid="admin-gate-submit" iconRight="arrowRight">
+            <Button type="submit" variant="primary" size="lg" className="rs-btn--block" disabled={busy || pin.length < 6} aria-busy={busy || undefined} data-testid="admin-gate-submit" iconRight="arrowRight">
               {busy ? 'ACCESSO…' : 'ENTRA'}
             </Button>
           </form>
@@ -85,6 +86,8 @@ function AdminGate({ onBack, onExit }) {
 
 function Login({ onAuthenticated, onOpenSettings }) {
   const [directory, setDirectory] = useState([])
+  const [directoryReady, setDirectoryReady] = useState(false)
+  const [directoryFailed, setDirectoryFailed] = useState(false)
   const [query, setQuery] = useState('')
   const [matched, setMatched] = useState(null)
   const [pin, setPin] = useState('')
@@ -92,19 +95,53 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
   const [recovering, setRecovering] = useState(false)
-  useEffect(() => { loadDirectoryAll().then(setDirectory).catch(() => setDirectory([])) }, [])
+  useEffect(() => {
+    let active = true
+    loadDirectoryAll()
+      .then((rows) => {
+        if (!active) return
+        setDirectory(rows)
+        setDirectoryFailed(!rows.length)
+        setDirectoryReady(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setDirectory([])
+        setDirectoryFailed(true)
+        setDirectoryReady(true)
+      })
+    return () => { active = false }
+  }, [])
   const q = normalize(query)
-  const selectedUser = matched || directory.find((u) => normalize(u.name) === q) || null
+  const selectedUser = resolveLoginUser(directory, query, matched)
   const suggestions = useMemo(() => (
     q && !matched
       ? directory.filter((u) => normalize(u.name).startsWith(q)).slice(0, 6)
       : []
   ), [directory, q, matched])
 
+  const pickUser = (u) => {
+    setMatched(u)
+    setQuery(u.name)
+    setOpen(false)
+    setError('')
+  }
+
   const submit = async (e) => {
-    e.preventDefault(); setError('')
-    const user = selectedUser
-    if (!user) return setError('Seleziona un utente valido dalla lista')
+    e.preventDefault()
+    if (busy) return
+    setError('')
+    const user = resolveLoginUser(directory, query, matched)
+    if (!user) {
+      if (!directoryReady) return setError('Elenco utenti in caricamento… riprova tra un momento')
+      if (directoryFailed || !directory.length) return setError('Elenco utenti non disponibile. Controlla la connessione e riprova.')
+      return setError('Seleziona un utente valido dalla lista')
+    }
+    if (user !== matched) {
+      setMatched(user)
+      setQuery(user.name)
+      setOpen(false)
+    }
     if (pin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
     const hotels = Array.from(new Set(user.hotels || [])).filter(Boolean)
     if (!hotels.length) return setError('Nessuna struttura abilitata per questo utente')
@@ -120,7 +157,8 @@ function Login({ onAuthenticated, onOpenSettings }) {
       } catch (err) { lastError = err }
     }
     console.warn('Login RandApp fallito', lastError)
-    setError('Utente o PIN non validi')
+    const detail = String(lastError?.message || lastError?.context?.body?.error || '').trim()
+    setError(detail && /pin|utente|struttura|tentativi|temporaneo|sessione|configurato/i.test(detail) ? detail : 'Utente o PIN non validi')
     setBusy(false)
   }
 
@@ -138,11 +176,28 @@ function Login({ onAuthenticated, onOpenSettings }) {
                 <TextInput icon="user" value={query} placeholder="Scrivi il tuo nome" autoComplete="username" data-testid="login-user-input"
                   onFocus={() => setOpen(true)}
                   onBlur={() => setTimeout(() => setOpen(false), 150)}
-                  onChange={(e) => { setQuery(e.target.value); setMatched(null); setError(''); setOpen(true) }} />
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setQuery(next)
+                    setError('')
+                    const auto = resolveLoginUser(directory, next, null)
+                    if (auto && normalize(auto.name) === normalize(next)) {
+                      setMatched(auto)
+                      setOpen(false)
+                    } else {
+                      setMatched(null)
+                      setOpen(true)
+                    }
+                  }} />
                 {open && suggestions.length > 0 && (
                   <div className="rs-suggest" data-testid="login-suggestions">
                     {suggestions.map((u) => (
-                      <button type="button" key={u.id || u.name} onMouseDown={(ev) => { ev.preventDefault(); setMatched(u); setQuery(u.name); setOpen(false) }}>
+                      <button
+                        type="button"
+                        key={u.id || u.name}
+                        onMouseDown={(ev) => { ev.preventDefault(); pickUser(u) }}
+                        onClick={() => pickUser(u)}
+                      >
                         <b>{u.name}</b>
                       </button>
                     ))}
@@ -156,12 +211,12 @@ function Login({ onAuthenticated, onOpenSettings }) {
             </Field>
             {selectedUser && <button type="button" className="rs-textback" onClick={() => setRecovering(true)} data-testid="pin-forgot-link">PIN dimenticato?</button>}
             {error && <p className="rs-error" role="alert" data-testid="login-error">{error}</p>}
-            <Button variant="primary" size="lg" className="rs-btn--block" disabled={busy} data-testid="login-submit" iconRight="arrowRight">
+            <Button type="submit" variant="primary" size="lg" className="rs-btn--block" disabled={busy} aria-busy={busy || undefined} data-testid="login-submit" iconRight="arrowRight">
               {busy ? 'ACCESSO…' : 'ACCEDI'}
             </Button>
           </form>
           <div className="rs-divider"><span>oppure</span></div>
-          <button className="rs-settings-link" onClick={onOpenSettings} data-testid="open-settings-link">
+          <button type="button" className="rs-settings-link" onClick={onOpenSettings} data-testid="open-settings-link">
             <Icon name="gear" />
             <span><b>Impostazioni</b><small>Configura l'app e le preferenze</small></span>
             <i><Icon name="chevronRight" /></i>

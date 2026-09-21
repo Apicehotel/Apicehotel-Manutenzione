@@ -27,4 +27,6 @@ test('login reference keeps authentication behavior unchanged', async () => {
   assert.match(app, /loginWithPin\(\{ hotelId, userId: user\.legacy_id \|\| user\.id, pin \}\)/)
   assert.match(app, /if \(pin\.length !== 4\)/)
   assert.match(app, /loadDirectoryAll\(\)/)
+  assert.match(app, /resolveLoginUser\(/)
+  assert.match(app, /type="submit"/)
 })

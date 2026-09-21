@@ -15,7 +15,14 @@ async function setReturnedSession(data) {
   if (error || !result?.session) throw error || new Error('Impossibile impostare la sessione Supabase')
   return result.session
 }
-export async function loginWithPin({ hotelId, userId, pin }) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-auth', { body: { hotel_id: hotelId, user_id: userId, pin } }); if (error) throw error; const session = await setReturnedSession(data); return { ...session, user: data?.user || session.user } }
+export async function loginWithPin({ hotelId, userId, pin }) {
+  if (!supabase) throw new Error('Supabase non configurato')
+  const { data, error } = await supabase.functions.invoke('pin-auth', { body: { hotel_id: hotelId, user_id: userId, pin } })
+  if (data?.error) throw new Error(String(data.error))
+  if (error) throw error
+  const session = await setReturnedSession(data)
+  return { ...session, user: data?.user || session.user }
+}
 export async function loginAdmin(pin) { assertSensitiveActionOnline('L’accesso amministratore'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-gate', { body: { pin } }); if (error) throw error; return setReturnedSession(data) }
 export async function changeOwnPin({ currentPin, newPin }) { assertSensitiveActionOnline('Il cambio PIN'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('user-pin', { body: { current_pin: currentPin, new_pin: newPin } }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 export async function requestPinRecovery({ hotelId, userId }) { assertSensitiveActionOnline('Il recupero PIN'); if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('pin-recovery', { body: { action: 'request', hotel_id: hotelId, user_id: userId } }); if (error) throw error; if (data?.enabled === false) throw new Error('Recupero PIN via email non ancora configurato'); if (data?.error) throw new Error(data.error); return data }
