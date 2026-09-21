@@ -6,4 +6,4 @@
 - [DONE] T004 Bind new standards into the existing RandUI v1 design contract without changing `RANDUI_VERSION`. Evidence: `src/randapp/randui/design-contract.js`.
 - [DONE] T005 Add anti-regression tests and zombie guard. Evidence: `test/randui-standardization-v1.test.js`.
 - [DONE] T006 Document ownership, external-tool boundaries and migration policy. Evidence: `docs/architecture/RANDUI_STANDARDIZATION_V1.md`.
-- [DOING] T007 Validate complete CI/Ocean/browser/device gates on the stacked consolidation branch. Evidence: PR checks on `cursor/close-non-wa-gaps-1e9a` (Sensori rebuild + high unify).
+- [DONE] T007 Validate complete CI/Ocean/browser/device gates on the stacked consolidation branch. Evidence: PR #323 checks on `cursor/close-non-wa-gaps-1e9a` (`build-test-e2e`, Ocean Deploy + Browser visual gate, guardrails) green at `a0de99c3`.
