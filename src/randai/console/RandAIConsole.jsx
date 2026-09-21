@@ -21,7 +21,7 @@ export default function RandAIConsole(){
     const { data:userData } = await supabase.auth.getUser()
     const user=userData?.user
     if(!user){ setAccess({loading:false,allowed:false,hotels:[],name:''}); return }
-    const { data:memberships } = await supabase.from('hotel_memberships').select('hotel_id,active,can_access_admin').eq('auth_user_id',user.id).eq('active',true).eq('can_access_admin',true)
+    const { data:memberships } = await supabase.from('hotel_memberships').select('hotel_id,active,can_access_admin,role').eq('auth_user_id',user.id).eq('active',true).eq('role','RandAI').eq('can_access_admin',true)
     const hotels=(memberships||[]).map((x)=>x.hotel_id).filter(Boolean)
     const { data:profile } = await supabase.from('profiles').select('display_name').eq('auth_user_id',user.id).maybeSingle()
     setAccess({loading:false,allowed:hotels.length>0,hotels,name:profile?.display_name||user.email||'Admin'})
