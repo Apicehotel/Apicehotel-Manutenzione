@@ -12,6 +12,8 @@ test('Task/MyWork uses lean hub fetches and always clears list loading', async (
   assert.match(view, /finally\s*\{\s*setListLoading\(false\)/)
   assert.doesNotMatch(view, /fetchIssues\(/)
   assert.doesNotMatch(view, /fetchPlanned\(/)
+  assert.doesNotMatch(view, /task-toggle-my-work/)
+  assert.doesNotMatch(view, /subscribeIssues/)
 })
 
 test('login submit is wired on both form submit and ACCEDI click', async () => {

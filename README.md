@@ -68,7 +68,7 @@ La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatame
 Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al centro).
 
 - **Operatività** = hub anteprima stile Planning: card **Segnalazioni** + **Interventi** (top 3 KPI ciascuna). **Niente Planning** qui.
-- **Task** = hub anteprima: card **Avvisi** + **Promemoria** + **I miei lavori** (top 3; i lavori personali restano sotto). **Niente Planning** qui.
+- **Task** = hub anteprima: card **Avvisi** + **Promemoria** (come Ops). Lista **I miei lavori** sotto, senza terza card. **Niente Planning** qui.
 - **Planning** (tab dedicato) = hub completo (lavori, sale, panoramica, calendario).
 - Ritmo condiviso `rs-ops-surface` / `rs-randui-choice` su Operatività, Task, Planning (owner: `visual-language.css` + `telegram-navigation.css`).
 - Titolo → contenuto senza banda vuota verticale: stack `align-content:start` / `grid-auto-rows:max-content`.
