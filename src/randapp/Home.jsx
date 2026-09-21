@@ -47,6 +47,10 @@ function roleLabel(user) {
   return role
 }
 
+function deskDayLabel(now = new Date()) {
+  return new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }).format(now)
+}
+
 export function buildPriorityItems({ user, openUrgents, openIssues, todayInterventions, reminders, weather }) {
   const rows = []
   if (canUser(user, 'urgent', 'view')) openUrgents.forEach((item) => rows.push({ id:`urgent-${item.id}`,score:100,tone:'high',icon:'warning',route:'urgent',eyebrow:'Allarme',title:item.message||item.title||item.location||'Richiesta urgente',meta:item.location||item.room||'Richiede attenzione immediata' }))
@@ -118,59 +122,163 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
     reminderDueToday,
   }),[user,planned,reminders,canInterventions,canReminders])
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
-  const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,7):priorities.slice(0,10)
+  const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,4):priorities.slice(0,8)
   const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
   const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null].filter(Boolean)
-  const quick=[
-    canCreateIssues?['new-issue','plus','Nuova segnalazione']:null,
+  const tools=[
+    canCreateIssues?['new-issue','plus','Nuova']:null,
+    canInterventions?['my-work','check','Miei']:null,
     canInterventions?['interventions','wrench','Interventi']:null,
-    canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','Housekeeping']:null,
+    canUrgent?['urgent','warning','Avvisi']:null,
+    canUser(user, 'housekeeping', 'view')?['housekeeping','housekeeping','HK']:null,
     canInventory?['inventory','package','Magazzino']:null,
-    canReminders?['reminders','bell','Promemoria']:null,
-  ].filter(Boolean).slice(0,4)
+    canReminders?['reminders','bell','Memo']:null,
+  ].filter(Boolean).slice(0,5)
   const setMode=(focus)=>{setFocusOnly(focus);writeFocus(focus)}
   const openPresenceTarget=()=>{ if(canUrgent) onNavigate?.('urgent') }
   const retrySync=()=>{ drainOfflineQueue().catch(()=>{}) }
+  const showDesk=canInterventions||canUrgent||canIssues
+  const presencePreview=presenceRows.slice(0,4)
+  const presenceMore=Math.max(0, presenceRows.length - presencePreview.length)
 
-  return <section className="rs-workhome" data-testid="home-view">
+  return <section className="rs-workhome rs-workhome--desk" data-testid="home-view">
     <header className="rs-workhome__hero">
-      <div><span className="rs-workhome__role">{roleLabel(user)}</span><h1>Ciao, {firstName(user?.name)}</h1><p>{hotel.name} · cosa richiede attenzione adesso</p></div>
+      <div>
+        <span className="rs-workhome__role">{roleLabel(user)} · Scrivania</span>
+        <h1>Ciao, {firstName(user?.name)}</h1>
+        <p>{hotel.name} · {deskDayLabel()} · il tuo banco operativo</p>
+      </div>
       <div className="rs-workhome__hero-actions">
         {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
         <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home"><span className="rs-workhome__view-label">Vista</span></Button>
       </div>
     </header>
     {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; puoi scegliere quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
-    {loading?<Spinner label="Preparo le priorità della giornata…"/>:<>
-      <div className="rs-workhome__stats" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
+    {loading?<Spinner label="Preparo la scrivania…"/>:<>
+      <div className="rs-workhome__stats rs-workhome__stats--strip" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
       {syncCard&&<button type="button" className={`rs-workhome__sync is-${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
-      {weatherCard&&<div className={`rs-workhome__weather is-${weatherCard.level}`} data-testid="weather-widget" role="status"><Icon name={weatherCard.level==='ok'?'thermometer':'warning'}/><span><strong>{weatherCard.title}</strong><small>{weatherCard.detail}</small></span></div>}
-      <div className="rs-workhome__sectionhead"><div><span>IN STRUTTURA</span><h2>Chi c&apos;è ora</h2></div><small>{presenceQuery.isLoading?'…':`${presenceRows.length} present${presenceRows.length===1?'e':'i'}${busyCount?` · ${busyCount} impegnat${busyCount===1?'o':'i'}`:''}`}</small></div>
-      <div className="rs-workhome__presence" data-testid="home-presence">
-        {presenceQuery.isLoading?<p className="rs-workhome__presence-empty">Controllo chi è in struttura…</p>:!presenceOk&&!presenceRows.length?<p className="rs-workhome__presence-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}.</p>:!presenceRows.length?<p className="rs-workhome__presence-empty">Nessun collega risulta in struttura.</p>:presenceRows.map((row)=><button key={row.id} type="button" className={`rs-workhome__colleague${row.busy?' is-busy':''}`} onClick={openPresenceTarget} disabled={!canUrgent} aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}><span className="rs-workhome__colleague-dot" data-busy={row.busy?'true':'false'} aria-hidden="true"/><span className="rs-workhome__colleague-body"><strong>{row.name}</strong><small>{row.detail}</small></span><Badge tone={row.busy?'waiting':'done'}>{row.busy?'Impegnato':'Libero'}</Badge></button>)}
-      </div>
-      <div className="rs-workhome__sectionhead"><div><span>PRIORITÀ</span><h2>Cosa fare adesso</h2></div><small>{visiblePriorities.length} attività rilevanti</small></div>
-      {visiblePriorities.length===0?<EmptyState icon="check" title="Nessuna priorità immediata">Non risultano attività urgenti o pianificate per adesso.</EmptyState>:<div className="rs-workhome__queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
-      {(canInterventions||canUrgent)&&<>
-        <div className="rs-workhome__sectionhead"><div><span>I MIEI LAVORI</span><h2>Assegnati a te</h2></div><small>{myWorkRows.length?`${myWorkRows.length} attivi`:'nessuno'}</small></div>
-        <div className="rs-workhome__mywork" data-testid="home-my-work">
-          {!myWorkRows.length?<p className="rs-workhome__presence-empty">Nessun lavoro assegnato a te adesso.</p>:myWorkRows.map((row)=><button key={row.id} type="button" className="rs-workhome__mywork-row" onClick={()=>onNavigate?.(row.route)}><span className="rs-workhome__taskicon"><Icon name={row.kind==='urgent'?'warning':'wrench'}/></span><span className="rs-workhome__colleague-body"><strong>{row.title}</strong><small>{row.meta}</small></span><Icon name="chevronRight"/></button>)}
-          {canInterventions&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('my-work')}>Apri i miei lavori</button>}
+
+      {showDesk&&<div className="rs-workhome__desk" data-testid="home-desk">
+        <div className="rs-workhome__desk-head">
+          <div>
+            <span>SUL BANCO</span>
+            <h2>La tua scrivania</h2>
+          </div>
+          {weatherCard&&<div className={`rs-workhome__desk-meteo is-${weatherCard.level}`} data-testid="weather-widget" role="status">
+            <Icon name={weatherCard.level==='ok'?'thermometer':'warning'}/>
+            <small>{weatherCard.detail}</small>
+          </div>}
         </div>
-      </>}
-      {nextCommitment&&<>
-        <div className="rs-workhome__sectionhead"><div><span>PROSSIMO</span><h2>Prossimo impegno</h2></div></div>
-        <button type="button" className="rs-workhome__next" data-testid="home-next-commitment" onClick={()=>onNavigate?.(nextCommitment.route)}>
-          <span className="rs-workhome__taskicon"><Icon name={nextCommitment.kind==='promemoria'?'bell':'wrench'}/></span>
-          <span className="rs-workhome__colleague-body"><small>{nextCommitment.eyebrow}</small><strong>{nextCommitment.title}</strong><span>{nextCommitment.meta}</span></span>
-          <Icon name="chevronRight"/>
+
+        <button
+          type="button"
+          className={`rs-workhome__desk-next${nextCommitment?'':' is-empty'}`}
+          data-testid={nextCommitment?'home-next-commitment':'home-next-empty'}
+          onClick={()=>nextCommitment&&onNavigate?.(nextCommitment.route)}
+          disabled={!nextCommitment}
+        >
+          <span className="rs-workhome__desk-kicker">Prossimo</span>
+          {nextCommitment?(
+            <>
+              <strong>{nextCommitment.title}</strong>
+              <small>{nextCommitment.meta}</small>
+            </>
+          ):(
+            <>
+              <strong>Nessun impegno orario</strong>
+              <small>Quando arriva un intervento o un memo, compare qui</small>
+            </>
+          )}
         </button>
-      </>}
-      {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>}
-      {!!quick.length&&<>
-        <div className="rs-workhome__sectionhead"><div><span>SCORCIATOIE</span><h2>Vai al lavoro</h2></div></div>
-        <div className="rs-workhome__quick" data-testid="home-shortcuts">{quick.map(([route,icon,label])=><button key={route} type="button" onClick={()=>onNavigate?.(route)}><Icon name={icon}/><span>{label}</span><Icon name="chevronRight"/></button>)}</div>
-      </>}
+
+        <div className="rs-workhome__desk-grid">
+          <section className="rs-workhome__desk-pane" data-testid="home-my-work" aria-label="I tuoi lavori">
+            <div className="rs-workhome__desk-panehead">
+              <strong>I tuoi</strong>
+              <small>{myWorkRows.length?`${myWorkRows.length} attivi`:'libero'}</small>
+            </div>
+            {!myWorkRows.length?(
+              <p className="rs-workhome__desk-empty">
+                {canIssues&&openIssues.length
+                  ? `${openIssues.length} segnalazion${openIssues.length===1?'e':'i'} in struttura`
+                  : 'Niente assegnato a te'}
+              </p>
+            ):(
+              <ul className="rs-workhome__desk-list">
+                {myWorkRows.map((row)=>(
+                  <li key={row.id}>
+                    <button type="button" onClick={()=>onNavigate?.(row.route)}>
+                      <Icon name={row.kind==='urgent'?'warning':'wrench'}/>
+                      <span>
+                        <strong>{row.title}</strong>
+                        <small>{row.meta}</small>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="rs-workhome__you-actions">
+              {canInterventions&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('my-work')}>Task</button>}
+              {canIssues&&!myWorkRows.length&&openIssues.length>0&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('issues')}>Segnalazioni</button>}
+            </div>
+          </section>
+
+          <section className="rs-workhome__desk-pane" data-testid="home-presence" aria-label="Chi c'è in struttura">
+            <div className="rs-workhome__desk-panehead">
+              <strong>Team</strong>
+              <small>{presenceQuery.isLoading?'…':`${presenceRows.length} · ${busyCount} impegnati`}</small>
+            </div>
+            {presenceQuery.isLoading?(
+              <p className="rs-workhome__desk-empty">Controllo presenza…</p>
+            ):!presenceOk&&!presenceRows.length?(
+              <p className="rs-workhome__desk-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}</p>
+            ):!presenceRows.length?(
+              <p className="rs-workhome__desk-empty">Nessuno in struttura</p>
+            ):(
+              <div className="rs-workhome__desk-team">
+                {presencePreview.map((row)=>(
+                  <button
+                    key={row.id}
+                    type="button"
+                    className={`rs-workhome__desk-chip${row.busy?' is-busy':''}`}
+                    onClick={openPresenceTarget}
+                    disabled={!canUrgent}
+                    aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}
+                  >
+                    <span className="rs-workhome__colleague-dot" data-busy={row.busy?'true':'false'} aria-hidden="true"/>
+                    <span>
+                      <strong>{row.name.split(' ')[0]}</strong>
+                      <small>{row.busy?'Impegnato':'Libero'}</small>
+                    </span>
+                  </button>
+                ))}
+                {presenceMore>0&&<span className="rs-workhome__desk-more">+{presenceMore}</span>}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>}
+
+      {!!tools.length&&(
+        <div className="rs-workhome__tools" data-testid="home-shortcuts">
+          <div className="rs-workhome__sectionhead"><div><span>ATTREZZI</span><h2>A portata di mano</h2></div></div>
+          <div className="rs-workhome__toolrow">
+            {tools.map(([route,icon,label])=>(
+              <button key={route} type="button" onClick={()=>onNavigate?.(route)}>
+                <Icon name={icon}/>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="rs-workhome__tray">
+        <div className="rs-workhome__sectionhead"><div><span>VASSOIO</span><h2>Da smaltire</h2></div><small>{visiblePriorities.length} in coda</small></div>
+        {visiblePriorities.length===0?<EmptyState icon="check" title="Vassoio vuoto">Niente urgente da smaltire adesso.</EmptyState>:<div className="rs-workhome__queue" data-testid="home-priority-queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
+        {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>}
+      </div>
     </>}
   </section>
 }
