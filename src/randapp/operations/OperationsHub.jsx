@@ -1,47 +1,83 @@
-import { Icon } from '../ui.jsx'
-import { PageTitle, Stack, Surface } from '../randui/visual-primitives.jsx'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { fetchIssues, subscribeIssues } from '../../issues-data.js'
+import { fetchPlanned, subscribePlanned } from '../../planned-data.js'
+import { Spinner } from '../ui.jsx'
+import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
+import HubChoice from './HubChoice.jsx'
+import { interventionPreviewMetrics, issuePreviewMetrics } from './hub-preview-stats.js'
 
-function DestinationRow({ icon, title, description, onClick, testId }) {
-  return (
-    <button type="button" className="rs-telegram-destination" onClick={onClick} data-testid={testId}>
-      <span className="rs-telegram-destination__icon" aria-hidden="true"><Icon name={icon} /></span>
-      <span className="rs-telegram-destination__copy">
-        <b>{title}</b>
-        <small>{description}</small>
-      </span>
-      <span className="rs-telegram-destination__chevron" aria-hidden="true"><Icon name="chevronRight" /></span>
-    </button>
-  )
-}
+export default function OperationsHub({ hotel, canIssues, canInterventions, onOpen }) {
+  const [issues, setIssues] = useState([])
+  const [planned, setPlanned] = useState([])
+  const [loading, setLoading] = useState(Boolean(canIssues || canInterventions))
 
-export default function OperationsHub({ canIssues, canInterventions, onOpen }) {
+  const load = useCallback(async () => {
+    if (!hotel?.id || (!canIssues && !canInterventions)) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const [issuesRes, plannedRes] = await Promise.all([
+        canIssues ? fetchIssues(hotel.id) : Promise.resolve({ issues: [] }),
+        canInterventions ? fetchPlanned(hotel.id) : Promise.resolve({ items: [] }),
+      ])
+      setIssues(issuesRes.issues || issuesRes.items || [])
+      setPlanned(plannedRes.items || [])
+    } catch (error) {
+      console.warn('Anteprima Operatività non disponibile', error)
+      setIssues([])
+      setPlanned([])
+    } finally {
+      setLoading(false)
+    }
+  }, [hotel?.id, canIssues, canInterventions])
+
+  useEffect(() => {
+    load()
+    const offs = []
+    if (canIssues && hotel?.id) offs.push(subscribeIssues(hotel.id, load))
+    if (canInterventions && hotel?.id) offs.push(subscribePlanned(hotel.id, load))
+    return () => offs.forEach((off) => off?.())
+  }, [hotel?.id, canIssues, canInterventions, load])
+
+  const issueMetrics = useMemo(() => issuePreviewMetrics(issues), [issues])
+  const interventionMetrics = useMemo(() => interventionPreviewMetrics(planned), [planned])
+  const columns = canIssues && canInterventions ? 2 : 1
+
   return (
-    <Stack gap="sm" className="rs-operations-hub rs-ops-surface">
+    <Stack gap="sm" className="rs-operations-hub rs-ops-surface" data-testid="operations-hub">
       <PageTitle
         title="Operatività"
         subtitle="Segnalazioni e interventi adesso."
       />
-      <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
-        {canIssues && (
-          <DestinationRow
-            icon="issues"
-            title="Segnalazioni"
-            description="Apri, filtra e crea segnalazioni."
-            onClick={() => onOpen('issues')}
-            testId="operations-open-issues"
-          />
-        )}
-        {canInterventions && (
-          <DestinationRow
-            icon="wrench"
-            title="Interventi"
-            description="Assegnazioni, stato lavori e risoluzioni."
-            onClick={() => onOpen('interventions')}
-            testId="operations-open-interventions"
-          />
-        )}
-      </Surface>
-      <p className="rs-telegram-hint">Il menu completo resta dal profilo in alto. Ogni voce rispetta i permessi del ruolo.</p>
+      {loading ? (
+        <Spinner label="Carico anteprima…" />
+      ) : (
+        <Grid columns={columns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
+          {canIssues && (
+            <HubChoice
+              icon="issues"
+              title="Segnalazioni"
+              kind="issues"
+              metrics={issueMetrics}
+              onClick={() => onOpen('issues')}
+              testId="operations-open-issues"
+            />
+          )}
+          {canInterventions && (
+            <HubChoice
+              icon="wrench"
+              title="Interventi"
+              kind="interventions"
+              metrics={interventionMetrics}
+              onClick={() => onOpen('interventions')}
+              testId="operations-open-interventions"
+            />
+          )}
+        </Grid>
+      )}
+      <p className="rs-telegram-hint">Tap sulla card per aprire l’elenco completo. I tre numeri sono solo anteprima.</p>
     </Stack>
   )
 }

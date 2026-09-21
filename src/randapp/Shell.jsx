@@ -374,7 +374,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
     let content = null
     if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'operations') content = <OperationsHub canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
+    if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
     if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
@@ -382,7 +382,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} standalone />
-    if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} />
+    if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
     if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
@@ -431,6 +431,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const isBottomActive = (item) => {
     if (settings !== null || item.href) return false
     if (item.id === 'operations') return ['operations', 'issues', 'interventions'].includes(view)
+    if (item.id === 'my-work') return ['my-work', 'urgent', 'reminders'].includes(view)
     if (item.id === 'planning-work') return view === 'planning-work' || view === 'planning-sale'
     return view === item.id
   }

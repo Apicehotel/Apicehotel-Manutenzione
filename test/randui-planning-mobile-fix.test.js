@@ -41,9 +41,27 @@ test('Operatività and Task do not embed Planning shortcuts', () => {
   assert.doesNotMatch(visual, /\.rs-planning-counts/)
   assert.match(operations, /rs-ops-surface/)
   assert.match(operations, /Segnalazioni e interventi adesso\./)
+  assert.match(operations, /HubChoice/)
+  assert.match(operations, /operations-open-issues/)
+  assert.match(operations, /operations-open-interventions/)
   assert.match(myWork, /eyebrow="Task"/)
+  assert.match(myWork, /title="Task"/)
+  assert.match(myWork, /task-open-urgent/)
+  assert.match(myWork, /task-open-reminders/)
+  assert.match(myWork, /task-toggle-my-work/)
   assert.match(myWork, /rs-ops-toolbar/)
   assert.match(visual, /\.rs-ops-surface/)
+})
+
+test('Operatività and Task hubs use Planning-style preview cards', () => {
+  const hubChoice = read('../src/randapp/operations/HubChoice.jsx')
+  assert.match(hubChoice, /rs-randui-choice/)
+  assert.match(hubChoice, /Metric/)
+  assert.match(operations, /rs-ops-choice-grid|rs-planning-choice-grid/)
+  assert.match(myWork, /rs-ops-choice-grid|rs-planning-choice-grid/)
+  assert.match(myWork, /Avvisi/)
+  assert.match(myWork, /Promemoria/)
+  assert.match(myWork, /I miei lavori/)
 })
 
 test('Operatività and Task flush title above content without stretched dead space', () => {
