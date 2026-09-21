@@ -32,7 +32,8 @@
 .rs-reminder-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 @media(max-width:560px){
   [data-testid='reminders-view']{padding-inline:2px}
-  .rs-reminder-head{align-items:center}
+  .rs-reminder-head{align-items:flex-start;flex-direction:column}
+  .rs-reminder-head > :first-child{flex:0 0 auto;width:100%;min-height:0}
   .rs-reminder-head p{font-size:.82rem;line-height:1.35}
   .rs-reminder-form-card{padding:14px!important}
   .rs-reminder-form{gap:15px}
