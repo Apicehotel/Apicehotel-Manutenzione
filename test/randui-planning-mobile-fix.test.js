@@ -64,6 +64,24 @@ test('Operatività and Task hubs use Planning-style preview cards', () => {
   assert.match(myWork, /I miei lavori/)
 })
 
+test('Operatività and Task hubs paint cards without blocking on full photo hydration', () => {
+  assert.match(operations, /fetchIssuesForHub/)
+  assert.match(operations, /fetchPlannedForHub/)
+  assert.match(operations, /peekCachedIssues/)
+  assert.doesNotMatch(operations, /Spinner/)
+  assert.match(myWork, /fetchIssuesForHub/)
+  assert.match(myWork, /fetchPlannedForHub/)
+  assert.doesNotMatch(myWork, /fetchIssues\(/)
+  assert.doesNotMatch(myWork, /fetchPlanned\(/)
+  const issuesData = read('../src/issues-data.js')
+  const plannedData = read('../src/planned-data.js')
+  assert.match(issuesData, /fetchIssuesForHub/)
+  assert.match(issuesData, /HUB_ISSUE_COLUMNS/)
+  assert.doesNotMatch(issuesData, /fetchIssuesForHub[\s\S]*hydrateIssuePhotos/)
+  assert.match(plannedData, /fetchPlannedForHub/)
+  assert.doesNotMatch(plannedData, /fetchPlannedForHub[\s\S]*hydratePlannedPhotos/)
+})
+
 test('Operatività and Task flush title above content without stretched dead space', () => {
   assert.match(visual, /\.rs-ops-surface\s*\{[^}]*align-content:\s*start;/s)
   assert.match(visual, /\.rs-operations-hub\.rs-ops-surface[\s\S]*?grid-auto-rows:\s*max-content;/s)
