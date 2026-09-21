@@ -19,15 +19,16 @@ test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   assert.match(architecture, /RandGateway.*Tool Gateway.*RandSecure.*HITL.*Action Gateway.*RandAudit/s)
 })
 
-test('Phase 0 separates the complete RandAI page from the quick header popup', () => {
+test('Phase 0 keeps Control Center at /randai while primary nav opens the chat', () => {
   const main = read('src/main.jsx')
   const navigation = read('src/randapp/shell-navigation.js')
   const shell = read('src/randapp/Shell.jsx')
 
   assert.match(main, /randaiConsoleMatch/)
   assert.match(main, /<RandAIProtectedRoute \/>/)
-  assert.match(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
-  assert.match(shell, /window\.location\.assign\(item\.href\)/)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/)
+  assert.doesNotMatch(navigation, /href:\s*'\/randai'/)
+  assert.match(shell, /if \(item\.id === 'randai'\)/)
   assert.match(shell, /data-testid="header-randai"/)
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
 })

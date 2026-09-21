@@ -14,7 +14,8 @@ test('mobile primary navigation keeps Home central and RandAI far right', () => 
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /randai:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
-  assert.match(navigation, /id:\s*'randai'.*href:\s*'\/randai'/s)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/)
+  assert.doesNotMatch(navigation, /href:\s*'\/randai'/)
   assert.doesNotMatch(navigation, /label:\s*'Altro'/)
   assert.match(css, /data-slot='3'/)
   assert.match(css, /data-slot='5'/)
@@ -43,11 +44,12 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('RandAI navbar opens the complete page while the header owns the quick popup', () => {
-  assert.match(shell, /if \(item\.href\)/)
-  assert.match(shell, /window\.location\.assign\(item\.href\)/)
-  assert.match(shell, /data-testid="header-randai"/)
+test('RandAI navbar and header both open the in-app chat; Control Center stays at /randai', () => {
+  assert.match(shell, /if \(item\.id === 'randai'\)/)
   assert.match(shell, /new CustomEvent\('randai-toggle'\)/)
+  assert.match(shell, /data-testid="header-randai"/)
+  assert.match(main, /randaiConsoleMatch/)
+  assert.match(main, /<RandAIProtectedRoute \/>/)
   assert.match(css, /rs-header__randai--desktop/)
 })
 
