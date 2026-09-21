@@ -529,7 +529,8 @@ a { color: var(--rs-cyan); }
   margin-top: 0;
 }
 
-.rs-page-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 4px 4px; }
+.rs-page-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 2px 4px 4px; }
+.rs-page-title > div:first-child { min-width: 0; flex: 1 1 auto; min-height: 0; }
 .rs-page-title h1 { margin: 0; font-family: 'Sora'; font-size: 1.45rem; }
 .rs-page-title p { margin: 2px 0 0; color: var(--rs-text-2); font-size: .84rem; }
 

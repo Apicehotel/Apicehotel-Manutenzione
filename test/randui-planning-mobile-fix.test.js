@@ -51,7 +51,7 @@ test('Operatività and Task flush title above content without stretched dead spa
   assert.match(visual, /\.rs-operations-hub\.rs-ops-surface[\s\S]*?grid-auto-rows:\s*max-content;/s)
   assert.match(visual, /\.rs-my-work\.rs-ops-surface[\s\S]*?align-content:\s*start;/s)
   assert.match(visual, /\.rs-ops-surface\s*>\s*\.rs-page-title[\s\S]*?margin:\s*0;/s)
-  // Mobile column titles must not keep the desktop 280px flex-basis (it becomes height).
+  // Mobile column titles must not keep a large px flex-basis (it becomes height).
   assert.match(
     visual,
     /@media \(max-width:\s*767px\)[\s\S]*\.rs-randui-local-header__copy[\s\S]*?flex:\s*0\s+0\s+auto;/s,
@@ -61,6 +61,22 @@ test('Operatività and Task flush title above content without stretched dead spa
     completion,
     /@media \(max-width:\s*767px\)[\s\S]*\.rs-randui-local-header__copy[\s\S]*?flex:\s*0\s+0\s+auto;/s,
   )
+})
+
+test('page title flex-basis never uses a large px value that becomes height in column mode', () => {
+  const foundation = read('../src/randapp/randui/foundation.css')
+  const shell = read('../src/randapp/shell.css')
+  const reminders = read('../src/randapp/reminders/reminders.css')
+  // Root invariant: no 280px (or similar) flex-basis on title copy/heading.
+  assert.doesNotMatch(visual, /flex:\s*1\s+1\s+280px/)
+  assert.doesNotMatch(foundation, /flex:\s*1\s+1\s+280px/)
+  assert.match(visual, /\.rs-randui-local-header__copy[\s\S]*?flex:\s*1\s+1\s+auto;/s)
+  assert.match(foundation, /\.rs-randui-page__heading\s*\{[^}]*flex:\s*1\s+1\s+auto;/s)
+  assert.match(shell, /\.rs-page-title\s*\{[^}]*align-items:\s*flex-start;/s)
+  assert.match(shell, /\.rs-page-title\s*>\s*div:first-child\s*\{[^}]*flex:\s*1\s+1\s+auto;/s)
+  assert.match(foundation, /@media \(max-width:\s*767px\)[\s\S]*\.rs-randui-page__heading\s*\{[\s\S]*?flex:\s*0\s+0\s+auto;/s)
+  assert.match(reminders, /\.rs-reminder-head\s*\{[^}]*align-items:\s*flex-start;/s)
+  assert.match(reminders, /@media\(max-width:560px\)[\s\S]*\.rs-reminder-head\s*>\s*:first-child\s*\{[^}]*flex:\s*0\s+0\s+auto;/s)
 })
 
 test('notification onboarding no longer traps iPhone users over page content', () => {

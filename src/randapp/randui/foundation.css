@@ -56,7 +56,12 @@
   gap: var(--rand-space-4);
 }
 
-.rs-randui-page__heading { flex: 1 1 280px; }
+.rs-randui-page__heading {
+  min-width: 0;
+  /* Same invariant as local page titles: px flex-basis must not become height
+     when the header wraps/stacks on narrow viewports. */
+  flex: 1 1 auto;
+}
 .rs-randui-page__heading h1 {
   margin: 0;
   font-family: var(--rand-font-display);
@@ -206,7 +211,16 @@
 }
 
 @media (max-width: 767px) {
-  .rs-randui-page__header { gap: var(--rand-space-3); }
+  .rs-randui-page__header {
+    gap: var(--rand-space-3);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rs-randui-page__heading {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+  }
   .rs-randui-page__actions { width: 100%; margin-left: 0; }
   .rs-randui-page__actions > * { flex: 1 1 140px; }
   .rs-randui-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
