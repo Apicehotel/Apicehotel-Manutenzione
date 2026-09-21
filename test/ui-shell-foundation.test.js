@@ -55,6 +55,15 @@ test('top safe area has one owner so iOS does not double the notch clearance', a
   assert.doesNotMatch(css, /\.rs-app\s*\{\s*padding-top:\s*var\(--rs-adaptive-safe-top\)/)
 })
 
+test('phone and tablet pin the operational header while the body scrolls', async () => {
+  const css = await read('src/randapp/adaptive-layout.css')
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app\s*\{[\s\S]*height:\s*100dvh/)
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app\s*\{[\s\S]*overflow:\s*hidden/)
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app(?:,\s*\.rs-app\.rs-app--with-side)?\s*\{[\s\S]*display:\s*flex/)
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-content\s*\{[\s\S]*overflow-y:\s*auto/)
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-header\s*\{[\s\S]*flex:\s*0 0 auto/)
+})
+
 test('native inset bridge writes and clears CSS variables for a future Android wrapper', () => {
   const values = new Map()
   const previousDocument = global.document
