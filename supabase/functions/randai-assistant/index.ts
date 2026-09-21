@@ -57,14 +57,19 @@ function buildSuggestion({ kind, id, title, summary, trust, actionable, nextActi
 async function verifyOpenAI() {
   const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) return { ok: false, error: "openai_secret_missing" };
+  const model = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4.1-mini";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-5.6-luna", input: "Reply only with OK.", max_output_tokens: 16 }),
+    body: JSON.stringify({ model, input: "Reply only with OK.", max_output_tokens: 16 }),
   });
-  if (!response.ok) { const detail = await response.json().catch(() => ({})); console.error("OpenAI verification failed", response.status, detail?.error?.code || detail?.error?.type || "unknown"); return { ok: false, error: "openai_verification_failed", status: response.status }; }
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    console.error("OpenAI verification failed", response.status, detail?.error?.code || detail?.error?.type || "unknown");
+    return { ok: false, error: "openai_verification_failed", status: response.status };
+  }
   const data = await response.json();
-  return { ok: true, model: data.model || "gpt-5.6-luna", responseId: data.id || null };
+  return { ok: true, model: data.model || model, responseId: data.id || null };
 }
 
 async function resolveHvacDiagnostic(hotelId: string, query: string) {
@@ -94,22 +99,24 @@ async function resolveHvacDiagnostic(hotelId: string, query: string) {
 
 async function resolveVerifiedResource(hotelId: string, context: any) {
   if (context?.resource?.type !== "issue" || !context.resource.id) return null;
-  const { data, error } = await admin.from("maintenance_issues")
-    .select("id,location,category,priority,status,description,room_status")
+  // Canonical operational issues live in segnalazioni (same table Action Gateway mutates).
+  const { data, error } = await admin.from("segnalazioni")
+    .select("id,camera,categoria,urgenza,stato,note,stato_camera")
     .eq("hotel_id", hotelId)
     .eq("id", context.resource.id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   return {
     type: "issue",
     id: data.id,
-    location: data.location || null,
-    category: data.category || null,
-    urgency: data.priority || null,
-    status: data.status || null,
-    description: data.description || null,
-    roomStatus: data.room_status || null,
+    location: data.camera || null,
+    category: data.categoria || null,
+    urgency: data.urgenza || null,
+    status: data.stato || null,
+    description: data.note || null,
+    roomStatus: data.stato_camera || null,
   };
 }
 
@@ -160,7 +167,7 @@ Deno.serve(async (req: Request) => {
     const [proceduresResult, equipmentResult, issuesResult, interventionsResult, documentsResult] = await Promise.all([
       admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
       admin.from("randai_equipment").select("id,name,category,location,description,randai_equipment_serves(served_area,note)").eq("hotel_id", hotelId).eq("active", true),
-      admin.from("maintenance_issues").select("id,location,category,description,status,completion_note,completed_at,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending:false }).limit(20),
+      admin.from("segnalazioni").select("id,camera,categoria,note,stato,nota_completamento,completato_il,updated_at").eq("hotel_id", hotelId).is("deleted_at", null).order("updated_at", { ascending:false }).limit(20),
       admin.from("interventi").select("id,camera,categoria,note,stato,sezione,pezzo_nome,pezzo_sostituito,completato_il,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending:false }).limit(20),
       admin.rpc("randai_search_document_chunks", { p_hotel_id:hotelId, p_query:effectiveQuery, p_limit:5 }),
     ]);
@@ -178,7 +185,7 @@ Deno.serve(async (req: Request) => {
     if (!procedure && documents.length === 0 && sensors.length === 0 && !hvacDiagnostic && equipment.length === 0) return json({ ok:true, found:false, reason:"no_approved_knowledge", intent, section, resolvedQuery: effectiveQuery, operationalContext });
 
     const historyPool=[...((issuesResult.error?[]:issuesResult.data)||[]).map((item:any)=>({...item,__kind:"segnalazione"})),...((interventionsResult.error?[]:interventionsResult.data)||[]).map((item:any)=>({...item,__kind:"intervento"}))];
-    const history=intent === "location" ? [] : historyPool.map((item:any)=>({item,score:scoreHistory(item,effectiveQuery,procedure)})).filter((entry:any)=>entry.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3).map(({item}:any)=>({id:item.id,kind:item.__kind,location:item.location||item.camera||item.sezione||"",category:item.category||item.categoria||"",text:item.completion_note||item.note||item.description||"",status:item.status||item.stato||"",date:item.completed_at||item.completato_il||item.updated_at||null}));
+    const history=intent === "location" ? [] : historyPool.map((item:any)=>({item,score:scoreHistory(item,effectiveQuery,procedure)})).filter((entry:any)=>entry.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3).map(({item}:any)=>({id:item.id,kind:item.__kind,location:item.location||item.camera||item.sezione||"",category:item.category||item.categoria||"",text:item.nota_completamento||item.completion_note||item.note||item.description||"",status:item.status||item.stato||"",date:item.completato_il||item.completed_at||item.updated_at||null}));
     const source=intent === "location" && equipment.length ? "equipment_location" : hvacDiagnostic?"live_hvac_diagnostic":procedure?"approved_internal_knowledge":documents.length>0?"approved_documentation":"live_sensor_context";
     const suggestions = [
       ...(procedure ? [buildSuggestion({ kind: "procedure", id: procedure.id, title: procedure.title, summary: procedure.summary, trust: "APPROVED", actionable: true, nextAction: Array.isArray(procedure.steps) ? procedure.steps[0] : "Apri la procedura e verifica il primo passaggio.", provenance: { kind: "maintenance_procedure", id: procedure.id, version: procedure.version }, caution: procedure.caution })] : []),

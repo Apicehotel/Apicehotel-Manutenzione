@@ -34,11 +34,24 @@ function taskSummary(row: any) {
 }
 
 async function getIssue(hotelId: string, issueId: string) {
-  const { data, error } = await admin.from("maintenance_issues")
-    .select("id,hotel_id,location,category,priority,status,description,completion_note,completed_at,updated_at")
-    .eq("hotel_id", hotelId).eq("id", issueId).maybeSingle();
+  // Canonical operational issues: same table UI + Action Gateway use.
+  const { data, error } = await admin.from("segnalazioni")
+    .select("id,hotel_id,camera,categoria,urgenza,stato,note,nota_completamento,completato_il,updated_at")
+    .eq("hotel_id", hotelId).eq("id", issueId).is("deleted_at", null).maybeSingle();
   if (error) throw error;
-  return data;
+  if (!data) return null;
+  return {
+    id: data.id,
+    hotel_id: data.hotel_id,
+    location: data.camera || null,
+    category: data.categoria || null,
+    priority: data.urgenza || null,
+    status: data.stato || null,
+    description: data.note || null,
+    completion_note: data.nota_completamento || null,
+    completed_at: data.completato_il || null,
+    updated_at: data.updated_at || null,
+  };
 }
 
 async function getActiveTask(hotelId: string, issueId: string) {

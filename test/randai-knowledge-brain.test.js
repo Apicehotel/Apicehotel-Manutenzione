@@ -23,10 +23,12 @@ test('RandAI uses a protected hotel-scoped brain with memory sensors procedures 
   assert.match(edge, /\.eq\("hotel_id", hotelId\)/)
   assert.match(edge, /\.eq\("status", "approved"\)/)
   assert.match(edge, /randai_equipment_serves/)
-  assert.match(edge, /maintenance_issues/)
+  assert.match(edge, /from\("segnalazioni"\)/)
+  assert.doesNotMatch(edge, /from\("maintenance_issues"\)/)
   assert.match(edge, /interventi/)
   assert.match(edge, /randai_search_document_chunks/)
   assert.match(edge, /Promise\.all/)
+  assert.match(edge, /OPENAI_MODEL/)
 
   assert.match(assistant, /Memoria RandAI verificata/)
   assert.match(assistant, /Dati live impianto/)

@@ -71,7 +71,7 @@ export default function RandAIControlCenter() {
     const user = userData?.user
     if (!user) { setAccess({ loading: false, allowed: false, hotels: [], name: '' }); return }
     const [{ data: memberships }, { data: profile }] = await Promise.all([
-      supabase.from('hotel_memberships').select('hotel_id,active,can_access_admin').eq('auth_user_id', user.id).eq('active', true).eq('can_access_admin', true),
+      supabase.from('hotel_memberships').select('hotel_id,active,can_access_admin,role').eq('auth_user_id', user.id).eq('active', true).eq('role', 'RandAI').eq('can_access_admin', true),
       supabase.from('profiles').select('display_name').eq('auth_user_id', user.id).maybeSingle(),
     ])
     const hotels = (memberships || []).map((row) => row.hotel_id).filter(Boolean)
