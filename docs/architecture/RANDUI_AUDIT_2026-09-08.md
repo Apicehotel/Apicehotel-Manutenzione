@@ -11,9 +11,9 @@ Stato consolidato della revisione UI avviata dai test iPhone.
 - niente secondo design system: PageBoundary, template, Foundation e component registry restano canonici.
 
 ## Classificazione
-- **KEEP**: `plants`, `desktop-download`;
-- **REBUILD**: `temperature` (priorità critica);
-- **UNIFY**: le restanti 21 pagine, mantenendo workflow e logica ma allineando gabbia, spazi, densità e azioni.
+- **KEEP**: `plants`, `desktop-download`, `temperature` (rebuild Sensori chiuso: sezioni alert/offline/ok, stato prima del nome, cache last-known);
+- **REBUILD**: nessuno;
+- **UNIFY**: le restanti pagine, mantenendo workflow e logica ma allineando gabbia, spazi, densità e azioni.
 
 ## Correzioni già incluse
 - bottom bar: Operatività · Planning · Home · Task · RandAI per ruoli autorizzati;
@@ -23,8 +23,9 @@ Stato consolidato della revisione UI avviata dai test iPhone.
 - Planning sale `+` → Nuova attività sala;
 - bridge legacy Planning→intervento rimosso;
 - `layout-contract.js` e `layout-v2.css` introducono gabbia misurabile senza riscrivere le pagine;
-- Sensori usa riepilogo, priorità anomalie, stati espliciti e griglia responsive;
+- Sensori usa riepilogo, sezioni prioritarie, stati espliciti, cache offline e griglia responsive;
 - Impianti resta invariato come riferimento valido;
+- Magazzino / Rifornimenti / Housekeeping / Avvisi urgenti allineati a `rs-ops-surface` e gerarchia stato-prima;
 - `digitalocean-preview.yml` valida il PR head e lo porta su Ocean dopo i gate automatici.
 
 ## Vincoli futuri

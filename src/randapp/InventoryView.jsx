@@ -23,6 +23,7 @@ import {
 } from '../inventory-domain.js'
 import { canUser } from '../permissions.js'
 import { Badge, Button, Card, EmptyState, Field, Icon, Sheet, Spinner, TextInput } from './ui.jsx'
+import { PageTitle } from './randui/visual-primitives.jsx'
 import InventoryBlock2Panel from './InventoryBlock2Panel.jsx'
 import './inventory.css'
 
@@ -111,8 +112,109 @@ export default function InventoryView({ user, hotel }) {
   const reload = async () => { try { const [nextItems, nextCategories, nextLocations] = await Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)]); setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations) } finally { setLoading(false) } }
   useEffect(() => { setLoading(true); reload(); const unsubscribe = subscribeInventory(hotel.id, reload); return () => unsubscribe?.(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [hotel.id])
   const categoryOptions = useMemo(() => flattenInventoryTree(categories), [categories]); const lowCount = useMemo(() => items.filter((i) => inventoryStockStatus(i) !== 'ok').length, [items])
-  const filtered = useMemo(() => { const q = search.trim().toLocaleLowerCase('it'); return items.filter((i) => (category === 'all' || i.categoryId === category) && (!lowOnly || inventoryStockStatus(i) !== 'ok') && (!q || inventorySearchText(i).includes(q))) }, [items, search, category, lowOnly])
+  const filtered = useMemo(() => {
+    const q = search.trim().toLocaleLowerCase('it')
+    const rank = (item) => {
+      const status = inventoryStockStatus(item)
+      if (status === 'esaurito') return 0
+      if (status === 'sotto_scorta') return 1
+      return 2
+    }
+    return items
+      .filter((i) => (category === 'all' || i.categoryId === category) && (!lowOnly || inventoryStockStatus(i) !== 'ok') && (!q || inventorySearchText(i).includes(q)))
+      .sort((a, b) => rank(a) - rank(b) || String(a.name || '').localeCompare(String(b.name || ''), 'it'))
+  }, [items, search, category, lowOnly])
   const selected = items.find((i) => i.id === selectedId) || null
-  const create = async (draft) => { await createInventoryItem(hotel.id, draft); await reload() }; const createCategory = async (draft) => { await createInventoryCategory(hotel.id, draft); await reload() }; const createLocation = async (draft) => { await createInventoryLocation(hotel.id, draft); await reload() }; const adjust = async (id, delta, note, movementType) => { await adjustInventoryStock(id, delta, note, { movementType }); await reload() }
-  return <div className="rs-inventory" data-testid="inventory-view"><div className="rs-page-title"><div><h1>Magazzino</h1><p>{hotel.name}</p></div>{canCreate && <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>Articolo</Button>}</div><div className="rs-inventory-summary"><Card><small>ARTICOLI</small><strong>{items.length}</strong></Card><Card><small>CATEGORIE</small><strong>{categories.length}</strong></Card><Card className={lowCount ? 'is-low' : ''}><small>DA RIORDINARE</small><strong>{lowCount}</strong></Card></div><InventoryBlock2Panel user={user} hotel={hotel} items={items} locations={locations} onSelectItem={setSelectedId} onReload={reload} /><div className="rs-toolbar rs-inventory-toolbar"><TextInput icon="search" value={search} placeholder="Nome, codice, barcode, tag, modello…" onChange={(e) => setSearch(e.target.value)} /><div className="rs-inventory-toolbar-row"><select className="rs-select" value={category} onChange={(e) => setCategory(e.target.value)}><option value="all">Tutte le categorie</option>{categoryOptions.map((c) => <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth)}${c.name}`}</option>)}</select><button type="button" className={`rs-chip ${lowOnly ? 'active high' : ''}`} onClick={() => setLowOnly((v) => !v)}><Icon name="warning" /> Da riordinare{lowCount ? ` · ${lowCount}` : ''}</button>{canCreate && <button type="button" className="rs-chip" onClick={() => setCategoryOpen(true)}><Icon name="plus" /> Categoria</button>}</div></div>{loading ? <Spinner label="Carico il magazzino…" /> : filtered.length === 0 ? <EmptyState icon="package" title="Magazzino vuoto">{items.length ? 'Nessun articolo corrisponde ai filtri.' : 'Aggiungi il primo articolo del magazzino.'}</EmptyState> : <div className="rs-inventory-list">{filtered.map((item) => { const status = inventoryStockStatus(item); return <Card as="button" className={`rs-inventory-item ${status !== 'ok' ? 'is-low' : ''}`} key={item.id} onClick={() => canEdit && setSelectedId(item.id)}><InventoryPhoto path={item.photoPath} className="rs-inventory-item__photo" /><span className="rs-inventory-item__main"><span className="rs-inventory-item__top"><strong>{item.name}</strong>{status !== 'ok' && <Badge tone="high">{status === 'esaurito' ? 'Esaurito' : 'Scorta bassa'}</Badge>}</span><small>{item.category}{item.variantLabel ? ` · ${item.variantLabel}` : ''}{item.location ? ` · ${item.location}` : ''}</small></span><span className="rs-inventory-item__qty"><strong>{fmt(item.quantity)}</strong><small>{item.unit}</small></span>{canEdit && <Icon name="chevronRight" />}</Card> })}</div>}<NewItemSheet open={newOpen} categories={categories} locations={locations} onClose={() => setNewOpen(false)} onSave={create} onNewCategory={() => setCategoryOpen(true)} onNewLocation={() => setLocationOpen(true)} /><CategorySheet open={categoryOpen} categories={categories} onClose={() => setCategoryOpen(false)} onSave={createCategory} /><LocationSheet open={locationOpen} locations={locations} onClose={() => setLocationOpen(false)} onSave={createLocation} /><StockSheet item={selected} open={Boolean(selected)} onClose={() => setSelectedId(null)} onAdjusted={adjust} /></div>
+  const create = async (draft) => { await createInventoryItem(hotel.id, draft); await reload() }
+  const createCategory = async (draft) => { await createInventoryCategory(hotel.id, draft); await reload() }
+  const createLocation = async (draft) => { await createInventoryLocation(hotel.id, draft); await reload() }
+  const adjust = async (id, delta, note, movementType) => { await adjustInventoryStock(id, delta, note, { movementType }); await reload() }
+
+  return (
+    <div className="rs-inventory rs-ops-surface" data-testid="inventory-view">
+      <PageTitle
+        title="Magazzino"
+        subtitle={hotel.name}
+        action={canCreate ? <Button variant="primary" icon="plus" onClick={() => setNewOpen(true)}>Articolo</Button> : null}
+      />
+      <div className="rs-inventory-summary">
+        <Card><small>ARTICOLI</small><strong>{items.length}</strong></Card>
+        <Card><small>CATEGORIE</small><strong>{categories.length}</strong></Card>
+        <Card className={lowCount ? 'is-low' : ''}><small>DA RIORDINARE</small><strong>{lowCount}</strong></Card>
+      </div>
+      <InventoryBlock2Panel user={user} hotel={hotel} items={items} locations={locations} onSelectItem={setSelectedId} onReload={reload} />
+      <div className="rs-toolbar rs-inventory-toolbar">
+        <TextInput icon="search" value={search} placeholder="Nome, codice, barcode, tag, modello…" onChange={(e) => setSearch(e.target.value)} />
+        <div className="rs-inventory-toolbar-row">
+          <select className="rs-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="all">Tutte le categorie</option>
+            {categoryOptions.map((c) => (
+              <option key={c.id} value={c.id}>{`${'— '.repeat(c.depth)}${c.name}`}</option>
+            ))}
+          </select>
+          <button type="button" className={`rs-chip ${lowOnly ? 'active high' : ''}`} onClick={() => setLowOnly((v) => !v)}>
+            <Icon name="warning" /> Da riordinare{lowCount ? ` · ${lowCount}` : ''}
+          </button>
+          {canCreate && (
+            <button type="button" className="rs-chip" onClick={() => setCategoryOpen(true)}>
+              <Icon name="plus" /> Categoria
+            </button>
+          )}
+        </div>
+      </div>
+      {loading ? (
+        <Spinner label="Carico il magazzino…" />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon="package" title="Magazzino vuoto">
+          {items.length ? 'Nessun articolo corrisponde ai filtri.' : 'Aggiungi il primo articolo del magazzino.'}
+        </EmptyState>
+      ) : (
+        <div className="rs-inventory-list">
+          {filtered.map((item) => {
+            const status = inventoryStockStatus(item)
+            return (
+              <Card
+                as="button"
+                className={`rs-inventory-item ${status !== 'ok' ? 'is-low' : ''}`}
+                key={item.id}
+                onClick={() => canEdit && setSelectedId(item.id)}
+              >
+                <InventoryPhoto path={item.photoPath} className="rs-inventory-item__photo" />
+                <span className="rs-inventory-item__main">
+                  <span className="rs-inventory-item__top">
+                    {status !== 'ok' && (
+                      <Badge tone="high">{status === 'esaurito' ? 'Esaurito' : 'Scorta bassa'}</Badge>
+                    )}
+                    <strong>{item.name}</strong>
+                  </span>
+                  <small>
+                    {item.category}
+                    {item.variantLabel ? ` · ${item.variantLabel}` : ''}
+                    {item.location ? ` · ${item.location}` : ''}
+                  </small>
+                </span>
+                <span className="rs-inventory-item__qty">
+                  <strong>{fmt(item.quantity)}</strong>
+                  <small>{item.unit}</small>
+                </span>
+                {canEdit && <Icon name="chevronRight" />}
+              </Card>
+            )
+          })}
+        </div>
+      )}
+      <NewItemSheet
+        open={newOpen}
+        categories={categories}
+        locations={locations}
+        onClose={() => setNewOpen(false)}
+        onSave={create}
+        onNewCategory={() => setCategoryOpen(true)}
+        onNewLocation={() => setLocationOpen(true)}
+      />
+      <CategorySheet open={categoryOpen} categories={categories} onClose={() => setCategoryOpen(false)} onSave={createCategory} />
+      <LocationSheet open={locationOpen} locations={locations} onClose={() => setLocationOpen(false)} onSave={createLocation} />
+      <StockSheet item={selected} open={Boolean(selected)} onClose={() => setSelectedId(null)} onAdjusted={adjust} />
+    </div>
+  )
 }

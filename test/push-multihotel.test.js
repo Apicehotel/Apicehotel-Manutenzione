@@ -24,7 +24,16 @@ test('profile exposes personal native RandApp push activation independently from
   assert.match(profile, /strutture e i permessi del tuo profilo/)
   assert.doesNotMatch(profile, /subscribeToPush\(hotel\.id\)/)
   assert.doesNotMatch(profile, /unsubscribeFromPush\(hotel\.id\)/)
+  assert.match(profile, /humanizePushError/)
   assert.match(profile, /ntfy resta un canale separato/i)
+})
+
+test('push client soft-fails with human-readable Italian messages', async () => {
+  const push = await readFile(new URL('../src/push.js', import.meta.url), 'utf8')
+  assert.match(push, /export function humanizePushError/)
+  assert.match(push, /servizio push del dispositivo ha rifiutato/)
+  assert.match(push, /app resta utilizzabile/)
+  assert.match(push, /vapid_keys_missing/)
 })
 
 test('push subscription backend binds one device to the person and mirrors active memberships only for routing', async () => {

@@ -16,6 +16,7 @@ import {
   subscribeSupplyRequests,
 } from '../supply-data.js'
 import { Button, Icon, Sheet } from './ui.jsx'
+import { PageTitle } from './randui/visual-primitives.jsx'
 import './supply-requests.css'
 
 const CATEGORY_LABEL = { minibar: 'Minibar', consumo: 'Consumo' }
@@ -330,11 +331,23 @@ export default function SupplyRequestsPortal({ user, hotel, standalone = false }
   if (!canView || !hotel) return null
 
   const content = (
-    <div className="rs-supply-sheet" data-testid="supply-portal">
-      <header className="rs-supply-sheet__head">
-        <div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}{floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}</p></div>
-        <button type="button" onClick={refreshAll} disabled={loading || contextLoading}>Aggiorna</button>
-      </header>
+    <div className={`rs-supply-sheet${standalone ? ' rs-ops-surface' : ''}`} data-testid="supply-portal">
+      {standalone ? (
+        <PageTitle
+          title="Rifornimenti"
+          subtitle={`Minibar e Consumo · ${hotel.name}${floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}`}
+          action={(
+            <Button variant="outline" size="sm" onClick={refreshAll} disabled={loading || contextLoading}>
+              Aggiorna
+            </Button>
+          )}
+        />
+      ) : (
+        <header className="rs-supply-sheet__head">
+          <div><h2>Rifornimenti</h2><p>Minibar e Consumo · {hotel.name}{floorContext ? ` · ${floorContext.area_label} · ${floorContext.floor_label}` : ''}</p></div>
+          <button type="button" onClick={refreshAll} disabled={loading || contextLoading}>Aggiorna</button>
+        </header>
+      )}
       {error && <p className="rs-supply-error">{error}</p>}
       {canCreate && <RequestComposer hotel={hotel} products={products} floorContexts={floorContexts} floorContext={floorContext} onFloorContextChange={changeFloorContext} contextLoading={contextLoading} onCreated={refresh} />}
       <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
