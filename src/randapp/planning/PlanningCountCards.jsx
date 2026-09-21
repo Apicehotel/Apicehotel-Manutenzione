@@ -38,7 +38,38 @@ export default function PlanningCountCards({ hotel, user, onOpen, className = ''
   }, [hotel.id, canSeeSale, canSeeWork, load])
   const today = isoDay()
   const workStats = useMemo(() => statsFor(work, (item) => item.date === today), [work, today])
+  // Align with Planning hub sale prep metrics (not calendar event range).
   const saleStats = useMemo(() => statsFor(bookings, (item) => (item.prepDate || item.dateFrom || item.date) === today), [bookings, today])
-  if ((!canSeeWork && !canSeeSale) || loading) return null
-  return <section className={`rs-planning-counts ${className}`.trim()} aria-label="Conteggi planning di oggi" data-testid="planning-count-cards"><div className="rs-planning-counts__head"><span>Oggi</span><strong>Planning operativo</strong></div><div className="rs-planning-counts__grid">{canSeeWork && <PlanningChoice icon="wrench" title="Planning lavori" stats={workStats} onClick={() => onOpen?.('planning-work')} />}{canSeeSale && <PlanningChoice icon="calendar" title="Planning sale" stats={saleStats} onClick={() => onOpen?.('planning-sale')} />}</div></section>
+  if (!canSeeWork && !canSeeSale) return null
+  return (
+    <section
+      className={`rs-planning-counts ${className}`.trim()}
+      aria-label="Scorciatoie planning di oggi"
+      aria-busy={loading || undefined}
+      data-testid="planning-count-cards"
+    >
+      <div className="rs-planning-counts__head">
+        <span>Oggi</span>
+        <strong>Scorciatoie planning</strong>
+      </div>
+      <div className="rs-planning-counts__grid">
+        {canSeeWork && (
+          <PlanningChoice
+            icon="wrench"
+            title="Planning lavori"
+            stats={loading ? { today: 0, finish: 0, done: 0 } : workStats}
+            onClick={() => onOpen?.('planning-work')}
+          />
+        )}
+        {canSeeSale && (
+          <PlanningChoice
+            icon="calendar"
+            title="Planning sale"
+            stats={loading ? { today: 0, finish: 0, done: 0 } : saleStats}
+            onClick={() => onOpen?.('planning-sale')}
+          />
+        )}
+      </div>
+    </section>
+  )
 }

@@ -106,7 +106,6 @@ export default function MyWorkView({ hotel, user, onOpen }) {
               </div>
             </section>
           )}
-          <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} className="rs-planning-counts--compact" />
           {!!filtPlannedDone.length && (
             <section className="rs-ops-section" aria-label="Interventi completati">
               <p className="rs-actions-heading">Interventi completati ({filtPlannedDone.length})</p>
@@ -141,7 +140,8 @@ export default function MyWorkView({ hotel, user, onOpen }) {
           )}
         </>
       )}
-      {!loading && total === 0 && (
+      {/* Planning stays a secondary shortcut after personal work, never between list sections. */}
+      {!loading && (
         <PlanningCountCards hotel={hotel} user={user} onOpen={onOpen} className="rs-planning-counts--compact" />
       )}
     </Stack>

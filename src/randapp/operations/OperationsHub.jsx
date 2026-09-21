@@ -20,7 +20,7 @@ export default function OperationsHub({ canIssues, canInterventions, hotel, user
     <Stack gap="sm" className="rs-operations-hub rs-ops-surface">
       <PageTitle
         title="Operatività"
-        subtitle="Segnalazioni e interventi adesso. Planning resta sotto come scorciatoia."
+        subtitle="Segnalazioni e interventi adesso. Sotto: scorciatoie planning."
       />
       <Surface padded={false} className="rs-telegram-list" aria-label="Funzioni operative">
         {canIssues && (
