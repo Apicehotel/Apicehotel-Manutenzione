@@ -2,19 +2,23 @@ import { useCallback, useEffect, useState } from 'react'
 import { fetchUrgents, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } from '../../urgents-data.js'
 import { insertIssue } from '../../issues-data.js'
 import { Button, Card, EmptyState, Field, IconButton, Spinner, TextInput } from '../ui.jsx'
+import ListFetchNotice from '../ListFetchNotice.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, URGENCY_META } from '../helpers.js'
 import { PageTitle, StatusPill, fmt } from './view-primitives.jsx'
 
 export default function UrgentView({ hotel, user }) {
-  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[transforming,setTransforming]=useState(null)
+  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[fetchOk,setFetchOk]=useState(true),[fetchOffline,setFetchOffline]=useState(false),[transforming,setTransforming]=useState(null)
   const load=useCallback(async()=>{
     setLoading(true)
     try{
       const result=await fetchUrgents(hotel.id)
       setItems(result.items||[])
+      setFetchOk(result.ok!==false)
+      setFetchOffline(Boolean(result.offline))
     }catch(error){
       console.warn('Caricamento avvisi urgenti fallito',error)
-      setItems([])
+      setFetchOk(false)
+      setFetchOffline(typeof navigator!=='undefined'?!navigator.onLine:false)
     }finally{
       setLoading(false)
     }
@@ -23,7 +27,8 @@ export default function UrgentView({ hotel, user }) {
   const take=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'presa_in_carico',takenBy:user?.name});load()}
   const done=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'completata',completedBy:user?.name});load()}
   if(transforming)return <TransformUrgentForm urgent={transforming} hotel={hotel} user={user} onCancel={()=>setTransforming(null)} onDone={()=>{setTransforming(null);load()}}/>
-  return <div data-testid="urgent-view" className="rs-ops-surface"><PageTitle title="Avvisi urgenti" subtitle={`${hotel.name} · ${items.filter(i=>i.status!=='completata').length} attivi`}/>{loading?<Spinner label="Carico avvisi…"/>:!items.length?<EmptyState icon="warning" title="Nessun avviso urgente">La struttura non ha avvisi attivi.</EmptyState>:<div className="rs-migrated-list">{items.map(item=><Card key={item.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{item.location||'Avviso urgente'}</strong><small>{fmt(item.createdAt)} · {item.createdBy||'—'}</small></div><StatusPill status={item.status}/></div><p>{item.note}</p>{item.transformedIssueId&&<small className="rs-success">✓ Trasformato in segnalazione</small>}<div className="rs-op-card__actions">{item.status==='aperta'&&<Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button>}{item.status==='presa_in_carico'&&<Button icon="check" onClick={()=>done(item)}>Completa</Button>}{canSendUrgent(user)&&item.status!=='completata'&&!item.transformed&&<Button variant="ghost" icon="issues" onClick={()=>setTransforming(item)}>Trasforma in segnalazione</Button>}</div></Card>)}</div>}</div>
+  const showEmpty=!loading&&!(!fetchOk&&!items.length)&&!items.length
+  return <div data-testid="urgent-view" className="rs-ops-surface"><PageTitle title="Avvisi urgenti" subtitle={`${hotel.name} · ${items.filter(i=>i.status!=='completata').length} attivi`}/>{loading?<Spinner label="Carico avvisi…"/>:(<><ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={items.length>0} onRetry={load} resourceLabel="lista avvisi" />{showEmpty?<EmptyState icon="warning" title="Nessun avviso urgente">La struttura non ha avvisi attivi.</EmptyState>:null}{items.length?<div className="rs-migrated-list">{items.map(item=><Card key={item.id} className="rs-card--pad rs-op-card"><div className="rs-op-card__head"><div><strong>{item.location||'Avviso urgente'}</strong><small>{fmt(item.createdAt)} · {item.createdBy||'—'}</small></div><StatusPill status={item.status}/></div><p>{item.note}</p>{item.transformedIssueId&&<small className="rs-success">✓ Trasformato in segnalazione</small>}<div className="rs-op-card__actions">{item.status==='aperta'&&<Button variant="outline" onClick={()=>take(item)}>Prendi in carico</Button>}{item.status==='presa_in_carico'&&<Button icon="check" onClick={()=>done(item)}>Completa</Button>}{canSendUrgent(user)&&item.status!=='completata'&&!item.transformed&&<Button variant="ghost" icon="issues" onClick={()=>setTransforming(item)}>Trasforma in segnalazione</Button>}</div></Card>)}</div>:null}</>)}</div>
 }
 
 function TransformUrgentForm({urgent,hotel,user,onCancel,onDone}){

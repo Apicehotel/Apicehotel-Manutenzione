@@ -13,6 +13,7 @@ import {
 } from '../../inventory-intervention-data.js'
 import { clearRandAIContextResource, createInterventionContextEnvelope, publishRandAIContext } from '../../randai/context/envelope.js'
 import { Button, Card, EmptyState, Field, Icon, IconButton, Spinner, TextInput, Sheet, ConfirmDialog, Badge } from '../ui.jsx'
+import ListFetchNotice from '../ListFetchNotice.jsx'
 import { canCreatePlanned, compressPhotoAsDataUrl } from '../helpers.js'
 import { PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
 
@@ -23,6 +24,8 @@ const qty = (value) => Number(value || 0).toLocaleString('it-IT', { maximumFract
 export default function InterventionsView({ hotel, user }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fetchOk, setFetchOk] = useState(true)
+  const [fetchOffline, setFetchOffline] = useState(false)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
   const load = useCallback(async () => {
@@ -30,9 +33,12 @@ export default function InterventionsView({ hotel, user }) {
     try {
       const result = await fetchPlanned(hotel.id)
       setItems(result.items || [])
+      setFetchOk(result.ok !== false)
+      setFetchOffline(Boolean(result.offline))
     } catch (error) {
       console.warn('Caricamento interventi fallito', error)
-      setItems([])
+      setFetchOk(false)
+      setFetchOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false)
     } finally {
       setLoading(false)
     }
@@ -41,10 +47,17 @@ export default function InterventionsView({ hotel, user }) {
   const visible = useMemo(() => items.filter((item) => filter === 'all' || (filter === 'done' ? item.status === 'done' : item.status !== 'done')), [items, filter])
   const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load() } }
   const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); await load() }
+  const showEmpty = !loading && !(!fetchOk && !items.length) && !visible.length
   return <div data-testid="interventions-view" className="rs-ops-surface">
     <PageTitle title="Interventi" subtitle={`${hotel.name} · ${items.filter(i => i.status !== 'done').length} aperti`} />
     <div className="rs-segmented rs-migrated-tabs" role="tablist" aria-label="Filtro interventi">{[['active','Aperti'],['done','Fatti'],['all','Tutti']].map(([id,label]) => <button type="button" key={id} role="tab" aria-selected={filter===id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{label}</button>)}</div>
-    {loading ? <Spinner label="Carico interventi…" /> : !visible.length ? <EmptyState icon="wrench" title="Nessun intervento">Non ci sono elementi per questo filtro.</EmptyState> : <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{item.category||'Manutenzione'} · {fmt(item.scheduledAt)}</small></div><StatusPill status={item.status}/></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}</Card>})}</div>}
+    {loading ? <Spinner label="Carico interventi…" /> : (
+      <>
+        <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={items.length > 0} onRetry={load} resourceLabel="lista interventi" />
+        {showEmpty ? <EmptyState icon="wrench" title="Nessun intervento">Non ci sono elementi per questo filtro.</EmptyState> : null}
+        {visible.length ? <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{item.category||'Manutenzione'} · {fmt(item.scheduledAt)}</small></div><StatusPill status={item.status}/></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}</Card>})}</div> : null}
+      </>
+    )}
     {selected&&<PlannedDetail item={selected} hotel={hotel} user={user} onClose={()=>setSelected(null)} onUpdate={doUpdate} onDelete={doDelete}/>} 
   </div>
 }
