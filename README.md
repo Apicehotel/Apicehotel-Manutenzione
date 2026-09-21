@@ -7,11 +7,13 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 17 settembre 2026
+## Stato consolidato — 21 settembre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
+
+**README:** ogni PR sostanziale aggiorna questo file allo stato operativo corrente (niente documentazione zombie; la cronologia resta nei docs dedicati).
 
 ## Stack canonico
 
@@ -59,6 +61,14 @@ Il catalogo copre **24/24 destinazioni** con 14 template. RandUI Guard è fail-c
 
 La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatamente token portabili, motion con reduced-motion fail-safe e adapter semantico delle icone. `src/randapp/randui-v2/` non è zombie finché `/ui-v2-preview` è usata dal gate Ocean.
 
+### Densità operativa (Operatività / Task / Planning)
+
+Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al centro).
+
+- **Operatività** e **Task** mostrano prima le azioni utili (destinazioni / lavori aperti); i conteggi Planning restano scorciatoie secondarie e compatte.
+- I conteggi Planning restano a **due colonne** su telefono fino a ~380px; sotto quella soglia stackano.
+- Ritmo condiviso `rs-ops-surface` su Operatività, Task, Planning, Interventi e Urgenti (owner: `visual-language.css` + `telegram-navigation.css`, senza nuovi `*-fix.css`).
+
 ## RandAI, RandMind e RandResearch
 
 Le superfici RandAI restano due: **Quick Assistant** dentro RandApp e **Control Center `/randai`** protetto e multi-hotel.
@@ -99,6 +109,8 @@ Warehouse mantiene ledger/stock/seriali e integrazione con Interventi. Rifornime
 
 RandApp usa un solo stack offline: Service Worker + sessione locale controllata + Dexie/IndexedDB. Safe-area e responsive usano `viewport-fit=cover`, `env(safe-area-inset-*)`, `system-insets.js` e layout adattivo. Header e contenuto condividono il gutter canonico e la safe-area superiore ha un solo proprietario.
 
+Registrazione PWA fallita (race di preview/CDN) resta non bloccante: `console.warn` lato client; il gate e2e non tratta quel TypeError come errore fatale della shell.
+
 ## Quality Matrix e test
 
 ```bash
@@ -133,7 +145,8 @@ Android richiede inoltre pacchetto firmato e prova su dispositivo reale: `npm ru
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
 - **Produzione stabile:** Vercel.
-- **Preview/test grafici:** DigitalOcean/Ocean.
+- **Preview/test grafici:** DigitalOcean/Ocean (`randui-preview`).
+- Prima del Browser visual gate Ocean, la CI attende che `/sw.js` risponda **200 con MIME javascript** (evita race del catchall `index.html` sul preview condiviso).
 - Gli agenti non promuovono automaticamente branch in produzione.
 - `/ui-v2-preview` resta una superficie di verifica finché il workflow Ocean la usa.
 
@@ -156,6 +169,7 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 - `docs/architecture/RIFORNIMENTI_INTERNI.md` — rifornimenti.
 
 Questo README descrive lo **stato operativo corrente**. Cronologia e dettagli specialistici restano nei documenti dedicati per evitare documentazione zombie.
+
 ## Governed design and PR review tools
 
 RandApp uses Impeccable as a development-only UI design and audit layer, and agent-reviews as a controlled PR review-bot triage aid. They never run in the production runtime and never bypass the branch/PR/human-review policy.

@@ -20,6 +20,7 @@ This file is the canonical engineering contract for AI coding agents working on 
 5. Never hard-code generated production UUIDs in replay/data migrations when a stable semantic lookup is available.
 6. Do not introduce a dependency when the platform API or existing dependency already solves the problem cleanly.
 7. Before declaring completion, run or rely on the repository quality gates and verify the actual CI result.
+8. For every substantive PR, update `README.md` to the current operational state (no zombie docs; detail stays in dedicated files).
 
 ## React and frontend rules
 
