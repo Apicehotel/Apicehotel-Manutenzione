@@ -47,6 +47,8 @@ textarea:focus-visible,
 .rs-btn--sm { min-height: var(--rs-control-h-sm); }
 .rs-btn--lg { min-height: var(--rs-control-h-lg); }
 .rs-btn--block { width: 100%; }
+.rs-btn .rs-icon,
+.rs-btn > span { pointer-events: none; }
 .rs-iconbtn { min-width: 44px; min-height: 44px; }
 
 .rs-btn[aria-busy='true'],

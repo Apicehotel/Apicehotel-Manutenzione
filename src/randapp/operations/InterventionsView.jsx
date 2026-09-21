@@ -25,7 +25,18 @@ export default function InterventionsView({ hotel, user }) {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
-  const load = useCallback(async () => { const result = await fetchPlanned(hotel.id); setItems(result.items || []); setLoading(false) }, [hotel.id])
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const result = await fetchPlanned(hotel.id)
+      setItems(result.items || [])
+    } catch (error) {
+      console.warn('Caricamento interventi fallito', error)
+      setItems([])
+    } finally {
+      setLoading(false)
+    }
+  }, [hotel.id])
   useEffect(() => { load(); return subscribePlanned(hotel.id, load) }, [hotel.id, load])
   const visible = useMemo(() => items.filter((item) => filter === 'all' || (filter === 'done' ? item.status === 'done' : item.status !== 'done')), [items, filter])
   const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load() } }

@@ -57,4 +57,8 @@ test('notification banner remains compact and mobile safe',()=>{
   assert.match(css,/env\(safe-area-inset-bottom\)/)
   assert.match(css,/@media\(max-width:520px\)/)
   assert.match(css,/backdrop-filter/)
+  assert.match(css,/data-notification-onboarding/)
+  assert.match(css,/--rs-notification-onboarding-h/)
+  assert.match(onboarding,/markBannerVisible/)
+  assert.match(onboarding,/dataset\.notificationOnboarding/)
 })

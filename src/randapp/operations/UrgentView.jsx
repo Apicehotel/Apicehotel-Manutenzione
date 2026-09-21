@@ -7,7 +7,18 @@ import { PageTitle, StatusPill, fmt } from './view-primitives.jsx'
 
 export default function UrgentView({ hotel, user }) {
   const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[transforming,setTransforming]=useState(null)
-  const load=useCallback(async()=>{const result=await fetchUrgents(hotel.id);setItems(result.items||[]);setLoading(false)},[hotel.id])
+  const load=useCallback(async()=>{
+    setLoading(true)
+    try{
+      const result=await fetchUrgents(hotel.id)
+      setItems(result.items||[])
+    }catch(error){
+      console.warn('Caricamento avvisi urgenti fallito',error)
+      setItems([])
+    }finally{
+      setLoading(false)
+    }
+  },[hotel.id])
   useEffect(()=>{load();return subscribeUrgents(hotel.id,load)},[hotel.id,load])
   const take=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'presa_in_carico',takenBy:user?.name});load()}
   const done=async item=>{await updateUrgentRow(item.id,{hotelId:hotel.id,status:'completata',completedBy:user?.name});load()}

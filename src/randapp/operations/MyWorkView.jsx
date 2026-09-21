@@ -28,10 +28,18 @@ export default function MyWorkView({ hotel, user, onOpen }) {
   const [q, setQ] = useState('')
 
   const load = useCallback(async () => {
-    const [issuesRes, plannedRes] = await Promise.all([fetchIssues(hotel.id), fetchPlanned(hotel.id)])
-    setIssues(issuesRes.items || [])
-    setPlanned(plannedRes.items || [])
-    setLoading(false)
+    setLoading(true)
+    try {
+      const [issuesRes, plannedRes] = await Promise.all([fetchIssues(hotel.id), fetchPlanned(hotel.id)])
+      setIssues(issuesRes.issues || issuesRes.items || [])
+      setPlanned(plannedRes.items || [])
+    } catch (error) {
+      console.warn('Caricamento Task fallito', error)
+      setIssues([])
+      setPlanned([])
+    } finally {
+      setLoading(false)
+    }
   }, [hotel.id])
 
   useEffect(() => {

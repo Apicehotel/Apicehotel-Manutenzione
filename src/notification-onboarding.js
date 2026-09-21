@@ -9,12 +9,18 @@ let busy=false
 const currentHotelId=()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')?.hotelId||null}catch{return null}}
 const dismissalKey=(id)=>`${DISMISS_PREFIX}:${id||'unknown'}`
 const dismissed=(id)=>{try{return sessionStorage.getItem(dismissalKey(id))==='1'}catch{return false}}
+const markBannerVisible=(visible)=>{
+  try{
+    if(visible)document.documentElement.dataset.notificationOnboarding='1'
+    else delete document.documentElement.dataset.notificationOnboarding
+  }catch{/* noop */}
+}
 const dismiss=(id)=>{try{sessionStorage.setItem(dismissalKey(id),'1')}catch{};remove()}
-const remove=()=>document.getElementById(ID)?.remove()
+const remove=()=>{document.getElementById(ID)?.remove();markBannerVisible(false)}
 
 function ensureBanner(){
   let el=document.getElementById(ID)
-  if(el)return el
+  if(el){markBannerVisible(true);return el}
   el=document.createElement('aside')
   el.id=ID
   el.className='rs-notification-onboarding'
@@ -22,6 +28,7 @@ function ensureBanner(){
   el.innerHTML='<span class="rs-notification-onboarding__icon" aria-hidden="true">🔔</span><span class="rs-notification-onboarding__copy"><b>Attiva le notifiche</b><small>Servono per ricevere interventi assegnati, avvisi e promemoria.</small></span><button type="button" class="rs-notification-onboarding__close" aria-label="Chiudi avviso notifiche">×</button><button type="button" class="rs-notification-onboarding__action">Attiva</button>'
   const app=document.querySelector('.rs-app')||document.body
   app.appendChild(el)
+  markBannerVisible(true)
   el.querySelector('.rs-notification-onboarding__close')?.addEventListener('click',()=>dismiss(hotelId||currentHotelId()))
   el.querySelector('.rs-notification-onboarding__action')?.addEventListener('click',async()=>{
     if(busy)return
