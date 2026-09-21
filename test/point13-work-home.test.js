@@ -15,7 +15,7 @@ test('point 13 home ranks actionable work instead of freeform widgets', () => {
 })
 
 test('point 13 home uses hotel-scoped operational sources', () => {
-  for (const call of ['fetchIssues(hotel.id)', 'fetchUrgents(hotel.id)', 'fetchPlanned(hotel.id)', 'fetchReminders(hotel.id)', 'fetchOperationalWeather(hotel.id']) {
+  for (const call of ['fetchIssues(hotel.id)', 'fetchUrgents(hotel.id)', 'fetchPlanned(hotel.id)', 'fetchReminders(hotel.id)', 'fetchOperationalWeather(hotel.id', 'fetchPeopleInStructure(hotel.id)']) {
     assert.ok(home.includes(call), `${call} must remain hotel scoped`)
   }
 })
