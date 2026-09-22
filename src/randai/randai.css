@@ -9,7 +9,9 @@
   --randai-radius: 22px;
 }
 
-/* Dedicated shell page (bottom-nav / header): fill content, not a floating dialog. */
+/* Dedicated shell page (bottom-nav / header): fill content, not a floating dialog.
+   Must beat `.rs-randui-page--migrated .rs-randui-page__content > :first-child { height:auto }`
+   the same way RandChat does with !important viewport height. */
 html.rs-randai-page-active,
 body.rs-randai-page-active {
   height: 100%;
@@ -21,6 +23,29 @@ body.rs-randai-page-active {
   min-height: 0;
   padding: 0 !important;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rs-content.rs-content--randai .rs-randui-page,
+.rs-content.rs-content--randai .rs-randui-page__body,
+.rs-content.rs-content--randai .rs-randui-page__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-content: stretch;
+}
+
+.rs-content.rs-content--randai .rs-randui-page__content > :first-child {
+  flex: 1 1 auto !important;
+  align-self: stretch !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
 }
 
 .randai--page {
@@ -28,31 +53,63 @@ body.rs-randai-page-active {
   inset: auto;
   z-index: auto;
   pointer-events: auto;
-  height: var(--randai-viewport-h, calc(100dvh - 210px));
-  max-height: var(--randai-viewport-h, calc(100dvh - 210px));
-  min-height: 0;
+  height: var(--randai-viewport-h, calc(100dvh - 210px)) !important;
+  max-height: var(--randai-viewport-h, calc(100dvh - 210px)) !important;
+  min-height: 0 !important;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  background: var(--rs-bg, #0b1220);
 }
 
 .randai--page .randai__panel {
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  top: auto;
-  width: 100%;
-  max-height: none;
-  height: 100%;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  max-height: none !important;
+  height: 100% !important;
   min-height: 0;
-  border-radius: 0;
+  border-radius: 0 !important;
   box-shadow: none;
   border: 0;
   flex: 1 1 auto;
+  background: var(--rs-bg, #0b1220);
+}
+
+.randai--page .randai__messages {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.randai--page .randai__composer,
+.randai--page .randai__audio-notice {
+  background: var(--rs-card, #fff);
 }
 
 .randai--page .randai__composer {
   padding-bottom: 12px;
+}
+
+@media (max-width: 899px) {
+  .randai--page {
+    height: var(--randai-viewport-h, calc(100dvh - 210px)) !important;
+    max-height: var(--randai-viewport-h, calc(100dvh - 210px)) !important;
+  }
+
+  .randai--page .randai__panel {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+  }
 }
 
 .randai__panel {
@@ -266,3 +323,14 @@ body.rs-randai-page-active {
 .randai__project-signals span { padding:4px 7px; border-radius:999px; background:color-mix(in srgb,var(--rs-card,#fff) 72%,transparent); font-size:11px; }
 .randai__project-hypothesis { display:grid; gap:2px; padding:8px; border-radius:9px; background:rgba(245,158,11,.12); }
 .randai__project-hypothesis strong, .randai__project-hypothesis small { font-size:12px; }
+
+/* Final page-mode overrides after overlay media queries: full shell height, composer docked. */
+@media (max-width: 899px) {
+  .randai--page .randai__panel {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+  }
+}

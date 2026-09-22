@@ -78,7 +78,7 @@ Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al
 - Titolo → contenuto senza banda vuota verticale: stack `align-content:start` / `grid-auto-rows:max-content`.
 ## RandAI, RandMind e RandResearch
 
-Le superfici RandAI restano due: **pagina chat dedicata** in RandApp (tab RandAI in bottom nav + azione header) e **Control Center `/randai`** protetto e multi-hotel (URL diretta, non nella nav primaria).
+Le superfici RandAI restano due: **pagina chat dedicata** in RandApp (tab RandAI + header, a tutta area shell, conversazione preservata tra i tab) e **Control Center `/randai`** protetto e multi-hotel (URL diretta, non nella nav primaria).
 
 - **Group 1**: RandTool Gateway, Promptfoo, OpenTelemetry e ToolHive opzionale dietro i gate.
 - **Group 2**: Supabase source of truth, RandMind memoria canonica, projection opzionali ricostruibili e RandKnowledge Gateway.
