@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildHvacDiagnostic, inferHvacMode, selectHvacZone } from "../_shared/hvac-routing.js";
 import { detectRandAIIntent, detectRandAISection, filterSensorsBySection, resolveRandAIQuery } from "../_shared/randai-query-scope.js";
 import { buildContextQuery, clientContextSummary, sanitizeOperationalContext } from "../_shared/randai-operational-context.js";
+import { composeRandAIAnswer } from "../_shared/randai-assistant-compose.js";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -23,7 +24,7 @@ function scoreProcedure(item: any, query: string) {
 }
 function scoreHistory(item: any, query: string, procedure: any) {
   const words = normalize(query).split(/\s+/).filter((word) => word.length > 3);
-  const haystack = normalize([item.location, item.camera, item.category, item.categoria, item.description, item.note, item.completion_note, item.pezzo_nome, item.pezzo_sostituito, item.sezione].join(" "));
+  const haystack = normalize([item.location, item.camera, item.category, item.categoria, item.description, item.note, item.completion_note, item.nota_completamento, item.pezzo_nome, item.pezzo_sostituito, item.sezione].join(" "));
   let score = words.reduce((total, word) => total + (haystack.includes(word) ? 1 : 0), 0);
   if (procedure?.category && haystack.includes(normalize(procedure.category))) score += 3;
   if (procedure?.area && haystack.includes(normalize(procedure.area))) score += 2;
@@ -99,7 +100,6 @@ async function resolveHvacDiagnostic(hotelId: string, query: string) {
 
 async function resolveVerifiedResource(hotelId: string, context: any) {
   if (context?.resource?.type !== "issue" || !context.resource.id) return null;
-  // Canonical operational issues live in segnalazioni (same table Action Gateway mutates).
   const { data, error } = await admin.from("segnalazioni")
     .select("id,camera,categoria,urgenza,stato,note,stato_camera")
     .eq("hotel_id", hotelId)
@@ -118,6 +118,48 @@ async function resolveVerifiedResource(hotelId: string, context: any) {
     description: data.note || null,
     roomStatus: data.stato_camera || null,
   };
+}
+
+async function captureKnowledgeGap({ hotelId, query, intent, section, userId }: any) {
+  try {
+    const question = String(query || "").trim().slice(0, 500);
+    if (!hotelId || !question) return { captured: false };
+    const { data: existing } = await admin
+      .from("randai_knowledge_gaps")
+      .select("id")
+      .eq("hotel_id", hotelId)
+      .eq("scope", "maintenance")
+      .eq("status", "open")
+      .eq("question", question)
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return { captured: true, gapId: existing.id, created: false };
+
+    const nowIso = new Date().toISOString();
+    const gapId = `GAP-${crypto.randomUUID()}`;
+    const { error } = await admin.from("randai_knowledge_gaps").insert({
+      id: gapId,
+      scope: "maintenance",
+      status: "open",
+      priority: "normal",
+      hotel_id: hotelId,
+      question,
+      context: `intent=${intent || "general"}; section=${section || "none"}`,
+      source_kind: "randai_assistant",
+      source_id: "no_approved_knowledge",
+      metadata: { capturedFromAssistant: true, actorUserId: userId || null },
+      created_at: nowIso,
+      updated_at: nowIso,
+    });
+    if (error) {
+      console.error("randai-assistant gap capture", error.message || error);
+      return { captured: false };
+    }
+    return { captured: true, gapId, created: true };
+  } catch (error) {
+    console.error("randai-assistant gap capture", error instanceof Error ? error.message : "unknown");
+    return { captured: false };
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -148,49 +190,147 @@ Deno.serve(async (req: Request) => {
     const effectiveQuery = buildContextQuery(conversationalQuery, verifiedResource);
     const intent = detectRandAIIntent(effectiveQuery);
     const section = detectRandAISection(effectiveQuery);
-    const [memoryResult, sensorResult, rawHvacDiagnostic] = await Promise.all([
+
+    const [
+      memoryResult,
+      sensorResult,
+      rawHvacDiagnostic,
+      proceduresResult,
+      equipmentResult,
+      issuesResult,
+      interventionsResult,
+      documentsResult,
+    ] = await Promise.all([
       admin.rpc("randai_search_memory", { p_hotel_id: hotelId, p_query: effectiveQuery, p_limit: 3 }),
       admin.rpc("randai_sensor_context", { p_hotel_id: hotelId, p_query: effectiveQuery }),
       intent === "location" ? Promise.resolve(null) : resolveHvacDiagnostic(hotelId, effectiveQuery),
+      admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
+      admin.from("randai_equipment").select("id,name,category,location,description,randai_equipment_serves(served_area,note)").eq("hotel_id", hotelId).eq("active", true),
+      admin.from("segnalazioni").select("id,camera,categoria,note,stato,nota_completamento,completato_il,updated_at").eq("hotel_id", hotelId).is("deleted_at", null).order("updated_at", { ascending: false }).limit(20),
+      admin.from("interventi").select("id,camera,categoria,note,stato,sezione,pezzo_nome,pezzo_sostituito,completato_il,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending: false }).limit(20),
+      admin.rpc("randai_search_document_chunks", { p_hotel_id: hotelId, p_query: effectiveQuery, p_limit: 5 }),
     ]);
+
     if (memoryResult.error) throw memoryResult.error;
+    if (proceduresResult.error) throw proceduresResult.error;
+    if (equipmentResult.error) throw equipmentResult.error;
+
     const rawSensors = sensorResult.error ? [] : (sensorResult.data || []);
     const sensors = intent === "location" ? [] : filterSensorsBySection(rawSensors, section);
     const hvacDiagnostic = rawHvacDiagnostic && (!section || rawHvacDiagnostic.section === section) ? rawHvacDiagnostic : null;
-    const memory = intent === "location" ? [] : (memoryResult.data || []);
-    if (memory.length > 0) {
-      const normalizedMemory = memory.map((item: any) => ({ id:item.id, hotelId:item.hotel_id, equipmentId:item.equipment_id, area:item.area, category:item.category, symptom:item.symptom, errorCode:item.error_code, cause:item.cause, solution:item.solution, confidence:item.confidence, confirmationCount:item.confirmation_count, failureCount:item.failure_count, sourceLabel:item.source_label, lastConfirmedAt:item.last_confirmed_at }));
-      const suggestions = normalizedMemory.map((item: any) => buildSuggestion({ kind: "experience", id: item.id, title: item.symptom || "Caso precedente simile", summary: item.solution || item.cause, trust: "VERIFIED", actionable: false, nextAction: "Confronta il caso precedente con i dati attuali; non applicare automaticamente la soluzione.", provenance: { kind: "memory", id: item.id } }));
-      return json({ ok: true, found: true, source: "verified_memory", intent, section, resolvedQuery: effectiveQuery, operationalContext, memory: normalizedMemory, suggestions, sensors, hvacDiagnostic, procedure:null, equipment:[], history:[], documents:[] });
-    }
+    const memoryRows = intent === "location" ? [] : (memoryResult.data || []);
+    const memory = memoryRows.map((item: any) => ({
+      id: item.id,
+      hotelId: item.hotel_id,
+      equipmentId: item.equipment_id,
+      area: item.area,
+      category: item.category,
+      symptom: item.symptom,
+      errorCode: item.error_code,
+      cause: item.cause,
+      solution: item.solution,
+      confidence: item.confidence,
+      confirmationCount: item.confirmation_count,
+      failureCount: item.failure_count,
+      sourceLabel: item.source_label,
+      lastConfirmedAt: item.last_confirmed_at,
+    }));
 
-    const [proceduresResult, equipmentResult, issuesResult, interventionsResult, documentsResult] = await Promise.all([
-      admin.from("randai_procedures").select("id,hotel_id,title,category,area,symptom,summary,keywords,steps,caution,source_label,version").eq("hotel_id", hotelId).eq("status", "approved"),
-      admin.from("randai_equipment").select("id,name,category,location,description,randai_equipment_serves(served_area,note)").eq("hotel_id", hotelId).eq("active", true),
-      admin.from("segnalazioni").select("id,camera,categoria,note,stato,nota_completamento,completato_il,updated_at").eq("hotel_id", hotelId).is("deleted_at", null).order("updated_at", { ascending:false }).limit(20),
-      admin.from("interventi").select("id,camera,categoria,note,stato,sezione,pezzo_nome,pezzo_sostituito,completato_il,updated_at").eq("hotel_id", hotelId).order("updated_at", { ascending:false }).limit(20),
-      admin.rpc("randai_search_document_chunks", { p_hotel_id:hotelId, p_query:effectiveQuery, p_limit:5 }),
-    ]);
-    if (proceduresResult.error) throw proceduresResult.error; if (equipmentResult.error) throw equipmentResult.error;
-    const ranked = (proceduresResult.data || []).map((procedure:any) => ({ procedure, score:scoreProcedure(procedure, effectiveQuery) })).filter((entry:any) => entry.score > 0).sort((a:any,b:any) => b.score-a.score);
-    const procedure = intent === "location" ? null : ranked[0]?.procedure;
+    const ranked = (proceduresResult.data || [])
+      .map((procedure: any) => ({ procedure, score: scoreProcedure(procedure, effectiveQuery) }))
+      .filter((entry: any) => entry.score > 0)
+      .sort((a: any, b: any) => b.score - a.score);
+    const procedure = intent === "location" ? null : ranked[0]?.procedure || null;
     const documents = documentsResult.error ? [] : (documentsResult.data || []);
     const queryText = normalize(effectiveQuery);
-    const equipment = (equipmentResult.data || []).filter((item:any) => {
+    const equipment = (equipmentResult.data || []).filter((item: any) => {
       if (!equipmentMatchesSection(item, section)) return false;
-      const haystack=normalize([item.name,item.category,item.location,item.description,...(item.randai_equipment_serves || []).map((entry:any) => entry.served_area)].join(" "));
+      const haystack = normalize([item.name, item.category, item.location, item.description, ...(item.randai_equipment_serves || []).map((entry: any) => entry.served_area)].join(" "));
       if (intent === "location" && section) return haystack.includes(section) && (haystack.includes("climat") || haystack.includes("condizion") || queryText.includes("motore"));
-      return (procedure?.category && normalize(item.category)===normalize(procedure.category)) || (procedure?.area && haystack.includes(normalize(procedure.area))) || queryText.split(/\s+/).some((word)=>word.length>3 && haystack.includes(word));
+      return (procedure?.category && normalize(item.category) === normalize(procedure.category))
+        || (procedure?.area && haystack.includes(normalize(procedure.area)))
+        || queryText.split(/\s+/).some((word) => word.length > 3 && haystack.includes(word));
     });
-    if (!procedure && documents.length === 0 && sensors.length === 0 && !hvacDiagnostic && equipment.length === 0) return json({ ok:true, found:false, reason:"no_approved_knowledge", intent, section, resolvedQuery: effectiveQuery, operationalContext });
 
-    const historyPool=[...((issuesResult.error?[]:issuesResult.data)||[]).map((item:any)=>({...item,__kind:"segnalazione"})),...((interventionsResult.error?[]:interventionsResult.data)||[]).map((item:any)=>({...item,__kind:"intervento"}))];
-    const history=intent === "location" ? [] : historyPool.map((item:any)=>({item,score:scoreHistory(item,effectiveQuery,procedure)})).filter((entry:any)=>entry.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3).map(({item}:any)=>({id:item.id,kind:item.__kind,location:item.location||item.camera||item.sezione||"",category:item.category||item.categoria||"",text:item.nota_completamento||item.completion_note||item.note||item.description||"",status:item.status||item.stato||"",date:item.completato_il||item.completed_at||item.updated_at||null}));
-    const source=intent === "location" && equipment.length ? "equipment_location" : hvacDiagnostic?"live_hvac_diagnostic":procedure?"approved_internal_knowledge":documents.length>0?"approved_documentation":"live_sensor_context";
-    const suggestions = [
-      ...(procedure ? [buildSuggestion({ kind: "procedure", id: procedure.id, title: procedure.title, summary: procedure.summary, trust: "APPROVED", actionable: true, nextAction: Array.isArray(procedure.steps) ? procedure.steps[0] : "Apri la procedura e verifica il primo passaggio.", provenance: { kind: "maintenance_procedure", id: procedure.id, version: procedure.version }, caution: procedure.caution })] : []),
-      ...history.slice(0, 3).map((item: any) => buildSuggestion({ kind: "experience", id: item.id, title: `Storico ${item.kind}`, summary: item.text, trust: "VERIFIED", actionable: false, nextAction: "Confronta lo storico con il problema attuale.", provenance: { kind: "history", id: item.id } })),
+    const historyPool = [
+      ...((issuesResult.error ? [] : issuesResult.data) || []).map((item: any) => ({ ...item, __kind: "segnalazione" })),
+      ...((interventionsResult.error ? [] : interventionsResult.data) || []).map((item: any) => ({ ...item, __kind: "intervento" })),
     ];
-    return json({ok:true,found:true,source,intent,section,resolvedQuery:effectiveQuery,operationalContext,procedure:procedure?{...procedure,hotelId:procedure.hotel_id,sourceType:"procedura_interna",sourceLabel:procedure.source_label}:null,equipment,history,documents,memory:[],suggestions,sensors,hvacDiagnostic});
-  } catch (error) { console.error("randai-assistant", error instanceof Error ? error.message : "unknown"); return json({ok:false,error:"randai_unavailable"},500); }
+    const history = intent === "location"
+      ? []
+      : historyPool
+        .map((item: any) => ({ item, score: scoreHistory(item, effectiveQuery, procedure) }))
+        .filter((entry: any) => entry.score > 0)
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, 3)
+        .map(({ item }: any) => ({
+          id: item.id,
+          kind: item.__kind,
+          location: item.location || item.camera || item.sezione || "",
+          category: item.category || item.categoria || "",
+          text: item.nota_completamento || item.completion_note || item.note || item.description || "",
+          status: item.status || item.stato || "",
+          date: item.completato_il || item.completed_at || item.updated_at || null,
+        }));
+
+    const composed = composeRandAIAnswer({
+      intent,
+      section,
+      resolvedQuery: effectiveQuery,
+      memory,
+      sensors,
+      hvacDiagnostic,
+      procedure: procedure ? { ...procedure, hotelId: procedure.hotel_id, sourceType: "procedura_interna", sourceLabel: procedure.source_label } : null,
+      equipment,
+      history,
+      documents,
+      buildSuggestion,
+    });
+
+    if (!composed.found) {
+      const gap = await captureKnowledgeGap({
+        hotelId,
+        query: effectiveQuery,
+        intent,
+        section,
+        userId: userData.user.id,
+      });
+      return json({
+        ok: true,
+        found: false,
+        reason: composed.reason,
+        intent,
+        section,
+        resolvedQuery: effectiveQuery,
+        operationalContext,
+        headline: composed.headline,
+        nextChecks: composed.nextChecks,
+        gapCaptured: Boolean(gap.captured),
+        gapId: gap.gapId || null,
+      });
+    }
+
+    return json({
+      ok: true,
+      found: true,
+      source: composed.source,
+      intent: composed.intent,
+      section: composed.section,
+      resolvedQuery: composed.resolvedQuery,
+      operationalContext,
+      headline: composed.headline,
+      nextChecks: composed.nextChecks,
+      procedure: composed.procedure,
+      equipment: composed.equipment,
+      history: composed.history,
+      documents: composed.documents,
+      memory: composed.memory,
+      suggestions: composed.suggestions,
+      sensors: composed.sensors,
+      hvacDiagnostic: composed.hvacDiagnostic,
+    });
+  } catch (error) {
+    console.error("randai-assistant", error instanceof Error ? error.message : "unknown");
+    return json({ ok: false, error: "randai_unavailable" }, 500);
+  }
 });

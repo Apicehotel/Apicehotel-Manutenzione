@@ -128,6 +128,20 @@ body.rs-randai-page-active {
 .randai__bubble ol { margin:.6rem 0 .7rem; padding-left:1.2rem; }
 .randai__bubble li + li { margin-top:.45rem; }
 .randai__source { display:inline-flex; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:4px 7px; border-radius:999px; background:color-mix(in srgb,var(--rs-accent,#315efb) 14%,transparent); }
+.randai__headline { margin:.15rem 0 .55rem; font-size:15px; line-height:1.35; }
+.randai__next-checks {
+  display: grid;
+  gap: 6px;
+  margin: .55rem 0 .85rem;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--rs-accent, #315efb) 22%, transparent);
+  background: color-mix(in srgb, var(--rs-accent, #315efb) 8%, transparent);
+}
+.randai__next-checks > b { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.randai__next-checks ol { margin: 0; padding-left: 1.15rem; }
+.randai__next-checks li { font-size: 13px; line-height: 1.4; }
+.randai__gap-note { display: block; margin-top: 8px; font-size: 12px; opacity: .8; }
 
 .randai__equipment { display:grid; gap:7px; margin:.75rem 0; padding:10px; border:1px solid var(--rs-border,rgba(15,23,42,.12)); border-radius:12px; background:color-mix(in srgb,var(--rs-accent,#315efb) 5%,transparent); }
 .randai__equipment > b { font-size:12px; text-transform:uppercase; letter-spacing:.03em; }

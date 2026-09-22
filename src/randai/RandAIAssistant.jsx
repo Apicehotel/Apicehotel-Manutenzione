@@ -20,9 +20,20 @@ function hvacConclusionLabel(diagnostic) {
     'floor-temperature-available-switch-unmapped': 'Il sensore C/F del piano Jazz è disponibile. L’interruttore del piano non è ancora mappato, quindi RandAI non inventa uno stato ON/OFF.',
     'floor-circuit-off': 'Il circuito del piano Jazz risulta SPENTO.',
     'floor-circuit-on-check-downstream': 'Il circuito del piano Jazz risulta ATTIVO; se il problema persiste, il controllo successivo è a valle.',
+    'temperature-alert': 'Almeno un sensore è in ALLERTA: tratta la temperatura come anomalia operativa e verifica il locale prima di chiudere.',
     'insufficient-data': 'I dati disponibili non bastano ancora per restringere la diagnosi.',
   }
   return labels[diagnostic?.conclusion] || labels['insufficient-data']
+}
+
+function NextChecks({ checks, title = 'Prossimi controlli' }) {
+  if (!Array.isArray(checks) || checks.length === 0) return null
+  return (
+    <div className="randai__next-checks" data-testid="randai-next-checks">
+      <b>{title}</b>
+      <ol>{checks.map((check) => <li key={check}>{check}</li>)}</ol>
+    </div>
+  )
 }
 
 function HvacDiagnostic({ diagnostic }) {
@@ -227,7 +238,10 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
   }
 
   const readMessage = (message) => {
-    const text = message.text || [message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || [])].filter(Boolean).join('. ')
+    const text = message.text
+      || [message.headline, ...(message.nextChecks || []), message.procedure?.title, message.procedure?.summary, ...(message.procedure?.steps || [])]
+        .filter(Boolean)
+        .join('. ')
     if (!text) return
     try { audio.current?.speak(text) } catch { setAudioNotice('Lettura vocale non disponibile su questo dispositivo.') }
   }
@@ -267,8 +281,16 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
 
     try {
       const guidance = await retrieveRandAIGuidance({ hotelId: session.hotelId, query: clean, contextQuery })
-      if (!guidance) {
-        setMessages((current) => [...current, { role: 'assistant', kind: 'missing', text: 'Non trovo ancora conoscenza approvata o dati live sufficienti per questo problema. Non improvviso: raccogliamo zona, impianto e sintomi e poi decidiamo il controllo successivo.' }])
+      if (!guidance || guidance.found === false) {
+        setMessages((current) => [...current, {
+          role: 'assistant',
+          kind: 'missing',
+          text: guidance?.headline || 'Non trovo ancora conoscenza approvata o dati live sufficienti per questo problema. Non improvviso: raccogliamo zona, impianto e sintomi e poi decidiamo il controllo successivo.',
+          headline: guidance?.headline || null,
+          nextChecks: guidance?.nextChecks || [],
+          gapCaptured: Boolean(guidance?.gapCaptured),
+          resolvedQuery: guidance?.resolvedQuery || clean,
+        }])
         return
       }
       setMessages((current) => [...current, { role: 'assistant', kind: 'guidance', ...guidance }])
@@ -307,6 +329,8 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
                 {audio.current?.capabilities.tts && <button type="button" className="randai__audio-action" onClick={() => readMessage(message)} aria-label="Leggi la risposta RandAI">🔊 Leggi</button>}
+                {message.headline && <h3 className="randai__headline" data-testid="randai-headline">{message.headline}</h3>}
+                <NextChecks checks={message.nextChecks} />
                 <HvacDiagnostic diagnostic={message.hvacDiagnostic} />
                 {issueResource?.id && <ProjectIntelligencePanel intelligence={buildProjectIntelligence({ hotelId: session.hotelId, issue: issueResource, equipment: message.equipment, history: message.history, memory: message.memory, suggestions: message.suggestions, documents: message.documents, sensors: message.sensors })} />}
                 {message.sensors?.length > 0 && (
@@ -356,7 +380,7 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
                         <strong>{item.symptom}</strong>
                         {item.cause && <span>Causa confermata: {item.cause}</span>}
                         <small>Soluzione: {item.solution}</small>
-                        <small>{item.confirmationCount || 1} conferma/e · {item.sourceLabel}</small>}
+                        <small>{item.confirmationCount || 1} conferma/e · {item.sourceLabel}</small>
                       </div>
                     ))}
                   </div>
@@ -402,6 +426,12 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
                 {audio.current?.capabilities.tts && <button type="button" className="randai__audio-action" onClick={() => readMessage(message)} aria-label="Leggi la risposta RandAI">🔊 Leggi</button>}
                 <span className="randai__source">{message.kind === 'error' ? 'Base tecnica non disponibile' : 'Conoscenza insufficiente'}</span>
                 <p>{message.text}</p>
+                <NextChecks checks={message.nextChecks} title="Cosa mi serve per aiutarti" />
+                {message.kind === 'missing' && message.gapCaptured && (
+                  <small className="randai__gap-note" data-testid="randai-gap-captured">
+                    Lacuna registrata: la squadra RandAI può completarla senza inventare sul campo.
+                  </small>
+                )}
               </div>
             ))}
             {busy && <div className="randai__bubble randai__bubble--assistant"><span className="randai__source">Controllo memoria e stato impianto…</span></div>}
