@@ -5,6 +5,7 @@ import { getIssueWorkspace, startIssueWorkspace, confirmIssueWorkspaceStep, prep
 import { getRandAIContext } from './context/envelope.js'
 import { buildProjectIntelligence } from './project-intelligence.js'
 import { createBrowserRandAudio, createTranscriptArtifact } from './audio/index.js'
+import { readRandAIChatMemory, writeRandAIChatMemory } from './randai-chat-memory.js'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -172,11 +173,12 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
   const isPage = variant === 'page'
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(isPage)
-  const [query, setQuery] = useState('')
-  const [messages, setMessages] = useState([])
+  const boot = readRandAIChatMemory(loadSession())
+  const [query, setQuery] = useState(boot.query)
+  const [messages, setMessages] = useState(boot.messages)
   const [busy, setBusy] = useState(false)
-  const [workspace, setWorkspace] = useState(null)
-  const [workspaceSummary, setWorkspaceSummary] = useState('')
+  const [workspace, setWorkspace] = useState(boot.workspace)
+  const [workspaceSummary, setWorkspaceSummary] = useState(boot.workspaceSummary)
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const [listening, setListening] = useState(false)
   const [audioNotice, setAudioNotice] = useState('')
@@ -193,14 +195,29 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
 
   useEffect(() => {
     if (!isPage) setOpen(false)
-    setMessages([])
-    setQuery('')
-    setBusy(false)
     audio.current?.stopListening()
     audio.current?.stopSpeaking()
     setListening(false)
     setAudioNotice('')
-  }, [session?.hotelId, session?.userId, isPage])
+    setBusy(false)
+  }, [isPage])
+
+  const chatKey = `${session?.hotelId || ''}:${session?.userId || ''}`
+  const chatKeyRef = useRef(chatKey)
+
+  useEffect(() => {
+    if (!session?.hotelId) return
+    if (chatKeyRef.current !== chatKey) {
+      chatKeyRef.current = chatKey
+      const next = readRandAIChatMemory(session)
+      setMessages(next.messages)
+      setQuery(next.query)
+      setWorkspace(next.workspace)
+      setWorkspaceSummary(next.workspaceSummary)
+      return
+    }
+    writeRandAIChatMemory(session, { messages, query, workspace, workspaceSummary })
+  }, [chatKey, session, messages, query, workspace, workspaceSummary])
 
   useEffect(() => {
     if (isPage) return undefined
