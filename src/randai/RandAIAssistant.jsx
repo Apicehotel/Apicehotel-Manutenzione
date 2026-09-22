@@ -129,15 +129,17 @@ function useRandAIPageViewport(enabled) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         if (!ref.current) return
-        const top = ref.current.getBoundingClientRect().top
-        const visual = window.visualViewport
-        const viewportBottom = visual ? visual.offsetTop + visual.height : window.innerHeight
+        const header = document.querySelector('.rs-header')
         const bottomNav = document.querySelector('.rs-bottomnav')
+        const visual = window.visualViewport
+        const layoutHeight = visual ? visual.height + visual.offsetTop : window.innerHeight
+        const headerBottom = header ? Math.ceil(header.getBoundingClientRect().bottom) : 0
         const navVisible = bottomNav && window.getComputedStyle(bottomNav).display !== 'none'
-        const navTop = navVisible ? bottomNav.getBoundingClientRect().top : viewportBottom
-        const bottom = Math.min(viewportBottom, navTop)
-        const height = Math.max(220, Math.floor(bottom - top))
-        ref.current.style.setProperty('--randai-viewport-h', `${height}px`)
+        const navTop = navVisible ? Math.floor(bottomNav.getBoundingClientRect().top) : layoutHeight
+        const top = Math.max(0, headerBottom)
+        const bottom = Math.max(0, Math.ceil(window.innerHeight - Math.min(navTop, layoutHeight)))
+        ref.current.style.setProperty('--randai-top', `${top}px`)
+        ref.current.style.setProperty('--randai-bottom', `${bottom}px`)
       })
     }
 
@@ -152,6 +154,7 @@ function useRandAIPageViewport(enabled) {
     const nav = document.querySelector('.rs-bottomnav')
     if (header) observer?.observe(header)
     if (nav) observer?.observe(nav)
+    if (content) observer?.observe(content)
 
     return () => {
       cancelAnimationFrame(frame)
