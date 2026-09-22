@@ -91,15 +91,18 @@ export function buildHvacDiagnostic({ zone, room = null, mode = 'unknown', senso
   const hasStaleTemperature = temperatures.some((sensor) => sensor.stale)
 
   let conclusion = 'insufficient-data'
+  const hasAlert = temperatures.some((sensor) => sensor.alert && sensor.online)
   if (zone.section === 'wine') {
     if (hasMissingTemperature || hasOfflineTemperature || hasStaleTemperature) conclusion = 'check-upstream-data'
     else if (relay.key === 'off') conclusion = 'circuit-off'
+    else if (hasAlert) conclusion = 'temperature-alert'
     else if (relay.key === 'on') conclusion = 'circuit-on-check-downstream'
     else conclusion = 'check-circuit-state'
   } else if (zone.section === 'jazz') {
     if (hasMissingTemperature || hasOfflineTemperature || hasStaleTemperature) conclusion = 'check-floor-temperature-data'
-    else if (!zone.switch_device_id) conclusion = 'floor-temperature-available-switch-unmapped'
+    else if (!zone.switch_device_id) conclusion = hasAlert ? 'temperature-alert' : 'floor-temperature-available-switch-unmapped'
     else if (relay.key === 'off') conclusion = 'floor-circuit-off'
+    else if (hasAlert) conclusion = 'temperature-alert'
     else if (relay.key === 'on') conclusion = 'floor-circuit-on-check-downstream'
   }
 
@@ -123,7 +126,9 @@ export function buildHvacDiagnostic({ zone, room = null, mode = 'unknown', senso
       stale: switchSensor ? stale(switchSensor.aggiornato_il, now) : true,
     } : null,
     temperatures,
+    // Device-side alert flags exist; numeric hotel thresholds remain unset.
     thresholds_defined: false,
+    sensor_alert_active: hasAlert,
     conclusion,
   }
 }

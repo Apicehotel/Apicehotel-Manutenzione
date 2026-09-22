@@ -60,3 +60,12 @@ test('Jazz includes the floor temperature for a real room', () => {
   assert.equal(diagnostic.switch, null)
   assert.equal(diagnostic.conclusion, 'floor-temperature-available-switch-unmapped')
 })
+
+test('Jazz alert with unmapped switch still surfaces temperature-alert', () => {
+  const zone = zones[2]
+  const now = Date.parse('2026-08-29T18:40:00Z')
+  const sensors = [{ device_id: 'jazz-p3-temp', nome: 'Temp. C/F Jazz P3', temperatura: 29, online: true, in_allerta: true, aggiornato_il: '2026-08-29T18:30:00Z' }]
+  const diagnostic = buildHvacDiagnostic({ zone, room: 3305, mode: 'cooling', sensors, now })
+  assert.equal(diagnostic.conclusion, 'temperature-alert')
+  assert.equal(diagnostic.sensor_alert_active, true)
+})
