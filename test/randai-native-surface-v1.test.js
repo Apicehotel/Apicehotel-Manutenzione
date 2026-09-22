@@ -19,6 +19,7 @@ test('RandAI messages and composer remain scroll and keyboard safe', () => {
   assert.match(css, /overscroll-behavior:\s*contain/)
   assert.match(css, /\.randai__composer[\s\S]*flex:\s*0 0 auto/)
   assert.match(css, /\.randai--page \.randai__messages[\s\S]*flex:\s*1 1 auto/)
+  assert.match(css, /\.randai--page\s*\{[\s\S]*?position:\s*fixed/)
   assert.match(css, /@media \(max-height: 560px\)/)
 })
 
