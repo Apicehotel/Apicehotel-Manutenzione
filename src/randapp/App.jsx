@@ -223,7 +223,6 @@ function Login({ onAuthenticated, onOpenSettings }) {
               aria-busy={busy || undefined}
               data-testid="login-submit"
               iconRight="arrowRight"
-              onClick={(e) => { e.preventDefault(); void submit(e) }}
             >
               {busy ? 'ACCESSO…' : 'ACCEDI'}
             </Button>
