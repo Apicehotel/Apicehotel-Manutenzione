@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { HOTELS } from '../../config.js'
 import { Badge, Button, Card, Spinner } from '../ui.jsx'
 import { loadSession } from '../../session.js'
 import { friendlyNtfyError, invokeNtfyAdmin } from '../ntfy/ntfy-client.js'
@@ -9,18 +10,21 @@ function fmtWhen(value) {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('it-IT')
 }
 
+const DEFAULT_HOTEL = HOTELS[0]?.id || 'hotelgio'
+
 export default function NtfyTab() {
   const session = useMemo(() => loadSession(), [])
-  const hotelId = session?.hotelId || null
+  const [hotelId, setHotelId] = useState(() => session?.hotelId || DEFAULT_HOTEL)
   const [busy, setBusy] = useState(true)
   const [action, setAction] = useState('')
   const [status, setStatus] = useState(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
-  const refresh = async () => {
-    if (!hotelId) {
+  const refresh = async (targetHotelId = hotelId) => {
+    if (!targetHotelId) {
       setBusy(false)
+      setStatus(null)
       setError('Seleziona una struttura per gestire ntfy.')
       return
     }
@@ -28,7 +32,7 @@ export default function NtfyTab() {
     setError('')
     setMessage('')
     try {
-      const next = await invokeNtfyAdmin(hotelId, 'status')
+      const next = await invokeNtfyAdmin(targetHotelId, 'status')
       setStatus(next)
     } catch (err) {
       setStatus(null)
@@ -38,7 +42,13 @@ export default function NtfyTab() {
     }
   }
 
-  useEffect(() => { refresh() }, [hotelId])
+  useEffect(() => { refresh(hotelId) }, [hotelId])
+
+  const selectHotel = (nextHotelId) => {
+    if (!nextHotelId || nextHotelId === hotelId) return
+    setStatus(null)
+    setHotelId(nextHotelId)
+  }
 
   const run = async (nextAction, extra = {}, successMessage) => {
     if (!hotelId) return
@@ -48,7 +58,7 @@ export default function NtfyTab() {
     try {
       const result = await invokeNtfyAdmin(hotelId, nextAction, extra)
       setMessage(successMessage(result))
-      await refresh()
+      await refresh(hotelId)
     } catch (err) {
       setError(friendlyNtfyError(err))
     } finally {
@@ -58,6 +68,7 @@ export default function NtfyTab() {
 
   const current = status?.current
   const enabled = Boolean(status?.enabled)
+  const selectedHotel = HOTELS.find((hotel) => hotel.id === hotelId)
 
   return (
     <div data-testid="ntfy-admin-tab" style={{ display: 'grid', gap: 16 }}>
@@ -70,13 +81,35 @@ export default function NtfyTab() {
           Qui attivi ntfy, completi i topic mancanti e verifichi l’invio.
           Gli operatori restano su Profilo con i soli short link personali: i topic tecnici non escono da questo pannello.
         </p>
-        {!hotelId && <p className="rs-error">Struttura non selezionata.</p>}
+
+        <fieldset className="rs-fieldset" style={{ marginTop: 12 }}>
+          <legend>Struttura da gestire</legend>
+          <div className="rs-hotel-toggles" role="group" aria-label="Seleziona struttura ntfy">
+            {HOTELS.map((hotel) => (
+              <button
+                type="button"
+                key={hotel.id}
+                className={`rs-hotel-toggle ${hotelId === hotel.id ? 'on' : ''}`}
+                aria-pressed={hotelId === hotel.id}
+                onClick={() => selectHotel(hotel.id)}
+              >
+                {hotelId === hotel.id ? '✓ ' : ''}{hotel.short}
+              </button>
+            ))}
+          </div>
+          {!session?.hotelId && (
+            <small style={{ display: 'block', marginTop: 8, color: 'var(--rs-text-3)' }}>
+              Sei in Impostazioni senza sessione hotel: scegli qui la struttura (es. Giò) e poi completa i topic.
+            </small>
+          )}
+        </fieldset>
+
         {busy && !status && <Spinner label="Carico stato ntfy…" />}
         {status && (
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
             <div className="rs-diag-row">
               <div>
-                <strong>{current?.label || hotelId}</strong>
+                <strong>{current?.label || selectedHotel?.name || hotelId}</strong>
                 <small>
                   Server {status.server_host} · urgenti {current?.urgent_configured ? 'ok' : 'mancanti'} ·
                   promemoria ruolo {current?.role_topics_configured || 0}/{current?.role_topics_expected || 0} ·
@@ -116,7 +149,7 @@ export default function NtfyTab() {
               >
                 {action === 'test_urgent' ? 'Invio…' : 'Test avvisi urgenti'}
               </Button>
-              <Button type="button" variant="ghost" disabled={Boolean(action) || busy} onClick={refresh}>Aggiorna</Button>
+              <Button type="button" variant="ghost" disabled={Boolean(action) || busy} onClick={() => refresh(hotelId)}>Aggiorna</Button>
             </div>
           </div>
         )}
@@ -129,7 +162,13 @@ export default function NtfyTab() {
           <div className="rs-section__head"><h3>Stato multi-hotel</h3></div>
           <div style={{ display: 'grid', gap: 8 }}>
             {status.hotels.map((hotel) => (
-              <div key={hotel.hotel_id} className="rs-diag-row">
+              <button
+                type="button"
+                key={hotel.hotel_id}
+                className="rs-diag-row"
+                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: hotel.hotel_id === hotelId ? '1px solid var(--rs-cyan)' : undefined, borderRadius: 10, background: 'transparent' }}
+                onClick={() => selectHotel(hotel.hotel_id)}
+              >
                 <div>
                   <strong>{hotel.label}</strong>
                   <small>
@@ -138,9 +177,9 @@ export default function NtfyTab() {
                   </small>
                 </div>
                 <Badge tone={hotel.urgent_configured && hotel.role_topics_configured === hotel.role_topics_expected ? 'done' : 'waiting'}>
-                  {hotel.hotel_id === hotelId ? 'Corrente' : hotel.urgent_configured ? 'Ok' : 'Gap'}
+                  {hotel.hotel_id === hotelId ? 'Selezionata' : hotel.urgent_configured ? 'Ok' : 'Gap'}
                 </Badge>
-              </div>
+              </button>
             ))}
           </div>
         </Card>
