@@ -142,6 +142,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [directoryState, setDirectoryState] = useState('loading')
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
+  const [issueFocusId, setIssueFocusId] = useState(null)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [interventionCreateOpen, setInterventionCreateOpen] = useState(false)
@@ -256,11 +257,22 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     const nextView = target?.view || item.id
     if (target?.settings) { setSettings(target.settings); return }
     if (!viewAllowed(nextView)) return
+    if (nextView === 'issues') setIssueFocusId(null)
     setPlanningCreateRequest(null)
     setInterventionCreateOpen(false)
     setSettings(null)
     setView(nextView)
     if (target?.create) setCreateSignal((n) => n + 1)
+  }
+
+  const openIssueFromOperations = (issueId) => {
+    if (!viewAllowed('issues') || issueId == null) return
+    setDrawer(false)
+    setPlanningCreateRequest(null)
+    setInterventionCreateOpen(false)
+    setSettings(null)
+    setIssueFocusId(String(issueId))
+    setView('issues')
   }
 
   const openHomePersonalize = () => {
@@ -387,8 +399,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
     let content = null
     if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
-    if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id) => pick({ id })} />
-    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} />
+    if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id, context) => id === 'issues' && context?.issueId != null ? openIssueFromOperations(context.issueId) : pick({ id })} />
+    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} focusIssueId={issueFocusId} onFocusConsumed={() => setIssueFocusId(null)} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
