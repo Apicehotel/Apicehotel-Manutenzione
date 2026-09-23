@@ -59,3 +59,16 @@ test('RandAI remains a sidebar placement item', async () => {
   assert.match(roleNav, /\['randai', 'RandAI'\]/)
   assert.match(roleNav, /randai: 'side'/)
 })
+
+
+test('Task stays fixed even when live task permissions are temporarily stale', () => {
+  const placement = () => 'side'
+  for (const role of ['Governante','Capo Governante']) {
+    const nav = buildPrimaryBottomNav({
+      placement,
+      viewAllowed: (id) => ['issues','housekeeping','home','supplies'].includes(id),
+      user: { role },
+    })
+    assert.deepEqual(nav.map((item) => item.id), ['issues','housekeeping','home','my-work','supplies'])
+  }
+})
