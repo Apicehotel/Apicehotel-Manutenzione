@@ -78,8 +78,9 @@ test('RandAI agent tools are generated from the same catalog and require governe
   assert.equal(observed.actionId, 'issue.set_waiting_part')
   assert.equal(observed.hotelId, 'hotelgio')
   assert.deepEqual(observed.input, { part_name: 'Ventola' })
-  await assert.rejects(
-    () => registry.execute('issue.mark_done', { resourceId: '00000000-0000-4000-8000-000000000001' }),
-    /requires hotelId and resourceId/,
-  )
+  const denied = await registry.execute('issue.mark_done', {
+    resourceId: '00000000-0000-4000-8000-000000000001',
+  })
+  assert.equal(denied.status, 'FAILED')
+  assert.match(denied.error.message, /requires hotelId and resourceId/)
 })
