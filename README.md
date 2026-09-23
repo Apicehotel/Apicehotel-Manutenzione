@@ -7,7 +7,7 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 21 settembre 2026
+## Stato consolidato — 23 settembre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
@@ -96,6 +96,12 @@ RandMind può apprendere da esiti verificati ma non può cambiare autonomamente 
 
 Gli adapter Web, RandChat, MCP e Twilio/WhatsApp producono envelope canonici ma non decidono identità, hotel, ruolo, rischio o permessi. Nessun adapter può scrivere direttamente dati operativi.
 
+### Shared Actions / Agent-Native contract
+
+RandApp adotta il pattern Agent-Native **define once, reuse everywhere** senza introdurre un secondo runtime applicativo. Il catalogo canonico `src/randai/actions/catalog.js` descrive le capacità condivise da RandApp, RandAI/agenti e MCP; la policy server-side resta indipendente e fail-closed.
+
+Le azioni operative attuali (`issue.update_priority`, `issue.set_waiting_part`, `issue.mark_done`) sono private, hotel-scoped e HITL. MCP genera i propri tool dal catalogo invece di mantenere una seconda lista manuale. Agent-Native completo non è una dipendenza runtime: un eventuale worker futuro dovrà chiamare RandGateway e non potrà possedere auth, RLS, audit o scritture operative dirette.
+
 ## RandRadar Full Evolution
 
 Repo Radar deriva il perimetro dalle 24 pagine RandApp, dai moduli governati e dai fronti evolutivi RandAI. Il discovery automatico usa GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX; la policy manuale copre anche marketplace, registri MCP, Figma Community, Storybook e altre fonti pertinenti.
@@ -169,6 +175,7 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 - `docs/architecture/RANDUI_STANDARDIZATION_V1.md` — token, motion e icone.
 - `docs/architecture/RANDAI_UI_FOUNDATION_V1.md` — ownership UI RandAI.
 - `docs/architecture/RANDGATEWAY_POINT7.md` — gateway, adapter, HITL e audit.
+- `docs/architecture/AGENT_NATIVE_ACTIONS.md` — action catalog condiviso e confini Agent-Native.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` e `docs/RAND_RADAR_POLICY.md` — discovery multisorgente e governance.
 - `docs/architecture/RANDDESIGNBRIDGE_V1.md` — Figma ↔ RandUI e visual gate.
 - `docs/architecture/RANDCHAT.md` — gruppi, DM E2EE e media.
