@@ -9,19 +9,39 @@ import {
   validationIssue,
 } from '../reliability/validation-engine.js'
 import { getRandAIContext } from './context/envelope.js'
+import { getRandActionDefinition } from './actions/catalog.js'
 import { submitRandGatewayEnvelope } from '../randgateway-client.js'
+
+function actionTypeIssue(type) {
+  const definition = getRandActionDefinition(type)
+  return definition?.surfaces?.randapp === true
+    ? []
+    : [validationIssue('type', ValidationCode.INVALID_VALUE, 'Azione non esposta a RandApp')]
+}
 
 function validatePrepareInput({ hotelId, type, resourceId, input }) {
   const issues = [
     ...required(hotelId, 'hotelId'),
     ...required(type, 'type'),
     ...required(resourceId, 'resourceId'),
+    ...actionTypeIssue(type),
   ]
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     issues.push(validationIssue('input', ValidationCode.INVALID_VALUE, 'input deve essere un oggetto'))
   }
   const result = combineValidation(issues)
   if (!result.ok) throw new OperationValidationError(result, 'Azione RandAI non valida')
+}
+
+function validateExecutionInput({ hotelId, approvalId, type, resourceId }) {
+  const result = combineValidation(
+    required(hotelId, 'hotelId'),
+    required(approvalId, 'approvalId'),
+    required(type, 'type'),
+    required(resourceId, 'resourceId'),
+    actionTypeIssue(type),
+  )
+  if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI non valida')
 }
 
 async function invokeGateway({ hotelId, type, resourceId, input = {}, approvalId = null, approvalDecision = 'execute' }) {
@@ -74,25 +94,13 @@ export async function prepareRandAIAction({ hotelId, type, resourceId, input = {
 }
 
 export async function executeRandAIAction({ hotelId, approvalId, type, resourceId, input = {} } = {}) {
-  const result = combineValidation(
-    required(hotelId, 'hotelId'),
-    required(approvalId, 'approvalId'),
-    required(type, 'type'),
-    required(resourceId, 'resourceId'),
-  )
-  if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI non valida')
+  validateExecutionInput({ hotelId, approvalId, type, resourceId })
   const response = await invokeGateway({ hotelId, approvalId, type, resourceId, input })
   return response.result
 }
 
 export async function executeGovernedRandAIAction({ hotelId, approvalId, type, resourceId, input = {}, planValidation, confidenceDecision, permissionGranted = false } = {}) {
-  const result = combineValidation(
-    required(hotelId, 'hotelId'),
-    required(approvalId, 'approvalId'),
-    required(type, 'type'),
-    required(resourceId, 'resourceId'),
-  )
-  if (!result.ok) throw new OperationValidationError(result, 'Esecuzione RandAI governata non valida')
+  validateExecutionInput({ hotelId, approvalId, type, resourceId })
   assertActionMayExecute({
     hotelId,
     planValidation,
@@ -104,7 +112,7 @@ export async function executeGovernedRandAIAction({ hotelId, approvalId, type, r
 }
 
 export async function rejectRandAIAction({ hotelId, approvalId, type, resourceId, input = {} } = {}) {
-  if (!hotelId || !approvalId || !type || !resourceId) return null
+  if (!hotelId || !approvalId || !type || !resourceId || !getRandActionDefinition(type)?.surfaces?.randapp) return null
   const response = await invokeGateway({ hotelId, approvalId, type, resourceId, input, approvalDecision: 'reject' })
   return response.result
 }

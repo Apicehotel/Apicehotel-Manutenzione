@@ -22,6 +22,14 @@ This file is the canonical engineering contract for AI coding agents working on 
 7. Before declaring completion, run or rely on the repository quality gates and verify the actual CI result.
 8. For every substantive PR, update `README.md` to the current operational state (no zombie docs; detail stays in dedicated files).
 
+## Shared action rules
+
+- Application capabilities shared by RandApp, RandAI/agents and MCP belong in `src/randai/actions/catalog.js`; do not maintain parallel public tool lists.
+- The shared catalog is capability metadata, never the authorization authority. Server-side policy, Supabase membership/RLS and RandGateway remain fail-closed.
+- Do not add Agent-Native, another MCP runtime, another auth layer or another operational database when the existing Rand stack already owns that responsibility.
+- A future Agent-Native bridge may translate catalog entries to `defineAction()`, but every operational `run()` must dispatch through RandGateway and must not write operational tables directly.
+- Public-agent exposure defaults to off. Protected writes require the existing Rand HITL flow even if an external framework offers its own approval primitive.
+
 ## React and frontend rules
 
 Apply Vercel React engineering guidance:
