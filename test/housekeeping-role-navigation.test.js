@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Governante and Capo Governante bottom nav is Segnalazioni Housekeeping Home Task Rifornimenti', () => {
   const placement = () => 'side'
-  const allowed = new Set(['housekeeping','supplies','home','my-work'])
+  const allowed = new Set(['issues','housekeeping','supplies','home','my-work'])
   for (const role of ['Governante','Capo Governante']) {
     const nav = buildPrimaryBottomNav({
       placement,
@@ -51,4 +51,11 @@ test('housekeeping sidebar keeps RandAI available while Chat stays hidden', asyn
   const nav = await read('src/randapp/nav.js')
   assert.match(nav, /id: 'randai'.*label: 'RandAI'.*show: true/s)
   assert.match(nav, /id: 'chat'.*show: Boolean\(user\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(user\.role\)/s)
+})
+
+
+test('RandAI remains a sidebar placement item', async () => {
+  const roleNav = await read('src/randapp/role-navigation.js')
+  assert.match(roleNav, /\['randai', 'RandAI'\]/)
+  assert.match(roleNav, /randai: 'side'/)
 })
