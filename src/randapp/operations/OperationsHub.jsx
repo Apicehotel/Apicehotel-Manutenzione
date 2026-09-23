@@ -108,9 +108,23 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
             {topIssues.length ? (
               <div className="rs-migrated-list">
                 {topIssues.map((item) => (
-                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('issues')}>
+                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('issues', { issueId: item.id })}>
                     <div className="rs-op-card__head">
-                      <div><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || 'Segnalazione'}</small></div>
+                      <div style={{ minWidth: 0, width: '100%', textAlign: 'left' }}>
+                        <strong
+                          style={{
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 3,
+                            overflow: 'hidden',
+                            textAlign: 'left',
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {item.title || item.room || 'Segnalazione'}
+                        </strong>
+                        <small style={{ display: 'block', textAlign: 'left', marginTop: 4 }}>{item.room || 'Segnalazione'}</small>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 10 }}>
                       <Badge tone="info">{item.category || 'Segnalazione'}</Badge>

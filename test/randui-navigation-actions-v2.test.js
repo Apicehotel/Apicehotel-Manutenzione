@@ -72,3 +72,17 @@ test('Intervention tags stay at card bottom with waiting-piece and technician la
   assert.ok(interventions.includes('<InterventionTags item={item}/>'))
   assert.ok(!operationsHub.includes("<small>{item.status === 'da_finire'"))
 })
+
+
+test('Top 3 issue rows open the cited issue and clamp the title to three left-aligned lines', () => {
+  const issuesView = read('../src/randapp/Issues.jsx')
+  assert.ok(operationsHub.includes("onOpen('issues', { issueId: item.id })"))
+  assert.ok(operationsHub.includes('WebkitLineClamp: 3'))
+  assert.ok(operationsHub.includes("textAlign: 'left'"))
+  assert.ok(shell.includes('const [issueFocusId, setIssueFocusId] = useState(null)'))
+  assert.ok(shell.includes('openIssueFromOperations(context.issueId)'))
+  assert.ok(shell.includes('focusIssueId={issueFocusId}'))
+  assert.ok(issuesView.includes('focusIssueId = null'))
+  assert.ok(issuesView.includes("String(issue.id) === String(focusIssueId)"))
+  assert.ok(issuesView.includes('setSelected(target)'))
+})
