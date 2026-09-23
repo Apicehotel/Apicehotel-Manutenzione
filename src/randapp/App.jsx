@@ -101,7 +101,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const [recovering, setRecovering] = useState(false)
   useEffect(() => {
     let active = true
-    loadDirectoryAll()
+    withTimeout(loadDirectoryAll(), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
       .then((rows) => {
         if (!active) return
         setDirectory(rows)

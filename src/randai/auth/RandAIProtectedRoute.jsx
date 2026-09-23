@@ -1,12 +1,15 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../supabase.js'
 import { HOTELS } from '../../config.js'
+import { withTimeout } from '../../async-timeout.js'
+import { lazyWithRetry } from '../../lazy-retry.js'
 import { changeRandAIPassword, createRandAIUser, isValidRandAIPassword, isValidRandAIUsername, listRandAIUsers, loginRandAI, signOutRandAI } from './randai-auth.js'
 import './randai-auth.css'
 
-const RandAIControlCenter=lazy(()=>import('../control/RandAIControlCenter.jsx'))
-const RandAILive=lazy(()=>import('../live/RandAILive.jsx'))
+const RandAIControlCenter=lazyWithRetry(()=>import('../control/RandAIControlCenter.jsx'))
+const RandAILive=lazyWithRetry(()=>import('../live/RandAILive.jsx'))
 const ALL_HOTELS=HOTELS.map((hotel)=>hotel.id)
+const ACCESS_TIMEOUT_MS=12000
 
 function Login({onReady}){
   const [username,setUsername]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -29,7 +32,28 @@ function AccessManager({open,onClose,currentUser}){
 
 export default function RandAIProtectedRoute({mode='control'}){
   const [state,setState]=useState({loading:true,allowed:false,user:null}),[manage,setManage]=useState(false)
-  const check=useCallback(async()=>{if(!supabase){setState({loading:false,allowed:false,user:null});return}const {data}=await supabase.auth.getUser();const user=data?.user;if(!user){setState({loading:false,allowed:false,user:null});return}const {data:memberships}=await supabase.from('hotel_memberships').select('hotel_id,role,active,can_access_admin').eq('auth_user_id',user.id).eq('active',true).eq('role','RandAI').eq('can_access_admin',true);if(!memberships?.length){setState({loading:false,allowed:false,user:null});return}const {data:profile}=await supabase.from('profiles').select('display_name').eq('auth_user_id',user.id).maybeSingle();setState({loading:false,allowed:true,user:{id:user.id,name:profile?.display_name||'RandAI',hotels:memberships.map((x)=>x.hotel_id)}})},[])
+  const check=useCallback(async()=>{
+    if(!supabase){ setState({loading:false,allowed:false,user:null}); return }
+    try{
+      const {data}=await withTimeout(supabase.auth.getUser(), ACCESS_TIMEOUT_MS, 'RandAI sessione timeout')
+      const user=data?.user
+      if(!user){ setState({loading:false,allowed:false,user:null}); return }
+      const {data:memberships}=await withTimeout(
+        supabase.from('hotel_memberships').select('hotel_id,role,active,can_access_admin').eq('auth_user_id',user.id).eq('active',true).eq('role','RandAI').eq('can_access_admin',true),
+        ACCESS_TIMEOUT_MS,
+        'RandAI membership timeout',
+      )
+      if(!memberships?.length){ setState({loading:false,allowed:false,user:null}); return }
+      const {data:profile}=await withTimeout(
+        supabase.from('profiles').select('display_name').eq('auth_user_id',user.id).maybeSingle(),
+        ACCESS_TIMEOUT_MS,
+        'RandAI profile timeout',
+      )
+      setState({loading:false,allowed:true,user:{id:user.id,name:profile?.display_name||'RandAI',hotels:memberships.map((x)=>x.hotel_id)}})
+    }catch{
+      setState({loading:false,allowed:false,user:null})
+    }
+  },[])
   useEffect(()=>{check()},[check])
   const ready=()=>check()
   const logout=async()=>{await signOutRandAI();setState({loading:false,allowed:false,user:null})}

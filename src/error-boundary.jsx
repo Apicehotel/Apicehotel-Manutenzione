@@ -81,3 +81,73 @@ export default class AppErrorBoundary extends Component {
     return this.props.children
   }
 }
+
+/**
+ * Isolates a single Shell destination so a render/chunk failure does not tear
+ * down the whole chrome (header, bottom nav, hotel switch).
+ */
+export class ViewErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error, info) {
+    console.error('ViewErrorBoundary', this.props.viewId || 'view', error, info?.componentStack)
+    import('./diagnostics-client.js').then(({ reportDiagnosticEvent }) => reportDiagnosticEvent({
+      severity: 'error',
+      kind: 'react-view-render',
+      message: error?.message || 'Errore render sezione',
+      detail: `${this.props.viewId || ''}\n${error?.stack || ''}\n${info?.componentStack || ''}`,
+    })).catch(() => {})
+
+    if (typeof window !== 'undefined' && isRecoverableModuleError(error)) {
+      recoverFromDeploymentAssetError(error).catch(() => {})
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.viewId !== this.props.viewId && this.state.error) {
+      this.setState({ error: null })
+    }
+  }
+
+  handleRetry = () => {
+    if (typeof window !== 'undefined' && isRecoverableModuleError(this.state.error)) {
+      window.location.reload()
+      return
+    }
+    this.setState({ error: null })
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="rs-view-error" data-testid="view-error" style={{ padding: 24, textAlign: 'center' }}>
+        <h2 style={{ fontSize: 16, marginBottom: 8 }}>Questa sezione non si è caricata</h2>
+        <p style={{ fontSize: 14, color: '#5c645e', marginBottom: 16 }}>
+          Puoi riprovare la sezione senza uscire dall’app. Se il problema resta, ricarica RandApp.
+        </p>
+        <button
+          type="button"
+          data-testid="view-error-retry"
+          onClick={this.handleRetry}
+          style={{ padding: '10px 18px', marginRight: 8, borderRadius: 10, border: '1px solid #0e5c49', background: 'transparent', color: '#0e5c49', fontWeight: 700 }}
+        >
+          Riprova sezione
+        </button>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: '#0e5c49', color: '#fff', fontWeight: 700 }}
+        >
+          Ricarica l'app
+        </button>
+      </div>
+    )
+  }
+}

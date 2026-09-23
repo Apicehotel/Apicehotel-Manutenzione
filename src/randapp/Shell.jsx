@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { fetchDirectory } from '../users-data.js'
 import { withTimeout } from '../async-timeout.js'
 import { lazyWithRetry } from '../lazy-retry.js'
+import { ViewErrorBoundary } from '../error-boundary.jsx'
 import { Button, Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.js'
 import { canUser } from '../permissions.js'
@@ -40,19 +41,34 @@ const InterventionsView = lazyWithRetry(() => import('./operations/Interventions
 const UrgentView = lazyWithRetry(() => import('./operations/UrgentView.jsx'))
 const TaskView = lazyWithRetry(() => import('./operations/TaskView.jsx'))
 const RandAIAssistant = lazyWithRetry(() => import('../randai/RandAIAssistant.jsx'))
-const TemperatureView = lazyWithRetry(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
-  default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
-})))
-const PlantView = lazyWithRetry(() => import('../temperature.jsx').then(({ PlantStatus }) => ({
-  default: ({ hotel }) => <div data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
-})))
-const HousekeepingView = lazyWithRetry(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
-  default: ({ hotel, user }) => <div data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
-})))
-const TechnicianDirectoryView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
-const FeedbackView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
-const PinView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
-const ManualView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
+const TemperatureView = lazyWithRetry(() => import('../temperature.jsx').then((module) => {
+  if (!module?.TemperatureSensors) throw new Error("Cannot destructure property 'TemperatureSensors' from null or undefined value")
+  return { default: ({ hotel }) => <div data-testid="temperature-view"><module.TemperatureSensors hotel={hotel} /></div> }
+}))
+const PlantView = lazyWithRetry(() => import('../temperature.jsx').then((module) => {
+  if (!module?.PlantStatus) throw new Error("Cannot destructure property 'PlantStatus' from null or undefined value")
+  return { default: ({ hotel }) => <div data-testid="plants-view"><module.PlantStatus hotel={hotel} /></div> }
+}))
+const HousekeepingView = lazyWithRetry(() => import('../housekeeping.jsx').then((module) => {
+  if (!module?.Housekeeping) throw new Error("Cannot destructure property 'Housekeeping' from null or undefined value")
+  return { default: ({ hotel, user }) => <div data-testid="housekeeping-view"><module.Housekeeping hotel={hotel} user={user} /></div> }
+}))
+const TechnicianDirectoryView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => {
+  if (!module?.TechnicianDirectoryView) throw new Error('Failed to fetch dynamically imported module')
+  return { default: module.TechnicianDirectoryView }
+}))
+const FeedbackView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => {
+  if (!module?.FeedbackView) throw new Error('Failed to fetch dynamically imported module')
+  return { default: module.FeedbackView }
+}))
+const PinView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => {
+  if (!module?.PinView) throw new Error('Failed to fetch dynamically imported module')
+  return { default: module.PinView }
+}))
+const ManualView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => {
+  if (!module?.ManualView) throw new Error('Failed to fetch dynamically imported module')
+  return { default: module.ManualView }
+}))
 const DIRECTORY_TIMEOUT_MS = 12000
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
@@ -519,7 +535,12 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         </header>
 
         <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
-        <main className="rs-content" data-testid="main-content"><HousekeepingCompletionAlerts /><Suspense fallback={<ViewFallback />}>{renderView()}</Suspense></main>
+        <main className="rs-content" data-testid="main-content">
+          <HousekeepingCompletionAlerts />
+          <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
+            <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
+          </ViewErrorBoundary>
+        </main>
 
         <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => {
