@@ -26,7 +26,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'operativita', label: 'Operatività', items: [
         { id: 'issues', icon: 'issues', label: 'Segnalazioni', show: canUser(user, 'issues', 'view') },
         { id: 'new-issue', icon: 'plus', label: 'Nuova segnalazione', show: canUser(user, 'issues', 'create') },
-        { id: 'my-work', icon: 'check', label: 'I miei lavori', show: canUser(user, 'interventions', 'view') },
+        { id: 'my-work', icon: 'check', label: 'Task', show: canUser(user, 'urgent', 'view') || canUser(user, 'reminders', 'view') },
         { id: 'interventions', icon: 'wrench', label: 'Interventi', show: canUser(user, 'interventions', 'view') },
         { id: 'urgent', icon: 'warning', label: 'Avvisi urgenti', show: canUser(user, 'urgent', 'view') },
         { id: 'reminders', icon: 'bell', label: 'Promemoria', show: canUser(user, 'reminders', 'view') },
@@ -88,7 +88,7 @@ export const VIEW_GUARDS = {
   issues: view('issues'),
   chat: (u) => Boolean(u?.chat_enabled),
   interventions: view('interventions'),
-  'my-work': view('interventions'),
+  'my-work': (u) => canUser(u, 'urgent', 'view') || canUser(u, 'reminders', 'view'),
   inventory: view('inventory'),
   supplies: view('supplies'),
   urgent: view('urgent'),
@@ -101,7 +101,7 @@ export const VIEW_GUARDS = {
   technicians: view('technicians'),
   'feedback-received': (u) => canUser(u, 'app_settings', 'manage'),
   'desktop-download': view('desktop_download'),
-  randai: () => true,
+  randai: (u) => !['Governante','Capo Governante'].includes(u?.role),
 }
 
 export const CREATE_GUARDS = {
