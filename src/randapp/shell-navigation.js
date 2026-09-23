@@ -53,6 +53,7 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], 
       viewAllowed('supplies') && { slot: 2, id: 'supplies', key: 'supplies', icon: 'package', label: 'Rifornimenti' },
       viewAllowed('home') && { slot: 3, id: 'home', key: 'home', icon: 'home', label: 'Home' },
       viewAllowed('my-work') && { slot: 4, id: 'my-work', key: 'task', icon: 'check', label: 'Task' },
+      viewAllowed('randai') && { slot: 5, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' },
     ].filter(Boolean)
   }
 
