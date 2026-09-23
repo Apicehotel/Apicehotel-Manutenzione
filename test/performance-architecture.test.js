@@ -13,7 +13,7 @@ test('heavy RandApp views are route-lazy while Home stays immediate after auth',
   const shell = await source('src/randapp/Shell.jsx')
   assert.match(shell, /import \{ lazy, Suspense,/)
   assert.match(shell, /import Home from '\.\/Home\.jsx'/)
-  for (const p of ['./Issues.jsx','./Settings.jsx','./Profile.jsx','./PlanningHub.jsx','./reminders/RemindersView.jsx','./notifications/NotificationInbox.jsx','./operations/InterventionsView.jsx','./operations/UrgentView.jsx','./operations/MyWorkView.jsx']) assert.ok(shell.includes(`lazy(() => import('${p}')`), p)
+  for (const p of ['./Issues.jsx','./Settings.jsx','./Profile.jsx','./PlanningHub.jsx','./reminders/RemindersView.jsx','./notifications/NotificationInbox.jsx','./operations/InterventionsView.jsx','./operations/UrgentView.jsx','./operations/TaskView.jsx']) assert.ok(shell.includes(`lazy(() => import('${p}')`), p)
   assert.doesNotMatch(shell, /import Issues from/)
   assert.match(shell, /<Suspense fallback=\{<ViewFallback \/>\}>\{renderView\(\)\}<\/Suspense>/)
 })
