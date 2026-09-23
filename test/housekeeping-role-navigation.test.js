@@ -5,7 +5,7 @@ import { buildPrimaryBottomNav } from '../src/randapp/shell-navigation.js'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('Governante and Capo Governante bottom nav is Housekeeping Rifornimenti Home Task', () => {
+test('Governante and Capo Governante bottom nav is Segnalazioni Housekeeping Home Task Rifornimenti', () => {
   const placement = () => 'side'
   const allowed = new Set(['housekeeping','supplies','home','my-work'])
   for (const role of ['Governante','Capo Governante']) {
@@ -14,10 +14,10 @@ test('Governante and Capo Governante bottom nav is Housekeeping Rifornimenti Hom
       viewAllowed: (id) => allowed.has(id),
       user: { role },
     })
-    assert.deepEqual(nav.map((item) => item.id), ['housekeeping','supplies','home','my-work','randai'])
+    assert.deepEqual(nav.map((item) => item.id), ['issues','housekeeping','home','my-work','supplies'])
     assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4,5])
     assert.equal(nav.some((item) => item.id === 'chat'), false)
-    assert.equal(nav.some((item) => item.id === 'randai'), true)
+    assert.equal(nav.some((item) => item.id === 'randai'), false)
   }
 })
 
