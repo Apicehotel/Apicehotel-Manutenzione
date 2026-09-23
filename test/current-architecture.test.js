@@ -20,7 +20,7 @@ test('Shell imports operational views directly from focused modules', async () =
   ])
   assert.match(shell, /operations\/InterventionsView\.jsx/)
   assert.match(shell, /operations\/UrgentView\.jsx/)
-  assert.match(shell, /operations\/MyWorkView\.jsx/)
+  assert.match(shell, /operations\/TaskView\.jsx/)
   assert.match(shell, /operations\/UtilityLightViews\.jsx/)
   assert.doesNotMatch(shell, /operations\/UtilityViews\.jsx/)
   assert.doesNotMatch(shell, /MigratedViews/)
