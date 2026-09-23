@@ -21,14 +21,15 @@ test('single-purpose pages route the plus directly to their own domain', () => {
   assert.deepEqual(contextualAddActionIds('issues', all), ['issue'])
   assert.deepEqual(contextualAddActionIds('urgent', all), ['urgent'])
   assert.deepEqual(contextualAddActionIds('interventions', all), ['intervention'])
-  assert.deepEqual(contextualAddActionIds('my-work', all), ['intervention'])
+  assert.deepEqual(contextualAddActionIds('my-work', all), ['urgent'])
   assert.deepEqual(contextualAddActionIds('technicians', all), ['technician'])
 })
 
-test('planning routes each section plus to its matching object', () => {
-  assert.deepEqual(contextualAddActionIds('planning-work', all), ['planning-work'])
+test('planning overview plus offers work and sale, then respects capabilities', () => {
+  assert.deepEqual(contextualAddActionIds('planning-work', all), ['planning-work', 'planning-sale'])
   assert.deepEqual(contextualAddActionIds('planning-sale', all), ['planning-sale'])
-  assert.deepEqual(contextualAddActionIds('planning-work', { ...all, 'planning-work': false }), [])
+  assert.deepEqual(contextualAddActionIds('planning-work', { ...all, 'planning-work': false }), ['planning-sale'])
+  assert.deepEqual(contextualAddActionIds('planning-work', { ...all, 'planning-sale': false }), ['planning-work'])
   assert.deepEqual(contextualAddActionIds('planning-sale', { ...all, 'planning-sale': false }), [])
 })
 
