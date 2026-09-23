@@ -33,15 +33,20 @@ test('Phase 0 keeps Control Center at /randai while primary nav opens the chat p
   assert.match(shell, /data-testid="header-randai"/)
 })
 
-test('Phase 0 keeps Vercel Git deploys paused and Ocean preview-only', () => {
+test('Phase 0 keeps Vercel paused and makes main the stable Ocean deploy source', () => {
   const vercel = JSON.parse(read('vercel.json'))
   const preview = read('.github/workflows/digitalocean-preview.yml')
 
   assert.equal(vercel.git?.deploymentEnabled, false)
   assert.equal(existsSync(new URL('../.github/workflows/digitalocean-deploy.yml', import.meta.url)), false)
-  assert.match(preview, /pull_request:/)
-  assert.match(preview, /workflow_dispatch:/)
-  assert.match(preview, /environment: preview/)
-  assert.doesNotMatch(preview, /environment: production/)
+  assert.ok(preview.includes('push:'))
+  assert.ok(preview.includes('- main'))
+  assert.ok(preview.includes('pull_request:'))
+  assert.ok(preview.includes('workflow_dispatch:'))
+  assert.ok(preview.includes('environment: preview'))
+  assert.ok(!preview.includes('environment: production'))
+  assert.ok(preview.includes("github.event_name == 'push'"))
+  assert.ok(preview.includes('refs/heads/main'))
+  assert.ok(!preview.includes("if: github.event_name == 'pull_request'"))
   assert.doesNotMatch(preview, /vercel/i)
 })

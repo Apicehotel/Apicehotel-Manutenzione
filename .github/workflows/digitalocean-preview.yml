@@ -1,13 +1,16 @@
 name: RandUI Ocean Preview
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch, tag or commit to deploy to Ocean preview'
+        description: 'Branch, tag or commit to deploy intentionally to Ocean'
         required: true
         default: 'main'
 
@@ -20,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PREVIEW_REF: ${{ github.event.pull_request.head.sha || inputs.ref }}
+  PREVIEW_REF: ${{ github.event.pull_request.head.sha || inputs.ref || github.sha }}
 
 jobs:
   verify:
@@ -28,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout preview ref
+      - name: Checkout candidate ref
         uses: actions/checkout@v4
         with:
           ref: ${{ env.PREVIEW_REF }}
@@ -58,16 +61,16 @@ jobs:
         run: node scripts/check-bundle.mjs
 
   deploy:
-    name: Deploy RandUI preview to Ocean
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    name: Deploy main/intentional ref to Ocean
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
     env:
       SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
-      OCEAN_GITHUB_BRANCH: ${{ github.head_ref || inputs.ref || 'main' }}
+      OCEAN_GITHUB_BRANCH: ${{ github.event_name == 'push' && 'main' || inputs.ref || 'main' }}
     steps:
-      - name: Checkout preview ref
+      - name: Checkout deploy ref
         uses: actions/checkout@v4
         with:
           ref: ${{ env.PREVIEW_REF }}
@@ -84,7 +87,7 @@ jobs:
       - name: RandOps heartbeat start
         run: node scripts/rand-agent-heartbeat-cli.mjs --agent randops --status RUNNING --activity "DigitalOcean preview deploy"
 
-      - name: Deploy checked-out PR ref to existing DigitalOcean app
+      - name: Deploy checked-out ref to existing DigitalOcean app
         uses: digitalocean/app_action/deploy@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
@@ -101,14 +104,14 @@ jobs:
 
   browser-visual-gate:
     name: Browser visual gate on Ocean
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       E2E_BASE_URL: https://randui-preview-67ena.ondigitalocean.app
     steps:
-      - name: Checkout preview ref
+      - name: Checkout deployed ref
         uses: actions/checkout@v4
         with:
           ref: ${{ env.PREVIEW_REF }}
