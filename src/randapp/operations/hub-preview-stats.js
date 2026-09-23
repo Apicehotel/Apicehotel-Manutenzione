@@ -63,11 +63,3 @@ export function reminderPreviewMetrics(items = [], dueToday = []) {
   ]
 }
 
-/** I miei lavori: Da fare · In corso · Fatti oggi */
-export function myWorkPreviewMetrics({ pending = [], inProgress = [], doneToday = [] } = {}) {
-  return [
-    { value: pending.length, label: 'Da fare' },
-    { value: inProgress.length, label: 'In corso', tone: inProgress.length ? 'warning' : 'default' },
-    { value: doneToday.length, label: 'Fatti oggi', tone: 'success' },
-  ]
-}
