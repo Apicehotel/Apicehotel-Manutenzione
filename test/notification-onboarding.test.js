@@ -40,12 +40,14 @@ test('onboarding is initialized for the authenticated RandApp shell',()=>{
 })
 
 test('ntfy uses authenticated RandApp short links and hands the native app a resolved subscription',()=>{
-  assert.match(ntfy,/interventi un canale personale privato/)
+  assert.match(ntfy,/short link RandApp/)
+  assert.match(ntfy,/topic tecnico reale non viene mostrato/)
   assert.match(ntfy,/id === 'assignments' \? 'wrench'/)
   assert.match(ntfy,/buildNotificationShortUrl/)
   assert.match(ntfy,/>Apri<\/a>/)
   assert.match(ntfy,/Copia link/)
-  assert.match(ntfy,/Priorità \{channel\.priority \|\| 5\}/)
+  assert.match(ntfy,/Priorità \{channel\.priority \|\| '—'\}/)
+  assert.match(ntfy,/testChannel/)
   assert.match(shortLink,/resolveNtfyShortLink/)
   assert.match(shortLink,/Configura in ntfy/)
   assert.match(shortLink,/subscription_link/)
