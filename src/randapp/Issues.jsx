@@ -486,13 +486,11 @@ export default function Issues({ user, hotel, users, createSignal, focusIssueId 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotel.id])
 
-  useEffect(() => {
-    if (focusIssueId == null || !issues.length) return
-    const target = issues.find((issue) => String(issue.id) === String(focusIssueId))
-    if (!target) return
-    setSelected(target)
-    onFocusConsumed?.()
-  }, [focusIssueId, issues, onFocusConsumed])
+  const focusedIssue = useMemo(
+    () => focusIssueId == null ? null : issues.find((issue) => String(issue.id) === String(focusIssueId)) || null,
+    [focusIssueId, issues],
+  )
+  const activeIssue = selected || focusedIssue
 
   const counts = useMemo(() => issues.reduce((acc, i) => ({ ...acc, [i.status]: (acc[i.status] || 0) + 1 }), {}), [issues])
   const filtered = useMemo(() => {
@@ -582,7 +580,7 @@ const resetExtraFilters = () => {
   </div>
 </Sheet>
 
-      {selected && <IssueDetail issue={selected} user={user} users={users} onClose={() => setSelected(null)} onUpdate={doUpdate} onDelete={doDelete} />}
+      {activeIssue && <IssueDetail issue={activeIssue} user={user} users={users} onClose={() => { setSelected(null); onFocusConsumed?.() }} onUpdate={doUpdate} onDelete={doDelete} />}
     </div>
   )
 }

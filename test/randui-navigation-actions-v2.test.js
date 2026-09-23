@@ -84,5 +84,7 @@ test('Top 3 issue rows open the cited issue and clamp the title to three left-al
   assert.ok(shell.includes('focusIssueId={issueFocusId}'))
   assert.ok(issuesView.includes('focusIssueId = null'))
   assert.ok(issuesView.includes("String(issue.id) === String(focusIssueId)"))
-  assert.ok(issuesView.includes('setSelected(target)'))
+  assert.ok(issuesView.includes('const activeIssue = selected || focusedIssue'))
+  assert.ok(issuesView.includes('issue={activeIssue}'))
+  assert.ok(issuesView.includes('onFocusConsumed?.()'))
 })
