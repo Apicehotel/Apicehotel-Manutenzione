@@ -29,3 +29,11 @@ test('signed photo URLs fail soft on timeout instead of hanging Home/Task', asyn
   assert.match(photos, /Promise\.race/)
   assert.match(photos, /2500/)
 })
+
+
+test('login keyboard focus must not move the submit button on mobile', async () => {
+  const css = await source('src/randapp/login-reference.css')
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,220}\.rs-auth__inner/)
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,220}\.rs-authcard/)
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,220}\[data-testid='login-submit'\]/)
+})
