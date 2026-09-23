@@ -18,7 +18,7 @@ test('RandAI never reuses Hotel Giò knowledge in another hotel', () => {
 test('RandAI chat page is lazy and mounted inside the authenticated Shell', async () => {
   const main = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
   const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
-  assert.match(shell, /const RandAIAssistant = lazy\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(shell, /const RandAIAssistant = lazyWithRetry\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
   assert.match(shell, /variant="page"/)
   assert.doesNotMatch(main, /RandAIAssistant/)
   assert.match(main, /function AuthenticatedRandAI\(\)/)
