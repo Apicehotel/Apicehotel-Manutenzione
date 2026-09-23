@@ -33,6 +33,9 @@ function reminderDueToday(item, user, now = new Date()) {
 }
 
 export default function TaskView({ hotel, user, canUrgent = false, canReminders = false, onOpen }) {
+  const housekeepingTaskRole = ['Governante','Capo Governante'].includes(user?.role)
+  const showUrgent = housekeepingTaskRole || canUrgent
+  const showReminders = housekeepingTaskRole || canReminders
   const [urgents, setUrgents] = useState([])
   const [reminders, setReminders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -44,8 +47,8 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
     busy.current = true
     try {
       const [urgentResult, reminderResult] = await Promise.all([
-        canUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
-        canReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
+        showUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
+        showReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
       ])
       setUrgents(urgentResult.items || [])
       setReminders(Array.isArray(reminderResult) ? reminderResult : reminderResult.items || [])
@@ -55,7 +58,7 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
       busy.current = false
       setLoading(false)
     }
-  }, [hotel.id, canUrgent, canReminders])
+  }, [hotel.id, showUrgent, showReminders])
 
   const scheduleRefresh = useCallback(() => {
     if (timer.current) window.clearTimeout(timer.current)
@@ -68,13 +71,13 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
   useEffect(() => {
     void load()
     const offs = []
-    if (canUrgent) offs.push(subscribeUrgents(hotel.id, scheduleRefresh))
-    if (canReminders) offs.push(subscribeReminders(hotel.id, scheduleRefresh))
+    if (showUrgent) offs.push(subscribeUrgents(hotel.id, scheduleRefresh))
+    if (showReminders) offs.push(subscribeReminders(hotel.id, scheduleRefresh))
     return () => {
       if (timer.current) window.clearTimeout(timer.current)
       offs.forEach((off) => off?.())
     }
-  }, [hotel.id, canUrgent, canReminders, load, scheduleRefresh])
+  }, [hotel.id, showUrgent, showReminders, load, scheduleRefresh])
 
   const dueReminders = useMemo(
     () => reminders.filter((item) => reminderDueToday(item, user)),
@@ -87,7 +90,7 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
   )
 
   const cards = [
-    canUrgent && {
+    showUrgent && {
       key: 'urgent',
       icon: 'warning',
       title: 'Avvisi',
@@ -95,7 +98,7 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
       onClick: () => onOpen?.('urgent'),
       testId: 'task-open-urgent',
     },
-    canReminders && {
+    showReminders && {
       key: 'reminders',
       icon: 'bell',
       title: 'Promemoria',
@@ -110,7 +113,7 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
       <PageTitle
         eyebrow="Task"
         title="Task"
-        subtitle="${hotel.name} · promemoria e avvisi"
+        subtitle={`${hotel.name} · promemoria e avvisi`}
       />
       {loading ? (
         <Spinner label="Carico Task…" />
