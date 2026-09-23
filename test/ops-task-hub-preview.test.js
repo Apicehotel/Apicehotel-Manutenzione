@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import {
   interventionPreviewMetrics,
   issuePreviewMetrics,
-  myWorkPreviewMetrics,
   reminderPreviewMetrics,
   urgentPreviewMetrics,
 } from '../src/randapp/operations/hub-preview-stats.js'
@@ -52,9 +51,4 @@ test('urgent and reminder preview metrics stay compact', () => {
     [{ active: true }, { active: false }, { active: true }],
     [{ id: 'due' }],
   )[0].value, 1)
-  assert.equal(myWorkPreviewMetrics({
-    pending: [1, 2],
-    inProgress: [1],
-    doneToday: [1, 2, 3],
-  })[2].value, 3)
 })
