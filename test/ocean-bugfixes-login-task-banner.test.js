@@ -16,10 +16,10 @@ test('Task/MyWork uses lean hub fetches and always clears list loading', async (
   assert.doesNotMatch(view, /subscribeIssues/)
 })
 
-test('login submit is wired on both form submit and ACCEDI click', async () => {
+test('login submit uses one native form submit path for first-tap mobile reliability', async () => {
   const app = await source('src/randapp/App.jsx')
   assert.match(app, /busyRef/)
-  assert.match(app, /onClick=\{\(e\) => \{ e\.preventDefault\(\); void submit\(e\) \}\}/)
+  assert.doesNotMatch(app, /onClick=\{\(e\) => \{ e\.preventDefault\(\); void submit\(e\) \}\}/)
   assert.match(app, /type="submit"/)
 })
 
