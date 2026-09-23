@@ -46,6 +46,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
     },
     {
       id: 'account', label: 'Profilo e guida', items: [
+        { id: 'randai', icon: 'sparkles', label: 'RandAI', show: true },
         { id: 'profile', icon: 'user', label: 'Il mio profilo', show: true },
         { id: 'manual', icon: 'book', label: 'Manuale', show: true },
         { id: 'feedback', icon: 'message', label: 'Invia feedback', show: true },
@@ -101,7 +102,7 @@ export const VIEW_GUARDS = {
   technicians: view('technicians'),
   'feedback-received': (u) => canUser(u, 'app_settings', 'manage'),
   'desktop-download': view('desktop_download'),
-  randai: (u) => !['Governante','Capo Governante'].includes(u?.role),
+  randai: () => true,
 }
 
 export const CREATE_GUARDS = {

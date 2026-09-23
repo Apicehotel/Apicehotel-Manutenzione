@@ -5,17 +5,17 @@ import { buildPrimaryBottomNav } from '../src/randapp/shell-navigation.js'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('Governante and Capo Governante bottom nav is Housekeeping Rifornimenti Home Task', () => {
+test('Governante and Capo Governante bottom nav is Segnalazioni Housekeeping Home Task Rifornimenti', () => {
   const placement = () => 'side'
-  const allowed = new Set(['housekeeping','supplies','home','my-work'])
+  const allowed = new Set(['issues','housekeeping','supplies','home','my-work'])
   for (const role of ['Governante','Capo Governante']) {
     const nav = buildPrimaryBottomNav({
       placement,
       viewAllowed: (id) => allowed.has(id),
       user: { role },
     })
-    assert.deepEqual(nav.map((item) => item.id), ['housekeeping','supplies','home','my-work'])
-    assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4])
+    assert.deepEqual(nav.map((item) => item.id), ['issues','housekeeping','home','my-work','supplies'])
+    assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4,5])
     assert.equal(nav.some((item) => item.id === 'chat'), false)
     assert.equal(nav.some((item) => item.id === 'randai'), false)
   }
@@ -31,10 +31,11 @@ test('Task view loads only alerts and reminders', async () => {
   assert.doesNotMatch(task, /Interventi|I miei lavori/)
 })
 
-test('housekeeping roles cannot enter Chat or RandAI from navigation guards', async () => {
+test('housekeeping roles cannot enter Chat but keep RandAI and Segnalazioni', async () => {
   const nav = await read('src/randapp/nav.js')
   assert.match(nav, /chat: \(u\) => Boolean\(u\?\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
-  assert.match(nav, /randai: \(u\) => !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
+  assert.match(nav, /randai: \(\) => true/)
+  assert.match(nav, /id: 'issues'.*label: 'Segnalazioni'.*canUser\(user, 'issues', 'view'\)/s)
 })
 
 test('housekeeping Task permissions are read-only and do not grant interventions or planning', async () => {
@@ -43,4 +44,18 @@ test('housekeeping Task permissions are read-only and do not grant interventions
   assert.match(sql, /'view', true/)
   assert.match(sql, /\('interventions'\),\('planning_work'\),\('planning_sale'\)/)
   assert.match(sql, /'view', false/)
+})
+
+
+test('housekeeping sidebar keeps RandAI available while Chat stays hidden', async () => {
+  const nav = await read('src/randapp/nav.js')
+  assert.match(nav, /id: 'randai'.*label: 'RandAI'.*show: true/s)
+  assert.match(nav, /id: 'chat'.*show: Boolean\(user\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(user\.role\)/s)
+})
+
+
+test('RandAI remains a sidebar placement item', async () => {
+  const roleNav = await read('src/randapp/role-navigation.js')
+  assert.match(roleNav, /\['randai', 'RandAI'\]/)
+  assert.match(roleNav, /randai: 'side'/)
 })
