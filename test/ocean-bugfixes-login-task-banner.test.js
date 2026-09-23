@@ -29,3 +29,20 @@ test('signed photo URLs fail soft on timeout instead of hanging Home/Task', asyn
   assert.match(photos, /Promise\.race/)
   assert.match(photos, /2500/)
 })
+
+
+test('login auto-submits on the fourth PIN digit and keeps ACCEDI as fallback', async () => {
+  const app = await source('src/randapp/App.jsx')
+  assert.match(app, /const nextPin = e\.target\.value\.replace/)
+  assert.match(app, /if \(nextPin\.length === 4 && !busyRef\.current\)/)
+  assert.match(app, /void submit\(null, nextPin\)/)
+  assert.match(app, /enterKeyHint="go"/)
+  assert.match(app, /type="submit"/)
+})
+
+test('mobile login focus does not resize the form around the submit button', async () => {
+  const css = await source('src/randapp/login-reference.css')
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}\.rs-auth__inner/)
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}\.rs-authcard/)
+  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}login-submit/)
+})
