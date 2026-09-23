@@ -39,6 +39,8 @@ test('ntfy setup keeps transport isolated and guides iOS Android and desktop', a
   assert.match(client, /resolveNtfyShortLink/)
   assert.match(client, /invokeNtfyAdmin/)
   assert.match(client, /X-RandApp-Request/)
+  assert.match(client, /non è ancora pubblicata/)
+  assert.match(client, /NOT_FOUND\|function was not found\|HTTP 404/)
   assert.doesNotMatch(setup + client, /randapp-[A-Za-z0-9_-]{20,}/)
 })
 

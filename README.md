@@ -13,6 +13,8 @@ RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i co
 
 Le notifiche ntfy sono gestibili senza SQL: in **Impostazioni → ntfy** l’admin attiva/disattiva il canale, completa i topic hotel/ruolo mancanti e invia un test urgente. In **Profilo** l’operatore resta sui soli short link personali (`/n/GIO-AV-……`) con test per canale; i topic tecnici non vengono mostrati. La diagnostica considera ntfy “ok” solo dopo setup + test riuscito.
 
+Dopo il merge codice serve anche il **deploy edge** su Supabase (`ntfy-admin` + aggiornamenti `ntfy-config`/`ntfy-resolve`/`ntfy-alert`) e la migrazione `20260923180000_ensure_ntfy_alerts.sql`. Smoke: `node scripts/smoke-ntfy-edge.mjs` (404 su `ntfy-admin` = non ancora pubblicato).
+
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
 Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v16 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).
