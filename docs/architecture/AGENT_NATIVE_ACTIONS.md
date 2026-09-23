@@ -17,6 +17,7 @@ RandApp already owns authentication, multi-hotel authorization, Supabase/Postgre
 The compatibility layer is therefore intentionally small:
 
 - `src/randai/actions/catalog.js` is the shared application-action catalog.
+- `src/randai/actions/agent-tools.js` bridges the catalog into RandAI `ToolRegistry` only when a governed dispatch function is supplied.
 - RandApp validates that browser-requested actions exist in that catalog.
 - `api/mcp.js` generates MCP tools from the same catalog.
 - Server-side `randai-action-policy.js` remains the independent authorization source of truth.
@@ -28,7 +29,7 @@ The compatibility layer is therefore intentionally small:
 - `issue.set_waiting_part`
 - `issue.mark_done`
 
-All three are private, hotel-scoped, protected writes and require HITL. They are exposed to RandApp, RandAI/agent callers and the internal MCP surface, never to a public agent surface.
+All three are private, hotel-scoped, protected writes and require HITL. They are exposed to RandApp, RandAI/agent callers and the internal MCP surface, never to a public agent surface. The agent bridge has no default executor: the host must inject a governed dispatcher, preventing a silent bypass of RandGateway.
 
 ## Future evolution
 
