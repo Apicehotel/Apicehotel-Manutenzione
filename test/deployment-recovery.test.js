@@ -41,7 +41,7 @@ test('offline bootstrap keeps the last validated access and pre-offline director
 
 test('deployment recovery is installed before any lazy runtime route can load', () => {
   const installAt = main.indexOf('installDeploymentRecovery()')
-  const lazyAt = main.indexOf('lazy(() => import(')
+  const lazyAt = main.indexOf('lazyWithRetry(() => import(')
   assert.ok(installAt >= 0)
   assert.ok(lazyAt >= 0)
   assert.ok(installAt < lazyAt)

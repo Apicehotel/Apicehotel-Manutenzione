@@ -33,13 +33,27 @@ export default class AppErrorBoundary extends Component {
     }
   }
 
+  handleRetry = () => {
+    const error = this.state.error
+    // React.lazy caches a rejected dynamic import: remounting alone cannot recover
+    // a stale chunk. Force a real reload for deployment/module asset failures.
+    if (typeof window !== 'undefined' && isRecoverableModuleError(error)) {
+      window.location.reload()
+      return
+    }
+    this.setState({ error: null })
+  }
+
   render() {
     if (this.state.error) {
+      const moduleError = isRecoverableModuleError(this.state.error)
       return (
         <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif', color: '#1b2420', background: '#f4f2ed', minHeight: '100vh' }}>
           <h1 style={{ fontSize: 18, marginBottom: 8 }}>Si è verificato un errore</h1>
           <p style={{ fontSize: 14, color: '#5c645e', marginBottom: 16 }}>
-            RandApp ha registrato il problema nella diagnostica. Puoi provare a riprendere senza ricaricare oppure ricaricare l'app.
+            {moduleError
+              ? 'Un aggiornamento dell’app ha lasciato una sezione incompleta. Premi Riprova per ricaricare i moduli aggiornati.'
+              : 'RandApp ha registrato il problema nella diagnostica. Puoi provare a riprendere senza ricaricare oppure ricaricare l’app.'}
           </p>
           <pre style={{
             whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#fff', border: '1px solid #e4e0d6',
@@ -48,12 +62,14 @@ export default class AppErrorBoundary extends Component {
             {String(this.state.error?.message || this.state.error)}
           </pre>
           <button
-            onClick={() => this.setState({ error: null })}
+            type="button"
+            onClick={this.handleRetry}
             style={{ padding: '10px 18px', marginRight: 8, borderRadius: 10, border: '1px solid #0e5c49', background: 'transparent', color: '#0e5c49', fontWeight: 700 }}
           >
             Riprova
           </button>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: '#0e5c49', color: '#fff', fontWeight: 700 }}
           >

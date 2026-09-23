@@ -15,7 +15,7 @@ import {
   saveSupplyProduct,
   subscribeSupplyRequests,
 } from '../supply-data.js'
-import { Button, Icon } from './ui.jsx'
+import { Button, EmptyState, Icon } from './ui.jsx'
 import { PageTitle } from './randui/visual-primitives.jsx'
 import './supply-requests.css'
 
@@ -326,7 +326,13 @@ export default function SupplyRequestsPortal({ user, hotel }) {
     catch (err) { setError(err?.message || 'Aggiornamento non riuscito') }
   }
 
-  if (!canView || !hotel) return null
+  if (!canView || !hotel) {
+    return (
+      <EmptyState icon="lock" title="Rifornimenti non disponibili">
+        Non hai i permessi per questa sezione oppure la struttura non è selezionata.
+      </EmptyState>
+    )
+  }
 
   return (
     <div className="rs-supply-sheet rs-ops-surface" data-testid="supply-portal">
