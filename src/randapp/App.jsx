@@ -1,14 +1,17 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTELS } from '../config.js'
 import { loadSession, saveSession, clearSession } from '../session.js'
 import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
+import { withTimeout } from '../async-timeout.js'
+import { lazyWithRetry } from '../lazy-retry.js'
 import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
 import { resolveLoginUser } from './login-resolve.js'
 import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
 
-const Shell = lazy(() => import('./Shell.jsx'))
-const Settings = lazy(() => import('./Settings.jsx'))
+const Shell = lazyWithRetry(() => import('./Shell.jsx'))
+const Settings = lazyWithRetry(() => import('./Settings.jsx'))
+const SESSION_CHECK_TIMEOUT_MS = 12000
 
 const EVENT = 'apice-session-changed'
 
@@ -310,14 +313,14 @@ export default function App() {
       }
       try {
         const { validateSupabaseSession, signOutSupabase } = await import('../auth-data.js')
-        const result = await validateSupabaseSession()
+        const result = await withTimeout(validateSupabaseSession(), SESSION_CHECK_TIMEOUT_MS, 'Controllo sessione timeout')
         if (active && !result.valid) {
           await resetSession(signOutSupabase)
           return
         }
         if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
-        const directory = await fetchDirectory(session.hotelId)
+        const directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
         if (!active) return
         const rows = directory?.users || []
         const authorized = rows.some((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId)

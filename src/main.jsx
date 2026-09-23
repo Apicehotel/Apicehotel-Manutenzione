@@ -1,6 +1,7 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import AppErrorBoundary from './error-boundary.jsx'
+import { lazyWithRetry } from './lazy-retry.js'
 import { initUiSize } from './randapp/ui-size.js'
 import { initTheme } from './randapp/theme.js'
 import { loadSession } from './session.js'
@@ -31,14 +32,14 @@ import { installDeploymentRecovery } from './deployment-recovery.js'
 
 installDeploymentRecovery()
 
-const App = lazy(() => import('./randapp/App.jsx'))
-const RandUiV2Preview = lazy(() => import('./randapp/randui-v2/Preview.jsx'))
-const RandAIContextBridge = lazy(() => import('./randai/context/RandAIContextBridge.jsx'))
-const TechnicianPortal = lazy(() => import('./technician-portal.jsx'))
-const TechnicianDispatchPortal = lazy(() => import('./randapp/TechnicianDispatchPortal.jsx'))
-const PublicIssueView = lazy(() => import('./public-issue-view.jsx'))
-const NtfyShortLink = lazy(() => import('./randapp/ntfy/NtfyShortLink.jsx'))
-const RandAIProtectedRoute = lazy(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
+const App = lazyWithRetry(() => import('./randapp/App.jsx'))
+const RandUiV2Preview = lazyWithRetry(() => import('./randapp/randui-v2/Preview.jsx'))
+const RandAIContextBridge = lazyWithRetry(() => import('./randai/context/RandAIContextBridge.jsx'))
+const TechnicianPortal = lazyWithRetry(() => import('./technician-portal.jsx'))
+const TechnicianDispatchPortal = lazyWithRetry(() => import('./randapp/TechnicianDispatchPortal.jsx'))
+const PublicIssueView = lazyWithRetry(() => import('./public-issue-view.jsx'))
+const NtfyShortLink = lazyWithRetry(() => import('./randapp/ntfy/NtfyShortLink.jsx'))
+const RandAIProtectedRoute = lazyWithRetry(() => import('./randai/auth/RandAIProtectedRoute.jsx'))
 const technicianMatch = window.location.pathname.match(/^\/tecnico\/([^/]+)\/?$/)
 const technicianDispatchMatch = /^\/tecnici-esterni\/?$/.test(window.location.pathname)
 const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)

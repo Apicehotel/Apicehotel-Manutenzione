@@ -13,6 +13,8 @@ RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i co
 
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
+Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk delle sezioni, timeout 12s su controllo sessione/directory (niente spinner infinito su rete lenta), `Riprova` sulla directory fallita e reload reale dall’ErrorBoundary per moduli stale post-deploy.
+
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
 La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati.

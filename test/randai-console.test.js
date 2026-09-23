@@ -17,7 +17,7 @@ const externalMedia=fs.readFileSync('supabase/migrations/20260829123000_randai_d
 const procedureLink=fs.readFileSync('supabase/migrations/20260829124500_randai_document_procedure_link.sql','utf8')
 
 test('dedicated /randai route lazy-loads protected RandAI entry without mounting operational RandApp',()=>{
-  assert.match(main,/const RandAIProtectedRoute = lazy\(\(\) => import\('\.\/randai\/auth\/RandAIProtectedRoute\.jsx'\)\)/)
+  assert.match(main,/const RandAIProtectedRoute = lazyWithRetry\(\(\) => import\('\.\/randai\/auth\/RandAIProtectedRoute\.jsx'\)\)/)
   assert.match(main,/const randaiConsoleMatch = \/\^\\\/randai\\\/\?\$\/.test\(window\.location\.pathname\)/)
   assert.match(main,/randaiConsoleMatch \? <Suspense[\s\S]*?<RandAIProtectedRoute \/>[\s\S]*?<\/Suspense>/)
   assert.match(main,/: <Suspense[\s\S]*?<App \/><AuthenticatedRandAI \/>[\s\S]*?<\/Suspense>/)

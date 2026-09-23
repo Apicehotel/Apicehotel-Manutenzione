@@ -7,12 +7,12 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8'
 test('main keeps standalone routes and RandAI out of the static entry graph', async () => {
   const main = await source('src/main.jsx')
   const shell = await source('src/randapp/Shell.jsx')
-  assert.match(main, /const App = lazy\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
-  assert.match(shell, /const RandAIAssistant = lazy\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
+  assert.match(main, /const App = lazyWithRetry\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
+  assert.match(shell, /const RandAIAssistant = lazyWithRetry\(\(\) => import\('\.\.\/randai\/RandAIAssistant\.jsx'\)\)/)
   assert.doesNotMatch(main, /RandAIAssistant/)
-  assert.match(main, /const TechnicianPortal = lazy\(\(\) => import\('\.\/technician-portal\.jsx'\)\)/)
-  assert.match(main, /const PublicIssueView = lazy\(\(\) => import\('\.\/public-issue-view\.jsx'\)\)/)
-  assert.match(main, /const NtfyShortLink = lazy\(\(\) => import\('\.\/randapp\/ntfy\/NtfyShortLink\.jsx'\)\)/)
+  assert.match(main, /const TechnicianPortal = lazyWithRetry\(\(\) => import\('\.\/technician-portal\.jsx'\)\)/)
+  assert.match(main, /const PublicIssueView = lazyWithRetry\(\(\) => import\('\.\/public-issue-view\.jsx'\)\)/)
+  assert.match(main, /const NtfyShortLink = lazyWithRetry\(\(\) => import\('\.\/randapp\/ntfy\/NtfyShortLink\.jsx'\)\)/)
   assert.doesNotMatch(main, /import App from '\.\/randapp\/App\.jsx'/)
 })
 

@@ -1,6 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchDirectory } from '../users-data.js'
-import { Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
+import { withTimeout } from '../async-timeout.js'
+import { lazyWithRetry } from '../lazy-retry.js'
+import { Button, Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
@@ -20,37 +22,38 @@ import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
 
-const Settings = lazy(() => import('./Settings.jsx'))
-const Issues = lazy(() => import('./Issues.jsx'))
-const ChatGroups = lazy(() => import('./chat/ChatGroups.jsx'))
-const InventoryView = lazy(() => import('./InventoryView.jsx'))
-const SupplyRequestsPortal = lazy(() => import('./SupplyRequestsPortal.jsx'))
-const Profile = lazy(() => import('./Profile.jsx'))
-const RandDesktopDownload = lazy(() => import('./RandDesktopDownload.jsx'))
-const PlanningHub = lazy(() => import('./PlanningHub.jsx'))
-const PlannedCreateSheet = lazy(() => import('./PlannedCreateSheet.jsx'))
-const RemindersView = lazy(() => import('./reminders/RemindersView.jsx'))
-const NotificationInbox = lazy(() => import('./notifications/NotificationInbox.jsx'))
-const InsertLauncher = lazy(() => import('./InsertLauncher.jsx'))
-const UrgentCreateSheet = lazy(() => import('./UrgentCreateSheet.jsx'))
-const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
-const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
-const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
-const TaskView = lazy(() => import('./operations/TaskView.jsx'))
-const RandAIAssistant = lazy(() => import('../randai/RandAIAssistant.jsx'))
-const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
+const Settings = lazyWithRetry(() => import('./Settings.jsx'))
+const Issues = lazyWithRetry(() => import('./Issues.jsx'))
+const ChatGroups = lazyWithRetry(() => import('./chat/ChatGroups.jsx'))
+const InventoryView = lazyWithRetry(() => import('./InventoryView.jsx'))
+const SupplyRequestsPortal = lazyWithRetry(() => import('./SupplyRequestsPortal.jsx'))
+const Profile = lazyWithRetry(() => import('./Profile.jsx'))
+const RandDesktopDownload = lazyWithRetry(() => import('./RandDesktopDownload.jsx'))
+const PlanningHub = lazyWithRetry(() => import('./PlanningHub.jsx'))
+const PlannedCreateSheet = lazyWithRetry(() => import('./PlannedCreateSheet.jsx'))
+const RemindersView = lazyWithRetry(() => import('./reminders/RemindersView.jsx'))
+const NotificationInbox = lazyWithRetry(() => import('./notifications/NotificationInbox.jsx'))
+const InsertLauncher = lazyWithRetry(() => import('./InsertLauncher.jsx'))
+const UrgentCreateSheet = lazyWithRetry(() => import('./UrgentCreateSheet.jsx'))
+const OperationsHub = lazyWithRetry(() => import('./operations/OperationsHub.jsx'))
+const InterventionsView = lazyWithRetry(() => import('./operations/InterventionsView.jsx'))
+const UrgentView = lazyWithRetry(() => import('./operations/UrgentView.jsx'))
+const TaskView = lazyWithRetry(() => import('./operations/TaskView.jsx'))
+const RandAIAssistant = lazyWithRetry(() => import('../randai/RandAIAssistant.jsx'))
+const TemperatureView = lazyWithRetry(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
 })))
-const PlantView = lazy(() => import('../temperature.jsx').then(({ PlantStatus }) => ({
+const PlantView = lazyWithRetry(() => import('../temperature.jsx').then(({ PlantStatus }) => ({
   default: ({ hotel }) => <div data-testid="plants-view"><PlantStatus hotel={hotel} /></div>,
 })))
-const HousekeepingView = lazy(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
+const HousekeepingView = lazyWithRetry(() => import('../housekeeping.jsx').then(({ Housekeeping }) => ({
   default: ({ hotel, user }) => <div data-testid="housekeeping-view"><Housekeeping hotel={hotel} user={user} /></div>,
 })))
-const TechnicianDirectoryView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
-const FeedbackView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
-const PinView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
-const ManualView = lazy(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
+const TechnicianDirectoryView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.TechnicianDirectoryView })))
+const FeedbackView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.FeedbackView })))
+const PinView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.PinView })))
+const ManualView = lazyWithRetry(() => import('./operations/UtilityLightViews.jsx').then((module) => ({ default: module.ManualView })))
+const DIRECTORY_TIMEOUT_MS = 12000
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
@@ -140,6 +143,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
   const [directoryState, setDirectoryState] = useState('loading')
+  const [directoryRetry, setDirectoryRetry] = useState(0)
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
   const [issueFocusId, setIssueFocusId] = useState(null)
@@ -171,22 +175,23 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       return () => { active = false }
     }
     setDirectoryState('loading')
-    fetchDirectory(session.hotelId).then(({ users: list }) => {
-      if (!active) return
-      const rows = list || []
-      const matchedUser = rows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || null
-      setUsers(rows)
-      setUser(matchedUser)
-      setDirectoryState(matchedUser ? 'ready' : 'unauthorized')
-    }).catch((error) => {
-      if (!active) return
-      console.error('Directory struttura non disponibile', error)
-      setUsers([])
-      setUser(null)
-      setDirectoryState('error')
-    })
+    withTimeout(fetchDirectory(session.hotelId), DIRECTORY_TIMEOUT_MS, 'Directory struttura timeout')
+      .then(({ users: list }) => {
+        if (!active) return
+        const rows = list || []
+        const matchedUser = rows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || null
+        setUsers(rows)
+        setUser(matchedUser)
+        setDirectoryState(matchedUser ? 'ready' : 'unauthorized')
+      }).catch((error) => {
+        if (!active) return
+        console.error('Directory struttura non disponibile', error)
+        setUsers([])
+        setUser(null)
+        setDirectoryState('error')
+      })
     return () => { active = false }
-  }, [session.hotelId, session.userId, hotel])
+  }, [session.hotelId, session.userId, hotel, directoryRetry])
 
   useEffect(() => {
     let active = true
@@ -390,7 +395,18 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   if (directoryState === 'loading') return <Spinner label="Verifico accesso alla struttura…" />
   if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
-  if (directoryState === 'error') return <main className="rs-content"><EmptyState icon="warning" title="Accesso non verificabile">Non riesco a verificare i permessi della struttura. Riprova con connessione disponibile.</EmptyState></main>
+  if (directoryState === 'error') {
+    return (
+      <main className="rs-content" data-testid="directory-error">
+        <EmptyState icon="warning" title="Accesso non verificabile">Non riesco a verificare i permessi della struttura. Riprova con connessione disponibile.</EmptyState>
+        <div style={{ display: 'grid', placeItems: 'center', marginTop: 16 }}>
+          <Button type="button" variant="primary" onClick={() => setDirectoryRetry((n) => n + 1)} data-testid="directory-retry">
+            Riprova
+          </Button>
+        </div>
+      </main>
+    )
+  }
   if (directoryState === 'unauthorized' || !user || !hotel) return <main className="rs-content"><EmptyState icon="lock" title="Accesso non consentito">L’utente della sessione non è abilitato per questa struttura.</EmptyState></main>
 
   const renderView = () => {
