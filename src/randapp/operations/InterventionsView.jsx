@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../../planned-data.js'
+import { withTimeout } from '../../async-timeout.js'
 import { fetchInventoryItems } from '../../inventory-data.js'
 import {
   consumeInterventionPart,
@@ -31,7 +32,7 @@ export default function InterventionsView({ hotel, user }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await fetchPlanned(hotel.id)
+      const result = await withTimeout(fetchPlanned(hotel.id), 20000, 'Interventi timeout')
       setItems(result.items || [])
       setFetchOk(result.ok !== false)
       setFetchOffline(Boolean(result.offline))

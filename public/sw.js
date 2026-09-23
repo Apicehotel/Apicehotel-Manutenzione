@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v15'
+const CACHE_NAME = 'apicehotel-manutenzione-v16'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -102,7 +102,25 @@ self.addEventListener('fetch', (event) => {
           }
           return response
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
+        .catch(async () => {
+          // Transient online failures must not pin a stale shell that references
+          // obsolete hashed chunks after a deploy — that looks like "pages won't load".
+          if (self.navigator && self.navigator.onLine !== false) {
+            return new Response('Application shell temporarily unavailable', {
+              status: 504,
+              statusText: 'Gateway Timeout',
+              headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'no-store, max-age=0',
+              },
+            })
+          }
+          const cached = await caches.match(request)
+          return cached || caches.match('/') || new Response('Offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+          })
+        }),
     )
     return
   }

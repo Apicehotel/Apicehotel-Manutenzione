@@ -11,6 +11,7 @@ import {
   getInventoryPhotoUrl,
   subscribeInventory,
 } from '../inventory-data.js'
+import { withTimeout } from '../async-timeout.js'
 import {
   flattenInventoryTree,
   INVENTORY_DEFAULT_ACTIONS,
@@ -109,7 +110,7 @@ function StockSheet({ item, open, onClose, onAdjusted }) {
 export default function InventoryView({ user, hotel }) {
   const [items, setItems] = useState([]); const [categories, setCategories] = useState([]); const [locations, setLocations] = useState([]); const [loading, setLoading] = useState(true); const [search, setSearch] = useState(''); const [category, setCategory] = useState('all'); const [lowOnly, setLowOnly] = useState(false); const [newOpen, setNewOpen] = useState(false); const [categoryOpen, setCategoryOpen] = useState(false); const [locationOpen, setLocationOpen] = useState(false); const [selectedId, setSelectedId] = useState(null)
   const canCreate = canUser(user, 'inventory', 'create'); const canEdit = canUser(user, 'inventory', 'edit')
-  const reload = async () => { try { const [nextItems, nextCategories, nextLocations] = await Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)]); setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations) } finally { setLoading(false) } }
+  const reload = async () => { try { const [nextItems, nextCategories, nextLocations] = await withTimeout(Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)]), 20000, 'Magazzino timeout'); setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations) } catch (error) { console.warn('Caricamento magazzino fallito', error) } finally { setLoading(false) } }
   useEffect(() => { setLoading(true); reload(); const unsubscribe = subscribeInventory(hotel.id, reload); return () => unsubscribe?.(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [hotel.id])
   const categoryOptions = useMemo(() => flattenInventoryTree(categories), [categories]); const lowCount = useMemo(() => items.filter((i) => inventoryStockStatus(i) !== 'ok').length, [items])
   const filtered = useMemo(() => {

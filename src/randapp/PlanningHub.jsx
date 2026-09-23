@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchPlanningWork, subscribePlanningWork } from '../planning-work-data.js'
 import { fetchBookings, subscribeBookings } from '../sale-data.js'
+import { withTimeout } from '../async-timeout.js'
 import { canUser } from '../permissions.js'
 import { Button, Spinner } from './ui.jsx'
 import { Grid, PageTitle, Stack } from './randui/visual-primitives.jsx'
@@ -12,7 +13,7 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
   const [section,setSection]=useState(null),[work,setWork]=useState([]),[bookings,setBookings]=useState([]),[loading,setLoading]=useState(true),[workCreateSignal,setWorkCreateSignal]=useState(0),[saleCreateSignal,setSaleCreateSignal]=useState(0)
   const canSeeWork=canUser(user,'planning_work','view')
   const canSeeSale=allowSale&&canUser(user,'planning_sale','view')
-  const load=useCallback(async()=>{setLoading(true);try{const [workItems,sales]=await Promise.all([canSeeWork?fetchPlanningWork(hotel.id):Promise.resolve([]),canSeeSale?fetchBookings(hotel.id):Promise.resolve({items:[]})]);setWork(workItems||[]);setBookings(sales.items||[])}finally{setLoading(false)}},[hotel.id,canSeeWork,canSeeSale])
+  const load=useCallback(async()=>{setLoading(true);try{const [workItems,sales]=await withTimeout(Promise.all([canSeeWork?fetchPlanningWork(hotel.id):Promise.resolve([]),canSeeSale?fetchBookings(hotel.id):Promise.resolve({items:[]})]),20000,'Planning timeout');setWork(workItems||[]);setBookings(sales.items||[])}catch(error){console.warn('Caricamento planning fallito',error)}finally{setLoading(false)}},[hotel.id,canSeeWork,canSeeSale])
   useEffect(()=>{setSection(null);load();const offWork=canSeeWork?subscribePlanningWork(hotel.id,load):null;const offSales=canSeeSale?subscribeBookings(hotel.id,load):null;return()=>{offWork?.();offSales?.()}},[hotel.id,load,canSeeWork,canSeeSale])
   useEffect(()=>{if(!createRequest?.nonce)return;let consumed=false;if(createRequest.kind==='work'&&canSeeWork){setSection('work');onSectionChange?.('work');setWorkCreateSignal(n=>n+1);consumed=true}if(createRequest.kind==='sale'&&canSeeSale){setSection('sale');onSectionChange?.('sale');setSaleCreateSignal(n=>n+1);consumed=true}if(consumed)onCreateRequestConsumed?.(createRequest.kind)},[createRequest?.nonce,createRequest?.kind,canSeeWork,canSeeSale,onSectionChange,onCreateRequestConsumed])
   const chooseSection=(next)=>{setSection(next);onSectionChange?.(next)}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ROLES } from '../../config.js'
 import { canSendReminder, canEditReminder, canDeleteReminder, createReminder, deleteReminder, fetchReminders, subscribeReminders, updateReminder, updateReminderWithPhoto } from './reminder-data.js'
+import { withTimeout } from '../../async-timeout.js'
 import { Button, Card, Field, Icon, EmptyState, Spinner } from '../ui.jsx'
 import './reminders.css'
 
@@ -14,7 +15,7 @@ export default function RemindersView({ hotel, user }) {
   const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[creating,setCreating]=useState(false),[saving,setSaving]=useState(false),[message,setMessage]=useState('')
   const [editing,setEditing]=useState(null),[rolePickerOpen,setRolePickerOpen]=useState(false),[form,setForm]=useState(emptyForm())
   const allowed=canSendReminder(user), editAllowed=canEditReminder(user), deleteAllowed=canDeleteReminder(user)
-  const load=async()=>{try{setItems(await fetchReminders(hotel.id))}catch(e){setMessage(e?.message||'Errore caricamento')}finally{setLoading(false)}}
+  const load=async()=>{try{setItems(await withTimeout(fetchReminders(hotel.id),20000,'Promemoria timeout'))}catch(e){setMessage(e?.message||'Errore caricamento')}finally{setLoading(false)}}
   useEffect(()=>{setLoading(true);load();const off=subscribeReminders(hotel.id,load);return()=>off?.()},[hotel.id])
   const photoPreview=useMemo(()=>form.photo?URL.createObjectURL(form.photo):null,[form.photo])
   useEffect(()=>()=>{if(photoPreview)URL.revokeObjectURL(photoPreview)},[photoPreview])

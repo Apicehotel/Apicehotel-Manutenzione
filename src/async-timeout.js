@@ -13,3 +13,33 @@ export function withTimeout(promise, timeoutMs = 12000, label = 'Timeout') {
     if (timer) clearTimeout(timer)
   })
 }
+
+/**
+ * Fetch wrapper that aborts hung REST/storage calls. Used as Supabase global.fetch
+ * so list/bootstrap queries cannot spin forever on flaky mobile networks.
+ */
+export function createTimedFetch(timeoutMs = 20000) {
+  const ms = Math.max(1000, Number(timeoutMs) || 20000)
+  return async function timedFetch(input, init = {}) {
+    const controller = new AbortController()
+    const parent = init?.signal
+    const forwardAbort = () => {
+      try { controller.abort(parent?.reason) } catch { controller.abort() }
+    }
+    if (parent) {
+      if (parent.aborted) forwardAbort()
+      else parent.addEventListener('abort', forwardAbort, { once: true })
+    }
+    const timer = setTimeout(() => {
+      try { controller.abort(new DOMException(`Network timeout after ${ms}ms`, 'AbortError')) }
+      catch { controller.abort() }
+    }, ms)
+    timer?.unref?.()
+    try {
+      return await fetch(input, { ...init, signal: controller.signal })
+    } finally {
+      clearTimeout(timer)
+      if (parent) parent.removeEventListener('abort', forwardAbort)
+    }
+  }
+}

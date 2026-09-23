@@ -53,14 +53,17 @@ test('React render boundary delegates recoverable module failures to centralized
   assert.doesNotMatch(boundary, /randapp-module-recovery:/)
 })
 
-test('service worker refuses invalid stale dynamic assets and supports runtime cache purge', () => {
-  assert.match(serviceWorker, /apicehotel-manutenzione-v15/)
+test('service worker refuses invalid stale dynamic assets and avoids online stale-shell fallback', () => {
+  assert.match(serviceWorker, /apicehotel-manutenzione-v16/)
   assert.match(serviceWorker, /PURGE_RUNTIME_CACHES/)
-  assert.match(serviceWorker, /isValidDynamicAsset/) 
-  assert.match(serviceWorker, /isImmutableAsset/) 
+  assert.match(serviceWorker, /isValidDynamicAsset/)
+  assert.match(serviceWorker, /isImmutableAsset/)
   assert.match(serviceWorker, /event\.waitUntil\(refreshCachedDynamicAsset/)
   assert.match(serviceWorker, /status:\s*503/)
   assert.match(serviceWorker, /Cache-Control.*no-store/)
+  assert.match(serviceWorker, /navigator\.onLine !== false/)
+  assert.match(serviceWorker, /Application shell temporarily unavailable/)
+  assert.match(serviceWorker, /status:\s*504/)
 })
 
 test('deployment caching keeps HTML fresh and hashed assets immutable', () => {

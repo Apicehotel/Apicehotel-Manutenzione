@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
 import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
+import { withTimeout } from '../../async-timeout.js'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 import { Badge, Card } from '../ui.jsx'
 import HubChoice from './HubChoice.jsx'
@@ -17,10 +18,10 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
   const refresh = useCallback(async () => {
     if (!hotel?.id || (!canIssues && !canInterventions)) return
     try {
-      const [issuesRes, plannedRes] = await Promise.all([
+      const [issuesRes, plannedRes] = await withTimeout(Promise.all([
         canIssues ? fetchIssuesForHub(hotel.id) : Promise.resolve({ issues: [] }),
         canInterventions ? fetchPlannedForHub(hotel.id) : Promise.resolve({ items: [] }),
-      ])
+      ]), 20000, 'Operatività timeout')
       setIssues(issuesRes.issues || [])
       setPlanned(plannedRes.items || [])
     } catch (error) {
