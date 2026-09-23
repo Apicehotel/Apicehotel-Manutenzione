@@ -41,3 +41,20 @@ test('error boundary Riprova reloads recoverable module failures instead of remo
   assert.match(boundary, /window\.location\.reload\(\)/)
   assert.equal(isDeploymentAssetError(new Error('Failed to fetch dynamically imported module')), true)
 })
+
+test('Shell isolates section failures with ViewErrorBoundary and named-export guards', () => {
+  assert.match(boundary, /export class ViewErrorBoundary/)
+  assert.match(boundary, /data-testid="view-error"/)
+  assert.match(shell, /ViewErrorBoundary viewId=/)
+  assert.match(shell, /if \(!module\?\.TemperatureSensors\)/)
+  assert.match(shell, /if \(!module\?\.Housekeeping\)/)
+})
+
+test('Home bounds operational queries and surfaces hard fetch failures', () => {
+  const home = readFileSync(new URL('../src/randapp/Home.jsx', import.meta.url), 'utf8')
+  assert.match(home, /HOME_QUERY_TIMEOUT_MS/)
+  assert.match(home, /timed\(fetchIssues/)
+  assert.match(home, /homeHardFail/)
+  assert.match(home, /data-testid="home-retry"/)
+  assert.match(app, /withTimeout\(loadDirectoryAll\(\)/)
+})

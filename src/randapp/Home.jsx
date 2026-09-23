@@ -12,6 +12,7 @@ import {
   weatherSummary,
 } from '../home-widgets-logic.js'
 import { drainOfflineQueue, getOfflineStatus } from '../offline-store.js'
+import { withTimeout } from '../async-timeout.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
@@ -19,6 +20,8 @@ import { Badge, Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
 import './home-operational.css'
 
+const HOME_QUERY_TIMEOUT_MS = 15000
+const timed = (promise, label) => withTimeout(promise, HOME_QUERY_TIMEOUT_MS, label)
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } } })
 const FOCUS_KEY = 'randapp.home.focus.v1'
 const readFocus = () => { try { return localStorage.getItem(FOCUS_KEY) !== 'complete' } catch { return true } }
@@ -80,12 +83,12 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const canInterventions = canUser(user, 'interventions', 'view')
   const canReminders = canUser(user, 'reminders', 'view')
   const canInventory = canUser(user, 'inventory', 'view')
-  const issuesQuery=useQuery({queryKey:['home13',hotel.id,'issues'],queryFn:()=>fetchIssues(hotel.id),enabled:canIssues})
-  const urgentsQuery=useQuery({queryKey:['home13',hotel.id,'urgents'],queryFn:()=>fetchUrgents(hotel.id),enabled:canUrgent})
-  const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>fetchPlanned(hotel.id),enabled:canInterventions})
-  const remindersQuery=useQuery({queryKey:['home13',hotel.id,'reminders',user?.role],queryFn:()=>fetchReminders(hotel.id),enabled:canReminders})
-  const weatherQuery=useQuery({queryKey:['home13',hotel.id,'weather'],queryFn:({signal})=>fetchOperationalWeather(hotel.id,{signal}),refetchInterval:5*60_000})
-  const presenceQuery=useQuery({queryKey:['home13',hotel.id,'presence'],queryFn:()=>fetchPeopleInStructure(hotel.id),refetchInterval:60_000})
+  const issuesQuery=useQuery({queryKey:['home13',hotel.id,'issues'],queryFn:()=>timed(fetchIssues(hotel.id),'Home issues timeout'),enabled:canIssues})
+  const urgentsQuery=useQuery({queryKey:['home13',hotel.id,'urgents'],queryFn:()=>timed(fetchUrgents(hotel.id),'Home urgents timeout'),enabled:canUrgent})
+  const plannedQuery=useQuery({queryKey:['home13',hotel.id,'planned'],queryFn:()=>timed(fetchPlanned(hotel.id),'Home planned timeout'),enabled:canInterventions})
+  const remindersQuery=useQuery({queryKey:['home13',hotel.id,'reminders',user?.role],queryFn:()=>timed(fetchReminders(hotel.id),'Home reminders timeout'),enabled:canReminders})
+  const weatherQuery=useQuery({queryKey:['home13',hotel.id,'weather'],queryFn:({signal})=>timed(fetchOperationalWeather(hotel.id,{signal}),'Home weather timeout'),refetchInterval:5*60_000})
+  const presenceQuery=useQuery({queryKey:['home13',hotel.id,'presence'],queryFn:()=>timed(fetchPeopleInStructure(hotel.id),'Home presence timeout'),refetchInterval:60_000})
   useEffect(()=>{
     const refreshPresence=()=>{ queryClient.invalidateQueries({ queryKey:['home13',hotel.id,'presence'] }) }
     window.addEventListener('apice-presence-changed', refreshPresence)
@@ -97,7 +100,18 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
       window.removeEventListener('online', refreshPresence)
     }
   },[queryClient,hotel.id])
-  const loading=[issuesQuery,urgentsQuery,plannedQuery,remindersQuery].some((q)=>q.isLoading)
+  const coreQueries=[
+    canIssues && issuesQuery,
+    canUrgent && urgentsQuery,
+    canInterventions && plannedQuery,
+    canReminders && remindersQuery,
+  ].filter(Boolean)
+  const loading=coreQueries.some((q)=>q.isLoading)
+  const homeFailed=coreQueries.some((q)=>q.isError)
+  const homeHardFail=homeFailed && !loading && coreQueries.every((q)=>q.isError && !q.data)
+  const retryHome=()=>{
+    queryClient.invalidateQueries({ queryKey:['home13',hotel.id] })
+  }
   const issues=issuesQuery.data?.issues||[], urgents=urgentsQuery.data?.items||[], planned=plannedQuery.data?.items||[], reminders=remindersQuery.data||[]
   const openIssues=issues.filter((item)=>item.status!=='done'), openUrgents=urgents.filter((item)=>item.status!=='completata')
   const todayInterventions=planned.filter((item)=>item.status!=='done'&&(isToday(item.scheduledAt)||(item.scheduledAt&&item.scheduledUntil&&item.scheduledAt<=Date.now()&&item.scheduledUntil>=Date.now())))
@@ -154,7 +168,19 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
       </div>
     </header>
     {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; puoi scegliere quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
-    {loading?<Spinner label="Preparo la scrivania…"/>:<>
+    {loading?<Spinner label="Preparo la scrivania…"/>:homeHardFail?(
+      <div data-testid="home-hard-fail" style={{display:'grid',gap:16,justifyItems:'center',padding:'24px 12px'}}>
+        <EmptyState icon="warning" title="Scrivania non disponibile">
+          Non riesco a caricare i dati operativi. Controlla la connessione e riprova.
+        </EmptyState>
+        <Button type="button" variant="primary" size="sm" onClick={retryHome} data-testid="home-retry">Riprova</Button>
+      </div>
+    ):<>
+      {homeFailed&&(
+        <button type="button" className="rs-workhome__sync is-warn" onClick={retryHome} data-testid="home-partial-retry">
+          <Icon name="warning"/><span><strong>Alcuni dati non sono aggiornati</strong><small>Tocca per riprovare il caricamento</small></span>
+        </button>
+      )}
       <div className="rs-workhome__stats rs-workhome__stats--strip" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
       {syncCard&&<button type="button" className={`rs-workhome__sync is-${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
 
