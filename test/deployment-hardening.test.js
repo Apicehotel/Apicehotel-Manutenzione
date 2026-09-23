@@ -28,9 +28,9 @@ test('service worker validates MIME before caching dynamic assets', () => {
   assert.match(sw, /status:\s*503/)
 })
 
-test('Vercel Git deploys remain enabled after reviewed merges', () => {
+test('Vercel Git deploys stay paused; Ocean owns PR previews', () => {
   const config = JSON.parse(vercel)
-  assert.equal(config.git?.deploymentEnabled, true)
+  assert.equal(config.git?.deploymentEnabled, false)
 })
 
 test('Ocean preview waits for javascript SW before browser gates', () => {
