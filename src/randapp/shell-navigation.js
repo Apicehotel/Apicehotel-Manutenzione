@@ -52,7 +52,7 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], 
       viewAllowed('issues') && { slot: 1, id: 'issues', key: 'issues', icon: 'issues', label: 'Segnalazioni' },
       viewAllowed('housekeeping') && { slot: 2, id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
       viewAllowed('home') && { slot: 3, id: 'home', key: 'home', icon: 'home', label: 'Home' },
-      viewAllowed('my-work') && { slot: 4, id: 'my-work', key: 'task', icon: 'check', label: 'Task' },
+      { slot: 4, id: 'my-work', key: 'task', icon: 'check', label: 'Task' },
       viewAllowed('supplies') && { slot: 5, id: 'supplies', key: 'supplies', icon: 'package', label: 'Rifornimenti' },
     ].filter(Boolean)
   }
