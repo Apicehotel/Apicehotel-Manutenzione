@@ -89,7 +89,7 @@ export const VIEW_GUARDS = {
   issues: view('issues'),
   chat: (u) => Boolean(u?.chat_enabled) && !['Governante','Capo Governante'].includes(u?.role),
   interventions: view('interventions'),
-  'my-work': (u) => canUser(u, 'urgent', 'view') || canUser(u, 'reminders', 'view'),
+  'my-work': (u) => ['Governante','Capo Governante'].includes(u?.role) || canUser(u, 'urgent', 'view') || canUser(u, 'reminders', 'view'),
   inventory: view('inventory'),
   supplies: view('supplies'),
   urgent: view('urgent'),
