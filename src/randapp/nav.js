@@ -19,7 +19,7 @@ export function buildNav(user, hotel, navigationConfig = null, placement = null)
       id: 'principale', label: 'Principale', items: [
         { id: 'home', icon: 'home', label: 'Home', show: canUser(user, 'home', 'view') },
         { id: 'operations', icon: 'issues', label: 'Operatività', show: canSeeOperations(user) },
-        { id: 'chat', icon: 'message', label: 'RandChat', show: Boolean(user.chat_enabled) },
+        { id: 'chat', icon: 'message', label: 'RandChat', show: Boolean(user.chat_enabled) && !['Governante','Capo Governante'].includes(user.role) },
       ],
     },
     {
@@ -86,7 +86,7 @@ export const VIEW_GUARDS = {
   home: view('home'),
   operations: canSeeOperations,
   issues: view('issues'),
-  chat: (u) => Boolean(u?.chat_enabled),
+  chat: (u) => Boolean(u?.chat_enabled) && !['Governante','Capo Governante'].includes(u?.role),
   interventions: view('interventions'),
   'my-work': (u) => canUser(u, 'urgent', 'view') || canUser(u, 'reminders', 'view'),
   inventory: view('inventory'),
