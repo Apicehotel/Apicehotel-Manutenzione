@@ -14,10 +14,10 @@ test('Governante and Capo Governante bottom nav is Housekeeping Rifornimenti Hom
       viewAllowed: (id) => allowed.has(id),
       user: { role },
     })
-    assert.deepEqual(nav.map((item) => item.id), ['housekeeping','supplies','home','my-work'])
-    assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4])
+    assert.deepEqual(nav.map((item) => item.id), ['housekeeping','supplies','home','my-work','randai'])
+    assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4,5])
     assert.equal(nav.some((item) => item.id === 'chat'), false)
-    assert.equal(nav.some((item) => item.id === 'randai'), false)
+    assert.equal(nav.some((item) => item.id === 'randai'), true)
   }
 })
 
@@ -31,10 +31,11 @@ test('Task view loads only alerts and reminders', async () => {
   assert.doesNotMatch(task, /Interventi|I miei lavori/)
 })
 
-test('housekeeping roles cannot enter Chat or RandAI from navigation guards', async () => {
+test('housekeeping roles cannot enter Chat but keep RandAI and Segnalazioni', async () => {
   const nav = await read('src/randapp/nav.js')
   assert.match(nav, /chat: \(u\) => Boolean\(u\?\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
-  assert.match(nav, /randai: \(u\) => !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
+  assert.match(nav, /randai: \(\) => true/)
+  assert.match(nav, /id: 'issues'.*label: 'Segnalazioni'.*canUser\(user, 'issues', 'view'\)/s)
 })
 
 test('housekeeping Task permissions are read-only and do not grant interventions or planning', async () => {
