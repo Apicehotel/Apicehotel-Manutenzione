@@ -15,7 +15,7 @@ import { clearRandAIContextResource, createInterventionContextEnvelope, publishR
 import { Button, Card, EmptyState, Field, Icon, IconButton, Spinner, TextInput, Sheet, ConfirmDialog, Badge } from '../ui.jsx'
 import ListFetchNotice from '../ListFetchNotice.jsx'
 import { canCreatePlanned, compressPhotoAsDataUrl } from '../helpers.js'
-import { PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
+import { InterventionTags, PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
 
 const partStatusLabel = { requested: 'Richiesto', reserved: 'Prenotato', consumed: 'Usato', released: 'Rilasciato', cancelled: 'Annullato' }
 const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'success', released: 'default', cancelled: 'default' }
@@ -55,7 +55,7 @@ export default function InterventionsView({ hotel, user }) {
       <>
         <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={items.length > 0} onRetry={load} resourceLabel="lista interventi" />
         {showEmpty ? <EmptyState icon="wrench" title="Nessun intervento">Non ci sono elementi per questo filtro.</EmptyState> : null}
-        {visible.length ? <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{item.category||'Manutenzione'} · {fmt(item.scheduledAt)}</small></div><StatusPill status={item.status}/></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}</Card>})}</div> : null}
+        {visible.length ? <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{fmt(item.scheduledAt)}</small></div></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}<InterventionTags item={item}/></Card>})}</div> : null}
       </>
     )}
     {selected&&<PlannedDetail item={selected} hotel={hotel} user={user} onClose={()=>setSelected(null)} onUpdate={doUpdate} onDelete={doDelete}/>} 
