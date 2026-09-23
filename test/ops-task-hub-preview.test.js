@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   interventionPreviewMetrics,
+  interventionTopPreview,
   issuePreviewMetrics,
+  issueTopPreview,
   reminderPreviewMetrics,
   urgentPreviewMetrics,
 } from '../src/randapp/operations/hub-preview-stats.js'
@@ -51,4 +53,25 @@ test('urgent and reminder preview metrics stay compact', () => {
     [{ active: true }, { active: false }, { active: true }],
     [{ id: 'due' }],
   )[0].value, 1)
+})
+
+
+test('operations top previews cap at 3 and respect operational priority', () => {
+  const issues = issueTopPreview([
+    { id: 1, status: 'todo', urgency: 'media', createdAt: 100 },
+    { id: 2, status: 'todo', urgency: 'alta', createdAt: 50 },
+    { id: 3, status: 'todo', urgency: 'alta', createdAt: 150 },
+    { id: 4, status: 'todo', urgency: 'bassa', createdAt: 200 },
+    { id: 5, status: 'done', urgency: 'alta', createdAt: 300 },
+  ])
+  assert.deepEqual(issues.map((item) => item.id), [3, 2, 4])
+
+  const interventions = interventionTopPreview([
+    { id: 'a', status: 'todo', scheduledAt: 300 },
+    { id: 'b', status: 'da_finire', scheduledAt: 500 },
+    { id: 'c', status: 'waiting', scheduledAt: 600 },
+    { id: 'd', status: 'todo', scheduledAt: 100 },
+    { id: 'e', status: 'done', scheduledAt: 10 },
+  ])
+  assert.deepEqual(interventions.map((item) => item.id), ['b', 'c', 'd'])
 })

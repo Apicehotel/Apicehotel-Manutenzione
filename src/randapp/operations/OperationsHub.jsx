@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
 import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
+import { Card } from '../ui.jsx'
 import HubChoice from './HubChoice.jsx'
-import { interventionPreviewMetrics, issuePreviewMetrics } from './hub-preview-stats.js'
+import { interventionPreviewMetrics, interventionTopPreview, issuePreviewMetrics, issueTopPreview } from './hub-preview-stats.js'
 
 const SOFT_REFRESH_MS = 2500
 
@@ -65,6 +66,8 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
 
   const issueMetrics = useMemo(() => issuePreviewMetrics(issues), [issues])
   const interventionMetrics = useMemo(() => interventionPreviewMetrics(planned), [planned])
+  const topIssues = useMemo(() => issueTopPreview(issues), [issues])
+  const topInterventions = useMemo(() => interventionTopPreview(planned), [planned])
   const columns = canIssues && canInterventions ? 2 : 1
 
   return (
@@ -95,7 +98,47 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
           />
         )}
       </Grid>
-      <p className="rs-telegram-hint">Tap sulla card per aprire l’elenco completo. I tre numeri sono solo anteprima.</p>
+      <Grid columns={columns} gap="sm" data-testid="operations-top-preview">
+        {canIssues && (
+          <Card className="rs-card--pad" data-testid="operations-top-issues">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <strong>Top 3 Segnalazioni</strong><small>{topIssues.length} in evidenza</small>
+            </div>
+            {topIssues.length ? (
+              <div className="rs-migrated-list">
+                {topIssues.map((item) => (
+                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('issues')}>
+                    <div className="rs-op-card__head">
+                      <div><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || item.category || 'Segnalazione'}</small></div>
+                      <small>{item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'In attesa' : 'Aperta'}</small>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : <small>Nessuna segnalazione aperta.</small>}
+          </Card>
+        )}
+        {canInterventions && (
+          <Card className="rs-card--pad" data-testid="operations-top-interventions">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <strong>Top 3 Interventi</strong><small>{topInterventions.length} in evidenza</small>
+            </div>
+            {topInterventions.length ? (
+              <div className="rs-migrated-list">
+                {topInterventions.map((item) => (
+                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('interventions')}>
+                    <div className="rs-op-card__head">
+                      <div><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.category || item.notes || 'Manutenzione'}</small></div>
+                      <small>{item.status === 'da_finire' ? 'Da finire' : item.status === 'waiting' ? 'In attesa' : 'Aperto'}</small>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : <small>Nessun intervento aperto.</small>}
+          </Card>
+        )}
+      </Grid>
+      <p className="rs-telegram-hint">Tap sulla card o su una riga per aprire l’elenco completo.</p>
     </Stack>
   )
 }

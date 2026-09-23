@@ -9,6 +9,7 @@ const nav = read('../src/randapp/nav.js')
 const roleNavigation = read('../src/randapp/role-navigation.js')
 const contextualAdd = read('../src/randapp/contextual-add.js')
 const planningHub = read('../src/randapp/PlanningHub.jsx')
+const operationsHub = read('../src/randapp/operations/OperationsHub.jsx')
 
 test('bottom navigation treats Task as alerts and reminders, not interventions', () => {
   assert.match(navigation, /id:\s*'my-work'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
@@ -19,12 +20,12 @@ test('bottom navigation treats Task as alerts and reminders, not interventions',
   assert.match(navigation, /view === 'my-work'/)
 })
 
-test('contextual plus creates only the object owned by the active page', () => {
-  assert.match(contextualAdd, /intervention:\s*\{[^}]*title:\s*'Nuovo intervento'/s)
-  assert.match(contextualAdd, /case 'interventions':[\s\S]*?return clean\(\['intervention'\]/)
-  assert.match(contextualAdd, /case 'planning-work':[\s\S]*?return clean\(\['planning-work'\]/)
-  assert.match(contextualAdd, /case 'planning-sale':[\s\S]*?return clean\(\['planning-sale'\]/)
-  assert.doesNotMatch(contextualAdd, /case 'planning-work':\s*\n\s*case 'planning-sale':/)
+test('contextual plus keeps Task on Avvisi and Planning offers work or sale', () => {
+  assert.ok(contextualAdd.includes("case 'interventions':\n      return clean(['intervention'], capabilities)"))
+  assert.ok(contextualAdd.includes("case 'my-work':\n      return clean(['urgent'], capabilities)"))
+  assert.ok(!contextualAdd.includes("case 'my-work':\n      return clean(['intervention'], capabilities)"))
+  assert.ok(contextualAdd.includes("case 'planning-work':\n      return clean(['planning-work', 'planning-sale'], capabilities)"))
+  assert.ok(contextualAdd.includes("case 'planning-sale':\n      return clean(['planning-sale'], capabilities)"))
 })
 
 test('Interventi plus opens the canonical intervention sheet without detouring through Planning', () => {
@@ -47,4 +48,14 @@ test('Planning legacy intervention bridge is gone and Task has an independent ac
   assert.doesNotMatch(planningHub, /PlannedCreateSheet/)
   assert.doesNotMatch(shell, /\['operations', 'issues', 'interventions', 'my-work'\]/)
   assert.match(shell, /\['operations', 'issues', 'interventions'\]\.includes\(view\)/)
+})
+
+
+test('Operatività renders both top-3 previews', () => {
+  assert.ok(operationsHub.includes('operations-top-issues'))
+  assert.ok(operationsHub.includes('Top 3 Segnalazioni'))
+  assert.ok(operationsHub.includes('operations-top-interventions'))
+  assert.ok(operationsHub.includes('Top 3 Interventi'))
+  assert.ok(operationsHub.includes('issueTopPreview(issues)'))
+  assert.ok(operationsHub.includes('interventionTopPreview(planned)'))
 })

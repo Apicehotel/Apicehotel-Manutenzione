@@ -63,3 +63,42 @@ export function reminderPreviewMetrics(items = [], dueToday = []) {
   ]
 }
 
+
+
+const asTime = (value) => {
+  const numeric = Number(value || 0)
+  if (Number.isFinite(numeric) && numeric > 0) return numeric
+  const parsed = Date.parse(value || '')
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+/** Top 3 Segnalazioni: urgenti aperte prima, poi aperte più recenti. */
+export function issueTopPreview(issues = [], limit = 3) {
+  return issues
+    .filter((item) => item.status !== 'done')
+    .sort((a, b) => {
+      const urgencyA = a.urgency === 'alta' ? 1 : 0
+      const urgencyB = b.urgency === 'alta' ? 1 : 0
+      if (urgencyA !== urgencyB) return urgencyB - urgencyA
+      return asTime(b.createdAt || b.updatedAt) - asTime(a.createdAt || a.updatedAt)
+    })
+    .slice(0, limit)
+}
+
+/** Top 3 Interventi: da finire/in attesa prima, poi aperti con data più vicina. */
+export function interventionTopPreview(items = [], limit = 3) {
+  const priority = (status) => (status === 'da_finire' || status === 'waiting' ? 0 : 1)
+  return items
+    .filter((item) => item.status !== 'done')
+    .sort((a, b) => {
+      const byPriority = priority(a.status) - priority(b.status)
+      if (byPriority) return byPriority
+      const aTime = asTime(a.scheduledAt)
+      const bTime = asTime(b.scheduledAt)
+      if (!aTime && !bTime) return asTime(b.createdAt) - asTime(a.createdAt)
+      if (!aTime) return 1
+      if (!bTime) return -1
+      return aTime - bTime
+    })
+    .slice(0, limit)
+}
