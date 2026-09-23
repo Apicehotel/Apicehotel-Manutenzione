@@ -348,7 +348,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const userInterests = useMemo(() => resolveUserInterests(user), [user])
   const bottomNav = useMemo(() => {
     if (!user) return []
-    return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests })
+    return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests, user })
   }, [user, placement, viewAllowed, userInterests])
 
   const addCapabilities = useMemo(() => ({
@@ -486,7 +486,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
+            {viewAllowed('randai') && <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>}
           </div>
         </header>
 
