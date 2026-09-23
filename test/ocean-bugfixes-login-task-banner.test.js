@@ -4,16 +4,14 @@ import test from 'node:test'
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('Task/MyWork uses lean hub fetches and always clears list loading', async () => {
-  const view = await source('src/randapp/operations/MyWorkView.jsx')
-  assert.match(view, /fetchIssuesForHub/)
-  assert.match(view, /fetchPlannedForHub/)
-  assert.match(view, /setIssues\(issuesRes\.issues\s*\|\|\s*\[\]\)/)
-  assert.match(view, /finally\s*\{\s*setListLoading\(false\)/)
-  assert.doesNotMatch(view, /fetchIssues\(/)
-  assert.doesNotMatch(view, /fetchPlanned\(/)
-  assert.doesNotMatch(view, /task-toggle-my-work/)
-  assert.doesNotMatch(view, /subscribeIssues/)
+test('Task loads only alerts and reminders and always clears loading', async () => {
+  const view = await source('src/randapp/operations/TaskView.jsx')
+  assert.match(view, /fetchUrgents/)
+  assert.match(view, /fetchReminders/)
+  assert.match(view, /finally\s*\{[\s\S]*setLoading\(false\)/)
+  assert.doesNotMatch(view, /fetchIssues/)
+  assert.doesNotMatch(view, /fetchPlanned/)
+  assert.doesNotMatch(view, /Interventi|I miei lavori/)
 })
 
 test('login submit uses one native form submit path for first-tap mobile reliability', async () => {

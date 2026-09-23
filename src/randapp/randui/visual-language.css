@@ -211,7 +211,7 @@
   min-height: 0;
 }
 .rs-operations-hub.rs-ops-surface,
-.rs-my-work.rs-ops-surface,
+.rs-task-view.rs-ops-surface,
 .rs-planning-hub.rs-ops-surface {
   /* Title must sit flush above the first useful block — no stretched dead band. */
   grid-auto-rows: max-content;

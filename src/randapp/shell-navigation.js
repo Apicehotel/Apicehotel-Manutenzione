@@ -21,9 +21,11 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
   randai: 5,
 })
 
+const HOUSEKEEPING_ROLES = new Set(['Governante', 'Capo Governante'])
+
 function firstContextualDestination({ placement, viewAllowed, interests }) {
-  if (placement('interventions') !== 'off' && viewAllowed('my-work')) {
-    return { id: 'my-work', key: 'interventions', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
+  if (placement('task') !== 'off' && viewAllowed('my-work')) {
+    return { id: 'my-work', key: 'task', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
   }
 
   if (placement('chat') !== 'off' && viewAllowed('chat')) {
@@ -42,8 +44,17 @@ function firstContextualDestination({ placement, viewAllowed, interests }) {
   return ranked[0] ? { ...ranked[0], slot: TELEGRAM_PRIMARY_SLOTS.contextual } : null
 }
 
-export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [] }) {
+export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], user = null }) {
   if (typeof placement !== 'function' || typeof viewAllowed !== 'function') return []
+
+  if (HOUSEKEEPING_ROLES.has(user?.role)) {
+    return [
+      viewAllowed('housekeeping') && { slot: 1, id: 'housekeeping', key: 'housekeeping', icon: 'housekeeping', label: 'Housekeeping' },
+      viewAllowed('supplies') && { slot: 2, id: 'supplies', key: 'supplies', icon: 'package', label: 'Rifornimenti' },
+      viewAllowed('home') && { slot: 3, id: 'home', key: 'home', icon: 'home', label: 'Home' },
+      viewAllowed('my-work') && { slot: 4, id: 'my-work', key: 'task', icon: 'check', label: 'Task' },
+    ].filter(Boolean)
+  }
 
   const items = []
   const operationsVisible = viewAllowed('operations')

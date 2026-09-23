@@ -36,7 +36,7 @@ const UrgentCreateSheet = lazy(() => import('./UrgentCreateSheet.jsx'))
 const OperationsHub = lazy(() => import('./operations/OperationsHub.jsx'))
 const InterventionsView = lazy(() => import('./operations/InterventionsView.jsx'))
 const UrgentView = lazy(() => import('./operations/UrgentView.jsx'))
-const MyWorkView = lazy(() => import('./operations/MyWorkView.jsx'))
+const TaskView = lazy(() => import('./operations/TaskView.jsx'))
 const RandAIAssistant = lazy(() => import('../randai/RandAIAssistant.jsx'))
 const TemperatureView = lazy(() => import('../temperature.jsx').then(({ TemperatureSensors }) => ({
   default: ({ hotel }) => <div data-testid="temperature-view"><TemperatureSensors hotel={hotel} /></div>,
@@ -348,7 +348,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const userInterests = useMemo(() => resolveUserInterests(user), [user])
   const bottomNav = useMemo(() => {
     if (!user) return []
-    return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests })
+    return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests, user })
   }, [user, placement, viewAllowed, userInterests])
 
   const addCapabilities = useMemo(() => ({
@@ -395,7 +395,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} />
-    if (view === 'my-work') content = <MyWorkView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
+    if (view === 'my-work') content = <TaskView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
     if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
@@ -486,7 +486,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </button>
             <PresenceChip user={user} />
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>
+            {viewAllowed('randai') && <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>}
           </div>
         </header>
 

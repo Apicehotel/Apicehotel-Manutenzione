@@ -10,11 +10,12 @@ const roleNavigation = read('../src/randapp/role-navigation.js')
 const contextualAdd = read('../src/randapp/contextual-add.js')
 const planningHub = read('../src/randapp/PlanningHub.jsx')
 
-test('bottom navigation prefers Task in slot four and protects it like interventions', () => {
+test('bottom navigation treats Task as alerts and reminders, not interventions', () => {
   assert.match(navigation, /id:\s*'my-work'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
-  assert.match(navigation, /placement\('interventions'\).*viewAllowed\('my-work'\)/s)
-  assert.match(nav, /'my-work':\s*view\('interventions'\)/)
-  assert.match(roleNavigation, /'my-work':\s*'interventions'/)
+  assert.match(navigation, /placement\('task'\).*viewAllowed\('my-work'\)/s)
+  assert.match(nav, /'my-work':\s*\(u\) => canUser\(u, 'urgent', 'view'\) \|\| canUser\(u, 'reminders', 'view'\)/)
+  assert.match(roleNavigation, /'my-work':\s*'task'/)
+  assert.doesNotMatch(navigation, /placement\('interventions'\).*label:\s*'Task'/s)
   assert.match(navigation, /view === 'my-work'/)
 })
 
