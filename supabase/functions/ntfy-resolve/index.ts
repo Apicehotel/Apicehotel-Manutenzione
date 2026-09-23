@@ -33,6 +33,7 @@ Deno.serve(async(req:Request)=>{
   // Native ntfy subscription URI: the app receives only the real topic after
   // authenticated resolution. RandApp's HTTPS short URL is never used as a topic.
   const subscriptionLink=`ntfy://${host}/${encodeURIComponent(topic)}?display=${encodeURIComponent(alias)}`;
-  return json({ok:true,alias,hotel_id:hotelId,channel,label,topic,subscription_link:subscriptionLink,deep_link:subscriptionLink});
- }catch(error){console.error("ntfy-resolve",error instanceof Error?error.message:"unknown");return json({ok:false,error:"resolve_failed"},500)}
+  const appLink=host==="ntfy.sh"?"https://ntfy.sh/app":`${String(server).replace(/\/$/,"")}/app`;
+  return json({ok:true,alias,hotel_id:hotelId,channel,label,topic,subscription_link:subscriptionLink,deep_link:subscriptionLink,app_link:appLink});
+}catch(error){console.error("ntfy-resolve",error instanceof Error?error.message:"unknown");return json({ok:false,error:"resolve_failed"},500)}
 });

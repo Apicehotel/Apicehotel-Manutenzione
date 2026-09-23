@@ -11,6 +11,8 @@ PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. 
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
+Le notifiche ntfy sono gestibili senza SQL: in **Impostazioni → ntfy** l’admin attiva/disattiva il canale, completa i topic hotel/ruolo mancanti e invia un test urgente. In **Profilo** l’operatore resta sui soli short link personali (`/n/GIO-AV-……`) con test per canale; i topic tecnici non vengono mostrati. La diagnostica considera ntfy “ok” solo dopo setup + test riuscito.
+
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
 Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v16 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).

@@ -176,14 +176,16 @@ export async function getDiagnosticsSnapshot({ hotelId = loadSession()?.hotelId 
   } catch {}
   const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches || navigator.standalone === true
   const ntfyConfigured = hotelId ? localStorage.getItem(`apicehotel.ntfy.setup.v2.${hotelId}`) === '1' : false
-  const ntfyVerified = hotelId ? localStorage.getItem(`apicehotel.ntfy.verified.v2.${hotelId}`) === '1' : false
+  // NtfySetup stores an ISO timestamp when the test succeeds (not the literal "1").
+  const ntfyVerifiedRaw = hotelId ? localStorage.getItem(`apicehotel.ntfy.verified.v2.${hotelId}`) : null
+  const ntfyVerified = Boolean(ntfyVerifiedRaw && ntfyVerifiedRaw !== '0')
   return {
     generatedAt: new Date().toISOString(), build: buildInfo, hotelId,
     platform: { online: online(), standalone, userAgent: navigator.userAgent },
     services: {
       supabaseApi: api, auth, realtime: { ok: realtimeConnected, value: realtimeConnected },
       serviceWorker: sw, push, offlineQueue: offline,
-      ntfy: { ok: !hotelId || ntfyConfigured, value: { configured: ntfyConfigured, verified: ntfyVerified } },
+      ntfy: { ok: !hotelId || (ntfyConfigured && ntfyVerified), value: { configured: ntfyConfigured, verified: ntfyVerified, verifiedAt: ntfyVerifiedRaw || null } },
     },
     telemetry: getTelemetryReadiness(),
     storage, localDiagnosticQueue: readQueue().length,

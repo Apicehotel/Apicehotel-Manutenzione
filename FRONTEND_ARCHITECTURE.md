@@ -176,9 +176,15 @@ Tre livelli distinti:
 
 - inbox RandApp;
 - push web/PWA;
-- ntfy parallelo per hotel/ruolo.
+- ntfy parallelo per hotel/ruolo/assegnazioni personali.
 
 `ntfy` non è il database delle notifiche. Gli identificatori/routing restano separati per struttura.
+
+Gestione:
+
+- operatore → `Profilo` (`NtfySetup`) con short link e test per canale;
+- admin → `Impostazioni → ntfy` (`ntfy-admin`) per enable, ensure topic e test hotel;
+- resolve autenticato → `ntfy-resolve` restituisce `subscription_link` e `app_link` senza esporre il topic nel Profilo.
 
 ## 13. Diagnostica e telemetria
 

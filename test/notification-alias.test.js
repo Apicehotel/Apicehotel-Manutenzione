@@ -47,7 +47,7 @@ test('profile and ntfy UI never render or copy the real topic as the normal iden
   const edge=read('supabase/functions/ntfy-config/index.ts')
   assert.match(profile,/Codice notifiche/)
   assert.match(profile,/saveOwnNotificationCode/)
-  assert.match(setup,/channel\.alias\|\|buildNotificationAlias/)
+  assert.match(setup,/channel\.alias\s*\|\|\s*buildNotificationAlias/)
   assert.doesNotMatch(setup,/>\{channel\.topic\}</)
   assert.doesNotMatch(setup,/clipboard\.writeText\(channel\.topic\)/)
   assert.match(setup,/buildNotificationShortUrl/)
