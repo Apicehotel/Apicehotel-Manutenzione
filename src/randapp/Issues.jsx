@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
+import { withTimeout } from '../async-timeout.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import ListFetchNotice from './ListFetchNotice.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
@@ -466,7 +467,7 @@ export default function Issues({ user, hotel, users, createSignal, focusIssueId 
 
   useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) setCreating(true) }, [createSignal])
 
-  const reload = () => fetchIssues(hotel.id)
+  const reload = () => withTimeout(fetchIssues(hotel.id), 45000, 'Segnalazioni timeout')
     .then((result) => {
       setIssues(result.issues || [])
       setFetchOk(result.ok !== false)

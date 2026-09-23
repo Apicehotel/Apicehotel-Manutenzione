@@ -18,6 +18,27 @@ test('withTimeout rejects hung promises so bootstrap cannot spin forever', async
   assert.equal(await withTimeout(Promise.resolve('ok'), 200, 'unused'), 'ok')
 })
 
+test('createTimedFetch aborts hung fetch calls', async () => {
+  const { createTimedFetch } = await import('../src/async-timeout.js')
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = (_input, init = {}) => new Promise((_resolve, reject) => {
+    const signal = init.signal
+    if (signal?.aborted) {
+      reject(signal.reason || new DOMException('Aborted', 'AbortError'))
+      return
+    }
+    signal?.addEventListener('abort', () => {
+      reject(signal.reason || new DOMException('Aborted', 'AbortError'))
+    }, { once: true })
+  })
+  try {
+    const timedFetch = createTimedFetch(40)
+    await assert.rejects(() => timedFetch('https://example.test/hang'), /AbortError|Network timeout|aborted/i)
+  } finally {
+    globalThis.fetch = previousFetch
+  }
+})
+
 test('route and shell pages use retrying lazy imports for transient chunk failures', () => {
   assert.match(main, /lazyWithRetry\(\(\) => import\('\.\/randapp\/App\.jsx'\)\)/)
   assert.match(app, /lazyWithRetry\(\(\) => import\('\.\/Shell\.jsx'\)\)/)
@@ -48,6 +69,9 @@ test('Shell isolates section failures with ViewErrorBoundary and named-export gu
   assert.match(shell, /ViewErrorBoundary viewId=/)
   assert.match(shell, /if \(!module\?\.TemperatureSensors\)/)
   assert.match(shell, /if \(!module\?\.Housekeeping\)/)
+  assert.match(shell, /hotel-switch-loading/)
+  assert.match(shell, /shellBootstrapped/)
+  assert.match(shell, /ViewErrorBoundary viewId="notifications"/)
 })
 
 test('Home bounds operational queries and surfaces hard fetch failures', () => {
@@ -57,4 +81,14 @@ test('Home bounds operational queries and surfaces hard fetch failures', () => {
   assert.match(home, /homeHardFail/)
   assert.match(home, /data-testid="home-retry"/)
   assert.match(app, /withTimeout\(loadDirectoryAll\(\)/)
+})
+
+test('Supabase client and list views abort hung network calls', () => {
+  const supabase = readFileSync(new URL('../src/supabase.js', import.meta.url), 'utf8')
+  const issues = readFileSync(new URL('../src/randapp/Issues.jsx', import.meta.url), 'utf8')
+  const asyncTimeout = readFileSync(new URL('../src/async-timeout.js', import.meta.url), 'utf8')
+  assert.match(asyncTimeout, /export function createTimedFetch/)
+  assert.match(supabase, /createTimedFetch\(SUPABASE_FETCH_TIMEOUT_MS\)/)
+  assert.match(supabase, /global:\s*\{\s*fetch:/)
+  assert.match(issues, /withTimeout\(fetchIssues\(hotel\.id\), 45000/)
 })

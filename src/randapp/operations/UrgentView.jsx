@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchUrgents, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } from '../../urgents-data.js'
 import { insertIssue } from '../../issues-data.js'
+import { withTimeout } from '../../async-timeout.js'
 import { Button, Card, EmptyState, Field, IconButton, Spinner, TextInput } from '../ui.jsx'
 import ListFetchNotice from '../ListFetchNotice.jsx'
 import { canSendUrgent, ISSUE_CATEGORIES, URGENCY_META } from '../helpers.js'
@@ -26,7 +27,7 @@ export default function UrgentView({ hotel, user }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await fetchUrgents(hotel.id)
+      const result = await withTimeout(fetchUrgents(hotel.id), 20000, 'Avvisi timeout')
       setItems(result.items || [])
       setFetchOk(result.ok !== false)
       setFetchOffline(Boolean(result.offline))

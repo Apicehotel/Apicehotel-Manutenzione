@@ -13,7 +13,7 @@ RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i co
 
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
-Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk delle sezioni, timeout 12s su controllo sessione/directory/login (niente spinner infinito su rete lenta), `Riprova` sulla directory fallita, `ViewErrorBoundary` per isolare il crash di una sola sezione, timeout 15s + Riprova sulla Home, e reload reale dall’ErrorBoundary per moduli stale post-deploy.
+Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v16 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 

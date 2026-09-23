@@ -160,6 +160,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [users, setUsers] = useState([])
   const [directoryState, setDirectoryState] = useState('loading')
   const [directoryRetry, setDirectoryRetry] = useState(0)
+  const [shellBootstrapped, setShellBootstrapped] = useState(false)
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
   const [issueFocusId, setIssueFocusId] = useState(null)
@@ -184,13 +185,15 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   useEffect(() => {
     let active = true
-    setUsers([])
-    setUser(null)
     if (!hotel) {
+      setUsers([])
+      setUser(null)
       setDirectoryState('invalid-hotel')
       return () => { active = false }
     }
     setDirectoryState('loading')
+    // Keep the previous shell chrome during hotel switch so the UI does not flash
+    // a full-screen spinner that feels like "the page never loaded".
     withTimeout(fetchDirectory(session.hotelId), DIRECTORY_TIMEOUT_MS, 'Directory struttura timeout')
       .then(({ users: list }) => {
         if (!active) return
@@ -199,6 +202,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         setUsers(rows)
         setUser(matchedUser)
         setDirectoryState(matchedUser ? 'ready' : 'unauthorized')
+        if (matchedUser) setShellBootstrapped(true)
       }).catch((error) => {
         if (!active) return
         console.error('Directory struttura non disponibile', error)
@@ -409,7 +413,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (kind === 'work') setPlanningCreateRequest(null)
   }, [])
 
-  if (directoryState === 'loading') return <Spinner label="Verifico accesso alla struttura…" />
+  if (directoryState === 'loading' && !shellBootstrapped) return <Spinner label="Verifico accesso alla struttura…" />
+  if (directoryState === 'loading') return <div data-testid="hotel-switch-loading"><Spinner label="Cambio struttura…" /></div>
   if (directoryState === 'invalid-hotel') return <main className="rs-content"><EmptyState icon="lock" title="Struttura non valida">La sessione indica una struttura non riconosciuta. Esci e accedi di nuovo.</EmptyState></main>
   if (directoryState === 'error') {
     return (
@@ -555,9 +560,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
-      {insertOpen && <Suspense fallback={null}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
-      {urgentCreateOpen && <Suspense fallback={null}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} /></Suspense>}
-      {interventionCreateOpen && <Suspense fallback={null}><PlannedCreateSheet open={interventionCreateOpen} onClose={() => setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { setInterventionCreateOpen(false); setSettings(null); setView('interventions') }} /></Suspense>}
+      <ViewErrorBoundary viewId={insertOpen ? 'insert' : urgentCreateOpen ? 'urgent-create' : interventionCreateOpen ? 'intervention-create' : 'overlay'}>
+        {insertOpen && <Suspense fallback={<ViewFallback />}><InsertLauncher open={insertOpen} onClose={() => setInsertOpen(false)} hotel={hotel} user={user} onPick={pickInsert} actionIds={contextualActionIds} /></Suspense>}
+        {urgentCreateOpen && <Suspense fallback={<ViewFallback />}><UrgentCreateSheet open={urgentCreateOpen} onClose={() => setUrgentCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} /></Suspense>}
+        {interventionCreateOpen && <Suspense fallback={<ViewFallback />}><PlannedCreateSheet open={interventionCreateOpen} onClose={() => setInterventionCreateOpen(false)} hotel={hotel} user={user} onSaved={() => { setInterventionCreateOpen(false); setSettings(null); setView('interventions') }} /></Suspense>}
+      </ViewErrorBoundary>
 
       <Sheet open={hotelSheet} onClose={() => setHotelSheet(false)} title="Cambia struttura">
         {allowedHotels.map((id) => {
@@ -568,7 +575,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       </Sheet>
 
       <Sheet open={notificationsOpen} onClose={() => setNotificationsOpen(false)} title="Notifiche">
-        <Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setSettings(null); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setSettings(null); setView('reminders') }} /></Suspense>
+        <ViewErrorBoundary viewId="notifications">
+          <Suspense fallback={<ViewFallback />}><NotificationInbox hotel={hotel} user={user} onUnreadChange={setNotificationUnread} canOpenUrgent={viewAllowed('urgent')} canManageReminders={viewAllowed('reminders')} onOpenUrgent={() => { setNotificationsOpen(false); setSettings(null); setView('urgent') }} onOpenReminders={() => { setNotificationsOpen(false); setSettings(null); setView('reminders') }} /></Suspense>
+        </ViewErrorBoundary>
       </Sheet>
 
       {drawer && (

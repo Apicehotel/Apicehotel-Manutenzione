@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchUrgents, subscribeUrgents } from '../../urgents-data.js'
 import { fetchReminders, subscribeReminders } from '../reminders/reminder-data.js'
+import { withTimeout } from '../../async-timeout.js'
 import { Spinner } from '../ui.jsx'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 import HubChoice from './HubChoice.jsx'
@@ -46,10 +47,10 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
     if (busy.current) return
     busy.current = true
     try {
-      const [urgentResult, reminderResult] = await Promise.all([
+      const [urgentResult, reminderResult] = await withTimeout(Promise.all([
         showUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
         showReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
-      ])
+      ]), 20000, 'Task timeout')
       setUrgents(urgentResult.items || [])
       setReminders(Array.isArray(reminderResult) ? reminderResult : reminderResult.items || [])
     } catch (error) {
