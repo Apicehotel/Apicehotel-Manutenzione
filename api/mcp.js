@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
 import { createHash } from 'node:crypto'
+import { listRandActions, mapRandActionInput } from '../src/randai/actions/catalog.js'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
 const publishableKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
@@ -13,6 +14,19 @@ function mcpResult(result) {
     structuredContent: result,
     isError: result?.ok !== true,
   }
+}
+
+function fieldSchema(field) {
+  let schema
+  if (field.kind === 'enum') schema = z.enum(field.values)
+  else if (field.kind === 'string') {
+    schema = z.string().trim()
+    if (field.min != null) schema = schema.min(field.min)
+    if (field.max != null) schema = schema.max(field.max)
+  } else {
+    throw new TypeError(`Unsupported Rand action field kind: ${field.kind}`)
+  }
+  return field.required === false ? schema.optional() : schema
 }
 
 export function createRandMcpServer({ authorization, dispatch = null } = {}) {
@@ -44,32 +58,25 @@ export function createRandMcpServer({ authorization, dispatch = null } = {}) {
     approvalId: z.string().max(180).optional().describe('ID restituito dal primo passaggio HITL'),
   }
 
-  server.registerTool('issue.update_priority', {
-    title: 'Cambia urgenza segnalazione',
-    description: 'Prepara o esegue, dopo conferma Rand, una modifica di urgenza hotel-scoped.',
-    inputSchema: { ...common, priority: z.enum(['alta', 'media', 'bassa']) },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async ({ hotelId, resourceId, priority, approvalId }, extra) => mcpResult(await invoke({
-    name: 'issue.update_priority', hotelId, resourceId, input: { priority }, approvalId, requestId: extra.requestId,
-  })))
-
-  server.registerTool('issue.set_waiting_part', {
-    title: 'Segnalazione in attesa ricambio',
-    description: 'Prepara o esegue, dopo conferma Rand, lo stato di attesa ricambio.',
-    inputSchema: { ...common, partName: z.string().trim().min(1).max(180) },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async ({ hotelId, resourceId, partName, approvalId }, extra) => mcpResult(await invoke({
-    name: 'issue.set_waiting_part', hotelId, resourceId, input: { part_name: partName }, approvalId, requestId: extra.requestId,
-  })))
-
-  server.registerTool('issue.mark_done', {
-    title: 'Completa segnalazione',
-    description: 'Prepara o esegue, dopo conferma Rand, il completamento di una segnalazione.',
-    inputSchema: { ...common, completionNote: z.string().trim().max(800).optional() },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
-  }, async ({ hotelId, resourceId, completionNote, approvalId }, extra) => mcpResult(await invoke({
-    name: 'issue.mark_done', hotelId, resourceId, input: { completion_note: completionNote || null }, approvalId, requestId: extra.requestId,
-  })))
+  for (const action of listRandActions({ surface: 'mcp' })) {
+    const actionFields = Object.fromEntries(action.fields.map((field) => [field.name, fieldSchema(field)]))
+    server.registerTool(action.id, {
+      title: action.title,
+      description: action.description,
+      inputSchema: { ...common, ...actionFields },
+      annotations: action.annotations,
+    }, async (args, extra) => {
+      const { hotelId, resourceId, approvalId, ...actionInput } = args
+      return mcpResult(await invoke({
+        name: action.id,
+        hotelId,
+        resourceId,
+        input: mapRandActionInput(action.id, actionInput),
+        approvalId,
+        requestId: extra.requestId,
+      }))
+    })
+  }
 
   return server
 }
