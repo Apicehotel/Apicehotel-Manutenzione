@@ -30,8 +30,9 @@ test('point 7: diagnostics dashboard checks app services and exposes build ident
 test('point 7: settings keeps current admin actions and diagnostics is an explicit RandUI tab', async () => {
   const settings = await source('src/randapp/Settings.jsx')
   assert.match(settings, /const TABS = \[/)
-  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|usage|diagnostics)'/g)].map((match) => match[1])
-  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'usage', 'diagnostics'])
+  const navTabs = [...settings.matchAll(/\{ id:'(users|sensors|navigation|usage|ntfy|diagnostics)'/g)].map((match) => match[1])
+  assert.deepEqual(navTabs, ['users', 'sensors', 'navigation', 'usage', 'ntfy', 'diagnostics'])
+  assert.match(settings, /id:'ntfy', icon:'bell', label:'ntfy'/)
   assert.match(settings, /id:'diagnostics', icon:'wrench', label:'Diagnostica'/)
   assert.match(settings, /SettingsTemplate/)
   assert.doesNotMatch(settings, /rs-settings-head|rs-settings-nav/)

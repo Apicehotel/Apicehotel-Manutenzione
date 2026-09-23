@@ -12,8 +12,10 @@ export const friendlyNtfyError = (error) => {
   if (/unauthorized|sessione/i.test(text)) return 'Sessione scaduta: esci e rientra in RandApp.'
   if (/alias_not_owned/i.test(text)) return 'Questo link notifiche appartiene a un altro operatore.'
   if (/invalid_alias/i.test(text)) return 'Link notifiche non valido.'
-  if (/topic_not_configured/i.test(text)) return 'Canale ntfy non configurato per questa struttura.'
+  if (/topic_not_configured|ntfy_alerts_missing/i.test(text)) return 'Canale ntfy non configurato per questa struttura. Chiedi a un amministratore di completare Impostazioni → ntfy.'
+  if (/ntfy_disabled/i.test(text)) return 'ntfy è disattivato per RandApp. Un amministratore può riattivarlo da Impostazioni → ntfy.'
   if (/forbidden/i.test(text)) return 'Questo canale ntfy non è disponibile per il tuo ruolo.'
+  if (/delivery_failed/i.test(text)) return 'Invio ntfy non riuscito. Riprova tra poco o verifica il server ntfy.'
   return text || 'Configurazione ntfy non riuscita.'
 }
 
@@ -48,4 +50,8 @@ export async function invokeNtfy(name, hotelId, extra = {}) {
 
 export async function resolveNtfyShortLink(alias) {
   return invoke('ntfy-resolve',{ alias })
+}
+
+export async function invokeNtfyAdmin(hotelId, action, extra = {}) {
+  return invoke('ntfy-admin', { hotel_id: hotelId, action, ...extra })
 }

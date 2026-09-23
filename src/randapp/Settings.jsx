@@ -6,12 +6,14 @@ import SensorsTab from './admin/SensorsTab.jsx'
 import RolesTab from './admin/RolesTab.jsx'
 import UsageTab from './admin/UsageTab.jsx'
 import DiagnosticsTab from './admin/DiagnosticsTab.jsx'
+import NtfyTab from './admin/NtfyTab.jsx'
 
 const TABS = [
   { id:'users', icon:'users', label:'Utenti', Component:UsersTab },
   { id:'sensors', icon:'sensor', label:'Sensori', Component:SensorsTab },
   { id:'navigation', icon:'sliders', label:'Ruoli', Component:RolesTab },
   { id:'usage', icon:'activity', label:'Consumi', Component:UsageTab },
+  { id:'ntfy', icon:'bell', label:'ntfy', Component:NtfyTab },
   { id:'diagnostics', icon:'wrench', label:'Diagnostica', Component:DiagnosticsTab },
 ]
 
@@ -40,7 +42,7 @@ function SettingsContent({ initialTab='users', onExit, embedded=false }) {
     <SettingsTemplate
       eyebrow="RandUI · Gestione"
       title="Impostazioni"
-      description="Utenti, ruoli, sensori, consumi e diagnostica in un unico spazio amministrativo."
+      description="Utenti, ruoli, sensori, ntfy, consumi e diagnostica in un unico spazio amministrativo."
       toolbar={toolbar}
       actions={<Button type="button" variant="ghost" size="sm" icon="chevronLeft" onClick={onExit}>{embedded?'Torna all’app':'Indietro'}</Button>}
     >

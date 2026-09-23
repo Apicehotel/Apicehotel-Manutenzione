@@ -37,5 +37,6 @@ test('authorized short link uses documented Android handoff and safe iOS copy fa
   assert.match(view,/Copia topic ntfy/)
   assert.match(edge,/const subscriptionLink=`ntfy:\/\//)
   assert.match(edge,/subscription_link:subscriptionLink/)
+  assert.match(edge,/app_link:appLink/)
   assert.doesNotMatch(edge,/apicehotel\.vercel\.app\/n\/\$\{alias\}/)
 })

@@ -32,10 +32,12 @@ test('ntfy setup keeps transport isolated and guides iOS Android and desktop', a
   assert.match(setup, /navigator\.clipboard\.writeText/)
   assert.match(setup, /short link RandApp/)
   assert.match(setup, /buildNotificationShortUrl/)
+  assert.match(setup, /testChannel/)
   assert.doesNotMatch(setup, />\{channel\.topic\}</)
   assert.doesNotMatch(setup, /clipboard\.writeText\(channel\.topic\)/)
   assert.match(client, /functions\/v1/)
   assert.match(client, /resolveNtfyShortLink/)
+  assert.match(client, /invokeNtfyAdmin/)
   assert.match(client, /X-RandApp-Request/)
   assert.doesNotMatch(setup + client, /randapp-[A-Za-z0-9_-]{20,}/)
 })
@@ -55,6 +57,32 @@ test('ntfy edge functions require an authenticated active hotel membership', asy
   }
   assert.match(config, /user_notification_codes/)
   assert.match(config, /notification_code/)
+  assert.match(config, /alerts_enabled/)
+  assert.match(config, /priority:3/)
   assert.match(resolve, /user_notification_codes/)
   assert.match(resolve, /alias_not_owned/)
+  assert.match(resolve, /app_link/)
+})
+
+test('admin ntfy console manages enablement without exposing topics in the profile', async () => {
+  const [settings, tab, admin, migration] = await Promise.all([
+    read('../src/randapp/Settings.jsx'),
+    read('../src/randapp/admin/NtfyTab.jsx'),
+    read('../supabase/functions/ntfy-admin/index.ts'),
+    read('../supabase/migrations/20260923180000_ensure_ntfy_alerts.sql'),
+  ])
+  assert.match(settings, /NtfyTab/)
+  assert.match(settings, /id:'ntfy'/)
+  assert.match(tab, /data-testid="ntfy-admin-tab"/)
+  assert.match(tab, /invokeNtfyAdmin/)
+  assert.match(tab, /Completa topic mancanti/)
+  assert.match(admin, /requireAdmin/)
+  assert.match(admin, /action === "ensure_topics"/)
+  assert.match(admin, /action === "set_enabled"/)
+  assert.match(admin, /action === "test_urgent"/)
+  assert.doesNotMatch(tab, /config\.topics/)
+  assert.doesNotMatch(tab, /randapp-urgent-/)
+  assert.match(admin, /topics\?\.\[hotelId\]/)
+  assert.match(migration, /ntfy_alerts/)
+  assert.match(migration, /where not exists/)
 })
