@@ -268,30 +268,11 @@ html[data-theme='dark'] .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth
   .rs-auth:has([data-testid='admin-gate-submit']) .rs-auth__inner { max-width: 420px; }
 }
 
-/* iOS/Android keyboard: compact progressively and keep active fields/suggestions visible. */
+/* iOS/Android keyboard: keep geometry stable while moving focus from PIN to ACCEDI.
+   A focus-driven reflow can move the submit button between pointer-down and click,
+   causing the first tap to be lost on iOS Safari. Only the suggestion list is
+   constrained while an input is focused; the card/button geometry stays fixed. */
 @media (max-width: 600px) {
-  .rs-auth:has(input:focus) {
-    padding-top: max(calc(var(--rs-safe-top) + 8px), 12px) !important;
-    padding-bottom: max(calc(var(--rs-safe-bottom) + 12px), 16px) !important;
-  }
-  .rs-auth:has(input:focus) .rs-auth__inner { gap: 12px !important; }
-  .rs-auth:has(input:focus) .rs-brand {
-    display: grid;
-    grid-template-columns: 64px 1fr;
-    align-items: center;
-    justify-content: center;
-    gap: 10px !important;
-  }
-  .rs-auth:has(input:focus) .rs-brand__logo { width: 64px !important; height: 64px !important; border-radius: 18px !important; }
-  .rs-auth:has(input:focus) .rs-brand > div:last-child { justify-items: start !important; text-align: left; }
-  .rs-auth:has(input:focus) .rs-brand__title { font-size: 1.65rem !important; }
-  .rs-auth:has(input:focus) .rs-brand__sub { font-size: .82rem !important; }
-  .rs-auth:has(input:focus) .rs-brand__tag { display: none !important; }
-  .rs-auth:has(input:focus) .rs-authcard { padding: 16px !important; gap: 10px !important; }
-  .rs-auth:has(input:focus) .rs-authcard header h1 { font-size: 1.45rem !important; }
-  .rs-auth:has(input:focus) .rs-authcard header p { margin-top: 3px !important; font-size: .86rem !important; }
-  .rs-auth:has(input:focus) .rs-authform { gap: 10px !important; }
-  .rs-auth:has(input:focus) .rs-input { min-height: 50px !important; }
   .rs-auth:has(input:focus) .rs-suggest {
     max-height: min(34dvh, 260px);
     overflow-y: auto;
