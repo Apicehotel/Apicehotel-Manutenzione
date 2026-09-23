@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
 import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
-import { Card } from '../ui.jsx'
+import { Badge, Card } from '../ui.jsx'
 import HubChoice from './HubChoice.jsx'
+import { InterventionTags } from './view-primitives.jsx'
 import { interventionPreviewMetrics, interventionTopPreview, issuePreviewMetrics, issueTopPreview } from './hub-preview-stats.js'
 
 const SOFT_REFRESH_MS = 2500
@@ -109,8 +110,13 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
                 {topIssues.map((item) => (
                   <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('issues')}>
                     <div className="rs-op-card__head">
-                      <div><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || item.category || 'Segnalazione'}</small></div>
-                      <small>{item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'In attesa' : 'Aperta'}</small>
+                      <div><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || 'Segnalazione'}</small></div>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 10 }}>
+                      <Badge tone="info">{item.category || 'Segnalazione'}</Badge>
+                      <Badge tone={item.urgency === 'alta' ? 'danger' : item.status === 'waiting' ? 'warning' : 'default'}>
+                        {item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'In attesa' : 'Aperta'}
+                      </Badge>
                     </div>
                   </Card>
                 ))}
@@ -128,9 +134,9 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
                 {topInterventions.map((item) => (
                   <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('interventions')}>
                     <div className="rs-op-card__head">
-                      <div><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.category || item.notes || 'Manutenzione'}</small></div>
-                      <small>{item.status === 'da_finire' ? 'Da finire' : item.status === 'waiting' ? 'In attesa' : 'Aperto'}</small>
+                      <div><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.notes || 'Intervento operativo'}</small></div>
                     </div>
+                    <InterventionTags item={item} />
                   </Card>
                 ))}
               </div>

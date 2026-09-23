@@ -59,3 +59,16 @@ test('Operatività renders both top-3 previews', () => {
   assert.ok(operationsHub.includes('issueTopPreview(issues)'))
   assert.ok(operationsHub.includes('interventionTopPreview(planned)'))
 })
+
+
+test('Intervention tags stay at card bottom with waiting-piece and technician labels', () => {
+  const primitives = read('../src/randapp/operations/view-primitives.jsx')
+  const interventions = read('../src/randapp/operations/InterventionsView.jsx')
+  assert.ok(primitives.includes("waiting: 'In attesa pezzo'"))
+  assert.ok(primitives.includes("tecnico: 'In attesa tecnico'"))
+  assert.ok(primitives.includes("['presa_in_carico', 'in_progress', 'tecnico']"))
+  assert.ok(primitives.includes('export function InterventionTags'))
+  assert.ok(operationsHub.includes('<InterventionTags item={item} />'))
+  assert.ok(interventions.includes('<InterventionTags item={item}/>'))
+  assert.ok(!operationsHub.includes("<small>{item.status === 'da_finire'"))
+})
