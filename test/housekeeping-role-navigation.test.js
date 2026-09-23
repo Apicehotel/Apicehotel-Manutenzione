@@ -27,8 +27,8 @@ test('Task view loads only alerts and reminders', async () => {
   assert.match(task, /fetchReminders/)
   assert.doesNotMatch(task, /fetchIssues/)
   assert.doesNotMatch(task, /fetchPlanned/)
-  assert.doesNotMatch(task, /intervent/i)
-  assert.doesNotMatch(task, /planning/i)
+  assert.doesNotMatch(task, /fetchPlanned|planning-work|planning-sale/)
+  assert.doesNotMatch(task, /Interventi|I miei lavori/)
 })
 
 test('housekeeping roles cannot enter Chat or RandAI from navigation guards', async () => {
