@@ -1,6 +1,6 @@
 export const ADD_ACTION_DEFS = {
   issue: { id: 'issue', icon: 'issues', title: 'Nuova segnalazione', subtitle: 'Guasto, camera, zona o problema da gestire' },
-  urgent: { id: 'urgent', icon: 'warning', title: 'Nuovo allarme', subtitle: 'Crea un avviso urgente per la struttura' },
+  urgent: { id: 'urgent', icon: 'warning', title: 'Nuovo avviso', subtitle: 'Crea un avviso urgente per la struttura' },
   intervention: { id: 'intervention', icon: 'wrench', title: 'Nuovo intervento', subtitle: 'Crea e assegna un intervento operativo' },
   'planning-work': { id: 'planning-work', icon: 'wrench', title: 'Nuovo lavoro', subtitle: 'Aggiungi un lavoro al Planning lavori' },
   'planning-sale': { id: 'planning-sale', icon: 'hotel', title: 'Nuova attività sala', subtitle: 'Aggiungi una prenotazione o attività al Planning sale' },
@@ -16,10 +16,11 @@ export function contextualAddActionIds(view, capabilities = {}) {
     case 'issues':
       return clean(['issue'], capabilities)
     case 'interventions':
-    case 'my-work':
       return clean(['intervention'], capabilities)
+    case 'my-work':
+      return clean(['urgent'], capabilities)
     case 'planning-work':
-      return clean(['planning-work'], capabilities)
+      return clean(['planning-work', 'planning-sale'], capabilities)
     case 'planning-sale':
       return clean(['planning-sale'], capabilities)
     case 'urgent':
