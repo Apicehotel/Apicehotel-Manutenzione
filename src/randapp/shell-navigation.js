@@ -24,8 +24,8 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
 const HOUSEKEEPING_ROLES = new Set(['Governante', 'Capo Governante'])
 
 function firstContextualDestination({ placement, viewAllowed, interests }) {
-  if (placement('interventions') !== 'off' && viewAllowed('my-work')) {
-    return { id: 'my-work', key: 'interventions', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
+  if (placement('task') !== 'off' && viewAllowed('my-work')) {
+    return { id: 'my-work', key: 'task', icon: 'check', label: 'Task', slot: TELEGRAM_PRIMARY_SLOTS.contextual }
   }
 
   if (placement('chat') !== 'off' && viewAllowed('chat')) {
