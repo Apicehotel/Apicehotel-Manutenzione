@@ -128,7 +128,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     setError('')
   }
 
-  const submit = async (e) => {
+  const submit = async (e, pinOverride = null) => {
     e?.preventDefault?.()
     if (busyRef.current) return
     setError('')
@@ -143,7 +143,8 @@ function Login({ onAuthenticated, onOpenSettings }) {
       setQuery(user.name)
       setOpen(false)
     }
-    if (pin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
+    const loginPin = pinOverride ?? pin
+    if (loginPin.length !== 4) return setError('Inserisci un PIN di 4 cifre')
     const hotels = Array.from(new Set(user.hotels || [])).filter(Boolean)
     if (!hotels.length) return setError('Nessuna struttura abilitata per questo utente')
     busyRef.current = true
@@ -152,7 +153,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
     for (const hotelId of hotels) {
       try {
         const { loginWithPin } = await import('../auth-data.js')
-        const auth = await loginWithPin({ hotelId, userId: user.legacy_id || user.id, pin })
+        const auth = await loginWithPin({ hotelId, userId: user.legacy_id || user.id, pin: loginPin })
         const userId = auth?.user?.id || user.id
         onAuthenticated({ user, userId, allowedHotels: hotels, workedHotel: hotelId })
         return
@@ -209,8 +210,15 @@ function Login({ onAuthenticated, onOpenSettings }) {
               </div>
             </Field>
             <Field label="PIN">
-              <TextInput icon="lock" value={pin} inputMode="numeric" autoComplete="current-password" placeholder="••••" data-testid="login-pin-input"
-                onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }} />
+              <TextInput icon="lock" value={pin} inputMode="numeric" enterKeyHint="go" autoComplete="current-password" placeholder="••••" data-testid="login-pin-input"
+                onChange={(e) => {
+                  const nextPin = e.target.value.replace(/\D/g, '').slice(0, 4)
+                  setPin(nextPin)
+                  setError('')
+                  if (nextPin.length === 4 && !busyRef.current) {
+                    void submit(null, nextPin)
+                  }
+                }} />
             </Field>
             {selectedUser && <button type="button" className="rs-textback" onClick={() => setRecovering(true)} data-testid="pin-forgot-link">PIN dimenticato?</button>}
             {error && <p className="rs-error" role="alert" data-testid="login-error">{error}</p>}
