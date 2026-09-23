@@ -2,7 +2,7 @@ import { HOTELS } from '../../config.js'
 import { permissionLabels } from '../../permissions.js'
 
 export const NAV_ITEMS = [
-  ['home', 'Home'], ['issues', 'Segnalazioni'], ['interventions', 'Interventi'], ['planning_work', 'Planning'],
+  ['home', 'Home'], ['issues', 'Segnalazioni'], ['interventions', 'Interventi'], ['task', 'Task'], ['planning_work', 'Planning'],
   ['housekeeping', 'Housekeeping'], ['temperature', 'Temperature'], ['urgent', 'Avvisi urgenti'],
   ['reminders', 'Promemoria'], ['technicians', 'Rubrica tecnici'], ['desktop_download', 'RandDesktop'], ['structure', 'Cambia struttura'],
   ['profile', 'Il mio profilo'], ['manual', 'Manuale'], ['feedback', 'Feedback'],
