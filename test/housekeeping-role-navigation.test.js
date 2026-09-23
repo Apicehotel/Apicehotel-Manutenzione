@@ -72,3 +72,15 @@ test('Task stays fixed even when live task permissions are temporarily stale', (
     assert.deepEqual(nav.map((item) => item.id), ['issues','housekeeping','home','my-work','supplies'])
   }
 })
+
+
+test('Task always shows Avvisi and Promemoria for housekeeping roles and interpolates hotel name', async () => {
+  const task = await read('src/randapp/operations/TaskView.jsx')
+  assert.match(task, /const housekeepingTaskRole = \['Governante','Capo Governante'\]\.includes\(user\?\.role\)/)
+  assert.match(task, /const showUrgent = housekeepingTaskRole \|\| canUrgent/)
+  assert.match(task, /const showReminders = housekeepingTaskRole \|\| canReminders/)
+  assert.match(task, /showUrgent && \{/)
+  assert.match(task, /showReminders && \{/)
+  assert.match(task, /subtitle=\{\`\$\{hotel\.name\} · promemoria e avvisi\`\}/)
+  assert.doesNotMatch(task, /subtitle="\$\{hotel\.name\}/)
+})
