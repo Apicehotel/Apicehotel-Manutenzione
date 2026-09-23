@@ -45,3 +45,10 @@ test('housekeeping Task permissions are read-only and do not grant interventions
   assert.match(sql, /\('interventions'\),\('planning_work'\),\('planning_sale'\)/)
   assert.match(sql, /'view', false/)
 })
+
+
+test('housekeeping sidebar keeps RandAI available while Chat stays hidden', async () => {
+  const nav = await read('src/randapp/nav.js')
+  assert.match(nav, /id: 'randai'.*label: 'RandAI'.*show: true/s)
+  assert.match(nav, /id: 'chat'.*show: Boolean\(user\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(user\.role\)/s)
+})
