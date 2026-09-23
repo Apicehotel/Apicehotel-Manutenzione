@@ -1,0 +1,46 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { buildPrimaryBottomNav } from '../src/randapp/shell-navigation.js'
+
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
+
+test('Governante and Capo Governante bottom nav is Housekeeping Rifornimenti Home Task', () => {
+  const placement = () => 'side'
+  const allowed = new Set(['housekeeping','supplies','home','my-work'])
+  for (const role of ['Governante','Capo Governante']) {
+    const nav = buildPrimaryBottomNav({
+      placement,
+      viewAllowed: (id) => allowed.has(id),
+      user: { role },
+    })
+    assert.deepEqual(nav.map((item) => item.id), ['housekeeping','supplies','home','my-work'])
+    assert.deepEqual(nav.map((item) => item.slot), [1,2,3,4])
+    assert.equal(nav.some((item) => item.id === 'chat'), false)
+    assert.equal(nav.some((item) => item.id === 'randai'), false)
+  }
+})
+
+test('Task view loads only alerts and reminders', async () => {
+  const task = await read('src/randapp/operations/TaskView.jsx')
+  assert.match(task, /fetchUrgents/)
+  assert.match(task, /fetchReminders/)
+  assert.doesNotMatch(task, /fetchIssues/)
+  assert.doesNotMatch(task, /fetchPlanned/)
+  assert.doesNotMatch(task, /intervent/i)
+  assert.doesNotMatch(task, /planning/i)
+})
+
+test('housekeeping roles cannot enter Chat or RandAI from navigation guards', async () => {
+  const nav = await read('src/randapp/nav.js')
+  assert.match(nav, /chat: \(u\) => Boolean\(u\?\.chat_enabled\) && !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
+  assert.match(nav, /randai: \(u\) => !\['Governante','Capo Governante'\]\.includes\(u\?\.role\)/)
+})
+
+test('housekeeping Task permissions are read-only and do not grant interventions or planning', async () => {
+  const sql = await read('supabase/migrations/20260923050000_housekeeping_task_permissions.sql')
+  assert.match(sql, /cross join \(values \('urgent'\),\('reminders'\)\)/)
+  assert.match(sql, /'view', true/)
+  assert.match(sql, /\('interventions'\),\('planning_work'\),\('planning_sale'\)/)
+  assert.match(sql, /'view', false/)
+})
