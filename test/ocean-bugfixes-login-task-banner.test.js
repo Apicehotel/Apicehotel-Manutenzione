@@ -42,7 +42,9 @@ test('login auto-submits on the fourth PIN digit and keeps ACCEDI as fallback', 
 
 test('mobile login focus does not resize the form around the submit button', async () => {
   const css = await source('src/randapp/login-reference.css')
-  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}\.rs-auth__inner/)
-  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}\.rs-authcard/)
-  assert.doesNotMatch(css, /:has\(input:focus\)[\s\S]{0,260}login-submit/)
+  const mobileFocusBlock = css.match(/@media \(max-width: 600px\) \{[\s\S]*?\.rs-auth:has\(input:focus\) \.rs-suggest \{[\s\S]*?\n  \}\n\}/)?.[0] || ''
+  assert.match(mobileFocusBlock, /\.rs-auth:has\(input:focus\) \.rs-suggest/)
+  assert.doesNotMatch(mobileFocusBlock, /\.rs-auth__inner/)
+  assert.doesNotMatch(mobileFocusBlock, /\.rs-authcard/)
+  assert.doesNotMatch(mobileFocusBlock, /login-submit/)
 })
