@@ -100,7 +100,7 @@ Gli adapter Web, RandChat, MCP e Twilio/WhatsApp producono envelope canonici ma 
 
 RandApp adotta il pattern Agent-Native **define once, reuse everywhere** senza introdurre un secondo runtime applicativo. Il catalogo canonico `src/randai/actions/catalog.js` descrive le capacità condivise da RandApp, RandAI/agenti e MCP; la policy server-side resta indipendente e fail-closed.
 
-Le azioni operative attuali (`issue.update_priority`, `issue.set_waiting_part`, `issue.mark_done`) sono private, hotel-scoped e HITL. MCP genera i propri tool dal catalogo invece di mantenere una seconda lista manuale. Agent-Native completo non è una dipendenza runtime: un eventuale worker futuro dovrà chiamare RandGateway e non potrà possedere auth, RLS, audit o scritture operative dirette.
+Le azioni operative attuali (`issue.update_priority`, `issue.set_waiting_part`, `issue.mark_done`) sono private, hotel-scoped e HITL. MCP genera i propri tool dal catalogo invece di mantenere una seconda lista manuale; RandAI dispone di un bridge verso `ToolRegistry` che richiede esplicitamente un dispatcher governato. Agent-Native completo non è una dipendenza runtime: un eventuale worker futuro dovrà chiamare RandGateway e non potrà possedere auth, RLS, audit o scritture operative dirette.
 
 ## RandRadar Full Evolution
 
