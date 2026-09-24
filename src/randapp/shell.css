@@ -291,40 +291,105 @@ a { color: var(--rs-cyan); }
 .rs-empty strong { font-family: 'Sora'; font-size: 1.05rem; color: var(--rs-text); }
 .rs-empty p { margin: 0; font-size: .88rem; max-width: 320px; }
 
-/* ---------- Overlays: sheet / drawer / modal ---------- */
-.rs-overlay {
-  position: fixed; inset: 0; z-index: 90;
-  background: var(--rs-overlay-bg); backdrop-filter: blur(4px);
-  display: flex; align-items: flex-end; justify-content: center;
-  animation: rs-fade .2s ease;
+/* ---------- Full-screen surfaces + drawer ---------- */
+.rs-fullpage-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--rs-bg);
 }
-.rs-overlay--center { align-items: center; padding: 18px; }
-@keyframes rs-fade { from { opacity: 0; } }
-@keyframes rs-slide-up { from { transform: translateY(100%); } }
-@keyframes rs-pop { from { transform: translateY(14px) scale(.98); opacity: 0; } }
 
-.rs-sheet {
-  width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto;
-  background: linear-gradient(180deg, var(--rs-surface-2), var(--rs-surface));
-  border: 1px solid var(--rs-line); border-bottom: 0;
-  border-radius: 26px 26px 0 0; padding: 8px 18px calc(22px + var(--rs-safe-bottom));
-  animation: rs-slide-up .28s cubic-bezier(.22,1,.36,1);
+.rs-fullpage {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--rs-bg), var(--rs-bg-2));
 }
-.rs-sheet__handle { display: block; width: 42px; height: 4px; border-radius: 4px; background: var(--rs-line-strong); margin: 6px auto 12px; }
-.rs-sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.rs-sheet__head h3 { margin: 0; font-family: 'Sora'; font-size: 1.15rem; }
 
+.rs-fullpage__head,
+.rs-fullpage__footer {
+  flex: none;
+  background: var(--rs-chrome-solid);
+  backdrop-filter: blur(18px);
+}
+
+.rs-fullpage__head {
+  padding: calc(var(--rs-adaptive-safe-top, 0px) + 14px) max(18px, var(--rs-adaptive-safe-right, 0px)) 14px max(18px, var(--rs-adaptive-safe-left, 0px));
+  border-bottom: 1px solid var(--rs-line);
+}
+
+.rs-fullpage__head h3 {
+  margin: 0;
+  font-family: 'Sora';
+  font-size: 1.2rem;
+}
+
+.rs-fullpage__head p {
+  margin: 4px 0 0;
+  color: var(--rs-text-2);
+  font-size: .88rem;
+}
+
+.rs-fullpage__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 18px max(18px, var(--rs-adaptive-safe-right, 0px)) 24px max(18px, var(--rs-adaptive-safe-left, 0px));
+}
+
+.rs-fullpage__footer {
+  padding: 10px max(18px, var(--rs-adaptive-safe-right, 0px)) calc(10px + var(--rs-adaptive-safe-bottom, 0px)) max(18px, var(--rs-adaptive-safe-left, 0px));
+  border-top: 1px solid var(--rs-line);
+}
+
+.rs-fullpage__inner {
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
+.rs-fullpage__footer .rs-btn {
+  width: 100%;
+  min-height: var(--rs-control-h-lg);
+}
+
+/* Legacy primitive class names remain only for feature-level selectors. */
+.rs-sheet,
 .rs-modal {
-  width: 100%; max-width: 480px; max-height: 90dvh; overflow-y: auto;
-  background: linear-gradient(180deg, var(--rs-surface-2), var(--rs-surface));
-  border: 1px solid var(--rs-line-strong); border-radius: 24px; padding: 18px;
-  box-shadow: var(--rs-shadow); animation: rs-pop .24s ease;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  animation: none;
 }
-.rs-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.rs-modal__head h3 { margin: 0; font-family: 'Sora'; font-size: 1.2rem; }
-.rs-modal__head p { margin: 3px 0 0; color: var(--rs-text-2); font-size: .86rem; }
-.rs-modal__body { display: flex; flex-direction: column; gap: 14px; }
-.rs-modal__actions { display: flex; gap: 10px; }
+
+.rs-sheet__handle,
+.rs-sheet__head,
+.rs-modal__head {
+  display: none;
+}
+
+.rs-sheet__body,
+.rs-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rs-modal__actions {
+  display: flex;
+  gap: 10px;
+}
+
 .rs-modal__actions > * { flex: 1; }
 .rs-confirm__msg { margin: 0; color: var(--rs-text-2); line-height: 1.5; }
 

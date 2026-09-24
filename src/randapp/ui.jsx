@@ -159,37 +159,47 @@ function useDialogA11y(open, onClose) {
   return ref
 }
 
-export function Sheet({ open, onClose, title, children, className = '' }) {
+function FullScreenSurface({ open, onClose, title, subtitle, children, className = '', legacyClass = '' }) {
   useLockScroll(open)
-  const dialogRef = useDialogA11y(open, onClose)
+  const pageRef = useDialogA11y(open, onClose)
   if (!open) return null
   return (
-    <div className="rs-overlay" onClick={onClose}>
-      <section ref={dialogRef} className={`rs-sheet ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title || 'Pannello'}>
-        <span className="rs-sheet__handle" />
-        {title && <header className="rs-sheet__head"><h3>{title}</h3><IconButton icon="close" label="Chiudi" onClick={onClose} /></header>}
-        <div className="rs-sheet__body">{children}</div>
+    <div className="rs-fullpage-layer">
+      <section ref={pageRef} className={`rs-fullpage ${legacyClass} ${className}`} role="region" aria-label={title || 'Dettaglio'}>
+        {(title || subtitle) && (
+          <header className="rs-fullpage__head">
+            <div className="rs-fullpage__inner">
+              {title && <h3>{title}</h3>}
+              {subtitle && <p>{subtitle}</p>}
+            </div>
+          </header>
+        )}
+        <div className="rs-fullpage__body">
+          <div className="rs-fullpage__inner">{children}</div>
+        </div>
+        <footer className="rs-fullpage__footer">
+          <div className="rs-fullpage__inner">
+            <Button variant="ghost" icon="chevronLeft" onClick={onClose} data-testid="fullpage-back">Indietro</Button>
+          </div>
+        </footer>
       </section>
     </div>
   )
 }
 
-export function Modal({ open, onClose, title, subtitle, children, className = '' }) {
-  useLockScroll(open)
-  const dialogRef = useDialogA11y(open, onClose)
-  if (!open) return null
+export function Sheet({ open, onClose, title, children, className = '' }) {
   return (
-    <div className="rs-overlay rs-overlay--center" onClick={onClose}>
-      <section ref={dialogRef} className={`rs-modal ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title || 'Finestra'}>
-        {(title || onClose) && (
-          <header className="rs-modal__head">
-            <div>{title && <h3>{title}</h3>}{subtitle && <p>{subtitle}</p>}</div>
-            <IconButton icon="close" label="Chiudi" onClick={onClose} />
-          </header>
-        )}
-        <div className="rs-modal__body">{children}</div>
-      </section>
-    </div>
+    <FullScreenSurface open={open} onClose={onClose} title={title} className={className} legacyClass="rs-sheet">
+      <div className="rs-sheet__body">{children}</div>
+    </FullScreenSurface>
+  )
+}
+
+export function Modal({ open, onClose, title, subtitle, children, className = '' }) {
+  return (
+    <FullScreenSurface open={open} onClose={onClose} title={title} subtitle={subtitle} className={className} legacyClass="rs-modal">
+      <div className="rs-modal__body">{children}</div>
+    </FullScreenSurface>
   )
 }
 
@@ -198,7 +208,6 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Conferma',
     <Modal open={open} onClose={onCancel} title={title}>
       <p className="rs-confirm__msg">{message}</p>
       <div className="rs-modal__actions">
-        <Button variant="ghost" onClick={onCancel}>Annulla</Button>
         <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>{confirmLabel}</Button>
       </div>
     </Modal>

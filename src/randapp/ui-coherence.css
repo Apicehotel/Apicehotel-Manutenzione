@@ -114,25 +114,23 @@ textarea:focus-visible,
 .rs-form-actions > .rs-btn,
 .rs-modal__actions > .rs-btn { min-width: 0; }
 
-/* Dialogs stay inside the visual viewport when iOS/Android keyboard is open. */
-.rs-overlay {
+/* Full-screen detail surfaces own the viewport on phone, tablet and desktop. */
+.rs-fullpage-layer {
   overscroll-behavior: contain;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
 }
 
-.rs-sheet,
-.rs-modal {
-  overscroll-behavior: contain;
+.rs-fullpage {
+  min-height: 100svh;
+}
+
+.rs-fullpage__body {
   scrollbar-gutter: stable;
 }
 
-.rs-sheet { max-height: min(88dvh, 88svh); }
-.rs-modal { max-height: min(90dvh, 90svh); }
-html[data-keyboard-open='true'] .rs-sheet,
-html[data-keyboard-open='true'] .rs-modal { max-height: calc(var(--rs-visual-viewport-height, 100dvh) - 12px); }
-.rs-sheet__body,
-.rs-modal__body { overflow-y: auto; overscroll-behavior-y: contain; }
+html[data-keyboard-open='true'] .rs-fullpage {
+  height: var(--rs-visual-viewport-height, 100dvh);
+  min-height: var(--rs-visual-viewport-height, 100dvh);
+}
 
 @media (pointer: coarse) {
   button, [role='button'], a, input, select { min-height: 44px; }
@@ -142,9 +140,24 @@ html[data-keyboard-open='true'] .rs-modal { max-height: calc(var(--rs-visual-vie
   button:not(:disabled), [role='button'], a[href] { cursor: pointer; }
 }
 
+@media (min-width: 900px) {
+  .rs-fullpage__body { padding-top: 28px; padding-bottom: 32px; }
+  .rs-fullpage__footer .rs-btn { width: min(100%, 320px); }
+}
+
 @media (orientation: landscape) and (max-height: 520px) {
-  .rs-sheet, .rs-modal { max-height: calc(100dvh - 16px); }
-  .rs-content { padding-top: 8px; }
+  .rs-fullpage__head {
+    padding-top: max(8px, var(--rs-adaptive-safe-top, 0px));
+    padding-bottom: 8px;
+  }
+  .rs-fullpage__body {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .rs-fullpage__footer {
+    padding-top: 6px;
+    padding-bottom: calc(6px + var(--rs-adaptive-safe-bottom, 0px));
+  }
 }
 
 /* Consistent operational feedback. */
