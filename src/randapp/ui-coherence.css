@@ -120,16 +120,12 @@ textarea:focus-visible,
 }
 
 .rs-fullpage {
-  min-height: 100svh;
+  height: var(--rs-app-viewport-height);
+  min-height: var(--rs-app-viewport-min-height);
 }
 
 .rs-fullpage__body {
   scrollbar-gutter: stable;
-}
-
-html[data-keyboard-open='true'] .rs-fullpage {
-  height: var(--rs-visual-viewport-height, 100dvh);
-  min-height: var(--rs-visual-viewport-height, 100dvh);
 }
 
 @media (pointer: coarse) {

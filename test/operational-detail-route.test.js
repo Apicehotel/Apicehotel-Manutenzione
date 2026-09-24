@@ -8,6 +8,7 @@ const issues = read('src/randapp/Issues.jsx')
 const interventions = read('src/randapp/operations/InterventionsView.jsx')
 const detail = read('src/randapp/OperationalDetailPage.jsx')
 const css = read('src/randapp/operational-detail.css')
+const adaptive = read('src/randapp/adaptive-layout.css')
 
 test('operational detail has one canonical surface for all operational domains', () => {
   assert.match(detail, /OPERATIONAL_DETAIL_KINDS = Object\.freeze\(\['issue', 'intervention', 'task', 'supply'\]\)/)
@@ -38,10 +39,11 @@ test('all resource details replace their lists instead of stacking over them', (
 })
 
 test('focus mode owns safe areas, keyboard viewport, landscape and desktop', () => {
-  assert.match(css, /min-height:\s*100svh/)
+  assert.match(css, /min-height:\s*var\(--rs-app-viewport-min-height\)/)
   assert.match(css, /var\(--rs-adaptive-safe-top, 0px\)/)
   assert.match(css, /var\(--rs-adaptive-safe-bottom, 0px\)/)
-  assert.match(css, /data-keyboard-open='true'/)
+  assert.match(adaptive, /data-keyboard-open='true'/)
+  assert.match(adaptive, /--rs-app-viewport-min-height:\s*var\(--rs-visual-viewport-height/)
   assert.match(css, /orientation:\s*landscape/)
   assert.match(css, /min-width:\s*900px/)
   assert.match(css, /overflow-y:\s*auto/)
