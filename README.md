@@ -88,6 +88,7 @@ Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al
 ### Focus operativo — dettaglio unico
 
 Segnalazioni e Interventi usano `OperationalDetailPage` come proprietario canonico del dettaglio: la lista non resta montata sotto, la Shell entra in **Focus Mode** e sospende header/sidebar, fascia urgenti, bottom nav e FAB. Il dettaglio mantiene il proprio scroll e un comando **Indietro** persistente in basso, con safe-area adattive iOS/Android e layout desktop. Il contratto accetta i domini `issue`, `intervention`, `task`, `supply`; Task e Rifornimenti riuseranno la stessa superficie quando aprono una singola risorsa, senza creare nuove varianti di popup/drawer.
+Il footer è ora l’**Operational Dock**: `Indietro` resta stabile a sinistra e il dominio può fornire una sola azione primaria autorizzata a destra. Segnalazioni usa lo stato corrente (Da fare / Attesa pezzo / Tecnico) per scegliere l’azione; Interventi porta il completamento nel Dock e lo disabilita finché esistono ricambi pendenti. Le azioni primarie duplicate nel corpo sono vietate.
 ## RandAI, RandMind e RandResearch
 
 Le superfici RandAI restano due: **pagina chat dedicata** in RandApp (tab RandAI + header, fissata tra header e bottom nav con composer in basso; conversazione preservata tra i tab) e **Control Center `/randai`** protetto e multi-hotel (URL diretta, non nella nav primaria).
