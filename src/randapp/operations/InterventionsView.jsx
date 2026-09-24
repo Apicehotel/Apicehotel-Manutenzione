@@ -21,6 +21,7 @@ import { InterventionTags, PageTitle, StatusPill, fmt, isAssignedTo } from './vi
 import OperationalDetailPage from '../OperationalDetailPage.jsx'
 import OperationalTimeline from '../OperationalTimeline.jsx'
 import { buildInterventionTimeline } from '../operational-timeline.js'
+import OperationalRandAI from '../OperationalRandAI.jsx'
 
 const partStatusLabel = { requested: 'Richiesto', reserved: 'Prenotato', consumed: 'Usato', released: 'Rilasciato', cancelled: 'Annullato' }
 const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'success', released: 'default', cancelled: 'default' }
@@ -207,7 +208,7 @@ function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
   const primaryAction = canComplete ? { label: 'Segna completato', icon: 'check', onClick: complete, disabled: partsPending, busy, busyLabel: 'Salvataggio…' } : null
   return <OperationalDetailPage kind="intervention" resourceId={item.id} title={item.ticketCode || 'Intervento'} subtitle={item.location || 'Dettaglio intervento'} onBack={onClose} primaryAction={primaryAction} className="rs-issue-detail">
     <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0} onClick={()=>setConfirmDel(true)}/>}</div>
-    <h2 className="rs-detail-room">{item.ticketCode ? `${item.ticketCode} · ` : ""}{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p><OperationalTimeline events={timelineEvents} />
+    <h2 className="rs-detail-room">{item.ticketCode ? `${item.ticketCode} · ` : ""}{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p><OperationalTimeline events={timelineEvents} /><OperationalRandAI hotelId={hotel.id} user={user} intervention={item} parts={parts} />
     {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
     <InterventionParts item={item} hotel={hotel} user={user} editable={canComplete||canManage} onWaitingChange={setPartsPending}/>
     {canComplete&&<div className="rs-actions-stack"><p className="rs-actions-heading">Completamento</p><label className="rs-photo-action" style={{borderStyle:'dashed'}}><input type="file" accept="image/*" onChange={async e=>setPhoto(await compressPhotoAsDataUrl(e.target.files?.[0]))}/><Icon name="camera"/><strong>{photo?'Foto aggiunta':'Aggiungi foto completamento'}</strong></label>{photo&&<img className="rs-photo-preview" src={photo} alt="Anteprima"/>}{partsPending&&<p className="rs-note rs-note--waiting">Risolvi prima i ricambi richiesti o prenotati: segnali come “Usato” oppure “Non usato/Annulla”.</p>}</div>}

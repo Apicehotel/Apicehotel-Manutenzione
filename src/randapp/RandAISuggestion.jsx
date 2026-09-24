@@ -173,11 +173,11 @@ export default function RandAISuggestion({ issue, hotelId, user = null, onAction
   const memory = guidance?.memory || []
 
   return (
-    <section className="rs-randai-suggestion rs-randai-workspace" aria-label="RandAI per questa segnalazione" data-testid="randai-issue-suggestion">
+    <section className="rs-randai-suggestion rs-randai-workspace rs-randai-presence" aria-label="RandAI per questa segnalazione" data-testid="randai-issue-suggestion">
       <div className="rs-randai-suggestion__head">
         <img src="/icons/randai-cat.webp" alt="" aria-hidden="true" />
-        <div className="rs-randai-workspace__title"><strong>RandAI</strong><small>{progress ? `${progress.label}${progress.next ? ` · prossimo: ${progress.next}` : ''}` : 'Assistente operativo della segnalazione'}</small></div>
-        <button type="button" className="rs-randai-workspace__toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open} data-testid="randai-workspace-toggle">{open ? 'Chiudi' : progress ? 'Continua con RandAI' : 'Apri RandAI'}</button>
+        <div className="rs-randai-workspace__title"><strong>RandAI</strong><small>{progress ? `${progress.label}${progress.next ? ` · prossimo: ${progress.next}` : ''}` : 'Posso aiutarti su questa segnalazione'}</small></div>
+        <button type="button" className="rs-randai-workspace__toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open} data-testid="randai-workspace-toggle">{open ? 'Riduci' : progress ? 'Continua' : 'Chiedi a RandAI'}</button>
       </div>
       {progress && <div className="rs-randai-progress" aria-label={`Progresso ${progress.percent}%`}><span style={{ width: `${progress.percent}%` }} /></div>}
 

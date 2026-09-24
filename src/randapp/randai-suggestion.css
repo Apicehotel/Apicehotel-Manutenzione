@@ -73,3 +73,47 @@
   .rs-randai-workspace__body { grid-template-columns: minmax(0, 1fr); }
   .rs-randai-pane { min-height: 120px; }
 }
+
+/* Contextual RandAI presence: quiet when closed, rich only when expanded. */
+.rs-randai-presence {
+  margin: 10px 0 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.rs-randai-presence > .rs-randai-suggestion__head {
+  min-height: 48px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--rs-accent, #8b5cf6) 22%, var(--rs-line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--rs-accent, #8b5cf6) 5%, var(--rs-surface));
+}
+.rs-randai-presence > .rs-randai-suggestion__head img { width: 30px; height: 30px; border-radius: 10px; }
+.rs-randai-presence > .rs-randai-suggestion__head .rs-randai-workspace__title small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-randai-presence > .rs-randai-workspace__body,
+.rs-randai-presence > .rs-randai-progress { margin-inline: 2px; }
+.rs-randai-context-block {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rs-accent, #8b5cf6) 6%, var(--rs-surface));
+}
+.rs-randai-context-block > small {
+  color: var(--rs-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .68rem;
+}
+@media (max-width: 520px) {
+  .rs-randai-presence > .rs-randai-suggestion__head { flex-wrap: nowrap; }
+  .rs-randai-presence .rs-randai-workspace__toggle { width: auto; min-height: 40px; flex: 0 0 auto; }
+  .rs-randai-presence > .rs-randai-suggestion__head .rs-randai-workspace__title small { max-width: 42vw; }
+}
