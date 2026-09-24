@@ -23,7 +23,6 @@ import './randapp/theme-coherence.css'
 import './randapp/single-insert-entry.css'
 import './randapp/presence-dot.css'
 import './randapp/notification-onboarding.css'
-import './randapp/urgent-shell-layout-fix.css'
 import './randapp/telegram-navigation.css'
 import './randapp/randui/foundation.css'
 import './offline-status.js'
@@ -33,7 +32,6 @@ import { installDeploymentRecovery } from './deployment-recovery.js'
 installDeploymentRecovery()
 
 const App = lazyWithRetry(() => import('./randapp/App.jsx'))
-const RandUiV2Preview = lazyWithRetry(() => import('./randapp/randui-v2/Preview.jsx'))
 const RandAIContextBridge = lazyWithRetry(() => import('./randai/context/RandAIContextBridge.jsx'))
 const TechnicianPortal = lazyWithRetry(() => import('./technician-portal.jsx'))
 const TechnicianDispatchPortal = lazyWithRetry(() => import('./randapp/TechnicianDispatchPortal.jsx'))
@@ -46,7 +44,6 @@ const publicIssueMatch = window.location.pathname.match(/^\/s\/([^/]+)\/?$/)
 const ntfyShortMatch = window.location.pathname.match(/^\/n\/([^/]+)\/?$/)
 const randaiConsoleMatch = /^\/randai\/?$/.test(window.location.pathname)
 const randaiLiveMatch = /^\/randailive\/?$/.test(window.location.pathname)
-const randuiV2PreviewMatch = /^\/ui-v2-preview\/?$/.test(window.location.pathname)
 const pendingNtfyShort = new URLSearchParams(window.location.search).get('ntfy_short')
 const SESSION_EVENT = 'apice-session-changed'
 
@@ -77,7 +74,6 @@ createRoot(document.getElementById('root')).render(
       : ntfyShortMatch ? <Suspense fallback={<RouteFallback />}><NtfyShortLink alias={decodeURIComponent(ntfyShortMatch[1])} /></Suspense>
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
       : randaiLiveMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAILive…" dark />}><RandAIProtectedRoute mode="live" /></Suspense>
-      : randuiV2PreviewMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandUI v2…" />}><RandUiV2Preview /></Suspense>
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
   </AppErrorBoundary></React.StrictMode>,
 )
@@ -93,7 +89,7 @@ function afterPageLoad(task) {
   else window.addEventListener('load', run, { once: true })
 }
 
-if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch && !randaiLiveMatch && !randuiV2PreviewMatch) {
+if (!technicianMatch && !technicianDispatchMatch && !ntfyShortMatch && !randaiConsoleMatch && !randaiLiveMatch) {
   registerPwa()
   afterPageLoad(() => import('./diagnostics-client.js').then(({installDiagnosticsCapture})=>installDiagnosticsCapture()).catch(()=>{}))
   afterPageLoad(() => import('./external-telemetry.js').then(({initExternalTelemetry})=>initExternalTelemetry()).catch(()=>{}))
