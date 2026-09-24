@@ -323,8 +323,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
             {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
           </dl>
-          <RandAISuggestion issue={issue} hotelId={issue.hotelId} />
           <OperationalTimeline events={timelineEvents} />
+          <RandAISuggestion issue={issue} hotelId={issue.hotelId} user={user} />
         </>
       )}
 
