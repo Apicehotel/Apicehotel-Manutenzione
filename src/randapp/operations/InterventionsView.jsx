@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../../planned-data.js'
+import { fetchPlanned, peekCachedPlanned, updatePlannedRow, deletePlannedRow, subscribePlanned } from '../../planned-data.js'
 import { withTimeout } from '../../async-timeout.js'
+import { putViewCache, takeViewCache } from '../view-session-cache.js'
 import { fetchInventoryItems } from '../../inventory-data.js'
 import {
   consumeInterventionPart,
@@ -23,17 +24,21 @@ const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'succ
 const qty = (value) => Number(value || 0).toLocaleString('it-IT', { maximumFractionDigits: 3 })
 
 export default function InterventionsView({ hotel, user }) {
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `interventions:${hotel.id}`
+  const warm = takeViewCache(cacheKey)
+  const [items, setItems] = useState(() => (Array.isArray(warm) ? warm : []))
+  const [loading, setLoading] = useState(() => !(Array.isArray(warm) && warm.length))
   const [fetchOk, setFetchOk] = useState(true)
   const [fetchOffline, setFetchOffline] = useState(false)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ soft = false } = {}) => {
+    if (!soft) setLoading(true)
     try {
       const result = await withTimeout(fetchPlanned(hotel.id), 20000, 'Interventi timeout')
-      setItems(result.items || [])
+      const next = result.items || []
+      setItems(next)
+      putViewCache(cacheKey, next)
       setFetchOk(result.ok !== false)
       setFetchOffline(Boolean(result.offline))
     } catch (error) {
@@ -43,18 +48,45 @@ export default function InterventionsView({ hotel, user }) {
     } finally {
       setLoading(false)
     }
-  }, [hotel.id])
-  useEffect(() => { load(); return subscribePlanned(hotel.id, load) }, [hotel.id, load])
+  }, [hotel.id, cacheKey])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const sessionWarm = takeViewCache(cacheKey)
+      if (Array.isArray(sessionWarm) && sessionWarm.length) {
+        setItems(sessionWarm)
+        setLoading(false)
+      } else {
+        try {
+          const cached = await peekCachedPlanned(hotel.id)
+          if (cancelled) return
+          if (cached.length) {
+            setItems(cached)
+            putViewCache(cacheKey, cached)
+            setLoading(false)
+          }
+        } catch {
+          /* cache miss is fine */
+        }
+      }
+      if (!cancelled) await load({ soft: true })
+    })()
+    const unsub = subscribePlanned(hotel.id, () => { void load({ soft: true }) })
+    return () => {
+      cancelled = true
+      unsub?.()
+    }
+  }, [hotel.id, cacheKey, load])
   const visible = useMemo(() => items.filter((item) => filter === 'all' || (filter === 'done' ? item.status === 'done' : item.status !== 'done')), [items, filter])
-  const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load() } }
-  const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); await load() }
+  const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load({ soft: true }) } }
+  const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); await load({ soft: true }) }
   const showEmpty = !loading && !(!fetchOk && !items.length) && !visible.length
   return <div data-testid="interventions-view" className="rs-ops-surface">
     <PageTitle title="Interventi" subtitle={`${hotel.name} · ${items.filter(i => i.status !== 'done').length} aperti`} />
     <div className="rs-segmented rs-migrated-tabs" role="tablist" aria-label="Filtro interventi">{[['active','Aperti'],['done','Fatti'],['all','Tutti']].map(([id,label]) => <button type="button" key={id} role="tab" aria-selected={filter===id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{label}</button>)}</div>
     {loading ? <Spinner label="Carico interventi…" /> : (
       <>
-        <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={items.length > 0} onRetry={load} resourceLabel="lista interventi" />
+        <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={items.length > 0} onRetry={() => load({ soft: true })} resourceLabel="lista interventi" />
         {showEmpty ? <EmptyState icon="wrench" title="Nessun intervento">Non ci sono elementi per questo filtro.</EmptyState> : null}
         {visible.length ? <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{fmt(item.scheduledAt)}</small></div></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}<InterventionTags item={item}/></Card>})}</div> : null}
       </>

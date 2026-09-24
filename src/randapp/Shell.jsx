@@ -9,6 +9,7 @@ import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
 import { fetchRoleNavigation, placementFor, subscribeRoleNavigation, VIEW_TO_NAV_KEY } from './role-navigation.js'
 import { buildPrimaryBottomNav } from './shell-navigation.js'
+import { prefetchViews, relatedPrefetchIds, scheduleNavPrefetch } from './nav-prefetch.js'
 import { resolveUserInterests } from './adaptive-layout.js'
 import { initSystemInsetsBridge } from './system-insets.js'
 import { contextualAddActions, contextualAddLabel } from './contextual-add.js'
@@ -388,6 +389,15 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     return buildPrimaryBottomNav({ placement, viewAllowed, interests: userInterests, user })
   }, [user, placement, viewAllowed, userInterests])
 
+  useEffect(() => {
+    if (!shellBootstrapped || !bottomNav.length) return undefined
+    return scheduleNavPrefetch(bottomNav.map((item) => item.id))
+  }, [shellBootstrapped, bottomNav])
+
+  const warmNavDestination = useCallback((itemId) => {
+    void prefetchViews(relatedPrefetchIds(itemId))
+  }, [])
+
   const addCapabilities = useMemo(() => ({
     issue: Boolean(user && canUser(user, 'issues', 'create') && viewAllowed('issues')),
     urgent: Boolean(user && canSendUrgent(user) && viewAllowed('urgent')),
@@ -551,7 +561,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
           {bottomNav.map((item) => {
             const active = isBottomActive(item)
             return (
-              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.id === 'randai' ? 'rs-navbtn--randai' : ''}`} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
+              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.id === 'randai' ? 'rs-navbtn--randai' : ''}`} onPointerDown={() => warmNavDestination(item.id)} onFocus={() => warmNavDestination(item.id)} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
                 <Icon name={item.icon} /><small>{item.label}</small>
               </button>
             )

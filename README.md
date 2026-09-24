@@ -7,9 +7,11 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 23 settembre 2026
+## Stato consolidato — 24 settembre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
+
+Il cambio tab della bottom nav non aspetta più uno spinner a ogni tap: i chunk delle destinazioni principali vengono precaricati in idle / al tocco, e le liste operative (Segnalazioni, Interventi, Urgenti, Task, Planning) ridipingono subito da cache di sessione/IndexedDB con refresh soft in background.
 
 Le notifiche ntfy sono gestibili senza SQL: in **Impostazioni → ntfy** l’admin attiva/disattiva il canale, completa i topic hotel/ruolo mancanti e invia un test urgente. In **Profilo** l’operatore resta sui soli short link personali (`/n/GIO-AV-……`) con test per canale; i topic tecnici non vengono mostrati. La diagnostica considera ntfy “ok” solo dopo setup + test riuscito.
 

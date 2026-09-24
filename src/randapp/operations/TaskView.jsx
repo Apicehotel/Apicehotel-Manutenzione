@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchUrgents, subscribeUrgents } from '../../urgents-data.js'
+import { fetchUrgents, peekCachedUrgents, subscribeUrgents } from '../../urgents-data.js'
 import { fetchReminders, subscribeReminders } from '../reminders/reminder-data.js'
 import { withTimeout } from '../../async-timeout.js'
 import { Spinner } from '../ui.jsx'
 import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
 import HubChoice from './HubChoice.jsx'
 import { reminderPreviewMetrics, urgentPreviewMetrics } from './hub-preview-stats.js'
+import { putViewCache, takeViewCache } from '../view-session-cache.js'
 
 const SOFT_REFRESH_MS = 2500
 
@@ -37,48 +38,76 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
   const housekeepingTaskRole = ['Governante','Capo Governante'].includes(user?.role)
   const showUrgent = housekeepingTaskRole || canUrgent
   const showReminders = housekeepingTaskRole || canReminders
-  const [urgents, setUrgents] = useState([])
-  const [reminders, setReminders] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `task:${hotel.id}`
+  const warm = takeViewCache(cacheKey)
+  const [urgents, setUrgents] = useState(() => (Array.isArray(warm?.urgents) ? warm.urgents : []))
+  const [reminders, setReminders] = useState(() => (Array.isArray(warm?.reminders) ? warm.reminders : []))
+  const [loading, setLoading] = useState(() => !(warm && ((Array.isArray(warm.urgents) && warm.urgents.length) || (Array.isArray(warm.reminders) && warm.reminders.length))))
   const timer = useRef(0)
   const busy = useRef(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ soft = false } = {}) => {
     if (busy.current) return
     busy.current = true
+    if (!soft) setLoading(true)
     try {
       const [urgentResult, reminderResult] = await withTimeout(Promise.all([
         showUrgent ? fetchUrgents(hotel.id) : Promise.resolve({ items: [] }),
         showReminders ? fetchReminders(hotel.id) : Promise.resolve([]),
       ]), 20000, 'Task timeout')
-      setUrgents(urgentResult.items || [])
-      setReminders(Array.isArray(reminderResult) ? reminderResult : reminderResult.items || [])
+      const nextUrgents = urgentResult.items || []
+      const nextReminders = Array.isArray(reminderResult) ? reminderResult : reminderResult.items || []
+      setUrgents(nextUrgents)
+      setReminders(nextReminders)
+      putViewCache(cacheKey, { urgents: nextUrgents, reminders: nextReminders })
     } catch (error) {
       console.warn('Caricamento Task fallito', error)
     } finally {
       busy.current = false
       setLoading(false)
     }
-  }, [hotel.id, showUrgent, showReminders])
+  }, [hotel.id, showUrgent, showReminders, cacheKey])
 
   const scheduleRefresh = useCallback(() => {
     if (timer.current) window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => {
       timer.current = 0
-      void load()
+      void load({ soft: true })
     }, SOFT_REFRESH_MS)
   }, [load])
 
   useEffect(() => {
-    void load()
+    let cancelled = false
+    ;(async () => {
+      const sessionWarm = takeViewCache(cacheKey)
+      if (sessionWarm && ((sessionWarm.urgents?.length) || (sessionWarm.reminders?.length))) {
+        setUrgents(sessionWarm.urgents || [])
+        setReminders(sessionWarm.reminders || [])
+        setLoading(false)
+      } else if (showUrgent) {
+        try {
+          const cached = await peekCachedUrgents(hotel.id)
+          if (cancelled) return
+          if (cached.length) {
+            setUrgents(cached)
+            putViewCache(cacheKey, { urgents: cached, reminders: [] })
+            setLoading(false)
+          }
+        } catch {
+          /* cache miss is fine */
+        }
+      }
+      if (!cancelled) await load({ soft: true })
+    })()
     const offs = []
     if (showUrgent) offs.push(subscribeUrgents(hotel.id, scheduleRefresh))
     if (showReminders) offs.push(subscribeReminders(hotel.id, scheduleRefresh))
     return () => {
+      cancelled = true
       if (timer.current) window.clearTimeout(timer.current)
       offs.forEach((off) => off?.())
     }
-  }, [hotel.id, showUrgent, showReminders, load, scheduleRefresh])
+  }, [hotel.id, showUrgent, showReminders, load, scheduleRefresh, cacheKey])
 
   const dueReminders = useMemo(
     () => reminders.filter((item) => reminderDueToday(item, user)),
