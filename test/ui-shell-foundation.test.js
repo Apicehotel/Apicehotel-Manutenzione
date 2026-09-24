@@ -57,7 +57,8 @@ test('top safe area has one owner so iOS does not double the notch clearance', a
 
 test('phone and tablet pin the operational header while the body scrolls', async () => {
   const css = await read('src/randapp/adaptive-layout.css')
-  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app\s*\{[\s\S]*height:\s*100dvh/)
+  assert.match(css, /--rs-app-viewport-height:\s*100dvh/)
+  assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app\s*\{[\s\S]*height:\s*var\(--rs-app-viewport-height\)/)
   assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app\s*\{[\s\S]*overflow:\s*hidden/)
   assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-app(?:,\s*\.rs-app\.rs-app--with-side)?\s*\{[\s\S]*display:\s*flex/)
   assert.match(css, /@media \(max-width:\s*1199px\)[\s\S]*\.rs-content\s*\{[\s\S]*overflow-y:\s*auto/)

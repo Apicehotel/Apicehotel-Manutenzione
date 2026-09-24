@@ -14,8 +14,8 @@
   grid-column: 1 !important;
   width: 100% !important;
   max-width: none !important;
-  height: 100dvh !important;
-  min-height: 100svh !important;
+  height: var(--rs-app-viewport-height) !important;
+  min-height: var(--rs-app-viewport-min-height) !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;

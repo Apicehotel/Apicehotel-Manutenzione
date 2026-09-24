@@ -7,6 +7,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const main = read('src/main.jsx')
 const foundation = read('src/randapp/randui/foundation.css')
 const css = read('src/randapp/ui-coherence.css')
+const adaptive = read('src/randapp/adaptive-layout.css')
 const settings = read('src/randapp/Settings.jsx')
 const shell = read('src/randapp/shell.css')
 const ui = read('src/randapp/ui.jsx')
@@ -44,7 +45,7 @@ test('point 12 handles accessibility preferences and mobile viewport constraints
   assert.match(css, /prefers-contrast:\s*more/)
   assert.match(css, /safe-area-inset-left/)
   assert.match(css, /safe-area-inset-right/)
-  assert.match(css, /svh/)
+  assert.match(adaptive, /--rs-app-viewport-min-height:\s*100svh/)
   assert.match(css, /overscroll-behavior:\s*contain/)
 })
 
@@ -66,7 +67,8 @@ test('Sheet and Modal are full-screen pages with a persistent low back action', 
   assert.match(shell, /\.rs-fullpage-layer\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*z-index:\s*90;/s)
   assert.match(shell, /\.rs-fullpage__body\s*\{[^}]*overflow-y:\s*auto;/s)
   assert.match(shell, /\.rs-fullpage__footer\s*\{[^}]*var\(--rs-adaptive-safe-bottom, 0px\)/s)
-  assert.match(css, /data-keyboard-open='true'\] \.rs-fullpage/)
+  assert.match(css, /\.rs-fullpage\s*\{[^}]*var\(--rs-app-viewport-height\)[^}]*var\(--rs-app-viewport-min-height\)/s)
+  assert.match(adaptive, /data-keyboard-open='true'/)
 })
 
 test('ConfirmDialog uses the low Indietro action as cancel instead of a popup cancel row', () => {
