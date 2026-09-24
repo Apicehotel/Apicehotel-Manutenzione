@@ -9,6 +9,6 @@
 
 ## Converge checklist
 - [DONE] C001 Acceptance criteria confrontati con implementazione — Evidence: test/operational-detail-route.test.js
-- [TODO] C002 Test/security/CI pertinenti verdi — Evidence: CI PR
+- [DONE] C002 Test/security/CI pertinenti verdi — Evidence: PR #356 + Ocean main gate verde
 - [DONE] C003 README/docs aggiornati — Evidence: README.md + specs/006-operational-detail-v1
 - [DONE] C004 Zero unresolved critici nel perimetro — Evidence: pre-validazione statica
