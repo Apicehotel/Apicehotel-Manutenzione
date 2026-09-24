@@ -5,8 +5,8 @@
   grid-template-rows: 1fr !important;
   grid-template-areas: 'main' !important;
   padding-top: 0 !important;
-  height: 100dvh;
-  min-height: 100svh;
+  height: var(--rs-app-viewport-height);
+  min-height: var(--rs-app-viewport-min-height);
   overflow: hidden;
 }
 .rs-app--operational-detail .rs-content {
@@ -28,8 +28,8 @@
 }
 .rs-operational-detail {
   width: 100%;
-  height: 100dvh;
-  min-height: 100svh;
+  height: var(--rs-app-viewport-height);
+  min-height: var(--rs-app-viewport-min-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -87,12 +87,6 @@
 }
 .rs-operational-dock > .rs-btn:only-child {
   grid-column: 1 / -1;
-}
-html[data-keyboard-open='true'] .rs-app.rs-app--operational-detail,
-html[data-keyboard-open='true'] .rs-app--operational-detail .rs-content,
-html[data-keyboard-open='true'] .rs-operational-detail {
-  height: var(--rs-visual-viewport-height, 100dvh) !important;
-  min-height: var(--rs-visual-viewport-height, 100dvh) !important;
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .rs-operational-detail__head { padding-top: max(8px, var(--rs-adaptive-safe-top, 0px)); padding-bottom: 8px; }

@@ -1,9 +1,8 @@
-// Bridge between web safe-area env() values and an optional future native shell.
-// Today PWA/iOS/Android browsers use CSS env(safe-area-inset-*).
-// A future Capacitor wrapper can dispatch `randapp-system-insets` with pixel values
-// without changing any RandApp component.
+// Canonical bridge between CSS safe areas, browser VisualViewport and an optional native shell.
+// Components consume CSS tokens only; they never own device-specific viewport math.
 
 const SIDES = ['top', 'right', 'bottom', 'left']
+const VISUAL_PROPS = ['--rs-visual-viewport-height', '--rs-visual-viewport-width', '--rs-visual-viewport-offset-top']
 
 function toPixels(value) {
   const number = Number(value)
@@ -26,6 +25,33 @@ export function clearSystemInsets() {
   delete root.dataset.systemInsets
 }
 
+export function clearVisualViewportState() {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  VISUAL_PROPS.forEach((name) => root.style.removeProperty(name))
+  delete root.dataset.keyboardOpen
+  delete root.dataset.viewportOrientation
+}
+
+export function syncVisualViewportState(win = globalThis.window) {
+  if (!win || typeof document === 'undefined') return
+  const root = document.documentElement
+  const viewport = win.visualViewport
+  const height = Math.round(viewport?.height || win.innerHeight || 0)
+  const width = Math.round(viewport?.width || win.innerWidth || 0)
+  const offsetTop = Math.max(0, Math.round(viewport?.offsetTop || 0))
+  const layoutHeight = Math.max(0, Math.round(win.innerHeight || height))
+
+  root.style.setProperty('--rs-visual-viewport-height', `${height}px`)
+  root.style.setProperty('--rs-visual-viewport-width', `${width}px`)
+  root.style.setProperty('--rs-visual-viewport-offset-top', `${offsetTop}px`)
+
+  const keyboardDelta = layoutHeight - height
+  const keyboardOpen = keyboardDelta >= 120 && height < layoutHeight * 0.86
+  root.dataset.keyboardOpen = keyboardOpen ? 'true' : 'false'
+  root.dataset.viewportOrientation = width > height ? 'landscape' : 'portrait'
+}
+
 export function initSystemInsetsBridge() {
   if (typeof window === 'undefined') return () => {}
 
@@ -35,21 +61,22 @@ export function initSystemInsetsBridge() {
   const onInsets = (event) => {
     if (event?.detail && typeof event.detail === 'object') applySystemInsets(event.detail)
   }
-
+  const sync = () => syncVisualViewportState(window)
   const visualViewport = window.visualViewport
-  const syncVisualViewport = () => {
-    if (!visualViewport) return
-    document.documentElement.style.setProperty('--rs-visual-viewport-height', `${Math.round(visualViewport.height)}px`)
-    document.documentElement.dataset.keyboardOpen = visualViewport.height < window.innerHeight * 0.78 ? 'true' : 'false'
-  }
 
   window.addEventListener('randapp-system-insets', onInsets)
-  visualViewport?.addEventListener('resize', syncVisualViewport, { passive: true })
-  visualViewport?.addEventListener('scroll', syncVisualViewport, { passive: true })
-  syncVisualViewport()
+  window.addEventListener('resize', sync, { passive: true })
+  window.addEventListener('orientationchange', sync, { passive: true })
+  visualViewport?.addEventListener('resize', sync, { passive: true })
+  visualViewport?.addEventListener('scroll', sync, { passive: true })
+  sync()
+
   return () => {
     window.removeEventListener('randapp-system-insets', onInsets)
-    visualViewport?.removeEventListener('resize', syncVisualViewport)
-    visualViewport?.removeEventListener('scroll', syncVisualViewport)
+    window.removeEventListener('resize', sync)
+    window.removeEventListener('orientationchange', sync)
+    visualViewport?.removeEventListener('resize', sync)
+    visualViewport?.removeEventListener('scroll', sync)
+    clearVisualViewportState()
   }
 }
