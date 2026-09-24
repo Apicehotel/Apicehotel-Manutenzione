@@ -55,3 +55,10 @@ test('settings navigation exposes stable tab semantics', () => {
   assert.match(settings, /aria-controls="settings-panel"/)
   assert.match(settings, /type="button"/)
 })
+
+
+test('shared overlays stay above the fixed mobile navigation and preserve iOS bottom clearance', () => {
+  assert.match(shell, /\.rs-overlay\s*\{[^}]*z-index:\s*90;/s)
+  assert.match(shell, /\.rs-sheet\s*\{[^}]*max-height:\s*88dvh;[^}]*overflow-y:\s*auto;/s)
+  assert.match(shell, /padding:\s*8px 18px calc\(22px \+ var\(--rs-safe-bottom\)\)/)
+})
