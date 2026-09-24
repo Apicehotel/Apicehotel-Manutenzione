@@ -141,6 +141,21 @@ html[data-keyboard-open='true'] .rs-fullpage {
   .rs-fullpage__footer .rs-btn { width: min(100%, 320px); }
 }
 
+@media (orientation: landscape) and (max-height: 520px) {
+  .rs-fullpage__head {
+    padding-top: max(8px, var(--rs-adaptive-safe-top, 0px));
+    padding-bottom: 8px;
+  }
+  .rs-fullpage__body {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .rs-fullpage__footer {
+    padding-top: 6px;
+    padding-bottom: calc(6px + var(--rs-adaptive-safe-bottom, 0px));
+  }
+}
+
 /* Consistent operational feedback. */
 .rs-error,
 .rs-field__error {
