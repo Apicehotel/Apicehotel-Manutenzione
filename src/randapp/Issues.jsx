@@ -12,6 +12,8 @@ import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
 import { operationFailed } from '../operation-feedback.js'
 import RandAISuggestion from './RandAISuggestion.jsx'
 import OperationalDetailPage from './OperationalDetailPage.jsx'
+import OperationalTimeline from './OperationalTimeline.jsx'
+import { buildIssueTimeline } from './operational-timeline.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -245,6 +247,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const canEditDetails = canUser(user, 'issues', 'edit') || isOwnSupremoIssue
   const technicians = (users || []).filter((p) => p.role === 'Tecnico esterno')
   const meta = ISSUE_STATUS_META[issue.status] || {}
+  const timelineEvents = useMemo(() => buildIssueTimeline(issue), [issue])
 
   const complete = () => { onUpdate(issue.id, { status: 'done', completionNote: note.trim() || null, completionPhotoData: photo, completedBy: user?.name, completedAt: Date.now() }); onClose() }
   const confirmPiece = () => { if (!piece.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: piece.trim() }); onClose() }
@@ -320,19 +323,14 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <div><dt>Categoria</dt><dd>{issue.category || '—'}</dd></div>
             {issue.roomStatus && <div><dt>Stato camera</dt><dd>{ROOM_STATUS_OPTIONS.find(([k]) => k === issue.roomStatus)?.[1] || issue.roomStatus}</dd></div>}
           </dl>
-          {(issue.photoData || issue.photoPath) && <IssuePhoto src={issue.photoData} alt="Foto segnalazione" />}
           <RandAISuggestion issue={issue} hotelId={issue.hotelId} />
+          <OperationalTimeline events={timelineEvents} />
         </>
       )}
 
-      {issue.status === 'tecnico' && (
-        <div className="rs-note rs-note--tecnico">
-          {issue.technicianName ? (
-            <>Tecnico richiesto da <strong>{issue.technicianRequestedBy}</strong> · assegnato a <strong>{issue.technicianName}</strong></>
-          ) : (
-            <>In attesa di contatto tecnico{issue.technicianAskedBy && <> — richiesto da <strong>{issue.technicianAskedBy}</strong></>}</>
-          )}
-          {canSendUrgent(user) && !issue.technicianName && (
+      {issue.status === 'tecnico' && canSendUrgent(user) && !issue.technicianName && (
+        <div className="rs-actions-stack">
+          {(
             <div style={{ marginTop: 8 }}>
               <Field label="Quale tecnico esterno?">
                 <select className="rs-select" value={techChoice} onChange={(e) => setTechChoice(e.target.value)}>
@@ -344,8 +342,10 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
               <Button variant="primary" disabled={!techChoice} onClick={confirmTech} style={{ marginTop: 8 }}>Assegna tecnico</Button>
             </div>
           )}
-          {canSendUrgent(user) && issue.technicianName && (
-            <div style={{ marginTop: 8 }}>
+        </div>
+      )}
+      {issue.status === 'tecnico' && canSendUrgent(user) && issue.technicianName && (
+        <div className="rs-actions-stack">
               <Field label="Nota per il tecnico (facoltativa)">
                 <textarea className="rs-textarea" rows="2" value={techNote} onChange={(e) => setTechNote(e.target.value)} placeholder="Aggiungi dettagli per il tecnico" />
               </Field>
@@ -356,27 +356,16 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
                 )}
               </div>
               {!issue.technicianPhone && <p className="rs-field__hint">Numero del tecnico non disponibile.</p>}
-            </div>
-          )}
         </div>
       )}
-      {issue.status === 'waiting' && (
-        <div className="rs-note rs-note--waiting">
-          In attesa del pezzo: <strong>{issue.pieceName}</strong>
-          {issue.pieceDecision ? (
-            <p style={{ margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Icon name="package" /> <strong>{issue.pieceDecisionBy}</strong> {issue.pieceDecision === 'ritiro' ? 'andrà a ritirarlo' : 'lo ordinerà'}
-            </p>
-          ) : canSendUrgent(user) && (
-            <div className="rs-action-pair" style={{ marginTop: 8 }}>
+      {issue.status === 'waiting' && canSendUrgent(user) && !issue.pieceDecision && (
+        <div className="rs-actions-stack">
+          <div className="rs-action-pair">
               <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ritiro', pieceDecisionBy: user?.name })}>Vado a prenderlo</Button>
               <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ordine', pieceDecisionBy: user?.name })}>Lo ordino</Button>
-            </div>
-          )}
+          </div>
         </div>
       )}
-      {issue.pieceReplaced && <div className="rs-note">Pezzo sostituito: <strong>{issue.pieceReplaced}</strong>{issue.pieceReplacedBy && <> · {issue.pieceReplacedBy}</>}</div>}
-      {issue.status === 'done' && <div className="rs-note rs-note--done">Completata da <strong>{issue.completedBy}</strong>{issue.completionNote && <p style={{ margin: '6px 0 0' }}>{issue.completionNote}</p>}{(issue.completionPhotoData || issue.completionPhotoPath) && <IssuePhoto src={issue.completionPhotoData} alt="Foto riparazione" />}</div>}
 
       {issue.status === 'todo' && canComplete && !asking && (
         <div className="rs-actions-stack">

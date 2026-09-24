@@ -1,0 +1,21 @@
+.rs-operational-timeline{margin:20px 0 24px}
+.rs-operational-timeline__title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.rs-operational-timeline__title h2{margin:0;font-family:'Sora';font-size:1rem}
+.rs-operational-timeline__title small{color:var(--rs-text-3);font-size:.75rem}
+.rs-operational-timeline ol{list-style:none;margin:0;padding:0}
+.rs-operational-timeline__item{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;position:relative;min-width:0}
+.rs-operational-timeline__rail{position:relative;display:flex;justify-content:center}
+.rs-operational-timeline__rail::after{content:'';position:absolute;top:18px;bottom:-8px;width:2px;background:var(--rs-line)}
+.rs-operational-timeline__item:last-child .rs-operational-timeline__rail::after{display:none}
+.rs-operational-timeline__rail i{width:12px;height:12px;margin-top:6px;border-radius:50%;background:var(--rs-surface-3);border:2px solid var(--rs-line-strong);z-index:1}
+.rs-operational-timeline__item.is-current .rs-operational-timeline__rail i{width:16px;height:16px;margin-top:4px;background:var(--rs-cyan);box-shadow:0 0 0 4px rgba(34,211,238,.12)}
+.rs-operational-timeline__item[data-tone='success'] .rs-operational-timeline__rail i{border-color:var(--rs-ok)}
+.rs-operational-timeline__item[data-tone='warning'] .rs-operational-timeline__rail i{border-color:var(--rs-warn)}
+.rs-operational-timeline__event{min-width:0;padding:0 0 18px}
+.rs-operational-timeline__event-head{display:flex;align-items:center;gap:8px;min-width:0}
+.rs-operational-timeline__event-head strong{font-size:.93rem}
+.rs-operational-timeline__event-head span{flex:0 0 auto;padding:3px 7px;border-radius:999px;background:rgba(34,211,238,.12);color:var(--rs-cyan);font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.rs-operational-timeline__meta{display:block;margin-top:3px;color:var(--rs-text-3);font-size:.74rem}
+.rs-operational-timeline__event p{margin:5px 0 0;color:var(--rs-text-2);line-height:1.45;font-size:.86rem}
+.rs-operational-timeline__event img{display:block;width:min(100%,520px);max-height:320px;object-fit:cover;margin-top:10px;border-radius:14px;border:1px solid var(--rs-line)}
+@media(min-width:900px){.rs-operational-timeline{margin-top:26px}.rs-operational-timeline__item{grid-template-columns:28px minmax(0,1fr);gap:14px}}
