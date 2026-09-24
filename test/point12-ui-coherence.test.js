@@ -57,8 +57,21 @@ test('settings navigation exposes stable tab semantics', () => {
 })
 
 
-test('shared overlays stay above the fixed mobile navigation and preserve iOS bottom clearance', () => {
-  assert.match(shell, /\.rs-overlay\s*\{[^}]*z-index:\s*90;/s)
-  assert.match(shell, /\.rs-sheet\s*\{[^}]*max-height:\s*88dvh;[^}]*overflow-y:\s*auto;/s)
-  assert.match(shell, /padding:\s*8px 18px calc\(22px \+ var\(--rs-safe-bottom\)\)/)
+test('Sheet and Modal are full-screen pages with a persistent low back action', () => {
+  assert.match(ui, /function FullScreenSurface/)
+  assert.match(ui, /className="rs-fullpage-layer"/)
+  assert.match(ui, /data-testid="fullpage-back">Indietro<\/Button>/)
+  assert.doesNotMatch(ui, /<div className="rs-overlay" onClick=\{onClose\}>/)
+  assert.doesNotMatch(ui, /IconButton icon="close" label="Chiudi"/)
+  assert.match(shell, /\.rs-fullpage-layer\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*z-index:\s*90;/s)
+  assert.match(shell, /\.rs-fullpage__body\s*\{[^}]*overflow-y:\s*auto;/s)
+  assert.match(shell, /\.rs-fullpage__footer\s*\{[^}]*var\(--rs-adaptive-safe-bottom, 0px\)/s)
+  assert.match(css, /data-keyboard-open='true'\] \.rs-fullpage/)
+})
+
+test('ConfirmDialog uses the low Indietro action as cancel instead of a popup cancel row', () => {
+  const confirmBlock = ui.slice(ui.indexOf('export function ConfirmDialog'), ui.indexOf('export function UiSizeControl'))
+  assert.match(confirmBlock, /<Modal open=\{open\} onClose=\{onCancel\}/)
+  assert.doesNotMatch(confirmBlock, />Annulla<\/Button>/)
+  assert.match(confirmBlock, /onClick=\{onConfirm\}/)
 })
