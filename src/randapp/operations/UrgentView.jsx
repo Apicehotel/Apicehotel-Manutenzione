@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchUrgents, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } from '../../urgents-data.js'
+import { fetchUrgents, peekCachedUrgents, updateUrgentRow, subscribeUrgents, linkUrgentToIssue } from '../../urgents-data.js'
 import { insertIssue } from '../../issues-data.js'
 import { withTimeout } from '../../async-timeout.js'
 import { Button, Card, EmptyState, Field, IconButton, Spinner, TextInput } from '../ui.jsx'
 import ListFetchNotice from '../ListFetchNotice.jsx'
+import { putViewCache, takeViewCache } from '../view-session-cache.js'
 import { canSendUrgent, ISSUE_CATEGORIES, URGENCY_META } from '../helpers.js'
 import { PageTitle, StatusPill, fmt } from './view-primitives.jsx'
 
@@ -18,17 +19,21 @@ function sortUrgents(items) {
 }
 
 export default function UrgentView({ hotel, user }) {
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `urgent:${hotel.id}`
+  const warm = takeViewCache(cacheKey)
+  const [items, setItems] = useState(() => (Array.isArray(warm) ? warm : []))
+  const [loading, setLoading] = useState(() => !(Array.isArray(warm) && warm.length))
   const [fetchOk, setFetchOk] = useState(true)
   const [fetchOffline, setFetchOffline] = useState(false)
   const [transforming, setTransforming] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ soft = false } = {}) => {
+    if (!soft) setLoading(true)
     try {
       const result = await withTimeout(fetchUrgents(hotel.id), 20000, 'Avvisi timeout')
-      setItems(result.items || [])
+      const next = result.items || []
+      setItems(next)
+      putViewCache(cacheKey, next)
       setFetchOk(result.ok !== false)
       setFetchOffline(Boolean(result.offline))
     } catch (error) {
@@ -38,23 +43,47 @@ export default function UrgentView({ hotel, user }) {
     } finally {
       setLoading(false)
     }
-  }, [hotel.id])
+  }, [hotel.id, cacheKey])
 
   useEffect(() => {
-    load()
-    return subscribeUrgents(hotel.id, load)
-  }, [hotel.id, load])
+    let cancelled = false
+    ;(async () => {
+      const sessionWarm = takeViewCache(cacheKey)
+      if (Array.isArray(sessionWarm) && sessionWarm.length) {
+        setItems(sessionWarm)
+        setLoading(false)
+      } else {
+        try {
+          const cached = await peekCachedUrgents(hotel.id)
+          if (cancelled) return
+          if (cached.length) {
+            setItems(cached)
+            putViewCache(cacheKey, cached)
+            setLoading(false)
+          }
+        } catch {
+          /* cache miss is fine */
+        }
+      }
+      if (!cancelled) await load({ soft: true })
+    })()
+    const unsub = subscribeUrgents(hotel.id, () => { void load({ soft: true }) })
+    return () => {
+      cancelled = true
+      unsub?.()
+    }
+  }, [hotel.id, cacheKey, load])
 
   const ordered = useMemo(() => sortUrgents(items), [items])
   const activeCount = useMemo(() => items.filter((item) => item.status !== 'completata').length, [items])
 
   const take = async (item) => {
     await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'presa_in_carico', takenBy: user?.name })
-    load()
+    load({ soft: true })
   }
   const done = async (item) => {
     await updateUrgentRow(item.id, { hotelId: hotel.id, status: 'completata', completedBy: user?.name })
-    load()
+    load({ soft: true })
   }
 
   if (transforming) {
@@ -64,7 +93,7 @@ export default function UrgentView({ hotel, user }) {
         hotel={hotel}
         user={user}
         onCancel={() => setTransforming(null)}
-        onDone={() => { setTransforming(null); load() }}
+        onDone={() => { setTransforming(null); load({ soft: true }) }}
       />
     )
   }
@@ -82,7 +111,7 @@ export default function UrgentView({ hotel, user }) {
             ok={fetchOk}
             offline={fetchOffline}
             hasItems={items.length > 0}
-            onRetry={load}
+            onRetry={() => load({ soft: true })}
             resourceLabel="lista avvisi"
           />
           {showEmpty ? (

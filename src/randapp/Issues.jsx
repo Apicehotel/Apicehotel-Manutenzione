@@ -1,10 +1,11 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
-import { fetchIssues, insertIssue, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
+import { fetchIssues, insertIssue, peekCachedIssues, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
 import { withTimeout } from '../async-timeout.js'
 import { Button, Card, Field, TextInput, Icon, IconButton, Badge, Segmented, Spinner, EmptyState, Sheet, ConfirmDialog } from './ui.jsx'
 import ListFetchNotice from './ListFetchNotice.jsx'
+import { putViewCache, takeViewCache } from './view-session-cache.js'
 import { canSendUrgent, ISSUE_CATEGORIES, ROOM_STATUS_OPTIONS, ISSUE_STATUS_META, URGENCY_META, compressPhotoAsDataUrl } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
@@ -450,8 +451,10 @@ function compareIssueRooms(a, b) {
 }
 
 export default function Issues({ user, hotel, users, createSignal, focusIssueId = null, onFocusConsumed }) {
-  const [loading, setLoading] = useState(true)
-  const [issues, setIssues] = useState([])
+  const cacheKey = `issues:${hotel.id}`
+  const warm = takeViewCache(cacheKey)
+  const [loading, setLoading] = useState(() => !(Array.isArray(warm) && warm.length))
+  const [issues, setIssues] = useState(() => (Array.isArray(warm) ? warm : []))
   const [fetchOk, setFetchOk] = useState(true)
   const [fetchOffline, setFetchOffline] = useState(false)
   const [filter, setFilter] = useState('todo')
@@ -467,23 +470,51 @@ export default function Issues({ user, hotel, users, createSignal, focusIssueId 
 
   useEffect(() => { if (createSignal && canUser(user, 'issues', 'create')) setCreating(true) }, [createSignal])
 
-  const reload = () => withTimeout(fetchIssues(hotel.id), 45000, 'Segnalazioni timeout')
-    .then((result) => {
-      setIssues(result.issues || [])
-      setFetchOk(result.ok !== false)
-      setFetchOffline(Boolean(result.offline))
-    })
-    .catch(() => {
-      setFetchOk(false)
-      setFetchOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false)
-    })
-    .finally(() => setLoading(false))
+  const reload = (opts = {}) => {
+    const soft = opts.soft === true
+    if (!soft) setLoading(true)
+    return withTimeout(fetchIssues(hotel.id), 45000, 'Segnalazioni timeout')
+      .then((result) => {
+        const next = result.issues || []
+        setIssues(next)
+        putViewCache(cacheKey, next)
+        setFetchOk(result.ok !== false)
+        setFetchOffline(Boolean(result.offline))
+      })
+      .catch(() => {
+        setFetchOk(false)
+        setFetchOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false)
+      })
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    setLoading(true)
-    reload()
-    const unsub = subscribeIssues(hotel.id, () => reload())
-    return () => unsub?.()
+    let cancelled = false
+    ;(async () => {
+      const sessionWarm = takeViewCache(cacheKey)
+      if (Array.isArray(sessionWarm) && sessionWarm.length) {
+        setIssues(sessionWarm)
+        setLoading(false)
+      } else {
+        try {
+          const cached = await peekCachedIssues(hotel.id)
+          if (cancelled) return
+          if (cached.length) {
+            setIssues(cached)
+            putViewCache(cacheKey, cached)
+            setLoading(false)
+          }
+        } catch {
+          /* cache miss is fine */
+        }
+      }
+      if (!cancelled) await reload({ soft: true })
+    })()
+    const unsub = subscribeIssues(hotel.id, () => { void reload({ soft: true }) })
+    return () => {
+      cancelled = true
+      unsub?.()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotel.id])
 
@@ -518,11 +549,11 @@ const resetExtraFilters = () => {
 
   const doUpdate = async (id, changes) => {
     setIssues((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i)))
-    try { await updateIssueRow(id, { ...changes, hotelId: hotel.id }) } finally { reload() }
+    try { await updateIssueRow(id, { ...changes, hotelId: hotel.id }) } finally { reload({ soft: true }) }
   }
-  const doDelete = async (id) => { await deleteIssueRow(id, hotel.id); reload() }
+  const doDelete = async (id) => { await deleteIssueRow(id, hotel.id); reload({ soft: true }) }
 
-  if (creating) return <NewIssueForm hotel={hotel} user={user} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); reload() }} />
+  if (creating) return <NewIssueForm hotel={hotel} user={user} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); reload({ soft: true }) }} />
 
   return (
     <div data-testid="issues-view">
@@ -543,7 +574,7 @@ const resetExtraFilters = () => {
 
       {loading ? <Spinner label="Carico le segnalazioni…" /> : (
         <>
-          <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={issues.length > 0} onRetry={reload} resourceLabel="lista segnalazioni" />
+          <ListFetchNotice ok={fetchOk} offline={fetchOffline} hasItems={issues.length > 0} onRetry={() => reload({ soft: true })} resourceLabel="lista segnalazioni" />
           {!(!fetchOk && !issues.length) && filtered.length === 0 ? (
             <EmptyState icon="issues" title="Nessuna segnalazione">
               {filter === 'all' ? `Non ci sono ancora segnalazioni per ${hotel.name}.` : 'Nessuna segnalazione con questo filtro.'}
