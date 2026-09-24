@@ -119,6 +119,10 @@ textarea:focus-visible,
   overscroll-behavior: contain;
 }
 
+.rs-fullpage {
+  min-height: 100svh;
+}
+
 .rs-fullpage__body {
   scrollbar-gutter: stable;
 }
