@@ -4,7 +4,29 @@ import './operational-detail.css'
 
 export const OPERATIONAL_DETAIL_KINDS = Object.freeze(['issue', 'intervention', 'task', 'supply'])
 
-export default function OperationalDetailPage({ kind, resourceId, title, subtitle, onBack, children, className = '' }) {
+export function OperationalDock({ onBack, primaryAction = null }) {
+  return (
+    <footer className="rs-operational-detail__footer" data-testid="operational-dock">
+      <div className="rs-operational-detail__inner rs-operational-dock">
+        <Button variant="ghost" icon="chevronLeft" onClick={onBack} data-testid="operational-detail-back">Indietro</Button>
+        {primaryAction && (
+          <Button
+            variant={primaryAction.variant || 'primary'}
+            icon={primaryAction.icon || 'check'}
+            disabled={Boolean(primaryAction.disabled || primaryAction.busy)}
+            aria-busy={primaryAction.busy ? 'true' : undefined}
+            onClick={primaryAction.onClick}
+            data-testid="operational-primary-action"
+          >
+            {primaryAction.busy ? (primaryAction.busyLabel || 'Attendi…') : primaryAction.label}
+          </Button>
+        )}
+      </div>
+    </footer>
+  )
+}
+
+export default function OperationalDetailPage({ kind, resourceId, title, subtitle, onBack, primaryAction = null, children, className = '' }) {
   const pageRef = useRef(null)
   const supported = OPERATIONAL_DETAIL_KINDS.includes(kind)
 
@@ -34,11 +56,7 @@ export default function OperationalDetailPage({ kind, resourceId, title, subtitl
       <div className="rs-operational-detail__body">
         <div className="rs-operational-detail__inner">{children}</div>
       </div>
-      <footer className="rs-operational-detail__footer">
-        <div className="rs-operational-detail__inner">
-          <Button variant="ghost" icon="chevronLeft" onClick={onBack} data-testid="operational-detail-back">Indietro</Button>
-        </div>
-      </footer>
+      <OperationalDock onBack={onBack} primaryAction={primaryAction} />
     </section>
   )
 }

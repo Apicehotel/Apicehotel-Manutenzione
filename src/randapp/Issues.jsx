@@ -267,8 +267,22 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
     window.open(technicianWaLink(issue, techNote.trim(), pageUrl), '_blank')
   }
 
+  const primaryAction = (() => {
+    if (!canComplete || editing || asking) return null
+    if (issue.status === 'waiting') {
+      return { label: 'Pezzo arrivato', icon: 'package', onClick: pieceArrived }
+    }
+    if (issue.status === 'tecnico' && issue.technicianName) {
+      return { label: 'Segna completata', icon: 'check', onClick: techDone }
+    }
+    if (issue.status === 'todo') {
+      return { label: 'Riparazione completata', icon: 'check', onClick: complete }
+    }
+    return null
+  })()
+
   return (
-    <OperationalDetailPage kind="issue" resourceId={issue.id} title={issue.ticketCode || 'Segnalazione'} subtitle={issue.room || 'Dettaglio segnalazione'} onBack={onClose} className="rs-issue-detail">
+    <OperationalDetailPage kind="issue" resourceId={issue.id} title={issue.ticketCode || 'Segnalazione'} subtitle={issue.room || 'Dettaglio segnalazione'} onBack={onClose} primaryAction={primaryAction} className="rs-issue-detail">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Badge tone={URGENCY_META[issue.urgency]?.tone}>{URGENCY_META[issue.urgency]?.label || issue.urgency}</Badge>
         <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -383,11 +397,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
             <Icon name="camera" /><strong>{photo ? 'Foto aggiunta' : 'Aggiungi foto completamento'}</strong>
           </label>
           {photo && <img className="rs-photo-preview" src={photo} alt="Anteprima" />}
-          <Button variant="primary" icon="check" onClick={complete} data-testid="complete-issue">Riparazione completata</Button>
         </div>
       )}
-      {issue.status === 'waiting' && canComplete && <div className="rs-actions-stack"><Button variant="primary" onClick={pieceArrived}>Pezzo arrivato, torna in Da fare</Button></div>}
-      {issue.status === 'tecnico' && issue.technicianName && canComplete && <div className="rs-actions-stack"><Button variant="primary" icon="check" onClick={techDone}>Segna completata (tecnico)</Button></div>}
 
       {asking === 'piece' && (
         <div className="rs-actions-stack">
