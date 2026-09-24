@@ -23,6 +23,9 @@ Browser/native signals -> system-insets -> CSS tokens -> all surfaces.
 ## Migration and rollout
 Nessuna migrazione dati. Un commit reversibile.
 
+## Rollback
+Revert del commit del Punto 6: ripristina i valori viewport diretti e il bridge precedente. Nessuna migrazione dati, schema o cache da annullare.
+
 ## Tests and evidence
 - test/cross-platform-focus-hardening.test.js
 - CI canonica
