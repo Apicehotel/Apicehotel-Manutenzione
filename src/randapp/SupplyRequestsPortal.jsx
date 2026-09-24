@@ -16,6 +16,7 @@ import {
   subscribeSupplyRequests,
 } from '../supply-data.js'
 import { Button, EmptyState, Icon } from './ui.jsx'
+import SupplyRequestDetail from './SupplyRequestDetail.jsx'
 import { PageTitle } from './randui/visual-primitives.jsx'
 import './supply-requests.css'
 
@@ -114,6 +115,12 @@ function ProductManager({ hotel, products, onChanged }) {
   const [category, setCategory] = useState('minibar')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [selectedRequest, setSelectedRequest] = useState(null)
+
+  useEffect(() => {
+    onDetailChange?.(selectedRequest ? { kind: 'supply', id: String(selectedRequest.id) } : null)
+    return () => onDetailChange?.(null)
+  }, [selectedRequest?.id, onDetailChange])
 
   const add = async (event) => {
     event.preventDefault()
@@ -221,7 +228,7 @@ function RequestComposer({ hotel, products, floorContexts, floorContext, onFloor
   )
 }
 
-function RequestsList({ requests, canComplete, onResolve }) {
+function RequestsList({ requests, onOpen }) {
   const open = requests.filter((request) => !request.completed_at)
   const closed = requests.filter((request) => request.completed_at)
   const renderRequest = (request) => {
@@ -238,15 +245,11 @@ function RequestsList({ requests, canComplete, onResolve }) {
           {(request.supply_request_items || []).map((item) => (
             <div key={item.id} className={`rs-supply-item status-${item.status}`}>
               <span><b>{item.product_name}</b><small>{CATEGORY_LABEL[item.category]} · {STATUS_LABEL[item.status]}</small></span>
-              {item.status === 'pending' && canComplete && (
-                <div className="rs-supply-actions">
-                  <button type="button" className="deliver" onClick={() => onResolve(item.id, 'delivered')}>✓ Consegnato</button>
-                  <button type="button" className="missing" onClick={() => onResolve(item.id, 'missing')}>! Manca</button>
-                </div>
-              )}
+
             </div>
           ))}
         </div>
+        <div className="rs-supply-actions"><button type="button" onClick={() => onOpen(request)}>Apri richiesta</button></div>
       </article>
     )
   }
@@ -259,7 +262,7 @@ function RequestsList({ requests, canComplete, onResolve }) {
   )
 }
 
-export default function SupplyRequestsPortal({ user, hotel }) {
+export default function SupplyRequestsPortal({ user, hotel, onDetailChange }) {
   const role = user?.role
   const canView = canUser(user, 'supplies', 'view') || VIEW_ROLES.has(role)
   const canCreate = canUser(user, 'supplies', 'create') || CREATE_ROLES.has(role)
@@ -281,8 +284,8 @@ export default function SupplyRequestsPortal({ user, hotel }) {
         fetchSupplyProducts(hotel.id, { includeInactive: canManage }),
         fetchSupplyRequests(hotel.id),
       ])
-      setProducts(productRows); setRequests(requestRows)
-    } catch (err) { setError(err?.message || 'Rifornimenti non disponibili') }
+      setProducts(productRows); setRequests(requestRows); return requestRows
+    } catch (err) { setError(err?.message || 'Rifornimenti non disponibili'); return [] }
     finally { setLoading(false) }
   }, [canView, canManage, hotel?.id])
 
@@ -322,8 +325,11 @@ export default function SupplyRequestsPortal({ user, hotel }) {
 
   const resolve = async (itemId, status) => {
     setError('')
-    try { await resolveSupplyItem(itemId, status); await refresh() }
-    catch (err) { setError(err?.message || 'Aggiornamento non riuscito') }
+    try {
+      await resolveSupplyItem(itemId, status)
+      const rows = await refresh()
+      setSelectedRequest((current) => rows.find((row) => row.id === current?.id) || current)
+    } catch (err) { setError(err?.message || 'Aggiornamento non riuscito') }
   }
 
   if (!canView || !hotel) {
@@ -333,6 +339,8 @@ export default function SupplyRequestsPortal({ user, hotel }) {
       </EmptyState>
     )
   }
+
+  if (selectedRequest) return <SupplyRequestDetail request={selectedRequest} hotel={hotel} canComplete={canComplete} onResolve={resolve} onBack={() => setSelectedRequest(null)} />
 
   return (
     <div className="rs-supply-sheet rs-ops-surface" data-testid="supply-portal">
@@ -347,7 +355,7 @@ export default function SupplyRequestsPortal({ user, hotel }) {
       />
       {error && <p className="rs-supply-error">{error}</p>}
       {canCreate && <RequestComposer hotel={hotel} products={products} floorContexts={floorContexts} floorContext={floorContext} onFloorContextChange={changeFloorContext} contextLoading={contextLoading} onCreated={refresh} />}
-      <RequestsList requests={requests} canComplete={canComplete} onResolve={resolve} />
+      <RequestsList requests={requests} onOpen={setSelectedRequest} />
       {canManage && <ProductManager hotel={hotel} products={products} onChanged={refresh} />}
     </div>
   )
