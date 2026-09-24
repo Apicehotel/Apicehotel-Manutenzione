@@ -165,6 +165,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
   const [issueFocusId, setIssueFocusId] = useState(null)
+  const [operationalDetail, setOperationalDetail] = useState(null)
   const [technicianCreateSignal, setTechnicianCreateSignal] = useState(0)
   const [planningCreateRequest, setPlanningCreateRequest] = useState(null)
   const [interventionCreateOpen, setInterventionCreateOpen] = useState(false)
@@ -181,8 +182,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [navigationConfig, setNavigationConfig] = useState({})
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
+  const operationalDetailOpen = Boolean(operationalDetail)
+  const handleOperationalDetailChange = useCallback((detail) => setOperationalDetail(detail || null), [])
 
   useEffect(() => initSystemInsetsBridge(), [])
+  useEffect(() => { setOperationalDetail(null) }, [view, hotel?.id])
 
   useEffect(() => {
     let active = true
@@ -447,11 +451,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     let content = null
     if (view === 'home') content = <Home user={user} hotel={hotel} personalizeSignal={personalizeSignal} onNavigate={(v) => pick({ id: v })} />
     if (view === 'operations') content = <OperationsHub hotel={hotel} canIssues={viewAllowed('issues')} canInterventions={viewAllowed('interventions')} onOpen={(id, context) => id === 'issues' && context?.issueId != null ? openIssueFromOperations(context.issueId) : pick({ id })} />
-    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} focusIssueId={issueFocusId} onFocusConsumed={() => setIssueFocusId(null)} />
+    if (view === 'issues') content = <Issues user={user} hotel={hotel} users={users} createSignal={createSignal} focusIssueId={issueFocusId} onFocusConsumed={() => setIssueFocusId(null)} onDetailChange={handleOperationalDetailChange} />
     if (view === 'chat') content = <ChatGroups user={user} hotel={hotel} />
     if (view === 'profile') content = <Profile user={user} hotel={hotel} />
     if (view === 'desktop-download') content = <RandDesktopDownload />
-    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} />
+    if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
     if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} />
     if (view === 'my-work') content = <TaskView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
@@ -485,7 +489,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   const showStructureSide = allowedHotels.length > 1 && placement('structure') === 'side'
   const showCacheSide = placement('cache') === 'side'
-  const urgentHidden = drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
+  const urgentHidden = operationalDetailOpen || drawer || hotelSheet || insertOpen || urgentCreateOpen || interventionCreateOpen || notificationsOpen
 
   const handleBottom = (item) => {
     if (item.href) {
@@ -515,8 +519,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
 
   return (
     <div className="rs-root" {...drawerSwipe}>
-      <div className="rs-app rs-app--with-side">
-        <aside className="rs-sidebar" data-testid="sidebar">
+      <div className={`rs-app rs-app--with-side ${operationalDetailOpen ? 'rs-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
+        {!operationalDetailOpen && <aside className="rs-sidebar" data-testid="sidebar">
           <div className="rs-sidebar__brand"><img src={logoFor(hotel.id)} alt={hotel.name} /><div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div></div>
           {allowedHotels.length > 1 && placement('structure') !== 'off' && (
             <button className="rs-sidebar__switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronDown" /></i></button>
@@ -531,9 +535,9 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             </div>
           </div>
           <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
-        </aside>
+        </aside>}
 
-        <header className="rs-header rs-header--operational">
+        {!operationalDetailOpen && <header className="rs-header rs-header--operational">
           <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
             <img src={logoFor(hotel.id)} alt={hotel.name} />
             <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
@@ -547,17 +551,17 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
             <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
             {viewAllowed('randai') && <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>}
           </div>
-        </header>
+        </header>}
 
-        <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />
+        {!operationalDetailOpen && <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />}
         <main className="rs-content" data-testid="main-content">
-          <HousekeepingCompletionAlerts />
+          {!operationalDetailOpen && <HousekeepingCompletionAlerts />}
           <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
             <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
           </ViewErrorBoundary>
         </main>
 
-        <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
+        {!operationalDetailOpen && <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
           {bottomNav.map((item) => {
             const active = isBottomActive(item)
             return (
@@ -566,8 +570,8 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
               </button>
             )
           })}
-        </nav>
-        {contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
+        </nav>}
+        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       <ViewErrorBoundary viewId={insertOpen ? 'insert' : urgentCreateOpen ? 'urgent-create' : interventionCreateOpen ? 'intervention-create' : 'overlay'}>

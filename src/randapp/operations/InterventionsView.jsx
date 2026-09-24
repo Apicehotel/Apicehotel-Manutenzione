@@ -18,12 +18,13 @@ import { Button, Card, EmptyState, Field, Icon, IconButton, Spinner, TextInput, 
 import ListFetchNotice from '../ListFetchNotice.jsx'
 import { canCreatePlanned, compressPhotoAsDataUrl } from '../helpers.js'
 import { InterventionTags, PageTitle, StatusPill, fmt, isAssignedTo } from './view-primitives.jsx'
+import OperationalDetailPage from '../OperationalDetailPage.jsx'
 
 const partStatusLabel = { requested: 'Richiesto', reserved: 'Prenotato', consumed: 'Usato', released: 'Rilasciato', cancelled: 'Annullato' }
 const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'success', released: 'default', cancelled: 'default' }
 const qty = (value) => Number(value || 0).toLocaleString('it-IT', { maximumFractionDigits: 3 })
 
-export default function InterventionsView({ hotel, user }) {
+export default function InterventionsView({ hotel, user, onDetailChange }) {
   const cacheKey = `interventions:${hotel.id}`
   const warm = takeViewCache(cacheKey)
   const [items, setItems] = useState(() => (Array.isArray(warm) ? warm : []))
@@ -32,6 +33,10 @@ export default function InterventionsView({ hotel, user }) {
   const [fetchOffline, setFetchOffline] = useState(false)
   const [filter, setFilter] = useState('active')
   const [selected, setSelected] = useState(null)
+  useEffect(() => {
+    onDetailChange?.(selected ? { kind: 'intervention', id: String(selected.id) } : null)
+    return () => onDetailChange?.(null)
+  }, [selected?.id, onDetailChange])
   const load = useCallback(async ({ soft = false } = {}) => {
     if (!soft) setLoading(true)
     try {
@@ -81,6 +86,7 @@ export default function InterventionsView({ hotel, user }) {
   const doUpdate = async (id, changes) => { setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...changes } : i))); try { return await updatePlannedRow(id, { ...changes, hotelId: hotel.id }) } finally { await load({ soft: true }) } }
   const doDelete = async (id) => { await deletePlannedRow(id, hotel.id); await load({ soft: true }) }
   const showEmpty = !loading && !(!fetchOk && !items.length) && !visible.length
+  if (selected) return <PlannedDetail item={selected} hotel={hotel} user={user} onClose={()=>setSelected(null)} onUpdate={doUpdate} onDelete={doDelete}/>
   return <div data-testid="interventions-view" className="rs-ops-surface">
     <PageTitle title="Interventi" subtitle={`${hotel.name} · ${items.filter(i => i.status !== 'done').length} aperti`} />
     <div className="rs-segmented rs-migrated-tabs" role="tablist" aria-label="Filtro interventi">{[['active','Aperti'],['done','Fatti'],['all','Tutti']].map(([id,label]) => <button type="button" key={id} role="tab" aria-selected={filter===id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{label}</button>)}</div>
@@ -91,7 +97,6 @@ export default function InterventionsView({ hotel, user }) {
         {visible.length ? <div className="rs-migrated-list">{visible.map((item) => {const assigned=isAssignedTo(item,user),roomsTotal=Array.isArray(item.rooms)?item.rooms.length:0,roomsDone=Object.keys(item.roomsDone||{}).length;return <Card as="button" key={item.id} className={`rs-card--pad rs-op-card ${assigned?'rs-op-card--assigned':''}`} onClick={()=>setSelected(item)}><div className="rs-op-card__head"><div><strong>{item.ticketCode ? `${item.ticketCode} · ` : ''}{item.location||'Intervento'}</strong><small>{fmt(item.scheduledAt)}</small></div></div>{item.notes&&<p>{item.notes}</p>}{roomsTotal>0&&<small>{roomsDone}/{roomsTotal} camere completate</small>}{item.pieceReplaced&&<small>Ricambi usati: {item.pieceReplaced}</small>}{!!item.assignees?.length&&<small>Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</small>}<InterventionTags item={item}/></Card>})}</div> : null}
       </>
     )}
-    {selected&&<PlannedDetail item={selected} hotel={hotel} user={user} onClose={()=>setSelected(null)} onUpdate={doUpdate} onDelete={doDelete}/>} 
   </div>
 }
 
@@ -196,7 +201,7 @@ function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
   const toggleRoom=async(room)=>{if(!canComplete)return;const next={...roomsDone};if(next[room])delete next[room];else next[room]={by:user?.name,at:Date.now()};await onUpdate(item.id,{roomsDone:next})}
   const complete=async()=>{setBusy(true);setError('');try{await onUpdate(item.id,{status:'done',photoAfter:photo,completedBy:user?.name,completedAt:Date.now()});onClose()}catch(e){setError(e.message)}finally{setBusy(false)}}
   const remove=async()=>{setBusy(true);setError('');try{const current=await fetchInterventionParts({hotelId:hotel.id,interventionId:item.id});if(current.some((part)=>part.status==='consumed'))throw new Error('Questo intervento ha movimenti Magazzino: non può essere eliminato senza perdere la tracciabilità.');for(const part of current.filter((p)=>p.status==='requested'||p.status==='reserved'||p.status==='released'))await releaseInterventionPart(part.id,{cancel:true});await onDelete(item.id);onClose()}catch(e){setConfirmDel(false);setError(e.message)}finally{setBusy(false)}}
-  return <Sheet open onClose={onClose} className="rs-issue-detail">
+  return <OperationalDetailPage kind="intervention" resourceId={item.id} title={item.ticketCode || 'Intervento'} subtitle={item.location || 'Dettaglio intervento'} onBack={onClose} className="rs-issue-detail">
     <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0} onClick={()=>setConfirmDel(true)}/>}</div>
     <h2 className="rs-detail-room">{item.ticketCode ? `${item.ticketCode} · ` : ""}{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p>{!!item.assignees?.length&&<p className="rs-detail-origin">Assegnato a: {item.assignees.map(p=>p.name||p).join(', ')}</p>}
     {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
@@ -206,5 +211,5 @@ function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
     {consumedParts.length>0&&canManage&&<p className="rs-field__hint">L’intervento non è eliminabile perché contiene movimenti Magazzino storici.</p>}
     {error&&<p className="rs-error" role="alert">{error}</p>}
     <ConfirmDialog open={confirmDel} title="Eliminare l'intervento?" message="Le richieste/prenotazioni aperte verranno annullate. Gli interventi con ricambi già consumati restano storici e non sono eliminabili." confirmLabel="Elimina" danger onCancel={()=>setConfirmDel(false)} onConfirm={remove}/>
-  </Sheet>
+  </OperationalDetailPage>
 }

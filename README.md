@@ -84,6 +84,10 @@ Nav primaria mobile: Operatività · Planning · Home · Task · RandAI (Home al
 - **Planning** (tab dedicato) = hub completo (lavori, sale, panoramica, calendario).
 - Ritmo condiviso `rs-ops-surface` / `rs-randui-choice` su Operatività, Task, Planning (owner: `visual-language.css` + `telegram-navigation.css`).
 - Titolo → contenuto senza banda vuota verticale: stack `align-content:start` / `grid-auto-rows:max-content`.
+
+### Focus operativo — dettaglio unico
+
+Segnalazioni e Interventi usano `OperationalDetailPage` come proprietario canonico del dettaglio: la lista non resta montata sotto, la Shell entra in **Focus Mode** e sospende header/sidebar, fascia urgenti, bottom nav e FAB. Il dettaglio mantiene il proprio scroll e un comando **Indietro** persistente in basso, con safe-area adattive iOS/Android e layout desktop. Il contratto accetta i domini `issue`, `intervention`, `task`, `supply`; Task e Rifornimenti riuseranno la stessa superficie quando aprono una singola risorsa, senza creare nuove varianti di popup/drawer.
 ## RandAI, RandMind e RandResearch
 
 Le superfici RandAI restano due: **pagina chat dedicata** in RandApp (tab RandAI + header, fissata tra header e bottom nav con composer in basso; conversazione preservata tra i tab) e **Control Center `/randai`** protetto e multi-hotel (URL diretta, non nella nav primaria).

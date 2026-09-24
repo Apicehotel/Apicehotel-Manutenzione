@@ -11,6 +11,7 @@ import { canUser } from '../permissions.js'
 import { clearDraft, loadDraft, saveDraft } from '../draft-store.js'
 import { operationFailed } from '../operation-feedback.js'
 import RandAISuggestion from './RandAISuggestion.jsx'
+import OperationalDetailPage from './OperationalDetailPage.jsx'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -267,7 +268,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   }
 
   return (
-    <Sheet open onClose={onClose} className="rs-issue-detail">
+    <OperationalDetailPage kind="issue" resourceId={issue.id} title={issue.ticketCode || 'Segnalazione'} subtitle={issue.room || 'Dettaglio segnalazione'} onBack={onClose} className="rs-issue-detail">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Badge tone={URGENCY_META[issue.urgency]?.tone}>{URGENCY_META[issue.urgency]?.label || issue.urgency}</Badge>
         <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -415,7 +416,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
 
       <ConfirmDialog open={confirmDel} title="Eliminare la segnalazione?" message="L'azione non è reversibile." confirmLabel="Elimina" danger
         onCancel={() => setConfirmDel(false)} onConfirm={() => { onDelete(issue.id); setConfirmDel(false); onClose() }} />
-    </Sheet>
+    </OperationalDetailPage>
   )
 }
 
@@ -450,7 +451,7 @@ function compareIssueRooms(a, b) {
   return left.text.localeCompare(right.text, 'it', { numeric: true, sensitivity: 'base' })
 }
 
-export default function Issues({ user, hotel, users, createSignal, focusIssueId = null, onFocusConsumed }) {
+export default function Issues({ user, hotel, users, createSignal, focusIssueId = null, onFocusConsumed, onDetailChange }) {
   const cacheKey = `issues:${hotel.id}`
   const warm = takeViewCache(cacheKey)
   const [loading, setLoading] = useState(() => !(Array.isArray(warm) && warm.length))
@@ -524,6 +525,11 @@ export default function Issues({ user, hotel, users, createSignal, focusIssueId 
   )
   const activeIssue = selected || focusedIssue
 
+  useEffect(() => {
+    onDetailChange?.(activeIssue ? { kind: 'issue', id: String(activeIssue.id) } : null)
+    return () => onDetailChange?.(null)
+  }, [activeIssue?.id, onDetailChange])
+
   const counts = useMemo(() => issues.reduce((acc, i) => ({ ...acc, [i.status]: (acc[i.status] || 0) + 1 }), {}), [issues])
   const filtered = useMemo(() => {
   const q = search.trim().toLowerCase()
@@ -554,6 +560,8 @@ const resetExtraFilters = () => {
   const doDelete = async (id) => { await deleteIssueRow(id, hotel.id); reload({ soft: true }) }
 
   if (creating) return <NewIssueForm hotel={hotel} user={user} onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); reload({ soft: true }) }} />
+
+  if (activeIssue) return <IssueDetail issue={activeIssue} user={user} users={users} onClose={() => { setSelected(null); onFocusConsumed?.() }} onUpdate={doUpdate} onDelete={doDelete} />
 
   return (
     <div data-testid="issues-view">
@@ -612,7 +620,6 @@ const resetExtraFilters = () => {
   </div>
 </Sheet>
 
-      {activeIssue && <IssueDetail issue={activeIssue} user={user} users={users} onClose={() => { setSelected(null); onFocusConsumed?.() }} onUpdate={doUpdate} onDelete={doDelete} />}
     </div>
   )
 }
