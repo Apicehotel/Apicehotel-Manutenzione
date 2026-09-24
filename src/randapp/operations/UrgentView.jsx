@@ -7,6 +7,7 @@ import ListFetchNotice from '../ListFetchNotice.jsx'
 import { putViewCache, takeViewCache } from '../view-session-cache.js'
 import { canSendUrgent, ISSUE_CATEGORIES, URGENCY_META } from '../helpers.js'
 import { PageTitle, StatusPill, fmt } from './view-primitives.jsx'
+import TaskResourceDetail from '../TaskResourceDetail.jsx'
 
 const STATUS_RANK = { aperta: 0, presa_in_carico: 1, completata: 2 }
 
@@ -18,7 +19,7 @@ function sortUrgents(items) {
   })
 }
 
-export default function UrgentView({ hotel, user }) {
+export default function UrgentView({ hotel, user, onDetailChange }) {
   const cacheKey = `urgent:${hotel.id}`
   const warm = takeViewCache(cacheKey)
   const [items, setItems] = useState(() => (Array.isArray(warm) ? warm : []))
@@ -26,6 +27,12 @@ export default function UrgentView({ hotel, user }) {
   const [fetchOk, setFetchOk] = useState(true)
   const [fetchOffline, setFetchOffline] = useState(false)
   const [transforming, setTransforming] = useState(null)
+  const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    onDetailChange?.(selected ? { kind: 'task', id: `urgent:${selected.id}` } : null)
+    return () => onDetailChange?.(null)
+  }, [selected?.id, onDetailChange])
 
   const load = useCallback(async ({ soft = false } = {}) => {
     if (!soft) setLoading(true)
@@ -86,6 +93,18 @@ export default function UrgentView({ hotel, user }) {
     load({ soft: true })
   }
 
+  if (selected) {
+    return <TaskResourceDetail
+      type="urgent"
+      item={selected}
+      hotel={hotel}
+      onBack={() => setSelected(null)}
+      onTake={take}
+      onComplete={done}
+      onTransformUrgent={(item) => { setSelected(null); setTransforming(item) }}
+    />
+  }
+
   if (transforming) {
     return (
       <TransformUrgentForm
@@ -135,17 +154,7 @@ export default function UrgentView({ hotel, user }) {
                     <small className="rs-success">✓ Trasformato in segnalazione</small>
                   )}
                   <div className="rs-op-card__actions">
-                    {item.status === 'aperta' && (
-                      <Button variant="outline" onClick={() => take(item)}>Prendi in carico</Button>
-                    )}
-                    {item.status === 'presa_in_carico' && (
-                      <Button icon="check" onClick={() => done(item)}>Completa</Button>
-                    )}
-                    {canSendUrgent(user) && item.status !== 'completata' && !item.transformed && (
-                      <Button variant="ghost" icon="issues" onClick={() => setTransforming(item)}>
-                        Trasforma in segnalazione
-                      </Button>
-                    )}
+                    <Button variant="ghost" onClick={() => setSelected(item)}>Apri avviso</Button>
                   </div>
                 </Card>
               ))}

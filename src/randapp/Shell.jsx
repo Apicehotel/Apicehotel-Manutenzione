@@ -457,11 +457,11 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
     if (view === 'desktop-download') content = <RandDesktopDownload />
     if (view === 'interventions') content = <InterventionsView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
     if (view === 'inventory') content = <InventoryView user={user} hotel={hotel} />
-    if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} />
+    if (view === 'supplies') content = <SupplyRequestsPortal user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
     if (view === 'my-work') content = <TaskView user={user} hotel={hotel} canUrgent={viewAllowed('urgent')} canReminders={viewAllowed('reminders')} onOpen={(id) => pick({ id })} />
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
-    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} />
-    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} />
+    if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
+    if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
     if (view === 'temperature') content = <TemperatureView hotel={hotel} />
     if (view === 'plants') content = <PlantView hotel={hotel} />
     if (view === 'housekeeping') content = <HousekeepingView user={user} hotel={hotel} />

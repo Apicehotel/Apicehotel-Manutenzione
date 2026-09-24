@@ -22,16 +22,19 @@ test('Shell owns focus mode and removes competing application chrome', () => {
   assert.match(shell, /!operationalDetailOpen && <header className="rs-header/)
   assert.match(shell, /!operationalDetailOpen && <nav className="rs-bottomnav/)
   assert.match(shell, /!operationalDetailOpen && contextualActionIds\.length > 0/)
-  assert.equal((shell.match(/onDetailChange=\{handleOperationalDetailChange\}/g) || []).length, 2)
+  assert.equal((shell.match(/onDetailChange=\{handleOperationalDetailChange\}/g) || []).length, 5)
 })
 
-test('Issues and Interventions replace their lists instead of stacking detail over them', () => {
+test('all resource details replace their lists instead of stacking over them', () => {
   assert.match(issues, /if \(activeIssue\) return <IssueDetail/)
   assert.match(issues, /<OperationalDetailPage kind="issue"/)
   assert.doesNotMatch(issues.slice(issues.indexOf('function IssueDetail'), issues.indexOf('export default function Issues')), /<Sheet open onClose=\{onClose\}/)
   assert.match(interventions, /if \(selected\) return <PlannedDetail/)
   assert.match(interventions, /<OperationalDetailPage kind="intervention"/)
   assert.doesNotMatch(interventions.slice(interventions.indexOf('function PlannedDetail')), /<Sheet open onClose=\{onClose\}/)
+  assert.match(shell, /<UrgentView[^>]*onDetailChange=\{handleOperationalDetailChange\}/)
+  assert.match(shell, /<RemindersView[^>]*onDetailChange=\{handleOperationalDetailChange\}/)
+  assert.match(shell, /<SupplyRequestsPortal[^>]*onDetailChange=\{handleOperationalDetailChange\}/)
 })
 
 test('focus mode owns safe areas, keyboard viewport, landscape and desktop', () => {

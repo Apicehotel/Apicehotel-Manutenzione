@@ -45,8 +45,11 @@ test('Governante and Capo Governante have an actual Rifornimenti menu route', ()
   assert.match(roleNav, /\['supplies', 'Rifornimenti'\]/)
   assert.match(roleNav, /supplies: 'side'/)
   assert.match(shell, /view === 'supplies'/)
-  assert.match(shell, /<SupplyRequestsPortal user=\{user\} hotel=\{hotel\} \/>/)
+  assert.match(shell, /<SupplyRequestsPortal user=\{user\} hotel=\{hotel\} onDetailChange=\{handleOperationalDetailChange\} \/>/)
   assert.doesNotMatch(shell, /SupplyRequestsPortal user=\{user\} hotel=\{hotel\} standalone/)
+  assert.match(portal, /SupplyRequestDetail/)
+  assert.match(portal, /onDetailChange/)
+
 })
 
 test('request creation validates active products and item resolution accepts only delivered or missing', () => {
