@@ -62,7 +62,7 @@ export class RandCapabilityRouter {
 
   #emitTrace(trace) {
     try {
-      this.#emitTrace(trace)
+      this.#onTrace?.(trace)
     } catch {
       // Telemetry must never change capability execution semantics.
     }
