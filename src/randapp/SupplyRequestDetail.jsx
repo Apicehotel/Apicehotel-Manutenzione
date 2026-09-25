@@ -2,20 +2,21 @@ import { useMemo, useState } from 'react'
 import OperationalDetailPage from './OperationalDetailPage.jsx'
 import OperationalTimeline from './OperationalTimeline.jsx'
 import { buildSupplyTimeline } from './task-supply-timeline.js'
+import { useOperationalActionGuard } from './operational-action-guard.js'
 
 const CATEGORY_LABEL = { minibar: 'Minibar', consumo: 'Consumo' }
 const STATUS_LABEL = { pending: 'In attesa', delivered: 'Consegnato', missing: 'Manca' }
 
 export default function SupplyRequestDetail({ request, hotel, canComplete, onResolve, onBack }) {
   const [busyId, setBusyId] = useState(null)
+  const { busy, error, run } = useOperationalActionGuard()
   const events = useMemo(() => buildSupplyTimeline(request), [request])
   const context = [request.area_label, request.floor_label].filter(Boolean).join(' · ')
 
-  const resolve = async (itemId, status) => {
-    if (busyId) return
-    setBusyId(itemId)
-    try { await onResolve?.(itemId, status) } finally { setBusyId(null) }
-  }
+  const resolve = (itemId, status) => run(
+    () => onResolve?.(itemId, status),
+    { onStart: () => setBusyId(itemId), onSettled: () => setBusyId(null) },
+  )
 
   return (
     <OperationalDetailPage
@@ -26,6 +27,7 @@ export default function SupplyRequestDetail({ request, hotel, canComplete, onRes
       onBack={onBack}
       className="rs-supply-request-detail"
     >
+      {error && <p className="rs-error" role="alert" data-testid="operational-action-error">{error}</p>}
       {request.note && <p className="rs-detail-desc">{request.note}</p>}
       <OperationalTimeline events={events} />
       <div className="rs-supply-items">
@@ -37,8 +39,8 @@ export default function SupplyRequestDetail({ request, hotel, canComplete, onRes
             </span>
             {item.status === 'pending' && canComplete && (
               <div className="rs-supply-actions">
-                <button type="button" className="deliver" disabled={busyId===item.id} onClick={() => resolve(item.id, 'delivered')}>✓ Consegnato</button>
-                <button type="button" className="missing" disabled={busyId===item.id} onClick={() => resolve(item.id, 'missing')}>! Manca</button>
+                <button type="button" className="deliver" disabled={busy || busyId===item.id} onClick={() => resolve(item.id, 'delivered')}>✓ Consegnato</button>
+                <button type="button" className="missing" disabled={busy || busyId===item.id} onClick={() => resolve(item.id, 'missing')}>! Manca</button>
               </div>
             )}
           </div>

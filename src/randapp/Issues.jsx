@@ -14,6 +14,7 @@ import RandAISuggestion from './RandAISuggestion.jsx'
 import OperationalDetailPage from './OperationalDetailPage.jsx'
 import OperationalTimeline from './OperationalTimeline.jsx'
 import { buildIssueTimeline } from './operational-timeline.js'
+import { useOperationalActionGuard } from './operational-action-guard.js'
 
 function LocationAutocomplete({ catalog, mode, onModeChange, value, onChange, error }) {
   const [open, setOpen] = useState(false)
@@ -239,6 +240,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const [confirmDel, setConfirmDel] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState(() => ({ room: issue.room || '', title: issue.title || '', urgency: issue.urgency || 'media', category: issue.category || 'Varie' }))
+  const { busy: actionBusy, error: actionError, run: runAction } = useOperationalActionGuard()
   const canComplete = canUser(user, 'issues', 'complete') || canUser(user, 'issues', 'take_charge')
   const currentAuthUserId = user?.auth_user_id || user?.id || null
   const isOwnIssue = Boolean(issue.createdByUserId) && issue.createdByUserId === currentAuthUserId
@@ -249,21 +251,29 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const meta = ISSUE_STATUS_META[issue.status] || {}
   const timelineEvents = useMemo(() => buildIssueTimeline(issue), [issue])
 
-  const complete = () => { onUpdate(issue.id, { status: 'done', completionNote: note.trim() || null, completionPhotoData: photo, completedBy: user?.name, completedAt: Date.now() }); onClose() }
-  const confirmPiece = () => { if (!piece.trim()) return; onUpdate(issue.id, { status: 'waiting', pieceName: piece.trim() }); onClose() }
-  const confirmReplaced = () => { if (!replaced.trim()) return; onUpdate(issue.id, { pieceReplaced: replaced.trim(), pieceReplacedBy: user?.name }); setAsking(''); setReplaced('') }
-  const confirmTech = () => { const t = technicians.find((p) => p.id === techChoice); if (!t) return; onUpdate(issue.id, { status: 'tecnico', technicianRequestedBy: user?.name, technicianId: t.id, technicianName: t.name, technicianPhone: t.phone || null }); onClose() }
-  const pieceArrived = () => { onUpdate(issue.id, { status: 'todo' }); onClose() }
-  const techDone = () => { onUpdate(issue.id, { status: 'done', completedBy: user?.name, completedAt: Date.now() }); onClose() }
+  const closeAfter = (action) => runAction(action, { onSuccess: onClose })
+  const complete = () => closeAfter(() => onUpdate(issue.id, { status: 'done', completionNote: note.trim() || null, completionPhotoData: photo, completedBy: user?.name, completedAt: Date.now() }))
+  const confirmPiece = () => { if (!piece.trim()) return; return closeAfter(() => onUpdate(issue.id, { status: 'waiting', pieceName: piece.trim() })) }
+  const confirmReplaced = async () => {
+    if (!replaced.trim()) return
+    const result = await runAction(() => onUpdate(issue.id, { pieceReplaced: replaced.trim(), pieceReplacedBy: user?.name }))
+    if (result.ok) { setAsking(''); setReplaced('') }
+  }
+  const confirmTech = () => {
+    const t = technicians.find((p) => p.id === techChoice)
+    if (!t) return
+    return closeAfter(() => onUpdate(issue.id, { status: 'tecnico', technicianRequestedBy: user?.name, technicianId: t.id, technicianName: t.name, technicianPhone: t.phone || null }))
+  }
+  const pieceArrived = () => closeAfter(() => onUpdate(issue.id, { status: 'todo' }))
+  const techDone = () => closeAfter(() => onUpdate(issue.id, { status: 'done', completedBy: user?.name, completedAt: Date.now() }))
   const saveEdit = async () => {
     if (!editDraft.room.trim() || !editDraft.title.trim()) return
-    await onUpdate(issue.id, {
+    await closeAfter(() => onUpdate(issue.id, {
       room: editDraft.room.trim(),
       title: editDraft.title.trim(),
       urgency: editDraft.urgency,
       category: editDraft.category,
-    })
-    onClose()
+    }))
   }
   const openWhatsApp = () => {
     const pageUrl = `${window.location.origin}/s/${issue.id}`
@@ -273,24 +283,25 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
   const primaryAction = (() => {
     if (!canComplete || editing || asking) return null
     if (issue.status === 'waiting') {
-      return { label: 'Pezzo arrivato', icon: 'package', onClick: pieceArrived }
+      return { label: 'Pezzo arrivato', icon: 'package', onClick: pieceArrived, busy: actionBusy, busyLabel: 'Salvataggio…' }
     }
     if (issue.status === 'tecnico' && issue.technicianName) {
-      return { label: 'Segna completata', icon: 'check', onClick: techDone }
+      return { label: 'Segna completata', icon: 'check', onClick: techDone, busy: actionBusy, busyLabel: 'Salvataggio…' }
     }
     if (issue.status === 'todo') {
-      return { label: 'Riparazione completata', icon: 'check', onClick: complete }
+      return { label: 'Riparazione completata', icon: 'check', onClick: complete, busy: actionBusy, busyLabel: 'Salvataggio…' }
     }
     return null
   })()
 
   return (
     <OperationalDetailPage kind="issue" resourceId={issue.id} title={issue.ticketCode || 'Segnalazione'} subtitle={issue.room || 'Dettaglio segnalazione'} onBack={onClose} primaryAction={primaryAction} className="rs-issue-detail">
+      {actionError && <p className="rs-error" role="alert" data-testid="operational-action-error">{actionError}</p>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <Badge tone={URGENCY_META[issue.urgency]?.tone}>{URGENCY_META[issue.urgency]?.label || issue.urgency}</Badge>
         <Badge tone={meta.tone}>{meta.label}</Badge>
-        {canEditDetails && !editing && <Button size="sm" variant="ghost" style={{ marginLeft: 'auto' }} onClick={() => setEditing(true)}>Modifica</Button>}
-        {canDelete && <IconButton icon="trash" label="Elimina" style={{ marginLeft: canEditDetails ? 0 : 'auto' }} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
+        {canEditDetails && !editing && <Button size="sm" variant="ghost" style={{ marginLeft: 'auto' }} disabled={actionBusy} onClick={() => setEditing(true)}>Modifica</Button>}
+        {canDelete && <IconButton icon="trash" label="Elimina" style={{ marginLeft: canEditDetails ? 0 : 'auto' }} disabled={actionBusy} onClick={() => setConfirmDel(true)} data-testid="delete-issue" />}
       </div>
       {editing ? (
         <div className="rs-actions-stack">
@@ -350,7 +361,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
                 <textarea className="rs-textarea" rows="2" value={techNote} onChange={(e) => setTechNote(e.target.value)} placeholder="Aggiungi dettagli per il tecnico" />
               </Field>
               <div className="rs-action-pair" style={{ marginTop: 8 }}>
-                <Button variant="ghost" onClick={() => onUpdate(issue.id, { technicianNote: techNote.trim() || null })}>Salva nota</Button>
+                <Button variant="ghost" disabled={actionBusy} onClick={() => runAction(() => onUpdate(issue.id, { technicianNote: techNote.trim() || null }))}>Salva nota</Button>
                 {issue.technicianPhone && (
                   <Button variant="primary" icon="message" onClick={openWhatsApp}>Apri WhatsApp</Button>
                 )}
@@ -361,8 +372,8 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       {issue.status === 'waiting' && canSendUrgent(user) && !issue.pieceDecision && (
         <div className="rs-actions-stack">
           <div className="rs-action-pair">
-              <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ritiro', pieceDecisionBy: user?.name })}>Vado a prenderlo</Button>
-              <Button variant="ghost" icon="package" onClick={() => onUpdate(issue.id, { pieceDecision: 'ordine', pieceDecisionBy: user?.name })}>Lo ordino</Button>
+              <Button variant="ghost" icon="package" disabled={actionBusy} onClick={() => runAction(() => onUpdate(issue.id, { pieceDecision: 'ritiro', pieceDecisionBy: user?.name }))}>Vado a prenderlo</Button>
+              <Button variant="ghost" icon="package" disabled={actionBusy} onClick={() => runAction(() => onUpdate(issue.id, { pieceDecision: 'ordine', pieceDecisionBy: user?.name }))}>Lo ordino</Button>
           </div>
         </div>
       )}
@@ -415,7 +426,7 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       )}
 
       <ConfirmDialog open={confirmDel} title="Eliminare la segnalazione?" message="L'azione non è reversibile." confirmLabel="Elimina" danger
-        onCancel={() => setConfirmDel(false)} onConfirm={() => { onDelete(issue.id); setConfirmDel(false); onClose() }} />
+        onCancel={() => setConfirmDel(false)} onConfirm={() => runAction(() => onDelete(issue.id), { onSuccess: () => { setConfirmDel(false); onClose() } })} />
     </OperationalDetailPage>
   )
 }

@@ -62,6 +62,9 @@ jobs:
       - name: Critical operational gate
         run: npm run test:critical
 
+      - name: Operational chaos gate
+        run: npm run test:chaos
+
       - name: Multi-hotel parity gate
         run: npm run test:multihotel
 
