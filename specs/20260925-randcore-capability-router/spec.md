@@ -1,4 +1,4 @@
-# Spec — RandCore Capability Router
+# SPEC: 20260925-randcore-capability-router — RandCore Capability Router
 
 ## Status
 IMPLEMENTED_ON_BRANCH
