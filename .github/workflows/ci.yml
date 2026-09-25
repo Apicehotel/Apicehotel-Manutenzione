@@ -194,6 +194,22 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:4173
         run: npm run test:device
 
+      - name: Web Release Readiness gate
+        run: npm run release:check
+
+      - name: Final Freeze gate
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: npm run freeze:check
+
+      - name: Upload final freeze evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: randapp-final-freeze-${{ github.sha }}
+          path: artifacts/randapp-final-freeze.json
+          if-no-files-found: error
+          retention-days: 365
+
       - name: RandCore health evidence snapshot
         run: npm run core:health
 
