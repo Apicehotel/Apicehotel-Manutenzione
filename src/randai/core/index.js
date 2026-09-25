@@ -19,3 +19,7 @@ export * from './durable-adapters.js'
 export * from './durable-store-contract.js'
 export * from './governance-runtime.js'
 export * from './supabase-governance-store.js'
+
+export * from './capability-router.js'
+export * from './capability-providers.js'
+export * from './capability-runtime.js'
