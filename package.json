@@ -76,7 +76,8 @@
     "release:check": "node scripts/check-release-readiness.mjs --target=web",
     "release:check:android": "node scripts/check-release-readiness.mjs --target=android",
     "test:chaos": "node --test test/operational-chaos-gate.test.js",
-    "freeze:check": "node scripts/check-final-freeze.mjs"
+    "freeze:check": "node scripts/check-final-freeze.mjs",
+    "test:capabilities": "node --test test/randcore-capability-router.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
