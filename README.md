@@ -120,6 +120,18 @@ RandApp adotta il pattern Agent-Native **define once, reuse everywhere** senza i
 
 Le azioni operative attuali (`issue.update_priority`, `issue.set_waiting_part`, `issue.mark_done`) sono private, hotel-scoped e HITL. MCP genera i propri tool dal catalogo invece di mantenere una seconda lista manuale; RandAI dispone di un bridge verso `ToolRegistry` che richiede esplicitamente un dispatcher governato. Agent-Native completo non è una dipendenza runtime: un eventuale worker futuro dovrà chiamare RandGateway e non potrà possedere auth, RLS, audit o scritture operative dirette.
 
+## RandCore Capability Router
+
+RandCore dispone ora di un router canonico `capability → provider`, adattato come pattern architetturale da `shy3130/tick-stock-panel` senza importarne stack finanziario, DuckDB/Parquet o runtime. Il primo collegamento reale è `operational.action → randgateway`: Action Gateway continua a passare da RandGateway/RLS/HITL/audit, ma non dipende più direttamente dal provider tecnico.
+
+Il router supporta provider registrabili/rimovibili, priorità, preflight, health snapshot e trace minima senza payload sensibili. È **fail-closed**: nessun provider disponibile = nessuna esecuzione. Il fallback dopo un tentativo è disabilitato per default e sulle mutazioni protette resta vietato, salvo errore esplicitamente retry-safe.
+
+```bash
+npm run test:capabilities
+```
+
+Contratto dettagliato: `docs/architecture/RANDCORE_CAPABILITY_ROUTER_V1.md`.
+
 ## RandRadar Full Evolution
 
 Repo Radar deriva il perimetro dalle 24 pagine RandApp, dai moduli governati e dai fronti evolutivi RandAI. Il discovery automatico usa GitHub, GitLab, Codeberg, Gitee, npm, crates.io, Hugging Face e Open VSX; la policy manuale copre anche marketplace, registri MCP, Figma Community, Storybook e altre fonti pertinenti.
