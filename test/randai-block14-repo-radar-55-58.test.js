@@ -129,3 +129,29 @@ test('Repo Radar is live in ecosystem only with code UI and weekly evidence', ()
   assert.ok(radar.evidence.includes('src/randai/control/RepoRadarConsole.jsx'))
   assert.ok(radar.evidence.includes('.github/workflows/repo-radar.yml'))
 })
+
+
+test('Awesome Scalability stays a reference-only architecture source', () => {
+  const source=REPO_RADAR_CATALOG.find((item)=>item.id==='awesome-scalability')
+  assert.ok(source)
+  assert.equal(source.usageMode,RepoRadarUsageMode.REFERENCE_ONLY)
+  assert.equal(source.category,'ARCHITECTURE_REFERENCE')
+  assert.equal(source.sector,'RELIABILITY_SCALABILITY')
+  assert.match(source.note,/FONTE/)
+
+  const report=buildRepoRadarSnapshot(REPO_RADAR_CATALOG).candidates.find((item)=>item.id==='awesome-scalability')
+  assert.ok(report)
+  assert.equal(report.usageMode,RepoRadarUsageMode.REFERENCE_ONLY)
+  assert.equal(report.decision,RepoRadarDecision.WATCH)
+  assert.equal(assertSafeAdoption(report),false)
+
+  const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
+  const dependencies={...(pkg.dependencies||{}),...(pkg.devDependencies||{})}
+  assert.equal(Object.keys(dependencies).some((name)=>/awesome-scalability/i.test(name)),false)
+
+  const playbook=fs.readFileSync('docs/architecture/RAND_ARCHITECTURE_PLAYBOOK_V1.md','utf8')
+  assert.match(playbook,/Adattare il pattern al problema reale/i)
+  assert.match(playbook,/timeout.*retry/i)
+  assert.match(playbook,/idempotency key.*dead-letter/i)
+  assert.match(playbook,/Anti-pattern vietati/i)
+})

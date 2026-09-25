@@ -126,6 +126,8 @@ Repo Radar deriva il perimetro dalle 24 pagine RandApp, dai moduli governati e d
 
 Classificazione: **Aggiungi / Sostituisci / Ignora / Fonte**; runtime interno `KEEP / UPGRADE / REPLACE / ADD / REJECT / WATCH`. Nessuna discovery auto-installa codice.
 
+Le **Fonti** architetturali restano `REFERENCE_ONLY`: insegnano pattern ma non entrano nel runtime. `binhnguyennus/awesome-scalability` è la prima fonte curata e alimenta `docs/architecture/RAND_ARCHITECTURE_PLAYBOOK_V1.md`, con pattern minimi per timeout/retry/circuit breaker, code/idempotenza/dead-letter, rate limiting, cache/stale state, observability e graceful degradation. Regola: adattare alla scala Rand, non imitare infrastrutture hyperscale.
+
 ```bash
 npm run repo:radar
 ```
@@ -205,6 +207,7 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 - `docs/architecture/RANDGATEWAY_POINT7.md` — gateway, adapter, HITL e audit.
 - `docs/architecture/AGENT_NATIVE_ACTIONS.md` — action catalog condiviso e confini Agent-Native.
 - `docs/architecture/RANDRADAR_FULL_EVOLUTION_V1.md` e `docs/RAND_RADAR_POLICY.md` — discovery multisorgente e governance.
+- `docs/architecture/RAND_ARCHITECTURE_PLAYBOOK_V1.md` — pattern di reliability/scalability adattati alla scala Rand da fonti `REFERENCE_ONLY`.
 - `docs/architecture/RANDDESIGNBRIDGE_V1.md` — Figma ↔ RandUI e visual gate.
 - `docs/architecture/RANDCHAT.md` — gruppi, DM E2EE e media.
 - `docs/architecture/RANDDESKTOP_PRINTING.md` — desktop/stampa.
