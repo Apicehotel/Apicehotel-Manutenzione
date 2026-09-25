@@ -193,7 +193,7 @@ function InterventionParts({ item, hotel, user, editable, onWaitingChange }) {
       {part.status==='consumed'&&<small className="rs-field__hint">Movimento Magazzino registrato e collegato all’intervento.</small>}
       {part.status==='released'&&editable&&<div className="rs-intervention-part__actions"><Button size="sm" variant="ghost" disabled={busy||!part.itemId} onClick={()=>reserveExisting(part)}>Prenota di nuovo</Button><Button size="sm" variant="ghost" disabled={busy} onClick={()=>releasePart(part,true)}>Chiudi richiesta</Button></div>}
     </Card>})}</div>}
-    {error&&<p className="rs-error" role="alert" data-testid="operational-action-error">{error}</p>
+    {error&&<p className="rs-error" role="alert">{error}</p>}
   </section>
 }
 
@@ -211,11 +211,11 @@ function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
   return <OperationalDetailPage kind="intervention" resourceId={item.id} title={item.ticketCode || 'Intervento'} subtitle={item.location || 'Dettaglio intervento'} onBack={onClose} primaryAction={primaryAction} className="rs-issue-detail">
     <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0||busy} onClick={()=>setConfirmDel(true)}/>}</div>
     <h2 className="rs-detail-room">{item.ticketCode ? `${item.ticketCode} · ` : ""}{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p><OperationalTimeline events={timelineEvents} /><OperationalRandAI hotelId={hotel.id} user={user} intervention={item} parts={parts} />
-    {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete||busy} onClick={()=>toggleRoom(room)>{room}</button>)}</div></div>}
+    {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete||busy} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
     <InterventionParts item={item} hotel={hotel} user={user} editable={canComplete||canManage} onWaitingChange={setPartsPending}/>
     {canComplete&&<div className="rs-actions-stack"><p className="rs-actions-heading">Completamento</p><label className="rs-photo-action" style={{borderStyle:'dashed'}}><input type="file" accept="image/*" onChange={async e=>setPhoto(await compressPhotoAsDataUrl(e.target.files?.[0]))}/><Icon name="camera"/><strong>{photo?'Foto aggiunta':'Aggiungi foto completamento'}</strong></label>{photo&&<img className="rs-photo-preview" src={photo} alt="Anteprima"/>}{partsPending&&<p className="rs-note rs-note--waiting">Risolvi prima i ricambi richiesti o prenotati: segnali come “Usato” oppure “Non usato/Annulla”.</p>}</div>}
     {consumedParts.length>0&&canManage&&<p className="rs-field__hint">L’intervento non è eliminabile perché contiene movimenti Magazzino storici.</p>}
-    {error&&<p className="rs-error" role="alert">{error}</p>}
+    {error&&<p className="rs-error" role="alert" data-testid="operational-action-error">{error}</p>}
     <ConfirmDialog open={confirmDel} title="Eliminare l'intervento?" message="Le richieste/prenotazioni aperte verranno annullate. Gli interventi con ricambi già consumati restano storici e non sono eliminabili." confirmLabel="Elimina" danger onCancel={()=>setConfirmDel(false)} onConfirm={remove}/>
   </OperationalDetailPage>
 }
