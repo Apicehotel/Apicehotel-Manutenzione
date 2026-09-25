@@ -159,6 +159,7 @@ npm run test:group6
 npm run test:randui
 npm run test:e2e
 npm run test:device
+npm run test:chaos
 npm run test:lts
 npm run skills:validate
 npm run spec:validate
@@ -167,7 +168,7 @@ npm run design:check
 npm run release:check
 ```
 
-La CI canonica verifica RandSpec, dependency/security audit, Phase 0/1, Quality Matrix, critical operational gate, multi-hotel parity, production confidence, build/bundle budget, contratti RandApp/RandAI/RandUI/RandBrain/RandAudio, Chromium + WebKit, device acceptance, RandCore health evidence e LTS attestation.
+La CI canonica verifica RandSpec, dependency/security audit, Phase 0/1, Quality Matrix, critical operational gate, **Operational chaos gate**, multi-hotel parity, production confidence, build/bundle budget, contratti RandApp/RandAI/RandUI/RandBrain/RandAudio, Chromium + WebKit, device acceptance, RandCore health evidence e LTS attestation. Il chaos gate protegge le mutazioni del Focus Mode da doppio invio e chiusure premature: su errore il dettaglio resta aperto e mostra feedback inline.
 
 Android richiede inoltre pacchetto firmato e prova su dispositivo reale: `npm run release:check:android` è fail-closed se queste evidenze esterne mancano.
 
@@ -179,7 +180,7 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 - **Preview/test grafici:** DigitalOcean/Ocean (`randui-preview`).
 - Prima del Browser visual gate Ocean, la CI attende che `/sw.js` risponda **200 con MIME javascript** (evita race del catchall `index.html` sul preview condiviso).
 - Gli agenti non promuovono automaticamente branch in produzione.
-- `/ui-v2-preview` resta una superficie di verifica finché il workflow Ocean la usa.
+- Il vecchio prototipo `/ui-v2-preview` è stato rimosso dal runtime; Ocean verifica direttamente la RandApp canonica.
 
 ## Documentazione principale
 

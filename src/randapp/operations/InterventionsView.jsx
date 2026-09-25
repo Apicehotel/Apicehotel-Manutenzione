@@ -22,6 +22,7 @@ import OperationalDetailPage from '../OperationalDetailPage.jsx'
 import OperationalTimeline from '../OperationalTimeline.jsx'
 import { buildInterventionTimeline } from '../operational-timeline.js'
 import OperationalRandAI from '../OperationalRandAI.jsx'
+import { useOperationalActionGuard } from '../operational-action-guard.js'
 
 const partStatusLabel = { requested: 'Richiesto', reserved: 'Prenotato', consumed: 'Usato', released: 'Rilasciato', cancelled: 'Annullato' }
 const partStatusTone = { requested: 'warning', reserved: 'info', consumed: 'success', released: 'default', cancelled: 'default' }
@@ -197,23 +198,24 @@ function InterventionParts({ item, hotel, user, editable, onWaitingChange }) {
 }
 
 function PlannedDetail({ item, hotel, user, onClose, onUpdate, onDelete }) {
-  const [photo,setPhoto]=useState(null),[confirmDel,setConfirmDel]=useState(false),[partsPending,setPartsPending]=useState(false),[parts,setParts]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+  const [photo,setPhoto]=useState(null),[confirmDel,setConfirmDel]=useState(false),[partsPending,setPartsPending]=useState(false),[parts,setParts]=useState([])
+  const { busy, error, run } = useOperationalActionGuard()
   const assigned=isAssignedTo(item,user),canManage=canCreatePlanned(user)||user?.role==='manutentore',canComplete=(canManage||assigned)&&item.status!=='done',rooms=Array.isArray(item.rooms)?item.rooms:null,roomsDone=item.roomsDone||{},doneCount=rooms?rooms.filter(r=>roomsDone[r]).length:0,pct=rooms?.length?Math.round((doneCount/rooms.length)*100):0
   useEffect(()=>{fetchInterventionParts({hotelId:hotel.id,interventionId:item.id}).then(setParts).catch(()=>setParts([]));return subscribeInterventionParts({hotelId:hotel.id,interventionId:item.id},()=>fetchInterventionParts({hotelId:hotel.id,interventionId:item.id}).then(setParts).catch(()=>{}))},[hotel.id,item.id])
   const consumedParts=parts.filter((part)=>part.status==='consumed')
   const timelineEvents=useMemo(()=>buildInterventionTimeline(item,parts),[item,parts])
-  const toggleRoom=async(room)=>{if(!canComplete)return;const next={...roomsDone};if(next[room])delete next[room];else next[room]={by:user?.name,at:Date.now()};await onUpdate(item.id,{roomsDone:next})}
-  const complete=async()=>{setBusy(true);setError('');try{await onUpdate(item.id,{status:'done',photoAfter:photo,completedBy:user?.name,completedAt:Date.now()});onClose()}catch(e){setError(e.message)}finally{setBusy(false)}}
-  const remove=async()=>{setBusy(true);setError('');try{const current=await fetchInterventionParts({hotelId:hotel.id,interventionId:item.id});if(current.some((part)=>part.status==='consumed'))throw new Error('Questo intervento ha movimenti Magazzino: non può essere eliminato senza perdere la tracciabilità.');for(const part of current.filter((p)=>p.status==='requested'||p.status==='reserved'||p.status==='released'))await releaseInterventionPart(part.id,{cancel:true});await onDelete(item.id);onClose()}catch(e){setConfirmDel(false);setError(e.message)}finally{setBusy(false)}}
+  const toggleRoom=(room)=>{if(!canComplete)return;const next={...roomsDone};if(next[room])delete next[room];else next[room]={by:user?.name,at:Date.now()};return run(()=>onUpdate(item.id,{roomsDone:next}))}
+  const complete=()=>run(()=>onUpdate(item.id,{status:'done',photoAfter:photo,completedBy:user?.name,completedAt:Date.now()}),{onSuccess:onClose})
+  const remove=()=>run(async()=>{const current=await fetchInterventionParts({hotelId:hotel.id,interventionId:item.id});if(current.some((part)=>part.status==='consumed'))throw new Error('Questo intervento ha movimenti Magazzino: non può essere eliminato senza perdere la tracciabilità.');for(const part of current.filter((p)=>p.status==='requested'||p.status==='reserved'||p.status==='released'))await releaseInterventionPart(part.id,{cancel:true});await onDelete(item.id)},{onSuccess:onClose,onSettled:()=>setConfirmDel(false)})
   const primaryAction = canComplete ? { label: 'Segna completato', icon: 'check', onClick: complete, disabled: partsPending, busy, busyLabel: 'Salvataggio…' } : null
   return <OperationalDetailPage kind="intervention" resourceId={item.id} title={item.ticketCode || 'Intervento'} subtitle={item.location || 'Dettaglio intervento'} onBack={onClose} primaryAction={primaryAction} className="rs-issue-detail">
-    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0} onClick={()=>setConfirmDel(true)}/>}</div>
+    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><StatusPill status={item.status}/>{canManage&&<IconButton icon="trash" label="Elimina" style={{marginLeft:'auto'}} disabled={consumedParts.length>0||busy} onClick={()=>setConfirmDel(true)}/>}</div>
     <h2 className="rs-detail-room">{item.ticketCode ? `${item.ticketCode} · ` : ""}{item.location||'Intervento'}</h2>{item.notes&&<p className="rs-detail-desc">{item.notes}</p>}<p className="rs-detail-origin">{item.category||'Manutenzione'}{item.scheduledAt?` · ${fmt(item.scheduledAt)}`:''}</p><OperationalTimeline events={timelineEvents} /><OperationalRandAI hotelId={hotel.id} user={user} intervention={item} parts={parts} />
-    {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
+    {rooms?.length>0&&<div className="rs-note"><p style={{margin:'0 0 8px',fontWeight:700}}>{doneCount}/{rooms.length} camere completate ({pct}%)</p><div className="rs-chips">{rooms.map(room=><button type="button" key={room} className={`rs-chip ${roomsDone[room]?'active':''}`} disabled={!canComplete||busy} onClick={()=>toggleRoom(room)}>{room}</button>)}</div></div>}
     <InterventionParts item={item} hotel={hotel} user={user} editable={canComplete||canManage} onWaitingChange={setPartsPending}/>
     {canComplete&&<div className="rs-actions-stack"><p className="rs-actions-heading">Completamento</p><label className="rs-photo-action" style={{borderStyle:'dashed'}}><input type="file" accept="image/*" onChange={async e=>setPhoto(await compressPhotoAsDataUrl(e.target.files?.[0]))}/><Icon name="camera"/><strong>{photo?'Foto aggiunta':'Aggiungi foto completamento'}</strong></label>{photo&&<img className="rs-photo-preview" src={photo} alt="Anteprima"/>}{partsPending&&<p className="rs-note rs-note--waiting">Risolvi prima i ricambi richiesti o prenotati: segnali come “Usato” oppure “Non usato/Annulla”.</p>}</div>}
     {consumedParts.length>0&&canManage&&<p className="rs-field__hint">L’intervento non è eliminabile perché contiene movimenti Magazzino storici.</p>}
-    {error&&<p className="rs-error" role="alert">{error}</p>}
+    {error&&<p className="rs-error" role="alert" data-testid="operational-action-error">{error}</p>}
     <ConfirmDialog open={confirmDel} title="Eliminare l'intervento?" message="Le richieste/prenotazioni aperte verranno annullate. Gli interventi con ricambi già consumati restano storici e non sono eliminabili." confirmLabel="Elimina" danger onCancel={()=>setConfirmDel(false)} onConfirm={remove}/>
   </OperationalDetailPage>
 }

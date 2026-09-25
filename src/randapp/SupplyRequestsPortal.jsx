@@ -329,7 +329,11 @@ export default function SupplyRequestsPortal({ user, hotel, onDetailChange }) {
       await resolveSupplyItem(itemId, status)
       const rows = await refresh()
       setSelectedRequest((current) => rows.find((row) => row.id === current?.id) || current)
-    } catch (err) { setError(err?.message || 'Aggiornamento non riuscito') }
+    } catch (err) {
+      const message = err?.message || 'Aggiornamento non riuscito'
+      setError(message)
+      throw err instanceof Error ? err : new Error(message)
+    }
   }
 
   if (!canView || !hotel) {

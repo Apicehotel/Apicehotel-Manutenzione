@@ -9,6 +9,6 @@
 
 ## Converge checklist
 - [DONE] C001 Acceptance criteria confrontati con implementazione — Evidence: test/runtime-zombie-cleanup.test.js
-- [TODO] C002 CI pertinente verde — Evidence: PR
+- [DONE] C002 CI pertinente verde — Evidence: PR #363 + main/Ocean post-merge verdi
 - [DONE] C003 README/docs aggiornati — Evidence: README.md + specs/012-runtime-zombie-cleanup-v1
 - [DONE] C004 Nessuna migrazione/documentazione utile rimossa — Evidence: scope file list
