@@ -48,3 +48,23 @@ test('focus mode owns safe areas, keyboard viewport, landscape and desktop', () 
   assert.match(css, /min-width:\s*900px/)
   assert.match(css, /overflow-y:\s*auto/)
 })
+
+
+test('Focus Mode keeps the canonical drawer reachable through a compact menu trigger', () => {
+  const shell = read('src/randapp/Shell.jsx')
+  const css = read('src/randapp/operational-detail.css')
+  assert.match(shell, /operationalDetailOpen && !drawer/)
+  assert.match(shell, /data-testid="operational-menu-trigger"/)
+  assert.match(shell, /icon="menu"/)
+  assert.match(shell, /onClick=\{\(\) => setDrawer\(true\)\}/)
+  assert.match(css, /\.rs-operational-menu-trigger\s*\{/)
+  assert.match(css, /z-index:\s*88/)
+})
+
+test('Focus Mode propagates viewport height through RandUI wrappers so the Dock stays visible', () => {
+  const css = read('src/randapp/operational-detail.css')
+  assert.match(css, /\.rs-app--operational-detail \.rs-randui-page,[\s\S]*\.rs-randui-page__content[\s\S]*height:\s*100%/)
+  assert.match(css, /\.rs-app--operational-detail \.rs-randui-page__body[\s\S]*overflow:\s*hidden/)
+  assert.match(css, /\.rs-app--operational-detail \.rs-randui-page__content > \.rs-operational-detail[\s\S]*min-height:\s*0/)
+  assert.match(css, /\.rs-app--operational-detail \.rs-operational-detail__head[\s\S]*padding-right:/)
+})
