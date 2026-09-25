@@ -60,6 +60,14 @@ export class RandCapabilityRouter {
     this.#now = now
   }
 
+  #emitTrace(trace) {
+    try {
+      this.#emitTrace(trace)
+    } catch {
+      // Telemetry must never change capability execution semantics.
+    }
+  }
+
   register(provider) {
     const normalized = normalizeProvider(provider)
     if (this.#providers.has(normalized.id)) {
@@ -119,7 +127,7 @@ export class RandCapabilityRouter {
         fallbackCount: 0,
         durationMs: Math.max(0, this.#now() - startedAt),
       })
-      this.#onTrace?.(trace)
+      this.#emitTrace(trace)
       throw new CapabilityRoutingError(
         'CAPABILITY_UNAVAILABLE',
         `Nessun provider disponibile per ${target}`,
@@ -143,7 +151,7 @@ export class RandCapabilityRouter {
           durationMs: Math.max(0, this.#now() - startedAt),
           providerDurationMs: Math.max(0, this.#now() - attemptStartedAt),
         })
-        this.#onTrace?.(trace)
+        this.#emitTrace(trace)
         return Object.freeze({ value, trace })
       } catch (error) {
         lastError = error
@@ -157,8 +165,10 @@ export class RandCapabilityRouter {
             durationMs: Math.max(0, this.#now() - startedAt),
             errorCode: String(error?.code || error?.name || 'Error').slice(0, 100),
           })
-          this.#onTrace?.(trace)
-          if (error && typeof error === 'object' && !error.capabilityTrace) error.capabilityTrace = trace
+          this.#emitTrace(trace)
+          if (error && typeof error === 'object' && !error.capabilityTrace) {
+            try { error.capabilityTrace = trace } catch { /* immutable error */ }
+          }
           throw error
         }
         fallbackCount += 1
