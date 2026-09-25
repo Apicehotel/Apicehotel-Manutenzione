@@ -9,7 +9,7 @@
 - [DONE] T007 Test anti-bypass/anti-zombie — Evidence: test/final-freeze-v1.test.js
 
 ## Converge checklist
-- [DONE] C001 Punto 9 incorporato: web readiness + distribuzione esplicita.
-- [DONE] C002 Punto 10 implementato: freeze policy + artifact.
-- [TODO] C003 CI finale verde sul head PR.
-- [DONE] C004 Nessuna nuova dependency/runtime.
+- [DONE] C001 Punto 9 incorporato: web readiness + distribuzione esplicita. Evidence: Web Release Readiness gate + final freeze artifact.
+- [DONE] C002 Punto 10 implementato: freeze policy + artifact. Evidence: src/release/freeze-policy.js + scripts/check-final-freeze.mjs.
+- [TODO] C003 CI finale verde sul head PR. Evidence: PR #365 checks.
+- [DONE] C004 Nessuna nuova dependency/runtime. Evidence: package.json dependencies unchanged; only scripts/governance added.
