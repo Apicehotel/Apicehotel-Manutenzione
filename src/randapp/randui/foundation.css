@@ -173,47 +173,6 @@
 .rs-randui-state--warning .rs-randui-state__icon { color:var(--rs-warn); background:rgba(247,185,85,.10); border-color:rgba(247,185,85,.30); }
 .rs-randui-state--danger .rs-randui-state__icon { color:var(--rs-danger); background:rgba(246,96,125,.10); border-color:rgba(246,96,125,.30); }
 
-/* The historical shell stylesheet switches to desktop at 1024px. RandUI v1's
-   architecture contract is desktop >=1200px, so 1024–1199 remains tablet with
-   the same pinned-header / scrolling-body shell as phone. */
-@media (min-width: 1024px) and (max-width: 1199px) {
-  :root {
-    --rs-nav-h: calc(68px * var(--rs-scale));
-    --rs-header-h: calc(62px * var(--rs-scale));
-  }
-  .rs-app,
-  .rs-app.rs-app--with-side {
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: none;
-    grid-template-rows: none;
-    grid-template-areas: none;
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-  }
-  .rs-sidebar { display: none !important; }
-  .rs-header { display: flex !important; grid-area: auto; flex: 0 0 auto; position: relative; top: auto; }
-  .rs-content {
-    grid-area: auto;
-    grid-column: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    max-width: 1100px;
-    padding-left: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-left));
-    padding-right: max(var(--rs-page-pad-x), var(--rs-adaptive-safe-right));
-    padding-bottom: calc(var(--rs-nav-h) + var(--rs-adaptive-safe-bottom) + 20px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
-  .rs-content > * { width: 100%; max-width: 100%; }
-  .rs-bottomnav { display: grid !important; }
-  .rs-navfab { display: grid !important; }
-}
-
 @media (min-width: 768px) {
   .rs-randui-page__body--aside { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
 }

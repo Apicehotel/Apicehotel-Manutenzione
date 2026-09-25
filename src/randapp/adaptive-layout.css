@@ -36,6 +36,22 @@ body { overflow-x: hidden; }
   min-width: 0;
 }
 
+
+/* Canonical shell row contract: urgent priority strip owns intrinsic height on desktop.
+   Phone/tablet switch the shell to flex below, so no second fix stylesheet is needed. */
+.rs-app {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.rs-global-urgent {
+  align-self: start;
+  min-height: 0;
+  height: auto;
+}
+.rs-content {
+  align-self: start;
+  min-height: 0;
+}
+
 /* Safe-area top has one owner: the header. Applying it to both app and
    header doubled the iOS notch/Dynamic Island clearance.
    On phone/tablet the app shell is viewport-locked: header (and urgent strip)

@@ -47,8 +47,9 @@ test('external UI repositories stay governed pattern sources instead of runtime 
   }
 })
 
-test('RandUI v2 preview is retained while Ocean preview still references it', () => {
+test('obsolete RandUI v2 prototype cannot return as a runtime owner', () => {
   const main = read('src/main.jsx')
-  assert.match(main, /randapp\/randui-v2\/Preview\.jsx/)
-  assert.match(main, /\/ui-v2-preview/)
+  assert.doesNotMatch(main, /randapp\/randui-v2\/Preview\.jsx/)
+  assert.doesNotMatch(main, /\/ui-v2-preview/)
+  assert.match(main, /randapp\/randui\/foundation\.css/)
 })
