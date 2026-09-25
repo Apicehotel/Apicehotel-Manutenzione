@@ -520,6 +520,16 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   return (
     <div className="rs-root" {...drawerSwipe}>
       <div className={`rs-app rs-app--with-side ${operationalDetailOpen ? 'rs-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
+        {operationalDetailOpen && !drawer && (
+          <IconButton
+            icon="menu"
+            label="Apri menu principale"
+            className="rs-operational-menu-trigger"
+            onClick={() => setDrawer(true)}
+            data-testid="operational-menu-trigger"
+          />
+        )}
+
         {!operationalDetailOpen && <aside className="rs-sidebar" data-testid="sidebar">
           <div className="rs-sidebar__brand"><img src={logoFor(hotel.id)} alt={hotel.name} /><div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div></div>
           {allowedHotels.length > 1 && placement('structure') !== 'off' && (
