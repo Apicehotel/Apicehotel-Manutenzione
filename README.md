@@ -7,7 +7,7 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 24 settembre 2026
+## Stato consolidato — 25 settembre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
@@ -73,7 +73,7 @@ Flusso canonico:
 
 Il catalogo copre **24/24 destinazioni** con 14 template. RandUI Guard è fail-closed su composizione, overflow, viewport, touch target, accessibilità e ID DOM. La matrice responsive copre 320 / 375 / 390 / 430 / 768 / 1024 / 1440 px, Chromium e WebKit.
 
-La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatamente token portabili, motion con reduced-motion fail-safe e adapter semantico delle icone. `src/randapp/randui-v2/` non è zombie finché `/ui-v2-preview` è usata dal gate Ocean.
+La standardizzazione RandUI mantiene `RANDUI_VERSION=1.0.0` e governa separatamente token portabili, motion con reduced-motion fail-safe e adapter semantico delle icone. Il prototipo runtime `randui-v2` è stato rimosso: RandUI canonico vive sotto `src/randapp/randui/` e la geometria resta di `adaptive-layout.css`.
 
 ### Densità operativa (Operatività / Task / Planning)
 
@@ -170,7 +170,15 @@ npm run release:check
 
 La CI canonica verifica RandSpec, dependency/security audit, Phase 0/1, Quality Matrix, critical operational gate, **Operational chaos gate**, multi-hotel parity, production confidence, build/bundle budget, contratti RandApp/RandAI/RandUI/RandBrain/RandAudio, Chromium + WebKit, device acceptance, RandCore health evidence e LTS attestation. Il chaos gate protegge le mutazioni del Focus Mode da doppio invio e chiusure premature: su errore il dettaglio resta aperto e mostra feedback inline.
 
-Android richiede inoltre pacchetto firmato e prova su dispositivo reale: `npm run release:check:android` è fail-closed se queste evidenze esterne mancano.
+Il **Web Release Readiness gate** (`npm run release:check`) è ora parte della CI canonica. Subito dopo, il **Final Freeze gate** (`npm run freeze:check`) produce `artifacts/randapp-final-freeze.json` e blocca il freeze se web readiness, separazione ambienti, revisione umana o invarianti anti-zombie non sono coerenti.
+
+Stato distribuzione al freeze:
+- **Web/PWA:** target canonico, deve risultare `READY`.
+- **Android nativo:** `BLOCKED` finché mancano pacchetto firmato e prova su dispositivo reale; `npm run release:check:android` resta fail-closed.
+- **iOS privata / Apple Business Manager:** `DEFERRED` finché non esiste evidenza di firma/distribuzione e test reale.
+- **Windows:** PWA/browser supportato; installer nativo firmato separato e `DEFERRED`.
+
+Dopo il merge del gate finale RandApp entra in **RandApp LTS 1.0 / FROZEN** per un orizzonte operativo di 12 mesi: solo bugfix, sicurezza, recovery e documentazione. Feature/refactor/schema/major dependency richiedono eccezione umana esplicita, rollback e release gate verde. Policy: `docs/governance/RELEASE_FREEZE.md`.
 
 ## Deploy
 
@@ -185,6 +193,7 @@ Repository: `Apicehotel/Apicehotel-Manutenzione`.
 ## Documentazione principale
 
 - `docs/governance/RAND_CONSTITUTION.md` — ownership, freeze, HITL e change protocol.
+- `docs/governance/RELEASE_FREEZE.md` — RandApp LTS 1.0, cambi ammessi, eccezioni e distribuzione.
 - `docs/architecture/RANDSPEC_V1.md` — specifiche governate e convergenza.
 - `docs/architecture/RANDCORE_RUNTIME_V2.md` — runtime core, eventi e health.
 - `docs/architecture/RAND_GOVERNANCE_V1.md` — governance runtime.

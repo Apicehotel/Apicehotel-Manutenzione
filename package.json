@@ -75,7 +75,8 @@
     "lts:attest": "node scripts/rand-lts-attestation.mjs",
     "release:check": "node scripts/check-release-readiness.mjs --target=web",
     "release:check:android": "node scripts/check-release-readiness.mjs --target=android",
-    "test:chaos": "node --test test/operational-chaos-gate.test.js"
+    "test:chaos": "node --test test/operational-chaos-gate.test.js",
+    "freeze:check": "node scripts/check-final-freeze.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
