@@ -16,5 +16,9 @@ test('server-state policy avoids duplicate offline ownership', () => {
   assert.match(client, /refetchOnReconnect: true/)
   assert.match(client, /refetchOnWindowFocus: false/)
   assert.match(client, /mutations:[\s\S]*retry: false/)
-  assert.doesNotMatch(client, /persistQueryClient|localStorage|indexedDB|Dexie/)
+  // Guard executable persistence hooks/imports, not explanatory comments.
+  assert.doesNotMatch(client, /persistQueryClient/)
+  assert.doesNotMatch(client, /from ['"]dexie['"]|require\(['"]dexie['"]\)/i)
+  assert.doesNotMatch(client, /\b(?:window\.)?localStorage\s*[.[]/)
+  assert.doesNotMatch(client, /\bindexedDB\s*[.[]/)
 })
