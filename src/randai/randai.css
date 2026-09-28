@@ -339,3 +339,32 @@ body.rs-randai-page-active {
     border-radius: 0 !important;
   }
 }
+
+.randai__repo-toggle {
+  margin-left: auto;
+  min-height: 40px;
+  border: 1px solid var(--rs-border, rgba(15,23,42,.14));
+  border-radius: 12px;
+  background: var(--rs-card, #fff);
+  color: inherit;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.randai__repo-registry { display:grid; gap:10px; padding:12px 14px; border-bottom:1px solid var(--rs-border,rgba(15,23,42,.1)); background:color-mix(in srgb,var(--rs-accent,#315efb) 5%,var(--rs-card,#fff)); max-height:42%; overflow:auto; }
+.randai__repo-registry-head { display:flex; align-items:center; gap:10px; }
+.randai__repo-registry-head > div { display:grid; gap:2px; min-width:0; }
+.randai__repo-registry-head small { opacity:.7; }
+.randai__repo-registry-head button { margin-left:auto; min-height:36px; border:1px solid var(--rs-border,rgba(15,23,42,.14)); border-radius:10px; background:var(--rs-card,#fff); color:inherit; padding:6px 9px; font:inherit; font-weight:700; }
+.randai__repo-list { display:grid; gap:8px; }
+.randai__repo-item { display:grid; grid-template-columns:1fr auto; gap:4px 10px; padding:10px; border:1px solid var(--rs-border,rgba(15,23,42,.12)); border-radius:12px; background:var(--rs-card,#fff); }
+.randai__repo-item > div { display:grid; }
+.randai__repo-item p { grid-column:1 / -1; margin:2px 0; font-size:12px; line-height:1.35; }
+.randai__repo-item > small { grid-column:1 / -1; opacity:.62; overflow-wrap:anywhere; }
+.randai__repo-item span { align-self:start; padding:4px 7px; border-radius:999px; font-size:10px; font-weight:800; background:rgba(15,23,42,.08); }
+.randai__repo-item span[data-status="CURRENT"], .randai__repo-item span[data-status="MANAGED_HERE"] { background:rgba(22,163,74,.12); }
+.randai__repo-item span[data-status="UPDATE_AVAILABLE"] { background:rgba(245,158,11,.18); }
+.randai__repo-item span[data-status="CHECK_FAILED"] { background:rgba(220,38,38,.12); }
+.randai__repo-checked { opacity:.65; }
+@media (max-width:430px) { .randai__repo-toggle { min-height:36px; padding:6px 8px; font-size:12px; } .randai__repo-registry { max-height:48%; } }
