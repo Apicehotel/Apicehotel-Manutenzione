@@ -1,3 +1,5 @@
 export * from './contracts.js'
 export * from './engine.js'
 export * from './readiness.js'
+export * from './repository-registry.js'
+export * from './repository-updates.js'

@@ -6,6 +6,7 @@ import { getRandAIContext } from './context/envelope.js'
 import { buildProjectIntelligence } from './project-intelligence.js'
 import { createBrowserRandAudio, createTranscriptArtifact } from './audio/index.js'
 import { readRandAIChatMemory, writeRandAIChatMemory } from './randai-chat-memory.js'
+import RepositoryRegistryPanel from './software/RepositoryRegistryPanel.jsx'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -185,6 +186,7 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const [listening, setListening] = useState(false)
   const [audioNotice, setAudioNotice] = useState('')
+  const [showRepositories, setShowRepositories] = useState(false)
   const audio = useRef(null)
   const pageRef = useRandAIPageViewport(isPage)
 
@@ -332,8 +334,11 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
         <section className="randai__panel" role={isPage ? 'region' : 'dialog'} aria-label="RandAI assistente manutenzione">
           <header className="randai__header">
             <div><strong>RandAI</strong><small>Assistente manutenzione · {hotelLabel}</small></div>
+            <button type="button" className="randai__repo-toggle" onClick={() => setShowRepositories((value) => !value)} aria-expanded={showRepositories}>Repository</button>
             {!isPage && <button type="button" className="randai__close" onClick={() => setOpen(false)} aria-label="Chiudi RandAI">×</button>}
           </header>
+
+          {showRepositories && <RepositoryRegistryPanel />}
 
           <div className="randai__messages" aria-live="polite">
             {messages.length === 0 && (
