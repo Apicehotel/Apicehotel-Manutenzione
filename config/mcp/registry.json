@@ -16,7 +16,10 @@
       "endpointEnv": "RAND_MCP_URL",
       "purpose": "Hotel actions exposed from the canonical Rand action catalog",
       "mode": "governed-write",
-      "authority": "RandGateway + Supabase RLS/HITL"
+      "authority": "RandGateway + Supabase RLS/HITL",
+      "capabilities": [
+        "operational.action"
+      ]
     },
     {
       "id": "github",
@@ -30,7 +33,10 @@
       "headers": {
         "X-MCP-Readonly": "true",
         "X-MCP-Lockdown": "true"
-      }
+      },
+      "capabilities": [
+        "repository.inspect"
+      ]
     },
     {
       "id": "supabase",
@@ -40,7 +46,10 @@
       "transport": "streamable-http",
       "url": "https://mcp.supabase.com/mcp?project_ref=ooqlfldcrnkudhgjnied&read_only=true&features=database,docs",
       "purpose": "Project-scoped database inspection and documentation",
-      "mode": "read-only"
+      "mode": "read-only",
+      "capabilities": [
+        "database.inspect"
+      ]
     },
     {
       "id": "digitalocean-apps",
@@ -50,7 +59,10 @@
       "transport": "streamable-http",
       "url": "https://apps.mcp.digitalocean.com/mcp",
       "purpose": "Ocean app status, logs and controlled app operations",
-      "mode": "read-mostly"
+      "mode": "read-mostly",
+      "capabilities": [
+        "deployment.inspect"
+      ]
     },
     {
       "id": "digitalocean-docs",
@@ -60,7 +72,10 @@
       "transport": "streamable-http",
       "url": "https://docs.mcp.digitalocean.com/mcp",
       "purpose": "Current DigitalOcean documentation",
-      "mode": "read-only"
+      "mode": "read-only",
+      "capabilities": [
+        "docs.lookup"
+      ]
     },
     {
       "id": "playwright",
@@ -69,9 +84,16 @@
       "placement": "ci-and-dev",
       "transport": "stdio-or-http",
       "command": "npx",
-      "args": ["@playwright/mcp@latest", "--headless", "--browser=webkit"],
+      "args": [
+        "@playwright/mcp@latest",
+        "--headless",
+        "--browser=webkit"
+      ],
       "purpose": "Browser acceptance gate with iOS/WebKit coverage",
-      "mode": "test-only"
+      "mode": "test-only",
+      "capabilities": [
+        "browser.test"
+      ]
     },
     {
       "id": "figma",
@@ -81,7 +103,10 @@
       "transport": "streamable-http",
       "url": "https://mcp.figma.com/mcp",
       "purpose": "Design context and governed design-system workflows",
-      "mode": "design"
+      "mode": "design",
+      "capabilities": [
+        "design.inspect"
+      ]
     },
     {
       "id": "sentry",
@@ -91,7 +116,10 @@
       "transport": "streamable-http",
       "url": "https://mcp.sentry.dev/mcp",
       "purpose": "Production diagnostics, issues and traces",
-      "mode": "inspect"
+      "mode": "inspect",
+      "capabilities": [
+        "error.inspect"
+      ]
     },
     {
       "id": "context7",
@@ -101,7 +129,10 @@
       "transport": "streamable-http",
       "url": "https://mcp.context7.com/mcp/oauth",
       "purpose": "Version-current library documentation",
-      "mode": "read-only"
+      "mode": "read-only",
+      "capabilities": [
+        "docs.lookup"
+      ]
     },
     {
       "id": "vercel",
@@ -111,7 +142,10 @@
       "transport": "streamable-http",
       "url": "https://mcp.vercel.com",
       "purpose": "Vercel project and deployment diagnostics",
-      "mode": "read-only-default"
+      "mode": "read-only-default",
+      "capabilities": [
+        "deployment.inspect"
+      ]
     },
     {
       "id": "bladewindui",
@@ -121,13 +155,48 @@
       "transport": "streamable-http",
       "url": "https://bladewindui.com/mcp/server",
       "purpose": "UI component documentation and pattern discovery only",
-      "mode": "read-only-reference"
+      "mode": "read-only-reference",
+      "capabilities": [
+        "ui.reference"
+      ]
     }
   ],
   "profiles": {
-    "rand-observer": ["rand-internal", "github", "supabase", "digitalocean-docs", "digitalocean-apps", "sentry", "context7"],
-    "rand-coder": ["rand-internal", "github", "supabase", "digitalocean-apps", "playwright", "context7", "sentry"],
-    "rand-designer": ["github", "playwright", "figma", "context7", "bladewindui"],
-    "rand-admin": ["rand-internal", "github", "supabase", "digitalocean-apps", "playwright", "figma", "sentry", "context7", "vercel"]
+    "rand-observer": [
+      "rand-internal",
+      "github",
+      "supabase",
+      "digitalocean-docs",
+      "digitalocean-apps",
+      "sentry",
+      "context7"
+    ],
+    "rand-coder": [
+      "rand-internal",
+      "github",
+      "supabase",
+      "digitalocean-apps",
+      "playwright",
+      "context7",
+      "sentry"
+    ],
+    "rand-designer": [
+      "github",
+      "playwright",
+      "figma",
+      "context7",
+      "bladewindui"
+    ],
+    "rand-admin": [
+      "rand-internal",
+      "github",
+      "supabase",
+      "digitalocean-apps",
+      "playwright",
+      "figma",
+      "sentry",
+      "context7",
+      "vercel"
+    ]
   }
 }
