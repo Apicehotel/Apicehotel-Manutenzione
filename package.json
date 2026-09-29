@@ -79,7 +79,7 @@
     "freeze:check": "node scripts/check-final-freeze.mjs",
     "test:capabilities": "node --test test/randcore-capability-router.test.js",
     "mcp:start": "node scripts/rand-mcp-server.mjs",
-    "test:mcp": "node --test test/rand-mcp-foundation.test.js"
+    "test:mcp": "node --test test/rand-mcp-foundation.test.js test/rand-mcp-capabilities.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
