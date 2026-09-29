@@ -54,6 +54,7 @@ I candidati validi vanno classificati come:
 - **AGGIUNGI** — utile da adottare, integrare o mantenere come riferimento permanente;
 - **SOSTITUISCI** — può rimpiazzare una soluzione Rand esistente con vantaggi concreti;
 - **IGNORA** — non porta beneficio sufficiente, è ridondante o presenta rischi non giustificati.
+- **FONTE** — riferimento permanente di architettura, pattern, casi reali o documentazione. Una FONTE resta `REFERENCE_ONLY`: non è una dipendenza runtime, non ottiene autorità e non può essere auto-installata.
 
 Ogni classificazione deve includere motivazione, benefici, rischi, maturità, attività/manutenzione, sicurezza, licenza, compatibilità, impatto sulle dipendenze e destinazione nell’ecosistema Rand.
 
@@ -88,6 +89,12 @@ Le famiglie sono anche codificate in `src/randai/discovery/repo-radar-sources.js
 ## Output
 
 Per richieste ampie, RandRadar deve prima raccogliere un insieme più grande di candidati, deduplicarlo e poi presentare la shortlist realmente utile. Non deve dichiarare una ricerca “approfondita” se ha controllato solo pochi siti o un solo ecosistema.
+
+## Fonti architetturali curate
+
+Le raccolte di pattern possono entrare nel catalogo come `FONTE` quando hanno valore trasversale e non rappresentano una dipendenza da installare. Il primo riferimento canonico è `binhnguyennus/awesome-scalability`, usato dal **Rand Architecture Playbook** per reliability, availability, performance, code/eventi, caching, rate limiting, observability e failure handling. I pattern vengono sempre adattati alla scala reale Rand: tre hotel non devono ereditare la complessità operativa di una piattaforma hyperscale.
+
+Una fonte curata deve avere `usageMode=REFERENCE_ONLY`, gate di benchmark non automaticamente approvato e un test che verifichi l'assenza di dipendenze runtime accidentali.
 
 ## Governance
 

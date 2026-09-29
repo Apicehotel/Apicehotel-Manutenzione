@@ -22,6 +22,7 @@ La skill può analizzare, scoprire, confrontare e proporre; installazioni, sosti
 - Confrontare capacità, licenza, maturità, manutenzione, sicurezza, compatibilità, benchmark, rollback e costo di adozione.
 - Assegnare ogni capacità esterna a un proprietario canonico Rand prima di proporre l'adozione.
 - Classificare `AGGIUNGI`, `SOSTITUISCI`, `IGNORA` o `FONTE` con motivazione; per i plugin usare anche `ADOPT_PATTERN`, `ADAPT`, `CONNECT`, `WATCH`, `IGNORE`.
+- Mantenere **Fonti architetturali curate** come `REFERENCE_ONLY`: estrarre pattern nel Rand Architecture Playbook senza trasformare reading list, casi studio o raccolte in dipendenze runtime.
 
 # Forbidden actions
 
@@ -48,3 +49,5 @@ La skill può analizzare, scoprire, confrontare e proporre; installazioni, sosti
 # Validation
 
 La copertura `RAND_FULL_EVOLUTION_V1` deve risultare completa per pagine, moduli e fronti AI. Ogni decisione deve indicare cosa cambia, cosa non cambia e perché non crea un secondo sistema concorrente. Discovery non equivale ad approvazione e non può auto-installare o auto-sostituire codice. I candidati da `openai/plugins` devono rispettare `src/randai/discovery/openai-plugin-catalog.js`.
+
+Le candidate `FONTE` devono restare `REFERENCE_ONLY` e i pattern riusabili devono convergere in `docs/architecture/RAND_ARCHITECTURE_PLAYBOOK_V1.md`; nessuna fonte può diventare dipendenza applicativa per effetto della sola catalogazione.
