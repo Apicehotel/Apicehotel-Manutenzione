@@ -233,3 +233,15 @@ Questo README descrive lo **stato operativo corrente**. Cronologia e dettagli sp
 RandApp uses Impeccable as a development-only UI design and audit layer, and agent-reviews as a controlled PR review-bot triage aid. They never run in the production runtime and never bypass the branch/PR/human-review policy.
 
 See [docs/integrations/BAKAUS_TOOLS.md](docs/integrations/BAKAUS_TOOLS.md), [.impeccable/PRODUCT.md](.impeccable/PRODUCT.md), and [.impeccable/DESIGN.md](.impeccable/DESIGN.md).
+
+## Rand MCP foundation
+
+Rand dispone di un server MCP interno già governato dal catalogo azioni condiviso e da RandGateway. La configurazione canonica dei provider MCP esterni è in `config/mcp/registry.json`.
+
+- **Rand MCP interno:** servizio separato su DigitalOcean App Platform, avviabile con `npm run mcp:start`; endpoint `/mcp`, health `/healthz`.
+- **GitHub / Supabase / DigitalOcean / Figma / Sentry / Context7 / Vercel / BladewindUI:** endpoint remoti dei rispettivi provider; nessuna copia self-hosted nel runtime RandApp.
+- **Playwright MCP:** solo sviluppo/CI e visual gate, non produzione.
+- Default fail-closed: GitHub read-only + lockdown, Supabase project-scoped + read-only, nessun secret nel repository, operazioni hotel protette sempre via RandGateway/RLS/HITL.
+
+Dettagli, profili e configurazione client: `config/mcp/README.md`. Gate dedicato: `npm run test:mcp`.
+
