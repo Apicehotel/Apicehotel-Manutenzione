@@ -10,7 +10,8 @@ import {
 } from '../reliability/validation-engine.js'
 import { getRandAIContext } from './context/envelope.js'
 import { getRandActionDefinition } from './actions/catalog.js'
-import { submitRandGatewayEnvelope } from '../randgateway-client.js'
+import { RandCapability } from './core/capability-providers.js'
+import { randCapabilityRouter } from './core/capability-runtime.js'
 
 function actionTypeIssue(type) {
   const definition = getRandActionDefinition(type)
@@ -46,7 +47,7 @@ function validateExecutionInput({ hotelId, approvalId, type, resourceId }) {
 
 async function invokeGateway({ hotelId, type, resourceId, input = {}, approvalId = null, approvalDecision = 'execute' }) {
   assertSensitiveActionOnline('Le azioni operative RandAI')
-  return submitRandGatewayEnvelope({
+  const { value } = await randCapabilityRouter.invoke(RandCapability.OPERATIONAL_ACTION, { envelope: {
     channel: 'randapp',
     direction: 'inbound',
     actor: { hotelId },
@@ -62,7 +63,8 @@ async function invokeGateway({ hotelId, type, resourceId, input = {}, approvalId
       metadata: { approvalDecision },
     },
     origin: { provider: 'randapp', providerMessageId: crypto.randomUUID() },
-  })
+  } }, { allowExecutionFallback: false })
+  return value
 }
 
 export async function prepareRandAIAction({ hotelId, type, resourceId, input = {}, context = null } = {}) {

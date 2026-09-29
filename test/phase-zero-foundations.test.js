@@ -7,6 +7,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   const gateway = read('supabase/functions/_shared/rand-gateway/gateway.js')
   const client = read('src/randai/action-gateway.js')
+  const capabilityProvider = read('src/randai/core/capability-providers.js')
   const architecture = read('docs/architecture/RANDGATEWAY_POINT7.md')
 
   assert.match(gateway, /this\.identity\.resolve/)
@@ -14,7 +15,9 @@ test('Phase 0 keeps every channel behind the Point 7 execution chain', () => {
   assert.match(gateway, /this\.hitl\.verify/)
   assert.match(gateway, /this\.actions\.execute/)
   assert.match(gateway, /this\.#audit/)
-  assert.match(client, /submitRandGatewayEnvelope/)
+  assert.match(client, /randCapabilityRouter\.invoke/)
+  assert.match(client, /RandCapability\.OPERATIONAL_ACTION/)
+  assert.match(capabilityProvider, /submitRandGatewayEnvelope/)
   assert.doesNotMatch(client, /functions\.invoke\(['"]randai-action-gateway/)
   assert.match(architecture, /RandGateway.*Tool Gateway.*RandSecure.*HITL.*Action Gateway.*RandAudit/s)
 })

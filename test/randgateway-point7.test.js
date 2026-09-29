@@ -205,8 +205,11 @@ test('authenticated RandGateway endpoint requires active hotel membership and ve
 
 test('RandApp browser actions also use the canonical gateway instead of invoking the executor directly', () => {
   const client = fs.readFileSync('src/randai/action-gateway.js', 'utf8')
+  const capabilityProvider = fs.readFileSync('src/randai/core/capability-providers.js', 'utf8')
   const migration = fs.readFileSync('supabase/migrations/20260915041542_randgateway_randapp_ingress.sql', 'utf8')
-  assert.match(client, /submitRandGatewayEnvelope/)
+  assert.match(client, /randCapabilityRouter\.invoke/)
+  assert.match(client, /RandCapability\.OPERATIONAL_ACTION/)
+  assert.match(capabilityProvider, /submitRandGatewayEnvelope/)
   assert.match(client, /channel: 'randapp'/)
   assert.doesNotMatch(client, /functions\.invoke\(['"]randai-action-gateway['"]/)
   assert.match(migration, /'randapp','internal','issue\.mark_done'/)
