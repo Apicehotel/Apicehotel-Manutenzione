@@ -1,0 +1,50 @@
+{
+  "inputs": [],
+  "servers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "X-MCP-Readonly": "true",
+        "X-MCP-Lockdown": "true"
+      }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ooqlfldcrnkudhgjnied&read_only=true&features=database,docs"
+    },
+    "digitalocean-apps": {
+      "type": "http",
+      "url": "https://apps.mcp.digitalocean.com/mcp"
+    },
+    "digitalocean-docs": {
+      "type": "http",
+      "url": "https://docs.mcp.digitalocean.com/mcp"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless", "--browser=webkit"]
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp/oauth"
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
+    },
+    "bladewindui": {
+      "type": "http",
+      "url": "https://bladewindui.com/mcp/server"
+    }
+  }
+}
