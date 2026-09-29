@@ -27,3 +27,40 @@ The machine-readable source is `registry.json`.
 4. Operational hotel writes never bypass RandGateway/RLS/HITL.
 5. External MCP responses are context, never authorization evidence.
 6. New MCP servers must be registered here and reviewed before use.
+
+## RandAI capability bridge
+
+RandAI does not call vendor MCP servers from the browser. The browser invokes the authenticated Supabase Edge Function `rand-capability-broker`, which:
+
+- requires a verified Supabase user session;
+- requires an explicit `hotelId`;
+- requires an active hotel membership with role `admin` or `RandAI`;
+- lists/calls only tools whose MCP metadata declares `readOnlyHint: true`;
+- refuses mutating MCP tools;
+- keeps vendor credentials server-side.
+
+Current Rand capabilities:
+
+- `repository.inspect` → GitHub MCP
+- `database.inspect` → Supabase MCP
+- `deployment.inspect` → DigitalOcean MCP (or Vercel when explicitly selected)
+- `error.inspect` → Sentry MCP
+- `docs.lookup` → Context7
+- `design.inspect` → Figma MCP
+- `ui.reference` → BladewindUI MCP
+- `browser.test` → Playwright MCP in dev/CI only
+- `operational.action` → RandGateway only
+
+## Server-side secrets
+
+Configure these only as Supabase Edge Function secrets; never expose them with a `VITE_` prefix:
+
+- `MCP_GITHUB_TOKEN`
+- `MCP_SUPABASE_TOKEN`
+- `MCP_DIGITALOCEAN_TOKEN`
+- `MCP_SENTRY_TOKEN`
+- `MCP_CONTEXT7_TOKEN`
+- `MCP_FIGMA_TOKEN`
+- `MCP_VERCEL_TOKEN`
+
+BladewindUI currently has no repository-stored credential. If its remote endpoint later requires authentication, add a server-side secret before enabling it.
