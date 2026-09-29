@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { RandCapability, createMcpBrokerCapabilityProvider } from '../src/randai/core/capability-providers.js'
 import { createMcpCapabilityTools } from '../src/randai/tools/mcp-capability-tools.js'
 
@@ -38,4 +39,13 @@ test('MCP capability tools remain low-risk read-only tools', async () => {
 test('external MCP tools never expose operational write capability', () => {
   const tools = createMcpCapabilityTools({ router: { invoke: async () => ({ value: {}, trace: { providerId: 'x' } }) } })
   assert.equal(tools.some((tool) => tool.id.includes('operational')), false)
+})
+
+test('MCP broker is server-side, hotel-scoped and admin restricted', () => {
+  const source = fs.readFileSync(new URL('../supabase/functions/rand-capability-broker/index.ts', import.meta.url), 'utf8')
+  assert.match(source, /hotel_required/)
+  assert.match(source, /hotel_memberships/)
+  assert.match(source, /\['admin', 'RandAI'\]/)
+  assert.match(source, /mcp_write_tool_denied/)
+  assert.match(source, /readOnlyHint/)
 })
