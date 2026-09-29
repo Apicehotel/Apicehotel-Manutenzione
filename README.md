@@ -32,6 +32,7 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 ## Stack canonico
 
 - React 19 + Vite 7 per la PWA.
+- TanStack Query è il proprietario canonico dello **server-state in memoria** (freshness, retry controllato, invalidation); Dexie/IndexedDB resta il proprietario dell'offline persistente. Nessuna seconda cache persistente.
 - Supabase/Postgres per dati, Auth, RLS/RPC, Realtime e source of truth operativa.
 - RandUI come design system unico.
 - RandGateway come unico ingresso governato per Web/RandApp, RandChat, MCP e WhatsApp/Twilio.

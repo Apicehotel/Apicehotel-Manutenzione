@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { QueryClientProvider } from '@tanstack/react-query'
 import AppErrorBoundary from './error-boundary.jsx'
 import { lazyWithRetry } from './lazy-retry.js'
 import { initUiSize } from './randapp/ui-size.js'
@@ -28,6 +29,7 @@ import './randapp/randui/foundation.css'
 import './offline-status.js'
 import './operation-feedback.js'
 import { installDeploymentRecovery } from './deployment-recovery.js'
+import { queryClient } from './randapp/query-client.js'
 
 installDeploymentRecovery()
 
@@ -67,7 +69,7 @@ function AuthenticatedRandAI() {
 }
 
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode><AppErrorBoundary>
+  <React.StrictMode><QueryClientProvider client={queryClient}><AppErrorBoundary>
     {technicianMatch ? <Suspense fallback={<RouteFallback />}><TechnicianPortal token={technicianMatch[1]} /></Suspense>
       : technicianDispatchMatch ? <Suspense fallback={<RouteFallback label="Caricamento Centro Tecnici…" dark />}><TechnicianDispatchPortal /></Suspense>
       : publicIssueMatch ? <Suspense fallback={<RouteFallback />}><PublicIssueView id={publicIssueMatch[1]} /></Suspense>
@@ -75,7 +77,7 @@ createRoot(document.getElementById('root')).render(
       : randaiConsoleMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAI…" dark />}><RandAIProtectedRoute /></Suspense>
       : randaiLiveMatch ? <Suspense fallback={<RouteFallback label="Caricamento RandAILive…" dark />}><RandAIProtectedRoute mode="live" /></Suspense>
       : <Suspense fallback={<RouteFallback label="Avvio RandApp…" />}><App /><AuthenticatedRandAI /></Suspense>}
-  </AppErrorBoundary></React.StrictMode>,
+  </AppErrorBoundary></QueryClientProvider></React.StrictMode>,
 )
 
 if (pendingNtfyShort && !ntfyShortMatch) window.addEventListener(SESSION_EVENT,()=>window.location.replace(`/n/${encodeURIComponent(pendingNtfyShort)}`),{once:true})
