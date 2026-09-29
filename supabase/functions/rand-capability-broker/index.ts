@@ -69,7 +69,22 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json()
     const capability = clean(body?.capability, 120)
+    const hotelId = clean(body?.hotelId, 80)
     const input = safeInput(body?.input)
+    if (!hotelId) return json({ ok: false, error: 'hotel_required' }, 400)
+
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data: membership, error: membershipError } = await admin.from('hotel_memberships')
+      .select('role,active')
+      .eq('auth_user_id', userData.user.id)
+      .eq('hotel_id', hotelId)
+      .maybeSingle()
+    if (membershipError) throw membershipError
+    if (!membership?.active || !['admin', 'RandAI'].includes(String(membership.role || ''))) {
+      return json({ ok: false, error: 'mcp_infrastructure_forbidden' }, 403)
+    }
     const requestedProvider = clean(input.provider, 80)
     const serverId = capability === 'deployment.inspect' && requestedProvider === 'vercel'
       ? 'vercel'
