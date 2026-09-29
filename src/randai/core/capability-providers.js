@@ -54,7 +54,7 @@ export function createMcpBrokerCapabilityProvider({
     getHealth: async ({ context } = {}) => ({
       status: await isAvailable({ context }) ? 'HEALTHY' : 'DISABLED',
     }),
-    execute: async ({ capability, input }) => invoke(capability, input),
+    execute: async ({ capability, input, context }) => invoke(capability, input, context),
   }
 }
 
