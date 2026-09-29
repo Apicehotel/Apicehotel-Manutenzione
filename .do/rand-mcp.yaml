@@ -1,0 +1,30 @@
+name: rand-mcp
+region: fra
+services:
+  - name: rand-mcp
+    github:
+      repo: Apicehotel/Apicehotel-Manutenzione
+      branch: ${OCEAN_GITHUB_BRANCH}
+      deploy_on_push: false
+    source_dir: /
+    environment_slug: node-js
+    build_command: npm ci
+    run_command: npm run mcp:start
+    http_port: 8080
+    instance_count: 1
+    health_check:
+      http_path: /healthz
+    routes:
+      - path: /
+    envs:
+      - key: PORT
+        value: "8080"
+      - key: SUPABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: SUPABASE_ANON_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: MCP_ALLOWED_ORIGINS
+        scope: RUN_TIME
+        type: SECRET

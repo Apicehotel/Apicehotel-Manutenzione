@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "policy": {
+    "defaultMode": "read-only",
+    "noSecretsInRepository": true,
+    "writesRequireRandGateway": true,
+    "productionDeployRequiresHumanApproval": true
+  },
+  "servers": [
+    {
+      "id": "rand-internal",
+      "title": "Rand MCP",
+      "owner": "Apicehotel",
+      "placement": "digitalocean-app-platform",
+      "transport": "streamable-http",
+      "endpointEnv": "RAND_MCP_URL",
+      "purpose": "Hotel actions exposed from the canonical Rand action catalog",
+      "mode": "governed-write",
+      "authority": "RandGateway + Supabase RLS/HITL"
+    },
+    {
+      "id": "github",
+      "title": "GitHub MCP",
+      "owner": "GitHub",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "purpose": "Repositories, PRs, Actions and security",
+      "mode": "read-only-default",
+      "headers": {
+        "X-MCP-Readonly": "true",
+        "X-MCP-Lockdown": "true"
+      }
+    },
+    {
+      "id": "supabase",
+      "title": "Supabase MCP",
+      "owner": "Supabase",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ooqlfldcrnkudhgjnied&read_only=true&features=database,docs",
+      "purpose": "Project-scoped database inspection and documentation",
+      "mode": "read-only"
+    },
+    {
+      "id": "digitalocean-apps",
+      "title": "DigitalOcean App Platform MCP",
+      "owner": "DigitalOcean",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://apps.mcp.digitalocean.com/mcp",
+      "purpose": "Ocean app status, logs and controlled app operations",
+      "mode": "read-mostly"
+    },
+    {
+      "id": "digitalocean-docs",
+      "title": "DigitalOcean Docs MCP",
+      "owner": "DigitalOcean",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://docs.mcp.digitalocean.com/mcp",
+      "purpose": "Current DigitalOcean documentation",
+      "mode": "read-only"
+    },
+    {
+      "id": "playwright",
+      "title": "Playwright MCP",
+      "owner": "Microsoft",
+      "placement": "ci-and-dev",
+      "transport": "stdio-or-http",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless", "--browser=webkit"],
+      "purpose": "Browser acceptance gate with iOS/WebKit coverage",
+      "mode": "test-only"
+    },
+    {
+      "id": "figma",
+      "title": "Figma MCP",
+      "owner": "Figma",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://mcp.figma.com/mcp",
+      "purpose": "Design context and governed design-system workflows",
+      "mode": "design"
+    },
+    {
+      "id": "sentry",
+      "title": "Sentry MCP",
+      "owner": "Sentry",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://mcp.sentry.dev/mcp",
+      "purpose": "Production diagnostics, issues and traces",
+      "mode": "inspect"
+    },
+    {
+      "id": "context7",
+      "title": "Context7 MCP",
+      "owner": "Upstash",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://mcp.context7.com/mcp/oauth",
+      "purpose": "Version-current library documentation",
+      "mode": "read-only"
+    },
+    {
+      "id": "vercel",
+      "title": "Vercel MCP",
+      "owner": "Vercel",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://mcp.vercel.com",
+      "purpose": "Vercel project and deployment diagnostics",
+      "mode": "read-only-default"
+    },
+    {
+      "id": "bladewindui",
+      "title": "BladewindUI MCP",
+      "owner": "BladewindUI",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://bladewindui.com/mcp/server",
+      "purpose": "UI component documentation and pattern discovery only",
+      "mode": "read-only-reference"
+    }
+  ],
+  "profiles": {
+    "rand-observer": ["rand-internal", "github", "supabase", "digitalocean-docs", "digitalocean-apps", "sentry", "context7"],
+    "rand-coder": ["rand-internal", "github", "supabase", "digitalocean-apps", "playwright", "context7", "sentry"],
+    "rand-designer": ["github", "playwright", "figma", "context7", "bladewindui"],
+    "rand-admin": ["rand-internal", "github", "supabase", "digitalocean-apps", "playwright", "figma", "sentry", "context7", "vercel"]
+  }
+}
