@@ -51,9 +51,15 @@ export function createMcpBrokerCapabilityProvider({
     capabilities: MCP_BROKER_CAPABILITIES,
     priority: 20,
     isAvailable,
-    getHealth: async ({ context } = {}) => ({
-      status: await isAvailable({ context }) ? 'HEALTHY' : 'DISABLED',
-    }),
+    getHealth: async ({ context } = {}) => {
+      if (!context?.hotelId || !await isAvailable({ context })) return { status: 'DISABLED', reason: 'session_or_hotel_missing' }
+      try {
+        const report = await invoke('broker.status', {}, context)
+        const configured = (report?.servers || []).filter((server) => server.status === 'CONFIGURED_NOT_PROBED')
+        return { status: configured.length ? 'DEGRADED' : 'DISABLED', reason: 'live_provider_probe_required',
+          configuredProviders: configured.map((server) => server.serverId) }
+      } catch { return { status: 'DISABLED', reason: 'broker_not_deployed_or_forbidden' } }
+    },
     execute: async ({ capability, input, context }) => invoke(capability, input, context),
   }
 }
