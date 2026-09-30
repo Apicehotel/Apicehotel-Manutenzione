@@ -36,6 +36,7 @@ export function buildUnifiedRandCapabilityCatalog({
     requiredTools: [...(skill.requiredTools || [])],
     profiles: [],
     capabilities: [],
+    searchTerms: [...(skill.metadata?.routing?.keywords || [])],
   }))
 
   const profileMembership = new Map()
@@ -64,6 +65,7 @@ export function buildUnifiedRandCapabilityCatalog({
     requiredTools: [],
     profiles: [...(profileMembership.get(server.id) || [])].sort(),
     capabilities: [...(server.capabilities || [])],
+    searchTerms: [],
   }))
 
   const profiles = Object.entries(mcp?.profiles || {}).map(([id, serverIds]) => ({
@@ -103,7 +105,7 @@ export function filterUnifiedRandCapabilityCatalog(catalog, {
     if (!needle) return true
     return [
       item.id, item.name, item.description, item.source,
-      ...(item.tags || []), ...(item.capabilities || []), ...(item.requiredTools || []),
+      ...(item.tags || []), ...(item.capabilities || []), ...(item.requiredTools || []), ...(item.searchTerms || []),
     ].filter(Boolean).join(' ').toLowerCase().includes(needle)
   })
 }
