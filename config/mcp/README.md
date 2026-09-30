@@ -64,3 +64,42 @@ Configure these only as Supabase Edge Function secrets; never expose them with a
 - `MCP_VERCEL_TOKEN`
 
 BladewindUI currently has no repository-stored credential. If its remote endpoint later requires authentication, add a server-side secret before enabling it.
+
+## Deployment and activation (fail closed)
+
+The GitHub registry is an inventory, **not** proof of a running connection. The
+`rand-capability-broker` Supabase Edge Function must first be deployed to an
+isolated Supabase preview/branch (or intentionally released by an authorized
+operator). Never publish it automatically to the shared MultiHotel project.
+
+All vendor servers start DISABLED, even if OAuth credentials are present.
+Enable a vetted server in **server-side Edge Function secrets only**, e.g.:
+
+`MCP_ENABLE_BLADEWINDUI=true`
+`MCP_ENABLE_GITHUB=true`
+`MCP_ENABLE_SUPABASE=true`
+`MCP_ENABLE_CONTEXT7=true`
+
+Identifiers containing hyphens are normalized to underscores, e.g.
+`MCP_ENABLE_DIGITALOCEAN_APPS`. Do not use `VITE_` prefixes.
+
+`supabase/functions/_shared/mcp-read-policy.js` is the executable tool
+allowlist. Vendor tool metadata alone never grants access: a tool must be on the
+exact list and declare `readOnlyHint: true` (except BladewindUI's explicitly
+audited documentation-only trio, which still cannot declare readOnlyHint:false).
+The DigitalOcean/Vercel allowlists deliberately remain empty until their precise
+read operations are verified against the vendor surface. SQL execution,
+deploy/merge/mutation tools and unknown servers are denied.
+
+Authenticated administrators can use capability `broker.status` with their
+verified `hotelId` to see only enabled/configured states (not secret values).
+`CONFIGURED_NOT_PROBED` is deliberately not called HEALTHY. Runtime calls also
+require verified active `hotel_memberships` with `admin` or `RandAI` role.
+Every agent still requires the tool ID in its caller-provided `allowedToolIds`.
+
+Testing before rollout: `npm run test:mcp`, `npm run test:randui`,
+`npm run test:e2e`, `npm run test:device`. Run live negative tests against a
+dedicated preview using test accounts for all three hotels, including invalid
+JWT, inactive membership, non-admin role, cross-hotel target, blocked vendor,
+unknown tool, and unauthorized write. Never run destructive test cases against
+real tickets.
