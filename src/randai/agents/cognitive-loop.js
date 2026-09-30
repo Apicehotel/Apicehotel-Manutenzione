@@ -1,5 +1,6 @@
 import { ToolRisk } from '../tools/contracts.js'
 import { ToolsetResolver } from '../tools/toolsets.js'
+import { registerMcpCapabilityTools } from '../tools/mcp-capability-tools.js'
 import { RandSkillRouter, matchesToolPattern } from '../skills/router.js'
 
 const clone = (value) => value == null ? value : structuredClone(value)
@@ -13,6 +14,8 @@ export class RandMindCognitiveLoop {
     this.runtime = runtime
     this.skillRegistry = skillRegistry
     this.toolRegistry = toolRegistry
+    // Registration is not authorization: allowedToolIds and the server-side broker still gate every use.
+    if (typeof toolRegistry.register === 'function') registerMcpCapabilityTools(toolRegistry)
     this.toolsets = new ToolsetResolver({ toolRegistry })
     this.skillRouter = skillRouter || new RandSkillRouter({ skillRegistry })
     this.learningEngine = learningEngine
