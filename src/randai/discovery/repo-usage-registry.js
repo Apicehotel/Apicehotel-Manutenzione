@@ -3,6 +3,7 @@ export const RepositoryUsageKind = Object.freeze({
   BUILD_TOOL: 'build_tool',
   CI_TOOL: 'ci_tool',
   GITHUB_ACTION: 'github_action',
+  ARCHITECTURE_REFERENCE: 'architecture_reference',
 })
 
 export const RepositoryAdoptionMode = Object.freeze({
@@ -33,6 +34,7 @@ export const RAND_USED_REPOSITORIES = Object.freeze([
   { id:'actions-setup-node', name:'GitHub Setup Node Action', repository:'https://github.com/actions/setup-node', kind:RepositoryUsageKind.GITHUB_ACTION, packages:['actions/setup-node@v4'], source:'.github/workflows', adoption:RepositoryAdoptionMode.TOOLING, randTargets:['RandOps','RandTest'], watch:true },
   { id:'actions-upload-artifact', name:'GitHub Upload Artifact Action', repository:'https://github.com/actions/upload-artifact', kind:RepositoryUsageKind.GITHUB_ACTION, packages:['actions/upload-artifact@v4'], source:'.github/workflows', adoption:RepositoryAdoptionMode.TOOLING, randTargets:['RandOps','RandTest'], watch:true },
   { id:'digitalocean-app-action', name:'DigitalOcean App Platform Deploy Action', repository:'https://github.com/digitalocean/app_action', kind:RepositoryUsageKind.GITHUB_ACTION, packages:['digitalocean/app_action/deploy@v2'], source:'.github/workflows/digitalocean-preview.yml', adoption:RepositoryAdoptionMode.TOOLING, randTargets:['RandOps','RandUI'], watch:true },
+  { id:'skills-manager', name:'Skills Manager', repository:'https://github.com/xingkongliang/skills-manager', kind:RepositoryUsageKind.ARCHITECTURE_REFERENCE, packages:[], source:'RandSkills Unified Manager pattern', adoption:RepositoryAdoptionMode.CONCEPT, randTargets:['RandSkills','RandAI','RandCore'], watch:true },
 ])
 
 export function getUsedRepository(id){
