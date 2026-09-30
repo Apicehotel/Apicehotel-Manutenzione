@@ -3,12 +3,14 @@ import UsersTab from '../../randapp/admin/UsersTab.jsx'
 import RolesTab from '../../randapp/admin/RolesTab.jsx'
 import RandAIKnowledgeConsole from '../console/RandAIConsole.jsx'
 import RandAIConfigurationConsole from './RandAIConfigurationConsole.jsx'
+import RandSkillsConsole from './RandSkillsConsole.jsx'
 import './randai-admin-console.css'
 
 const TABS = [
   ['users', 'Utenti'],
   ['permissions', 'Permessi e menu'],
   ['runtime', 'RandAI'],
+  ['skills', 'Skill & MCP'],
   ['guide', 'RandGuide'],
 ]
 
@@ -18,6 +20,7 @@ export default function RandAIAdminConsole({ accessHotels = [], hotelFilter = 'a
     users: <UsersTab />,
     permissions: <RolesTab />,
     runtime: <RandAIConfigurationConsole accessHotels={accessHotels} hotelFilter={hotelFilter} />,
+    skills: <RandSkillsConsole accessHotels={accessHotels} hotelFilter={hotelFilter} />,
     guide: <RandAIKnowledgeConsole />,
   }[tab]
 
