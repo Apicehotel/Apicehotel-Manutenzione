@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { Client } from 'npm:@modelcontextprotocol/sdk@1.30.0/client/index.js'
 import { StreamableHTTPClientTransport } from 'npm:@modelcontextprotocol/sdk@1.30.0/client/streamableHttp.js'
 import {
-  MCP_READ_POLICY, assertMcpHotel, assertMcpArguments, enabledMcpServer, isAllowedMcpTool,
+  MCP_READ_POLICY, assertMcpHotel, assertMcpArguments, enabledMcpServer, isAllowedMcpTool, isAuthorizedMcpMembership,
 } from '../_shared/mcp-read-policy.js'
 
 const url = Deno.env.get('SUPABASE_URL')!
@@ -83,7 +83,7 @@ Deno.serve(async (req: Request) => {
     const { data: membership, error: membershipError } = await admin.from('hotel_memberships')
       .select('role,active').eq('auth_user_id', userData.user.id).eq('hotel_id', hotelId).maybeSingle()
     if (membershipError) throw membershipError
-    if (!membership?.active || !['admin', 'RandAI'].includes(String(membership.role || ''))) {
+    if (!isAuthorizedMcpMembership(hotelId, membership)) {
       return json({ ok: false, error: 'mcp_infrastructure_forbidden' }, 403)
     }
     if (capability === 'broker.status') return json({ ok: true, result: { servers: configStatus() } })
