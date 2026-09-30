@@ -22,6 +22,12 @@ export function enabledMcpServer(serverId, getEnv) {
     getEnv('MCP_ENABLE_' + serverId.replace(/[^a-z0-9]/g, '_').toUpperCase()) === 'true'
 }
 
+export function isAuthorizedMcpMembership(hotelId, membership) {
+  return HOTEL_IDS.has(hotelId) &&
+    membership?.active === true &&
+    ['admin', 'RandAI'].includes(membership.role)
+}
+
 export function assertMcpHotel(hotelId) {
   if (!HOTEL_IDS.has(hotelId)) throw new Error('MCP_HOTEL_SCOPE_INVALID')
   return hotelId
