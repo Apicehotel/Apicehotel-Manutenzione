@@ -34,5 +34,8 @@ export function createMcpCapabilityTools({ router = randCapabilityRouter } = {})
 
 export function registerMcpCapabilityTools(toolRegistry, options = {}) {
   if (!toolRegistry?.register) throw new TypeError('Tool registry required')
-  return createMcpCapabilityTools(options).map((tool) => toolRegistry.register(tool))
+  const existing = new Set(toolRegistry.list().map((tool) => tool.id))
+  return createMcpCapabilityTools(options)
+    .filter((tool) => !existing.has(tool.id))
+    .map((tool) => toolRegistry.register(tool))
 }
