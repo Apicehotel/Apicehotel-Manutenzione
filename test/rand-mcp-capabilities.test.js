@@ -45,9 +45,10 @@ test('MCP broker is server-side, hotel-scoped and admin restricted', () => {
   const source = fs.readFileSync(new URL('../supabase/functions/rand-capability-broker/index.ts', import.meta.url), 'utf8')
   assert.match(source, /hotel_required/)
   assert.match(source, /hotel_memberships/)
-  assert.match(source, /\['admin', 'RandAI'\]/)
+  assert.match(source, /isAuthorizedMcpMembership/)
   assert.match(source, /mcp_write_tool_denied/)
-  assert.match(source, /readOnlyHint/)
+  const policySource = fs.readFileSync(new URL('../supabase/functions/_shared/mcp-read-policy.js', import.meta.url), 'utf8')
+  assert.match(policySource, /readOnlyHint/)
 })
 
 
