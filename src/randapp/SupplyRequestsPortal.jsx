@@ -121,7 +121,6 @@ function ProductManager({ hotel, products, onChanged }) {
     onDetailChange?.(selectedRequest ? { kind: 'supply', id: String(selectedRequest.id) } : null)
     return () => onDetailChange?.(null)
   }, [selectedRequest?.id, onDetailChange])
-
   const add = async (event) => {
     event.preventDefault()
     setBusy(true); setError('')
