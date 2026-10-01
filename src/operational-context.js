@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { callSupplyApi } from './supply-api.js'
 import { getCachedCollection, isTransientNetworkError, setCachedCollection } from './offline-store.js'
 
 const STORAGE_PREFIX = 'apicehotel.operational-floor-context.v1'
@@ -26,8 +27,7 @@ export async function fetchOperationalFloorContexts(hotelId) {
   if (!hotelId) return []
   if (!supabase || !onlineNow()) return normalizeContexts(await getCachedCollection(CACHE_ENTITY, hotelId))
   try {
-    const { data, error } = await supabase.rpc('operational_list_floor_contexts', { p_hotel_id: hotelId })
-    if (error) throw error
+    const { data } = await callSupplyApi('floor-contexts', { hotel_id: hotelId })
     const rows = normalizeContexts(data)
     await setCachedCollection(CACHE_ENTITY, hotelId, rows)
     return rows
