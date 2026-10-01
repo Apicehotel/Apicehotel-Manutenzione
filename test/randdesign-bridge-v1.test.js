@@ -23,8 +23,8 @@ test('RandDesignBridge deliberately avoids zombie overlap', () => {
 
 test('RandDesignBridge has a complete governed capability surface', () => {
   const summary=summarizeRandDesignBridge()
-  assert.ok(summary.toolCount>=7)
-  for(const capability of ['FIGMA_READ','FIGMA_WRITE','DESIGN_CONTEXT','DESIGN_TOKEN_SYNC','CODE_COMPONENT_MAPPING','VISUAL_REGRESSION','REVERSE_IMPORT','SCREENSHOT_TO_LAYERS']) assert.ok(summary.capabilities.includes(capability))
+  assert.ok(summary.toolCount>=8)
+  for(const capability of ['FIGMA_READ','FIGMA_WRITE','DESIGN_CONTEXT','DESIGN_TOKEN_SYNC','CODE_COMPONENT_MAPPING','VISUAL_REGRESSION','REVERSE_IMPORT','SCREENSHOT_TO_LAYERS','UI_PATTERN_KNOWLEDGE']) assert.ok(summary.capabilities.includes(capability))
 })
 
 test('RandRadar multisource rule spans enough ecosystems and source families', () => {
