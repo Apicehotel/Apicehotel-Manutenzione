@@ -1,0 +1,34 @@
+{
+  "version": "1.0.0",
+  "purpose": "Persistent UI/UX pattern knowledge for RandUI/RandAI design decisions",
+  "sources": [
+    {"id":"reui","license":"MIT","learn":["dense dashboards","data grids","kanban","filters","content hierarchy"],"useWhen":["management","monitor","dashboard"],"avoidWhen":["simple mobile action flow"]},
+    {"id":"shadcn-ecosystem","license":"MIT/copy-owned depending on source","learn":["composable primitives","variant anatomy","accessible states","sheet/dialog patterns"],"useWhen":["forms","settings","overlays","lists"],"avoidWhen":["introducing duplicate runtime dependencies"]},
+    {"id":"motiq","license":"MIT","learn":["live states","workflow activity","collaboration signals","pipeline feedback"],"useWhen":["operations","activity","sync","task status"],"avoidWhen":["decorative-only motion"]},
+    {"id":"animate-ui","license":"MIT","learn":["state transitions","progressive disclosure","reduced-motion-aware movement"],"useWhen":["tabs","accordion","drawer","feedback"],"avoidWhen":["motion hides latency or state"]},
+    {"id":"velora-ui","license":"MIT","learn":["lightweight animated surfaces","polished hover/press feedback"],"useWhen":["cards","quick actions","empty states"],"avoidWhen":["high-frequency operational lists"]},
+    {"id":"radian-ui","license":"MIT","learn":["token discipline","design-system consistency","variant governance"],"useWhen":["foundation","tokens","cross-page consistency"],"avoidWhen":["page-specific one-off styling"]},
+    {"id":"ai-canvas","license":"MIT for free components","learn":["block composition","command surfaces","workflow grouping"],"useWhen":["RandAI","admin tools","quick actions"],"avoidWhen":["duplicating navigation owners"]},
+    {"id":"rare-ui","license":"check current attribution/Commons-Clause terms","learn":["distinctive visual treatments","special emphasis"],"useWhen":["small branded accents"],"avoidWhen":["core primitives","unverified licensing"]}
+  ],
+  "principles": [
+    "one canonical RandUI runtime",
+    "copy patterns, not frameworks",
+    "mobile-first operational clarity",
+    "accessibility and reduced-motion mandatory",
+    "permissions and real data before decoration",
+    "Piccolo/Normale/Grande remain separate density contracts",
+    "safe-area and responsive geometry keep one owner",
+    "new patterns require provenance, use-case and anti-pattern notes"
+  ],
+  "patternFamilies": {
+    "layeredSurface":{"from":["velora-ui","radian-ui"],"goodFor":["home cards","focus surfaces","settings groups"]},
+    "statCard":{"from":["reui","shadcn-ecosystem"],"goodFor":["KPI","counts","health states"]},
+    "statusChip":{"from":["motiq","shadcn-ecosystem"],"goodFor":["urgency","sync","presence","workflow state"]},
+    "activityTimeline":{"from":["motiq","reui"],"goodFor":["evidence timeline","intervention history","audit activity"]},
+    "commandSurface":{"from":["ai-canvas","shadcn-ecosystem"],"goodFor":["quick actions","RandAI tools","admin launcher"]},
+    "progressMeter":{"from":["reui","animate-ui"],"goodFor":["completion","capacity","health"]},
+    "dataList":{"from":["reui","shadcn-ecosystem"],"goodFor":["mobile lists","compact management rows"]},
+    "skeleton":{"from":["shadcn-ecosystem","velora-ui"],"goodFor":["loading without layout shift"]}
+  }
+}
