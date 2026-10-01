@@ -7,7 +7,7 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 25 settembre 2026
+## Stato consolidato — 1 ottobre 2026
 
 RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
@@ -20,6 +20,8 @@ Dopo il merge codice serve anche il **deploy edge** su Supabase (`ntfy-admin` + 
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
 Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v16 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).
+
+La Shell autenticata è inoltre resiliente ai fallimenti temporanei della directory: se utente e hotel corrente erano già stati verificati, un errore transitorio Supabase/Auth non azzera più identità, header, menu laterale o navigazione. Il fallback è limitato allo stesso hotel già verificato e non riusa permessi tra strutture diverse.
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
@@ -38,7 +40,7 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 - RandGateway come unico ingresso governato per Web/RandApp, RandChat, MCP e WhatsApp/Twilio.
 - RandCore per health, audit, release gate, workers, sicurezza, costi, governance e integrazioni.
 - RandMind come memoria governata canonica; RandResearch come owner della ricerca evidence-first.
-- DigitalOcean/Ocean per preview e workload esterni/pesanti; Vercel resta la produzione stabile.
+- DigitalOcean/Ocean è il canale attivo per preview/test e workload esterni/pesanti. I Git deploy automatici Vercel restano sospesi (`vercel.json → git.deploymentEnabled=false`) finché non vengono riattivati con decisione esplicita.
 - Node: `.nvmrc` fissa `24.20.0`; `package.json` usa `24.x` per compatibilità buildpack Ocean.
 
 ## Confini invariabili
@@ -153,6 +155,8 @@ npm run repo:radar
 
 RandApp comprende segnalazioni, interventi, planning lavori e sale, housekeeping, rifornimenti, warehouse, urgenze, promemoria, sensori/temperature, utenti/ruoli, RandGuide, feedback, RandChat, RandDesktop e RandAI.
 
+Il catalogo operativo Hotel Giò include anche le zone `Cantina`, `Gusto` e i riferimenti sintetici `1–4 Jazz` / `1–4 Wine`; i test verificano unicità e presenza delle zone richieste senza dipendere da un conteggio rigido.
+
 Warehouse mantiene ledger/stock/seriali e integrazione con Interventi. Rifornimenti resta un workflow distinto e non crea quantità o movimenti Warehouse. RandChat riusa identità e autorizzazioni RandApp; DM E2EE e media mantengono i rispettivi boundary. RandDesktop riusa RandApp e aggiunge solo capacità native ristrette.
 
 ## Offline e device
@@ -203,8 +207,8 @@ Dopo il merge del gate finale RandApp entra in **RandApp LTS 1.0 / FROZEN** per 
 
 Repository: `Apicehotel/Apicehotel-Manutenzione`.
 
-- **Produzione stabile:** Vercel.
-- **Preview/test grafici:** DigitalOcean/Ocean (`randui-preview`).
+- **Preview/test attivi:** DigitalOcean/Ocean (`randui-preview`).
+- **Vercel:** Git deploy automatici sospesi (`deploymentEnabled:false`); nessuna promozione automatica da branch/PR.
 - Prima del Browser visual gate Ocean, la CI attende che `/sw.js` risponda **200 con MIME javascript** (evita race del catchall `index.html` sul preview condiviso).
 - Gli agenti non promuovono automaticamente branch in produzione.
 - Il vecchio prototipo `/ui-v2-preview` è stato rimosso dal runtime; Ocean verifica direttamente la RandApp canonica.
