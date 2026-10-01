@@ -174,7 +174,8 @@ Deno.serve(async(req:Request)=>{
       const credentialRows=await sql`select pin_hash,failed_attempts,locked_until from public.auth_pin_credentials where auth_user_id=${existingProfile.auth_user_id}::uuid limit 1`;
       const credential:any=credentialRows[0]||null;
       if(credential?.locked_until&&new Date(credential.locked_until).getTime()>Date.now())return json({ok:false,error:"Troppi tentativi. Riprova più tardi."},429);
-      const valid=credential?.pin_hash?await bcrypt.compare(pin,String(credential.pin_hash)):Boolean(legacy.pin&&String(legacy.pin)===pin);
+      if(!credential?.pin_hash)throw new Error("CREDENTIAL_REQUIRED");
+      const valid=await bcrypt.compare(pin,credential.pin_hash);
       if(!valid){
         const failures=Number(credential?.failed_attempts||0)+1;
         if(credential){
@@ -183,8 +184,8 @@ Deno.serve(async(req:Request)=>{
         }
         return json({ok:false,error:"Utente o PIN non validi"},401);
       }
-    }else if(!legacy.pin||String(legacy.pin)!==pin){
-      return json({ok:false,error:"Utente o PIN non validi"},401);
+    }else{
+      throw new Error("CREDENTIAL_REQUIRED");
     }
 
     const {authUserId,internalEmail}=await ensureIdentity(legacy,pin);
@@ -209,6 +210,7 @@ Deno.serve(async(req:Request)=>{
     const m=error instanceof Error?error.message:String(error||"unknown");
     if(m==="INACTIVE")return json({ok:false,error:"Utente disattivato"},403);
     if(m==="PROTECTED")return json({ok:false,error:"Account Admin accessibile solo dal pannello Admin"},403);
+    if(m==="CREDENTIAL_REQUIRED")return json({ok:false,error:"Credenziale PIN non configurata. Contatta un amministratore."},403);
     console.error("pin-auth",m);
     return json({ok:false,error:"Errore temporaneo di accesso"},500);
   }
