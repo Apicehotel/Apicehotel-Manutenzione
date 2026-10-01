@@ -68,6 +68,10 @@ npm run test:randspec
 
 ## RandUI
 
+### UI learning catalog
+
+RandUI mantiene ora un catalogo persistente di pattern UI/UX appresi da sorgenti free/open-source (ReUI, ecosistema shadcn, Motiq, Animate UI, Velora UI, Radian UI, AI Canvas e Rare UI come sola ispirazione soggetta a verifica licenza). Il catalogo non introduce framework runtime duplicati: registra provenienza, casi d'uso, anti-pattern e famiglie riusabili; `ui-learning.js` può raccomandare pattern mentre RandUI Guard, permessi, Page Schema e geometria canonica restano autorità finali. Le primitive native aggiunte sono LayeredCard, StatCard, StatusChip, ProgressMeter, ActivityTimeline, DataList, CommandSurface e SkeletonBlock.
+
 Flusso canonico:
 
 `Page Schema → Template Resolver → Template Registry → Component Registry → Foundation → Shell`
