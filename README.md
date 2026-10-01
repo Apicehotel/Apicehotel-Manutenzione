@@ -259,3 +259,6 @@ Rand dispone di un server MCP interno già governato dal catalogo azioni condivi
 
 Dettagli, profili e configurazione client: `config/mcp/README.md`. Gate dedicato: `npm run test:mcp`.
 
+
+
+Rifornimenti non usa più PostgREST/RPC dal browser per prodotti, richieste, risoluzioni o contesto piano: il modulo passa da `supply-api` (Edge Function con validazione Supabase Auth e autorizzazione hotel/ruolo) e poi da Postgres diretto. Questo evita il percorso `PGRST303 / JWT issued at future` senza rendere pubblici i dati; il realtime resta solo un aggiornamento opzionale e non blocca il caricamento iniziale.
