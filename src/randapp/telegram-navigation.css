@@ -88,11 +88,13 @@
 
 .rs-overlay--drawer {
   justify-content: flex-end;
+  z-index: 100;
   backdrop-filter: blur(3px);
 }
 
 .rs-drawer--telegram {
   width: min(92vw, 390px);
+  z-index: 101;
   border-left: 1px solid var(--rs-line);
   box-shadow: -24px 0 60px -34px rgba(0, 0, 0, .58);
 }
