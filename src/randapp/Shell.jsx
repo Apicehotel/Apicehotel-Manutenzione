@@ -180,6 +180,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
   const [navigationConfig, setNavigationConfig] = useState({})
+  const verifiedHotelRef = useRef(null)
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
   const operationalDetailOpen = Boolean(operationalDetail)
@@ -207,14 +208,17 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         setUsers(rows)
         setUser(matchedUser)
         setDirectoryState(matchedUser ? 'ready' : 'unauthorized')
-        if (matchedUser) setShellBootstrapped(true)
+        if (matchedUser) {
+          verifiedHotelRef.current = session.hotelId
+          setShellBootstrapped(true)
+        }
       }).catch((error) => {
         if (!active) return
         console.error('Directory struttura non disponibile', error)
         // A transient Supabase/Auth failure must not tear down an already
         // bootstrapped shell. Keep the last verified identity/navigation alive
         // and let cached/live data recover on the next successful refresh.
-        if (shellBootstrapped && user) {
+        if (shellBootstrapped && user && verifiedHotelRef.current === session.hotelId) {
           setDirectoryState('ready')
           return
         }
