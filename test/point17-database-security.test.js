@@ -68,7 +68,7 @@ test('point 17 PIN auth is hash-only, locked out and rotates random Supabase cre
   assert.match(pinAuth, /10\*60\*1000/)
   const rotatingPasswords = pinAuth.match(/crypto\.randomUUID\(\)\+crypto\.randomUUID\(\)/g) || []
   assert.equal(rotatingPasswords.length, 1)
-  assert.match(pinAuth, /admin\.auth\.admin\.updateUserById\(authUserId,\{password\}\)/)
+  assert.match(pinAuth, /authJson\(\`\/admin\/users\/\$\{authUserId\}\`,"PUT",\{password\}\)/)
 })
 
 test('point 17 covers composite foreign keys and removes exact duplicate indexes', () => {
