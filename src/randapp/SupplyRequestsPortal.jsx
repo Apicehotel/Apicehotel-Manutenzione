@@ -115,13 +115,6 @@ function ProductManager({ hotel, products, onChanged }) {
   const [category, setCategory] = useState('minibar')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [selectedRequest, setSelectedRequest] = useState(null)
-
-  useEffect(() => {
-    onDetailChange?.(selectedRequest ? { kind: 'supply', id: String(selectedRequest.id) } : null)
-    return () => onDetailChange?.(null)
-  }, [selectedRequest?.id, onDetailChange])
-
   const add = async (event) => {
     event.preventDefault()
     setBusy(true); setError('')
@@ -275,6 +268,12 @@ export default function SupplyRequestsPortal({ user, hotel, onDetailChange }) {
   const [contextLoading, setContextLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedRequest, setSelectedRequest] = useState(null)
+
+  useEffect(() => {
+    onDetailChange?.(selectedRequest ? { kind: 'supply', id: String(selectedRequest.id) } : null)
+    return () => onDetailChange?.(null)
+  }, [selectedRequest?.id, onDetailChange])
 
   const refresh = useCallback(async () => {
     if (!canView || !hotel?.id) return
