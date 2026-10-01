@@ -88,6 +88,7 @@
 
 .rs-overlay--drawer {
   justify-content: flex-end;
+  z-index: 100;
   backdrop-filter: blur(3px);
 }
 
