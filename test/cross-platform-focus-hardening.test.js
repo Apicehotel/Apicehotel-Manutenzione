@@ -6,6 +6,7 @@ import { clearVisualViewportState, syncVisualViewportState } from '../src/randap
 const read=(p)=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8')
 const adaptive=read('src/randapp/adaptive-layout.css')
 const detail=read('src/randapp/operational-detail.css')
+const telegram=read('src/randapp/telegram-navigation.css')
 const coherence=read('src/randapp/ui-coherence.css')
 const bridge=read('src/randapp/system-insets.js')
 
@@ -72,4 +73,15 @@ test('large UI enlarges Focus Mode controls and narrow phones stack the dock',()
   assert.match(adaptive,/@media \(max-width:\s*420px\)[\s\S]*html\[data-ui-size='large'\] \.rs-operational-dock[\s\S]*grid-template-columns:\s*1fr/)
   assert.match(adaptive,/@media \(min-width:\s*768px\) and \(max-width:\s*1199px\)/)
   assert.match(adaptive,/@media \(min-width:\s*1200px\)/)
+})
+
+
+test('Focus Mode menu drawer stays above operational content without outranking critical viewers',()=>{
+  const triggerZ=Number(detail.match(/\.rs-operational-menu-trigger\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+  const overlayZ=Number(telegram.match(/\.rs-overlay--drawer\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+  const drawerZ=Number(telegram.match(/\.rs-drawer--telegram\s*\{[\s\S]*?z-index:\s*(\d+)/)?.[1])
+  assert.ok(Number.isFinite(triggerZ) && Number.isFinite(overlayZ) && Number.isFinite(drawerZ))
+  assert.ok(overlayZ > triggerZ, `drawer overlay z-index ${overlayZ} must exceed Focus trigger ${triggerZ}`)
+  assert.ok(drawerZ > overlayZ, `drawer z-index ${drawerZ} must exceed overlay ${overlayZ}`)
+  assert.ok(drawerZ < 120, 'drawer must stay below critical full-screen viewers')
 })
