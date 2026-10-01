@@ -27,14 +27,14 @@ test('a requested product has only pending, delivered or missing states', () => 
   assert.doesNotMatch(portal, /Niente/)
 })
 
-test('governanti create requests and manutentori resolve them through controlled RPCs', () => {
+test('governanti create requests and manutentori resolve them through the controlled supply API', () => {
   assert.match(migration, /'Governante','supplies','create',true/)
   assert.match(migration, /'Capo Governante','supplies','create',true/)
   assert.match(migration, /'manutentore','supplies','complete',true/)
   assert.match(migration, /revoke insert,update,delete on public\.supply_requests from authenticated/)
   assert.match(migration, /revoke insert,update,delete on public\.supply_request_items from authenticated/)
-  assert.match(data, /supply_create_request/)
-  assert.match(data, /supply_resolve_item/)
+  assert.match(data, /callSupplyApi\('create-request'/)
+  assert.match(data, /callSupplyApi\('resolve-item'/)
 })
 
 test('Governante and Capo Governante have an actual Rifornimenti menu route', () => {
