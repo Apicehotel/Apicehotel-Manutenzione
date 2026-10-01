@@ -62,3 +62,12 @@ test('Telegram visual layer is runtime-owned while navigation logic stays side-e
   assert.match(css, /focus-visible/)
   assert.match(css, /@media \(max-width: 360px\)/)
 })
+
+
+test('transient directory failures do not tear down an already verified menu shell', () => {
+  assert.match(shell, /verifiedHotelRef\.current = session\.hotelId/)
+  assert.match(shell, /shellBootstrapped && user && verifiedHotelRef\.current === session\.hotelId/)
+  assert.match(shell, /setDirectoryState\('ready'\)/)
+  const catchBlock = shell.slice(shell.indexOf("Directory struttura non disponibile"), shell.indexOf("return () => { active = false }"))
+  assert.match(catchBlock, /if \(shellBootstrapped && user/)
+})
