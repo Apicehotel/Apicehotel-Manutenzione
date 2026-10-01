@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { canAttemptDeploymentRecovery, isDeploymentAssetError } from '../src/deployment-recovery.js'
+import { canAttemptDeploymentRecovery, isDeploymentAssetError, isDocumentBuildStale } from '../src/deployment-recovery.js'
 
 const main = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8')
 const app = readFileSync(new URL('../src/randapp/App.jsx', import.meta.url), 'utf8')
@@ -54,7 +54,7 @@ test('React render boundary delegates recoverable module failures to centralized
 })
 
 test('service worker refuses invalid stale dynamic assets and avoids online stale-shell fallback', () => {
-  assert.match(serviceWorker, /apicehotel-manutenzione-v16/)
+  assert.match(serviceWorker, /apicehotel-manutenzione-v17/)
   assert.match(serviceWorker, /PURGE_RUNTIME_CACHES/)
   assert.match(serviceWorker, /isValidDynamicAsset/)
   assert.match(serviceWorker, /isImmutableAsset/)
@@ -71,4 +71,23 @@ test('deployment caching keeps HTML fresh and hashed assets immutable', () => {
   assert.match(vercel, /no-cache, no-store, must-revalidate/)
   assert.match(vercel, /"source": "\/assets\/\(\.\*\)"/)
   assert.match(vercel, /"source": "\/sw\.js"/)
+})
+
+
+test('build freshness guard detects when Ocean HTML points to a newer entry bundle', () => {
+  const oldEntry = 'https://randui-preview.example/assets/index-oldhash.js'
+  const newerHtml = '<!doctype html><script type="module" crossorigin src="/assets/index-newhash.js"></script>'
+  const sameHtml = '<!doctype html><script type="module" crossorigin src="/assets/index-oldhash.js"></script>'
+  assert.equal(isDocumentBuildStale(newerHtml, oldEntry, 'https://randui-preview.example'), true)
+  assert.equal(isDocumentBuildStale(sameHtml, oldEntry, 'https://randui-preview.example'), false)
+})
+
+test('freshness recovery is event-driven instead of background polling', () => {
+  const recovery = readFileSync(new URL('../src/deployment-recovery.js', import.meta.url), 'utf8')
+  assert.match(recovery, /addEventListener\('pageshow'/)
+  assert.match(recovery, /addEventListener\('online'/)
+  assert.match(recovery, /addEventListener\('visibilitychange'/)
+  assert.doesNotMatch(recovery, /setInterval\(/)
+  assert.match(recovery, /cache:\s*'no-store'/)
+  assert.match(recovery, /PURGE_RUNTIME_CACHES/)
 })
