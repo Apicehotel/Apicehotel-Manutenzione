@@ -211,6 +211,13 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       }).catch((error) => {
         if (!active) return
         console.error('Directory struttura non disponibile', error)
+        // A transient Supabase/Auth failure must not tear down an already
+        // bootstrapped shell. Keep the last verified identity/navigation alive
+        // and let cached/live data recover on the next successful refresh.
+        if (shellBootstrapped && user) {
+          setDirectoryState('ready')
+          return
+        }
         setUsers([])
         setUser(null)
         setDirectoryState('error')
