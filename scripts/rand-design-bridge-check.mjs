@@ -6,6 +6,8 @@ const REQUIRED_FILES=[
   'src/randapp/ui.jsx',
   'src/randapp/randui/design-contract.js',
   'src/randapp/randui/component-registry.js',
+  'src/randapp/randui/ui-learning-catalog.json',
+  'src/randapp/randui/ui-learning.js',
   'src/randapp/randui/foundation.css',
   'src/randapp/randui/guard.js',
   'test/randui-visual-language-v1.test.js',

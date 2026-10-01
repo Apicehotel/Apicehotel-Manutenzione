@@ -52,7 +52,14 @@ async function writeViaGithubOidc() {
       },
     }),
   })
-  if (!response.ok) throw new Error(`Heartbeat edge function failed: ${response.status} ${await response.text()}`)
+  if (!response.ok) {
+    const body = await response.text()
+    if (response.status === 401 || response.status === 403) {
+      console.log(`::warning title=Rand heartbeat skipped::Heartbeat edge function rejected GitHub OIDC (${response.status}). CI continues because heartbeat is telemetry, not a quality gate.`)
+      return null
+    }
+    throw new Error(`Heartbeat edge function failed: ${response.status} ${body}`)
+  }
   return response.json()
 }
 
@@ -81,7 +88,7 @@ if (serviceRoleKey) {
 } else {
   result = await writeViaGithubOidc()
   if (!result) {
-    console.log('::notice title=Rand heartbeat not sent::No service-role secret and GitHub OIDC is unavailable on this runner.')
+    console.log('::notice title=Rand heartbeat not sent::No usable service-role/OIDC heartbeat path on this runner.')
     process.exit(0)
   }
 }

@@ -15,9 +15,18 @@ export const RANDDESIGN_CAPABILITIES = Object.freeze([
   'VISUAL_REGRESSION',
   'REVERSE_IMPORT',
   'SCREENSHOT_TO_LAYERS',
+  'UI_PATTERN_KNOWLEDGE',
 ])
 
 export const RANDDESIGN_TOOLS = Object.freeze([
+  {
+    id:'randui-learning-catalog',
+    name:'RandUI Learning Catalog',
+    decision:RandDesignToolDecision.ADOPT_PATTERN,
+    capabilities:['UI_PATTERN_KNOWLEDGE'],
+    runtimeBoundary:'INTERNAL_KNOWLEDGE',
+    reason:'Catalogo canonico di pattern UI/UX con provenienza, casi d’uso e anti-pattern; insegna nuove soluzioni senza introdurre un secondo runtime UI.',
+  },
   {
     id:'figma-official-mcp',
     name:'Figma MCP ufficiale',
@@ -93,7 +102,7 @@ export const RANDDESIGN_TOOLS = Object.freeze([
 ])
 
 export const RANDDESIGN_CONTRACT = Object.freeze({
-  version:'1.0.0',
+  version:'1.1.0',
   owner:'RandUI',
   bridge:'RandDesignBridge',
   principles:Object.freeze([
@@ -105,6 +114,7 @@ export const RANDDESIGN_CONTRACT = Object.freeze({
     'visual-regression-prefers-existing-playwright-gates-until-storybook-is-canonical',
     'tokens-use-dtcg-compatible-shapes-when-exported',
     'reverse-import-output-is-never-canonical-without-review',
+    'ui-pattern-learning-must-have-provenance-and-license-notes',
   ]),
 })
 

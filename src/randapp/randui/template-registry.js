@@ -1,6 +1,6 @@
 import { RANDUI_TEMPLATE_IDS } from './design-contract.js'
 
-const VISUAL_CORE = Object.freeze(['PageTitle', 'Surface', 'Stack', 'Grid', 'Metric'])
+const VISUAL_CORE = Object.freeze(['PageTitle', 'Surface', 'Stack', 'Grid', 'Metric', 'LayeredCard', 'StatCard', 'StatusChip', 'ProgressMeter', 'ActivityTimeline', 'DataList', 'CommandSurface', 'SkeletonBlock'])
 const CORE = Object.freeze(['TemplateFrame', 'Icon', 'Button', 'IconButton', 'Card', 'Badge', 'SystemState', ...VISUAL_CORE])
 const FORMS = Object.freeze([...CORE, 'Field', 'TextInput', 'Segmented', 'Sheet', 'Modal', 'ConfirmDialog'])
 const SETTINGS = Object.freeze([...FORMS, 'UiSizeControl', 'ThemeControl'])
