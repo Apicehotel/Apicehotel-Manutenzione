@@ -77,13 +77,7 @@ test('large UI enlarges Focus Mode controls and narrow phones stack the dock',()
 
 
 test('Focus Mode menu drawer stays above operational content without outranking critical viewers',()=>{
-  const block=(source,selector)=>source.match(new RegExp(`\\\\.${selector}\\\\s*\\\\{([^}]*)\\\\}`))?.[1] || ''
-  const z=(source,selector)=>Number(block(source,selector).match(/z-index:\\s*(\\d+)/)?.[1])
-  const triggerZ=z(detail,'rs-operational-menu-trigger')
-  const overlayZ=z(telegram,'rs-overlay--drawer')
-  const drawerZ=z(telegram,'rs-drawer--telegram')
-  assert.ok(Number.isFinite(triggerZ) && Number.isFinite(overlayZ) && Number.isFinite(drawerZ))
-  assert.ok(overlayZ > triggerZ, `drawer overlay z-index ${overlayZ} must exceed Focus trigger ${triggerZ}`)
-  assert.ok(drawerZ >= overlayZ, `drawer z-index ${drawerZ} must not fall below overlay ${overlayZ}`)
-  assert.ok(drawerZ < 120, 'drawer must stay below critical full-screen viewers')
+  assert.match(detail,/\.rs-operational-menu-trigger\s*\{[^}]*z-index:\s*88\b/s)
+  assert.match(telegram,/\.rs-overlay--drawer\s*\{[^}]*z-index:\s*100\b/s)
+  assert.match(telegram,/\.rs-drawer--telegram\s*\{[^}]*z-index:\s*101\b/s)
 })
