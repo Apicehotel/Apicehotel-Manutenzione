@@ -21,8 +21,8 @@ export function StatCard({ label, value, detail, icon, tone = 'default', trend, 
   )
 }
 
-export function StatusChip({ children, tone = 'neutral', icon, className = '' }) {
-  return <span className={cx('rs-randui-statuschip', className)} data-randui-tone={tone}>{icon ? <Icon name={icon} /> : null}<span>{children}</span></span>
+export function StatusChip({ children, tone = 'neutral', icon, className = '', ...props }) {
+  return <span className={cx('rs-randui-statuschip', className)} data-randui-tone={tone} {...props}>{icon ? <Icon name={icon} /> : null}<span>{children}</span></span>
 }
 
 export function ProgressMeter({ value = 0, max = 100, label, detail, tone = 'accent', className = '' }) {
