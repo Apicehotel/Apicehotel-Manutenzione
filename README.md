@@ -24,6 +24,7 @@ La PWA verifica inoltre la freschezza della build in modo **event-driven** (avvi
 
 La Shell autenticata è inoltre resiliente ai fallimenti temporanei della directory: se utente e hotel corrente erano già stati verificati, un errore transitorio Supabase/Auth non azzera più identità, header, menu laterale o navigazione. Il fallback è limitato allo stesso hotel già verificato e non riusa permessi tra strutture diverse. Dopo il login, `App.jsx` passa alla Shell la directory già validata: la Shell non dipende più da una seconda chiamata di rete per mostrare menu e navigazione, mentre il refresh successivo resta non distruttivo.
 Il menu laterale mobile usa un unico drawer runtime: gli stili specifici dell'header mobile sono caricati esplicitamente dall'entrypoint e l'overlay del drawer possiede l'intero viewport (`position: fixed; inset: 0`). Il trigger profilo e quello Focus Mode aprono lo stesso stato `drawer`.
+Rifornimenti mantiene lo stato della richiesta selezionata nel componente `SupplyRequestsPortal`, che possiede anche il callback `onDetailChange`; il gestore prodotti resta indipendente e non può causare crash della sezione per riferimenti fuori scope.
 
 Il login PIN non usa più PostgREST per le operazioni privilegiate: `pin-auth` legge e aggiorna `utenti`, `profiles`, `auth_pin_credentials` e `hotel_memberships` tramite connessione Postgres diretta (`SUPABASE_DB_URL`), mentre Supabase Auth resta responsabile dell'identità e della sessione. Questo evita il percorso `PGRST303 / JWT issued at future` osservato sul gateway con le nuove API key.
 
