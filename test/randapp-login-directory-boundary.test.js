@@ -11,8 +11,8 @@ test('PIN login directory is minimal, separately cached and excludes RandAI iden
   assert.match(usersData, /getCachedCollection\('login-directory', hotelId\)/)
   assert.match(usersData, /setCachedCollection\('login-directory', hotelId, users\)/)
   assert.match(pinAuth, /async function listLoginDirectory\(hotelId:string\)/)
-  assert.match(pinAuth, /\.neq\("ruolo","RandAI"\)/)
-  assert.match(pinAuth, /\{id:u\.id,legacy_id:u\.id,name:u\.nome,hotel_id:hotelId,active:true\}/)
+  assert.match(pinAuth, /ruolo <> 'RandAI'/)
+  assert.match(pinAuth, /\{id:String\(u\.id\),legacy_id:String\(u\.id\),name:u\.nome,hotel_id:hotelId,active:true\}/)
 })
 
 test('authenticated operational directory stays separate from the pre-login contract', () => {
