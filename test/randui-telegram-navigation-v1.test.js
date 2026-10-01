@@ -66,9 +66,9 @@ test('Telegram visual layer is runtime-owned while navigation logic stays side-e
 
 
 test('transient directory failures preserve the verified menu only for the active hotel', () => {
-  assert.match(shell, /const verifiedHotelRef = useRef\(null\)/)
+  assert.match(shell, /const verifiedHotelRef = useRef\(initialUser \? session\.hotelId : null\)/)
   assert.match(shell, /verifiedHotelRef\.current = session\.hotelId/)
-  assert.match(shell, /shellBootstrapped && user && verifiedHotelRef\.current === session\.hotelId/)
+  assert.match(shell, /\(hasVerifiedSeed \|\| shellBootstrapped\) && \(seededUser \|\| user\) && verifiedHotelRef\.current === session\.hotelId/)
   assert.match(shell, /setDirectoryState\('ready'\)/)
   assert.match(shell, /setUsers\(\[\]\)\s*\n\s*setUser\(null\)\s*\n\s*setDirectoryState\('error'\)/)
 })
