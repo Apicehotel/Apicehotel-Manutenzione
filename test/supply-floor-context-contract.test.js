@@ -37,14 +37,14 @@ test('frontend persists active floor per user and hotel for reuse by Housekeepin
   assert.match(context, /userStorageKey/)
   assert.match(context, /localStorage\.getItem/)
   assert.match(context, /localStorage\.setItem/)
-  assert.match(context, /operational_list_floor_contexts/)
+  assert.match(context, /callSupplyApi\('floor-contexts'/)
 })
 
-test('Rifornimenti uses the v2 RPC and shows Cambia piano plus destination on requests', () => {
-  assert.match(data, /supply_create_request_v2/)
-  assert.match(data, /p_area_code/)
-  assert.match(data, /p_floor_number/)
-  assert.match(data, /area_code,area_label,floor_number,floor_label/)
+test('Rifornimenti uses the direct supply API and shows Cambia piano plus destination on requests', () => {
+  assert.match(data, /callSupplyApi\('create-request'/)
+  assert.match(data, /area_code:/)
+  assert.match(data, /floor_number:/)
+  assert.match(data, /callSupplyApi\('list-requests'/)
   assert.match(portal, /Cambia piano/)
   assert.match(portal, /Dove serve\?/)
   assert.match(portal, /P\{context\.floor_number\}/)
