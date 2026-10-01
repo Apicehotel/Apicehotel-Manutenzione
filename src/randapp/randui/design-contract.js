@@ -3,7 +3,7 @@ import { RANDUI_MOTION, RANDUI_MOTION_VERSION } from './motion-contract.js'
 import designTokens from './design-tokens.json' with { type: 'json' }
 
 export const RANDUI_VERSION = '1.0.0'
-export const RANDUI_STANDARDIZATION_VERSION = '1.0.0'
+export const RANDUI_STANDARDIZATION_VERSION = '1.1.0'
 
 export const RANDUI_BREAKPOINTS = Object.freeze({
   mobileMax: 767,
@@ -25,6 +25,7 @@ export const RANDUI_LAYER_OWNERS = Object.freeze({
   icons: 'src/randapp/randui/icon-contract.js',
   templates: 'src/randapp/randui/template-registry.js',
   components: 'src/randapp/randui/component-registry.js',
+  uiLearning: 'src/randapp/randui/ui-learning-catalog.json',
   pageSchema: 'src/randapp/randui/page-schema.js',
   systemStates: 'src/randapp/randui/system-states.jsx',
   guard: 'src/randapp/randui/guard.js',
@@ -65,6 +66,8 @@ export const RANDUI_DESIGN_CONTRACT = Object.freeze({
     'safe-area-owned-by-shared-chrome',
     'templates-before-page-specific-layout',
     'registered-components-only',
+    'learned-patterns-have-provenance',
+    'external-ui-patterns-do-not-create-a-second-runtime',
     'reduced-motion-is-mandatory',
     'guard-before-template-migration',
   ]),
