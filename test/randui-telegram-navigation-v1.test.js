@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const main = fs.readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8')
 const navigation = fs.readFileSync(new URL('../src/randapp/shell-navigation.js', import.meta.url), 'utf8')
 const shell = fs.readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
+const app = fs.readFileSync(new URL('../src/randapp/App.jsx', import.meta.url), 'utf8')
 const nav = fs.readFileSync(new URL('../src/randapp/nav.js', import.meta.url), 'utf8')
 const hub = fs.readFileSync(new URL('../src/randapp/operations/OperationsHub.jsx', import.meta.url), 'utf8')
 const css = fs.readFileSync(new URL('../src/randapp/telegram-navigation.css', import.meta.url), 'utf8')
@@ -65,9 +66,19 @@ test('Telegram visual layer is runtime-owned while navigation logic stays side-e
 
 
 test('transient directory failures preserve the verified menu only for the active hotel', () => {
-  assert.match(shell, /const verifiedHotelRef = useRef\(null\)/)
+  assert.match(shell, /const verifiedHotelRef = useRef\(initialUser \? session\.hotelId : null\)/)
   assert.match(shell, /verifiedHotelRef\.current = session\.hotelId/)
-  assert.match(shell, /shellBootstrapped && user && verifiedHotelRef\.current === session\.hotelId/)
+  assert.match(shell, /\(hasVerifiedSeed \|\| shellBootstrapped\) && \(seededUser \|\| user\) && verifiedHotelRef\.current === session\.hotelId/)
   assert.match(shell, /setDirectoryState\('ready'\)/)
   assert.match(shell, /setUsers\(\[\]\)\s*\n\s*setUser\(null\)\s*\n\s*setDirectoryState\('error'\)/)
+})
+
+
+test('validated login directory bootstraps Shell before background refresh', () => {
+  assert.match(app, /setValidatedDirectory\(\{ hotelId: session\.hotelId, users: rows \}\)/)
+  assert.match(app, /<Shell session=\{session\} initialDirectory=\{validatedDirectory\}/)
+  assert.match(shell, /initialDirectory\?\.hotelId === session\.hotelId/)
+  assert.match(shell, /const \[directoryState, setDirectoryState\] = useState\(initialUser \? 'ready' : 'loading'\)/)
+  assert.match(shell, /const hasVerifiedSeed = Boolean\(seededUser\)/)
+  assert.match(shell, /\(hasVerifiedSeed \|\| shellBootstrapped\)/)
 })

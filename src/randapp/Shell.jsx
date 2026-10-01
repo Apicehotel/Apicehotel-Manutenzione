@@ -156,12 +156,14 @@ function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) 
   ))
 }
 
-export default function Shell({ session, onLogout, onSwitchHotel }) {
-  const [user, setUser] = useState(null)
-  const [users, setUsers] = useState([])
-  const [directoryState, setDirectoryState] = useState('loading')
+export default function Shell({ session, initialDirectory = null, onLogout, onSwitchHotel }) {
+  const initialRows = initialDirectory?.hotelId === session.hotelId ? (initialDirectory.users || []) : []
+  const initialUser = initialRows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || null
+  const [user, setUser] = useState(initialUser)
+  const [users, setUsers] = useState(initialRows)
+  const [directoryState, setDirectoryState] = useState(initialUser ? 'ready' : 'loading')
   const [directoryRetry, setDirectoryRetry] = useState(0)
-  const [shellBootstrapped, setShellBootstrapped] = useState(false)
+  const [shellBootstrapped, setShellBootstrapped] = useState(Boolean(initialUser))
   const [view, setView] = useState('home')
   const [createSignal, setCreateSignal] = useState(0)
   const [issueFocusId, setIssueFocusId] = useState(null)
@@ -180,7 +182,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
   const [cacheBusy, setCacheBusy] = useState(false)
   const [cacheStatus, setCacheStatus] = useState('')
   const [navigationConfig, setNavigationConfig] = useState({})
-  const verifiedHotelRef = useRef(null)
+  const verifiedHotelRef = useRef(initialUser ? session.hotelId : null)
   const hotel = hotelById(session.hotelId)
   const drawerSwipe = useDrawerSwipe({ open: drawer, setOpen: setDrawer })
   const operationalDetailOpen = Boolean(operationalDetail)
@@ -197,9 +199,22 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
       setDirectoryState('invalid-hotel')
       return () => { active = false }
     }
-    setDirectoryState('loading')
-    // Keep the previous shell chrome during hotel switch so the UI does not flash
-    // a full-screen spinner that feels like "the page never loaded".
+    const seededRows = initialDirectory?.hotelId === session.hotelId ? (initialDirectory.users || []) : []
+    const seededUser = seededRows.find((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId) || null
+    const hasVerifiedSeed = Boolean(seededUser)
+
+    if (hasVerifiedSeed) {
+      setUsers(seededRows)
+      setUser(seededUser)
+      setDirectoryState('ready')
+      verifiedHotelRef.current = session.hotelId
+      setShellBootstrapped(true)
+    } else {
+      setDirectoryState('loading')
+    }
+
+    // Refresh the already-validated directory in background. A transient failure
+    // must not tear down a Shell that App.jsx has just verified for this hotel.
     withTimeout(fetchDirectory(session.hotelId), DIRECTORY_TIMEOUT_MS, 'Directory struttura timeout')
       .then(({ users: list }) => {
         if (!active) return
@@ -217,7 +232,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         console.error('Directory struttura non disponibile', error)
         // Keep an already verified shell usable during transient Supabase/Auth
         // outages, but never reuse identity state across different hotels.
-        if (shellBootstrapped && user && verifiedHotelRef.current === session.hotelId) {
+        if ((hasVerifiedSeed || shellBootstrapped) && (seededUser || user) && verifiedHotelRef.current === session.hotelId) {
           setDirectoryState('ready')
           return
         }
@@ -226,7 +241,7 @@ export default function Shell({ session, onLogout, onSwitchHotel }) {
         setDirectoryState('error')
       })
     return () => { active = false }
-  }, [session.hotelId, session.userId, hotel, directoryRetry])
+  }, [session.hotelId, session.userId, hotel, directoryRetry, initialDirectory])
 
   useEffect(() => {
     let active = true

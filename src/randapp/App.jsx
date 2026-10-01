@@ -275,6 +275,7 @@ function HotelSelector({ pending, onPick }) {
 export default function App() {
   const [session, setSession] = useState(loadSession())
   const [sessionReady, setSessionReady] = useState(() => !loadSession())
+  const [validatedDirectory, setValidatedDirectory] = useState(null)
   const [pending, setPending] = useState(null)
   const [settingsFromLogin, setSettingsFromLogin] = useState(false)
   const recoveryToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('pinRecovery') : null
@@ -288,6 +289,7 @@ export default function App() {
 
   useEffect(() => {
     if (!session) {
+      setValidatedDirectory(null)
       setSessionReady(true)
       return undefined
     }
@@ -297,6 +299,7 @@ export default function App() {
       try { await signOutSupabase?.() } catch { /* local reset still proceeds */ }
       clearSession()
       if (!active) return
+      setValidatedDirectory(null)
       setPending(null)
       setSession(null)
       setSessionReady(true)
@@ -331,7 +334,10 @@ export default function App() {
         }
         const validatedSession = markSessionValidated(session)
         saveSession(validatedSession)
-        if (active) setSessionReady(true)
+        if (active) {
+          setValidatedDirectory({ hotelId: session.hotelId, users: rows })
+          setSessionReady(true)
+        }
       } catch (error) {
         console.warn('Controllo sessione rimandato', error)
         if (isOfflineSessionFresh(session)) {
@@ -377,7 +383,7 @@ export default function App() {
   if (recoveryToken && !recoveryDone) return <PinRecoveryComplete token={recoveryToken} onDone={() => { setRecoveryDone(true); try { window.history.replaceState({}, '', window.location.pathname) } catch { /* noop */ } }} />
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
   if (session && !sessionReady) return <Spinner label="Verifico accesso…" />
-  if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} onLogout={onLogout} onSwitchHotel={(id) => { saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
+  if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} initialDirectory={validatedDirectory} onLogout={onLogout} onSwitchHotel={(id) => { setValidatedDirectory(null); saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
   if (pending) return <HotelSelector pending={pending} onPick={pickHotel} />
   return <Login onAuthenticated={onAuthenticated} onOpenSettings={() => setSettingsFromLogin(true)} />
 }

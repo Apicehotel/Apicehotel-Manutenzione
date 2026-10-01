@@ -21,7 +21,7 @@ Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` +
 
 Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v16 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).
 
-La Shell autenticata è inoltre resiliente ai fallimenti temporanei della directory: se utente e hotel corrente erano già stati verificati, un errore transitorio Supabase/Auth non azzera più identità, header, menu laterale o navigazione. Il fallback è limitato allo stesso hotel già verificato e non riusa permessi tra strutture diverse.
+La Shell autenticata è inoltre resiliente ai fallimenti temporanei della directory: se utente e hotel corrente erano già stati verificati, un errore transitorio Supabase/Auth non azzera più identità, header, menu laterale o navigazione. Il fallback è limitato allo stesso hotel già verificato e non riusa permessi tra strutture diverse. Dopo il login, `App.jsx` passa alla Shell la directory già validata: la Shell non dipende più da una seconda chiamata di rete per mostrare menu e navigazione, mentre il refresh successivo resta non distruttivo.
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
