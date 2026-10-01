@@ -37,8 +37,8 @@ test('pre-login directory is minimal while authenticated hotel members keep the 
   const client = await source('src/users-data.js')
   const loginEdge = edge.match(/async function listLoginDirectory[\s\S]*?\r?\n}\r?\n\r?\nasync function listOperationalDirectory/)?.[0] || ''
   const loginClient = client.match(/function loginDirectoryUsers[\s\S]*?\r?\n}\r?\nfunction operationalUsers/)?.[0] || ''
-  assert.match(loginEdge, /select\("id,nome,active,is_system_protected,hotels"\)/)
-  assert.match(loginEdge, /\{id:u\.id,legacy_id:u\.id,name:u\.nome,hotel_id:hotelId,active:true\}/)
+  assert.match(loginEdge, /select id,nome,active,is_system_protected,hotels from public\.utenti/)
+  assert.match(loginEdge, /\{id:String\(u\.id\),legacy_id:String\(u\.id\),name:u\.nome,hotel_id:hotelId,active:true\}/)
   assert.doesNotMatch(loginEdge, /telefono|department|role|can_admin|in_struttura|auth_user_id/)
   assert.match(edge, /activeMember\(req,hotelId\)/)
   assert.match(edge, /listOperationalDirectory\(hotelId\):listLoginDirectory\(hotelId\)/)
