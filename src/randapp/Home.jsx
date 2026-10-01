@@ -16,7 +16,8 @@ import { withTimeout } from '../async-timeout.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
-import { Badge, Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
+import { Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
+import { CommandSurface, StatCard, StatusChip } from './randui/advanced-primitives.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
 import './home-operational.css'
 
@@ -138,7 +139,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const priorities=useMemo(()=>buildPriorityItems({user,openUrgents,openIssues,todayInterventions,reminders,weather}),[user,openUrgents,openIssues,todayInterventions,reminders,weather])
   const visiblePriorities=focusOnly?priorities.filter((item)=>item.score>=68).slice(0,4):priorities.slice(0,8)
   const dueReminders=reminders.filter((item)=>reminderDueToday(item,user)).length
-  const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'high':'done'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'high':'todo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:'waiting'}:null].filter(Boolean)
+  const stats=[canUrgent?{label:'Allarmi',value:openUrgents.length,route:'urgent',tone:openUrgents.length?'danger':'success',icon:'warning',detail:openUrgents.length?'Richiedono attenzione':'Nessun allarme'}:null,canIssues?{label:'Da fare',value:openIssues.length,route:'issues',tone:openIssues.some((x)=>x.urgency==='alta')?'danger':'default',icon:'issues',detail:openIssues.length?'Segnalazioni aperte':'Tutto sotto controllo'}:null,canInterventions?{label:'Oggi',value:todayInterventions.length,route:'interventions',tone:'accent',icon:'wrench',detail:'Interventi previsti'}:null,canReminders?{label:'Promemoria',value:dueReminders,route:'reminders',tone:dueReminders?'warning':'default',icon:'bell',detail:'Da vedere oggi'}:null].filter(Boolean)
   const tools=[
     canCreateIssues?['new-issue','plus','Nuova']:null,
     canInterventions?['my-work','check','Miei']:null,
@@ -181,7 +182,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
           <Icon name="warning"/><span><strong>Alcuni dati non sono aggiornati</strong><small>Tocca per riprovare il caricamento</small></span>
         </button>
       )}
-      <div className="rs-workhome__stats rs-workhome__stats--strip" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><button key={stat.label} type="button" className="rs-workhome__stat" onClick={()=>onNavigate?.(stat.route)}><Badge tone={stat.tone}>{stat.label}</Badge><strong>{stat.value}</strong></button>)}</div>
+      <div className="rs-workhome__stats rs-workhome__stats--rich" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}</div>
       {syncCard&&<button type="button" className={`rs-workhome__sync is-${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
 
       {showDesk&&<div className="rs-workhome__desk" data-testid="home-desk">
@@ -190,10 +191,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
             <span>SUL BANCO</span>
             <h2>La tua scrivania</h2>
           </div>
-          {weatherCard&&<div className={`rs-workhome__desk-meteo is-${weatherCard.level}`} data-testid="weather-widget" role="status">
-            <Icon name={weatherCard.level==='ok'?'thermometer':'warning'}/>
-            <small>{weatherCard.detail}</small>
-          </div>}
+          {weatherCard&&<StatusChip tone={weatherCard.level==='ok'?'success':weatherCard.level==='danger'?'danger':'warning'} icon={weatherCard.level==='ok'?'thermometer':'warning'} className="rs-workhome__desk-meteo" data-testid="weather-widget" role="status">{weatherCard.detail}</StatusChip>}
         </div>
 
         <button
@@ -288,15 +286,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
 
       {!!tools.length&&(
         <div className="rs-workhome__tools" data-testid="home-shortcuts">
-          <div className="rs-workhome__sectionhead"><div><span>ATTREZZI</span><h2>A portata di mano</h2></div></div>
-          <div className="rs-workhome__toolrow">
-            {tools.map(([route,icon,label])=>(
-              <button key={route} type="button" onClick={()=>onNavigate?.(route)}>
-                <Icon name={icon}/>
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
+          <CommandSurface title="Azioni rapide" items={tools.map(([route,icon,label])=>({id:route,icon,label,detail:route==='new-issue'?'Apri una nuova segnalazione':route==='my-work'?'Vai ai tuoi task':route==='interventions'?'Apri gli interventi':route==='urgent'?'Controlla gli urgenti':route==='housekeeping'?'Apri housekeeping':route==='inventory'?'Apri magazzino':'Apri promemoria'}))} onPick={(item)=>onNavigate?.(item.id)} />
         </div>
       )}
 
