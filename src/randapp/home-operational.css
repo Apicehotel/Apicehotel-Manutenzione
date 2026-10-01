@@ -727,3 +727,42 @@ html[data-ui-size='large'] .rs-workhome__toolrow button { min-height: 72px; }
     column-gap: 24px;
   }
 }
+
+
+/* RandUI learned patterns applied to the real Home. */
+.rs-workhome__stats--rich {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.rs-workhome__stats--rich .rs-randui-statcard {
+  min-height: 104px;
+}
+.rs-workhome__stats--rich .rs-randui-statcard > strong {
+  margin-top: 8px;
+}
+.rs-workhome__desk-meteo.rs-randui-statuschip {
+  max-width: min(48%, 300px);
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 999px;
+}
+.rs-workhome__desk-meteo.rs-randui-statuschip > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .rs-workhome__stats--rich {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .rs-workhome__stats--rich .rs-randui-statcard {
+    min-height: 92px;
+    padding: 10px;
+  }
+  .rs-workhome__stats--rich .rs-randui-statcard > small {
+    font-size: .62rem;
+  }
+  .rs-workhome__desk-meteo.rs-randui-statuschip {
+    max-width: 52%;
+  }
+}
