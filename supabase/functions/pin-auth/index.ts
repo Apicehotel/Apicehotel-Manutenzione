@@ -29,6 +29,7 @@ const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{
 const ROLE_VALUES=new Set(["admin","Supremo","Direzione","Direttore Centro Congressi","Portiere Notturno","Responsabile","manutentore","Tecnico esterno","Governante","Capo Governante","Reception","Isola dei Golosi","Ristorante Wine/Jazz","Colazione Jazz"]);
 const canonicalRole=(v:unknown)=>{const r=String(v||"Reception").trim();return ROLE_VALUES.has(r)?r:"Reception"};
 const PRESENCE_MAX_MS=(7*60+20)*60*1000;
+const randomAuthPassword=()=>crypto.randomUUID()+crypto.randomUUID();
 
 function hotelList(value:any):string[]{
   if(Array.isArray(value)) return value.map(String);
@@ -113,7 +114,7 @@ async function ensureIdentity(legacy:any,pin:string){
     :`u-${legacy.id}@auth.apicehotel.invalid`;
 
   if(!authUserId){
-    const password=crypto.randomUUID()+crypto.randomUUID();
+    const password=randomAuthPassword();
     const created=await authJson("/admin/users","POST",{email:internalEmail,password,email_confirm:true,user_metadata:{legacy_user_id:String(legacy.id),display_name:legacy.nome}});
     if(!created?.id)throw new Error("Creazione identità fallita");
     authUserId=String(created.id);
@@ -162,7 +163,7 @@ Deno.serve(async(req:Request)=>{
     if(!hotelId||!userId||!/^\d{4}$/.test(pin))return json({ok:false,error:"Dati login non validi"},400);
 
     const legacyUserId=await resolveLegacyUserId(userId);
-    const legacyRows=await sql`select id,nome,ruolo,pin,hotels,puo_admin,department,telefono,email,phone_country_code,phone_verified,email_verified,deve_cambiare_pin,active,is_system_protected,in_struttura,in_struttura_dal from public.utenti where id=${legacyUserId}::uuid and active=true limit 1`;
+    const legacyRows=await sql`select id,nome,ruolo,hotels,puo_admin,department,telefono,email,phone_country_code,phone_verified,email_verified,deve_cambiare_pin,active,is_system_protected,in_struttura,in_struttura_dal from public.utenti where id=${legacyUserId}::uuid and active=true limit 1`;
     const legacy:any=legacyRows[0]||null;
     if(!legacy||(legacy.is_system_protected&&legacy.nome!=="Randagio")||!hasHotel(legacy.hotels,hotelId))return json({ok:false,error:"Utente o PIN non validi"},401);
 
@@ -195,7 +196,7 @@ Deno.serve(async(req:Request)=>{
     const membership:any=membershipRows[0]||null;
     if(!membership?.active)return json({ok:false,error:"Accesso alla struttura non consentito"},403);
 
-    const password=crypto.randomUUID()+crypto.randomUUID();
+    const password=randomAuthPassword();
     await authJson(`/admin/users/${authUserId}`,"PUT",{password});
     const signed=await authJson("/token?grant_type=password","POST",{email:internalEmail,password},PUBLIC);
     if(!signed?.access_token||!signed?.refresh_token)throw new Error("Sessione non disponibile");
