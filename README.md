@@ -36,6 +36,10 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 
 **README:** ogni PR sostanziale aggiorna questo file allo stato operativo corrente (niente documentazione zombie; la cronologia resta nei docs dedicati).
 
+## Separazione spazi Supabase (transizione verso PC)
+
+Il progetto Supabase condiviso resta temporaneo: non vengono creati tre progetti a pagamento. I confini applicativi sono **HotelGio | MultiHotel | Eye Supremo**. HotelGio è fuori scope e non viene modificato; MultiHotel mantiene l'operatività corrente in `public`; Eye Supremo usa lo spazio dedicato `eye_supremo` e il bucket privato `eye-invoices`. La migration `20261002060000_eye_supremo_space_facade.sql` crea una facade non distruttiva: nessuna tabella Eye esistente viene spostata o cancellata. Dettagli e cutover futuro in `docs/architecture/SUPABASE_SPACE_SEPARATION.md`.
+
 ## Stack canonico
 
 - React 19 + Vite 7 per la PWA.
