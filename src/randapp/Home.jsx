@@ -16,10 +16,9 @@ import { withTimeout } from '../async-timeout.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
-import { Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
+import { Button, EmptyState, Icon, Spinner } from './ui.jsx'
 import { CommandSurface, StatCard, StatusChip } from './randui/advanced-primitives.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
-import './home-operational.css'
 
 const HOME_QUERY_TIMEOUT_MS = 15000
 const timed = (promise, label) => withTimeout(promise, HOME_QUERY_TIMEOUT_MS, label)
@@ -156,145 +155,72 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const presencePreview=presenceRows.slice(0,4)
   const presenceMore=Math.max(0, presenceRows.length - presencePreview.length)
 
-  return <section className="rs-home rs-workhome rs-workhome--desk" data-testid="home-view">
-    <header className="rs-workhome__hero">
-      <div>
-        <span className="rs-workhome__role">{roleLabel(user)} · Scrivania</span>
+  return <section className="rv2-home" data-testid="home-view">
+    <header className="rv2-homehead">
+      <div className="rv2-homehead__copy">
+        <span className="rv2-eyebrow">{roleLabel(user)} · Scrivania</span>
         <h1>Ciao, {firstName(user?.name)}</h1>
         <p>{hotel.name} · {deskDayLabel()} · il tuo banco operativo</p>
       </div>
-      <div className="rs-workhome__hero-actions">
-        {canCreateIssues&&<Button variant="ghost" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione"><span className="rs-workhome__create-label">Nuova</span></Button>}
-        <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home"><span className="rs-workhome__view-label">Vista</span></Button>
+      <div className="rv2-homehead__actions">
+        {canCreateIssues&&<Button variant="primary" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione">Nuova</Button>}
+        <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home">Vista</Button>
       </div>
     </header>
-    {preferencesOpen&&<Card className="rs-card--pad rs-workhome__prefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; puoi scegliere quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></Card>}
+
+    {preferencesOpen&&<section className="rv2-panel rv2-homeprefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; scegli quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></section>}
+
     {loading?<Spinner label="Preparo la scrivania…"/>:homeHardFail?(
-      <div data-testid="home-hard-fail" style={{display:'grid',gap:16,justifyItems:'center',padding:'24px 12px'}}>
-        <EmptyState icon="warning" title="Scrivania non disponibile">
-          Non riesco a caricare i dati operativi. Controlla la connessione e riprova.
-        </EmptyState>
+      <div className="rv2-homefail" data-testid="home-hard-fail">
+        <EmptyState icon="warning" title="Scrivania non disponibile">Non riesco a caricare i dati operativi. Controlla la connessione e riprova.</EmptyState>
         <Button type="button" variant="primary" size="sm" onClick={retryHome} data-testid="home-retry">Riprova</Button>
       </div>
     ):<>
-      {homeFailed&&(
-        <button type="button" className="rs-workhome__sync is-warn" onClick={retryHome} data-testid="home-partial-retry">
-          <Icon name="warning"/><span><strong>Alcuni dati non sono aggiornati</strong><small>Tocca per riprovare il caricamento</small></span>
-        </button>
-      )}
-      <div className="rs-workhome__stats rs-workhome__stats--rich" data-count={stats.length} data-testid="home-stats">{stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}</div>
-      {syncCard&&<button type="button" className={`rs-workhome__sync is-${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
+      {homeFailed&&<button type="button" className="rv2-alertline warning" onClick={retryHome} data-testid="home-partial-retry"><Icon name="warning"/><span><strong>Alcuni dati non sono aggiornati</strong><small>Tocca per riprovare</small></span></button>}
 
-      {showDesk&&<div className="rs-workhome__desk" data-testid="home-desk">
-        <div className="rs-workhome__desk-head">
-          <div>
-            <span>SUL BANCO</span>
-            <h2>La tua scrivania</h2>
-          </div>
-          {weatherCard&&<StatusChip tone={weatherCard.level==='ok'?'success':weatherCard.level==='danger'?'danger':'warning'} icon={weatherCard.level==='ok'?'thermometer':'warning'} className="rs-workhome__desk-meteo" data-testid="weather-widget" role="status">{weatherCard.detail}</StatusChip>}
+      <section className="rv2-kpi-grid" data-count={stats.length} data-testid="home-stats">
+        {stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}
+      </section>
+
+      {syncCard&&<button type="button" className={`rv2-alertline ${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
+
+      {showDesk&&<section className="rv2-desk" data-testid="home-desk">
+        <div className="rv2-desk__head">
+          <div><span className="rv2-eyebrow">Sul banco</span><h2>La tua giornata</h2></div>
+          {weatherCard&&<StatusChip tone={weatherCard.level==='ok'?'success':weatherCard.level==='danger'?'danger':'warning'} icon={weatherCard.level==='ok'?'thermometer':'warning'} data-testid="weather-widget" role="status">{weatherCard.detail}</StatusChip>}
         </div>
 
-        <button
-          type="button"
-          className={`rs-workhome__desk-next${nextCommitment?'':' is-empty'}`}
-          data-testid={nextCommitment?'home-next-commitment':'home-next-empty'}
-          onClick={()=>nextCommitment&&onNavigate?.(nextCommitment.route)}
-          disabled={!nextCommitment}
-        >
-          <span className="rs-workhome__desk-kicker">Prossimo</span>
-          {nextCommitment?(
-            <>
-              <strong>{nextCommitment.title}</strong>
-              <small>{nextCommitment.meta}</small>
-            </>
-          ):(
-            <>
-              <strong>Nessun impegno orario</strong>
-              <small>Quando arriva un intervento o un memo, compare qui</small>
-            </>
-          )}
+        <button type="button" className={`rv2-next ${nextCommitment?'':'is-empty'}`} data-testid={nextCommitment?'home-next-commitment':'home-next-empty'} onClick={()=>nextCommitment&&onNavigate?.(nextCommitment.route)} disabled={!nextCommitment}>
+          <span className="rv2-next__label">Prossimo</span>
+          <span className="rv2-next__body">{nextCommitment?<><strong>{nextCommitment.title}</strong><small>{nextCommitment.meta}</small></>:<><strong>Nessun impegno orario</strong><small>Quando arriva un intervento o un memo, compare qui</small></>}</span>
+          {nextCommitment&&<Icon name="chevronRight"/>}
         </button>
 
-        <div className="rs-workhome__desk-grid">
-          <section className="rs-workhome__desk-pane" data-testid="home-my-work" aria-label="I tuoi lavori">
-            <div className="rs-workhome__desk-panehead">
-              <strong>I tuoi</strong>
-              <small>{myWorkRows.length?`${myWorkRows.length} attivi`:'libero'}</small>
-            </div>
-            {!myWorkRows.length?(
-              <p className="rs-workhome__desk-empty">
-                {canIssues&&openIssues.length
-                  ? `${openIssues.length} segnalazion${openIssues.length===1?'e':'i'} in struttura`
-                  : 'Niente assegnato a te'}
-              </p>
-            ):(
-              <ul className="rs-workhome__desk-list">
-                {myWorkRows.map((row)=>(
-                  <li key={row.id}>
-                    <button type="button" onClick={()=>onNavigate?.(row.route)}>
-                      <Icon name={row.kind==='urgent'?'warning':'wrench'}/>
-                      <span>
-                        <strong>{row.title}</strong>
-                        <small>{row.meta}</small>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+        <div className="rv2-deskgrid">
+          <section className="rv2-panel" data-testid="home-my-work" aria-label="I tuoi lavori">
+            <div className="rv2-panel__head"><div><span>Lavori</span><h2>I tuoi</h2></div><small>{myWorkRows.length?`${myWorkRows.length} attivi`:'libero'}</small></div>
+            {!myWorkRows.length?<p className="rv2-empty">{canIssues&&openIssues.length?`${openIssues.length} segnalazion${openIssues.length===1?'e':'i'} in struttura`:'Niente assegnato a te'}</p>:(
+              <div className="rv2-list">{myWorkRows.map((row)=><button key={row.id} type="button" className="rv2-row" onClick={()=>onNavigate?.(row.route)}><span className="rv2-row__icon"><Icon name={row.kind==='urgent'?'warning':'wrench'}/></span><span className="rv2-row__body"><strong>{row.title}</strong><small>{row.meta}</small></span><Icon name="chevronRight"/></button>)}</div>
             )}
-            <div className="rs-workhome__you-actions">
-              {canInterventions&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('my-work')}>Task</button>}
-              {canIssues&&!myWorkRows.length&&openIssues.length>0&&<button type="button" className="rs-workhome__mywork-all" onClick={()=>onNavigate?.('issues')}>Segnalazioni</button>}
-            </div>
+            <div className="rv2-panel-actions">{canInterventions&&<button type="button" onClick={()=>onNavigate?.('my-work')}>Task</button>}{canIssues&&!myWorkRows.length&&openIssues.length>0&&<button type="button" onClick={()=>onNavigate?.('issues')}>Segnalazioni</button>}</div>
           </section>
 
-          <section className="rs-workhome__desk-pane" data-testid="home-presence" aria-label="Chi c'è in struttura">
-            <div className="rs-workhome__desk-panehead">
-              <strong>Team</strong>
-              <small>{presenceQuery.isLoading?'…':`${presenceRows.length} · ${busyCount} impegnati`}</small>
-            </div>
-            {presenceQuery.isLoading?(
-              <p className="rs-workhome__desk-empty">Controllo presenza…</p>
-            ):!presenceOk&&!presenceRows.length?(
-              <p className="rs-workhome__desk-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}</p>
-            ):!presenceRows.length?(
-              <p className="rs-workhome__desk-empty">Nessuno in struttura</p>
-            ):(
-              <div className="rs-workhome__desk-team">
-                {presencePreview.map((row)=>(
-                  <button
-                    key={row.id}
-                    type="button"
-                    className={`rs-workhome__desk-chip${row.busy?' is-busy':''}`}
-                    onClick={openPresenceTarget}
-                    disabled={!canUrgent}
-                    aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}
-                  >
-                    <span className="rs-workhome__colleague-dot" data-busy={row.busy?'true':'false'} aria-hidden="true"/>
-                    <span>
-                      <strong>{row.name.split(' ')[0]}</strong>
-                      <small>{row.busy?'Impegnato':'Libero'}</small>
-                    </span>
-                  </button>
-                ))}
-                {presenceMore>0&&<span className="rs-workhome__desk-more">+{presenceMore}</span>}
-              </div>
+          <section className="rv2-panel" data-testid="home-presence" aria-label="Chi c'è in struttura">
+            <div className="rv2-panel__head"><div><span>Presenza</span><h2>Team</h2></div><small>{presenceQuery.isLoading?'…':`${presenceRows.length} · ${busyCount} impegnati`}</small></div>
+            {presenceQuery.isLoading?<p className="rv2-empty">Controllo presenza…</p>:!presenceOk&&!presenceRows.length?<p className="rv2-empty">Presenza non aggiornata{presenceQuery.data?.offline?' (offline)':''}</p>:!presenceRows.length?<p className="rv2-empty">Nessuno in struttura</p>:(
+              <div className="rv2-teamgrid">{presencePreview.map((row)=><button key={row.id} type="button" className={`rv2-person ${row.busy?'is-busy':''}`} onClick={openPresenceTarget} disabled={!canUrgent} aria-label={`${row.name}: ${row.busy?'impegnato':'libero'}`}><span className="rv2-person__dot"/><span><strong>{row.name.split(' ')[0]}</strong><small>{row.busy?'Impegnato':'Libero'}</small></span></button>)}{presenceMore>0&&<span className="rv2-team-more">+{presenceMore}</span>}</div>
             )}
           </section>
         </div>
-      </div>}
+      </section>}
 
-      {!!tools.length&&(
-        <div className="rs-workhome__tools" data-testid="home-shortcuts">
-          <CommandSurface title="Azioni rapide" items={tools.map(([route,icon,label])=>({id:route,icon,label,detail:route==='new-issue'?'Apri una nuova segnalazione':route==='my-work'?'Vai ai tuoi task':route==='interventions'?'Apri gli interventi':route==='urgent'?'Controlla gli urgenti':route==='housekeeping'?'Apri housekeeping':route==='inventory'?'Apri magazzino':'Apri promemoria'}))} onPick={(item)=>onNavigate?.(item.id)} />
-        </div>
-      )}
+      {!!tools.length&&<section className="rv2-tools" data-testid="home-shortcuts"><CommandSurface title="Azioni rapide" items={tools.map(([route,icon,label])=>({id:route,icon,label,detail:route==='new-issue'?'Apri una nuova segnalazione':route==='my-work'?'Vai ai tuoi task':route==='interventions'?'Apri gli interventi':route==='urgent'?'Controlla gli urgenti':route==='housekeeping'?'Apri housekeeping':route==='inventory'?'Apri magazzino':'Apri promemoria'}))} onPick={(item)=>onNavigate?.(item.id)} /></section>}
 
-      <div className="rs-workhome__tray">
-        <div className="rs-workhome__sectionhead"><div><span>VASSOIO</span><h2>Da smaltire</h2></div><small>{visiblePriorities.length} in coda</small></div>
-        {visiblePriorities.length===0?<EmptyState icon="check" title="Vassoio vuoto">Niente urgente da smaltire adesso.</EmptyState>:<div className="rs-workhome__queue" data-testid="home-priority-queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rs-workhome__task tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rs-workhome__rank">{index+1}</span><span className="rs-workhome__taskicon"><Icon name={item.icon}/></span><span className="rs-workhome__taskbody"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
+      <section className="rv2-tray">
+        <div className="rv2-desk__head"><div><span className="rv2-eyebrow">Vassoio</span><h2>Da smaltire</h2></div><small>{visiblePriorities.length} in coda</small></div>
+        {visiblePriorities.length===0?<EmptyState icon="check" title="Vassoio vuoto">Niente urgente da smaltire adesso.</EmptyState>:<div className="rv2-priority-list" data-testid="home-priority-queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rv2-priority tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rv2-priority__rank">{index+1}</span><span className="rv2-priority__icon"><Icon name={item.icon}/></span><span className="rv2-priority__body"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
         {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>}
-      </div>
+      </section>
     </>}
   </section>
 }

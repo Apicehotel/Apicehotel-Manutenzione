@@ -20,10 +20,9 @@ import PresenceChip from './PresenceChip.jsx'
 import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
-import './mobile-nav-tune.css'
+import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
 import './new-issue-compact.css'
-import './header-mobile.css'
-import './randui-rebuild.css'
+import './randui-v2.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
@@ -545,7 +544,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
   return (
     <div className="rs-root" {...drawerSwipe}>
-      <div className={`rs-app rs-app--with-side ${operationalDetailOpen ? 'rs-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
+      <div className={`rv2-app ${operationalDetailOpen ? 'rv2-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
         {operationalDetailOpen && !drawer && (
           <IconButton
             icon="menu"
@@ -556,58 +555,50 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
           />
         )}
 
-        {!operationalDetailOpen && <aside className="rs-sidebar" data-testid="sidebar">
-          <div className="rs-sidebar__brand"><img src={logoFor(hotel.id)} alt={hotel.name} /><div style={{ minWidth: 0 }}><b>RandApp</b><small>{hotel.name}</small></div></div>
-          {allowedHotels.length > 1 && placement('structure') !== 'off' && (
-            <button className="rs-sidebar__switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /> <span>Cambia struttura</span> <i><Icon name="chevronDown" /></i></button>
-          )}
-          <div className="rs-sidebar__scroll">
-            <NavGroups user={user} hotel={hotel} variant="sidebar" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />
-            <div className="rs-sidebar__prefs">
-              {viewAllowed('home') && <><span className="rs-sidebar__label">Home</span><button className="rs-sidebar__item" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /> <span>Personalizza Home</span></button></>}
-              <span className="rs-sidebar__label">Tema</span><ThemeControl />
-              <span className="rs-sidebar__label">Dimensione interfaccia</span><UiSizeControl />
-              {placement('cache') !== 'off' && <><span className="rs-sidebar__label">Sistema</span><button className="rs-sidebar__item" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /> <span>{cacheStatus || 'Pulisci cache'}</span></button></>}
-            </div>
-          </div>
-          <button className="rs-sidebar__item" onClick={onLogout} data-testid="sidebar-logout"><Icon name="logout" /> Esci</button>
-        </aside>}
+        {!operationalDetailOpen && (
+          <RandDesktopSidebar
+            brand={<><img src={logoFor(hotel.id)} alt={hotel.name} /><div className="rv2-brandcopy"><b>RandApp</b><small>{hotel.name}</small></div></>}
+            switcher={allowedHotels.length > 1 && placement('structure') !== 'off' ? (
+              <button className="rv2-structure-switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /><span>{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><Icon name="chevronDown" /></button>
+            ) : null}
+            navigation={<NavGroups user={user} hotel={hotel} variant="sidebar" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />}
+            preferences={<div className="rv2-sidebar-prefs">
+              {viewAllowed('home') && <button className="rv2-side-action" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /><span>Personalizza Home</span></button>}
+              <div className="rv2-prefrow"><span>Tema</span><ThemeControl /></div>
+              <div className="rv2-prefrow"><span>Dimensione</span><UiSizeControl /></div>
+              {placement('cache') !== 'off' && <button className="rv2-side-action" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /><span>{cacheStatus || 'Pulisci cache'}</span></button>}
+            </div>}
+            onLogout={onLogout}
+          />
+        )}
 
-        {!operationalDetailOpen && <header className="rs-header rs-header--operational">
-          <button className="rs-hotelchip rs-hotelchip--operational" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
-            <img src={logoFor(hotel.id)} alt={hotel.name} />
-            <span className="rs-hotelchip__text"><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
-            {allowedHotels.length > 1 && placement('structure') !== 'off' && <span className="rs-hotelchip__caret"><Icon name="chevronDown" /></span>}
-          </button>
-          <div className="rs-header__actions">
-            <button type="button" className="rs-profile-trigger" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu">
-              <span className="rs-profile-avatar">{userInitials}</span><span className="rs-profile-trigger__name">{user?.name?.split(' ')[0] || 'Profilo'}</span>
-            </button>
-            <PresenceChip user={user} />
-            <span className="rs-header-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rs-header-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>
-            {viewAllowed('randai') && <button type="button" className="rs-header__randai rs-header__randai--desktop" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button>}
-          </div>
-        </header>}
+        {!operationalDetailOpen && (
+          <RandTopbar
+            hotel={<button className="rv2-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
+              <img src={logoFor(hotel.id)} alt={hotel.name} />
+              <span><small>Struttura</small><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
+              {allowedHotels.length > 1 && placement('structure') !== 'off' && <Icon name="chevronDown" />}
+            </button>}
+            profile={<button type="button" className="rv2-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rv2-profile__avatar">{userInitials}</span><span className="rv2-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
+            presence={<PresenceChip user={user} />}
+            notifications={<span className="rv2-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rv2-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
+            randai={viewAllowed('randai') ? <button type="button" className="rv2-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
+          />
+        )}
 
         {!operationalDetailOpen && <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />}
-        <main className="rs-content" data-testid="main-content">
-          {!operationalDetailOpen && <HousekeepingCompletionAlerts />}
-          <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
-            <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
-          </ViewErrorBoundary>
-        </main>
 
-        {!operationalDetailOpen && <nav className="rs-bottomnav rs-bottomnav--telegram" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
-          {bottomNav.map((item) => {
-            const active = isBottomActive(item)
-            return (
-              <button key={`${item.id}-${item.slot}`} data-slot={item.slot} className={`rs-navbtn ${active ? 'active' : ''} ${item.id === 'randai' ? 'rs-navbtn--randai' : ''}`} onPointerDown={() => warmNavDestination(item.id)} onFocus={() => warmNavDestination(item.id)} onClick={() => handleBottom(item)} data-testid={`nav-${item.id}`} aria-current={active ? 'page' : undefined}>
-                <Icon name={item.icon} /><small>{item.label}</small>
-              </button>
-            )
-          })}
-        </nav>}
-        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
+        <RandSwipeStage items={bottomNav} isActive={isBottomActive} onPick={handleBottom}>
+          <main className="rv2-content" data-testid="main-content">
+            {!operationalDetailOpen && <HousekeepingCompletionAlerts />}
+            <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
+              <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
+            </ViewErrorBoundary>
+          </main>
+        </RandSwipeStage>
+
+        {!operationalDetailOpen && <RandMobileNav data-count="5" items={bottomNav} isActive={isBottomActive} onPick={handleBottom} onWarm={warmNavDestination} />}
+        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rv2-fab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       <ViewErrorBoundary viewId={insertOpen ? 'insert' : urgentCreateOpen ? 'urgent-create' : interventionCreateOpen ? 'intervention-create' : 'overlay'}>
