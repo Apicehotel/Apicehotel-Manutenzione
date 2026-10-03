@@ -138,12 +138,12 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
   ].filter(Boolean)
 
   return (
-    <section className="rv2-page rv2-task" data-testid="task-view">
+    <section className="rv2-page rv2-task rs-ops-surface" data-testid="task-view" data-eyebrow="Task" title="Task">
       <header className="rv2-pagehead">
         <div><span className="rv2-eyebrow">Task</span><h1>Task</h1><p>{hotel.name} · promemoria e avvisi</p></div>
       </header>
       {loading ? <Spinner label="Carico Task…" /> : (
-        <div className="rv2-choice-grid" data-columns={cards.length >= 2 ? 2 : 1}>
+        <div className="rv2-choice-grid rs-ops-choice-grid" data-columns={cards.length >= 2 ? 2 : 1}>
           {cards.map((card) => <HubChoice key={card.key} icon={card.icon} title={card.title} kind={card.key} metrics={card.metrics} onClick={card.onClick} testId={card.testId} />)}
         </div>
       )}
