@@ -21,9 +21,7 @@ import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
-import './mobile-nav-tune.css'
 import './new-issue-compact.css'
-import './header-mobile.css'
 import './randui-v2.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
@@ -576,7 +574,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
         {!operationalDetailOpen && (
           <RandTopbar
-            hotel={<button className="rv2-hotelchip rs-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
+            hotel={<button className="rv2-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
               <img src={logoFor(hotel.id)} alt={hotel.name} />
               <span><small>Struttura</small><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
               {allowedHotels.length > 1 && placement('structure') !== 'off' && <Icon name="chevronDown" />}
@@ -591,7 +589,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
         {!operationalDetailOpen && <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />}
 
         <RandSwipeStage items={bottomNav} isActive={isBottomActive} onPick={handleBottom}>
-          <main className="rv2-content rs-content" data-testid="main-content">
+          <main className="rv2-content" data-testid="main-content">
             {!operationalDetailOpen && <HousekeepingCompletionAlerts />}
             <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
               <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
@@ -600,7 +598,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
         </RandSwipeStage>
 
         {!operationalDetailOpen && <RandMobileNav items={bottomNav} isActive={isBottomActive} onPick={handleBottom} onWarm={warmNavDestination} />}
-        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rv2-fab rs-navfab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
+        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rv2-fab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       <ViewErrorBoundary viewId={insertOpen ? 'insert' : urgentCreateOpen ? 'urgent-create' : interventionCreateOpen ? 'intervention-create' : 'overlay'}>
