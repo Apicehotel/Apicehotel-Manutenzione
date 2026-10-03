@@ -23,6 +23,7 @@ import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import './mobile-nav-tune.css'
 import './new-issue-compact.css'
 import './header-mobile.css'
+import './randui-rebuild.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
