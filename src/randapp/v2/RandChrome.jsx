@@ -22,7 +22,7 @@ export function RandDesktopSidebar({ brand, switcher, navigation, preferences, o
 
 export function RandTopbar({ hotel, profile, presence, notifications, randai }) {
   return (
-    <header className="rv2-topbar rs-header rs-header--operational">
+    <header className="rv2-topbar">
       <div className="rv2-topbar__hotel">{hotel}</div>
       <div className="rv2-topbar__actions">
         {presence}
@@ -36,7 +36,7 @@ export function RandTopbar({ hotel, profile, presence, notifications, randai }) 
 
 export function RandMobileNav({ items, isActive, onPick, onWarm }) {
   return (
-    <nav className="rv2-bottomnav rs-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
+    <nav className="rv2-bottomnav" data-count="5" data-testid="bottom-nav" aria-label="Navigazione principale">
       {items.map((item) => {
         const active = isActive(item)
         return (
