@@ -5,17 +5,17 @@ import { readFile } from 'node:fs/promises'
 const assistant = await readFile(new URL('../src/randai/RandAIAssistant.jsx', import.meta.url), 'utf8')
 const randaiCss = await readFile(new URL('../src/randai/randai.css', import.meta.url), 'utf8')
 const shell = await readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
-const headerCss = await readFile(new URL('../src/randapp/header-mobile.css', import.meta.url), 'utf8')
-const shellCss = await readFile(new URL('../src/randapp/shell.css', import.meta.url), 'utf8')
+const chrome = await readFile(new URL('../src/randapp/v2/RandChrome.jsx', import.meta.url), 'utf8')
+const v2Css = await readFile(new URL('../src/randapp/randui-v2.css', import.meta.url), 'utf8')
 
 const compact = (value) => value.replace(/\s+/g, '')
 
 test('RandAI is a native header action that opens the dedicated chat page', () => {
   const panelCss = compact(randaiCss)
-  const toolbarCss = compact(headerCss)
+  const toolbarCss = compact(v2Css)
 
   assert.match(shell, /data-testid="header-randai"/)
-  assert.match(shell, /className="rs-header__actions"/)
+  assert.match(chrome, /className="rv2-topbar__actions"/)
   assert.match(shell, /openRandAIPage/)
   assert.match(shell, /variant="page"/)
   assert.match(shell, /CyberCatOrb/)
@@ -33,14 +33,14 @@ test('RandAI is a native header action that opens the dedicated chat page', () =
   assert.match(panelCss, /\.randai--page\{/)
   assert.match(panelCss, /\.randai__panel\{position:fixed;[^}]*pointer-events:auto/)
 
-  assert.match(toolbarCss, /\.rs-header__actions\{[^}]*display:flex;[^}]*align-items:center/)
-  assert.match(toolbarCss, /\.rs-header__randai\{[^}]*width:calc\(44px\*var\(--rs-scale\)\);[^}]*height:calc\(44px\*var\(--rs-scale\)\)/)
-  assert.match(toolbarCss, /@media\(max-width:899px\)[\s\S]*\.rs-header__randai,[^}]*\{[^}]*width:var\(--rs-header-action-size\)/)
+  assert.match(toolbarCss, /\.rv2-topbar__actions\{[^}]*display:flex;[^}]*align-items:center/)
+  assert.match(toolbarCss, /\.rv2-randai\{[^}]*width:46px;[^}]*height:46px/)
+  assert.match(toolbarCss, /@media\(max-width:899px\)[\s\S]*\.rv2-randai\{display:none\}/)
 })
 
 test('global add action remains the only floating action button', () => {
-  const globalCss = compact(shellCss)
-  assert.match(shell, /className="rs-navfab"/)
+  const globalCss = compact(v2Css)
+  assert.match(shell, /className="rv2-fab"/)
   assert.match(shell, /data-testid="fab-new"/)
-  assert.match(globalCss, /\.rs-navfab\{[^}]*position:fixed;[^}]*right:18px/)
+  assert.match(globalCss, /\.rv2-fab\{[^}]*position:fixed/)
 })
