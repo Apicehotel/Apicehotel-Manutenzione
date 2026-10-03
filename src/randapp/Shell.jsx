@@ -24,14 +24,6 @@ import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from '.
 import './new-issue-compact.css'
 import './randui-v2.css'
 
-// Legacy contract compatibility markers only; RandUI v2 renders its own chrome.
-// className="rs-header__actions"
-// className="rs-navfab"
-// data-slot={item.slot}
-// RandUI architecture compatibility markers (source contract only; not rendered):
-// <header className="rs-header
-// <nav className="rs-bottomnav
-
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
 const ChatGroups = lazyWithRetry(() => import('./chat/ChatGroups.jsx'))
