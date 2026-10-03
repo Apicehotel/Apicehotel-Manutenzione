@@ -15,9 +15,9 @@ test('Home puts the operational queue before RandAI recommendation', async () =>
 
 test('Home exposes stat count so three operational counters can stay on one mobile row', async () => {
   const home = await read('src/randapp/Home.jsx')
-  const css = await read('src/randapp/home-operational.css')
+  const css = await read('src/randapp/randui-v2.css')
   assert.match(home, /data-count=\{stats\.length\}/)
-  assert.match(css, /\.rs-workhome__stats\[data-count='3'\]\s*\{\s*grid-template-columns:\s*repeat\(3,/)
+  assert.match(css, /\.rv2-kpi-grid\[data-count="3"\]\s*\{\s*grid-template-columns:\s*repeat\(3,/)
 })
 
 test('Home distinguishes urgent alerts from high-priority issues', async () => {
@@ -29,22 +29,22 @@ test('Home distinguishes urgent alerts from high-priority issues', async () => {
 
 test('Home replaces floating create overlap with an explicit authorized new-issue action', async () => {
   const home = await read('src/randapp/Home.jsx')
-  const css = await read('src/randapp/home-operational.css')
+  const css = await read('src/randapp/randui-v2.css')
   assert.match(home, /canCreateIssues&&<Button[\s\S]*onNavigate\?\.\('new-issue'\)/)
   assert.match(home, /aria-label="Nuova segnalazione"/)
-  assert.match(css, /\.rs-app:has\(\.rs-workhome\) \.rs-navfab \{ display: none; \}/)
+  assert.match(css, /\.rv2-app:has\(\.rv2-home\) \.rv2-fab\s*\{\s*display:none/)
 })
 
 test('Home density keeps Piccolo Normale Grande compatible', async () => {
-  const css = await read('src/randapp/home-operational.css')
-  assert.match(css, /html\[data-ui-size='large'\] \.rs-workhome__stat/)
-  assert.match(css, /html\[data-ui-size='large'\] \.rs-workhome__task/)
+  const css = await read('src/randapp/randui-v2.css')
+  assert.match(css, /html\[data-ui-size='large'\] \.rv2-kpi-grid/)
+  assert.match(css, /html\[data-ui-size='large'\] \.rv2-priority/)
   assert.match(css, /@media \(max-width: 520px\)/)
 })
 
 test('RandAI score is self-explanatory and component no longer owns inline CSS', async () => {
   const card = await read('src/randapp/RandAIPriorityCard.jsx')
-  const css = await read('src/randapp/home-operational.css')
+  const css = await read('src/randapp/randui-v2.css')
   assert.match(card, /Priorità \{item\.score\}/)
   assert.doesNotMatch(card, /<style>/)
   assert.match(css, /\.rs-randai-priority__score/)
