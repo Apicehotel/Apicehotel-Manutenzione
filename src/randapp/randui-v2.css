@@ -48,7 +48,7 @@ body{
 }
 
 .rs-root{min-height:100dvh}
-.rs-app.rs-app--with-side{
+.rv2-app{
   min-height:100dvh;
   display:grid;
   grid-template-columns:var(--rv2-sidebar) minmax(0,1fr);
@@ -232,7 +232,7 @@ body{
 
 /* ---------- stage / contenuto ---------- */
 .rv2-stage{grid-area:content;min-width:0;min-height:0;overflow:auto;overscroll-behavior-x:contain}
-.rv2-content.rs-content{
+.rv2-content{
   width:min(100%,1320px);
   margin:0 auto;
   padding:22px 24px 36px;
@@ -353,7 +353,7 @@ body{
 }
 
 @media(max-width:899px){
-  .rs-app.rs-app--with-side{
+  .rv2-app{
     display:grid;
     grid-template-columns:1fr;
     grid-template-rows:auto minmax(0,1fr);
@@ -376,7 +376,7 @@ body{
   .rv2-profile__copy{display:none}
   .rv2-profile{width:44px;padding:4px;justify-content:center}
   .rv2-randai{display:none}
-  .rv2-content.rs-content{
+  .rv2-content{
     padding:14px 13px calc(var(--rv2-mobile-nav) + 46px + env(safe-area-inset-bottom));
     overflow:visible
   }
@@ -425,7 +425,7 @@ body{
     font-size:.58rem!important;font-weight:700
   }
 
-  .rv2-fab.rs-navfab{
+  .rv2-fab{
     right:18px!important;
     bottom:calc(84px + env(safe-area-inset-bottom))!important;
     width:52px!important;height:52px!important;border-radius:16px!important;
@@ -453,7 +453,7 @@ body{
 
 @media(max-width:520px){
   .rv2-topbar__actions{gap:5px}
-  .rv2-content.rs-content{padding-inline:11px}
+  .rv2-content{padding-inline:11px}
   .rv2-bottomnav{left:7px;right:7px;bottom:calc(6px + env(safe-area-inset-bottom))}
 }
 
