@@ -460,3 +460,124 @@ body{
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+
+/* ---------- pagine operative v2 ---------- */
+.rv2-page{display:grid;gap:16px}
+.rv2-pagehead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding:2px 0 14px;border-bottom:1px solid var(--rv2-line)
+}
+.rv2-pagehead>div{min-width:0}
+.rv2-pagehead h1{
+  margin:2px 0 3px;
+  font-family:Sora,sans-serif;
+  font-size:clamp(1.6rem,2.4vw,2.3rem);
+  line-height:1.05;
+  letter-spacing:-.04em
+}
+.rv2-pagehead p{margin:0;color:var(--rv2-text-2);font-size:.86rem}
+.rv2-eyebrow{
+  display:inline-flex;
+  color:var(--rv2-accent);
+  font-size:.64rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase
+}
+.rv2-choice-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px
+}
+.rv2-choice-grid[data-columns="1"]{grid-template-columns:1fr}
+.rv2-choice-grid .rs-card,
+.rv2-choice-grid button{
+  border-radius:12px!important
+}
+.rv2-preview-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px
+}
+.rv2-preview-grid[data-columns="1"]{grid-template-columns:1fr}
+.rv2-panel{
+  min-width:0;
+  display:grid;
+  gap:10px;
+  padding:14px;
+  border:1px solid var(--rv2-line);
+  border-radius:13px;
+  background:linear-gradient(180deg,#151f2c,#101821)
+}
+.rv2-panel__head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding-bottom:8px;border-bottom:1px solid var(--rv2-line)
+}
+.rv2-panel__head>div{display:grid;gap:1px}
+.rv2-panel__head span{
+  color:var(--rv2-accent);font-size:.61rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase
+}
+.rv2-panel__head h2{margin:0;font-size:1.05rem;font-family:Sora,sans-serif}
+.rv2-panel__head small{color:var(--rv2-text-3);font-size:.7rem}
+.rv2-list{display:grid;gap:7px}
+.rv2-row{
+  width:100%;min-height:62px;
+  display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;
+  padding:9px 10px;border:1px solid var(--rv2-line);border-radius:10px;
+  background:#0f1721;color:var(--rv2-text);text-align:left
+}
+.rv2-row:hover{background:#131d29;border-color:rgba(101,214,235,.24)}
+.rv2-row__icon{
+  width:36px;height:36px;display:grid;place-items:center;border-radius:9px;
+  background:rgba(101,214,235,.08);color:var(--rv2-accent)
+}
+.rv2-row__body{min-width:0;display:grid;gap:2px}
+.rv2-row__body strong{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:.86rem
+}
+.rv2-row__body small{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--rv2-text-3);font-size:.7rem
+}
+.rv2-status{
+  min-height:26px;padding:0 8px;
+  display:grid;place-items:center;border-radius:999px;
+  background:#1c2734;color:#9fb0c3;
+  font-size:.61rem;font-weight:800
+}
+.rv2-status.warning{background:rgba(239,189,103,.12);color:var(--rv2-warning)}
+.rv2-status.danger{background:rgba(255,120,144,.12);color:var(--rv2-danger)}
+.rv2-seeall{
+  min-height:38px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 4px;border:0;background:transparent;color:var(--rv2-accent);
+  font-weight:800;font-size:.74rem;text-align:left
+}
+.rv2-empty{
+  margin:0;padding:14px 10px;
+  border:1px dashed var(--rv2-line);border-radius:10px;
+  color:var(--rv2-text-3);font-size:.78rem;text-align:center
+}
+.rv2-task-hint{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-radius:10px;
+  background:#101821;border:1px solid var(--rv2-line);
+  color:var(--rv2-text-2);font-size:.76rem
+}
+.rv2-task-hint .rs-icon{color:var(--rv2-accent)}
+.rv2-planning-body{display:grid;gap:12px}
+.rv2-planning-body>.rs-card,
+.rv2-planning-body>.rs-stack,
+.rv2-planning-body>section{
+  min-width:0
+}
+
+@media(max-width:720px){
+  .rv2-page{gap:13px}
+  .rv2-pagehead{align-items:flex-start;padding-bottom:11px}
+  .rv2-pagehead h1{font-size:1.65rem}
+  .rv2-choice-grid,
+  .rv2-preview-grid{grid-template-columns:1fr}
+  .rv2-row{min-height:60px;grid-template-columns:34px minmax(0,1fr) auto;padding:8px}
+  .rv2-row__icon{width:32px;height:32px}
+  .rv2-panel{padding:11px}
+}
