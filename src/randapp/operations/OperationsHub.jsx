@@ -73,93 +73,49 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
   const columns = canIssues && canInterventions ? 2 : 1
 
   return (
-    <Stack gap="sm" className="rs-operations-hub rs-ops-surface" data-testid="operations-hub">
-      <PageTitle
-        title="Operatività"
-        subtitle="Segnalazioni e interventi adesso."
-      />
-      <Grid columns={columns} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
+    <section className="rv2-page rv2-operations" data-testid="operations-hub">
+      <header className="rv2-pagehead">
+        <div><span className="rv2-eyebrow">Operatività</span><h1>Operatività</h1><p>Segnalazioni e interventi adesso.</p></div>
+      </header>
+
+      <div className="rv2-choice-grid" data-columns={columns}>
+        {canIssues && <HubChoice icon="issues" title="Segnalazioni" kind="issues" metrics={issueMetrics} onClick={() => onOpen('issues')} testId="operations-open-issues" />}
+        {canInterventions && <HubChoice icon="wrench" title="Interventi" kind="interventions" metrics={interventionMetrics} onClick={() => onOpen('interventions')} testId="operations-open-interventions" />}
+      </div>
+
+      <div className="rv2-preview-grid" data-columns={columns} data-testid="operations-top-preview">
         {canIssues && (
-          <HubChoice
-            icon="issues"
-            title="Segnalazioni"
-            kind="issues"
-            metrics={issueMetrics}
-            onClick={() => onOpen('issues')}
-            testId="operations-open-issues"
-          />
+          <section className="rv2-panel" data-testid="operations-top-issues">
+            <div className="rv2-panel__head"><div><span>Segnalazioni</span><h2>Top 3</h2></div><small>{topIssues.length} in evidenza</small></div>
+            {topIssues.length ? <div className="rv2-list">
+              {topIssues.map((item) => (
+                <button type="button" key={item.id} className="rv2-row" onClick={() => onOpen('issues', { issueId: item.id })}>
+                  <span className="rv2-row__icon"><Icon name="issues" /></span>
+                  <span className="rv2-row__body"><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || item.category || 'Segnalazione'}</small></span>
+                  <span className={`rv2-status ${item.urgency === 'alta' ? 'danger' : item.status === 'waiting' ? 'warning' : ''}`}>{item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'Attesa' : 'Aperta'}</span>
+                </button>
+              ))}
+            </div> : <p className="rv2-empty">Nessuna segnalazione aperta.</p>}
+            <button type="button" className="rv2-seeall" onClick={() => onOpen('issues')}>Vedi tutte le segnalazioni <Icon name="chevronRight" /></button>
+          </section>
         )}
+
         {canInterventions && (
-          <HubChoice
-            icon="wrench"
-            title="Interventi"
-            kind="interventions"
-            metrics={interventionMetrics}
-            onClick={() => onOpen('interventions')}
-            testId="operations-open-interventions"
-          />
+          <section className="rv2-panel" data-testid="operations-top-interventions">
+            <div className="rv2-panel__head"><div><span>Interventi</span><h2>Top 3</h2></div><small>{topInterventions.length} in evidenza</small></div>
+            {topInterventions.length ? <div className="rv2-list">
+              {topInterventions.map((item) => (
+                <button type="button" key={item.id} className="rv2-row" onClick={() => onOpen('interventions')}>
+                  <span className="rv2-row__icon"><Icon name="wrench" /></span>
+                  <span className="rv2-row__body"><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.notes || 'Intervento operativo'}</small></span>
+                  <span className="rv2-status">Apri</span>
+                </button>
+              ))}
+            </div> : <p className="rv2-empty">Nessun intervento aperto.</p>}
+            <button type="button" className="rv2-seeall" onClick={() => onOpen('interventions')}>Vedi tutti gli interventi <Icon name="chevronRight" /></button>
+          </section>
         )}
-      </Grid>
-      <Grid columns={columns} gap="sm" data-testid="operations-top-preview">
-        {canIssues && (
-          <Card className="rs-card--pad" data-testid="operations-top-issues">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <strong>Top 3 Segnalazioni</strong><small>{topIssues.length} in evidenza</small>
-            </div>
-            {topIssues.length ? (
-              <div className="rs-migrated-list">
-                {topIssues.map((item) => (
-                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('issues', { issueId: item.id })}>
-                    <div className="rs-op-card__head">
-                      <div style={{ minWidth: 0, width: '100%', textAlign: 'left' }}>
-                        <strong
-                          style={{
-                            display: '-webkit-box',
-                            WebkitBoxOrient: 'vertical',
-                            WebkitLineClamp: 3,
-                            overflow: 'hidden',
-                            textAlign: 'left',
-                            lineHeight: 1.25,
-                          }}
-                        >
-                          {item.title || item.room || 'Segnalazione'}
-                        </strong>
-                        <small style={{ display: 'block', textAlign: 'left', marginTop: 4 }}>{item.room || 'Segnalazione'}</small>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 10 }}>
-                      <Badge tone="info">{item.category || 'Segnalazione'}</Badge>
-                      <Badge tone={item.urgency === 'alta' ? 'danger' : item.status === 'waiting' ? 'warning' : 'default'}>
-                        {item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'In attesa' : 'Aperta'}
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : <small>Nessuna segnalazione aperta.</small>}
-          </Card>
-        )}
-        {canInterventions && (
-          <Card className="rs-card--pad" data-testid="operations-top-interventions">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <strong>Top 3 Interventi</strong><small>{topInterventions.length} in evidenza</small>
-            </div>
-            {topInterventions.length ? (
-              <div className="rs-migrated-list">
-                {topInterventions.map((item) => (
-                  <Card as="button" type="button" key={item.id} className="rs-card--pad rs-op-card" onClick={() => onOpen('interventions')}>
-                    <div className="rs-op-card__head">
-                      <div><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.notes || 'Intervento operativo'}</small></div>
-                    </div>
-                    <InterventionTags item={item} />
-                  </Card>
-                ))}
-              </div>
-            ) : <small>Nessun intervento aperto.</small>}
-          </Card>
-        )}
-      </Grid>
-      <p className="rs-telegram-hint">Tap sulla card o su una riga per aprire l’elenco completo.</p>
-    </Stack>
+      </div>
+    </section>
   )
 }
