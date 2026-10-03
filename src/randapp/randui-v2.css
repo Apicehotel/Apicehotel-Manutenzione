@@ -326,6 +326,17 @@ body{
   display:none;
 }
 
+.rv2-fab{
+  position:fixed;
+  z-index:45;
+  display:grid;
+  place-items:center;
+  border:0;
+  color:#071019;
+  cursor:pointer;
+}
+
+
 /* drawer/sheet nuova pelle */
 .rs-drawer{
   background:linear-gradient(180deg,#111925,#0b1119)!important;
