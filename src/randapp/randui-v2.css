@@ -581,3 +581,137 @@ body{
   .rv2-row__icon{width:32px;height:32px}
   .rv2-panel{padding:11px}
 }
+
+
+/* ---------- Home v2 ---------- */
+.rv2-home{display:grid;gap:16px}
+.rv2-homehead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding:2px 0 14px;border-bottom:1px solid var(--rv2-line)
+}
+.rv2-homehead__copy{min-width:0}
+.rv2-homehead h1{
+  margin:4px 0 3px;
+  font-family:Sora,sans-serif;
+  font-size:clamp(1.8rem,3vw,2.6rem);
+  line-height:1.02;
+  letter-spacing:-.045em
+}
+.rv2-homehead p{margin:0;color:var(--rv2-text-2);font-size:.86rem}
+.rv2-homehead__actions{display:flex;gap:8px;align-items:center}
+.rv2-homeprefs{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.rv2-homeprefs>div:first-child{display:grid;gap:2px}
+.rv2-homeprefs small{color:var(--rv2-text-3)}
+.rv2-homefail{display:grid;gap:14px;justify-items:center;padding:24px 12px}
+.rv2-alertline{
+  width:100%;min-height:52px;
+  display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:10px;
+  padding:9px 12px;border:1px solid var(--rv2-line);border-radius:11px;
+  background:#121a25;color:var(--rv2-text);text-align:left
+}
+.rv2-alertline>span{display:grid;gap:2px}
+.rv2-alertline small{color:var(--rv2-text-3)}
+.rv2-alertline.warning{border-color:rgba(239,189,103,.25);background:rgba(239,189,103,.055)}
+.rv2-alertline.error,.rv2-alertline.danger{border-color:rgba(255,120,144,.24);background:rgba(255,120,144,.05)}
+.rv2-alertline.success{border-color:rgba(102,215,163,.22);background:rgba(102,215,163,.05)}
+
+.rv2-kpi-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px
+}
+.rv2-kpi-grid .rs-workhome__stat,
+.rv2-kpi-grid .rs-stat-card{
+  min-height:92px;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,#172130,#111923)!important;
+  border:1px solid var(--rv2-line)!important;
+  box-shadow:none!important
+}
+
+.rv2-desk{
+  display:grid;gap:12px;
+  padding:14px;
+  border:1px solid var(--rv2-line);
+  border-radius:15px;
+  background:linear-gradient(180deg,#111923,#0e151e)
+}
+.rv2-desk__head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px
+}
+.rv2-desk__head h2{margin:2px 0 0;font-size:1.14rem;font-family:Sora,sans-serif}
+.rv2-desk__head>small{color:var(--rv2-text-3)}
+.rv2-next{
+  min-height:68px;
+  display:grid;grid-template-columns:72px minmax(0,1fr) 22px;align-items:center;gap:12px;
+  padding:11px 12px;border:1px solid var(--rv2-line);border-radius:11px;
+  background:#121b26;color:var(--rv2-text);text-align:left
+}
+.rv2-next:disabled{opacity:1}
+.rv2-next__label{
+  color:var(--rv2-accent);font-size:.62rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase
+}
+.rv2-next__body{display:grid;gap:2px;min-width:0}
+.rv2-next__body strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv2-next__body small{color:var(--rv2-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv2-next.is-empty{grid-template-columns:72px minmax(0,1fr);background:#0f171f}
+.rv2-deskgrid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}
+.rv2-panel-actions{display:flex;gap:8px;flex-wrap:wrap}
+.rv2-panel-actions button{
+  min-height:34px;padding:0 10px;border:1px solid var(--rv2-line);border-radius:9px;
+  background:#111923;color:var(--rv2-text-2);font-size:.7rem;font-weight:800
+}
+
+.rv2-teamgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rv2-person{
+  min-height:52px;display:grid;grid-template-columns:10px minmax(0,1fr);align-items:center;gap:8px;
+  padding:8px 9px;border:1px solid var(--rv2-line);border-radius:10px;
+  background:#0f1721;color:var(--rv2-text);text-align:left
+}
+.rv2-person__dot{width:8px;height:8px;border-radius:50%;background:var(--rv2-success);box-shadow:0 0 0 3px rgba(102,215,163,.08)}
+.rv2-person.is-busy .rv2-person__dot{background:var(--rv2-warning);box-shadow:0 0 0 3px rgba(239,189,103,.08)}
+.rv2-person>span:last-child{display:grid;gap:1px;min-width:0}
+.rv2-person strong,.rv2-person small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv2-person small{color:var(--rv2-text-3);font-size:.66rem}
+.rv2-team-more{display:grid;place-items:center;min-height:40px;color:var(--rv2-text-3);font-size:.72rem}
+
+.rv2-tools{min-width:0}
+.rv2-tray{display:grid;gap:10px}
+.rv2-priority-list{display:grid;gap:8px}
+.rv2-priority{
+  width:100%;min-height:70px;
+  display:grid;grid-template-columns:28px 36px minmax(0,1fr) 20px;align-items:center;gap:9px;
+  padding:10px 11px;border:1px solid var(--rv2-line);border-radius:11px;
+  background:#101821;color:var(--rv2-text);text-align:left
+}
+.rv2-priority:hover{background:#131d28;border-color:rgba(101,214,235,.24)}
+.rv2-priority__rank{
+  width:24px;height:24px;border-radius:8px;display:grid;place-items:center;
+  background:#1b2634;color:#93a4b7;font-size:.68rem;font-weight:800
+}
+.rv2-priority__icon{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(101,214,235,.08);color:var(--rv2-accent)
+}
+.rv2-priority__body{min-width:0;display:grid;gap:2px}
+.rv2-priority__body>small{color:var(--rv2-accent);font-size:.58rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.rv2-priority__body>strong,.rv2-priority__body>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv2-priority__body>span{color:var(--rv2-text-3);font-size:.69rem}
+.rv2-priority.tone-high{border-color:rgba(255,120,144,.20)}
+.rv2-priority.tone-mid{border-color:rgba(239,189,103,.18)}
+
+@media(max-width:899px){
+  .rv2-home{gap:13px}
+  .rv2-homehead{align-items:flex-start}
+  .rv2-homehead h1{font-size:1.8rem}
+  .rv2-homehead__actions .rs-btn{min-height:38px}
+  .rv2-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rv2-desk{padding:11px}
+  .rv2-deskgrid{grid-template-columns:1fr}
+  .rv2-next{grid-template-columns:62px minmax(0,1fr) 18px}
+}
+@media(max-width:520px){
+  .rv2-homehead{display:grid;grid-template-columns:1fr;gap:10px}
+  .rv2-homehead__actions{justify-content:flex-start}
+  .rv2-homeprefs{grid-template-columns:1fr}
+  .rv2-teamgrid{grid-template-columns:1fr}
+  .rv2-priority{grid-template-columns:24px 32px minmax(0,1fr) 18px;padding-inline:9px}
+}
