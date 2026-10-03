@@ -1,21 +1,105 @@
 <!doctype html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
-    <meta name="theme-color" content="#060a13" />
-    <meta name="description" content="Gestione delle segnalazioni di manutenzione delle strutture Apicehotel." />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="RandApp - Manutenzioni" />
-    <link rel="manifest" href="/manifest.webmanifest?v=9" />
-    <link rel="icon" href="/icons/icon-192.png?v=9" type="image/png" sizes="192x192" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=9" />
-    <title>RandApp - Manutenzioni</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RandApp Loader Demo</title>
+<style>
+:root{--bg:#060a13;--s:#0e1727;--s2:#121d31;--line:rgba(90,170,230,.14);--tx:#eef4ff;--tx2:#9db0cf;--cyan:#22d3ee;--blue:#3b82f6;--ok:#46d99a;--grad:linear-gradient(135deg,#34e3e8,#3b82f6)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(100% 70% at 10% 0%,rgba(34,211,238,.12),transparent 60%),var(--bg);color:var(--tx);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:430px;margin:auto;min-height:100vh;padding:20px 16px 40px}
+h1{font-size:1.6rem;margin:0 0 4px}.sub{color:var(--tx2);font-size:.84rem;margin-bottom:16px}
+.card{background:linear-gradient(160deg,var(--s2),var(--s));border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.title{font-weight:800}.small{font-size:.76rem;color:var(--tx2);margin-top:4px;line-height:1.35}
+.btn{width:100%;min-height:46px;border:1px solid var(--line);border-radius:14px;background:var(--s2);color:var(--tx);font-weight:800;margin-top:12px}.btn.primary{background:var(--grad);color:#04121e;border:0}.btn:disabled{opacity:.65}
+.loaderBox{min-height:96px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:15px;margin-top:12px;background:#09111d}
+.status{display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:#0a1220;border:1px solid var(--line);margin-top:12px}
+.done{color:var(--ok);font-weight:800}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.tabs button{min-height:42px;border-radius:12px;border:1px solid var(--line);background:var(--s);color:var(--tx2);font-weight:700}.tabs button.active{color:var(--cyan);border-color:rgba(34,211,238,.35);background:rgba(34,211,238,.08)}
+svg{display:block}.note{font-size:.72rem;color:var(--tx2);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>RandApp · Loader test</h1>
+<div class="sub">Demo reale in codice con SVG-Loaders integrati nello stile RandApp.</div>
+
+<div class="tabs">
+<button class="active" data-mode="section">Sezione</button>
+<button data-mode="sync">Sync</button>
+<button data-mode="ai">RandAI</button>
+</div>
+
+<section id="section" class="panel">
+<div class="card">
+<div class="title">Carico Planning</div>
+<div class="small">Uso di <b>oval.svg</b> come stato di caricamento sezione.</div>
+<div class="loaderBox" id="sectionBox">
+<svg width="38" height="38" viewBox="0 0 38 38" stroke="#22d3ee" aria-label="Caricamento">
+<g fill="none" fill-rule="evenodd"><g transform="translate(1 1)" stroke-width="2">
+<circle stroke-opacity=".5" cx="18" cy="18" r="18"/>
+<path d="M36 18c0-9.94-8.06-18-18-18"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite"/></path>
+</g></g></svg>
+</div>
+<button class="btn primary" id="sectionBtn">Simula caricamento</button>
+</div>
+</section>
+
+<section id="sync" class="panel" style="display:none">
+<div class="card">
+<div class="title">Sincronizzazione dati</div>
+<div class="small">Uso di <b>three-dots.svg</b> per retry, refresh e sincronizzazione breve.</div>
+<div class="status" id="syncStatus">
+<svg width="54" height="18" viewBox="0 0 120 30" fill="#22d3ee">
+<circle cx="15" cy="15" r="15"><animate attributeName="r" dur=".8s" values="15;9;15" repeatCount="indefinite"/><animate attributeName="fill-opacity" dur=".8s" values="1;.5;1" repeatCount="indefinite"/></circle>
+<circle cx="60" cy="15" r="9" fill-opacity=".3"><animate attributeName="r" dur=".8s" values="9;15;9" repeatCount="indefinite"/><animate attributeName="fill-opacity" dur=".8s" values=".5;1;.5" repeatCount="indefinite"/></circle>
+<circle cx="105" cy="15" r="15"><animate attributeName="r" dur=".8s" values="15;9;15" repeatCount="indefinite"/><animate attributeName="fill-opacity" dur=".8s" values="1;.5;1" repeatCount="indefinite"/></circle>
+</svg>
+<div><b>Sincronizzo…</b><div class="small">Segnalazioni, Task e Planning</div></div>
+</div>
+<button class="btn" id="syncBtn">Riavvia sync</button>
+</div>
+</section>
+
+<section id="ai" class="panel" style="display:none">
+<div class="card">
+<div class="title">RandAI sta elaborando</div>
+<div class="small">Uso di <b>puff.svg</b> per un’elaborazione visiva più morbida.</div>
+<div class="loaderBox">
+<svg width="44" height="44" viewBox="0 0 44 44" stroke="#3b82f6">
+<g fill="none" fill-rule="evenodd" stroke-width="2">
+<circle cx="22" cy="22" r="1"><animate attributeName="r" begin="0s" dur="1.8s" values="1;20" repeatCount="indefinite"/><animate attributeName="stroke-opacity" begin="0s" dur="1.8s" values="1;0" repeatCount="indefinite"/></circle>
+<circle cx="22" cy="22" r="1"><animate attributeName="r" begin="-.9s" dur="1.8s" values="1;20" repeatCount="indefinite"/><animate attributeName="stroke-opacity" begin="-.9s" dur="1.8s" values="1;0" repeatCount="indefinite"/></circle>
+</g></svg>
+</div>
+<button class="btn primary" id="aiBtn">Simula risposta RandAI</button>
+</div>
+</section>
+
+<div class="note">SVG incorporati direttamente nel codice: nessuna dipendenza npm.</div>
+</div>
+<script>
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active');
+ document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+ document.getElementById(b.dataset.mode).style.display='block';
+});
+document.getElementById('sectionBtn').onclick=()=>{
+ const btn=document.getElementById('sectionBtn'), box=document.getElementById('sectionBox');
+ btn.disabled=true; btn.textContent='Carico…';
+ box.innerHTML='<svg width="38" height="38" viewBox="0 0 38 38" stroke="#22d3ee"><g fill="none"><g transform="translate(1 1)" stroke-width="2"><circle stroke-opacity=".5" cx="18" cy="18" r="18"/><path d="M36 18c0-9.94-8.06-18-18-18"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite"/></path></g></g></svg>';
+ setTimeout(()=>{box.innerHTML='<div class="done">✓ Planning caricato</div>';btn.disabled=false;btn.textContent='Simula caricamento';},1400);
+};
+document.getElementById('syncBtn').onclick=()=>{
+ const s=document.getElementById('syncStatus');
+ s.innerHTML='<svg width="54" height="18" viewBox="0 0 120 30" fill="#22d3ee"><circle cx="15" cy="15" r="15"><animate attributeName="r" dur=".8s" values="15;9;15" repeatCount="indefinite"/></circle><circle cx="60" cy="15" r="9"><animate attributeName="r" dur=".8s" values="9;15;9" repeatCount="indefinite"/></circle><circle cx="105" cy="15" r="15"><animate attributeName="r" dur=".8s" values="15;9;15" repeatCount="indefinite"/></circle></svg><div><b>Sincronizzo…</b><div class="small">Segnalazioni, Task e Planning</div></div>';
+ setTimeout(()=>s.innerHTML='<div class="done">✓ Sincronizzazione completata</div>',1200);
+};
+document.getElementById('aiBtn').onclick=()=>{
+ const btn=document.getElementById('aiBtn');
+ btn.disabled=true;btn.textContent='RandAI elabora…';
+ setTimeout(()=>{btn.disabled=false;btn.textContent='Simula risposta RandAI';alert('RandAI: priorità operative aggiornate.')},1600);
+};
+</script>
+</body></html>
