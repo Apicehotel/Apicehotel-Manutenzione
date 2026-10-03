@@ -5,6 +5,7 @@ import { withTimeout } from '../../async-timeout.js'
 import { Icon } from '../ui.jsx'
 import HubChoice from './HubChoice.jsx'
 import { interventionPreviewMetrics, interventionTopPreview, issuePreviewMetrics, issueTopPreview } from './hub-preview-stats.js'
+import { InterventionTags } from './view-primitives.jsx'
 
 const SOFT_REFRESH_MS = 2500
 
@@ -84,12 +85,12 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
       <div className="rv2-preview-grid" data-columns={columns} data-testid="operations-top-preview">
         {canIssues && (
           <section className="rv2-panel" data-testid="operations-top-issues">
-            <div className="rv2-panel__head"><div><span>Segnalazioni</span><h2>Top 3</h2></div><small>{topIssues.length} in evidenza</small></div>
+            <div className="rv2-panel__head"><div><span>Segnalazioni</span><h2>Top 3 Segnalazioni</h2></div><small>{topIssues.length} in evidenza</small></div>
             {topIssues.length ? <div className="rv2-list">
               {topIssues.map((item) => (
                 <button type="button" key={item.id} className="rv2-row" onClick={() => onOpen('issues', { issueId: item.id })}>
                   <span className="rv2-row__icon"><Icon name="issues" /></span>
-                  <span className="rv2-row__body"><strong>{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || item.category || 'Segnalazione'}</small></span>
+                  <div className="rv2-row__body"><strong className="rv2-row__title">{item.title || item.room || 'Segnalazione'}</strong><small>{item.room || item.category || 'Segnalazione'}</small></div>
                   <span className={`rv2-status ${item.urgency === 'alta' ? 'danger' : item.status === 'waiting' ? 'warning' : ''}`}>{item.urgency === 'alta' ? 'Urgente' : item.status === 'waiting' ? 'Attesa' : 'Aperta'}</span>
                 </button>
               ))}
@@ -100,12 +101,12 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
 
         {canInterventions && (
           <section className="rv2-panel" data-testid="operations-top-interventions">
-            <div className="rv2-panel__head"><div><span>Interventi</span><h2>Top 3</h2></div><small>{topInterventions.length} in evidenza</small></div>
+            <div className="rv2-panel__head"><div><span>Interventi</span><h2>Top 3 Interventi</h2></div><small>{topInterventions.length} in evidenza</small></div>
             {topInterventions.length ? <div className="rv2-list">
               {topInterventions.map((item) => (
                 <button type="button" key={item.id} className="rv2-row" onClick={() => onOpen('interventions')}>
                   <span className="rv2-row__icon"><Icon name="wrench" /></span>
-                  <span className="rv2-row__body"><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.notes || 'Intervento operativo'}</small></span>
+                  <div className="rv2-row__body"><strong>{item.location || item.ticketCode || 'Intervento'}</strong><small>{item.notes || 'Intervento operativo'}</small><InterventionTags item={item} /></div>
                   <span className="rv2-status">Apri</span>
                 </button>
               ))}
