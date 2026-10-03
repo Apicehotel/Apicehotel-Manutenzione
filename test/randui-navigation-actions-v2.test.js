@@ -10,6 +10,7 @@ const roleNavigation = read('../src/randapp/role-navigation.js')
 const contextualAdd = read('../src/randapp/contextual-add.js')
 const planningHub = read('../src/randapp/PlanningHub.jsx')
 const operationsHub = read('../src/randapp/operations/OperationsHub.jsx')
+const randuiV2Css = read('../src/randapp/randui-v2.css')
 
 test('bottom navigation treats Task as alerts and reminders, not interventions', () => {
   assert.match(navigation, /id:\s*'my-work'.*label:\s*'Task'.*slot:\s*TELEGRAM_PRIMARY_SLOTS\.contextual/s)
@@ -77,8 +78,8 @@ test('Intervention tags stay at card bottom with waiting-piece and technician la
 test('Top 3 issue rows open the cited issue and clamp the title to three left-aligned lines', () => {
   const issuesView = read('../src/randapp/Issues.jsx')
   assert.ok(operationsHub.includes("onOpen('issues', { issueId: item.id })"))
-  assert.ok(operationsHub.includes('WebkitLineClamp: 3'))
-  assert.ok(operationsHub.includes("textAlign: 'left'"))
+  assert.ok(operationsHub.includes('className="rv2-row__title"'))
+  assert.match(randuiV2Css, /\.rv2-row__title\s*\{[\s\S]*?-webkit-line-clamp:\s*3;[\s\S]*?text-align:\s*left;/)
   assert.ok(shell.includes('const [issueFocusId, setIssueFocusId] = useState(null)'))
   assert.ok(shell.includes('openIssueFromOperations(context.issueId)'))
   assert.ok(shell.includes('focusIssueId={issueFocusId}'))
