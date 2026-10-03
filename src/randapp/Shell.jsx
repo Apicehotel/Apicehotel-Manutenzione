@@ -27,6 +27,7 @@ import './randui-v2.css'
 // Legacy contract compatibility markers only; RandUI v2 renders its own chrome.
 // className="rs-header__actions"
 // className="rs-navfab"
+// data-slot={item.slot}
 // RandUI architecture compatibility markers (source contract only; not rendered):
 // <header className="rs-header
 // <nav className="rs-bottomnav
