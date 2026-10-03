@@ -7,7 +7,7 @@ const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8'
 test('floating plus uses the contextual multi-insert router', async () => {
   const shell = await source('src/randapp/Shell.jsx')
 
-  assert.match(shell, /className="rs-navfab"[\s\S]*onClick=\{openContextualAdd\}/)
+  assert.match(shell, /className="rv2-fab"[\s\S]*onClick=\{openContextualAdd\}/)
   assert.match(shell, /aria-label=\{fabLabel \|\| 'Aggiungi'\}/)
   assert.match(shell, /<InsertLauncher[\s\S]*actionIds=\{contextualActionIds\}/)
 
