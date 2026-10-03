@@ -11,20 +11,21 @@ aside{position:sticky;top:0;height:100vh;background:#08111f;border-right:1px sol
 .brand{display:flex;align-items:center;gap:10px;padding:8px}.brand b{white-space:nowrap}.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#34e3e8,#3b82f6);display:grid;place-items:center;color:#04121e;font-weight:900}
 .nav h4{color:#5f7898;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:18px 10px 7px;white-space:nowrap}
 .nav button{width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#a7b9cd;padding:11px;border-radius:11px;text-align:left}.nav button.active,.nav button:hover{background:#132238;color:#fff}.nav i{width:22px;text-align:center;font-style:normal}.rail .nav span,.rail .nav h4,.rail .brand b{display:none}
-main{min-width:0}.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(7,16,28,.88);backdrop-filter:blur(16px);position:sticky;top:0;z-index:10}
-.top button,.searchbtn{height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:0 13px}.searchbtn{flex:1;max-width:520px;text-align:left;color:var(--muted)}
+.side-search{width:100%;height:42px;margin:8px 0 2px;border:1px solid var(--line);background:#0d1929;color:var(--muted);border-radius:11px;padding:0 11px;display:flex;align-items:center;gap:9px;text-align:left}.side-search span{white-space:nowrap}.rail .side-search span{display:none}.rail .side-search{justify-content:center;padding:0}
+main{min-width:0}.top{height:64px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(7,16,28,.88);backdrop-filter:blur(16px);position:sticky;top:0;z-index:10}
+.top button{height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:0 13px}
 .content{padding:20px;max-width:1300px}.titleline{display:flex;justify-content:space-between;gap:12px;align-items:end}.titleline h1{margin:0;font-size:26px}.titleline p{margin:4px 0 0;color:var(--muted)}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;margin:18px 0}.card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:16px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:30px;margin-top:8px}.danger{color:var(--danger)}.warn{color:var(--warn)}.ok{color:var(--ok)}.accent{color:var(--cyan)}
 .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.list{display:grid;gap:8px}.row{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;background:#0b1524}.row .ico{width:36px;height:36px;border-radius:10px;background:#162841;display:grid;place-items:center}.row small{display:block;color:var(--muted);margin-top:3px}.tag{font-size:11px;padding:5px 8px;border-radius:999px;background:#182941;color:#b8c9db}
 .cmdback{display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:50;padding:12vh 18px}.cmdback.open{display:block}.cmd{max-width:620px;margin:auto;background:#0b1524;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden}.cmd input{width:100%;height:56px;border:0;border-bottom:1px solid var(--line);background:#0b1524;color:#fff;padding:0 18px;font-size:16px;outline:none}.results{max-height:360px;overflow:auto;padding:8px}.result{width:100%;display:flex;justify-content:space-between;align-items:center;border:0;background:transparent;color:#dce7f4;padding:11px;border-radius:10px;text-align:left}.result:hover{background:#132238}.result small{color:var(--muted)}
-.mobile{display:none}
-@media(max-width:820px){.shell{display:block}.shell aside{display:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.content{padding:14px}.mobile{display:inline-flex}.searchbtn{max-width:none}.titleline{align-items:flex-start;flex-direction:column}}
+@media(max-width:820px){.shell{display:block}.shell aside{display:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.content{padding:14px}.titleline{align-items:flex-start;flex-direction:column}.top{justify-content:flex-end}}
 </style>
 </head>
 <body>
 <div class="shell" id="shell">
 <aside>
  <div class="brand"><div class="logo">R</div><b>RandApp</b></div>
+ <button class="side-search" id="openCmd"><b>⌕</b><span>Cerca</span></button>
  <div class="nav">
   <h4>Principale</h4>
   <button class="active"><i>⌂</i><span>Home</span></button>
@@ -44,7 +45,6 @@ main{min-width:0}.top{height:64px;display:flex;align-items:center;gap:10px;paddi
 <main>
  <div class="top">
   <button id="railBtn">☰</button>
-  <button class="searchbtn" id="openCmd">⌕ Cerca in RandApp… <span style="float:right">⌘K</span></button>
   <button>🔔</button>
   <button>GIO</button>
  </div>
@@ -118,7 +118,7 @@ document.getElementById('openCmd').onclick=openCmd;
 input.oninput=()=>render(input.value);
 cmd.onclick=e=>{if(e.target===cmd)cmd.classList.remove('open')};
 document.addEventListener('keydown',e=>{
- if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openCmd()}
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k' && window.innerWidth>820){e.preventDefault();openCmd()}
  if(e.key==='Escape')cmd.classList.remove('open');
 });
 </script>
