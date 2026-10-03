@@ -597,7 +597,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
           </main>
         </RandSwipeStage>
 
-        {!operationalDetailOpen && <RandMobileNav items={bottomNav} isActive={isBottomActive} onPick={handleBottom} onWarm={warmNavDestination} />}
+        {!operationalDetailOpen && <RandMobileNav data-count="5" items={bottomNav} isActive={isBottomActive} onPick={handleBottom} onWarm={warmNavDestination} />}
         {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rv2-fab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
