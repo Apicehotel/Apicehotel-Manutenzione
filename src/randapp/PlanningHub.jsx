@@ -64,7 +64,6 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
   const saleStats={today:todayPrepSales.filter(x=>x.status!=='done').length,finish:todayPrepSales.filter(x=>x.status==='da_finire').length,done:todayPrepSales.filter(x=>x.status==='done').length}
   if(loading)return <Spinner label="Carico planning…"/>
   const subtitle=section?(section==='sale'?'Preparazioni operative delle sale.':'Calendario operativo dei lavori.'):'Lavori, sale e attività di oggi.'
-  const action=section?<Button type="button" variant="ghost" size="sm" onClick={()=>chooseSection(null)}>‹ Riepilogo</Button>:null
   return (
     <section className="rv2-page rv2-planning" data-testid="planning-hub">
       <header className="rv2-pagehead rv2-pagehead--action">
