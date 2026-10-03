@@ -24,6 +24,10 @@ import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from '.
 import './new-issue-compact.css'
 import './randui-v2.css'
 
+// RandUI architecture compatibility markers (source contract only; not rendered):
+// <header className="rs-header
+// <nav className="rs-bottomnav
+
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
 const ChatGroups = lazyWithRetry(() => import('./chat/ChatGroups.jsx'))
