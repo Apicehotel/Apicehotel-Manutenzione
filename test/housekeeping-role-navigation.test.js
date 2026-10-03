@@ -81,6 +81,6 @@ test('Task always shows Avvisi and Promemoria for housekeeping roles and interpo
   assert.match(task, /const showReminders = housekeepingTaskRole \|\| canReminders/)
   assert.match(task, /showUrgent && \{/)
   assert.match(task, /showReminders && \{/)
-  assert.match(task, /subtitle=\{\`\$\{hotel\.name\} · promemoria e avvisi\`\}/)
-  assert.doesNotMatch(task, /subtitle="\$\{hotel\.name\}/)
+  assert.match(task, /<p>\{hotel\.name\} · promemoria e avvisi<\/p>/)
+  assert.doesNotMatch(task, /<p>\$\{hotel\.name\}/)
 })
