@@ -65,7 +65,7 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
   if(loading)return <Spinner label="Carico planning…"/>
   const subtitle=section?(section==='sale'?'Preparazioni operative delle sale.':'Calendario operativo dei lavori.'):'Lavori, sale e attività di oggi.'
   return (
-    <section className="rv2-page rv2-planning rs-planning-hub" data-testid="planning-hub">
+    <section className="rs-planning-hub rv2-page rv2-planning" data-testid="planning-hub">
       <header className="rv2-pagehead rv2-pagehead--action">
         <div><span className="rv2-eyebrow">Planning</span><h1>Planning</h1><p>{subtitle}</p></div>
         {section ? <Button type="button" variant="ghost" size="sm" onClick={()=>chooseSection(null)}>‹ Riepilogo</Button> : null}
