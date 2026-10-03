@@ -16,10 +16,9 @@ import { withTimeout } from '../async-timeout.js'
 import { fetchReminders } from './reminders/reminder-data.js'
 import { canUser } from '../permissions.js'
 import { firstName, isToday, URGENCY_META } from './helpers.js'
-import { Button, Card, EmptyState, Icon, Spinner } from './ui.jsx'
+import { Button, EmptyState, Icon, Spinner } from './ui.jsx'
 import { CommandSurface, StatCard, StatusChip } from './randui/advanced-primitives.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
-import './home-operational.css'
 
 const HOME_QUERY_TIMEOUT_MS = 15000
 const timed = (promise, label) => withTimeout(promise, HOME_QUERY_TIMEOUT_MS, label)
