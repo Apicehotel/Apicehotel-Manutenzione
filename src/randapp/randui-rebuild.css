@@ -1,0 +1,388 @@
+/* RandUI 2026 rebuild — visual layer only.
+   Functions, routes, permissions and data flow remain untouched. */
+
+:root {
+  --rs-bg: #07101c;
+  --rs-bg-2: #0a1321;
+  --rs-surface: #0d1827;
+  --rs-surface-2: #122037;
+  --rs-surface-3: #172842;
+  --rs-line: rgba(132, 165, 204, .15);
+  --rs-line-strong: rgba(72, 214, 239, .32);
+  --rs-text: #f2f7fd;
+  --rs-text-2: #a3b4c8;
+  --rs-text-3: #71859e;
+  --rs-cyan: #37d6eb;
+  --rs-teal: #39d2b0;
+  --rs-blue: #4f8cff;
+  --rs-blue-deep: #2f6fe8;
+  --rs-grad-primary: linear-gradient(135deg,#3edeea 0%,#4f8cff 100%);
+  --rs-danger: #ff7088;
+  --rs-warn: #f6bd5c;
+  --rs-ok: #48d69a;
+  --rs-r-sm: 11px;
+  --rs-r: 15px;
+  --rs-r-lg: 20px;
+  --rs-shadow: 0 18px 50px -30px rgba(0,0,0,.95);
+  --rs-glow: 0 0 0 1px rgba(92,170,224,.12),0 18px 48px -34px rgba(55,214,235,.46);
+  --rs-header-bg: rgba(7,16,28,.88);
+  --rs-nav-bg: linear-gradient(180deg,rgba(11,19,32,.72),rgba(7,12,22,.98));
+  --rs-max: 1240px;
+}
+
+html,body {
+  background:
+    radial-gradient(90% 60% at 0 -10%,rgba(55,214,235,.10),transparent 58%),
+    radial-gradient(80% 60% at 100% 0,rgba(79,140,255,.10),transparent 52%),
+    var(--rs-bg);
+}
+
+.rs-app {
+  background: transparent;
+}
+
+.rs-content {
+  max-width: var(--rs-max);
+  padding-inline: clamp(14px,2vw,24px);
+}
+
+.rs-header {
+  min-height: 62px;
+  background: var(--rs-header-bg);
+  border-bottom: 1px solid rgba(132,165,204,.10);
+  box-shadow: 0 10px 30px -26px rgba(0,0,0,.9);
+}
+
+.rs-hotelchip,
+.rs-iconbtn,
+.rs-btn,
+.rs-input,
+.rs-select,
+.rs-segmented,
+.rs-card,
+.rs-sheet,
+.rs-drawer {
+  box-shadow: none;
+}
+
+.rs-hotelchip {
+  background: rgba(18,32,55,.86);
+  border-color: rgba(132,165,204,.14);
+  border-radius: 14px;
+}
+
+.rs-hotelchip:hover,
+.rs-iconbtn:hover,
+.rs-btn:hover {
+  border-color: var(--rs-line-strong);
+}
+
+.rs-iconbtn {
+  border-radius: 12px;
+  background: rgba(18,32,55,.86);
+}
+
+.rs-bottomnav {
+  border-top: 1px solid rgba(132,165,204,.14);
+  background: var(--rs-nav-bg);
+  box-shadow: 0 -18px 40px -34px rgba(0,0,0,.9);
+}
+
+.rs-navbtn {
+  min-height: 54px;
+  border-radius: 12px;
+}
+
+.rs-navbtn.active {
+  color: var(--rs-cyan);
+  background: rgba(55,214,235,.055);
+}
+
+.rs-navbtn.active::before {
+  top: -8px;
+  width: 22px;
+  height: 2px;
+  box-shadow: 0 0 12px rgba(55,214,235,.55);
+}
+
+.rs-sidebar {
+  background: linear-gradient(180deg,#08111e 0%,#091321 100%);
+  border-right: 1px solid rgba(132,165,204,.13);
+  box-shadow: 18px 0 48px -42px rgba(0,0,0,.95);
+}
+
+.rs-sidebar__brand {
+  border-bottom: 1px solid rgba(132,165,204,.10);
+}
+
+.rs-sidebar__group {
+  gap: 3px;
+}
+
+.rs-sidebar__label {
+  color: #60758e;
+  font-size: .66rem;
+  letter-spacing: .10em;
+  font-weight: 800;
+}
+
+.rs-sidebar__item {
+  min-height: 42px;
+  border-radius: 11px;
+  color: #9eb0c5;
+  border: 1px solid transparent;
+}
+
+.rs-sidebar__item:hover {
+  background: rgba(255,255,255,.035);
+  color: var(--rs-text);
+}
+
+.rs-sidebar__item.active {
+  color: #fff;
+  background: linear-gradient(90deg,rgba(55,214,235,.12),rgba(79,140,255,.07));
+  border-color: rgba(55,214,235,.17);
+}
+
+.rs-sidebar__item.active::before {
+  content:'';
+  width:3px;
+  height:22px;
+  border-radius:3px;
+  background:var(--rs-grad-primary);
+  position:absolute;
+  left:-1px;
+}
+
+.rs-sidebar__item { position:relative; }
+
+.rs-drawer {
+  background: #0a1422;
+  border-right: 1px solid rgba(132,165,204,.16);
+}
+
+.rs-drawer__item {
+  border-radius: 11px;
+}
+
+.rs-drawer__item.active {
+  background: rgba(55,214,235,.09);
+  color: var(--rs-cyan);
+}
+
+.rs-card {
+  border: 1px solid rgba(132,165,204,.14);
+  background: linear-gradient(160deg,rgba(18,32,55,.94),rgba(13,24,39,.98));
+  border-radius: 16px;
+  box-shadow: var(--rs-shadow);
+}
+
+.rs-card--pad {
+  padding: clamp(14px,1.6vw,20px);
+}
+
+.rs-page-title {
+  letter-spacing: -.02em;
+}
+
+.rs-btn {
+  border-radius: 12px;
+  min-height: 42px;
+}
+
+.rs-btn--primary {
+  background: var(--rs-grad-primary);
+  color: #04121e;
+  box-shadow: 0 12px 28px -20px rgba(55,214,235,.9);
+}
+
+.rs-btn--ghost,
+.rs-btn--secondary {
+  background: rgba(18,32,55,.82);
+  border-color: rgba(132,165,204,.14);
+}
+
+.rs-input,
+.rs-select {
+  background: #0b1625;
+  border-color: rgba(132,165,204,.15);
+  border-radius: 12px;
+}
+
+.rs-input:focus-within,
+.rs-select:focus {
+  border-color: rgba(55,214,235,.46);
+  box-shadow: 0 0 0 3px rgba(55,214,235,.08);
+}
+
+.rs-segmented {
+  background: #0b1625;
+  border: 1px solid rgba(132,165,204,.13);
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.rs-sheet {
+  border: 1px solid rgba(132,165,204,.16);
+  background: linear-gradient(180deg,#101d30,#0b1524);
+  border-radius: 20px 20px 0 0;
+}
+
+.rs-sheet__handle {
+  background: #536a84;
+  opacity: .7;
+}
+
+.rs-workhome {
+  gap: 16px;
+}
+
+.rs-workhome__hero {
+  align-items: center;
+  padding: 4px 0 2px;
+}
+
+.rs-workhome__hero h1 {
+  font-size: clamp(1.55rem,3vw,2.25rem);
+  letter-spacing: -.035em;
+}
+
+.rs-workhome__hero p {
+  color: var(--rs-text-2);
+}
+
+.rs-workhome__role {
+  color: var(--rs-cyan);
+  letter-spacing: .08em;
+}
+
+.rs-workhome__stats {
+  gap: 10px;
+}
+
+.rs-workhome__stat {
+  min-height: 88px;
+  padding: 13px 14px;
+  border-radius: 15px;
+  background: linear-gradient(155deg,#132239,#0d1828);
+  border-color: rgba(132,165,204,.14);
+  box-shadow: 0 14px 34px -28px rgba(0,0,0,.95);
+}
+
+.rs-workhome__stat:hover {
+  border-color: rgba(55,214,235,.28);
+}
+
+.rs-workhome__stat strong {
+  font-size: 1.85rem;
+  letter-spacing: -.04em;
+}
+
+.rs-workhome__weather,
+.rs-workhome__sync,
+.rs-workhome__mywork-row,
+.rs-workhome__next,
+.rs-workhome__colleague,
+.rs-workhome__task,
+.rs-workhome__quick button {
+  background: #0d1929;
+  border-color: rgba(132,165,204,.13);
+  border-radius: 13px;
+}
+
+.rs-workhome__task {
+  min-height: 72px;
+}
+
+.rs-workhome__task:hover,
+.rs-workhome__mywork-row:hover,
+.rs-workhome__next:hover,
+.rs-workhome__quick button:hover {
+  background: #112039;
+  border-color: rgba(55,214,235,.24);
+}
+
+.rs-workhome__taskicon {
+  border-radius: 10px;
+}
+
+.rs-workhome__sectionhead h2 {
+  font-size: 1.05rem;
+  letter-spacing: -.02em;
+}
+
+.rs-workhome__you {
+  border-radius: 15px;
+  background: linear-gradient(160deg,rgba(55,214,235,.07),#0d1929);
+}
+
+.rs-randai-priority {
+  border-radius: 15px;
+  background: linear-gradient(150deg,rgba(55,214,235,.07),rgba(13,24,39,.98));
+  border-color: rgba(55,214,235,.24);
+}
+
+/* Dense desktop workspace inspired by Gentelella's rail/dashboard grammar. */
+@media (min-width: 900px) {
+  .rs-content {
+    padding-top: 22px;
+    padding-bottom: 34px;
+  }
+
+  .rs-header {
+    padding-inline: 22px;
+  }
+
+  .rs-sidebar {
+    width: 252px;
+  }
+
+  .rs-workhome__stats {
+    grid-template-columns: repeat(4,minmax(0,1fr));
+  }
+
+  .rs-workhome__queue {
+    gap: 8px;
+  }
+
+  .rs-card {
+    box-shadow: 0 16px 40px -34px rgba(0,0,0,.95);
+  }
+}
+
+/* Mobile keeps the operational grammar: bottom nav, large tap targets, no sidebar search. */
+@media (max-width: 899px) {
+  .rs-content {
+    padding-top: 12px;
+  }
+
+  .rs-header {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .rs-hotelchip {
+    border-radius: 13px;
+  }
+
+  .rs-workhome__stats {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .rs-workhome__stat {
+    min-height: 78px;
+  }
+
+  .rs-workhome__task {
+    min-height: 70px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after {
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+  }
+}
