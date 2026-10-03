@@ -71,12 +71,12 @@ export default function OperationsHub({ hotel, canIssues, canInterventions, onOp
   const columns = canIssues && canInterventions ? 2 : 1
 
   return (
-    <section className="rv2-page rv2-operations" data-testid="operations-hub">
+    <section className="rv2-page rv2-operations rs-ops-surface" data-testid="operations-hub">
       <header className="rv2-pagehead">
         <div><span className="rv2-eyebrow">Operatività</span><h1>Operatività</h1><p>Segnalazioni e interventi adesso.</p></div>
       </header>
 
-      <div className="rv2-choice-grid" data-columns={columns}>
+      <div className="rv2-choice-grid rs-ops-choice-grid" data-columns={columns}>
         {canIssues && <HubChoice icon="issues" title="Segnalazioni" kind="issues" metrics={issueMetrics} onClick={() => onOpen('issues')} testId="operations-open-issues" />}
         {canInterventions && <HubChoice icon="wrench" title="Interventi" kind="interventions" metrics={interventionMetrics} onClick={() => onOpen('interventions')} testId="operations-open-interventions" />}
       </div>
