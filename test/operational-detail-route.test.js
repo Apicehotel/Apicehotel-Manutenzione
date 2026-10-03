@@ -18,10 +18,10 @@ test('operational detail has one canonical surface for all operational domains',
 
 test('Shell owns focus mode and removes competing application chrome', () => {
   assert.match(shell, /const \[operationalDetail, setOperationalDetail\] = useState\(null\)/)
-  assert.match(shell, /operationalDetailOpen \? 'rs-app--operational-detail'/)
-  assert.match(shell, /!operationalDetailOpen && <aside className="rs-sidebar"/)
-  assert.match(shell, /!operationalDetailOpen && <header className="rs-header/)
-  assert.match(shell, /!operationalDetailOpen && <nav className="rs-bottomnav/)
+  assert.match(shell, /operationalDetailOpen \? 'rv2-app--operational-detail'/)
+  assert.match(shell, /!operationalDetailOpen && \([\s\S]*<RandDesktopSidebar/)
+  assert.match(shell, /!operationalDetailOpen && \([\s\S]*<RandTopbar/)
+  assert.match(shell, /!operationalDetailOpen && <RandMobileNav/)
   assert.match(shell, /!operationalDetailOpen && contextualActionIds\.length > 0/)
   assert.equal((shell.match(/onDetailChange=\{handleOperationalDetailChange\}/g) || []).length, 5)
 })

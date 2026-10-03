@@ -16,11 +16,15 @@ test('nav prefetch warms primary bottom destinations and related hubs', async ()
 })
 
 test('Shell schedules idle prefetch and warms on pointerdown/focus', async () => {
-  const shell = await source('src/randapp/Shell.jsx')
+  const [shell, chrome] = await Promise.all([
+    source('src/randapp/Shell.jsx'),
+    source('src/randapp/v2/RandChrome.jsx'),
+  ])
   assert.match(shell, /scheduleNavPrefetch/)
   assert.match(shell, /prefetchViews/)
-  assert.match(shell, /onPointerDown=\{\(\) => warmNavDestination\(item\.id\)\}/)
-  assert.match(shell, /onFocus=\{\(\) => warmNavDestination\(item\.id\)\}/)
+  assert.match(shell, /onWarm=\{warmNavDestination\}/)
+  assert.match(chrome, /onPointerDown=\{\(\) => onWarm\?\.\(item\.id\)\}/)
+  assert.match(chrome, /onFocus=\{\(\) => onWarm\?\.\(item\.id\)\}/)
   assert.match(shell, /lazyWithRetry\(\(\) => import\('\.\/Issues\.jsx'\)\)/)
 })
 

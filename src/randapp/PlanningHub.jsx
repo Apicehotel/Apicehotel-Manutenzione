@@ -4,7 +4,6 @@ import { fetchBookings, subscribeBookings } from '../sale-data.js'
 import { withTimeout } from '../async-timeout.js'
 import { canUser } from '../permissions.js'
 import { Button, Spinner } from './ui.jsx'
-import { Grid, PageTitle, Stack } from './randui/visual-primitives.jsx'
 import PlanningWorkSimple from './PlanningWorkSimple.jsx'
 import PlanningSaleSimple from './PlanningSaleSimple.jsx'
 import { PlanningChoice, PlanningTodaySummary, SaleEventCalendar, eventOnDay, isoDay } from './planning/PlanningOverview.jsx'
@@ -65,16 +64,24 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
   const saleStats={today:todayPrepSales.filter(x=>x.status!=='done').length,finish:todayPrepSales.filter(x=>x.status==='da_finire').length,done:todayPrepSales.filter(x=>x.status==='done').length}
   if(loading)return <Spinner label="Carico planning…"/>
   const subtitle=section?(section==='sale'?'Preparazioni operative delle sale.':'Calendario operativo dei lavori.'):'Lavori, sale e attività di oggi.'
-  const action=section?<Button type="button" variant="ghost" size="sm" onClick={()=>chooseSection(null)}>‹ Riepilogo</Button>:null
-  return <Stack data-testid="planning-hub" className="rs-planning-hub rs-ops-surface" gap="sm">
-    <PageTitle title="Planning" subtitle={subtitle} action={action}/>
-    <Grid columns={canSeeWork&&canSeeSale?2:1} gap="sm" className="rs-planning-choice-grid">
-      {canSeeWork&&<PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>chooseSection('work')}/>}
-      {canSeeSale&&<PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>chooseSection('sale')}/>}
-    </Grid>
-    {!section?<Stack gap="sm" className="rs-planning-overview-stack">
-      <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>
-      {canSeeSale&&<SaleEventCalendar bookings={bookings}/>}
-    </Stack>:section==='work'&&canSeeWork?<PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/>:section==='sale'&&canSeeSale?<PlanningSaleSimple hotel={hotel} user={user} openRequest={saleCreateSignal}/>:null}
-  </Stack>
+  return (
+    <section className="rs-planning-hub rv2-page rv2-planning" data-testid="planning-hub">
+      <header className="rv2-pagehead rv2-pagehead--action">
+        <div><span className="rv2-eyebrow">Planning</span><h1>Planning</h1><p>{subtitle}</p></div>
+        {section ? <Button type="button" variant="ghost" size="sm" onClick={()=>chooseSection(null)}>‹ Riepilogo</Button> : null}
+      </header>
+
+      <div className="rv2-choice-grid" data-columns={canSeeWork&&canSeeSale?2:1}>
+        {canSeeWork&&<PlanningChoice active={section==='work'} icon="wrench" title="Planning lavori" stats={workStats} onClick={()=>chooseSection('work')}/>}
+        {canSeeSale&&<PlanningChoice active={section==='sale'} icon="calendar" title="Planning sale" stats={saleStats} onClick={()=>chooseSection('sale')}/>}
+      </div>
+
+      <div className="rv2-planning-body">
+        {!section ? <>
+          <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>
+          {canSeeSale&&<SaleEventCalendar bookings={bookings}/>}
+        </> : section==='work'&&canSeeWork ? <PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/> : section==='sale'&&canSeeSale ? <PlanningSaleSimple hotel={hotel} user={user} openRequest={saleCreateSignal}/> : null}
+      </div>
+    </section>
+  )
 }
