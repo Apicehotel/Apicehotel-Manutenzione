@@ -139,32 +139,18 @@ export default function TaskView({ hotel, user, canUrgent = false, canReminders 
   ].filter(Boolean)
 
   return (
-    <Stack gap="sm" className="rs-task-view rs-ops-surface" data-testid="task-view">
-      <PageTitle
-        eyebrow="Task"
-        title="Task"
-        subtitle={`${hotel.name} · promemoria e avvisi`}
-      />
-      {loading ? (
-        <Spinner label="Carico Task…" />
-      ) : (
-        <Grid columns={cards.length >= 2 ? 2 : 1} gap="sm" className="rs-planning-choice-grid rs-ops-choice-grid">
-          {cards.map((card) => (
-            <HubChoice
-              key={card.key}
-              icon={card.icon}
-              title={card.title}
-              kind={card.key}
-              metrics={card.metrics}
-              onClick={card.onClick}
-              testId={card.testId}
-            />
-          ))}
-        </Grid>
+    <section className="rv2-page rv2-task" data-testid="task-view">
+      <header className="rv2-pagehead">
+        <div><span className="rv2-eyebrow">Task</span><h1>Task</h1><p>{hotel.name} · promemoria e avvisi</p></div>
+      </header>
+      {loading ? <Spinner label="Carico Task…" /> : (
+        <div className="rv2-choice-grid" data-columns={cards.length >= 2 ? 2 : 1}>
+          {cards.map((card) => <HubChoice key={card.key} icon={card.icon} title={card.title} kind={card.key} metrics={card.metrics} onClick={card.onClick} testId={card.testId} />)}
+        </div>
       )}
       {!loading && cards.length > 0 && (
-        <p className="rs-telegram-hint">Apri Avvisi o Promemoria per vedere il dettaglio.</p>
+        <div className="rv2-task-hint"><Icon name="info" /><span>Apri Avvisi o Promemoria per vedere il dettaglio completo.</span></div>
       )}
-    </Stack>
+    </section>
   )
 }
