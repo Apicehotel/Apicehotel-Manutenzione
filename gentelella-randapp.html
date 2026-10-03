@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RandApp × Gentelella</title>
+<style>
+:root{--bg:#07101c;--panel:#0f1a2b;--panel2:#142239;--line:#263a55;--text:#eef6ff;--muted:#8ea4bf;--cyan:#28d7ef;--blue:#4e8dff;--warn:#ffc45d;--danger:#ff6f86;--ok:#48da9a;--rail:76px;--side:248px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.shell{display:grid;grid-template-columns:var(--side) 1fr;min-height:100vh}.shell.rail{grid-template-columns:var(--rail) 1fr}
+aside{position:sticky;top:0;height:100vh;background:#08111f;border-right:1px solid var(--line);padding:14px 10px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;padding:8px}.brand b{white-space:nowrap}.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#34e3e8,#3b82f6);display:grid;place-items:center;color:#04121e;font-weight:900}
+.nav h4{color:#5f7898;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:18px 10px 7px;white-space:nowrap}
+.nav button{width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#a7b9cd;padding:11px;border-radius:11px;text-align:left}.nav button.active,.nav button:hover{background:#132238;color:#fff}.nav i{width:22px;text-align:center;font-style:normal}.rail .nav span,.rail .nav h4,.rail .brand b{display:none}
+main{min-width:0}.top{height:64px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(7,16,28,.88);backdrop-filter:blur(16px);position:sticky;top:0;z-index:10}
+.top button,.searchbtn{height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:0 13px}.searchbtn{flex:1;max-width:520px;text-align:left;color:var(--muted)}
+.content{padding:20px;max-width:1300px}.titleline{display:flex;justify-content:space-between;gap:12px;align-items:end}.titleline h1{margin:0;font-size:26px}.titleline p{margin:4px 0 0;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;margin:18px 0}.card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:16px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:30px;margin-top:8px}.danger{color:var(--danger)}.warn{color:var(--warn)}.ok{color:var(--ok)}.accent{color:var(--cyan)}
+.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.list{display:grid;gap:8px}.row{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;background:#0b1524}.row .ico{width:36px;height:36px;border-radius:10px;background:#162841;display:grid;place-items:center}.row small{display:block;color:var(--muted);margin-top:3px}.tag{font-size:11px;padding:5px 8px;border-radius:999px;background:#182941;color:#b8c9db}
+.cmdback{display:none;position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:50;padding:12vh 18px}.cmdback.open{display:block}.cmd{max-width:620px;margin:auto;background:#0b1524;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden}.cmd input{width:100%;height:56px;border:0;border-bottom:1px solid var(--line);background:#0b1524;color:#fff;padding:0 18px;font-size:16px;outline:none}.results{max-height:360px;overflow:auto;padding:8px}.result{width:100%;display:flex;justify-content:space-between;align-items:center;border:0;background:transparent;color:#dce7f4;padding:11px;border-radius:10px;text-align:left}.result:hover{background:#132238}.result small{color:var(--muted)}
+.mobile{display:none}
+@media(max-width:820px){.shell{display:block}.shell aside{display:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.content{padding:14px}.mobile{display:inline-flex}.searchbtn{max-width:none}.titleline{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="shell" id="shell">
+<aside>
+ <div class="brand"><div class="logo">R</div><b>RandApp</b></div>
+ <div class="nav">
+  <h4>Principale</h4>
+  <button class="active"><i>⌂</i><span>Home</span></button>
+  <button><i>▣</i><span>Operatività</span></button>
+  <button><i>▦</i><span>Planning</span></button>
+  <button><i>✓</i><span>Task</span></button>
+  <h4>Gestione</h4>
+  <button><i>□</i><span>Rifornimenti</span></button>
+  <button><i>◫</i><span>Magazzino</span></button>
+  <button><i>⚙</i><span>Impianti</span></button>
+  <button><i>☎</i><span>Rubrica tecnici</span></button>
+  <h4>Assistente</h4>
+  <button><i>✦</i><span>RandAI</span></button>
+ </div>
+</aside>
+
+<main>
+ <div class="top">
+  <button id="railBtn">☰</button>
+  <button class="searchbtn" id="openCmd">⌕ Cerca in RandApp… <span style="float:right">⌘K</span></button>
+  <button>🔔</button>
+  <button>GIO</button>
+ </div>
+
+ <div class="content">
+  <div class="titleline"><div><h1>Scrivania operativa</h1><p>Hotel Giò · manutenzione · oggi</p></div><button style="height:40px;border:0;border-radius:11px;background:linear-gradient(135deg,#34e3e8,#3b82f6);padding:0 14px;font-weight:800">+ Nuova</button></div>
+
+  <div class="stats">
+   <div class="card stat"><small>Urgenti</small><strong class="danger">2</strong></div>
+   <div class="card stat"><small>Segnalazioni</small><strong class="warn">5</strong></div>
+   <div class="card stat"><small>Interventi oggi</small><strong class="accent">3</strong></div>
+   <div class="card stat"><small>Completati</small><strong class="ok">18</strong></div>
+  </div>
+
+  <div class="grid">
+   <div class="card">
+    <h3 style="margin-top:0">Priorità operative</h3>
+    <div class="list">
+     <div class="row"><div class="ico">!</div><div><b>Camera 305 · perdita acqua</b><small>Segnalazione urgente · 8 min fa</small></div><span class="tag">Alta</span></div>
+     <div class="row"><div class="ico">⚒</div><div><b>Sala Jazz · climatizzazione</b><small>Intervento oggi · 11:30</small></div><span class="tag">In corso</span></div>
+     <div class="row"><div class="ico">▦</div><div><b>Planning sala Perugia</b><small>Preparazione evento · 14:00</small></div><span class="tag">Oggi</span></div>
+    </div>
+   </div>
+   <div class="card">
+    <h3 style="margin-top:0">Sono in struttura</h3>
+    <p style="color:var(--muted)">Presenza operativa Hotel Giò</p>
+    <button id="presence" style="width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:#102037;color:#fff;font-weight:800">Fuori struttura</button>
+    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+    <h3>Azioni rapide</h3>
+    <div class="list"><button class="row" style="width:100%;color:#fff;text-align:left">Nuova segnalazione</button><button class="row" style="width:100%;color:#fff;text-align:left">Apri Task</button><button class="row" style="width:100%;color:#fff;text-align:left">Apri RandAI</button></div>
+   </div>
+  </div>
+ </div>
+</main>
+</div>
+
+<div class="cmdback" id="cmd">
+ <div class="cmd">
+  <input id="cmdInput" placeholder="Cerca pagina o azione…">
+  <div class="results" id="results"></div>
+ </div>
+</div>
+
+<script>
+const shell=document.getElementById('shell');
+document.getElementById('railBtn').onclick=()=>shell.classList.toggle('rail');
+
+let inside=false;
+document.getElementById('presence').onclick=e=>{
+ inside=!inside;
+ e.currentTarget.textContent=inside?'In struttura · GIO':'Fuori struttura';
+ e.currentTarget.style.color=inside?'#48da9a':'#fff';
+};
+
+const items=[
+ ['Home','Principale'],['Operatività','Principale'],['Segnalazioni','Operatività'],['Interventi','Operatività'],
+ ['Planning','Operatività'],['Task','Operatività'],['Rifornimenti','Gestione'],['Magazzino','Gestione'],
+ ['Impianti','Gestione'],['Rubrica tecnici','Gestione'],['RandAI','Assistente'],['Sono in struttura','Azione'],
+ ['Nuova segnalazione','Azione'],['Apri promemoria','Azione']
+];
+
+const cmd=document.getElementById('cmd'), input=document.getElementById('cmdInput'), results=document.getElementById('results');
+function render(q=''){
+ const s=q.trim().toLowerCase();
+ results.innerHTML=items.filter(x=>!s || (x[0]+' '+x[1]).toLowerCase().includes(s))
+ .map(x=>'<button class="result"><span><b>'+x[0]+'</b><small>'+x[1]+'</small></span><span>↵</span></button>').join('');
+ document.querySelectorAll('.result').forEach(b=>b.onclick=()=>{cmd.classList.remove('open');alert('Apertura: '+b.querySelector('b').textContent)});
+}
+function openCmd(){cmd.classList.add('open');render();setTimeout(()=>input.focus(),30)}
+document.getElementById('openCmd').onclick=openCmd;
+input.oninput=()=>render(input.value);
+cmd.onclick=e=>{if(e.target===cmd)cmd.classList.remove('open')};
+document.addEventListener('keydown',e=>{
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openCmd()}
+ if(e.key==='Escape')cmd.classList.remove('open');
+});
+</script>
+</body></html>
