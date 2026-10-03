@@ -726,3 +726,91 @@ body{
   .rv2-teamgrid{grid-template-columns:1fr}
   .rv2-priority{grid-template-columns:24px 32px minmax(0,1fr) 18px;padding-inline:9px}
 }
+
+
+/* Behavioral contracts retained in RandUI v2. */
+.rv2-app:has(.rv2-home) .rv2-fab{display:none}
+
+.rv2-row__title{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  line-clamp:3;
+  overflow:hidden;
+  white-space:normal;
+  text-align:left;
+  line-height:1.25;
+}
+.rv2-row__body [data-testid="intervention-tags"]{
+  margin-top:6px!important;
+}
+
+.rs-randai-priority{
+  display:grid;
+  gap:8px;
+  padding:11px;
+  border:1px solid var(--rv2-line);
+  border-radius:12px;
+  background:linear-gradient(180deg,#15202d,#101821);
+}
+.rs-randai-priority__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.rs-randai-priority__head>span{display:flex;align-items:center;gap:7px;min-width:0}
+.rs-randai-priority__head b{color:var(--rv2-accent);font-size:.7rem}
+.rs-randai-priority>button{
+  width:100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto 18px;
+  align-items:center;
+  gap:9px;
+  padding:9px;
+  border:1px solid var(--rv2-line);
+  border-radius:10px;
+  background:#0f1721;
+  color:var(--rv2-text);
+  text-align:left;
+}
+.rs-randai-priority__main{display:grid;gap:2px;min-width:0}
+.rs-randai-priority__main small{color:var(--rv2-text-3);font-size:.64rem;text-transform:uppercase;font-weight:800}
+.rs-randai-priority__main strong{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  overflow:hidden;
+}
+.rs-randai-priority__main span{color:var(--rv2-text-2);font-size:.72rem}
+.rs-randai-priority__score{
+  min-width:64px;
+  min-height:32px;
+  padding:0 8px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:var(--rv2-panel-3);
+  font-size:.68rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.rs-randai-priority__blocked{color:var(--rv2-warning);font-size:.7rem}
+.rs-randai-priority__assign{color:var(--rv2-text-2);font-size:.7rem}
+
+html[data-ui-size='large'] .rv2-home{gap:18px}
+html[data-ui-size='large'] .rv2-kpi-grid .rs-stat-card,
+html[data-ui-size='large'] .rv2-kpi-grid .rs-workhome__stat{min-height:104px}
+html[data-ui-size='large'] .rv2-priority{min-height:78px}
+html[data-ui-size='large'] .rs-randai-priority{padding:13px}
+
+@media(max-width:520px){
+  .rv2-kpi-grid[data-count="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rv2-kpi-grid[data-count="3"] .rs-stat-card,
+  .rv2-kpi-grid[data-count="3"] .rs-workhome__stat{min-width:0;padding:8px}
+  .rv2-kpi-grid[data-count="3"] strong{font-size:1.45rem}
+  .rs-randai-priority__head b{display:none}
+  .rs-randai-priority__main span{display:none}
+  .rs-randai-priority__score{min-width:58px;font-size:.64rem}
+}
