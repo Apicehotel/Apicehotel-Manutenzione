@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchIssuesForHub, peekCachedIssues, subscribeIssues } from '../../issues-data.js'
 import { fetchPlannedForHub, peekCachedPlanned, subscribePlanned } from '../../planned-data.js'
 import { withTimeout } from '../../async-timeout.js'
-import { Grid, PageTitle, Stack } from '../randui/visual-primitives.jsx'
-import { Badge, Card } from '../ui.jsx'
+import { Icon } from '../ui.jsx'
 import HubChoice from './HubChoice.jsx'
-import { InterventionTags } from './view-primitives.jsx'
 import { interventionPreviewMetrics, interventionTopPreview, issuePreviewMetrics, issueTopPreview } from './hub-preview-stats.js'
 
 const SOFT_REFRESH_MS = 2500
