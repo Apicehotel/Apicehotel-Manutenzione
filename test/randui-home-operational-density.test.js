@@ -39,7 +39,7 @@ test('Home density keeps Piccolo Normale Grande compatible', async () => {
   const css = await read('src/randapp/randui-v2.css')
   assert.match(css, /html\[data-ui-size='large'\] \.rv2-kpi-grid/)
   assert.match(css, /html\[data-ui-size='large'\] \.rv2-priority/)
-  assert.match(css, /@media \(max-width: 520px\)/)
+  assert.match(css, /@media\s*\(max-width:\s*520px\)/)
 })
 
 test('RandAI score is self-explanatory and component no longer owns inline CSS', async () => {
@@ -50,9 +50,11 @@ test('RandAI score is self-explanatory and component no longer owns inline CSS',
   assert.match(css, /\.rs-randai-priority__score/)
 })
 
-test('Home component uses one canonical external stylesheet instead of embedded HOME13 styles', async () => {
+test('Home component uses the canonical RandUI v2 stylesheet instead of embedded HOME13 styles', async () => {
   const home = await read('src/randapp/Home.jsx')
-  assert.match(home, /import ['"]\.\/home-operational\.css['"]/)
+  const shell = await read('src/randapp/Shell.jsx')
+  assert.match(shell, /import ['"]\.\/randui-v2\.css['"]/)
+  assert.doesNotMatch(home, /home-operational\.css/)
   assert.doesNotMatch(home, /HOME13_STYLES/)
   assert.doesNotMatch(home, /<style>/)
 })
