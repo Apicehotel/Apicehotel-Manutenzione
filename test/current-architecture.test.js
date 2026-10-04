@@ -28,10 +28,10 @@ test('Shell imports operational views directly from focused modules', async () =
   assert.match(shell, /buildPrimaryBottomNav/)
   assert.match(chrome, /data-count="5"/)
   assert.match(shellNavigation, /home:\s*3/)
-  assert.match(shellNavigation, /randai:\s*5/)
-  assert.match(shellNavigation, /id:\s*'randai'.*label:\s*'RandAI'/)
+  assert.match(shellNavigation, /more:\s*5/)
+  assert.match(shellNavigation, /id:\s*'more'.*label:\s*'Altro'/)
   assert.doesNotMatch(shellNavigation, /href:\s*'\/randai'/)
-  assert.doesNotMatch(shellNavigation, /label:\s*'Altro'/)
+  assert.match(shell, /data-testid="header-randai"/)
   assert.doesNotMatch(shellNavigation, /allowed\.length <= 5/)
 })
 

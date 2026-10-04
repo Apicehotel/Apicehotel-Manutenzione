@@ -53,7 +53,7 @@ test('interest ranking changes priority but never introduces unauthorized entrie
   assert.ok(interestScore('inventory', ['inventory']) > interestScore('issues', ['inventory']))
 })
 
-test('bottom navigation preserves Operatività, Planning, Home and RandAI anchors while ranking only slot 4', () => {
+test('bottom navigation preserves Operatività, Planning, Home and Altro anchors while ranking only slot 4', () => {
   const placements = {
     chat: 'off',
     planning_work: 'side',
@@ -71,6 +71,6 @@ test('bottom navigation preserves Operatività, Planning, Home and RandAI anchor
   assert.equal(nav.find((item) => item.slot === 2)?.id, 'planning-work')
   assert.equal(nav.find((item) => item.slot === 3)?.id, 'home')
   assert.equal(nav.find((item) => item.slot === 4)?.id, 'inventory')
-  assert.equal(nav.find((item) => item.slot === 5)?.id, 'randai')
+  assert.equal(nav.find((item) => item.slot === 5)?.id, 'more')
   assert.equal(nav.some((item) => item.id === 'housekeeping'), false)
 })
