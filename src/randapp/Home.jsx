@@ -19,6 +19,7 @@ import { firstName, isToday, URGENCY_META } from './helpers.js'
 import { Button, EmptyState, Icon, Spinner } from './ui.jsx'
 import { CommandSurface, StatCard, StatusChip } from './randui/advanced-primitives.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
+import PresenceChip from './PresenceChip.jsx'
 
 const HOME_QUERY_TIMEOUT_MS = 15000
 const timed = (promise, label) => withTimeout(promise, HOME_QUERY_TIMEOUT_MS, label)
@@ -156,6 +157,10 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const presenceMore=Math.max(0, presenceRows.length - presencePreview.length)
 
   return <section className="rv2-home" data-testid="home-view">
+    <div className="rv2-mobile-presence" data-testid="mobile-presence">
+      <span className="rv2-mobile-presence__label">Presenza</span>
+      <PresenceChip user={user} hotel={hotel} />
+    </div>
     <header className="rv2-homehead">
       <div className="rv2-homehead__copy">
         <span className="rv2-eyebrow">{roleLabel(user)} · Scrivania</span>
