@@ -106,13 +106,17 @@ export default function PresenceChip({ user, hotel }) {
       onClick={toggle}
       disabled={busy}
       aria-pressed={presentHere}
+      aria-busy={busy}
       aria-label={`${fullLabel}. ${actionLabel}`}
       title={error || `${fullLabel} · ${actionLabel}`}
       data-testid="presence-chip"
       data-presence={present ? 'in' : 'out'}
       data-here={presentHere ? 'true' : 'false'}
     >
-      <span className="rs-presence-chip__dot" aria-hidden="true" />
+      <span className="rs-presence-chip__liquid" aria-hidden="true">
+        <span className="rs-presence-chip__wave" />
+        <span className="rs-presence-chip__dot" />
+      </span>
       <span className="rs-presence-chip__text">{busy ? '…' : visibleLabel}</span>
     </button>
   )

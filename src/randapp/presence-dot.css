@@ -1,8 +1,10 @@
-/* Presence control: explicit personal location, compact enough for mobile header. */
+/* Presence control: explicit personal location, compact enough for mobile header.
+   The liquid fill is an original CSS treatment inspired by fluid toggle patterns;
+   presence semantics and hotel scoping remain unchanged. */
 .rs-presence-chip {
   min-height: calc(40px * var(--rs-scale));
   max-width: calc(132px * var(--rs-scale));
-  padding: 0 calc(12px * var(--rs-scale));
+  padding: 0 calc(12px * var(--rs-scale)) 0 calc(8px * var(--rs-scale));
   border: 1px solid color-mix(in srgb, var(--rs-border, #cbd5e1) 82%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--rs-surface, #fff) 92%, transparent);
@@ -21,7 +23,7 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   box-shadow: 0 1px 2px rgba(15,23,42,.06);
-  transition: transform .12s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, opacity .16s ease;
+  transition: transform .12s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .16s ease;
 }
 
 .rs-presence-chip:hover {
@@ -32,22 +34,55 @@
 .rs-presence-chip:focus-visible { outline: 2px solid var(--rs-accent); outline-offset: 2px; }
 .rs-presence-chip:disabled { cursor: wait; opacity: .62; }
 
-.rs-presence-chip__dot {
+.rs-presence-chip__liquid {
+  position: relative;
   flex: 0 0 auto;
+  width: calc(30px * var(--rs-scale));
+  height: calc(22px * var(--rs-scale));
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgba(148,163,184,.16);
+  box-shadow: inset 0 0 0 1px rgba(148,163,184,.26);
+}
+
+.rs-presence-chip__wave {
+  position: absolute;
+  inset: 55% -35% -45%;
+  border-radius: 45% 52% 44% 56%;
+  background: #94a3b8;
+  transform: translateY(35%) rotate(0deg);
+  transform-origin: 50% 50%;
+  transition: inset .32s cubic-bezier(.22,1,.36,1), transform .42s cubic-bezier(.22,1,.36,1), background-color .2s ease;
+}
+
+.rs-presence-chip__dot {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: calc(6px * var(--rs-scale));
   width: calc(9px * var(--rs-scale));
   height: calc(9px * var(--rs-scale));
+  margin-top: calc(-4.5px * var(--rs-scale));
   border-radius: 50%;
   background: #94a3b8;
   box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(148,163,184,.13);
+  transition: left .3s cubic-bezier(.22,1,.36,1), background-color .2s ease, box-shadow .2s ease;
 }
 
 .rs-presence-chip[data-presence='in'] {
   border-color: rgba(34,197,94,.34);
   background: rgba(34,197,94,.09);
 }
-.rs-presence-chip[data-presence='in'] .rs-presence-chip__dot {
+.rs-presence-chip[data-presence='in'] .rs-presence-chip__wave {
+  inset: -15% -35% -10%;
   background: #22c55e;
-  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(34,197,94,.14);
+  transform: translateY(0) rotate(16deg);
+}
+.rs-presence-chip[data-presence='in'] .rs-presence-chip__dot {
+  left: calc(15px * var(--rs-scale));
+  background: #22c55e;
+  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(34,197,94,.14), 0 0 10px rgba(34,197,94,.26);
 }
 
 /* If the user is physically in another hotel, make that distinction visible. */
@@ -55,9 +90,21 @@
   border-color: rgba(245,158,11,.38);
   background: rgba(245,158,11,.10);
 }
+.rs-presence-chip[data-presence='in'][data-here='false'] .rs-presence-chip__wave {
+  background: #f59e0b;
+}
 .rs-presence-chip[data-presence='in'][data-here='false'] .rs-presence-chip__dot {
   background: #f59e0b;
-  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(245,158,11,.14);
+  box-shadow: 0 0 0 calc(3px * var(--rs-scale)) rgba(245,158,11,.14), 0 0 10px rgba(245,158,11,.22);
+}
+
+.rs-presence-chip[aria-busy='true'] .rs-presence-chip__wave {
+  animation: rs-presence-liquid-busy .8s ease-in-out infinite alternate;
+}
+
+@keyframes rs-presence-liquid-busy {
+  from { transform: translateY(8%) rotate(-8deg); }
+  to { transform: translateY(-4%) rotate(14deg); }
 }
 
 .rs-presence-chip__text {
@@ -83,24 +130,35 @@
 @media (max-width: 430px) {
   .rs-presence-chip {
     min-height: calc(38px * var(--rs-scale));
-    max-width: calc(88px * var(--rs-scale));
-    padding: 0 calc(9px * var(--rs-scale));
-    gap: calc(6px * var(--rs-scale));
+    max-width: calc(96px * var(--rs-scale));
+    padding: 0 calc(8px * var(--rs-scale)) 0 calc(6px * var(--rs-scale));
+    gap: calc(5px * var(--rs-scale));
     font-size: .76rem;
+  }
+  .rs-presence-chip__liquid {
+    width: calc(28px * var(--rs-scale));
+    height: calc(20px * var(--rs-scale));
   }
   .rs-presence-chip__dot {
     width: calc(8px * var(--rs-scale));
     height: calc(8px * var(--rs-scale));
+    margin-top: calc(-4px * var(--rs-scale));
+  }
+  .rs-presence-chip[data-presence='in'] .rs-presence-chip__dot {
+    left: calc(14px * var(--rs-scale));
   }
 }
 
 @media (max-width: 360px) {
   .rs-presence-chip {
-    max-width: calc(74px * var(--rs-scale));
-    padding-inline: calc(8px * var(--rs-scale));
+    max-width: calc(82px * var(--rs-scale));
+    padding-inline: calc(6px * var(--rs-scale));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rs-presence-chip { transition: none; }
+  .rs-presence-chip,
+  .rs-presence-chip__wave,
+  .rs-presence-chip__dot { transition: none; }
+  .rs-presence-chip[aria-busy='true'] .rs-presence-chip__wave { animation: none; }
 }
