@@ -2,9 +2,9 @@ import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout
 
 // RandUI primary mobile navigation contract.
 // Five spatial slots stay stable on mobile: Operatività, Planning, Home, Task,
-// RandAI. Home is always the geometric centre and RandAI owns the far-right
-// slot. Task is the preferred operational destination; contextual fallbacks are
-// used only for roles that cannot access interventions/my-work.
+// Altro. Home is always the geometric centre and Altro owns the far-right slot.
+// Task is the preferred operational destination; contextual fallbacks are used
+// only for roles that cannot access interventions/my-work.
 
 export const PRIMARY_OPERATIONAL_NAV = Object.freeze([
   Object.freeze({ id: 'inventory', key: 'inventory', icon: 'package', label: 'Magazzino' }),
@@ -18,7 +18,7 @@ export const TELEGRAM_PRIMARY_SLOTS = Object.freeze({
   planning: 2,
   home: 3,
   contextual: 4,
-  randai: 5,
+  more: 5,
 })
 
 const HOUSEKEEPING_ROLES = new Set(['Governante', 'Capo Governante'])
@@ -75,13 +75,13 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], 
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // Bottom-nav RandAI opens the dedicated in-app chat page. Control Center
-  // /randai stays a protected URL, not a primary-nav destination.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.randai, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
+  // The far-right slot is the complete menu. RandAI remains available from the
+  // full menu/header instead of displacing the user's stable "Altro" entry.
+  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'more', key: 'more', icon: 'menu', label: 'Altro' })
 
   return items
 }
 
 export function isPrimaryBottomDestination(view) {
-  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || view === 'randai' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
+  return view === 'operations' || view === 'home' || view === 'planning-work' || view === 'my-work' || view === 'chat' || PRIMARY_OPERATIONAL_NAV.some((item) => item.id === view)
 }
