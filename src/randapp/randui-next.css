@@ -420,3 +420,22 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-panel-actions button{min-height:34px;padding:0 10px;border:1px solid var(--rnx-line);border-radius:10px;background:var(--rnx-surface);color:var(--rnx-text-2);font-size:.7rem;font-weight:800}
 .rnx-app--operational-detail{grid-template-columns:1fr}
 .rnx-app--operational-detail .rnx-stage{grid-column:1/-1}
+
+
+/* Contract hooks kept explicit for operational tests and density modes. */
+.rnx-kpi-grid[data-count="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.rnx-app:has(.rnx-home) .rnx-fab{display:none}
+html[data-ui-size='large'] .rnx-kpi-grid .rs-stat-card,
+html[data-ui-size='large'] .rnx-kpi-grid .rs-workhome__stat{min-height:112px}
+html[data-ui-size='large'] .rnx-priority{min-height:70px}
+html[data-ui-size='small'] .rnx-home{gap:9px}
+html[data-ui-size='small'] .rnx-kpi-grid .rs-stat-card,
+html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
+.rs-randai-priority__score{
+  min-width:62px;min-height:30px;padding:0 8px;display:grid;place-items:center;
+  border-radius:9px;background:var(--rnx-surface-3);color:var(--rnx-text-2);font-size:.68rem;font-weight:900
+}
+.rnx-content .rv2-row__title{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;
+  overflow:hidden;white-space:normal;text-align:left;line-height:1.25
+}
