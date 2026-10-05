@@ -41,9 +41,9 @@ test('presence timeout remains 7h20', () => {
 
 test('mobile home exposes presence even when the topbar is not visible', () => {
   const home = fs.readFileSync(new URL('../src/randapp/Home.jsx', import.meta.url), 'utf8')
-  const v2css = fs.readFileSync(new URL('../src/randapp/randui-v2.css', import.meta.url), 'utf8')
+  const nextCss = fs.readFileSync(new URL('../src/randapp/randui-next.css', import.meta.url), 'utf8')
   assert.match(home, /data-testid="mobile-presence"/)
   assert.match(home, /<PresenceChip user=\{user\} hotel=\{hotel\} \/>/)
-  assert.match(v2css, /\.rv2-mobile-presence\{display:none\}/)
-  assert.match(v2css, /@media\(max-width:899px\)[\s\S]*?\.rv2-mobile-presence\{[\s\S]*?display:flex/)
+  assert.match(nextCss, /.rnx-mobile-presence\{display:none\}/)
+  assert.match(nextCss, /@media\(max-width:767px\)[\s\S]*?.rnx-mobile-presence\{[\s\S]*?display:flex/)
 })
