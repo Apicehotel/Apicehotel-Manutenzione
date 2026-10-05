@@ -22,7 +22,7 @@ import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
 import './new-issue-compact.css'
-import './randui-v2.css'
+import './randui-next.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
@@ -545,7 +545,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
   return (
     <div className="rs-root" {...drawerSwipe}>
-      <div className={`rv2-app ${operationalDetailOpen ? 'rv2-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
+      <div className={`rnx-app ${operationalDetailOpen ? 'rnx-app--operational-detail rs-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
         {operationalDetailOpen && !drawer && (
           <IconButton
             icon="menu"
@@ -558,16 +558,16 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
         {!operationalDetailOpen && (
           <RandDesktopSidebar
-            brand={<><img src={logoFor(hotel.id)} alt={hotel.name} /><div className="rv2-brandcopy"><b>RandApp</b><small>{hotel.name}</small></div></>}
+            brand={<><img src={logoFor(hotel.id)} alt={hotel.name} /><div className="rnx-brandcopy"><b>RandApp</b><small>{hotel.name}</small></div></>}
             switcher={allowedHotels.length > 1 && placement('structure') !== 'off' ? (
-              <button className="rv2-structure-switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /><span>{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><Icon name="chevronDown" /></button>
+              <button className="rnx-structure-switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /><span>{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><Icon name="chevronDown" /></button>
             ) : null}
             navigation={<NavGroups user={user} hotel={hotel} variant="sidebar" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />}
-            preferences={<div className="rv2-sidebar-prefs">
-              {viewAllowed('home') && <button className="rv2-side-action" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /><span>Personalizza Home</span></button>}
-              <div className="rv2-prefrow"><span>Tema</span><ThemeControl /></div>
-              <div className="rv2-prefrow"><span>Dimensione</span><UiSizeControl /></div>
-              {placement('cache') !== 'off' && <button className="rv2-side-action" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /><span>{cacheStatus || 'Pulisci cache'}</span></button>}
+            preferences={<div className="rnx-sidebar-prefs">
+              {viewAllowed('home') && <button className="rnx-side-action" onClick={openHomePersonalize} data-testid="sidebar-personalize-home"><Icon name="sliders" /><span>Personalizza Home</span></button>}
+              <div className="rnx-prefrow"><span>Tema</span><ThemeControl /></div>
+              <div className="rnx-prefrow"><span>Dimensione</span><UiSizeControl /></div>
+              {placement('cache') !== 'off' && <button className="rnx-side-action" onClick={clearAppCache} disabled={cacheBusy} data-testid="sidebar-clear-cache"><Icon name="refresh" /><span>{cacheStatus || 'Pulisci cache'}</span></button>}
             </div>}
             onLogout={onLogout}
           />
@@ -575,22 +575,22 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
         {!operationalDetailOpen && (
           <RandTopbar
-            hotel={<button className="rv2-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
+            hotel={<button className="rnx-hotelchip" onClick={() => allowedHotels.length > 1 && placement('structure') !== 'off' && setHotelSheet(true)} data-testid="hotel-chip" aria-label={allowedHotels.length > 1 ? `Cambia struttura. Attuale ${hotel.name}` : hotel.name}>
               <img src={logoFor(hotel.id)} alt={hotel.name} />
               <span><small>Struttura</small><b><span className="rs-hotelchip__name-mobile">{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><span className="rs-hotelchip__name-desktop">{hotel.name}</span></b></span>
               {allowedHotels.length > 1 && placement('structure') !== 'off' && <Icon name="chevronDown" />}
             </button>}
-            profile={<button type="button" className="rv2-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rv2-profile__avatar">{userInitials}</span><span className="rv2-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
+            profile={<button type="button" className="rnx-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rnx-profile__avatar">{userInitials}</span><span className="rnx-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
             presence={<PresenceChip user={user} />}
-            notifications={<span className="rv2-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rv2-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
-            randai={viewAllowed('randai') ? <button type="button" className="rv2-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
+            notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rnx-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
+            randai={viewAllowed('randai') ? <button type="button" className="rnx-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
           />
         )}
 
         {!operationalDetailOpen && <GlobalUrgentAlert hotel={hotel} user={user} hidden={urgentHidden || !viewAllowed('urgent')} onOpen={() => { if (viewAllowed('urgent')) { setSettings(null); setView('urgent') } }} />}
 
         <RandSwipeStage items={bottomNav} isActive={isBottomActive} onPick={handleBottom}>
-          <main className="rv2-content" data-testid="main-content">
+          <main className="rnx-content" data-testid="main-content">
             {!operationalDetailOpen && <HousekeepingCompletionAlerts />}
             <ViewErrorBoundary viewId={settings !== null ? 'settings' : view}>
               <Suspense fallback={<ViewFallback />}>{renderView()}</Suspense>
@@ -599,7 +599,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
         </RandSwipeStage>
 
         {!operationalDetailOpen && <RandMobileNav data-count="5" items={bottomNav} isActive={isBottomActive} onPick={handleBottom} onWarm={warmNavDestination} />}
-        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rv2-fab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
+        {!operationalDetailOpen && contextualActionIds.length > 0 && <button className="rnx-fab" onClick={openContextualAdd} data-testid="fab-new" aria-label={fabLabel || 'Aggiungi'} title={fabLabel || 'Aggiungi'}><Icon name="plus" /></button>}
       </div>
 
       <ViewErrorBoundary viewId={insertOpen ? 'insert' : urgentCreateOpen ? 'urgent-create' : interventionCreateOpen ? 'intervention-create' : 'overlay'}>

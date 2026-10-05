@@ -15,7 +15,7 @@ test('mobile lateral menu styles are loaded by the runtime entry', () => {
 })
 
 test('profile and Focus Mode controls both open the same drawer state', () => {
-  assert.match(shell, /className="rv2-profile"[^>]*onClick=\{\(\) => setDrawer\(true\)\}[^>]*data-testid="header-profile-menu"/)
+  assert.match(shell, /className="rnx-profile"[^>]*onClick=\{\(\) => setDrawer\(true\)\}[^>]*data-testid="header-profile-menu"/)
   assert.match(shell, /data-testid="operational-menu-trigger"/)
   assert.match(shell, /onClick=\{\(\) => setDrawer\(true\)\}/)
   assert.match(shell, /\{drawer && \(/)
