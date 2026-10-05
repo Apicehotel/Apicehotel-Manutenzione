@@ -545,7 +545,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
   return (
     <div className="rs-root" {...drawerSwipe}>
-      <div className={`rnx-app ${operationalDetailOpen ? 'rnx-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
+      <div className={`rnx-app ${operationalDetailOpen ? 'rnx-app--operational-detail rs-app--operational-detail' : ''}`} data-operational-detail={operationalDetail?.kind || undefined}>
         {operationalDetailOpen && !drawer && (
           <IconButton
             icon="menu"
