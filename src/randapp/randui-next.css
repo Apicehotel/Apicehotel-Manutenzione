@@ -388,3 +388,35 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+
+/* Home support classes: complete coverage for runtime markup. */
+.rnx-homefail{
+  min-height:220px;display:grid;place-items:center;gap:12px;padding:24px;
+  border:1px solid var(--rnx-line);border-radius:18px;background:var(--rnx-surface)
+}
+.rnx-homeprefs{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;
+  padding:11px 12px;border:1px solid var(--rnx-line);border-radius:14px;background:var(--rnx-surface)
+}
+.rnx-alertline{
+  width:100%;min-height:50px;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:9px;
+  padding:8px 10px;border:1px solid var(--rnx-line);border-radius:13px;background:var(--rnx-surface-2);color:var(--rnx-text);text-align:left
+}
+.rnx-alertline.warning{border-color:color-mix(in srgb,var(--rnx-warning) 32%,var(--rnx-line))}
+.rnx-alertline.danger,.rnx-alertline.error{border-color:color-mix(in srgb,var(--rnx-danger) 32%,var(--rnx-line))}
+.rnx-alertline.success{border-color:color-mix(in srgb,var(--rnx-success) 32%,var(--rnx-line))}
+.rnx-list{display:grid;gap:8px}
+.rnx-row{
+  width:100%;min-height:60px;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:9px;
+  padding:9px 10px;border:1px solid var(--rnx-line);border-radius:13px;background:var(--rnx-surface);color:var(--rnx-text);text-align:left
+}
+.rnx-row:hover{background:var(--rnx-surface-2)}
+.rnx-row__icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:color-mix(in srgb,var(--rnx-accent) 10%,var(--rnx-surface-3));color:var(--rnx-accent)}
+.rnx-row__body{min-width:0;display:grid;gap:2px}
+.rnx-row__body strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rnx-row__body small{color:var(--rnx-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.7rem}
+.rnx-panel-actions{display:flex;gap:7px;flex-wrap:wrap}
+.rnx-panel-actions button{min-height:34px;padding:0 10px;border:1px solid var(--rnx-line);border-radius:10px;background:var(--rnx-surface);color:var(--rnx-text-2);font-size:.7rem;font-weight:800}
+.rnx-app--operational-detail{grid-template-columns:1fr}
+.rnx-app--operational-detail .rnx-stage{grid-column:1/-1}
