@@ -22,4 +22,14 @@ test('configurazione PWA completa e installabile', async () => {
   assert.match(serviceWorker, /self\.addEventListener\('fetch'/)
   assert.match(serviceWorker, /request\.mode === 'navigate'/)
   assert.match(serviceWorker, /shellHtml\.matchAll/)
+  assert.match(serviceWorker, /apicehotel-manutenzione-v18/)
+  assert.match(serviceWorker, /keys\.filter\(\(key\) => key !== CACHE_NAME/)
+})
+
+
+test('PWA registration forces waiting worker activation after UI deploys', async () => {
+  const pwa = await readFile(new URL('../src/pwa.js', import.meta.url), 'utf8')
+  assert.match(pwa, /updateViaCache: 'none'/)
+  assert.match(pwa, /registration\.update\(\)/)
+  assert.match(pwa, /registration\.waiting.*SKIP_WAITING/)
 })
