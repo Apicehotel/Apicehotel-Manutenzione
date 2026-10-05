@@ -439,3 +439,13 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;
   overflow:hidden;white-space:normal;text-align:left;line-height:1.25
 }
+
+
+@media(max-width:520px){
+  .rnx-content{padding-inline:10px}
+  .rnx-homehead{gap:8px}
+  .rnx-homehead h1{font-size:1.64rem}
+  .rnx-kpi-grid{grid-auto-columns:minmax(132px,78vw)}
+  .rnx-desk,.rnx-tray,.rnx-tools{border-radius:16px}
+  .rnx-bottomnav__item small{font-size:.56rem}
+}
