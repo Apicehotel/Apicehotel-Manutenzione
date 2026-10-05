@@ -51,11 +51,11 @@ test('completion layer stays dependency-free and does not create a second design
 })
 
 
-test('v2 completion does not hard-lock chrome to dark when light theme is active', () => {
-  const v2 = read('../src/randapp/randui-v2.css')
-  for (const hardDark of ['#111925','#0b1119','#0d141e 0%','#0a1119 100%']) {
-    assert.equal(v2.includes(hardDark), false, `hard-coded dark chrome remains: ${hardDark}`)
-  }
-  assert.match(v2, /html\[data-theme='light'\] \.rv2-topbar/)
-  assert.match(v2, /html\[data-theme='light'\] \.rv2-bottomnav/)
+test('RandUI Next does not hard-lock chrome and inherits the canonical theme', () => {
+  const next = read('../src/randapp/randui-next.css')
+  assert.match(next, /--rnx-bg:var\(--rand-canvas/)
+  assert.match(next, /--rnx-surface:var\(--rand-surface-1/)
+  assert.match(next, /--rnx-text:var\(--rand-text-primary/)
+  assert.match(next, /\.rs-drawer,.rs-sheet[\s\S]*background:var\(--rnx-surface\)!important/)
+  assert.doesNotMatch(next, /#111925|#0b1119/)
 })
