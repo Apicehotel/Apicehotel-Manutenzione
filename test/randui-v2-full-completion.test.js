@@ -49,3 +49,13 @@ test('completion layer stays dependency-free and does not create a second design
   assert.doesNotMatch(completion, /@mui|antd|chakra|bootstrap|tailwind|styled-components/i)
   assert.doesNotMatch(completion, /!important/)
 })
+
+
+test('v2 completion does not hard-lock chrome to dark when light theme is active', () => {
+  const v2 = read('../src/randapp/randui-v2.css')
+  for (const hardDark of ['#111925','#0b1119','#0d141e 0%','#0a1119 100%']) {
+    assert.equal(v2.includes(hardDark), false, `hard-coded dark chrome remains: ${hardDark}`)
+  }
+  assert.match(v2, /html\[data-theme='light'\] \.rv2-topbar/)
+  assert.match(v2, /html\[data-theme='light'\] \.rv2-bottomnav/)
+})

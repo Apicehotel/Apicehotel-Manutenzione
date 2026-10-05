@@ -81,3 +81,15 @@ test('theme engine is original RandUI code and carries no runtime UI dependency'
   assert.doesNotMatch(tokens, /@import\s+url/i)
   assert.match(tokens, /no third-party theme code is copied/i)
 })
+
+
+test('RandUI v2 inherits canonical theme tokens instead of forcing dark colors', () => {
+  const v2 = read('../src/randapp/randui-v2.css')
+  assert.match(v2, /--rv2-bg:var\(--rand-canvas/)
+  assert.match(v2, /--rv2-panel:var\(--rand-surface-1/)
+  assert.match(v2, /--rv2-text:var\(--rand-text-primary/)
+  assert.match(v2, /RandUI v2 theme bridge/)
+  assert.match(v2, /html\[data-theme='light'\] \.rs-drawer/)
+  assert.doesNotMatch(v2, /\.rs-drawer\{[\s\S]*?background:linear-gradient\(180deg,#111925,#0b1119\)/)
+  assert.doesNotMatch(v2, /html,body,#root\{background:#0b1018/)
+})
