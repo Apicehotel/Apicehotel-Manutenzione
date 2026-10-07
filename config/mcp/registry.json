@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "policy": {
     "defaultMode": "read-only",
     "noSecretsInRepository": true,
@@ -159,6 +159,24 @@
       "capabilities": [
         "ui.reference"
       ]
+    },
+    {
+      "id": "prompts-chat",
+      "title": "prompts.chat MCP",
+      "owner": "prompts.chat",
+      "placement": "vendor-remote",
+      "transport": "streamable-http",
+      "url": "https://prompts.chat/api/mcp",
+      "purpose": "Prompt and Agent Skill discovery for coding, debugging, review and reusable task patterns",
+      "mode": "read-only-reference",
+      "authority": "RandCore + RandSkills governance",
+      "capabilities": [
+        "prompts.search",
+        "prompts.get",
+        "prompts.improve",
+        "skills.search",
+        "skills.get"
+      ]
     }
   ],
   "profiles": {
@@ -178,7 +196,8 @@
       "digitalocean-apps",
       "playwright",
       "context7",
-      "sentry"
+      "sentry",
+      "prompts-chat"
     ],
     "rand-designer": [
       "github",
@@ -196,7 +215,8 @@
       "figma",
       "sentry",
       "context7",
-      "vercel"
+      "vercel",
+      "prompts-chat"
     ]
   }
 }
