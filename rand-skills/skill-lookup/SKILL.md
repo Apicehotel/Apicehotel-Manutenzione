@@ -5,7 +5,7 @@ description: Cerca Agent Skills nel registry prompts.chat e le tratta come candi
 
 # Scope
 
-Usa prompts.chat per scoprire skill esterne riutilizzabili. La skill integra Repo Radar e RandSkills: prompts.chat è una fonte di discovery, RandCore resta l'autorità.
+Usa prompts.chat per scoprire skill esterne riutilizzabili. La skill integra Repo Radar e RandSkills: prompts.chat è una fonte di discovery, RandCore resta l'autorità. Ogni candidata deve essere valutata anche rispetto allo scope hotel e ai confini tra strutture.
 
 # Permissions
 
