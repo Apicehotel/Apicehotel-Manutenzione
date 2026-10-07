@@ -11,7 +11,7 @@ const hub = fs.readFileSync(new URL('../src/randapp/operations/OperationsHub.jsx
 const css = fs.readFileSync(new URL('../src/randapp/telegram-navigation.css', import.meta.url), 'utf8')
 const catalog = fs.readFileSync(new URL('../src/randapp/randui/page-catalog.js', import.meta.url), 'utf8')
 
-test('mobile primary navigation keeps Home central and Altro far right', () => {
+test('mobile primary navigation keeps Home central and RandAI far right', () => {
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /more:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
