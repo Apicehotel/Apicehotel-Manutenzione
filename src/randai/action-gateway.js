@@ -12,6 +12,7 @@ import { getRandAIContext } from './context/envelope.js'
 import { getRandActionDefinition } from './actions/catalog.js'
 import { RandCapability } from './core/capability-providers.js'
 import { randCapabilityRouter } from './core/capability-runtime.js'
+import { notifyMaintenanceCompleted } from '../issues-data.js'
 
 function actionTypeIssue(type) {
   const definition = getRandActionDefinition(type)
@@ -98,6 +99,7 @@ export async function prepareRandAIAction({ hotelId, type, resourceId, input = {
 export async function executeRandAIAction({ hotelId, approvalId, type, resourceId, input = {} } = {}) {
   validateExecutionInput({ hotelId, approvalId, type, resourceId })
   const response = await invokeGateway({ hotelId, approvalId, type, resourceId, input })
+  if (type === 'issue.mark_done' || response?.result?.stato === 'done') void notifyMaintenanceCompleted({ hotelId, id: response?.result?.id || resourceId })
   return response.result
 }
 

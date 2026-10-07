@@ -35,7 +35,7 @@ export const WHATSAPP = Object.freeze({
   destinations: Object.freeze({
     hotelgio: Object.freeze({ phone: '+390759978247', receivesIssues: true }),
     chocohotel: Object.freeze({ phone: '+390759970610', receivesIssues: true }),
-    brigantino: null,
+    brigantino: Object.freeze({ phone: '+390759970628', receivesIssues: true }),
   }),
 })
 

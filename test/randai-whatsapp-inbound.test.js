@@ -12,9 +12,11 @@ const control = read('src/randai/control/RandAIControlCenter.jsx')
 const migration = read('supabase/migrations/20260901231000_randai_whatsapp_inbound_foundation.sql')
 const manual = read('supabase/migrations/20260901234500_randai_whatsapp_manual_actions.sql')
 
-test('Twilio inbound endpoint is configured for Giò and Choco', () => {
+test('Twilio inbound endpoint is configured for all production hotels', () => {
   assert.match(config, /\+390759978247/)
   assert.match(config, /\+390759970610/)
+  assert.match(config, /\+390759970628/)
+  assert.match(read('supabase/migrations/20261007210000_brigantino_whatsapp_webhook.sql'), /brigantino.*\+390759970628/s)
   assert.match(config, /inboundWebhook:\s*'\/api\/whatsapp\/incoming'/)
   assert.match(proxy, /x-twilio-signature/)
   assert.match(proxy, /x-randai-webhook-url/)
@@ -71,4 +73,32 @@ test('paused messages require an explicit safe decision', () => {
   assert.match(manual, /processing_status='ignored'/)
   assert.match(manual, /processing_status='linked'/)
   assert.match(manual, /processing_status='created'/)
+})
+
+test('completed maintenance notifies same-hotel Reception through Twilio', () => {
+  const completion = read('supabase/functions/maintenance-completion-whatsapp/index.ts')
+  const migrationFiles = fs.readdirSync('supabase/migrations').filter((name) => name.includes('reception_completion_whatsapp'))
+  assert.equal(migrationFiles.length, 1)
+  assert.match(completion, /hotel_memberships.*role.*Reception/)
+  assert.match(completion, /profiles.*phone/)
+  assert.match(completion, /maintenance_completed/)
+  assert.match(completion, /ContentSid/)
+  assert.match(completion, /notification_outbox/)
+  assert.match(read('src/issues-data.js'), /maintenance-completion-whatsapp/)
+  assert.match(read('src/randai/action-gateway.js'), /notifyMaintenanceCompleted/)
+})
+
+test('hotel test WhatsApp flow creates one issue and sends from each configured hotel sender', () => {
+  const flow = read('supabase/functions/create-and-send-hotel-test-whatsapp/index.ts')
+  assert.match(flow, /hotelgio.*chocohotel.*brigantino/)
+  assert.match(flow, /whatsapp_channel_settings/)
+  assert.match(flow, /segnalazioni.*insert/)
+  assert.match(flow, /notification_outbox/)
+  assert.match(flow, /HX02e74abd4bfd7db4c4ef5b195946f983/)
+})
+
+test('Supabase session refreshes before protected writes', () => {
+  const auth = read('src/auth-data.js')
+  assert.match(auth, /supabase\.auth\.refreshSession\(\)/)
+  assert.match(auth, /JWT issued at future/)
 })

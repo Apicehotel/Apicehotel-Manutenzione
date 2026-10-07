@@ -64,6 +64,11 @@ export async function validateSupabaseSession() {
   if (!session) return { valid: false, user: null }
   if (typeof navigator !== 'undefined' && !navigator.onLine) return { valid: true, user: session.user, offline: true }
   try {
+    // A session restored from storage can carry an access token whose iat is
+    // ahead of the API clock. Refresh first so writes do not fail later with
+    // the opaque "JWT issued at future" error.
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+    if (!refreshError && refreshed?.session) return { valid: true, user: refreshed.session.user, refreshed: true }
     const { data, error } = await supabase.auth.getUser()
     if (error || !data?.user) return { valid: false, user: null }
     return { valid: true, user: data.user }
