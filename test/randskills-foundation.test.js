@@ -11,7 +11,9 @@ test('RandSkills v1 manifests are valid and complete', () => {
     'maintenance',
     'planning',
     'procedures',
+    'prompt-lookup',
     'repo-radar',
+    'skill-lookup',
     'warehouse',
     'whatsapp',
   ])
@@ -30,4 +32,16 @@ test('RandSkills architecture keeps RandCore as authorization authority', () => 
   const doc = fs.readFileSync(new URL('../docs/architecture/RANDSKILLS_V1.md', import.meta.url), 'utf8')
   assert.match(doc, /RandCore resta l'autorità/)
   assert.match(doc, /non una dipendenza centrale/)
+})
+
+
+test('external repository skill discovery finds nested SKILL.md instead of requiring repository root', async () => {
+  const os = await import('node:os')
+  const path = await import('node:path')
+  const { findSkillManifests, skillPackagesFromRepository } = await import('../scripts/discover-skill-manifests.mjs')
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'randskills-'))
+  fs.mkdirSync(path.join(root, 'plugins', 'vendor', 'skills', 'coding'), { recursive: true })
+  fs.writeFileSync(path.join(root, 'plugins', 'vendor', 'skills', 'coding', 'SKILL.md'), '# nested')
+  assert.equal(findSkillManifests(root).length, 1)
+  assert.equal(skillPackagesFromRepository(root)[0].relativeManifestPath, 'plugins/vendor/skills/coding/SKILL.md')
 })
