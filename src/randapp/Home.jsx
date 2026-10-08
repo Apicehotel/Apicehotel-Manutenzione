@@ -130,6 +130,14 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
     planned:canInterventions?planned:[],
     urgents:canUrgent?openUrgents:[],
   }),[user,planned,openUrgents,canInterventions,canUrgent])
+  const weekBars=useMemo(()=>{
+    const start=new Date(); start.setHours(0,0,0,0)
+    const days=Array.from({length:7},(_,i)=>{const d=new Date(start); d.setDate(d.getDate()-(6-i)); return {key:d.getTime(),label:new Intl.DateTimeFormat('it-IT',{weekday:'short'}).format(d).slice(0,3),count:0}})
+    issues.forEach((item)=>{ if(!item?.createdAt) return; const d=new Date(item.createdAt); d.setHours(0,0,0,0); const day=days.find((x)=>x.key===d.getTime()); if(day) day.count+=1 })
+    return days
+  },[issues])
+  const weekMax=Math.max(1,...weekBars.map((d)=>d.count))
+  const weekTotal=weekBars.reduce((sum,d)=>sum+d.count,0)
   const nextCommitment=useMemo(()=>buildNextCommitment({
     user,
     planned:canInterventions?planned:[],
@@ -157,22 +165,20 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const presenceMore=Math.max(0, presenceRows.length - presencePreview.length)
 
   return <section className="rnx-home" data-testid="home-view">
-    <div className="rnx-mobile-presence" data-testid="mobile-presence">
-      <span className="rnx-mobile-presence__label">Presenza</span>
-      <PresenceChip user={user} hotel={hotel} />
-    </div>
     <header className="rnx-homehead">
       <div className="rnx-homehead__copy">
-        <span className="rnx-eyebrow">{roleLabel(user)} · Scrivania</span>
+        <span className="rnx-eyebrow">{roleLabel(user)} · {deskDayLabel()}</span>
         <h1>Ciao, {firstName(user?.name)}</h1>
-        <p>{hotel.name} · {deskDayLabel()} · il tuo banco operativo</p>
+        <p>{hotel.name} · Scrivania operativa</p>
+      </div>
+      <div className="rnx-mobile-presence" data-testid="mobile-presence">
+        <span className="rnx-mobile-presence__label">Presenza</span>
+        <PresenceChip user={user} hotel={hotel} />
       </div>
       <div className="rnx-homehead__actions">
-        {canCreateIssues&&<Button variant="primary" size="sm" icon="plus" onClick={()=>onNavigate?.('new-issue')} aria-label="Nuova segnalazione">Nuova</Button>}
-        <Button variant="ghost" size="sm" icon="sliders" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home">Vista</Button>
+        <Button variant="ghost" size="sm" icon="sliders" className="rnx-homehead__view" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home">Vista</Button>
       </div>
     </header>
-
     {preferencesOpen&&<section className="rnx-panel rnx-homeprefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; scegli quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></section>}
 
     {loading?<Spinner label="Preparo la scrivania…"/>:homeHardFail?(
@@ -186,6 +192,13 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
       <section className="rnx-kpi-grid" data-count={stats.length} data-testid="home-stats">
         {stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}
       </section>
+
+      {canIssues&&<section className="rnx-chartcard" data-testid="home-week-chart" aria-label="Segnalazioni create negli ultimi 7 giorni">
+        <div className="rnx-chartcard__plot" role="img" aria-label={`Segnalazioni create per giorno: ${weekBars.map((d)=>`${d.label} ${d.count}`).join(', ')}`}>
+          {weekBars.map((d)=><span key={d.key} className="rnx-chartcard__bar"><b>{d.count||''}</b><i style={{height:`${Math.max(6,Math.round((d.count/weekMax)*100))}%`}}/><small>{d.label}</small></span>)}
+        </div>
+        <div className="rnx-chartcard__body"><h2>Segnalazioni ultimi 7 giorni</h2><p>{weekTotal} nuove · {openIssues.length} ancora aperte</p></div>
+      </section>}
 
       {syncCard&&<button type="button" className={`rnx-alertline ${syncCard.tone}`} onClick={retrySync} data-testid="home-sync"><Icon name="refresh"/><span><strong>{syncCard.title}</strong><small>{syncCard.detail}</small></span></button>}
 
@@ -222,7 +235,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
       {!!tools.length&&<section className="rnx-tools" data-testid="home-shortcuts"><CommandSurface title="Azioni rapide" items={tools.map(([route,icon,label])=>({id:route,icon,label,detail:route==='new-issue'?'Apri una nuova segnalazione':route==='my-work'?'Vai ai tuoi task':route==='interventions'?'Apri gli interventi':route==='urgent'?'Controlla gli urgenti':route==='housekeeping'?'Apri housekeeping':route==='inventory'?'Apri magazzino':'Apri promemoria'}))} onPick={(item)=>onNavigate?.(item.id)} /></section>}
 
       <section className="rnx-tray">
-        <div className="rnx-desk__head"><div><span className="rnx-eyebrow">Vassoio</span><h2>Da smaltire</h2></div><small>{visiblePriorities.length} in coda</small></div>
+        <div className="rnx-desk__head"><div><span className="rnx-eyebrow">Priorità</span><h2>Da smaltire</h2></div><small>{visiblePriorities.length} in coda</small></div>
         {visiblePriorities.length===0?<EmptyState icon="check" title="Vassoio vuoto">Niente urgente da smaltire adesso.</EmptyState>:<div className="rnx-priority-list" data-testid="home-priority-queue">{visiblePriorities.map((item,index)=><button key={item.id} type="button" className={`rnx-priority tone-${item.tone}`} onClick={()=>item.route&&onNavigate?.(item.route)} disabled={!item.route}><span className="rnx-priority__rank">{index+1}</span><span className="rnx-priority__icon"><Icon name={item.icon}/></span><span className="rnx-priority__body"><small>{item.eyebrow}</small><strong>{item.title}</strong><span>{item.meta}</span></span>{item.route&&<Icon name="chevronRight"/>}</button>)}</div>}
         {canIssues&&<RandAIPriorityCard hotel={hotel} user={user} onNavigate={onNavigate}/>}
       </section>

@@ -27,11 +27,11 @@ test('Home distinguishes urgent alerts from high-priority issues', async () => {
   assert.match(home, /item\.urgency === 'alta' \? 92/)
 })
 
-test('Home replaces floating create overlap with an explicit authorized new-issue action', async () => {
+test('Home has no create button of its own: new issue stays an authorized quick action', async () => {
   const home = await read('src/randapp/Home.jsx')
   const css = await read('src/randapp/randui-next.css')
-  assert.match(home, /canCreateIssues&&<Button[\s\S]*onNavigate\?\.\('new-issue'\)/)
-  assert.match(home, /aria-label="Nuova segnalazione"/)
+  assert.doesNotMatch(home, /canCreateIssues&&<Button/)
+  assert.match(home, /canCreateIssues\?\['new-issue','plus','Nuova'\]:null/)
   assert.match(css, /\.rnx-app:has\(\.rnx-home\) \.rnx-fab\s*\{\s*display:none/)
 })
 

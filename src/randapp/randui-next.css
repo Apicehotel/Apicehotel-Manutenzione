@@ -22,9 +22,16 @@
   --rnx-radius:18px;
   --rnx-radius-sm:13px;
   --rnx-shadow:var(--rand-shadow-surface,0 18px 50px -36px rgba(28,47,38,.32));
-  --rnx-sidebar:286px;
+  --rnx-sidebar:264px;
+  --rnx-rail:84px;
   --rnx-topbar:72px;
   --rnx-nav-h:72px;
+  /* One action colour. Ink = accent pulled toward the text colour, readable as
+     text in light and dark themes. Action = accent darkened, readable under the
+     white label of filled buttons in both themes. */
+  --rnx-accent-ink:color-mix(in srgb,var(--rnx-accent) 70%,var(--rnx-text));
+  --rnx-action:color-mix(in srgb,var(--rnx-accent) 72%,#000);
+  --rnx-accent-soft:color-mix(in srgb,var(--rnx-accent) 12%,var(--rnx-surface));
 }
 
 html,body,#root{min-height:100%;background:var(--rnx-bg);color:var(--rnx-text)}
@@ -99,8 +106,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-sidebar .rs-sidebar__item.active{
   color:var(--rnx-text);
   border-color:color-mix(in srgb,var(--rnx-accent) 18%,var(--rnx-line));
-  background:linear-gradient(90deg,color-mix(in srgb,var(--rnx-accent) 12%,var(--rnx-surface)),color-mix(in srgb,var(--rnx-accent-2) 7%,var(--rnx-surface)))
+  background:var(--rnx-accent-soft)
 }
+.rnx-sidebar .rs-sidebar__item.active .rs-icon{color:var(--rnx-accent-ink)}
 .rnx-sidebar__footer{display:grid;gap:9px;padding-top:10px;border-top:1px solid var(--rnx-line)}
 .rnx-sidebar-prefs{display:grid;gap:7px}
 .rnx-side-action,.rnx-sidebar__logout{
@@ -111,6 +119,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-sidebar__logout{color:var(--rnx-danger)}
 .rnx-prefrow{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:8px;padding:0 8px}
 .rnx-prefrow>span{color:var(--rnx-text-3);font-size:.71rem}
+/* Theme and size live in the profile menu: in the narrower sidebar the
+   segmented controls were clipped. */
+.rnx-sidebar .rnx-prefrow{display:none}
 
 /* Header */
 .rnx-topbar{
@@ -170,50 +181,68 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-home{display:grid;gap:14px}
 .rnx-mobile-presence{display:none}
 .rnx-homehead{
-  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
-  padding:0 2px 14px;border-bottom:1px solid var(--rnx-line)
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px 16px;
+  padding:0 2px 6px
 }
+.rnx-homehead__actions{grid-column:2;grid-row:1}
 .rnx-homehead__copy{min-width:0}
-.rnx-homehead h1{margin:4px 0 3px;font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1;letter-spacing:-.05em}
+.rnx-homehead h1{margin:4px 0 3px;font-size:clamp(1.9rem,3vw,2.5rem);line-height:1.05;letter-spacing:-.04em}
 .rnx-homehead p{margin:0;color:var(--rnx-text-2);font-size:.86rem}
 .rnx-homehead__actions{display:flex;align-items:center;gap:8px}
-.rnx-eyebrow{display:inline-flex;color:var(--rnx-accent);font-size:.63rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
-.rnx-home .rs-btn{min-height:42px;border-radius:13px}
+.rnx-eyebrow{display:inline-flex;color:var(--rnx-accent-ink);font-size:.63rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.rnx-home .rs-btn{min-height:44px;border-radius:13px}
 .rnx-home .rs-btn--primary{
   border:0;color:#fff;
-  background:linear-gradient(135deg,var(--rnx-accent),var(--rnx-accent-2));
-  box-shadow:0 12px 28px -18px color-mix(in srgb,var(--rnx-accent-2) 65%,transparent)
+  background:var(--rnx-action);
+  box-shadow:0 10px 24px -16px color-mix(in srgb,var(--rnx-action) 80%,transparent)
 }
 
-.rnx-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+/* KPI tiles: one row on tablet/PC, 2x2 on phone (never an orphan tile). */
+.rnx-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px}
+.rnx-kpi-grid[data-count="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
 .rnx-kpi-grid .rs-stat-card,
-.rnx-kpi-grid .rs-workhome__stat{
-  min-height:104px;padding:13px;border:1px solid var(--rnx-line);border-radius:16px!important;
-  background:linear-gradient(180deg,var(--rnx-surface),var(--rnx-surface-2))!important;
+.rnx-kpi-grid .rs-workhome__stat,
+.rnx-kpi-grid .rs-randui-statcard{
+  min-height:104px;padding:14px;border:1px solid var(--rnx-line)!important;border-radius:16px!important;
+  background:var(--rnx-surface)!important;
   box-shadow:var(--rnx-shadow)!important
 }
+.rnx-kpi-grid .rs-randui-statcard::before{display:none}
 .rnx-kpi-grid strong{font-size:1.75rem}
+/* Status lives in the icon tile (solid tone, white glyph), not in coloured borders. */
+.rnx-kpi-grid .rs-randui-statcard__icon{width:36px;height:36px;border-radius:11px;color:#fff;background:var(--rnx-action)}
+.rnx-kpi-grid .rs-randui-statcard__icon .rs-icon{width:19px;height:19px}
+.rnx-kpi-grid [data-randui-tone='danger'] .rs-randui-statcard__icon{background:color-mix(in srgb,var(--rnx-danger) 88%,#000)}
+.rnx-kpi-grid [data-randui-tone='warning'] .rs-randui-statcard__icon{background:color-mix(in srgb,var(--rnx-warning) 80%,#000)}
+.rnx-kpi-grid [data-randui-tone='success'] .rs-randui-statcard__icon{background:color-mix(in srgb,var(--rnx-success) 78%,#000)}
+.rnx-kpi-grid [data-randui-tone='default'] .rs-randui-statcard__icon{background:#4a5750}
+.rnx-kpi-grid .rs-randui-statcard__label{font-size:.8rem;color:var(--rnx-text-2)}
+.rnx-kpi-grid .rs-randui-statcard>small{padding-top:8px;border-top:1px solid var(--rnx-line);color:var(--rnx-text-2)}
 
 .rnx-desk,
 .rnx-tray,
 .rnx-tools{
   border:1px solid var(--rnx-line);border-radius:20px;background:var(--rnx-surface);box-shadow:var(--rnx-shadow)
 }
-.rnx-desk{display:grid;gap:11px;padding:14px}
-.rnx-desk__head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.rnx-desk__head h2{margin:2px 0 0;font-size:1.12rem}.rnx-desk__head>small{color:var(--rnx-text-3);font-size:.72rem}
+.rnx-desk{display:grid;gap:14px;padding:0;border:0!important;background:transparent!important;box-shadow:none!important}
+.rnx-desk__head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 12px}
+.rnx-desk__head>div{min-width:0}
+.rnx-desk__head h2{margin:2px 0 0;font-size:1.12rem;white-space:nowrap}
+.rnx-desk__head .rs-randui-statuschip{max-width:100%;white-space:normal;line-height:1.3}.rnx-desk__head>small{color:var(--rnx-text-3);font-size:.72rem}
 .rnx-next{
-  min-height:64px;display:grid;grid-template-columns:72px minmax(0,1fr) 20px;align-items:center;gap:10px;
-  padding:10px 11px;border:1px solid var(--rnx-line);border-radius:14px;background:var(--rnx-surface-2);color:var(--rnx-text);text-align:left
+  min-height:72px;display:grid;grid-template-columns:76px minmax(0,1fr) 20px;align-items:center;gap:12px;
+  padding:12px 14px;border:1px solid color-mix(in srgb,var(--rnx-accent) 30%,var(--rnx-line));border-radius:16px;
+  background:var(--rnx-accent-soft);color:var(--rnx-text);text-align:left
 }
-.rnx-next.is-empty{grid-template-columns:72px minmax(0,1fr)}
-.rnx-next__label{color:var(--rnx-accent);font-size:.61rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.rnx-next__body strong{font-size:1rem}
+.rnx-next.is-empty{grid-template-columns:76px minmax(0,1fr)}
+.rnx-next__label{color:var(--rnx-accent-ink);font-size:.61rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
 .rnx-next__body{display:grid;gap:2px;min-width:0}.rnx-next__body strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rnx-next__body small{color:var(--rnx-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .rnx-deskgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr);gap:10px}
 .rnx-panel{
-  min-width:0;display:grid;gap:9px;padding:12px;border:1px solid var(--rnx-line);border-radius:16px;background:var(--rnx-surface-2)
+  min-width:0;display:grid;gap:9px;padding:14px;border:1px solid var(--rnx-line);border-radius:16px;background:var(--rnx-surface);box-shadow:var(--rnx-shadow)
 }
 .rnx-panel__head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding-bottom:7px;border-bottom:1px solid var(--rnx-line)}
 .rnx-panel__head>div{display:grid;gap:1px}.rnx-panel__head span{color:var(--rnx-accent);font-size:.61rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
@@ -257,7 +286,8 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-bottomnav{display:none}
 .rnx-fab{
   position:fixed;z-index:45;display:grid;place-items:center;border:0;color:#fff;
-  background:linear-gradient(135deg,var(--rnx-accent),var(--rnx-accent-2));cursor:pointer
+  background:var(--rnx-action);cursor:pointer;
+  box-shadow:0 12px 26px -12px color-mix(in srgb,var(--rnx-action) 75%,transparent)
 }
 
 /* Drawer/Sheets follow theme, no dark lock */
@@ -290,64 +320,60 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-content .rs-segmented{background:var(--rnx-surface-2)!important;border-color:var(--rnx-line)!important}
 .rnx-content .rs-segmented button.active{background:var(--rnx-surface)!important;color:var(--rnx-text)!important}
 
-/* tablet */
-@media(max-width:1199px){
-  .rnx-app{grid-template-columns:1fr;grid-template-rows:var(--rnx-topbar) minmax(0,1fr);grid-template-areas:"top" "content";padding-bottom:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom))}
-  .rnx-sidebar{display:none}
-  .rnx-content{padding:18px 18px calc(var(--rnx-nav-h) + 38px + env(safe-area-inset-bottom))}
-  .rnx-bottomnav{
-    position:fixed;z-index:50;left:50%;transform:translateX(-50%);
-    bottom:calc(8px + env(safe-area-inset-bottom));
-    width:min(720px,calc(100% - 20px));min-height:66px;
-    display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:5px;
-    border:1px solid var(--rnx-line);border-radius:22px;
-    background:color-mix(in srgb,var(--rnx-surface) 90%,transparent);
-    backdrop-filter:blur(22px) saturate(1.15);box-shadow:0 18px 50px -28px rgba(0,0,0,.45)
-  }
-  .rnx-bottomnav__item{
-    min-width:0;min-height:54px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    padding:4px 2px!important;border:0;border-radius:16px!important;background:transparent;color:var(--rnx-text-3)!important
-  }
-  .rnx-bottomnav__item.active{
-    color:var(--rnx-text)!important;
-    background:linear-gradient(180deg,color-mix(in srgb,var(--rnx-accent) 13%,transparent),color-mix(in srgb,var(--rnx-accent-2) 7%,transparent))!important
-  }
-  .rnx-bottomnav__icon{width:30px;height:28px;display:grid;place-items:center;border-radius:9px}
-  .rnx-bottomnav__item.active .rnx-bottomnav__icon{color:var(--rnx-accent);background:color-mix(in srgb,var(--rnx-accent) 11%,var(--rnx-surface))}
-  .rnx-bottomnav__item small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.59rem;font-weight:800}
-  .rnx-fab{right:18px!important;bottom:calc(84px + env(safe-area-inset-bottom))!important;width:52px!important;height:52px!important;border-radius:17px!important}
+/* tablet + small PC (768-1199): the sidebar collapses to an icon rail.
+   A Windows laptop at 125% zoom lands here: it must not look like a phone. */
+@media(min-width:768px) and (max-width:1199px){
+  .rnx-app{grid-template-columns:var(--rnx-rail) minmax(0,1fr)}
+  .rnx-sidebar{grid-template-rows:auto auto minmax(0,1fr) auto;gap:8px;padding:12px 8px}
+  .rnx-sidebar__brand{justify-content:center;min-height:0;padding:2px 0 10px}
+  .rnx-sidebar__brand>img{width:40px;height:40px}
+  .rnx-brandcopy,.rnx-sidebar__search,.rnx-sidebar .rs-sidebar__label,.rnx-sidebar-prefs{display:none}
+  .rnx-structure-switch{grid-template-columns:1fr;justify-items:center;padding:0;min-height:44px}
+  .rnx-structure-switch>:last-child{display:none}
+  .rnx-sidebar .rs-sidebar__group{gap:2px;margin:0 0 8px;padding-top:8px;border-top:1px solid var(--rnx-line)}
+  .rnx-sidebar .rs-sidebar__group:first-child{padding-top:0;border-top:0}
+  .rnx-sidebar .rs-sidebar__item,
+  .rnx-sidebar__logout{grid-template-columns:1fr;justify-items:center;min-height:44px;padding:0}
+  .rnx-sidebar .rs-sidebar__item .rs-icon,.rnx-sidebar__logout .rs-icon{width:21px;height:21px}
+  /* Labels stay in the accessibility tree; the rail shows icons and a tooltip. */
+  .rnx-structure-switch span,
+  .rnx-sidebar .rs-sidebar__item span,
+  .rnx-sidebar__logout span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .rnx-topbar{padding:9px 18px}
+  .rnx-content{padding:20px 22px 40px}
+  .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(240px,.8fr)}
+  .rnx-fab{right:22px!important;bottom:calc(22px + env(safe-area-inset-bottom))!important;width:56px!important;height:56px!important;border-radius:18px!important}
 }
 
 /* phone */
 @media(max-width:767px){
-  :root{--rnx-topbar:62px}
+  :root{--rnx-topbar:62px;--rnx-nav-h:64px}
+  .rnx-app{grid-template-columns:1fr;grid-template-rows:var(--rnx-topbar) minmax(0,1fr);grid-template-areas:"top" "content";padding-bottom:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom))}
+  .rnx-sidebar{display:none}
   .rnx-topbar{padding:7px 10px;gap:7px}
   .rnx-hotelchip{height:44px!important;grid-template-columns:31px minmax(0,1fr) 14px!important;padding:4px 5px!important}
   .rnx-hotelchip img{width:31px!important;height:31px!important}
   .rnx-hotelchip small{display:none}
-  .rnx-profile{width:42px;min-width:42px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
+  .rnx-profile{width:44px;min-width:44px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
   .rnx-randai{display:none}
-  .rnx-topbar__actions{gap:4px}
-  .rnx-content{padding:13px 11px calc(var(--rnx-nav-h) + 34px + env(safe-area-inset-bottom))}
-  .rnx-home{gap:11px}
-  .rnx-mobile-presence{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    min-height:48px;padding:5px 7px 5px 11px;border:1px solid var(--rnx-line);border-radius:15px;background:var(--rnx-surface)
-  }
-  .rnx-mobile-presence__label{color:var(--rnx-text-3);font-size:.66rem;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
-  .rnx-mobile-presence .rs-presence-chip{max-width:160px;min-height:36px}
-  .rnx-homehead{align-items:flex-start;gap:10px;padding-bottom:11px;flex-direction:column}
-  .rnx-homehead h1{font-size:1.72rem}.rnx-homehead p{font-size:.79rem}
-  .rnx-homehead__actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
-  .rnx-homehead__actions>*{width:100%}
-  .rnx-kpi-grid{
-    grid-template-columns:repeat(3,minmax(136px,1fr));gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;
-    overscroll-behavior-x:contain;scrollbar-width:none;padding-bottom:2px
-  }
-  .rnx-kpi-grid::-webkit-scrollbar{display:none}
-  .rnx-kpi-grid>*{scroll-snap-align:start}
-  .rnx-kpi-grid .rs-stat-card,.rnx-kpi-grid .rs-workhome__stat{min-height:92px}
-  .rnx-desk{padding:11px;gap:9px;border-radius:17px}
+  .rnx-topbar__actions{gap:6px}
+  /* The header presence chip duplicates the Home one on phones. */
+  .rnx-topbar .rs-presence-chip{display:none}
+  .rnx-content{padding:14px 12px calc(var(--rnx-nav-h) + 30px + env(safe-area-inset-bottom))}
+  .rnx-home{gap:12px}
+  /* Presence sits beside the greeting as a chip, not as its own card. */
+  .rnx-mobile-presence{display:flex;align-items:center;grid-column:2;grid-row:1;min-width:0}
+  .rnx-mobile-presence__label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .rnx-mobile-presence .rs-presence-chip{max-width:150px;min-height:36px}
+  .rnx-homehead{padding-bottom:2px}
+  .rnx-homehead h1{font-size:1.65rem}.rnx-homehead p{display:none}
+  /* No create button on the Home (it only took space); "Vista" lives in the menu. */
+  .rnx-homehead__actions{display:none}
+  .rnx-kpi-grid .rs-randui-statcard>small{display:none}
+  .rnx-desk__head>div{display:none}
+  .rnx-kpi-grid,.rnx-kpi-grid[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rnx-kpi-grid .rs-stat-card,.rnx-kpi-grid .rs-workhome__stat,.rnx-kpi-grid .rs-randui-statcard{min-height:92px;padding:12px}
+  .rnx-desk{gap:12px}
   .rnx-deskgrid{grid-template-columns:1fr}
   .rnx-next{min-height:58px;grid-template-columns:64px minmax(0,1fr) 18px;padding:8px 9px}
   .rnx-next.is-empty{grid-template-columns:64px minmax(0,1fr)}
@@ -362,15 +388,34 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-tray{padding:11px;border-radius:17px}
   .rnx-priority{grid-template-columns:28px 34px minmax(0,1fr) 16px;min-height:60px;padding:8px}
   .rnx-priority__body span{display:none}
-  .rnx-bottomnav{left:7px;right:7px;width:auto;transform:none;bottom:calc(6px + env(safe-area-inset-bottom));border-radius:21px}
+  /* Docked bottom bar: full width, no floating pill covering content. */
+  .rnx-bottomnav{
+    position:fixed;z-index:50;left:0;right:0;bottom:0;
+    min-height:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom));
+    display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
+    padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    border-top:1px solid var(--rnx-line);
+    background:color-mix(in srgb,var(--rnx-surface) 94%,transparent);
+    backdrop-filter:blur(18px) saturate(1.1)
+  }
+  .rnx-bottomnav__item{
+    min-width:0;min-height:54px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:2px!important;border:0;border-radius:14px!important;background:transparent!important;color:var(--rnx-text-2)!important
+  }
+  .rnx-bottomnav__item.active{color:var(--rnx-text)!important}
+  .rnx-bottomnav__icon{width:48px;height:30px;display:grid;place-items:center;border-radius:999px}
+  .rnx-bottomnav__item.active .rnx-bottomnav__icon{color:var(--rnx-accent-ink);background:var(--rnx-accent-soft)}
+  .rnx-bottomnav__item small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.64rem;font-weight:700}
+  .rnx-bottomnav__item.active small{font-weight:900}
+  .rnx-bottomnav__item::before,.rnx-bottomnav__item::after{display:none!important}
+  .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-h) + 14px + env(safe-area-inset-bottom))!important;width:54px!important;height:54px!important;border-radius:17px!important}
 }
 
 /* very small phones */
 @media(max-width:360px){
   .rnx-content{padding-inline:8px}
   .rnx-homehead h1{font-size:1.58rem}
-  .rnx-bottomnav__item small{font-size:.54rem}
-  .rnx-bottomnav{left:5px;right:5px}
+  .rnx-bottomnav__item small{font-size:.58rem}
 }
 
 /* desktop widescreen */
@@ -403,6 +448,8 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   width:100%;min-height:50px;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:9px;
   padding:8px 10px;border:1px solid var(--rnx-line);border-radius:13px;background:var(--rnx-surface-2);color:var(--rnx-text);text-align:left
 }
+.rnx-alertline>span{min-width:0;display:grid;gap:2px}
+.rnx-alertline>span small{color:var(--rnx-text-2)}
 .rnx-alertline.warning{border-color:color-mix(in srgb,var(--rnx-warning) 32%,var(--rnx-line))}
 .rnx-alertline.danger,.rnx-alertline.error{border-color:color-mix(in srgb,var(--rnx-danger) 32%,var(--rnx-line))}
 .rnx-alertline.success{border-color:color-mix(in srgb,var(--rnx-success) 32%,var(--rnx-line))}
@@ -445,7 +492,21 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   .rnx-content{padding-inline:10px}
   .rnx-homehead{gap:8px}
   .rnx-homehead h1{font-size:1.64rem}
-  .rnx-kpi-grid{grid-auto-columns:minmax(132px,78vw)}
   .rnx-desk,.rnx-tray,.rnx-tools{border-radius:16px}
-  .rnx-bottomnav__item small{font-size:.56rem}
+  .rnx-bottomnav__item small{font-size:.6rem}
+}
+
+/* A presence slot without a chip (role not tracked, offline) must not render
+   as an empty card on top of the Home. */
+.rnx-mobile-presence:not(:has(.rs-presence-chip)){display:none!important}
+
+/* Wide screens: the Home uses the width. Desk (next commitment, my work, team)
+   on the left, the priority tray on the right; dense flow pulls the tray up
+   beside the desk whatever optional banners precede it. */
+@media(min-width:1000px){
+  .rnx-home{grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);grid-auto-flow:row dense;column-gap:20px;align-items:start}
+  .rnx-home>*{grid-column:1/-1}
+  .rnx-home>.rnx-desk,.rnx-home>.rnx-tools{grid-column:1}
+  .rnx-home>.rnx-tray{grid-column:2;grid-row:span 2}
+  .rnx-home .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }

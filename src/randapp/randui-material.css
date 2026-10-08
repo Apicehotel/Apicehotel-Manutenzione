@@ -1,0 +1,274 @@
+/* RandUI Material layer — trial skin inspired by the layout language of
+   Material Dashboard (floating icon tiles, coloured card headers, dark side
+   navigation, chart card). Written from scratch for RandApp: no Bootstrap,
+   no jQuery, no third-party CSS. Loaded after randui-next.css. */
+
+:root{
+  --md-bg:#eef0f2;
+  --md-shadow:0 2px 2px 0 rgba(0,0,0,.12),0 3px 1px -2px rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.1);
+  --md-shadow-lg:0 4px 20px 0 rgba(0,0,0,.12);
+  --md-purple:linear-gradient(60deg,#9c3fb3,#7b1fa2);
+  --md-orange:linear-gradient(60deg,#f57c00,#d65100);
+  --md-green:linear-gradient(60deg,#43a047,#2e7d32);
+  --md-red:linear-gradient(60deg,#e53935,#c62828);
+  --md-cyan:linear-gradient(60deg,#00a1b3,#00838f);
+  --md-slate:linear-gradient(60deg,#546e7a,#37474f);
+  --md-glow-purple:0 7px 14px -6px rgba(123,31,162,.55);
+  --md-glow-orange:0 7px 14px -6px rgba(214,81,0,.55);
+  --md-glow-green:0 7px 14px -6px rgba(46,125,50,.55);
+  --md-glow-red:0 7px 14px -6px rgba(198,40,40,.55);
+  --md-glow-cyan:0 7px 14px -6px rgba(0,131,143,.55);
+  --md-side-bg:#1c2229;
+  --md-side-text:rgba(255,255,255,.78);
+  /* Follows the Piccolo / Normale / Grande setting (shell.css --rs-scale). */
+  --md-s:var(--rs-scale,1);
+  --md-tile:calc(64px * var(--md-s));
+}
+html:not([data-theme='dark']) .rnx-app{background:var(--md-bg)}
+html:not([data-theme='dark']) body{background:var(--md-bg)!important}
+
+/* ── Dark side navigation ─────────────────────────────────────────── */
+.rnx-sidebar{
+  background:linear-gradient(180deg,#232b33 0%,var(--md-side-bg) 60%,#151a1f 100%)!important;
+  border-right:0!important;color:var(--md-side-text);
+  box-shadow:0 16px 38px -12px rgba(0,0,0,.56),0 4px 25px 0 rgba(0,0,0,.12)
+}
+.rnx-sidebar__brand{border-bottom-color:rgba(255,255,255,.12)!important}
+.rnx-brandcopy b{color:#fff}
+.rnx-brandcopy small{color:rgba(255,255,255,.6)!important}
+.rnx-structure-switch,.rnx-sidebar__search{
+  background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.12)!important;color:#fff!important
+}
+.rnx-sidebar__search{color:rgba(255,255,255,.6)!important}
+.rnx-sidebar__search kbd{background:transparent!important;border-color:rgba(255,255,255,.2)!important;color:rgba(255,255,255,.6)!important}
+.rnx-sidebar .rs-sidebar__label{color:rgba(255,255,255,.45)!important}
+.rnx-sidebar .rs-sidebar__item{color:var(--md-side-text)!important;border-radius:6px!important}
+.rnx-sidebar .rs-sidebar__item:hover{background:rgba(255,255,255,.08)!important;color:#fff!important}
+.rnx-sidebar .rs-sidebar__item.active{
+  background:var(--md-purple)!important;color:#fff!important;border-color:transparent!important;
+  box-shadow:var(--md-glow-purple)
+}
+.rnx-sidebar .rs-sidebar__item.active .rs-icon{color:#fff!important}
+.rnx-sidebar__footer{border-top-color:rgba(255,255,255,.12)!important}
+.rnx-side-action{color:var(--md-side-text)!important}
+.rnx-side-action:hover{background:rgba(255,255,255,.08)!important;color:#fff!important}
+.rnx-sidebar__logout{color:#ff8a80!important}
+.rnx-sidebar__logout:hover{background:rgba(255,255,255,.08)!important}
+
+/* ── Top bar: flat, sits on the page ──────────────────────────────── */
+.rnx-topbar{background:transparent!important;border-bottom:0!important;backdrop-filter:none!important}
+.rnx-profile,.rnx-randai,.rnx-topbar .rs-iconbtn{border-color:transparent!important;background:var(--rnx-surface)!important;box-shadow:var(--md-shadow)}
+
+/* ── KPI tiles: floating gradient icon, right-aligned value, stats footer ─ */
+.rnx-kpi-grid{margin-top:22px;row-gap:34px!important}
+.rnx-kpi-grid .rs-randui-statcard{
+  position:relative;overflow:visible;text-align:right;
+  border:0!important;border-radius:6px!important;box-shadow:var(--md-shadow)!important;
+  padding:12px 16px 12px!important;min-height:0!important
+}
+.rnx-kpi-grid .rs-randui-statcard__top{display:block}
+.rnx-kpi-grid .rs-randui-statcard__icon{
+  position:absolute;top:-20px;left:16px;width:var(--md-tile)!important;height:var(--md-tile)!important;border-radius:6px!important;
+  background:var(--md-cyan)!important;box-shadow:var(--md-glow-cyan)
+}
+.rnx-kpi-grid .rs-randui-statcard__icon .rs-icon{width:calc(var(--md-tile) * .44)!important;height:calc(var(--md-tile) * .44)!important}
+.rnx-kpi-grid [data-randui-tone='danger'] .rs-randui-statcard__icon{background:var(--md-red)!important;box-shadow:var(--md-glow-red)}
+.rnx-kpi-grid [data-randui-tone='warning'] .rs-randui-statcard__icon{background:var(--md-orange)!important;box-shadow:var(--md-glow-orange)}
+.rnx-kpi-grid [data-randui-tone='success'] .rs-randui-statcard__icon{background:var(--md-green)!important;box-shadow:var(--md-glow-green)}
+.rnx-kpi-grid [data-randui-tone='default'] .rs-randui-statcard__icon{background:var(--md-slate)!important;box-shadow:0 7px 14px -6px rgba(55,71,79,.5)}
+.rnx-kpi-grid .rs-randui-statcard__label{display:block;white-space:normal!important;overflow:visible!important;line-height:1.2;padding-left:calc(var(--md-tile) + 16px);font-size:.82rem!important;font-weight:600!important;color:var(--rnx-text-2)!important}
+.rnx-kpi-grid .rs-randui-statcard>strong{margin-top:4px!important;padding-left:calc(var(--md-tile) + 16px);font-size:calc(1.75rem * var(--md-s))!important;font-weight:600;letter-spacing:-.01em}
+.rnx-kpi-grid .rs-randui-statcard>small{
+  display:block!important;margin-top:14px!important;padding-top:10px!important;text-align:left;
+  border-top:1px solid var(--rnx-line)!important;font-size:.76rem;color:var(--rnx-text-3)!important
+}
+
+/* ── Card headers in colour (Material "card-header") ──────────────── */
+.rnx-panel,.rnx-tray,.rnx-tools,.rnx-chartcard{
+  border:0!important;border-radius:6px!important;background:var(--rnx-surface)!important;box-shadow:var(--md-shadow)!important
+}
+.rnx-tray{margin-top:22px;padding:0 16px 16px!important}
+.rnx-tray>.rnx-desk__head{
+  margin:-20px 0 4px;padding:14px 16px;border-radius:6px;
+  background:var(--md-purple);box-shadow:var(--md-glow-purple);color:#fff
+}
+.rnx-tray>.rnx-desk__head>div{display:grid!important}
+.rnx-tray>.rnx-desk__head .rnx-eyebrow,.rnx-tray>.rnx-desk__head small{color:rgba(255,255,255,.85)!important}
+.rnx-tray>.rnx-desk__head h2{color:#fff}
+.rnx-priority{border:0!important;border-bottom:1px solid var(--rnx-line)!important;border-radius:0!important;background:transparent!important}
+.rnx-priority__rank{border-radius:50%!important}
+.rnx-priority__body small{color:var(--rnx-accent-ink)!important}
+
+.rnx-deskgrid{row-gap:34px!important}
+.rnx-panel{margin-top:22px;padding:0 14px 14px!important}
+.rnx-panel>.rnx-panel__head{
+  margin:-20px 0 2px;padding:12px 14px;border-radius:6px;border-bottom:0!important;color:#fff;
+  background:var(--md-orange);box-shadow:var(--md-glow-orange)
+}
+.rnx-panel[data-testid='home-presence']>.rnx-panel__head{background:var(--md-cyan);box-shadow:var(--md-glow-cyan)}
+.rnx-panel>.rnx-panel__head span,.rnx-panel>.rnx-panel__head small{color:rgba(255,255,255,.88)!important}
+.rnx-panel>.rnx-panel__head h2{color:#fff}
+
+.rnx-next{padding:12px 14px!important;border:0!important;border-radius:6px!important;background:var(--rnx-surface)!important;box-shadow:var(--md-shadow)!important}
+.rnx-next__label{
+  align-self:stretch;display:grid;place-items:center;margin:-12px 0 -12px -14px;border-radius:6px 0 0 6px;
+  background:var(--md-green);color:#fff!important
+}
+
+/* ── Chart card: bars on a coloured header ────────────────────────── */
+.rnx-chartcard{margin-top:22px;padding:0 16px 14px}
+.rnx-chartcard__plot{
+  height:calc(150px * var(--md-s));margin:-20px 0 0;padding:16px 14px 10px;border-radius:6px;
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:10px;
+  background:var(--md-green);box-shadow:var(--md-glow-green)
+}
+.rnx-chartcard__bar{height:100%;display:grid;grid-template-rows:16px minmax(0,1fr) 16px;justify-items:center;align-items:end;gap:4px;color:#fff}
+.rnx-chartcard__bar b{font-size:.7rem;font-weight:700}
+.rnx-chartcard__bar i{display:block;width:min(100%,22px);border-radius:4px 4px 2px 2px;background:rgba(255,255,255,.88)}
+.rnx-chartcard__bar small{font-size:.66rem;opacity:.9;text-transform:capitalize}
+.rnx-chartcard__body{padding-top:12px}
+.rnx-chartcard__body h2{margin:0;font-size:1rem}
+.rnx-chartcard__body p{margin:4px 0 0;color:var(--rnx-text-3);font-size:.8rem}
+
+/* Wide screens: the chart sits beside the KPI-following desk, tray below it. */
+@media(min-width:1000px){
+  .rnx-home>.rnx-chartcard{grid-column:2}
+  .rnx-home>.rnx-desk{grid-row:span 2}
+  .rnx-home>.rnx-tray{grid-row:auto}
+}
+
+/* Rail on tablet / small PC stays dark too. */
+@media(min-width:768px) and (max-width:1199px){
+  .rnx-structure-switch{background:rgba(255,255,255,.07)!important}
+}
+
+/* Phone: tighter floating tiles. */
+@media(max-width:767px){
+  .rnx-kpi-grid{row-gap:30px!important}
+  :root{--md-tile:calc(52px * var(--md-s))}
+  .rnx-kpi-grid .rs-randui-statcard__icon{top:-16px;left:12px}
+  .rnx-kpi-grid .rs-randui-statcard__label,.rnx-kpi-grid .rs-randui-statcard>strong{padding-left:calc(var(--md-tile) + 8px)}
+  .rnx-chartcard__plot{height:calc(130px * var(--md-s));gap:6px}
+}
+
+/* ── Dark theme: monochrome (black, greys, white) ─────────────────────
+   Colour is kept only where it carries meaning: alarm / warning / ok glyphs
+   on the KPI tiles and the semantic status tokens, which stay untouched. */
+html[data-theme='dark']{
+  --rand-canvas:#0c0c0c;
+  --rand-canvas-subtle:#111;
+  --rand-surface-1:#171717;
+  --rand-surface-2:#1e1e1e;
+  --rand-surface-3:#292929;
+  --rand-text-primary:#f5f5f5;
+  --rand-text-secondary:#c2c2c2;
+  --rand-text-muted:#8f8f8f;
+  --rand-border:#2c2c2c;
+  --rand-border-strong:#474747;
+  --rand-accent:#e6e6e6;
+  --rand-accent-secondary:#bdbdbd;
+  --rand-accent-strong:#ffffff;
+  --rand-gradient-primary:linear-gradient(135deg,#f0f0f0 0%,#a8a8a8 100%);
+  --rand-shadow-focus:0 0 0 1px var(--rand-border),0 18px 44px -30px rgba(255,255,255,.18);
+  --rnx-action:#f2f2f2;
+  --md-side-bg:#050505;
+  --md-side-text:rgba(255,255,255,.72);
+  --md-shadow:0 1px 0 0 rgba(255,255,255,.04) inset,0 2px 8px rgba(0,0,0,.6);
+  --md-purple:linear-gradient(60deg,#3b3b3b,#262626);
+  --md-orange:linear-gradient(60deg,#4a4a4a,#333);
+  --md-green:linear-gradient(60deg,#2f2f2f,#1c1c1c);
+  --md-red:linear-gradient(60deg,#3a3a3a,#242424);
+  --md-cyan:linear-gradient(60deg,#565656,#3c3c3c);
+  --md-slate:linear-gradient(60deg,#2c2c2c,#1a1a1a);
+  --md-glow-purple:0 7px 14px -6px rgba(0,0,0,.8);
+  --md-glow-orange:0 7px 14px -6px rgba(0,0,0,.8);
+  --md-glow-green:0 7px 14px -6px rgba(0,0,0,.8);
+  --md-glow-red:0 7px 14px -6px rgba(0,0,0,.8);
+  --md-glow-cyan:0 7px 14px -6px rgba(0,0,0,.8);
+}
+html[data-theme='dark'] .rnx-sidebar{background:linear-gradient(180deg,#141414 0%,#070707 100%)!important;border-right:1px solid #1f1f1f!important}
+/* Active navigation: white on black, the strongest contrast available. */
+html[data-theme='dark'] .rnx-sidebar .rs-sidebar__item.active{background:#f2f2f2!important;color:#0c0c0c!important;box-shadow:none}
+html[data-theme='dark'] .rnx-sidebar .rs-sidebar__item.active .rs-icon{color:#0c0c0c!important}
+html[data-theme='dark'] .rnx-sidebar__logout{color:#e0e0e0!important}
+/* Filled buttons become white with black labels. */
+html[data-theme='dark'] .rnx-home .rs-btn--primary,
+html[data-theme='dark'] .rnx-fab{background:#f2f2f2!important;color:#0c0c0c!important;box-shadow:none!important}
+html[data-theme='dark'] .rnx-bottomnav__item.active .rnx-bottomnav__icon{background:#f2f2f2;color:#0c0c0c}
+/* Coloured headers turn into grey slabs with a hairline so they still read as headers. */
+html[data-theme='dark'] .rnx-tray>.rnx-desk__head,
+html[data-theme='dark'] .rnx-panel>.rnx-panel__head,
+html[data-theme='dark'] .rnx-chartcard__plot{border:1px solid #3a3a3a}
+html[data-theme='dark'] .rnx-next__label{border-right:1px solid #333}
+html[data-theme='dark'] .rnx-chartcard__bar i{background:#f2f2f2}
+html[data-theme='dark'] .rnx-priority__icon,
+html[data-theme='dark'] .rnx-row__icon{background:#262626!important;color:#e6e6e6!important}
+/* KPI tiles: grey tiles; the glyph keeps the status colour. */
+html[data-theme='dark'] .rnx-kpi-grid .rs-randui-statcard__icon{border:1px solid #3d3d3d}
+html[data-theme='dark'] .rnx-kpi-grid [data-randui-tone='danger'] .rs-randui-statcard__icon{color:#ff8a80!important}
+html[data-theme='dark'] .rnx-kpi-grid [data-randui-tone='warning'] .rs-randui-statcard__icon{color:#ffd180!important}
+html[data-theme='dark'] .rnx-kpi-grid [data-randui-tone='success'] .rs-randui-statcard__icon{color:#b9f6ca!important}
+
+/* ── Light theme: no dark surfaces ────────────────────────────────────
+   White side navigation, pastel card headers with coloured text, bright
+   icon tiles. Dark slabs are reserved for the dark theme. */
+html:not([data-theme='dark']){
+  --md-side-bg:#ffffff;
+  --md-tile-red:linear-gradient(60deg,#ef5350,#e53935);
+  --md-tile-orange:linear-gradient(60deg,#ffa726,#fb8c00);
+  --md-tile-cyan:linear-gradient(60deg,#26c6da,#00acc1);
+  --md-tile-green:linear-gradient(60deg,#66bb6a,#43a047);
+  --md-tile-grey:linear-gradient(60deg,#b0bec5,#90a4ae);
+}
+html:not([data-theme='dark']) .rnx-sidebar{
+  background:#ffffff!important;color:var(--rnx-text-2);
+  border-right:1px solid var(--rnx-line)!important;box-shadow:0 0 24px -12px rgba(0,0,0,.18)
+}
+html:not([data-theme='dark']) .rnx-sidebar__brand{border-bottom-color:var(--rnx-line)!important}
+html:not([data-theme='dark']) .rnx-brandcopy b{color:var(--rnx-text)}
+html:not([data-theme='dark']) .rnx-brandcopy small{color:var(--rnx-text-3)!important}
+html:not([data-theme='dark']) .rnx-structure-switch,
+html:not([data-theme='dark']) .rnx-sidebar__search{background:var(--rnx-surface-2)!important;border-color:var(--rnx-line)!important;color:var(--rnx-text)!important}
+html:not([data-theme='dark']) .rnx-sidebar__search{color:var(--rnx-text-3)!important}
+html:not([data-theme='dark']) .rnx-sidebar__search kbd{border-color:var(--rnx-line)!important;color:var(--rnx-text-3)!important}
+html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__label{color:var(--rnx-text-3)!important}
+html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__item{color:var(--rnx-text-2)!important}
+html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__item:hover{background:var(--rnx-surface-2)!important;color:var(--rnx-text)!important}
+html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__item.active{background:#f3e5f5!important;color:#6a1b9a!important;box-shadow:none}
+html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__item.active .rs-icon{color:#8e24aa!important}
+html:not([data-theme='dark']) .rnx-sidebar__footer{border-top-color:var(--rnx-line)!important}
+html:not([data-theme='dark']) .rnx-side-action{color:var(--rnx-text-2)!important}
+html:not([data-theme='dark']) .rnx-side-action:hover{background:var(--rnx-surface-2)!important;color:var(--rnx-text)!important}
+html:not([data-theme='dark']) .rnx-sidebar__logout{color:#c62828!important}
+html:not([data-theme='dark']) .rnx-sidebar__logout:hover{background:#ffebee!important}
+
+/* Icon tiles: bright Material tones (icons only, no text on them). */
+html:not([data-theme='dark']) .rnx-kpi-grid .rs-randui-statcard__icon{background:var(--md-tile-cyan)!important;box-shadow:0 6px 12px -6px rgba(0,172,193,.6)!important}
+html:not([data-theme='dark']) .rnx-kpi-grid [data-randui-tone='danger'] .rs-randui-statcard__icon{background:var(--md-tile-red)!important;box-shadow:0 6px 12px -6px rgba(229,57,53,.55)!important}
+html:not([data-theme='dark']) .rnx-kpi-grid [data-randui-tone='warning'] .rs-randui-statcard__icon{background:var(--md-tile-orange)!important;box-shadow:0 6px 12px -6px rgba(251,140,0,.55)!important}
+html:not([data-theme='dark']) .rnx-kpi-grid [data-randui-tone='success'] .rs-randui-statcard__icon{background:var(--md-tile-green)!important;box-shadow:0 6px 12px -6px rgba(67,160,71,.55)!important}
+html:not([data-theme='dark']) .rnx-kpi-grid [data-randui-tone='default'] .rs-randui-statcard__icon{background:var(--md-tile-grey)!important;box-shadow:0 6px 12px -6px rgba(96,125,139,.45)!important}
+
+/* Card headers: pastel fills, text in the deep shade of the same hue. */
+html:not([data-theme='dark']) .rnx-tray>.rnx-desk__head{background:#f3e5f5;box-shadow:none;color:#4a148c}
+html:not([data-theme='dark']) .rnx-tray>.rnx-desk__head h2{color:#4a148c}
+html:not([data-theme='dark']) .rnx-tray>.rnx-desk__head .rnx-eyebrow,
+html:not([data-theme='dark']) .rnx-tray>.rnx-desk__head small{color:#7b1fa2!important}
+html:not([data-theme='dark']) .rnx-panel>.rnx-panel__head{background:#fff3e0;box-shadow:none;color:#bf360c}
+html:not([data-theme='dark']) .rnx-panel>.rnx-panel__head h2{color:#bf360c}
+html:not([data-theme='dark']) .rnx-panel>.rnx-panel__head span,
+html:not([data-theme='dark']) .rnx-panel>.rnx-panel__head small{color:#d84315!important}
+html:not([data-theme='dark']) .rnx-panel[data-testid='home-presence']>.rnx-panel__head{background:#e0f7fa;box-shadow:none}
+html:not([data-theme='dark']) .rnx-panel[data-testid='home-presence']>.rnx-panel__head h2{color:#005662}
+html:not([data-theme='dark']) .rnx-panel[data-testid='home-presence']>.rnx-panel__head span,
+html:not([data-theme='dark']) .rnx-panel[data-testid='home-presence']>.rnx-panel__head small{color:#00727f!important}
+html:not([data-theme='dark']) .rnx-next__label{background:#e8f5e9;color:#1b5e20!important}
+
+/* Chart: pale green field, green bars, dark-green labels. */
+html:not([data-theme='dark']) .rnx-chartcard__plot{background:#e8f5e9;box-shadow:none}
+html:not([data-theme='dark']) .rnx-chartcard__bar{color:#1b5e20}
+html:not([data-theme='dark']) .rnx-chartcard__bar i{background:linear-gradient(180deg,#66bb6a,#43a047)}
+
+/* Filled action and active tab: bright purple instead of a dark ink. */
+html:not([data-theme='dark']){--rnx-action:#8e24aa}
+html:not([data-theme='dark']) .rnx-bottomnav__item.active .rnx-bottomnav__icon{background:#f3e5f5;color:#8e24aa}

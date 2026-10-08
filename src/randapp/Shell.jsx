@@ -23,6 +23,7 @@ import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
 import './new-issue-compact.css'
 import './randui-next.css'
+import './randui-material.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
@@ -148,7 +149,7 @@ function NavGroups({ user, hotel, variant, current, onPick, navigationConfig }) 
     <div key={group.id} className="rs-sidebar__group">
       <span className="rs-sidebar__label">{group.label}</span>
       {group.items.map((item) => (
-        <button key={item.id} className={`rs-sidebar__item ${current === item.id ? 'active' : ''}`} onClick={() => onPick(item)} data-testid={`sidebar-${item.id}`}>
+        <button key={item.id} className={`rs-sidebar__item ${current === item.id ? 'active' : ''}`} onClick={() => onPick(item)} data-testid={`sidebar-${item.id}`} title={item.label}>
           <Icon name={item.icon} /><span>{item.label}</span>
         </button>
       ))}
@@ -560,7 +561,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
           <RandDesktopSidebar
             brand={<><img src={logoFor(hotel.id)} alt={hotel.name} /><div className="rnx-brandcopy"><b>RandApp</b><small>{hotel.name}</small></div></>}
             switcher={allowedHotels.length > 1 && placement('structure') !== 'off' ? (
-              <button className="rnx-structure-switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel"><Icon name="hotel" /><span>{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><Icon name="chevronDown" /></button>
+              <button className="rnx-structure-switch" onClick={() => setHotelSheet(true)} data-testid="sidebar-switch-hotel" title={`Struttura: ${hotel.name}`}><Icon name="hotel" /><span>{HEADER_HOTEL_LABEL[hotel.id] || hotel.name}</span><Icon name="chevronDown" /></button>
             ) : null}
             navigation={<NavGroups user={user} hotel={hotel} variant="sidebar" current={settings === null ? view : ''} onPick={pick} navigationConfig={navigationConfig} />}
             preferences={<div className="rnx-sidebar-prefs">
