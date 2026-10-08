@@ -1,0 +1,160 @@
+/* RandUI Material — access and loading screens (login, admin gate, hotel
+   selector, full-screen loaders). Same language as randui-material.css:
+   light theme pastel and bright, dark theme monochrome. Loaded at boot from
+   main.jsx because these screens render before the Shell chunk. */
+
+:root{
+  --ma-bg:#eef0f2;
+  --ma-card:#ffffff;
+  --ma-text:#1d2329;
+  --ma-text-2:#56606a;
+  --ma-text-3:#7a848d;
+  --ma-line:#dfe3e7;
+  --ma-field:#f6f7f9;
+  --ma-head-bg:#f3e5f5;
+  --ma-head-text:#4a148c;
+  --ma-head-sub:#7b1fa2;
+  --ma-action:#8e24aa;
+  --ma-action-text:#ffffff;
+  --ma-focus:#8e24aa;
+  --ma-ring:#8e24aa;
+  --ma-shadow:0 2px 2px rgba(0,0,0,.08),0 6px 22px -10px rgba(0,0,0,.22);
+  --ma-s:var(--rs-scale,1);
+}
+html[data-theme='dark']{
+  --ma-bg:#0c0c0c;
+  --ma-card:#171717;
+  --ma-text:#f5f5f5;
+  --ma-text-2:#c2c2c2;
+  --ma-text-3:#8f8f8f;
+  --ma-line:#2c2c2c;
+  --ma-field:#1e1e1e;
+  --ma-head-bg:#262626;
+  --ma-head-text:#ffffff;
+  --ma-head-sub:#bdbdbd;
+  --ma-action:#f2f2f2;
+  --ma-action-text:#0c0c0c;
+  --ma-focus:#f2f2f2;
+  --ma-ring:#f2f2f2;
+  --ma-shadow:0 2px 10px rgba(0,0,0,.7);
+}
+
+/* ── Page ground ──────────────────────────────────────────────────── */
+html body:has(.rs-auth),html body:has(.rs-hotelselect),html body:has(#root>.rs-spinner){background:var(--ma-bg)!important}
+html .rs-auth,html .rs-hotelselect{background:var(--ma-bg)!important;color:var(--ma-text)!important}
+html .rs-auth::before,html .rs-auth::after,html .rs-hotelselect::before,html .rs-hotelselect::after{display:none!important}
+
+/* ── Brand block ──────────────────────────────────────────────────── */
+html .rs-auth .rs-brand__logo,html .rs-hotelselect .rs-brand__logo{
+  background:#fff!important;border:0!important;border-radius:calc(22px * var(--ma-s))!important;box-shadow:var(--ma-shadow)!important
+}
+html .rs-auth .rs-brand__title,html .rs-hotelselect .rs-brand__title{color:var(--ma-text)!important;text-shadow:none!important;filter:none!important;background:none!important;-webkit-text-fill-color:currentColor!important}
+html .rs-auth .rs-brand__sub,html .rs-hotelselect .rs-brand__sub{color:var(--ma-text-2)!important}
+html .rs-auth .rs-brand__tag{color:var(--ma-text-3)!important;background:transparent!important;border:0!important}
+html .rs-auth .rs-brand__tag .rs-icon{color:var(--ma-head-sub)!important}
+
+/* ── Card with a floating coloured header (Material card-header) ──── */
+html .rs-auth .rs-authcard{
+  margin-top:calc(26px * var(--ma-s));
+  background:var(--ma-card)!important;border:1px solid var(--ma-line)!important;border-radius:10px!important;
+  box-shadow:var(--ma-shadow)!important;color:var(--ma-text)!important;backdrop-filter:none!important
+}
+html .rs-auth .rs-authcard>header{
+  margin:0 0 4px;
+  padding:calc(16px * var(--ma-s)) calc(18px * var(--ma-s));
+  border-radius:8px;background:var(--ma-head-bg);
+  box-shadow:0 8px 18px -12px rgba(74,20,140,.45)
+}
+/* Floats over the card edge only when it opens the card (login); the admin
+   gate keeps its back link on top, so there the header stays in flow. */
+html .rs-auth .rs-authcard>header:first-child{margin-top:calc(-26px * var(--ma-s) - clamp(21px,5.2vw,30px))}
+html .rs-auth .rs-authcard>.rs-textback:first-child{align-self:flex-start}
+html[data-theme='dark'] .rs-auth .rs-authcard>header{border:1px solid #3a3a3a;box-shadow:0 8px 18px -10px rgba(0,0,0,.9)}
+html .rs-auth .rs-authcard header h1{color:var(--ma-head-text)!important;margin:0!important}
+html .rs-auth .rs-authcard header p{color:var(--ma-head-sub)!important;margin:4px 0 0!important}
+
+/* ── Fields ───────────────────────────────────────────────────────── */
+html .rs-auth .rs-field__label{color:var(--ma-text-2)!important;letter-spacing:.06em}
+html .rs-auth .rs-input{
+  background:var(--ma-field)!important;border:1px solid var(--ma-line)!important;border-radius:8px!important;box-shadow:none!important
+}
+html .rs-auth .rs-input:focus-within{border-color:var(--ma-focus)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--ma-focus) 18%,transparent)!important}
+html .rs-auth .rs-input input{color:var(--ma-text)!important;-webkit-text-fill-color:var(--ma-text)!important}
+html .rs-auth .rs-input input::placeholder{color:var(--ma-text-3)!important;-webkit-text-fill-color:var(--ma-text-3)!important;opacity:1}
+html .rs-auth .rs-input>.rs-icon{color:var(--ma-text-3)!important}
+html .rs-auth .rs-suggest{background:var(--ma-card)!important;border:1px solid var(--ma-line)!important;border-radius:8px!important;box-shadow:var(--ma-shadow)!important}
+html .rs-auth .rs-suggest button{color:var(--ma-text)!important;background:transparent!important}
+html .rs-auth .rs-suggest button:hover,html .rs-auth .rs-suggest button:focus-visible{background:var(--ma-field)!important}
+html .rs-auth .rs-textback{color:var(--ma-text-2)!important}
+html .rs-auth .rs-error{color:#c62828!important}
+html[data-theme='dark'] .rs-auth .rs-error{color:#ff8a80!important}
+
+/* ── Primary action ───────────────────────────────────────────────── */
+html .rs-auth [data-testid='login-submit'],
+html .rs-auth [data-testid='admin-gate-submit']{
+  background:var(--ma-action)!important;color:var(--ma-action-text)!important;border:0!important;border-radius:8px!important;
+  box-shadow:0 8px 18px -10px color-mix(in srgb,var(--ma-action) 70%,transparent)!important;letter-spacing:.08em
+}
+html .rs-auth [data-testid='login-submit'] .rs-icon,
+html .rs-auth [data-testid='admin-gate-submit'] .rs-icon{color:currentColor!important}
+html .rs-auth [data-testid='login-submit']:disabled,
+html .rs-auth [data-testid='admin-gate-submit']:disabled{opacity:.55}
+
+/* ── Divider and settings row ─────────────────────────────────────── */
+html .rs-auth .rs-divider{color:var(--ma-text-3)!important}
+html .rs-auth .rs-divider::before,html .rs-auth .rs-divider::after{background:var(--ma-line)!important}
+html .rs-auth .rs-settings-link{
+  background:var(--ma-field)!important;border:1px solid var(--ma-line)!important;border-radius:8px!important;color:var(--ma-text)!important;box-shadow:none!important
+}
+html .rs-auth .rs-settings-link small{color:var(--ma-text-2)!important}
+html .rs-auth .rs-settings-link>.rs-icon,html .rs-auth .rs-settings-link i,html .rs-auth .rs-settings-link i .rs-icon{color:var(--ma-head-sub)!important}
+
+/* ── Hotel selector: white cards, logo tile, arrow in the action colour ─ */
+html .rs-hotelselect__head h1{color:var(--ma-text)!important}
+html .rs-hotelselect__head p{color:var(--ma-text-2)!important}
+html[data-theme='light'] .rs-hotelselect__grid .rs-hotel-option,
+html[data-theme='dark'] .rs-hotelselect__grid .rs-hotel-option,
+html .rs-hotelselect__grid .rs-hotel-option{
+  background:var(--ma-card)!important;border:1px solid var(--ma-line)!important;border-radius:10px!important;
+  box-shadow:var(--ma-shadow)!important;color:var(--ma-text)!important
+}
+html .rs-hotelselect__grid .rs-hotel-option:hover{border-color:var(--ma-focus)!important}
+html .rs-hotelselect__grid .rs-hotel-option img{background:#fff;border-radius:8px}
+html .rs-hotelselect__grid .rs-hotel-option b{color:var(--ma-text)!important}
+html .rs-hotelselect__grid .rs-hotel-option small{color:var(--ma-text-2)!important}
+html .rs-hotelselect__grid .rs-hotel-option i{
+  width:calc(36px * var(--ma-s));height:calc(36px * var(--ma-s));display:grid;place-items:center;border-radius:8px;
+  background:var(--ma-head-bg)!important;color:var(--ma-head-text)!important
+}
+
+/* ── Loading ──────────────────────────────────────────────────────── */
+.rs-spinner__ring{border-color:var(--ma-line)!important;border-top-color:var(--ma-ring)!important}
+.rs-spinner small{color:var(--ma-text-2)}
+
+/* Full-screen loaders (before login, while the session or the hotel is
+   verified): a branded splash instead of a bare spinner on a blank page. */
+#root>.rs-spinner,
+#root>[data-testid='hotel-switch-loading']>.rs-spinner{
+  min-height:100dvh;padding:24px;gap:calc(18px * var(--ma-s));background:var(--ma-bg);
+  justify-content:center
+}
+#root>.rs-spinner::before,
+#root>[data-testid='hotel-switch-loading']>.rs-spinner::before{
+  content:'';width:calc(96px * var(--ma-s));height:calc(96px * var(--ma-s));border-radius:calc(22px * var(--ma-s));
+  background:#fff url('/logos/apicehotel-mascot.png') center/112% no-repeat;box-shadow:var(--ma-shadow)
+}
+#root>.rs-spinner small,
+#root>[data-testid='hotel-switch-loading']>.rs-spinner small{
+  font-size:calc(.95rem * var(--ma-s));font-weight:700;letter-spacing:.02em;color:var(--ma-text-2)
+}
+/* Indeterminate bar under the label. */
+#root>.rs-spinner::after,
+#root>[data-testid='hotel-switch-loading']>.rs-spinner::after{
+  content:'';width:min(220px,60vw);height:4px;border-radius:999px;
+  background:linear-gradient(90deg,transparent 0 30%,var(--ma-ring) 30% 60%,transparent 60%) 0 0/200% 100% var(--ma-line);
+  animation:ma-load 1.2s linear infinite
+}
+@keyframes ma-load{from{background-position:100% 0}to{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){
+  #root>.rs-spinner::after,#root>[data-testid='hotel-switch-loading']>.rs-spinner::after{animation:none;background:var(--ma-ring)}
+}
