@@ -12,7 +12,7 @@ export function RandDesktopSidebar({ brand, switcher, navigation, preferences, o
       <div className="rnx-sidebar__scroll">{navigation}</div>
       <div className="rnx-sidebar__footer">
         {preferences}
-        <button type="button" className="rnx-sidebar__logout" onClick={onLogout} data-testid="sidebar-logout">
+        <button type="button" className="rnx-sidebar__logout" onClick={onLogout} data-testid="sidebar-logout" title="Esci">
           <Icon name="logout" /><span>Esci</span>
         </button>
       </div>
