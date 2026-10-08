@@ -4,7 +4,7 @@ import { loadSession, saveSession, clearSession } from '../session.js'
 import { isOfflineSessionFresh, markSessionValidated } from '../session-policy.js'
 import { withTimeout } from '../async-timeout.js'
 import { lazyWithRetry } from '../lazy-retry.js'
-import { Button, Field, TextInput, Icon, Spinner } from './ui.jsx'
+import { Button, Field, TextInput, Icon, Spinner, ThemeSwitch } from './ui.jsx'
 import { normalize, logoFor, hotelById, firstName } from './helpers.js'
 import { resolveLoginUser } from './login-resolve.js'
 import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
@@ -66,6 +66,7 @@ function AdminGate({ onBack, onExit }) {
   if (ok) return <Suspense fallback={<Spinner label="Carico impostazioni…" />}><Settings onExit={onExit || onBack} /></Suspense>
   return (
     <main className="rs-auth rs-auth--admin">
+      <ThemeSwitch className="rs-themeswitch--corner" />
       <div className="rs-auth__inner">
         <BrandMark tagline={false} />
         <section className="rs-card rs-authcard">
@@ -173,6 +174,7 @@ function Login({ onAuthenticated, onOpenSettings }) {
 
   return (
     <main className="rs-auth">
+      <ThemeSwitch className="rs-themeswitch--corner" />
       <div className="rs-auth__inner">
         <BrandMark />
         <section className="rs-card rs-authcard">
@@ -254,6 +256,7 @@ function HotelSelector({ pending, onPick }) {
   const hotels = (pending.allowedHotels || []).map(hotelById).filter(Boolean)
   return (
     <main className="rs-hotelselect">
+      <ThemeSwitch className="rs-themeswitch--corner" />
       <div className="rs-hotelselect__head">
         <BrandMark tagline={false} />
         <h1>Ciao {firstName(pending.user?.name)}</h1>

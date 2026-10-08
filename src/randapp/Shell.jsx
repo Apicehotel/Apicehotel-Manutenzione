@@ -3,7 +3,7 @@ import { fetchDirectory } from '../users-data.js'
 import { withTimeout } from '../async-timeout.js'
 import { lazyWithRetry } from '../lazy-retry.js'
 import { ViewErrorBoundary } from '../error-boundary.jsx'
-import { Button, Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl } from './ui.jsx'
+import { Button, Icon, IconButton, Sheet, EmptyState, Spinner, UiSizeControl, ThemeControl, ThemeSwitch } from './ui.jsx'
 import { canCreatePlanned, canSendUrgent, logoFor, hotelById } from './helpers.js'
 import { canUser } from '../permissions.js'
 import { buildNav, NAV_TARGET, VIEW_GUARDS } from './nav.js'
@@ -583,6 +583,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
             </button>}
             profile={<button type="button" className="rnx-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rnx-profile__avatar">{userInitials}</span><span className="rnx-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
             presence={<PresenceChip user={user} />}
+            themeSwitch={<ThemeSwitch />}
             notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rnx-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
             randai={viewAllowed('randai') ? <button type="button" className="rnx-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
           />

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { UI_SIZES, loadUiSize, setUiSize } from './ui-size.js'
-import { THEMES, loadThemeChoice, setThemeChoice } from './theme.js'
+import { THEMES, loadThemeChoice, resolveTheme, setThemeChoice } from './theme.js'
 
 const ICONS = {
   home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M9.5 21v-6h5v6" /></>,
@@ -231,6 +231,31 @@ export function UiSizeControl({ className = '' }) {
         </button>
       ))}
     </div>
+  )
+}
+
+// Quick light/dark switch for headers and access screens. It stores an explicit
+// choice (Chiaro/Scuro); "Sistema" stays available in the full ThemeControl.
+export function ThemeSwitch({ className = '' }) {
+  const [resolved, setResolved] = useState(() => resolveTheme(loadThemeChoice()))
+  useEffect(() => {
+    const sync = () => setResolved(resolveTheme(loadThemeChoice()))
+    window.addEventListener('apice-theme-changed', sync)
+    const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null
+    media?.addEventListener?.('change', sync)
+    return () => { window.removeEventListener('apice-theme-changed', sync); media?.removeEventListener?.('change', sync) }
+  }, [])
+  const dark = resolved === 'dark'
+  const toggle = () => { const next = dark ? 'light' : 'dark'; setThemeChoice(next); setResolved(next) }
+  return (
+    <button type="button" role="switch" aria-checked={dark} aria-label="Tema scuro" title={dark ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+      className={`rs-themeswitch ${dark ? 'is-dark' : ''} ${className}`} onClick={toggle} data-testid="theme-switch">
+      <span className="rs-themeswitch__track" aria-hidden="true">
+        <svg className="rs-themeswitch__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+        <svg className="rs-themeswitch__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+        <span className="rs-themeswitch__thumb" />
+      </span>
+    </button>
   )
 }
 

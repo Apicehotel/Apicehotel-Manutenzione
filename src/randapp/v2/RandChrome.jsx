@@ -20,12 +20,13 @@ export function RandDesktopSidebar({ brand, switcher, navigation, preferences, o
   )
 }
 
-export function RandTopbar({ hotel, profile, presence, notifications, randai }) {
+export function RandTopbar({ hotel, profile, presence, themeSwitch, notifications, randai }) {
   return (
     <header className="rnx-topbar">
       <div className="rnx-topbar__hotel">{hotel}</div>
       <div className="rnx-topbar__actions">
         {presence}
+        {themeSwitch}
         {notifications}
         {randai}
         {profile}
