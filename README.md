@@ -259,6 +259,7 @@ Rand dispone di un server MCP interno già governato dal catalogo azioni condivi
 - **Rand MCP interno:** servizio separato su DigitalOcean App Platform, avviabile con `npm run mcp:start`; endpoint `/mcp`, health `/healthz`.
 - **GitHub / Supabase / DigitalOcean / Figma / Sentry / Context7 / Vercel / BladewindUI:** endpoint remoti dei rispettivi provider; nessuna copia self-hosted nel runtime RandApp.
 - **Playwright MCP:** solo sviluppo/CI e visual gate, non produzione.
+- **prompts.chat MCP:** provider remoto read-only/reference per prompt e Agent Skill discovery; configurato a livello progetto per Cursor (`.cursor/mcp.json`), Claude Code (`.mcp.json`) e Codex (`.codex/config.toml`). Nessun segreto/API key è versionato nel repository.
 - Default fail-closed: GitHub read-only + lockdown, Supabase project-scoped + read-only, nessun secret nel repository, operazioni hotel protette sempre via RandGateway/RLS/HITL.
 
 Dettagli, profili e configurazione client: `config/mcp/README.md`. Gate dedicato: `npm run test:mcp`.
