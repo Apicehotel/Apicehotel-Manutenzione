@@ -2,7 +2,8 @@ import { interestsForNavItem, rankAuthorizedNavigation } from './adaptive-layout
 
 // RandUI primary mobile navigation contract.
 // Five spatial slots stay stable on mobile: Operatività, Planning, Home, Task,
-// Altro. Home is always the geometric centre and Altro owns the far-right slot.
+// RandAI. Home is always the geometric centre; the profile trigger owns the
+// complete menu, so the far-right slot is reserved for the assistant.
 // Task is the preferred operational destination; contextual fallbacks are used
 // only for roles that cannot access interventions/my-work.
 
@@ -75,9 +76,14 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], 
   const contextual = firstContextualDestination({ placement, viewAllowed, interests })
   if (contextual) items.push(contextual)
 
-  // The far-right slot is the complete menu. RandAI remains available from the
-  // full menu/header instead of displacing the user's stable "Altro" entry.
-  items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'more', key: 'more', icon: 'menu', label: 'Altro' })
+  // The profile trigger already owns the complete menu, so avoid duplicating
+  // it in the bottom bar. Keep RandAI one tap away; if role navigation disables
+  // RandAI, retain Altro as a safe fallback so the five-slot geometry is stable.
+  if (viewAllowed('randai')) {
+    items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
+  } else {
+    items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'more', key: 'more', icon: 'menu', label: 'Altro' })
+  }
 
   return items
 }

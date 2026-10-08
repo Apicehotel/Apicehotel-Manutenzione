@@ -11,11 +11,11 @@ const hub = fs.readFileSync(new URL('../src/randapp/operations/OperationsHub.jsx
 const css = fs.readFileSync(new URL('../src/randapp/telegram-navigation.css', import.meta.url), 'utf8')
 const catalog = fs.readFileSync(new URL('../src/randapp/randui/page-catalog.js', import.meta.url), 'utf8')
 
-test('mobile primary navigation keeps Home central and Altro far right', () => {
+test('mobile primary navigation keeps Home central and RandAI far right', () => {
   assert.match(navigation, /home:\s*3/)
   assert.match(navigation, /more:\s*5/)
   assert.match(navigation, /id:\s*'home'.*label:\s*'Home'/s)
-  assert.match(navigation, /id:\s*'more'.*label:\s*'Altro'/)
+  assert.match(navigation, /id:\s*'randai'.*label:\s*'RandAI'/)
   assert.doesNotMatch(navigation, /href:\s*'\/randai'/)
   assert.match(css, /data-slot='3'/)
   assert.match(css, /data-slot='5'/)
@@ -44,8 +44,10 @@ test('complete menu is profile-driven and grouped in accessible accordions', () 
   assert.doesNotMatch(shell, /item\.id === 'menu'/)
 })
 
-test('Altro opens the complete menu while RandAI remains available from the app', () => {
-  assert.match(shell, /item\.id === 'more'.*setDrawer\(true\)/s)
+test('profile opens the complete menu while RandAI stays one tap away in the bottom bar', () => {
+  assert.match(shell, /data-testid="header-profile-menu"/)
+  assert.match(shell, /onClick=\{\(\) => setDrawer\(true\)\}/)
+  assert.match(shell, /item\.id === 'randai'.*openRandAIPage\(\)/s)
   assert.match(shell, /openRandAIPage/)
   assert.match(shell, /variant="page"/)
   assert.match(shell, /view === 'randai'/)

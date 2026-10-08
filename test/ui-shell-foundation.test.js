@@ -9,7 +9,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const allBottom = (key) => ['home', 'planning_work', 'chat', ...PRIMARY_OPERATIONAL_NAV.map((item) => item.key)].includes(key) ? 'bottom' : 'off'
 const allAllowed = () => true
 
-test('adaptive primary mobile navigation keeps five structural slots with Home in slot 3 and Altro in slot 5', () => {
+test('adaptive primary mobile navigation keeps five structural slots with Home in slot 3 and RandAI in slot 5', () => {
   assert.ok(PRIMARY_OPERATIONAL_NAV.length >= 3)
   const nav = buildPrimaryBottomNav({ placement: allBottom, viewAllowed: allAllowed })
 
@@ -19,10 +19,10 @@ test('adaptive primary mobile navigation keeps five structural slots with Home i
   assert.equal(nav.find((item) => item.id === 'planning-work')?.slot, 2)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
   assert.equal(nav.find((item) => item.id === 'chat')?.slot, 4)
-  assert.equal(nav.find((item) => item.id === 'more')?.slot, 5)
+  assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
 
-test('permissions may hide a contextual destination without moving Home or Altro anchors', () => {
+test('permissions may hide a contextual destination without moving Home or RandAI anchors', () => {
   const nav = buildPrimaryBottomNav({
     placement: (key) => key === 'chat' ? 'off' : allBottom(key),
     viewAllowed: (id) => id !== 'inventory',
@@ -30,7 +30,7 @@ test('permissions may hide a contextual destination without moving Home or Altro
 
   assert.equal(nav.some((item) => item.id === 'inventory'), false)
   assert.equal(nav.find((item) => item.id === 'home')?.slot, 3)
-  assert.equal(nav.find((item) => item.id === 'more')?.slot, 5)
+  assert.equal(nav.find((item) => item.id === 'randai')?.slot, 5)
 })
 
 test('adaptive App Shell CSS uses effective browser/native insets and Telegram layer owns fixed navigation slots', async () => {
