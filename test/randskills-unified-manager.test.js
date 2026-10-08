@@ -9,8 +9,8 @@ import {
 
 test('unified RandSkills catalog contains canonical skills and MCP without duplicate keys', () => {
   const catalog = buildUnifiedRandCapabilityCatalog()
-  assert.ok(catalog.skills.length >= 7)
-  assert.ok(catalog.mcp.length >= 9)
+  assert.ok(catalog.skills.length >= 9)
+  assert.ok(catalog.mcp.length >= 12)
   assert.equal(catalog.items.length, catalog.skills.length + catalog.mcp.length)
   const keys = catalog.items.map((item) => item.key)
   assert.equal(new Set(keys).size, keys.length)
@@ -32,6 +32,8 @@ test('unified catalog filters across skill, MCP, capability and profile', () => 
   assert.ok(filterUnifiedRandCapabilityCatalog(catalog,{kind:'skill',query:'manutenzione'}).some((item)=>item.id==='maintenance'))
   assert.ok(filterUnifiedRandCapabilityCatalog(catalog,{kind:'mcp',query:'database.inspect'}).some((item)=>item.id==='supabase'))
   assert.ok(filterUnifiedRandCapabilityCatalog(catalog,{profile:'rand-designer'}).some((item)=>item.id==='figma'))
+  assert.ok(filterUnifiedRandCapabilityCatalog(catalog,{kind:'mcp',query:'prompt'}).some((item)=>item.id==='prompts-chat'))
+  assert.ok(filterUnifiedRandCapabilityCatalog(catalog,{profile:'rand-coder'}).some((item)=>item.id==='prompts-chat'))
   assert.equal(filterUnifiedRandCapabilityCatalog(catalog,{kind:'skill',profile:'rand-designer'}).length,0)
 })
 

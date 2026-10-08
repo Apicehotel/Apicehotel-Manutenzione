@@ -18,7 +18,7 @@ function tools() {
 test('block2: canonical RandSkills reuse the existing SkillRegistry', () => {
   const registry = registerCanonicalRandSkills()
   const skills = registry.list()
-  assert.equal(skills.length, 7)
+  assert.equal(skills.length, 9)
   assert.ok(skills.every((skill) => skill.status === 'APPROVED'))
   assert.equal(registry.inspect('maintenance').metadata.source, 'rand-skills/maintenance/SKILL.md')
 })

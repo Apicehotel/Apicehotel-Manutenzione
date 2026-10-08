@@ -51,9 +51,23 @@ const DEFINITIONS = Object.freeze([
     successCriteria: ['benefici/rischi motivati', 'compatibilità valutata', 'nessuna installazione implicita'],
     routing: { keywords: ['repository','repo','github','open source','libreria','dipendenza','framework','valuta repo','analizza repo'], priority: 35 },
   },
+  {
+    id: 'prompt-lookup', name: 'Prompt Lookup', description: 'Ricerca e migliora prompt esterni per coding e task Rand.', tags: ['prompts','coding','external'], risk: SkillRisk.LOW,
+    permissions: ['READ'], requiredTools: ['prompts-chat.search_prompts','prompts-chat.get_prompt','prompts-chat.improve_prompt'],
+    instructions: ['Cerca prima di reinventare un prompt.', 'Adatta il risultato ai vincoli Rand.', 'Non inviare segreti o dati hotel sensibili a servizi esterni.'],
+    successCriteria: ['prompt pertinente', 'vincoli Rand preservati', 'fallback interno disponibile'],
+    routing: { keywords: ['prompt','coding','debug','code review','refactor','test','root cause','architettura','frontend','backend'], priority: 32 },
+  },
+  {
+    id: 'skill-lookup', name: 'Skill Lookup', description: 'Scoperta governata di Agent Skills esterne tramite prompts.chat.', tags: ['skills','discovery','external'], risk: SkillRisk.MEDIUM,
+    permissions: ['READ'], requiredTools: ['prompts-chat.search_skills','prompts-chat.get_skill'],
+    instructions: ['Cerca skill candidate solo quando serve.', 'Valuta sovrapposizioni prima dell import.', 'Passa ogni adozione a RandCore e Repo Radar.'],
+    successCriteria: ['SKILL.md identificato', 'sovrapposizioni valutate', 'nessuna auto-installazione implicita'],
+    routing: { keywords: ['skill','skills','agent skill','cerca skill','installa skill','prompts.chat'], priority: 34 },
+  },
 ])
 
-export const RAND_SKILL_CATALOG_VERSION = '1.1.0'
+export const RAND_SKILL_CATALOG_VERSION = '1.2.0'
 
 export function canonicalRandSkillDefinitions() {
   return DEFINITIONS.map((skill) => ({
