@@ -218,7 +218,7 @@ test('RandApp browser actions also use the canonical gateway instead of invoking
 test('MCP uses the stable official SDK, Streamable HTTP and only the governed RandGateway', () => {
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
   const mcp = fs.readFileSync('api/mcp.js', 'utf8')
-  assert.equal(pkg.dependencies['@modelcontextprotocol/sdk'], '1.30.0')
+  assert.equal(pkg.dependencies['@modelcontextprotocol/sdk'], '1.32.1')
   assert.match(mcp, /StreamableHTTPServerTransport/)
   assert.match(mcp, /functions\/v1\/rand-gateway/)
   assert.match(mcp, /mcpServerId:\s*'rand-internal'/)
