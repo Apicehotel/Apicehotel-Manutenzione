@@ -329,3 +329,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/hotelgio-idromassaggio-jazz` | 0 | 131 |
 | `fix/housekeepers-by-hotel` | 0 | 2455 |
 | `fix/housekeeping-dark-theme` | 0 | 2507 |
+
+## Fix batch 2
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/housekeeping-dark-theme-v2` | 0 | 2507 |
+| `fix/housekeeping-role-navigation` | 0 | 388 |
+| `fix/housekeeping-theme-native` | 2 | 2506 |
+| `fix/impeccable-visual-polish` | 5 | 471 |
+| `fix/ios-login-keyboard` | 43 | 856 |
+| `fix/ios-offline-sw-response` | 11 | 917 |
+| `fix/issue-filter-adaptive-grid` | 0 | 2484 |
+| `fix/issue-filter-mobile` | 13 | 2486 |
+| `fix/issues-layout-structural` | 0 | 2477 |
+| `fix/lateral-menu-mobile-runtime` | 0 | 153 |
+| `fix/layout-hardening-audit` | 0 | 2462 |
+| `fix/login-directory-permission-boundary` | 3 | 1834 |
+| `fix/login-mobile-autosubmit` | 0 | 424 |
+| `fix/login-paste-nick-pin` | 10 | 854 |
+| `fix/login-single-tap-submit` | 2 | 430 |
+| `fix/mobile-header-hotel-name-order` | 1 | 955 |
+| `fix/mobile-header-toolbar` | 1 | 956 |
+| `fix/mobile-home-presence-density` | 0 | 71 |
