@@ -1,0 +1,29 @@
+/* RandUI hubs: single authoritative skin. Loaded after legacy Material/Next layers. */
+.rnx-content .rv2-operations,.rnx-content .rv2-planning{box-sizing:border-box;width:100%;max-width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:12px}
+.rnx-content .rv2-operations *,.rnx-content .rv2-planning *{box-sizing:border-box}
+.rnx-content .rv2-operations .rv2-pagehead,.rnx-content .rv2-planning .rv2-pagehead{display:flex;align-items:flex-start;justify-content:space-between;min-height:0;margin:0;padding:4px 0 8px;gap:10px}
+.rnx-content .rv2-operations .rv2-eyebrow,.rnx-content .rv2-planning .rv2-eyebrow{display:none}
+.rnx-content .rv2-operations .rv2-pagehead h1,.rnx-content .rv2-planning .rv2-pagehead h1{margin:0;font-size:clamp(1.45rem,5vw,1.9rem);line-height:1.16;color:var(--rnx-text)}
+.rnx-content .rv2-operations .rv2-pagehead p,.rnx-content .rv2-planning .rv2-pagehead p{margin:5px 0 0;color:var(--rnx-text-2);font-size:.85rem;line-height:1.35}
+.rnx-content .rv2-operations .rv2-choice-grid,.rnx-content .rv2-planning .rv2-choice-grid,.rnx-content .rv2-operations .rv2-preview-grid,.rnx-content .rv2-planning .rv2-planning-body{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:10px;width:100%;min-width:0;margin:0}
+.rnx-content .rv2-operations .rv2-choice-grid>*,.rnx-content .rv2-planning .rv2-choice-grid>*,.rnx-content .rv2-operations .rv2-preview-grid>*,.rnx-content .rv2-planning .rv2-planning-body>*{width:100%;min-width:0;max-width:100%;margin:0}
+.rnx-content .rv2-operations .rv2-panel{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:10px;min-width:0;width:100%;padding:14px;border:1px solid var(--rnx-line);border-radius:17px;background:var(--rnx-surface);color:var(--rnx-text);overflow:hidden}
+.rnx-content .rv2-operations .rv2-panel__head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.rnx-content .rv2-operations .rv2-panel__head>div>span{display:none}
+.rnx-content .rv2-operations .rv2-panel__head h2{margin:0;color:var(--rnx-text);font-size:1.05rem;line-height:1.3}
+.rnx-content .rv2-operations .rv2-panel__head small{font-size:.73rem;color:var(--rnx-text-3)}
+.rnx-content .rv2-operations .rv2-list{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
+.rnx-content .rv2-operations .rv2-list>.rv2-row{appearance:none;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:start;gap:9px;width:100%;min-width:0;max-width:100%;min-height:64px;height:auto;margin:0;padding:11px;border:1px solid var(--rnx-line);border-radius:12px;background:var(--rnx-surface-2);color:var(--rnx-text);text-align:left;white-space:normal;box-shadow:none;cursor:pointer}
+.rnx-content .rv2-operations .rv2-row__icon{display:grid;place-items:center;width:24px;min-width:0;color:var(--rnx-accent)}
+.rnx-content .rv2-operations .rv2-row__body{display:grid;gap:4px;min-width:0;max-width:100%;overflow-wrap:anywhere;text-align:left}
+.rnx-content .rv2-operations .rv2-row__body strong,.rnx-content .rv2-operations .rv2-row__body small{display:block;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.rnx-content .rv2-operations .rv2-row__body strong{font-size:.84rem;font-weight:700;line-height:1.35;color:var(--rnx-text)}
+.rnx-content .rv2-operations .rv2-row__body small{font-size:.73rem;line-height:1.35;color:var(--rnx-text-2)}
+.rnx-content .rv2-operations .rv2-status{font-size:.69rem;line-height:1.2;white-space:nowrap;color:var(--rnx-text-2)}
+.rnx-content .rv2-operations .rv2-status.danger{color:var(--rnx-danger)}
+.rnx-content .rv2-operations .rv2-seeall{display:inline-flex;align-items:center;justify-content:center;justify-self:start;gap:8px;width:auto;max-width:100%;min-height:44px;padding:9px 12px;margin:0;border:1px solid var(--rnx-line);border-radius:12px;background:var(--rnx-surface-2);color:var(--rnx-text);font-size:.8rem;font-weight:700}
+.rnx-content .rv2-planning .rs-randui-calendar{min-width:0;width:100%;padding:12px;border:1px solid var(--rnx-line);border-radius:16px;background:var(--rnx-surface);color:var(--rnx-text)}
+.rnx-content .rv2-planning .rs-randui-calendar__events{min-height:0}
+.rnx-content .rv2-planning .rs-randui-calendar__empty{padding:5px 0;font-size:.74rem}
+@media(min-width:900px){.rnx-content .rv2-operations .rv2-choice-grid[data-columns="2"],.rnx-content .rv2-planning .rv2-choice-grid[data-columns="2"],.rnx-content .rv2-operations .rv2-preview-grid[data-columns="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){.rnx-content .rv2-operations,.rnx-content .rv2-planning{gap:10px}.rnx-content .rv2-operations .rv2-panel{padding:11px}.rnx-content .rv2-planning .rs-randui-calendar__day{grid-template-columns:43px minmax(0,1fr)}}
