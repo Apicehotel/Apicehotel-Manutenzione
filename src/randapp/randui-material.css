@@ -406,3 +406,47 @@ html:not([data-theme='dark']) .rnx-bottomnav__item.active .rnx-bottomnav__icon{b
     width: 100%;
   }
 }
+
+/* Mobile Home: card headers remain inside their own cards; no overlap with
+   preceding sections. Desktop floating Material headers are unchanged. */
+@media (max-width:767px) {
+  .rnx-home { min-width:0; gap:14px; }
+  .rnx-home .rnx-kpi-grid,
+  .rnx-home .rnx-kpi-grid[data-count="3"],
+  .rnx-home .rnx-kpi-grid[data-count="4"] {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    margin-top:8px;
+    gap:12px;
+    row-gap:12px!important;
+  }
+  .rnx-home .rnx-kpi-grid .rs-randui-statcard {
+    min-width:0;
+    padding:12px!important;
+    overflow:hidden;
+    text-align:left;
+  }
+  .rnx-home .rnx-kpi-grid .rs-randui-statcard__icon {
+    position:static;
+    display:inline-grid;
+    width:36px!important;
+    height:36px!important;
+    margin-bottom:6px;
+  }
+  .rnx-home .rnx-kpi-grid .rs-randui-statcard__label,
+  .rnx-home .rnx-kpi-grid .rs-randui-statcard>strong {
+    padding-left:0!important;
+  }
+  .rnx-home .rnx-chartcard,
+  .rnx-home .rnx-panel,
+  .rnx-home .rnx-tray {
+    min-width:0;
+    margin-top:0;
+    padding-top:12px!important;
+  }
+  .rnx-home .rnx-chartcard__plot,
+  .rnx-home .rnx-panel>.rnx-panel__head,
+  .rnx-home .rnx-tray>.rnx-desk__head {
+    margin-top:0;
+  }
+  .rnx-home .rnx-deskgrid { row-gap:14px!important; }
+}

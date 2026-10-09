@@ -104,6 +104,10 @@ Sorgenti principali, sempre scoped per `hotel.id`:
 
 Le modalità Focus/Completa cambiano densità, non l'isolamento dati.
 
+### Home Material mobile: nessuna sovrapposizione
+
+Su smartphone (fino a 767px) le card KPI usano massimo due colonne e devono contenere icone, numeri ed etichette senza fuoriuscite. I titoli delle card Lavori/Presenza, il grafico e le priorità restano all'interno della rispettiva superficie senza margini negativi: nessuna intestazione deve sovrapporsi alla card precedente. La navigazione e l'area di stato iOS mantengono le rispettive safe-area; verificare su screenshot WebKit e dispositivo fisico prima di dichiarare risolto.
+
 ## 7. Autenticazione e sessione
 
 Il frontend non confronta PIN.
