@@ -489,3 +489,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `randai/block12-43-46` | 0 | 1396 |
 | `randai/block12bis-47-50` | 0 | 1390 |
 | `randai/block13-live-suggestions` | 3 | 1388 |
+
+## RandAI/RandUI batch 3
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `randai/block13-smart-suggestions-2` | 6 | 1389 |
+| `randai/block14-guided-procedures-live` | 2 | 1387 |
+| `randai/block15-project-intelligence` | 6 | 1386 |
+| `randai/block16-observability-2` | 5 | 1385 |
+| `randai/block17-evaluation-benchmark` | 6 | 1384 |
+| `randai/block18-multi-agent-2` | 6 | 1383 |
+| `randai/block19-permission-autonomy` | 7 | 1382 |
+| `randai/block20-recovery` | 6 | 1381 |
+| `randai/block21-engineering` | 6 | 1380 |
+| `randai/block22-learning` | 5 | 1379 |
+| `randai/block23-discovery` | 5 | 1378 |
+| `randai/block24-supervisor` | 5 | 1377 |
+| `randai/block25-proactive` | 4 | 1376 |
+| `randai/block26-control-center` | 8 | 1375 |
+| `randai/block-29-operational-supervisor` | 0 | 1790 |
+| `randai/block-30-completion-gateway` | 0 | 1785 |
+| `randai/block-30-issue-workspace` | 0 | 1787 |
+| `randai/block-31-operational-learning` | 0 | 1781 |
