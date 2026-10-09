@@ -228,8 +228,8 @@ html:not([data-theme='dark']) .rnx-sidebar__brand{border-bottom-color:var(--rnx-
 html:not([data-theme='dark']) .rnx-brandcopy b{color:var(--rnx-text)}
 html:not([data-theme='dark']) .rnx-brandcopy small{color:var(--rnx-text-3)!important}
 html:not([data-theme='dark']) .rnx-structure-switch,
-html:not([data-theme='dark']) .rnx-sidebar__search{background:var(--rnx-surface-2)!important;border-color:var(--rnx-line)!important;color:var(--rnx-text)!important}
-html:not([data-theme='dark']) .rnx-sidebar__search{color:var(--rnx-text-3)!important}
+/* One light-theme search rule: the previous colour was immediately overridden. */
+html:not([data-theme='dark']) .rnx-sidebar__search{background:var(--rnx-surface-2)!important;border-color:var(--rnx-line)!important;color:var(--rnx-text-3)!important}
 html:not([data-theme='dark']) .rnx-sidebar__search kbd{border-color:var(--rnx-line)!important;color:var(--rnx-text-3)!important}
 html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__label{color:var(--rnx-text-3)!important}
 html:not([data-theme='dark']) .rnx-sidebar .rs-sidebar__item{color:var(--rnx-text-2)!important}
