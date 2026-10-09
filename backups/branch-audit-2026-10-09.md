@@ -183,3 +183,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/randarchitecture-block3` | 14 | 856 |
 | `feat/randchat-group-a` | 20 | 1062 |
 | `feat/randchat-group-b` | 19 | 1061 |
+
+## Step feat/feature — batch 4
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/randchat-group-b-crypto` | 0 | 1061 |
+| `feat/randchat-group-c` | 27 | 1059 |
+| `feat/randcore-agent-control-center` | 0 | 640 |
+| `feat/randcore-agent-dashboard` | 0 | 632 |
+| `feat/randcore-agent-heartbeats` | 0 | 625 |
+| `feat/randcore-capability-router` | 0 | 291 |
+| `feat/randcore-main-protection-health` | 5 | 782 |
+| `feat/randcore-repository-governance-v1` | 2 | 782 |
+| `feat/randcore-runtime-v2` | 0 | 823 |
+| `feat/randmcp-gateway-chat-v1` | 0 | 747 |
+| `feat/randmind-learning-block2` | 12 | 952 |
+| `feat/randmind-v2` | 1 | 770 |
+| `feat/randresearch-v1` | 0 | 770 |
+| `feat/randsale2d-editor-facchini` | 15 | 856 |
+| `feat/randsale2d-history` | 8 | 856 |
+| `feat/randsale2d-persistence` | 14 | 856 |
+| `feat/randsale2d-planning-integration` | 2 | 856 |
+| `feat/randsale2d-randai-proposal` | 12 | 856 |
