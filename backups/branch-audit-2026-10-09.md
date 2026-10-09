@@ -552,3 +552,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `chore/remove-zombie-code` | 0 | 1755 |
 | `chore/revert-randailive-misplaced-changes` | 0 | 481 |
 | `chore/supabase-space-separation` | 0 | 135 |
+
+## Reconciliation batch 2
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `chore/update-hotelgio-locations-sheet-20260928` | 1 | 313 |
+| `chore/vercel-controlled-deploys` | 1 | 1835 |
+| `chore/wake-rand-ecosystem` | 0 | 576 |
+| `ci/shared-contract-diagnostics` | 8 | 1527 |
+| `codex/phase-0-foundation-certification` | 0 | 844 |
+| `codex/phase-1-identity-authorization` | 4 | 849 |
+| `codex/phase-2-mobile-randui` | 6 | 849 |
+| `codex/phase-3-governed-resolve` | 12 | 849 |
+| `codex/phase-5-randcore-cadence` | 17 | 849 |
+| `cursor/fixed-header-scroll-da75` | 1 | 448 |
+| `cursor/home-widgets-da75` | 1 | 445 |
+| `cursor/ops-planning-ui-density-947b` | 3 | 461 |
