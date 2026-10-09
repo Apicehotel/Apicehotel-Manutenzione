@@ -88,7 +88,7 @@ La navigazione viene filtrata per permesso ma **nascondere un pulsante non equiv
 
 ### Densità dettagli operativi su smartphone
 
-Nei dettagli Segnalazione la gerarchia deve restare leggibile ma compatta: evitare intestazioni ripetute, mantenere le coppie brevi etichetta/valore sulla stessa riga dove possibile, ridurre i margini superflui e preservare foto, timeline, input e pulsanti accessibili. Il Dock con azione primaria resta fisso e i suoi touch target non devono essere ridotti. Le modifiche sono localizzate in `src/randapp/operational-detail.css` sotto `.rs-issue-detail`; verificare iOS/WebKit, tema chiaro/scuro e viewport stretti prima del merge.
+Nei dettagli Segnalazione la gerarchia deve restare leggibile ma compatta: evitare intestazioni ripetute, mantenere le coppie brevi etichetta/valore sulla stessa riga dove possibile, ridurre i margini superflui e preservare foto, timeline, input e pulsanti accessibili. Il Dock con azione primaria resta fisso e i suoi touch target non devono essere ridotti. Le modifiche sono localizzate in `src/randapp/operational-detail.css` sotto `.rs-issue-detail`; La testata e il pulsante menu in Focus Mode devono rispettare il maggiore tra `--rs-adaptive-safe-top` e `env(safe-area-inset-top)` per non finire sotto notch/Dynamic Island su iPhone. Verificare iOS/WebKit, tema chiaro/scuro e viewport stretti prima del merge.
 
 ## 6. Home operativa
 
