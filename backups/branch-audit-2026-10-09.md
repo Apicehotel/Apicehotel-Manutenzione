@@ -620,3 +620,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `offline/module-preload` | 8 | 918 |
 | `ops/pause-vercel-deployments` | 12 | 461 |
 | `perf/ocean-app-cache` | 0 | 462 |
+
+## Reconciliation batch 6
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `performance/consolidation-point-4` | 0 | 1699 |
+| `rand/block13-ecosystem-51-54` | 0 | 1351 |
+| `rand/block14-repo-radar-55-58-clean` | 0 | 1340 |
+| `rand/block14-repo-radar-55-58` | 10 | 1352 |
+| `rand/block15-core-health-59-62` | 0 | 1329 |
+| `rand/block16-operations-security-63-66` | 0 | 1314 |
+| `rand/block17-warehouse-integration-67` | 0 | 1305 |
+| `rand/block18-lts-68-70` | 0 | 1294 |
+| `rand/block22-randguide-74-80` | 0 | 1243 |
+| `rand/block23-randmind-81-86` | 0 | 1230 |
+| `rand/block24-randbrain-87-92` | 0 | 1203 |
+| `rand/block71-health-evidence-contract` | 0 | 1280 |
