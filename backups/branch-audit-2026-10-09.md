@@ -114,3 +114,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `cursor/readme-ops-density-docs-947b` | 1 | 460 |
 
 **Risultato batch:** 3 behind, 37 divergenti. Totale campione cumulativo dichiarato in chat 86; eventuali doppi conteggi da escludere nel riepilogo finale. Nessuna eliminazione o merge.
+
+## Step feat/feature — batch 1
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/block-25-randui-live` | 0 | 1201 |
+| `feat/block-26-randaudio` | 0 | 1200 |
+| `feat/block-27-viking` | 0 | 1199 |
+| `feat/block-28-product-completion` | 0 | 1198 |
+| `feat/consolidated-randui-standardization-v1` | 0 | 726 |
+| `feat/consumi-vercel` | 0 | 2265 |
+| `feat/contextual-randai-focus` | 0 | 334 |
+| `feat/hotelgio-telegram-history-backfill` | 0 | 491 |
+| `feat/i-miei-lavori` | 0 | 2261 |
+| `feat/interventi-detail` | 0 | 2389 |
+| `feat/nuovo-intervento-form` | 1 | 2388 |
+| `feat/pannello-consumi` | 0 | 2269 |
+| `feat/piece-decision` | 0 | 2403 |
+| `feat/planning-counts-operations-task` | 7 | 469 |
+| `feat/post-randui-randai-ui-foundation` | 1 | 785 |
+| `feat/prompts-chat-cursor-claude` | 7 | 23 |
+| `feat/prompts-chat-randskills` | 12 | 25 |
+| `feat/public-issue-link` | 0 | 2397 |
