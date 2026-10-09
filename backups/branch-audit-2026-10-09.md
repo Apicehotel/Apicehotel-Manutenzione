@@ -375,3 +375,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/photo-preview-layout-and-compression` | 0 | 2411 |
 | `fix/pin-auth-direct-db` | 0 | 159 |
 | `fix/planning-sale-new-booking` | 34 | 856 |
+
+## Fix batch 4
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/pr58-pr60-current-main` | 9 | 1837 |
+| `fix/profile-access-hotels` | 1 | 2487 |
+| `fix/profile-pin-menu` | 3 | 2492 |
+| `fix/public-issue-url-shadowing` | 0 | 2393 |
+| `fix/pwa-cache-refresh-v18` | 0 | 65 |
+| `fix/rand-mcp-governed-completion` | 0 | 225 |
+| `fix/randai-distributed-lease-hardening` | 0 | 1825 |
+| `fix/randai-guidance-contract-hardening` | 1 | 1857 |
+| `fix/randai-hardening-20260916` | 0 | 816 |
+| `fix/randai-jazz-temperature` | 5 | 1868 |
+| `fix/randai-lease-service-role-only` | 0 | 1823 |
+| `fix/randai-maintenance-schema-hardening` | 1 | 1862 |
+| `fix/randai-section-sensor-isolation` | 7 | 1867 |
+| `fix/randailive-follow-polish-v1` | 0 | 523 |
+| `fix/randailive-internal-route` | 0 | 563 |
+| `fix/randailive-melon-init-race` | 0 | 507 |
+| `fix/randailive-melon-scale-fit` | 0 | 503 |
+| `fix/randailive-mobile-world-v21` | 0 | 541 |
