@@ -352,3 +352,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/mobile-header-hotel-name-order` | 1 | 955 |
 | `fix/mobile-header-toolbar` | 1 | 956 |
 | `fix/mobile-home-presence-density` | 0 | 71 |
+
+## Fix batch 3
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/new-issue-form-photo-category` | 0 | 2434 |
+| `fix/ocean-browser-visual-gate` | 1 | 470 |
+| `fix/ocean-drawer-focus-stacking` | 0 | 180 |
+| `fix/ocean-pwa-build-freshness` | 2 | 168 |
+| `fix/operational-tags-bottom` | 0 | 373 |
+| `fix/ops-task-planning-actions` | 0 | 375 |
+| `fix/optimistic-issue-update` | 0 | 2409 |
+| `fix/phase249-hardening-20260916` | 0 | 845 |
+| `fix/photo-align-v2` | 0 | 2430 |
+| `fix/photo-button-vertical-align` | 0 | 2432 |
+| `fix/photo-button-visible` | 0 | 2423 |
+| `fix/photo-compression-black-image` | 0 | 2415 |
+| `fix/photo-input-hotelgio-pattern` | 0 | 2417 |
+| `fix/photo-pipeline-lightbox` | 4 | 2454 |
+| `fix/photo-pipeline-lightbox-clean` | 0 | 2453 |
+| `fix/photo-preview-layout-and-compression` | 0 | 2411 |
+| `fix/pin-auth-direct-db` | 0 | 159 |
+| `fix/planning-sale-new-booking` | 34 | 856 |
