@@ -272,3 +272,137 @@ html:not([data-theme='dark']) .rnx-chartcard__bar i{background:linear-gradient(1
 /* Filled action and active tab: bright purple instead of a dark ink. */
 html:not([data-theme='dark']){--rnx-action:#8e24aa}
 html:not([data-theme='dark']) .rnx-bottomnav__item.active .rnx-bottomnav__icon{background:#f3e5f5;color:#8e24aa}
+
+
+/* Mobile Ops / Planning repair (2026-10-09).
+   Keep the existing data, roles and actions; repair only page geometry. */
+@media (max-width: 767px) {
+  .rnx-content :is(.rv2-operations,.rv2-planning) {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) > * {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-pagehead {
+    min-height: 0;
+    padding: 4px 0 10px;
+    margin: 0;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-pagehead .rv2-eyebrow {
+    display: none;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-pagehead h1 {
+    margin: 0;
+    font-size: clamp(1.5rem,6vw,1.85rem);
+    line-height: 1.15;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-pagehead p {
+    margin: 6px 0 0;
+    font-size: .85rem;
+    line-height: 1.35;
+  }
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-choice-grid,
+  .rnx-content .rv2-operations .rv2-preview-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+  }
+  .rnx-content .rv2-operations .rv2-preview-grid > *,
+  .rnx-content :is(.rv2-operations,.rv2-planning) .rv2-choice-grid > * {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+  }
+  .rnx-content .rv2-operations .rv2-panel {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-auto-rows: max-content;
+    gap: 9px;
+    overflow: hidden;
+    min-width: 0;
+    padding: 12px;
+  }
+  .rnx-content .rv2-operations .rv2-panel__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .rnx-content .rv2-operations .rv2-panel__head > div > span { display: none; }
+  .rnx-content .rv2-operations .rv2-panel__head h2 {
+    margin: 0;
+    font-size: 1.06rem;
+    line-height: 1.3;
+  }
+  .rnx-content .rv2-operations .rv2-list {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 7px;
+    min-width: 0;
+  }
+  .rnx-content .rv2-operations .rv2-row {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: 24px minmax(0,1fr) auto;
+    align-items: start;
+    gap: 8px;
+    padding: 10px;
+    margin: 0;
+    text-align: left;
+    white-space: normal;
+  }
+  .rnx-content .rv2-operations .rv2-row__body {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+  .rnx-content .rv2-operations .rv2-row__body > :is(strong,small) {
+    display: block;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+  .rnx-content .rv2-operations .rv2-row__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+  .rnx-content .rv2-operations .rv2-status { white-space: nowrap; }
+  .rnx-content .rv2-operations .rv2-seeall {
+    justify-self: start;
+    max-width: 100%;
+    margin: 0;
+  }
+  .rnx-content .rv2-planning .rv2-planning-body {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    grid-auto-rows: max-content;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+  }
+}
