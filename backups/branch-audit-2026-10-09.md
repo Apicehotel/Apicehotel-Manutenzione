@@ -569,3 +569,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `cursor/fixed-header-scroll-da75` | 1 | 448 |
 | `cursor/home-widgets-da75` | 1 | 445 |
 | `cursor/ops-planning-ui-density-947b` | 3 | 461 |
+
+## Reconciliation batch 3
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `cursor/remove-planning-from-ops-task-1e9a` | 1 | 456 |
+| `cursor/remove-supplies-fab-da75` | 2 | 443 |
+| `cursor/task-hub-compact-stable-1e9a` | 5 | 450 |
+| `docs/automated-video-tutorials` | 5 | 1696 |
+| `docs/rand-radar-multisite-rule-20260915` | 0 | 817 |
+| `docs/randui-phase0-baseline` | 13 | 854 |
+| `docs/randui-phase1-audit` | 11 | 854 |
+| `docs/readme-sync-20261001` | 0 | 187 |
+| `docs/tutorial-video-prototype` | 3 | 1696 |
+| `feat/atheros-liquid-presence` | 0 | 82 |
+| `feat/consolidated-final-review` | 0 | 644 |
+| `feat/operational-detail-convergence` | 0 | 331 |
