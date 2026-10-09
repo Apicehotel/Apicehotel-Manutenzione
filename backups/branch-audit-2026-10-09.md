@@ -298,3 +298,11 @@ Il report è preliminare: non certifica tutti i branch.
 | `feature/ui-components-glass` | 6 | 1619 |
 | `feature/ui-components-theme-system` | 6 | 1619 |
 | `feature/ui-shell-foundation` | 9 | 1620 |
+
+## Step feat/feature — batch 9
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feature/unified-responsive-ui` | 0 | 2574 |
+| `feature/whatsapp-webhook-multihotel-parity` | 0 | 2499 |
+| `feature/widget-size-limits` | 3 | 2500 |
