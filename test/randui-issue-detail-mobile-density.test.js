@@ -21,3 +21,10 @@ test('documentation tracks the mobile detail density contract', async () => {
   const doc = await read('FRONTEND_ARCHITECTURE.md')
   assert.match(doc, /Densità dettagli operativi su smartphone/)
 })
+
+test('iPhone notch stays clear in Focus Mode header and fixed menu', async () => {
+  const css = await read('src/randapp/operational-detail.css')
+  assert.match(css, /--rs-focus-safe-top:\s*max\(var\(--rs-adaptive-safe-top, 0px\), env\(safe-area-inset-top, 0px\)\)/)
+  assert.match(css, /\.rs-operational-detail__head\s*\{[^}]*var\(--rs-focus-safe-top\)/s)
+  assert.match(css, /\.rs-operational-menu-trigger\s*\{[^}]*env\(safe-area-inset-top, 0px\)/s)
+})
