@@ -421,3 +421,25 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/shell-use-validated-directory` | 0 | 174 |
 | `fix/sidebar-cache` | 6 | 2493 |
 | `fix/structure-brand-colors` | 5 | 2887 |
+
+## Fix batch 6
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/structure-brand-colors-final` | 0 | 2887 |
+| `fix/structure-brand-colors-v2` | 0 | 2887 |
+| `fix/structure-brand-colors-work` | 0 | 2887 |
+| `fix/supplies-direct-api` | 0 | 139 |
+| `fix/supplies-selected-request-state` | 0 | 148 |
+| `fix/sync-missing-migrations` | 0 | 2500 |
+| `fix/task-housekeeping-cards` | 0 | 378 |
+| `fix/theme-aware-drawer` | 0 | 67 |
+| `fix/top-issue-focus-stable` | 0 | 369 |
+| `fix/top-issues-direct-detail` | 0 | 371 |
+| `fix/twilio-inbound-response` | 1 | 1164 |
+| `fix/usage-panel-pro-limit` | 0 | 2267 |
+| `fix/use-public-iss-name` | 0 | 2391 |
+| `fix/vercel-note-save` | 0 | 2263 |
+| `fix/vercel-production-official` | 0 | 1779 |
+| `fix/widget-title-layout-v2` | 6 | 2494 |
+| `fix/widget-titles` | 5 | 2495 |
