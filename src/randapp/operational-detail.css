@@ -149,3 +149,67 @@
   height: 100%;
   min-height: 0;
 }
+
+
+/* Issue detail, mobile: keep short metadata on one line instead of spending
+   an entire card row per label/value. Scoped to issue Focus Mode only. */
+@media (max-width: 767px) {
+  .rs-issue-detail .rs-operational-detail__head {
+    padding-top: calc(var(--rs-adaptive-safe-top, 0px) + 8px);
+    padding-bottom: 8px;
+  }
+  .rs-issue-detail .rs-operational-detail__eyebrow,
+  .rs-issue-detail .rs-operational-detail__head p {
+    display: none;
+  }
+  .rs-issue-detail .rs-operational-detail__body {
+    padding-top: 12px;
+    padding-bottom: 16px;
+  }
+  .rs-issue-detail .rs-detail-room {
+    margin-top: 10px;
+    margin-bottom: 5px;
+  }
+  .rs-issue-detail .rs-detail-desc {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+  .rs-issue-detail .rs-detail-origin {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  .rs-issue-detail .rs-meta-grid {
+    gap: 8px;
+    margin-block: 8px 12px;
+  }
+  .rs-issue-detail .rs-meta-grid > div {
+    min-width: 0;
+    padding: 10px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 2px;
+  }
+  .rs-issue-detail .rs-meta-grid dt,
+  .rs-issue-detail .rs-meta-grid dd {
+    margin: 0;
+    min-width: 0;
+  }
+  .rs-issue-detail .rs-meta-grid dd {
+    overflow-wrap: anywhere;
+  }
+  .rs-issue-detail .rs-operational-timeline {
+    margin-top: 12px;
+    margin-bottom: 14px;
+  }
+  .rs-issue-detail .rs-operational-timeline__event {
+    padding-bottom: 12px;
+  }
+  .rs-issue-detail .rs-operational-timeline__event img {
+    max-height: 280px;
+  }
+  .rs-issue-detail .rs-actions-stack {
+    gap: 10px;
+  }
+}

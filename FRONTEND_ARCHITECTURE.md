@@ -85,6 +85,11 @@ Una schermata non deve costruire una navbar propria.
 
 La navigazione viene filtrata per permesso ma **nascondere un pulsante non equivale ad autorizzare**: la sicurezza definitiva resta nelle policy/RPC Supabase.
 
+
+### Densità dettagli operativi su smartphone
+
+Nei dettagli Segnalazione la gerarchia deve restare leggibile ma compatta: evitare intestazioni ripetute, mantenere le coppie brevi etichetta/valore sulla stessa riga dove possibile, ridurre i margini superflui e preservare foto, timeline, input e pulsanti accessibili. Il Dock con azione primaria resta fisso e i suoi touch target non devono essere ridotti. Le modifiche sono localizzate in `src/randapp/operational-detail.css` sotto `.rs-issue-detail`; verificare iOS/WebKit, tema chiaro/scuro e viewport stretti prima del merge.
+
 ## 6. Home operativa
 
 `src/randapp/Home.jsx` non è più una dashboard widget trascinabile. È una coda di lavoro ordinata per priorità e ruolo.
