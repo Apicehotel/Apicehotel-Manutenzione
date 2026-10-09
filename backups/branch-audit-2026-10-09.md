@@ -137,3 +137,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/prompts-chat-cursor-claude` | 7 | 23 |
 | `feat/prompts-chat-randskills` | 12 | 25 |
 | `feat/public-issue-link` | 0 | 2397 |
+
+## Step feat/feature — batch 2
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/rand-final-repo-closure` | 29 | 856 |
+| `feat/rand-foundations-group1` | 20 | 856 |
+| `feat/rand-governance-v1` | 0 | 807 |
+| `feat/rand-mcp-capability-bridge` | 0 | 237 |
+| `feat/rand-mcp-foundation` | 9 | 252 |
+| `feat/rand-operational-group2` | 26 | 856 |
+| `feat/randai-block-27-context-envelope` | 0 | 1822 |
+| `feat/randai-block-27-exec` | 0 | 1814 |
+| `feat/randai-block-27-final` | 0 | 1822 |
+| `feat/randai-block-27-final-impl` | 0 | 1822 |
+| `feat/randai-block-27-main` | 0 | 1822 |
+| `feat/randai-block-27-operational-context` | 0 | 1822 |
+| `feat/randai-block-27-operational-context-impl` | 0 | 1822 |
+| `feat/randai-block-27-operational-context-v2` | 0 | 1822 |
+| `feat/randai-block-27-work` | 0 | 1822 |
+| `feat/randai-block-27` | 6 | 1822 |
+| `feat/randai-block-28-action-gateway` | 0 | 1799 |
+| `feat/randai-control-center-randui-v1` | 0 | 782 |
