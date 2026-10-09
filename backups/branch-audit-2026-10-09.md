@@ -603,3 +603,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/issue-detail-mobile-compact-lines` | 3 | 1 |
 | `fix/ocean-stable-main` | 0 | 380 |
 | `fix/randui-home-ios-card-overlap` | 5 | 0 |
+
+## Reconciliation batch 5
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/randui-mobile-gutter-home-empty` | 3 | 954 |
+| `fix-randui-planning-mobile-visual-pr-temp` | 0 | 961 |
+| `fix-rifornimenti-catalogo-reale` | 0 | 1077 |
+| `gh-pages` | 4 | 131 |
+| `multi-hotel/consolidation-point-5` | 11 | 1698 |
+| `noop` | 0 | 1621 |
+| `noop-unused` | 0 | 1848 |
+| `ocean-deploy` | 2 | 969 |
+| `offline/bootstrap-recovery` | 3 | 919 |
+| `offline/module-preload` | 8 | 918 |
+| `ops/pause-vercel-deployments` | 12 | 461 |
+| `perf/ocean-app-cache` | 0 | 462 |
