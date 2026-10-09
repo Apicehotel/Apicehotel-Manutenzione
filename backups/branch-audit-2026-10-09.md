@@ -252,3 +252,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feature/free-widget-grid` | 3 | 2499 |
 | `feature/home-1x3-personalize-menu` | 4 | 2504 |
 | `feature/home-assistant-preview` | 31 | 1871 |
+
+## Step feat/feature — batch 7
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feature/home-widget-grid` | 8 | 2505 |
+| `feature/housekeeping-privacy-slope` | 28 | 2508 |
+| `feature/mobile-npm-installer` | 1 | 2498 |
+| `feature/navigation-profile-cleanup` | 3 | 2505 |
+| `feature/new-issue-form-polish` | 3 | 2448 |
+| `feature/photo-gallery-file-choice` | 0 | 2427 |
+| `feature/randai-autonomy-recovery` | 10 | 1847 |
+| `feature/randai-console` | 14 | 2887 |
+| `feature/randai-console-foundation` | 4 | 1558 |
+| `feature/randai-console-v2` | 7 | 1889 |
+| `feature/randai-contextual-integration` | 7 | 1618 |
+| `feature/randai-conversation-memory` | 8 | 1866 |
+| `feature/randai-core-tool-registry` | 9 | 1865 |
+| `feature/randai-discovery-supervisor` | 10 | 1843 |
+| `feature/randai-durable-runtime` | 9 | 1861 |
+| `feature/randai-evals-multi-agent` | 10 | 1856 |
+| `feature/randai-hvac-routing` | 6 | 1870 |
+| `feature/randai-issue-suggestions` | 7 | 1869 |
