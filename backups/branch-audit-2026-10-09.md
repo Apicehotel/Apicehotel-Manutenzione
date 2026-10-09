@@ -535,3 +535,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `randui/point4-ocean-preview` | 0 | 894 |
 | `randui/unified-audit-sensors-ocean` | 0 | 891 |
 | `randui/v2-full-completion` | 0 | 857 |
+
+## Reconciliation batch 1
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `audit/zombie-code-20260831` | 2 | 1768 |
+| `backup/randui-pre-rebuild-20260916` | 0 | 844 |
+| `chore/digitalocean-controlled-deploy` | 1 | 1836 |
+| `chore/final-ui-css-consolidation` | 0 | 1739 |
+| `chore/freeze-agent-main` | 3 | 917 |
+| `chore/integrate-impeccable-agent-reviews` | 0 | 472 |
+| `chore/pause-vercel-git-deploys` | 0 | 388 |
+| `chore/rand-agent-rules-consolidation-20261009` | 7 | 4 |
+| `chore/randapp-agent-toolchain` | 85 | 1865 |
+| `chore/remove-zombie-code` | 0 | 1755 |
+| `chore/revert-randailive-misplaced-changes` | 0 | 481 |
+| `chore/supabase-space-separation` | 0 | 135 |
