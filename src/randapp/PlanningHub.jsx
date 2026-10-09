@@ -78,7 +78,7 @@ export default function PlanningHub({hotel,user,createRequest=null,allowSale=tru
 
       <div className="rv2-planning-body">
         {!section ? <>
-          <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>
+          {(todayWork.length > 0 || todayEventSales.length > 0) && <PlanningTodaySummary workCount={todayWork.length} saleCount={todayEventSales.length} showWork={canSeeWork} showSale={canSeeSale}/>}
           {canSeeSale&&<SaleEventCalendar bookings={bookings}/>}
         </> : section==='work'&&canSeeWork ? <PlanningWorkSimple hotel={hotel} user={user} openRequest={workCreateSignal}/> : section==='sale'&&canSeeSale ? <PlanningSaleSimple hotel={hotel} user={user} openRequest={saleCreateSignal}/> : null}
       </div>
