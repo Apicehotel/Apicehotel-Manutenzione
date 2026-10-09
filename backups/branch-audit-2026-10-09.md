@@ -229,3 +229,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/randvisual-block2` | 7 | 856 |
 | `feat/reliability-audit-reversible-operations` | 7 | 1622 |
 | `feat/reliability-authz-rls-matrix` | 4 | 1624 |
+
+## Step feat/feature — batch 6
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/reliability-offline-concurrency` | 0 | 1621 |
+| `feat/reliability-offline-concurrency-2` | 12 | 1621 |
+| `feat/reliability-safe-write-engine` | 10 | 1625 |
+| `feat/reliability-unified-validation` | 11 | 1626 |
+| `feat/richiedi-tecnico` | 0 | 2401 |
+| `feat/room-status-suggestion` | 0 | 2419 |
+| `feat/security-intelligence-block3` | 0 | 942 |
+| `feat/tanstack-query-foundation` | 0 | 308 |
+| `feat/tecnico-status-on-ask` | 0 | 2395 |
+| `feat/telegram-backup-tickets` | 0 | 493 |
+| `feat/trasforma-urgenza` | 0 | 2259 |
+| `feat/wa-photo-link` | 0 | 2399 |
+| `feature/adaptive-layout-system` | 2 | 2503 |
+| `feature/adaptive-quick-actions` | 6 | 2498 |
+| `feature/base-multihotel` | 8 | 2887 |
+| `feature/free-widget-grid` | 3 | 2499 |
+| `feature/home-1x3-personalize-menu` | 4 | 2504 |
+| `feature/home-assistant-preview` | 31 | 1871 |
