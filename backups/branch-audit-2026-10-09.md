@@ -512,3 +512,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `randai/block-30-completion-gateway` | 0 | 1785 |
 | `randai/block-30-issue-workspace` | 0 | 1787 |
 | `randai/block-31-operational-learning` | 0 | 1781 |
+
+## RandAI/RandUI batch 4
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `randai/block-32-operational-prioritization` | 0 | 1769 |
+| `randai/consolidate-1-16-foundation` | 0 | 1489 |
+| `randai/group1-guardrails-observability` | 11 | 922 |
+| `randai/group2-knowledge-memory-rag` | 8 | 921 |
+| `randai/group3-durable-runtime` | 1 | 920 |
+| `randai/openai-plugins-governance` | 0 | 865 |
+| `randai/randcore-health-anon-acl` | 0 | 855 |
+| `randai/wp1-whatsapp-channel-foundation` | 0 | 1383 |
+| `randui/implementable-preview-ocean` | 34 | 922 |
+| `randui/login-navigation-ocean` | 1 | 893 |
+| `randui/point1-navigation-actions` | 0 | 907 |
+| `randui/point2-clean` | 3 | 907 |
+| `randui/point2-page-audit` | 3 | 907 |
+| `randui/point2-unified-page` | 0 | 901 |
+| `randui/point3-sensors` | 0 | 898 |
+| `randui/point4-ocean-preview` | 0 | 894 |
+| `randui/unified-audit-sensors-ocean` | 0 | 891 |
+| `randui/v2-full-completion` | 0 | 857 |
