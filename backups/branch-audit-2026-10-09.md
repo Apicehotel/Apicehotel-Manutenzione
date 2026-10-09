@@ -69,3 +69,48 @@ Il repository aveva 480 branch prima dell'aggiunta del branch di backup; success
 5. Cancellare soltanto dopo prova di recuperabilità del backup; aggiornare questo report con data, SHA, esito e motivo per ogni branch.
 
 Il report è preliminare: non certifica tutti i branch.
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `codex/agent-native-action-contract` | 0 | 357 |
+| `codex/fix-operations-mobile-spacing` | 14 | 849 |
+| `codex/fix-supply-portal-chunking` | 11 | 849 |
+| `codex/group-3-release-readiness` | 11 | 849 |
+| `codex/multihotel-feature-parity` | 13 | 849 |
+| `codex/point-4-tiled-collision` | 0 | 486 |
+| `codex/point-10-legacy-cleanup` | 10 | 849 |
+| `codex/punto-7-gateway-core` | 0 | 852 |
+| `codex/punto-7-randgateway` | 2 | 854 |
+| `codex/randai-dashboard-mobile-actions` | 1 | 1182 |
+| `codex/randai-theme-control` | 1 | 1181 |
+| `codex/randai-unified-admin-center` | 1 | 1180 |
+| `codex/randailive-map-alignment` | 3 | 485 |
+| `cursor/close-non-wa-gaps-1e9a` | 5 | 446 |
+| `cursor/fix-ocean-login-banner-loading-1e9a` | 1 | 458 |
+| `cursor/fix-ops-title-flex-space-1e9a` | 1 | 455 |
+| `cursor/fix-planning-task-ops-order-1e9a` | 1 | 457 |
+| `cursor/fix-title-flex-basis-all-pages-1e9a` | 1 | 454 |
+| `cursor/home-desk-desktop-da75` | 1 | 443 |
+| `cursor/home-first-viewport-da75` | 2 | 444 |
+| `cursor/home-presence-busy-da75` | 2 | 447 |
+| `cursor/honest-list-states-da75` | 1 | 450 |
+| `cursor/hub-choice-title-nowrap-1e9a` | 2 | 453 |
+| `cursor/hub-preview-fast-load-1e9a` | 2 | 453 |
+| `cursor/login-exact-name-match-1e9a` | 1 | 459 |
+| `cursor/nav-switch-perf-446a` | 1 | 348 |
+| `cursor/ntfy-deploy-smoke-a131` | 1 | 349 |
+| `cursor/ntfy-gestione-a131` | 4 | 351 |
+| `cursor/ntfy-selettore-struttura-a131` | 1 | 350 |
+| `cursor/ops-task-preview-cards-1e9a` | 2 | 454 |
+| `cursor/page-load-deep-dive-e340` | 1 | 352 |
+| `cursor/page-load-deep-hardening-e340` | 1 | 353 |
+| `cursor/page-load-hardening-e340` | 3 | 354 |
+| `cursor/randai-chat-page-da75` | 2 | 441 |
+| `cursor/randai-effective-assistant-1e9a` | 1 | 438 |
+| `cursor/randai-fullpage-fix-da75` | 1 | 436 |
+| `cursor/randai-page-layout-da75` | 1 | 437 |
+| `cursor/randai-segnalazioni-canonical-1e9a` | 2 | 439 |
+| `cursor/randai-tab-chat-da75` | 1 | 442 |
+| `cursor/readme-ops-density-docs-947b` | 1 | 460 |
+
+**Risultato batch:** 3 behind, 37 divergenti. Totale campione cumulativo dichiarato in chat 86; eventuali doppi conteggi da escludere nel riepilogo finale. Nessuna eliminazione o merge.
