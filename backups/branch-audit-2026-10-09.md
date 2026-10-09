@@ -443,3 +443,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/vercel-production-official` | 0 | 1779 |
 | `fix/widget-title-layout-v2` | 6 | 2494 |
 | `fix/widget-titles` | 5 | 2495 |
+
+## RandAI/RandUI batch 1
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `randai/agent-supply-chain-security` | 8 | 917 |
+| `randai/block1-foundation-hardening` | 5 | 1528 |
+| `randai/block2-canonical-5-8` | 16 | 1527 |
+| `randai/block2-runtime-context-hardening` | 0 | 1515 |
+| `randai/block4-13-16-hardening` | 9 | 1527 |
+| `randai/block5-17-20` | 0 | 1470 |
+| `randai/block6-21-24` | 0 | 1457 |
+| `randai/block7-25-26` | 0 | 1447 |
+| `randai/block8-27-30-reliability` | 0 | 1439 |
+| `randai/block8-reliability-27-30` | 7 | 1446 |
+| `randai/block9-31-34` | 0 | 1438 |
+| `randai/block9-canonical` | 0 | 1438 |
+| `randai/block9-canonical-31-34` | 0 | 1430 |
+| `randai/block9-code` | 0 | 1438 |
+| `randai/block9-code-v2` | 0 | 1438 |
+| `randai/block9-code-v3` | 0 | 1438 |
+| `randai/block9-code-v4` | 0 | 1438 |
+| `randai/block9-current` | 0 | 1438 |
