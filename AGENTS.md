@@ -8,7 +8,7 @@ This file is the canonical engineering contract for AI coding agents working on 
 - RandApp is multi-hotel: Hotel Giò, Chocohotel and Hotel Il Brigantino. Operational data must remain isolated by `hotel_id` unless an explicitly authorized cross-hotel admin view is required.
 - Navigation is not authorization. Final authorization belongs to Supabase/RLS/RPC/Edge Function checks.
 - The global `+` is the single creation entry point for operational creation flows unless a product decision explicitly says otherwise.
-- The bottom navigation stays compact and mobile-first; Home remains central where the active shell uses the five-item layout.
+- The mobile bottom navigation stays compact and Home remains central in the five-item shell. Preserve the active, role-specific navigation contract and test it before changing labels, order or destinations.
 - Existing six-digit notification codes are permanent once assigned. Do not mutate them casually.
 
 ## Working method
@@ -20,7 +20,7 @@ This file is the canonical engineering contract for AI coding agents working on 
 5. Never hard-code generated production UUIDs in replay/data migrations when a stable semantic lookup is available.
 6. Do not introduce a dependency when the platform API or existing dependency already solves the problem cleanly.
 7. Before declaring completion, run or rely on the repository quality gates and verify the actual CI result.
-8. For every substantive PR, update `README.md` to the current operational state (no zombie docs; detail stays in dedicated files).
+8. Update `README.md` when a change affects the user-visible product state, operations, deployment or architecture. For isolated refactors, tests and styling fixes, update only the relevant owning documentation; never duplicate unchanged status text.
 
 ## Shared action rules
 
@@ -101,7 +101,7 @@ Never place service-role keys, ntfy secret topics, private tokens or credentials
 
 ## Testing contract
 
-For non-trivial changes, the expected quality path is:
+Use change-scoped local checks first, followed by the mandatory CI gate on the PR. For security, auth, RLS, database migrations, notifications, offline replay or deployment changes, run the relevant focused security/operational tests in addition to full CI. For CSS-only changes, run CSS/UI regression tests, a build and visual checks at affected viewports; never claim cross-device validation from a build alone.\n\nFull repository validation (CI remains authoritative):
 
 ```bash
 npm ci
