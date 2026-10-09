@@ -688,3 +688,13 @@ Il report è preliminare: non certifica tutti i branch.
 | `tmp-main-into-consolidated-2` | 0 | 780 |
 | `tmp-main-into-consolidated-final` | 0 | 780 |
 | `ui/login-caricamento` | 0 | 10 |
+
+## Reconciliation batch 10
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `ui/struttura-responsive` | 0 | 12 |
+| `ui/switch-tema` | 0 | 9 |
+| `unused` | 0 | 969 |
+| `verify/brand-colors-final` | 7 | 2887 |
+| `verify/randapp-switch-logos` | 1 | 2833 |
