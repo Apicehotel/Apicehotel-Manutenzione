@@ -275,3 +275,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feature/randai-evals-multi-agent` | 10 | 1856 |
 | `feature/randai-hvac-routing` | 6 | 1870 |
 | `feature/randai-issue-suggestions` | 7 | 1869 |
+
+## Step feat/feature — batch 8
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feature/randai-maintenance-knowledge` | 8 | 1863 |
+| `feature/randai-memory-context` | 10 | 1860 |
+| `feature/randai-model-router-knowledge-gaps` | 11 | 1859 |
+| `feature/randai-proactive-control-center` | 10 | 1842 |
+| `feature/randai-project-observability` | 17 | 1848 |
+| `feature/randai-role-auth` | 0 | 1873 |
+| `feature/randai-skills-directives` | 10 | 1864 |
+| `feature/randai-smart-maintenance-guidance` | 7 | 1858 |
+| `feature/randai-software-learning` | 9 | 1846 |
+| `feature/randapp-dark-shell-rebuild` | 0 | 2529 |
+| `feature/randui-telegram-navigation` | 18 | 959 |
+| `feature/randui-v1-block3-migration` | 0 | 992 |
+| `feature/randui-v1-unification` | 0 | 996 |
+| `feature/randui-visual-unification` | 0 | 970 |
+| `feature/swipe-menu-navbar-slot` | 38 | 1617 |
+| `feature/ui-components-glass` | 6 | 1619 |
+| `feature/ui-components-theme-system` | 6 | 1619 |
+| `feature/ui-shell-foundation` | 9 | 1620 |
