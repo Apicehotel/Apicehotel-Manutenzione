@@ -654,3 +654,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `randui-adaptive-interests-layout` | 0 | 1104 |
 | `randui-home-operational-density` | 0 | 1091 |
 | `randvisual-engine-block4` | 0 | 1134 |
+
+## Reconciliation batch 8
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `refactor/fullscreen-detail-pages` | 0 | 342 |
+| `refactor/randui-material-css-cascade-guard` | 0 | 5 |
+| `refactor/react-structure-consolidation` | 0 | 1730 |
+| `refactor/runtime-zombie-cleanup` | 0 | 322 |
+| `release/final-readiness-freeze` | 0 | 316 |
+| `release/structure-brand-colors` | 6 | 2836 |
+| `revert/ocean-cache-v15` | 9 | 461 |
+| `safety/pre-housekeeping-privacy-20260825` | 0 | 2508 |
+| `safety/randapp-before-insert-patch` | 0 | 2531 |
+| `security/consolidation-point-3` | 0 | 1713 |
+| `security/point-3-auth-recovery` | 7 | 1729 |
+| `security/revoke-anon-randai-rpcs` | 1 | 1728 |
