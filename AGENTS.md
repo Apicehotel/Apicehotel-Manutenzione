@@ -7,9 +7,22 @@ This file is the canonical engineering contract for AI coding agents working on 
 - Target platforms are always iOS, Android and Windows. Every UI, layout, dependency and test decision must be evaluated across all three.
 - RandApp is multi-hotel: Hotel Giò, Chocohotel and Hotel Il Brigantino. Operational data must remain isolated by `hotel_id` unless an explicitly authorized cross-hotel admin view is required.
 - Navigation is not authorization. Final authorization belongs to Supabase/RLS/RPC/Edge Function checks.
-- The global `+` is the single creation entry point for operational creation flows unless a product decision explicitly says otherwise.
+- Respect the active authorized creation flows and their product tests. Do not reintroduce retired creation controls or force a global `+` where the current approved UI uses an alternate entry point.
 - The mobile bottom navigation stays compact and Home remains central in the five-item shell. Preserve the active, role-specific navigation contract and test it before changing labels, order or destinations.
 - Existing six-digit notification codes are permanent once assigned. Do not mutate them casually.
+
+## Rule freshness and evidence
+
+- This file is the authority for engineering safety and product invariants, not a frozen inventory of past implementation details.
+- Determine the current source of truth from the active code paths, dependency graph, migrations, CI workflows and recent merged PRs **before** applying a historical instruction. Never assume a retired route, CSS layer, UI shell, worker or integration still exists.
+- Classify legacy guidance as CURRENT (keep), STALE (rewrite from evidence), DUPLICATE (point to canonical owner) or UNVERIFIED (inspect first). Do not delete safeguards solely because they mention older technology.
+- Rewrite tests that assert outdated prose, layout snapshots or implementation names when the underlying contract has legitimately changed. Replace them with assertions on meaningful behavior, security boundaries or actual imports. Never weaken tests merely to make CI green.
+- Every policy or test update must state the reason, current evidence, scope and rollback. If evidence is insufficient, leave the rule and record the uncertainty.
+- Prefer one canonical rule in `AGENTS.md` with short references from `CLAUDE.md`, Copilot and Cursor instructions; avoid copying large policy blocks across agents.
+- Keep an architectural decision only while its invariant is relevant. Move implementation history into changelogs, not active mandatory instructions.
+- During a UI-only change, protect active navigation, role access, PWA, theme, responsive behavior, reduced motion and touch targets; do not reuse deprecated mockups as product acceptance criteria.
+- A green CI run is required but is not proof of physical device behavior. For visual changes, compare the existing UI with the changed UI using matching viewport and theme; stop if an unrelated regression appears.
+- Respect the protected workflow: branch and PR, review, relevant checks, and no automatic push, merge or production deploy on `main`.
 
 ## Working method
 
