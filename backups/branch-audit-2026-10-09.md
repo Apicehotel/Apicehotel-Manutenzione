@@ -206,3 +206,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/randsale2d-persistence` | 14 | 856 |
 | `feat/randsale2d-planning-integration` | 2 | 856 |
 | `feat/randsale2d-randai-proposal` | 12 | 856 |
+
+## Step feat/feature — batch 5
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/randskills-foundation-block1` | 20 | 954 |
+| `feat/randskills-governance-block2` | 0 | 924 |
+| `feat/randskills-router-block1` | 0 | 933 |
+| `feat/randskills-unified-manager` | 0 | 214 |
+| `feat/randspec-v1` | 0 | 854 |
+| `feat/randui-edera-theme-engine` | 190 | 563 |
+| `feat/randui-free-library-integration` | 3 | 198 |
+| `feat/randui-gentelella-rebuild` | 0 | 129 |
+| `feat/randui-mobile-demo` | 1 | 26 |
+| `feat/randui-next-home-rebuild` | 0 | 26 |
+| `feat/randui-next-rebuild` | 0 | 27 |
+| `feat/randui-real-home-showcase` | 0 | 194 |
+| `feat/randui-rebuild-v1` | 0 | 827 |
+| `feat/randui-standardization-v1` | 9 | 780 |
+| `feat/randui-v2-from-zero` | 0 | 85 |
+| `feat/randvisual-block2` | 7 | 856 |
+| `feat/reliability-audit-reversible-operations` | 7 | 1622 |
+| `feat/reliability-authz-rls-matrix` | 4 | 1624 |
