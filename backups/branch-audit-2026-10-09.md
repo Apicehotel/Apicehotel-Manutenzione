@@ -398,3 +398,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `fix/randailive-melon-init-race` | 0 | 507 |
 | `fix/randailive-melon-scale-fit` | 0 | 503 |
 | `fix/randailive-mobile-world-v21` | 0 | 541 |
+
+## Fix batch 5
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/randapp-authoritative-login-identity` | 2 | 1848 |
+| `fix/randapp-ios-module-recovery` | 0 | 1852 |
+| `fix/randapp-runtime-nav-cleanup` | 0 | 17 |
+| `fix/randapp-session-user-identity` | 0 | 1848 |
+| `fix/randchat-anon-acl` | 3 | 1060 |
+| `fix/randchat-dm-id-ambiguity` | 2 | 1058 |
+| `fix/randchat-single-screen` | 7 | 1057 |
+| `fix/randcore-heartbeat-direct-db` | 0 | 132 |
+| `fix/randui-planning-mobile-visual` | 0 | 960 |
+| `fix/restore-native-photo-picker` | 0 | 2425 |
+| `fix/restore-vercel-git-deploys` | 0 | 555 |
+| `fix/security-block37-rpc-execute` | 3 | 1623 |
+| `fix/session-recovery-current-main` | 4 | 1837 |
+| `fix/sheets-above-bottom-nav` | 0 | 347 |
+| `fix/shell-directory-resilience` | 3 | 193 |
+| `fix/shell-use-validated-directory` | 0 | 174 |
+| `fix/sidebar-cache` | 6 | 2493 |
+| `fix/structure-brand-colors` | 5 | 2887 |
