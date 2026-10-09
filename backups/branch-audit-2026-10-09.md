@@ -586,3 +586,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/atheros-liquid-presence` | 0 | 82 |
 | `feat/consolidated-final-review` | 0 | 644 |
 | `feat/operational-detail-convergence` | 0 | 331 |
+
+## Reconciliation batch 4
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/operational-detail-focus` | 0 | 340 |
+| `feat/operational-dock` | 0 | 338 |
+| `feat/operational-timeline` | 0 | 336 |
+| `feat/rand-ecosystem-heartbeats` | 0 | 592 |
+| `feature/randai-smart-maintenance-guided-procedures` | 8 | 1858 |
+| `feature-randdesktop-installer` | 0 | 1024 |
+| `feature-randdesktop-printing` | 0 | 1031 |
+| `feature-rifornimenti-piano-operativo` | 0 | 1063 |
+| `feature-segnalazioni-contesto-operativo` | 13 | 1062 |
+| `fix/issue-detail-mobile-compact-lines` | 3 | 1 |
+| `fix/ocean-stable-main` | 0 | 380 |
+| `fix/randui-home-ios-card-overlap` | 5 | 0 |
