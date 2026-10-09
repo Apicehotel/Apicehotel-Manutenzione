@@ -671,3 +671,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `security/consolidation-point-3` | 0 | 1713 |
 | `security/point-3-auth-recovery` | 7 | 1729 |
 | `security/revoke-anon-randai-rpcs` | 1 | 1728 |
+
+## Reconciliation batch 9
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `step2-rifornimenti-catalogo-hotelgio` | 0 | 1086 |
+| `test/home-dashboard-templates` | 8 | 954 |
+| `test/operational-chaos-hardening` | 0 | 319 |
+| `test/randai-e2e-hardening` | 0 | 1841 |
+| `test/randai-fault-injection-2` | 6 | 1840 |
+| `test/randai-hardening-full` | 3 | 1841 |
+| `test/randai-hardening-full-3` | 11 | 1839 |
+| `test-ignore` | 0 | 2508 |
+| `tmp-main-into-consolidated` | 0 | 780 |
+| `tmp-main-into-consolidated-2` | 0 | 780 |
+| `tmp-main-into-consolidated-final` | 0 | 780 |
+| `ui/login-caricamento` | 0 | 10 |
