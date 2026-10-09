@@ -637,3 +637,20 @@ Il report è preliminare: non certifica tutti i branch.
 | `rand/block23-randmind-81-86` | 0 | 1230 |
 | `rand/block24-randbrain-87-92` | 0 | 1203 |
 | `rand/block71-health-evidence-contract` | 0 | 1280 |
+
+## Reconciliation batch 7
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `rand/block72-external-evidence-bridge` | 0 | 1269 |
+| `rand/block73-full-health-final-gate` | 0 | 1257 |
+| `randagent-runtime-block1` | 4 | 1147 |
+| `randchange-visualqa-block6` | 0 | 1119 |
+| `randcore-visual-intelligence-block5` | 0 | 1125 |
+| `randmind-continuity-model-router-block3` | 9 | 1145 |
+| `randradar/awesome-scalability-source-20260924` | 0 | 319 |
+| `randradar/full-evolution-scan` | 6 | 923 |
+| `randtool-permission-block2` | 6 | 1146 |
+| `randui-adaptive-interests-layout` | 0 | 1104 |
+| `randui-home-operational-density` | 0 | 1091 |
+| `randvisual-engine-block4` | 0 | 1134 |
