@@ -27,6 +27,7 @@
   margin: 0 !important;
 }
 .rs-operational-detail {
+  --rs-focus-safe-top: max(var(--rs-adaptive-safe-top, 0px), env(safe-area-inset-top, 0px));
   width: 100%;
   height: var(--rs-app-viewport-height);
   min-height: var(--rs-app-viewport-min-height);
@@ -44,7 +45,7 @@
   backdrop-filter: blur(18px);
 }
 .rs-operational-detail__head {
-  padding: calc(var(--rs-adaptive-safe-top, 0px) + 12px) max(18px, var(--rs-adaptive-safe-right, 0px)) 12px max(18px, var(--rs-adaptive-safe-left, 0px));
+  padding: calc(var(--rs-focus-safe-top) + 12px) max(18px, var(--rs-adaptive-safe-right, 0px)) 12px max(18px, var(--rs-adaptive-safe-left, 0px));
   border-bottom: 1px solid var(--rs-line);
 }
 .rs-operational-detail__eyebrow {
@@ -89,7 +90,7 @@
   grid-column: 1 / -1;
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  .rs-operational-detail__head { padding-top: max(8px, var(--rs-adaptive-safe-top, 0px)); padding-bottom: 8px; }
+  .rs-operational-detail__head { padding-top: max(8px, var(--rs-focus-safe-top)); padding-bottom: 8px; }
   .rs-operational-detail__body { padding-top: 10px; padding-bottom: 10px; }
   .rs-operational-detail__footer { padding-top: 6px; padding-bottom: calc(6px + var(--rs-adaptive-safe-bottom, 0px)); }
 }
@@ -106,7 +107,7 @@
    Shell owns this trigger; the existing drawer remains the single menu owner. */
 .rs-operational-menu-trigger {
   position: fixed;
-  top: calc(var(--rs-adaptive-safe-top, 0px) + 10px);
+  top: calc(max(var(--rs-adaptive-safe-top, 0px), env(safe-area-inset-top, 0px)) + 10px);
   right: max(14px, calc(var(--rs-adaptive-safe-right, 0px) + 10px));
   z-index: 88;
   width: max(var(--rs-adaptive-touch-min, 44px), 44px);
@@ -155,7 +156,7 @@
    an entire card row per label/value. Scoped to issue Focus Mode only. */
 @media (max-width: 767px) {
   .rs-issue-detail .rs-operational-detail__head {
-    padding-top: calc(var(--rs-adaptive-safe-top, 0px) + 8px);
+    padding-top: calc(var(--rs-focus-safe-top) + 8px);
     padding-bottom: 8px;
   }
   .rs-issue-detail .rs-operational-detail__eyebrow,
