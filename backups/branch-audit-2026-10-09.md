@@ -160,3 +160,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feat/randai-block-27` | 6 | 1822 |
 | `feat/randai-block-28-action-gateway` | 0 | 1799 |
 | `feat/randai-control-center-randui-v1` | 0 | 782 |
+
+## Step feat/feature — batch 3
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/randai-hybrid-verification` | 0 | 1165 |
+| `feat/randai-native-surface-v1` | 0 | 785 |
+| `feat/randai-point-3-issue-operations` | 13 | 1543 |
+| `feat/randai-point-4-technician-dispatch` | 16 | 1542 |
+| `feat/randai-point-5-control-center` | 10 | 1541 |
+| `feat/randai-repository-registry` | 0 | 305 |
+| `feat/randai-runtime-hitl-v1` | 0 | 747 |
+| `feat/randailive-living-hotel-v2` | 0 | 548 |
+| `feat/randailive-melon-hotel-v1` | 0 | 510 |
+| `feat/randailive-phaser-grid-yuka` | 0 | 529 |
+| `feat/randailive-pixel-world` | 0 | 567 |
+| `feat/randapp-context-scope-guard` | 14 | 1628 |
+| `feat/randapp-context-scope-guard-v2` | 6 | 1627 |
+| `feat/randapp-live-runtime` | 0 | 573 |
+| `feat/randapp-reliability-foundation` | 5 | 1628 |
+| `feat/randarchitecture-block3` | 14 | 856 |
+| `feat/randchat-group-a` | 20 | 1062 |
+| `feat/randchat-group-b` | 19 | 1061 |
