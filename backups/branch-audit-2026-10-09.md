@@ -466,3 +466,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `randai/block9-code-v3` | 0 | 1438 |
 | `randai/block9-code-v4` | 0 | 1438 |
 | `randai/block9-current` | 0 | 1438 |
+
+## RandAI/RandUI batch 2
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `randai/block9-current-2` | 0 | 1438 |
+| `randai/block9-current-3` | 0 | 1438 |
+| `randai/block9-final-31-34` | 0 | 1438 |
+| `randai/block9-implementation` | 0 | 1438 |
+| `randai/block9-mainline` | 0 | 1438 |
+| `randai/block9-now` | 0 | 1438 |
+| `randai/block9-prod-31-34` | 0 | 1438 |
+| `randai/block9-prod-hardening` | 0 | 1438 |
+| `randai/block9-reliability-31-34-final` | 0 | 1438 |
+| `randai/block9-reliability-31-34-v2` | 0 | 1438 |
+| `randai/block9-reliability-31-34` | 0 | 1438 |
+| `randai/block9-single` | 0 | 1438 |
+| `randai/block9-work` | 0 | 1438 |
+| `randai/block10-35-38` | 0 | 1421 |
+| `randai/block11-39-42` | 0 | 1407 |
+| `randai/block12-43-46` | 0 | 1396 |
+| `randai/block12bis-47-50` | 0 | 1390 |
+| `randai/block13-live-suggestions` | 3 | 1388 |
