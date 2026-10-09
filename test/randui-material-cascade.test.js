@@ -28,8 +28,10 @@ test('Material cascade prevents duplicate sidebar search selectors and global ov
   assert.equal(css.split(selector).length - 1, 1)
   // Additional scoped mobile overrides may be required to preserve the Material design.
   // Guard the actual failure mode instead of a global magic number of !important rules.
-  const mobile = css.slice(css.indexOf('/* Mobile Home: card headers remain inside'))
-  assert.ok(mobile.length > 0, 'Mobile Home fix must remain present')
+  const marker = '/* Mobile Home: card headers remain inside'
+  const start = css.indexOf(marker)
+  assert.ok(start >= 0, 'Mobile Home fix must remain present')
+  const mobile = css.slice(start)
   assert.match(mobile, /@media\s*\(max-width:\s*767px\)/)
   assert.match(mobile, /\.rnx-home \.rnx-kpi-grid/)
   assert.doesNotMatch(mobile, /(?:^|\n)\s*html\s*\{|(?:^|\n)\s*body\s*\{/)
