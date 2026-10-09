@@ -698,3 +698,31 @@ Il report è preliminare: non certifica tutti i branch.
 | `unused` | 0 | 969 |
 | `verify/brand-colors-final` | 7 | 2887 |
 | `verify/randapp-switch-logos` | 1 | 2833 |
+
+## Quadro finale completo — inventario 481 riferimenti
+
+**Verifica incrociata 2026-10-09:** 479 righe di confronto uniche, nessuna mancante tranne i due riferimenti da conservare (`main` e `backup/pre-branch-cleanup-20261009`).
+
+- **250 branch** sono antenati di main (`ahead=0`): candidati a futura rimozione del riferimento, **solo dopo** backup mirror completo e validazione di usi esterni.
+- **229 branch** hanno uno o più commit esclusivi: non cancellare senza analisi per file e archiviazione dei rispettivi commit SHA.
+- **2 riferimenti da mantenere:** `main` e il presente backup operativo.
+- **0 eliminazioni; 0 merge; 0 deploy** nell'audit.
+
+**Priorità di revisione manuale (commit esclusivi più numerosi):**
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `feat/randui-edera-theme-engine` | 190 | 563 |
+| `chore/randapp-agent-toolchain` | 85 | 1865 |
+| `fix/home-remove-contextual-fab` | 44 | 856 |
+| `fix/ios-login-keyboard` | 43 | 856 |
+| `feature/swipe-menu-navbar-slot` | 38 | 1617 |
+| `fix/planning-sale-new-booking` | 34 | 856 |
+| `randui/implementable-preview-ocean` | 34 | 922 |
+| `feature/home-assistant-preview` | 31 | 1871 |
+| `feat/rand-final-repo-closure` | 29 | 856 |
+| `feature/housekeeping-privacy-slope` | 28 | 2508 |
+
+**Limitazione:** un confronto Git storico non equivale a prova che la funzione sia assente da main: i commit possono essere stati cherry-pickati, squashati o riscritti. Non usarlo per merge automatici.
+
+**Gate di eliminazione:** eseguire `backups/create-full-mirror-backup.ps1` su PC Windows con Git e accesso autenticato, verificare mirror, bundle e SHA256 su una destinazione indipendente; poi conservare il commit SHA dei riferimenti destinati alla cancellazione, controllare PR/protezioni/deploy e registrare ogni eliminazione. Il presente branch di backup NON sostituisce il mirror.
