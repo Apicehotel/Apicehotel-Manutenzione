@@ -306,3 +306,26 @@ Il report è preliminare: non certifica tutti i branch.
 | `feature/unified-responsive-ui` | 0 | 2574 |
 | `feature/whatsapp-webhook-multihotel-parity` | 0 | 2499 |
 | `feature/widget-size-limits` | 3 | 2500 |
+
+## Fix batch 1
+
+| Branch | Ahead | Behind |
+|---|---:|---:|
+| `fix/admin-keyboard-current-main` | 7 | 1697 |
+| `fix/admin-keyboard-layout` | 5 | 1848 |
+| `fix/completion-photo-same-protection` | 0 | 2413 |
+| `fix/consolidate-open-prs-clean` | 0 | 189 |
+| `fix/contextual-add-router` | 0 | 1529 |
+| `fix/cross-platform-focus-hardening` | 0 | 327 |
+| `fix/default-filter-todo` | 0 | 2405 |
+| `fix/deployment-stale-chunks` | 4 | 1872 |
+| `fix/filter-order-hotelgio` | 0 | 2407 |
+| `fix/focus-menu-dock-lts` | 0 | 314 |
+| `fix/full-app-bug-audit-1` | 5 | 1838 |
+| `fix/hk-dark-20260825` | 0 | 2507 |
+| `fix/hk-dark-shell` | 2 | 2507 |
+| `fix/home-remove-contextual-fab` | 44 | 856 |
+| `fix/hotel-switch-session` | 7 | 2838 |
+| `fix/hotelgio-idromassaggio-jazz` | 0 | 131 |
+| `fix/housekeepers-by-hotel` | 0 | 2455 |
+| `fix/housekeeping-dark-theme` | 0 | 2507 |
