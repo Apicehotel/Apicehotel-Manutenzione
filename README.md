@@ -30,7 +30,7 @@ Il login PIN non usa più PostgREST per le operazioni privilegiate: `pin-auth` l
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
-La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati.
+La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati. Su smartphone (≤767px) la skin Material mantiene KPI a due colonne e intestazioni di card/grafico nel flusso (senza margini negativi), così le superfici non si sovrappongono.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 

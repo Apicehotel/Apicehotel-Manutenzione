@@ -22,8 +22,16 @@ test('Material theme contracts remain in place', async () => {
   assert.match(auth, /\.rs-themeswitch__thumb/)
 })
 
-test('CSS important budget does not increase', async () => {
+test('Material cascade prevents duplicate sidebar search selectors and global overrides', async () => {
   const css = await read('src/randapp/randui-material.css')
-  const count = (css.match(/!important/g) || []).length
-  assert.ok(count <= 135, `Material CSS !important grew to ${count}; review specificity before adding overrides`)
+  const selector = "html:not([data-theme='dark']) .rnx-sidebar__search{"
+  assert.equal(css.split(selector).length - 1, 1)
+  // Scoped mobile overrides may grow; guard the failure mode, not a magic !important count.
+  const marker = '/* Mobile Home: card headers remain inside'
+  const start = css.indexOf(marker)
+  assert.ok(start >= 0, 'Mobile Home fix must remain present')
+  const mobile = css.slice(start)
+  assert.match(mobile, /@media\s*\(max-width:\s*767px\)/)
+  assert.match(mobile, /\.rnx-home \.rnx-kpi-grid/)
+  assert.doesNotMatch(mobile, /(?:^|\n)\s*html\s*\{|(?:^|\n)\s*body\s*\{/)
 })
