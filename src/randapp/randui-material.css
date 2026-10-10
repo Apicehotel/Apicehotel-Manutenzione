@@ -56,7 +56,11 @@ html:not([data-theme='dark']) body{background:var(--md-bg)!important}
 .rnx-sidebar__logout:hover{background:rgba(255,255,255,.08)!important}
 
 /* ── Top bar: flat, sits on the page ──────────────────────────────── */
-.rnx-topbar{background:transparent!important;border-bottom:0!important;backdrop-filter:none!important}
+/* Desktop keeps a transparent Material topbar; phone/tablet solid fill is in
+   randui-next.css (pinned chrome under notch, no top gradient bleed). */
+@media (min-width:1200px){
+  .rnx-topbar{background:transparent!important;border-bottom:0!important;backdrop-filter:none!important}
+}
 .rnx-profile,.rnx-randai,.rnx-topbar .rs-iconbtn{border-color:transparent!important;background:var(--rnx-surface)!important;box-shadow:var(--md-shadow)}
 
 /* ── KPI tiles: floating gradient icon, right-aligned value, stats footer ─ */
