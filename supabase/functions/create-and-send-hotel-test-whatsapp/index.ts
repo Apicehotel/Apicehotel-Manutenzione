@@ -39,7 +39,9 @@ Deno.serve(async (req: Request) => {
     if (!user) return json({ ok: false, error: "authentication_required" }, 401);
     const body = await req.json().catch(() => ({}));
     if (body?.confirm_test !== true) return json({ ok: false, error: "confirm_test_required" }, 400);
-    const recipient = e164(body.recipient || "+393341196935");
+    // Recipient must be explicit — never default to a hard-coded personal number.
+    if (!body?.recipient) return json({ ok: false, error: "recipient_required" }, 400);
+    const recipient = e164(body.recipient);
     const hotels = Array.isArray(body.hotel_ids) && body.hotel_ids.length ? body.hotel_ids.map((id: unknown) => clean(id, 40)).filter((id: string) => HOTEL_IDS.includes(id)) : HOTEL_IDS;
     if (!/^\+[1-9]\d{7,14}$/.test(recipient) || !hotels.length) return json({ ok: false, error: "invalid_recipient_or_hotels" }, 400);
 

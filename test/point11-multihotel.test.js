@@ -38,7 +38,7 @@ test('offline cache and outbox carry immutable hotel context and stable operatio
   assert.match(offline,/cacheKey = \(entity, hotelId\) => `\$\{entity\}:\$\{hotelId\}`/)
   assert.match(offline,/if \(!hotelId\) throw new Error\(`hotelId mancante/)
   assert.match(offline,/stableOperationId = operationId \|\| createOfflineOperationId\(\)/)
-  assert.match(offline,/const op = \{ operationId:stableOperationId, entity, hotelId, action/)
+  assert.match(offline,/const op = \{ operationId:stableOperationId, idempotencyKey:stableOperationId, entity, hotelId, action/)
   assert.match(offline,/op\.hotelId/)
   assert.match(offline,/op\.operationId/)
 })
