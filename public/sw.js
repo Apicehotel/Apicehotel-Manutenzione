@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v25'
+const CACHE_NAME = 'apicehotel-manutenzione-v26'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -60,18 +60,32 @@ const missingDynamicAssetResponse = () => new Response('Deployment asset no long
   },
 })
 
+const precacheAsset = async (cache, path) => {
+  try {
+    const request = new Request(path, { cache: 'no-store' })
+    const response = await fetch(request)
+    if (!response?.ok) return
+    const destination = /\.css(?:$|\?)/i.test(path) ? 'style'
+      : /\.js(?:$|\?)/i.test(path) ? 'script'
+        : ''
+    if (destination && !isValidDynamicAsset({ destination }, response)) return
+    await cache.put(request, response.clone())
+  } catch {}
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME)
-    await cache.addAll(APP_SHELL)
+    for (const path of APP_SHELL) await precacheAsset(cache, path)
 
     const shellResponse = await fetch('/', { cache: 'no-store' })
+    if (!shellResponse?.ok) return
     const shellHtml = await shellResponse.clone().text()
     const assetPaths = [...shellHtml.matchAll(/(?:src|href)="([^"#]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
       .filter((url) => url.origin === self.location.origin && !url.pathname.startsWith('/api/'))
       .map((url) => `${url.pathname}${url.search}`)
-    await cache.addAll([...new Set(assetPaths)])
+    for (const path of [...new Set(assetPaths)]) await precacheAsset(cache, path)
     await cache.put('/', shellResponse)
   })())
   self.skipWaiting()

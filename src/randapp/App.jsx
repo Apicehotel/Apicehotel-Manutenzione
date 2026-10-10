@@ -15,11 +15,16 @@ const SESSION_CHECK_TIMEOUT_MS = 12000
 
 const EVENT = 'apice-session-changed'
 
-async function loadDirectoryAll() {
+const LOGIN_DIRECTORY_MIN_QUERY = 2
+const LOGIN_DIRECTORY_DEBOUNCE_MS = 220
+
+async function searchLoginDirectory(query) {
+  const q = String(query || '').trim()
+  if (q.length < LOGIN_DIRECTORY_MIN_QUERY) return []
   const { fetchLoginDirectory } = await import('../users-data.js')
   const rows = await Promise.all(HOTELS.map(async (hotel) => {
     try {
-      const result = await fetchLoginDirectory(hotel.id)
+      const result = await fetchLoginDirectory(hotel.id, q)
       return { hotelId: hotel.id, users: result?.users || [] }
     } catch { return { hotelId: hotel.id, users: [] } }
   }))
@@ -90,33 +95,50 @@ function AdminGate({ onBack, onExit }) {
 
 function Login({ onAuthenticated, onOpenSettings }) {
   const [directory, setDirectory] = useState([])
-  const [directoryReady, setDirectoryReady] = useState(false)
+  const [directoryReady, setDirectoryReady] = useState(true)
   const [directoryFailed, setDirectoryFailed] = useState(false)
   const [query, setQuery] = useState('')
   const [matched, setMatched] = useState(null)
   const [pin, setPin] = useState('')
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
+  const searchSeq = useRef(0)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
   const [recovering, setRecovering] = useState(false)
   useEffect(() => {
-    let active = true
-    withTimeout(loadDirectoryAll(), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
-      .then((rows) => {
-        if (!active) return
-        setDirectory(rows)
-        setDirectoryFailed(!rows.length)
-        setDirectoryReady(true)
-      })
-      .catch(() => {
-        if (!active) return
+    const q = String(query || '').trim()
+    if (matched || q.length < LOGIN_DIRECTORY_MIN_QUERY) {
+      if (!matched && q.length < LOGIN_DIRECTORY_MIN_QUERY) {
         setDirectory([])
-        setDirectoryFailed(true)
+        setDirectoryFailed(false)
         setDirectoryReady(true)
-      })
-    return () => { active = false }
-  }, [])
+      }
+      return undefined
+    }
+    let active = true
+    const seq = ++searchSeq.current
+    setDirectoryReady(false)
+    const timer = setTimeout(() => {
+      withTimeout(searchLoginDirectory(q), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
+        .then((rows) => {
+          if (!active || seq !== searchSeq.current) return
+          setDirectory(rows)
+          setDirectoryFailed(!rows.length)
+          setDirectoryReady(true)
+        })
+        .catch(() => {
+          if (!active || seq !== searchSeq.current) return
+          setDirectory([])
+          setDirectoryFailed(true)
+          setDirectoryReady(true)
+        })
+    }, LOGIN_DIRECTORY_DEBOUNCE_MS)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [query, matched])
   const q = normalize(query)
   const selectedUser = resolveLoginUser(directory, query, matched)
   const suggestions = useMemo(() => (
@@ -128,6 +150,12 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const pickUser = (u) => {
     setMatched(u)
     setQuery(u.name)
+    setDirectory((prev) => {
+      const key = u.legacy_id || u.id
+      if (!key) return prev
+      if (prev.some((row) => (row.legacy_id || row.id) === key)) return prev
+      return [...prev, u]
+    })
     setOpen(false)
     setError('')
   }
@@ -136,9 +164,22 @@ function Login({ onAuthenticated, onOpenSettings }) {
     e?.preventDefault?.()
     if (busyRef.current) return
     setError('')
-    const user = resolveLoginUser(directory, query, matched)
+    let user = resolveLoginUser(directory, query, matched)
+    if (!user && String(query || '').trim().length >= LOGIN_DIRECTORY_MIN_QUERY) {
+      try {
+        const rows = await withTimeout(searchLoginDirectory(query), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
+        setDirectory(rows)
+        setDirectoryFailed(!rows.length)
+        setDirectoryReady(true)
+        user = resolveLoginUser(rows, query, null)
+      } catch {
+        setDirectoryFailed(true)
+        setDirectoryReady(true)
+      }
+    }
     if (!user) {
       if (!directoryReady) return setError('Elenco utenti in caricamento… riprova tra un momento')
+      if (String(query || '').trim().length < LOGIN_DIRECTORY_MIN_QUERY) return setError('Scrivi almeno 2 lettere del nome')
       if (directoryFailed || !directory.length) return setError('Elenco utenti non disponibile. Controlla la connessione e riprova.')
       return setError('Seleziona un utente valido dalla lista')
     }

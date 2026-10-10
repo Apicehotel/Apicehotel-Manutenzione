@@ -35,7 +35,33 @@ function sanitizeTelemetryValue(value, depth = 0) {
   return redactDiagnosticText(String(value))
 }
 
+/**
+ * OTEL connect-src is fail-closed: only same-origin exporters, or hosts listed in
+ * VITE_OTEL_CONNECT_ORIGINS (comma-separated origins that must also be present in
+ * vercel.json / ocean/nginx.conf Content-Security-Policy connect-src).
+ */
+export function isOtelEndpointCspSafe(endpoint, pageOrigin = typeof window !== 'undefined' ? window.location.origin : '') {
+  const raw = String(endpoint || '').trim()
+  if (!raw) return false
+  try {
+    const url = new URL(raw, pageOrigin || 'https://invalid.invalid')
+    if (pageOrigin && url.origin === pageOrigin) return true
+    const allow = String(env.VITE_OTEL_CONNECT_ORIGINS || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+    return allow.some((origin) => {
+      try { return new URL(origin).origin === url.origin } catch { return false }
+    })
+  } catch {
+    return false
+  }
+}
+
 export function externalTelemetryConfig() {
+  const otelEndpoint = env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT
+  const otelConfigured = Boolean(otelEndpoint)
+  const otelCspSafe = otelConfigured && isOtelEndpointCspSafe(otelEndpoint)
   return {
     sentry: {
       installed: true,
@@ -44,8 +70,9 @@ export function externalTelemetryConfig() {
     },
     opentelemetry: {
       installed: true,
-      configured: Boolean(env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT),
-      enabled: enabled('VITE_OTEL_ENABLED') && Boolean(env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT),
+      configured: otelConfigured,
+      cspSafe: otelCspSafe,
+      enabled: enabled('VITE_OTEL_ENABLED') && otelCspSafe,
     },
   }
 }
@@ -86,6 +113,10 @@ export async function initExternalTelemetry() {
     } catch (error) {
       console.warn('Sentry non inizializzato', redactDiagnosticText(error?.message || error))
     }
+  }
+
+  if (enabled('VITE_OTEL_ENABLED') && env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT && !config.opentelemetry.cspSafe) {
+    console.warn('OpenTelemetry disabilitato: endpoint fuori da connect-src CSP (stesso origin o VITE_OTEL_CONNECT_ORIGINS + header CSP)')
   }
 
   if (config.opentelemetry.enabled) {

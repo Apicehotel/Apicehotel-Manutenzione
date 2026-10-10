@@ -7,10 +7,10 @@ const pinAuth = readFileSync(new URL('../supabase/functions/pin-auth/index.ts', 
 
 test('PIN login directory is minimal, separately cached and excludes RandAI identities server-side', () => {
   assert.match(usersData, /function loginDirectoryUsers\(data, hotelId\)/)
-  assert.match(usersData, /export async function fetchLoginDirectory\(hotelId\)/)
+  assert.match(usersData, /export async function fetchLoginDirectory\(hotelId, query = ''\)/)
   assert.match(usersData, /getCachedCollection\('login-directory', hotelId\)/)
-  assert.match(usersData, /setCachedCollection\('login-directory', hotelId, users\)/)
-  assert.match(pinAuth, /async function listLoginDirectory\(hotelId:string\)/)
+  assert.match(usersData, /setCachedCollection\('login-directory', hotelId/)
+  assert.match(pinAuth, /async function listLoginDirectory\(hotelId:string,query:string\)/)
   assert.match(pinAuth, /ruolo <> 'RandAI'/)
   assert.match(pinAuth, /\{id:String\(u\.id\),legacy_id:String\(u\.id\),name:u\.nome,hotel_id:hotelId,active:true\}/)
 })
@@ -19,15 +19,18 @@ test('authenticated operational directory stays separate from the pre-login cont
   assert.match(usersData, /export async function fetchDirectory\(hotelId\)/)
   assert.match(usersData, /getCachedCollection\('directory', hotelId\)/)
   assert.match(pinAuth, /activeMember\(req,hotelId\)/)
-  assert.match(pinAuth, /listOperationalDirectory\(hotelId\):listLoginDirectory\(hotelId\)/)
+  assert.match(pinAuth, /if\(member\)return json\(\{ok:true,users:await listOperationalDirectory\(hotelId\)\}\)/)
+  assert.match(pinAuth, /users:await listLoginDirectory\(hotelId,query\)/)
 })
 
-test('unauthenticated PIN login directory is hotel-scoped and rate-limited', () => {
+test('unauthenticated PIN login directory is hotel-scoped, rate-limited and query-gated', () => {
   assert.match(pinAuth, /KNOWN_HOTELS/)
   assert.match(pinAuth, /allowLoginDirectory/)
   assert.match(pinAuth, /DIRECTORY_RATE_LIMIT\s*=\s*20/)
+  assert.match(pinAuth, /LOGIN_DIRECTORY_MIN_QUERY\s*=\s*2/)
   assert.match(pinAuth, /Troppe richieste\. Riprova tra un minuto\./)
   assert.match(pinAuth, /hotel_id non valido/)
-  // Authenticated callers skip the login-directory rate limit.
-  assert.match(pinAuth, /member&&!allowLoginDirectory|!member&&!allowLoginDirectory/)
+  assert.match(pinAuth, /query_required:\s*true/)
+  // Authenticated callers skip the login-directory rate limit and query gate.
+  assert.match(pinAuth, /if\(member\)return json\(\{ok:true,users:await listOperationalDirectory\(hotelId\)\}\)/)
 })
