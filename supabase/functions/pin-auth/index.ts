@@ -31,9 +31,11 @@ const KNOWN_HOTELS=new Set(["hotelgio","chocohotel","brigantino"]);
 const canonicalRole=(v:unknown)=>{const r=String(v||"Reception").trim();return ROLE_VALUES.has(r)?r:"Reception"};
 const PRESENCE_MAX_MS=(7*60+20)*60*1000;
 const randomAuthPassword=()=>crypto.randomUUID()+crypto.randomUUID();
-/** Unauthenticated login-directory dumps are rate-limited per IP+hotel (PIN remains 4 digits + lockout). */
+/** Unauthenticated login-directory: rate-limited + query-gated (no full dump). PIN remains 4 digits + lockout. */
 const DIRECTORY_RATE_LIMIT=20;
 const DIRECTORY_RATE_WINDOW_MS=60_000;
+const LOGIN_DIRECTORY_MIN_QUERY=2;
+const LOGIN_DIRECTORY_MAX_RESULTS=12;
 const directoryRate=new Map<string,{count:number;resetAt:number}>();
 function clientIp(req:Request){
   const xf=req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()||"";
@@ -48,6 +50,18 @@ function allowLoginDirectory(req:Request,hotelId:string){
   if(row.count>=DIRECTORY_RATE_LIMIT)return false;
   row.count+=1;
   return true;
+}
+function normalizeLoginQuery(value:unknown){
+  return String(value||"").trim().toLocaleLowerCase("it");
+}
+function shuffleInPlace<T>(rows:T[]){
+  for(let i=rows.length-1;i>0;i-=1){
+    const j=Math.floor(Math.random()*(i+1));
+    const tmp=rows[i];
+    rows[i]=rows[j];
+    rows[j]=tmp;
+  }
+  return rows;
 }
 
 function hotelList(value:any):string[]{
@@ -88,11 +102,15 @@ async function activeMember(req:Request,hotelId:string){
   return rows[0]?.active?String(user.id):null;
 }
 
-async function listLoginDirectory(hotelId:string){
+async function listLoginDirectory(hotelId:string,query:string){
+  const q=normalizeLoginQuery(query);
+  if(q.length<LOGIN_DIRECTORY_MIN_QUERY)return [];
   const rows=await sql`select id,nome,active,is_system_protected,hotels from public.utenti where active=true and ruolo <> 'RandAI' order by nome`;
-  return rows
+  const matched=rows
     .filter((u:any)=>(u.is_system_protected===false||u.nome==="Randagio")&&hasHotel(u.hotels,hotelId))
+    .filter((u:any)=>normalizeLoginQuery(u.nome).startsWith(q))
     .map((u:any)=>({id:String(u.id),legacy_id:String(u.id),name:u.nome,hotel_id:hotelId,active:true}));
+  return shuffleInPlace(matched).slice(0,LOGIN_DIRECTORY_MAX_RESULTS);
 }
 
 async function listOperationalDirectory(hotelId:string){
@@ -111,10 +129,6 @@ async function listOperationalDirectory(hotelId:string){
     const role=canonicalRole(m?.role||u.ruolo);
     return {id:authId||String(u.id),legacy_id:String(u.id),auth_user_id:authId,name:u.nome,role,department:u.department||null,hotels:hotelList(u.hotels).length?hotelList(u.hotels):[hotelId],hotel_id:hotelId,active:m?Boolean(m.active):true,can_admin:Boolean(m?.can_access_admin)||role==="admin",in_struttura:Boolean(u.in_struttura)&&!expired,in_struttura_dal:u.in_struttura_dal||null,email:p?.email||null,phone:u.telefono||null,phone_country_code:u.phone_country_code||"+39"};
   });
-}
-
-async function listDirectory(req:Request,hotelId:string){
-  return await activeMember(req,hotelId)?listOperationalDirectory(hotelId):listLoginDirectory(hotelId);
 }
 
 async function resolveLegacyUserId(userId:string){
@@ -164,23 +178,34 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   try{
     if(req.method==="GET"){
-      const hotelId=new URL(req.url).searchParams.get("hotel_id")?.trim();
+      const params=new URL(req.url).searchParams;
+      const hotelId=params.get("hotel_id")?.trim();
+      const query=params.get("q")||params.get("query")||"";
       if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);
       if(!KNOWN_HOTELS.has(hotelId))return json({ok:false,error:"hotel_id non valido"},400);
       const member=await activeMember(req,hotelId);
-      if(!member&&!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
-      return json({ok:true,users:member?await listOperationalDirectory(hotelId):await listLoginDirectory(hotelId)});
+      if(member)return json({ok:true,users:await listOperationalDirectory(hotelId)});
+      if(!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
+      if(normalizeLoginQuery(query).length<LOGIN_DIRECTORY_MIN_QUERY){
+        return json({ok:true,users:[],query_required:true,min_query:LOGIN_DIRECTORY_MIN_QUERY});
+      }
+      return json({ok:true,users:await listLoginDirectory(hotelId,query)});
     }
     if(req.method!=="POST")return json({ok:false,error:"Metodo non consentito"},405);
     const body=await req.json().catch(()=>null);
     const action=String(body?.action||"login");
     const hotelId=String(body?.hotel_id||"").trim();
     if(action==="directory"){
+      const query=String(body?.q||body?.query||"");
       if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);
       if(!KNOWN_HOTELS.has(hotelId))return json({ok:false,error:"hotel_id non valido"},400);
       const member=await activeMember(req,hotelId);
-      if(!member&&!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
-      return json({ok:true,users:member?await listOperationalDirectory(hotelId):await listLoginDirectory(hotelId)});
+      if(member)return json({ok:true,users:await listOperationalDirectory(hotelId)});
+      if(!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
+      if(normalizeLoginQuery(query).length<LOGIN_DIRECTORY_MIN_QUERY){
+        return json({ok:true,users:[],query_required:true,min_query:LOGIN_DIRECTORY_MIN_QUERY});
+      }
+      return json({ok:true,users:await listLoginDirectory(hotelId,query)});
     }
 
     const userId=String(body?.user_id||"").trim();

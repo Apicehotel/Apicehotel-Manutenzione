@@ -20,8 +20,11 @@ function loginDirectoryUsers(data, hotelId) {
 function operationalUsers(data) { return rowsFrom(data).filter((user) => user && user.active !== false && String(user.role || '').trim() !== 'RandAI') }
 async function invokeAdmin(body) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-users', { body }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
 async function invokeChatAdmin(body) { if (!supabase) throw new Error('Supabase non configurato'); const { data, error } = await supabase.functions.invoke('admin-chat-settings', { body }); if (error) throw error; if (data?.error) throw new Error(data.error); return data }
-async function invokeDirectory(hotelId) {
-  const { data, error } = await supabase.functions.invoke('pin-auth', { body: { action: 'directory', hotel_id: hotelId } })
+async function invokeDirectory(hotelId, query) {
+  const body = { action: 'directory', hotel_id: hotelId }
+  const q = String(query || '').trim()
+  if (q) body.q = q
+  const { data, error } = await supabase.functions.invoke('pin-auth', { body })
   if (error) throw error
   if (data?.error) throw new Error(data.error)
   return data
@@ -37,15 +40,34 @@ function mergeOwnChatSettings(users, settings) {
     ? { ...user, chat_enabled: Boolean(settings.chat_enabled), chat_can_create_groups: Boolean(settings.chat_can_create_groups) }
     : user)
 }
-export async function fetchLoginDirectory(hotelId) {
-  if (!hotelId) return { users: [] }
-  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: loginDirectoryUsers(await getCachedCollection('login-directory', hotelId), hotelId), offline: true }
+const LOGIN_DIRECTORY_MIN_QUERY = 2
+
+function filterLoginDirectoryByQuery(users, query) {
+  const q = String(query || '').trim().toLocaleLowerCase('it')
+  if (q.length < LOGIN_DIRECTORY_MIN_QUERY) return []
+  return users.filter((user) => String(user?.name || '').trim().toLocaleLowerCase('it').startsWith(q))
+}
+
+export async function fetchLoginDirectory(hotelId, query = '') {
+  if (!hotelId) return { users: [], query_required: true, min_query: LOGIN_DIRECTORY_MIN_QUERY }
+  const q = String(query || '').trim()
+  if (q.length < LOGIN_DIRECTORY_MIN_QUERY) {
+    return { users: [], query_required: true, min_query: LOGIN_DIRECTORY_MIN_QUERY }
+  }
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    const cached = filterLoginDirectoryByQuery(loginDirectoryUsers(await getCachedCollection('login-directory', hotelId), hotelId), q)
+    return { users: cached, offline: true }
+  }
   try {
-    const users = loginDirectoryUsers(await invokeDirectory(hotelId), hotelId)
-    await setCachedCollection('login-directory', hotelId, users)
-    return { users }
+    const payload = await invokeDirectory(hotelId, q)
+    const users = loginDirectoryUsers(payload, hotelId)
+    const previous = loginDirectoryUsers(await getCachedCollection('login-directory', hotelId), hotelId)
+    const byId = new Map(previous.map((user) => [String(user.legacy_id || user.id), user]))
+    for (const user of users) byId.set(String(user.legacy_id || user.id), user)
+    await setCachedCollection('login-directory', hotelId, Array.from(byId.values()))
+    return { users, query_required: Boolean(payload?.query_required), min_query: payload?.min_query || LOGIN_DIRECTORY_MIN_QUERY }
   } catch (error) {
-    const cached = loginDirectoryUsers(await getCachedCollection('login-directory', hotelId), hotelId)
+    const cached = filterLoginDirectoryByQuery(loginDirectoryUsers(await getCachedCollection('login-directory', hotelId), hotelId), q)
     if (cached.length) return { users: cached, offline: true }
     throw error
   }
