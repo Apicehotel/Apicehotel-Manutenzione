@@ -56,7 +56,8 @@ test('ntfy uses authenticated RandApp short links and hands the native app a res
 
 test('notification banner remains compact and mobile safe',()=>{
   assert.match(css,/position:fixed/)
-  assert.match(css,/env\(safe-area-inset-bottom\)/)
+  assert.match(css,/--rnx-nav-row/)
+  assert.match(css,/env\(safe-area-inset-bottom/)
   assert.match(css,/@media\(max-width:520px\)/)
   assert.match(css,/backdrop-filter/)
   assert.match(css,/data-notification-onboarding/)

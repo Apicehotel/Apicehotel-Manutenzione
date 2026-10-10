@@ -59,10 +59,11 @@ async function resolveLegacy(token: string) {
   if (!value || value.startsWith("revoked:") || value.startsWith("hash:")) return null;
   const digest = await sha256(value);
   const { data: row } = await admin.from("technician_access_tokens")
-    .select("auth_user_id,revoked_at")
+    .select("auth_user_id,revoked_at,expires_at")
     .eq("token", `hash:${digest}`)
     .maybeSingle();
   if (!row || row.revoked_at) return null;
+  if (!row.expires_at || new Date(row.expires_at).getTime() <= Date.now()) return null;
   const { data: profile } = await admin.from("profiles").select("auth_user_id,display_name,active").eq("auth_user_id", row.auth_user_id).maybeSingle();
   if (!profile?.active) return null;
   const { data: memberships } = await admin.from("hotel_memberships").select("hotel_id,role,active").eq("auth_user_id", profile.auth_user_id).eq("active", true).eq("role", "Tecnico esterno");

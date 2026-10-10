@@ -42,6 +42,9 @@ jobs:
         run: node --test test/randdesktop-printing-contract.test.js test/randdesktop-download-navigation-contract.test.js test/randdesktop-installer-contract.test.js
 
       - name: Build embedded RandApp
+        env:
+          VITE_SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX
         run: npm run build -- --base=./
 
       - name: Verify desktop renderer entry

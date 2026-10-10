@@ -2,6 +2,11 @@
 # SPA fallback (index.html) applies only to document navigation, never /assets/*.
 FROM node:24-bookworm AS build
 WORKDIR /app
+# Explicit publishable MultiHotel credentials (no silent fallback in src/supabase.js).
+ARG VITE_SUPABASE_URL=https://ooqlfldcrnkudhgjnied.supabase.co
+ARG VITE_SUPABASE_ANON_KEY=sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 COPY package.json package-lock.json .nvmrc ./
 RUN npm ci
 COPY . .
