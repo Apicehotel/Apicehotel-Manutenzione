@@ -49,7 +49,7 @@ Il progetto Supabase condiviso resta temporaneo: non vengono creati tre progetti
 - RandGateway come unico ingresso governato per Web/RandApp, RandChat, MCP e WhatsApp/Twilio.
 - RandCore per health, audit, release gate, workers, sicurezza, costi, governance e integrazioni.
 - RandMind come memoria governata canonica; RandResearch come owner della ricerca evidence-first.
-- DigitalOcean/Ocean è il canale attivo per preview/test e workload esterni/pesanti. I Git deploy automatici Vercel restano sospesi (`vercel.json → git.deploymentEnabled=false`) finché non vengono riattivati con decisione esplicita.
+- DigitalOcean/Ocean è il canale attivo per preview/test e workload esterni/pesanti. I Git deploy automatici Vercel restano sospesi (`vercel.json → git.deploymentEnabled=false`) finché non vengono riattivati con decisione esplicita. Ocean preview non usa più `catchall_document: index.html`: `Dockerfile.ocean` + nginx servono `dist` e rispondono **404 reale** su `/assets/*` (e icone/loghi/SW) mancanti, con fallback SPA solo sulla navigazione documento. CSP di produzione (Vercel + Ocean) include `default-src`/`script-src 'self'` e `connect-src` verso Supabase/ntfy/Sentry. La directory login PIN anon resta UX-necessaria ma è rate-limited per IP+hotel (20/min) e vincolata agli hotel noti.
 - Node: `.nvmrc` fissa `24.20.0`; `package.json` usa `24.x` per compatibilità buildpack Ocean.
 
 ## Confini invariabili
