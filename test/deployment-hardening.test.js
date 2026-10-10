@@ -48,3 +48,33 @@ test('Ocean preview waits for javascript SW before browser gates', () => {
   assert.match(e2e, /Registrazione PWA non riuscita/)
   assert.match(e2e, /Failed to update a ServiceWorker/)
 })
+
+test('CSP blocks default script injection and keeps app connect targets', () => {
+  const config = JSON.parse(vercel)
+  const csp = config.headers
+    ?.flatMap((entry) => entry.headers || [])
+    ?.find((header) => header.key === 'Content-Security-Policy')
+    ?.value || ''
+  assert.match(csp, /default-src 'self'/)
+  assert.match(csp, /script-src 'self'/)
+  assert.match(csp, /object-src 'none'/)
+  assert.match(csp, /frame-ancestors 'none'/)
+  assert.match(csp, /connect-src[^;]*https:\/\/\*\.supabase\.co/)
+  assert.match(csp, /connect-src[^;]*wss:\/\/\*\.supabase\.co/)
+  assert.doesNotMatch(csp, /script-src[^;]*'unsafe-eval'/)
+})
+
+test('Ocean nginx returns real 404 for missing hashed assets (no SPA catchall)', () => {
+  const app = readFileSync(new URL('../.do/app.yaml', import.meta.url), 'utf8')
+  const nginx = readFileSync(new URL('../ocean/nginx.conf', import.meta.url), 'utf8')
+  const dockerfile = readFileSync(new URL('../Dockerfile.ocean', import.meta.url), 'utf8')
+  assert.doesNotMatch(app, /catchall_document:\s*index\.html/)
+  assert.match(app, /dockerfile_path:\s*Dockerfile\.ocean/)
+  assert.match(app, /http_port:\s*8080/)
+  assert.match(dockerfile, /FROM nginx:1\.27-alpine/)
+  assert.match(dockerfile, /ocean\/nginx\.conf/)
+  assert.match(dockerfile, /EXPOSE 8080/)
+  assert.match(nginx, /location \^~ \/assets\/[\s\S]*try_files \$uri =404/)
+  assert.match(nginx, /location \/ \{[\s\S]*try_files \$uri \$uri\/ \/index\.html/)
+  assert.match(nginx, /Content-Security-Policy/)
+})

@@ -21,3 +21,13 @@ test('authenticated operational directory stays separate from the pre-login cont
   assert.match(pinAuth, /activeMember\(req,hotelId\)/)
   assert.match(pinAuth, /listOperationalDirectory\(hotelId\):listLoginDirectory\(hotelId\)/)
 })
+
+test('unauthenticated PIN login directory is hotel-scoped and rate-limited', () => {
+  assert.match(pinAuth, /KNOWN_HOTELS/)
+  assert.match(pinAuth, /allowLoginDirectory/)
+  assert.match(pinAuth, /DIRECTORY_RATE_LIMIT\s*=\s*20/)
+  assert.match(pinAuth, /Troppe richieste\. Riprova tra un minuto\./)
+  assert.match(pinAuth, /hotel_id non valido/)
+  // Authenticated callers skip the login-directory rate limit.
+  assert.match(pinAuth, /member&&!allowLoginDirectory|!member&&!allowLoginDirectory/)
+})
