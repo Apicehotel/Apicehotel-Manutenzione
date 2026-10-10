@@ -69,6 +69,8 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
   const queryClient = useQueryClient()
   const [focusOnly,setFocusOnly]=useState(readFocus)
   const [preferencesOpen,setPreferencesOpen]=useState(false)
+  const [chartMode,setChartMode]=useState(()=>{try{return localStorage.getItem('randapp-home-chart-mode')||'full'}catch{return 'full'}})
+  const changeChartMode=(value)=>{setChartMode(value);try{localStorage.setItem('randapp-home-chart-mode',value)}catch{}}
   const [offlineStatus,setOfflineStatus]=useState(null)
   useEffect(()=>{ if(personalizeSignal>0) setPreferencesOpen(true) },[personalizeSignal])
   useEffect(()=>{
@@ -179,7 +181,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
         <Button variant="ghost" size="sm" icon="sliders" className="rnx-homehead__view" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home">Vista</Button>
       </div>
     </header>
-    {preferencesOpen&&<section className="rnx-panel rnx-homeprefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; scegli quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div></section>}
+    {preferencesOpen&&<section className="rnx-panel rnx-homeprefs"><div><strong>Vista Home</strong><small>La priorità resta automatica; scegli quanta informazione mostrare.</small></div><div className="rs-segmented" role="group" aria-label="Vista Home"><button type="button" className={focusOnly?'active':''} onClick={()=>setMode(true)}>Focus</button><button type="button" className={!focusOnly?'active':''} onClick={()=>setMode(false)}>Completa</button></div><div className="rnx-chart-preferences" role="group" aria-label="Visualizzazione grafico">{[["full","Completo"],["compact","Compatto"],["hidden","Nascosto"]].map(([mode,label])=><button key={mode} type="button" aria-pressed={chartMode===mode} onClick={()=>changeChartMode(mode)}>{label}</button>)}</div></section>}
 
     {loading?<Spinner label="Preparo la scrivania…"/>:homeHardFail?(
       <div className="rnx-homefail" data-testid="home-hard-fail">
@@ -193,7 +195,7 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
         {stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}
       </section>
 
-      {canIssues&&<section className="rnx-chartcard" data-testid="home-week-chart" aria-label="Segnalazioni create negli ultimi 7 giorni">
+      {canIssues&&chartMode!=='hidden'&&<section className={`rnx-chartcard ${chartMode==='compact'?'rnx-chartcard--compact':''}`} data-testid="home-week-chart" aria-label="Segnalazioni create negli ultimi 7 giorni">
         <div className="rnx-chartcard__plot" role="img" aria-label={`Segnalazioni create per giorno: ${weekBars.map((d)=>`${d.label} ${d.count}`).join(', ')}`}>
           {weekBars.map((d)=><span key={d.key} className="rnx-chartcard__bar"><b>{d.count||''}</b><i style={{height:`${Math.max(6,Math.round((d.count/weekMax)*100))}%`}}/><small>{d.label}</small></span>)}
         </div>
