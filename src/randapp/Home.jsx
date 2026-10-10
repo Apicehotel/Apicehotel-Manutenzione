@@ -195,6 +195,8 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
         {stats.map((stat)=><StatCard key={stat.label} label={stat.label} value={stat.value} detail={stat.detail} icon={stat.icon} tone={stat.tone} onClick={()=>onNavigate?.(stat.route)} />)}
       </section>
 
+      {canIssues&&<div className="rnx-chart-mode-row"><label htmlFor="rand-home-chart-mode">Grafico 7 giorni</label><select id="rand-home-chart-mode" value={chartMode} onChange={(event)=>changeChartMode(event.target.value)} aria-label="Visualizzazione grafico Home"><option value="full">Completo</option><option value="compact">Compatto</option><option value="hidden">Nascosto</option></select></div>}
+
       {canIssues&&chartMode!=='hidden'&&<section className={`rnx-chartcard ${chartMode==='compact'?'rnx-chartcard--compact':''}`} data-testid="home-week-chart" aria-label="Segnalazioni create negli ultimi 7 giorni">
         <div className="rnx-chartcard__plot" role="img" aria-label={`Segnalazioni create per giorno: ${weekBars.map((d)=>`${d.label} ${d.count}`).join(', ')}`}>
           {weekBars.map((d)=><span key={d.key} className="rnx-chartcard__bar"><b>{d.count||''}</b><i style={{height:`${Math.max(6,Math.round((d.count/weekMax)*100))}%`}}/><small>{d.label}</small></span>)}
