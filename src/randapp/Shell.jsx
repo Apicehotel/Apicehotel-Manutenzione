@@ -25,6 +25,7 @@ import './new-issue-compact.css'
 import './randui-next.css'
 import './randui-material.css'
 import './randui-hubs.css'
+import './home-density.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
