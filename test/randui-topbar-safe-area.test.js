@@ -17,3 +17,12 @@ test('RandUI Next topbar owns the iOS notch safe-area (no double padding on shel
   // Phone media must not wipe the safe-top with a plain padding shorthand.
   assert.doesNotMatch(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-topbar\{padding:\s*\d+px\s+\d+px/)
 })
+
+test('RandUI Next pins the topbar on phone/tablet; only the stage scrolls', async () => {
+  const css = await read('src/randapp/randui-next.css')
+  assert.match(css, /@media\s*\(max-width:\s*1199px\)\s*\{[\s\S]*\.rnx-app\{[\s\S]*height:\s*var\(--rs-app-viewport-height/)
+  assert.match(css, /@media\s*\(max-width:\s*1199px\)\s*\{[\s\S]*\.rnx-app\{[\s\S]*overflow:\s*hidden/)
+  assert.match(css, /@media\s*\(max-width:\s*1199px\)\s*\{[\s\S]*\.rnx-topbar\{[\s\S]*position:\s*relative/)
+  assert.match(css, /@media\s*\(max-width:\s*1199px\)\s*\{[\s\S]*\.rnx-stage\{[\s\S]*overflow-y:\s*auto/)
+  assert.match(css, /@media\s*\(max-width:\s*1199px\)\s*\{[\s\S]*\.rnx-stage\{[\s\S]*-webkit-overflow-scrolling:\s*touch/)
+})
