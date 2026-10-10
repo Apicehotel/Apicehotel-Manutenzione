@@ -25,4 +25,13 @@ test('webhook worker signs payloads, times out, and bounds retries', () => {
   assert.match(worker, /MAX_ATTEMPTS = 5/i)
   assert.match(worker, /idempotency-key/i)
   assert.match(worker, /secret_not_configured/i)
+  assert.match(worker, /randcore_webhook_cron_secret/)
+  assert.doesNotMatch(worker, /reminder_cron_secret/)
+})
+
+test('RandCore webhook cron uses a dedicated secret distinct from reminder-worker', () => {
+  const migration = fs.readFileSync(new URL('../supabase/migrations/20261010085400_randcore_webhook_dedicated_cron_secret.sql', import.meta.url), 'utf8')
+  assert.match(migration, /randcore_webhook_cron_secret/)
+  assert.match(migration, /randcore-webhook-worker-1m/)
+  assert.doesNotMatch(migration, /key = 'reminder_cron_secret'/)
 })

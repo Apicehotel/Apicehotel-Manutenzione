@@ -80,7 +80,8 @@ async function finish(row: any, outcome: string, error: string | null) {
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
-  const expected = await secret("reminder_cron_secret");
+  // Dedicated secret — blast-radius isolation from the reminder worker cron credential.
+  const expected = await secret("randcore_webhook_cron_secret");
   if (!expected || req.headers.get("x-cron-secret") !== expected) return json({ ok: false, error: "forbidden" }, 403);
 
   const workerId = crypto.randomUUID();

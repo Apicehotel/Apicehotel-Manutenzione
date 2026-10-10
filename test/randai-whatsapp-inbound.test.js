@@ -22,6 +22,8 @@ test('Twilio inbound endpoint is configured for all production hotels', () => {
   assert.match(proxy, /x-randai-webhook-url/)
   assert.match(proxy, /x-randai-whatsapp-shared-secret/)
   assert.match(proxy, /WHATSAPP_INBOUND_SHARED_SECRET/)
+  assert.match(proxy, /RANDAI_WHATSAPP_INBOUND_URL|resolveUpstream/)
+  assert.match(proxy, /WHATSAPP_PUBLIC_WEBHOOK_URL|resolvePublicWebhookUrl/)
   assert.match(proxy, /AbortController/)
   assert.match(proxy, /12000/)
   assert.match(proxy, /text\/xml; charset=utf-8/)
@@ -95,6 +97,8 @@ test('hotel test WhatsApp flow creates one issue and sends from each configured 
   assert.match(flow, /segnalazioni.*insert/)
   assert.match(flow, /notification_outbox/)
   assert.match(flow, /HX02e74abd4bfd7db4c4ef5b195946f983/)
+  assert.match(flow, /recipient_required/)
+  assert.doesNotMatch(flow, /\+393341196935/)
 })
 
 test('Supabase session refreshes before protected writes', () => {
