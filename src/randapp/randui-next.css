@@ -392,6 +392,13 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   /* +5px topbar row / padding so hotel chip sits a bit lower under the notch.
      Bottom nav is a real grid row anchored to the shell bottom (not fixed). */
   :root{--rnx-topbar:67px;--rnx-nav-h:64px}
+  /* iOS startup: anchor the shell to the measured visual viewport from first paint.
+     The header styling and its safe-area ownership are unchanged. */
+  .rs-root:has(.rnx-app),
+  .rnx-app{
+    height:var(--rs-visual-viewport-height, 100dvh);
+    max-height:var(--rs-visual-viewport-height, 100dvh);
+  }
   .rnx-app{
     grid-template-columns:1fr;
     grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr) var(--rnx-nav-row);
