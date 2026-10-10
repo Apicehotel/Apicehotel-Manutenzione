@@ -22,12 +22,16 @@ test('service worker validates MIME before caching dynamic assets', () => {
   assert.match(sw, /content-type/)
   assert.match(sw, /javascript/)
   assert.match(sw, /text\/css/)
-  assert.match(sw, /CACHE_NAME = 'apicehotel-manutenzione-v24'/)
+  assert.match(sw, /CACHE_NAME = 'apicehotel-manutenzione-v25'/)
   assert.match(sw, /navigator\.onLine !== false/)
   assert.match(sw, /status:\s*504/)
   assert.match(sw, /PURGE_RUNTIME_CACHES/)
   assert.match(sw, /Deployment asset no longer available/)
   assert.match(sw, /status:\s*503/)
+  // Hashed Vite assets must match (single-escaped \. in the regex literal).
+  assert.match(sw, /\/-\[a-z0-9_-\]\{8,\}\\\.\(\?:js\|css\|woff2\?\)\$\/i/)
+  assert.match(sw, /safeNotificationUrl/)
+  assert.match(sw, /url\.origin !== self\.location\.origin/)
 })
 
 test('Vercel Git deploys stay paused; Ocean stable preview is owned by main', () => {

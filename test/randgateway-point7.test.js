@@ -201,6 +201,10 @@ test('authenticated RandGateway endpoint requires active hotel membership and ve
   assert.match(edge, /requested_by_auth_user_id === actor\.userId/)
   assert.match(edge, /approval\.hotel_id === actor\.hotelId/)
   assert.match(edge, /approvalMatchesToolRequest/)
+  // HITL verify must receive envelope (gateway.js passes it) — no bare ReferenceError.
+  assert.match(edge, /async verify\(\{\s*approvalId,\s*actor,\s*envelope\s*\}/)
+  assert.match(edge, /const toolRequest = envelope\?\.payload\?\.toolRequest/)
+  assert.match(edge, /!toolRequest\) return \{ approved: false \}/)
 })
 
 test('RandApp browser actions also use the canonical gateway instead of invoking the executor directly', () => {

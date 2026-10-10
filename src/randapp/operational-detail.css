@@ -1,16 +1,26 @@
 /* Canonical RandApp operational detail surface.
-   Shell owns Focus Mode; this component owns detail chrome and scroll. */
-.rs-app.rs-app--operational-detail {
+   Shell owns Focus Mode; this component owns detail chrome and scroll.
+   Material shell uses .rnx-app / .rnx-content; keep .rs-* for legacy shell. */
+.rs-app.rs-app--operational-detail,
+.rnx-app.rnx-app--operational-detail,
+.rnx-app.rs-app--operational-detail {
   grid-template-columns: 1fr !important;
-  grid-template-rows: 1fr !important;
-  grid-template-areas: 'main' !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  grid-template-areas: 'content' !important;
   padding-top: 0 !important;
+  padding-bottom: 0 !important;
   height: var(--rs-app-viewport-height);
+  max-height: var(--rs-app-viewport-height);
   min-height: var(--rs-app-viewport-min-height);
   overflow: hidden;
 }
-.rs-app--operational-detail .rs-content {
-  grid-area: main !important;
+.rs-app.rs-app--operational-detail {
+  grid-template-areas: 'main' !important;
+}
+.rs-app--operational-detail .rs-content,
+.rnx-app--operational-detail .rnx-content,
+.rs-app--operational-detail .rnx-content {
+  grid-area: content !important;
   grid-column: 1 !important;
   width: 100% !important;
   max-width: none !important;
@@ -20,7 +30,12 @@
   padding: 0 !important;
   overflow: hidden !important;
 }
-.rs-app--operational-detail .rs-content > * {
+.rs-app.rs-app--operational-detail .rs-content {
+  grid-area: main !important;
+}
+.rs-app--operational-detail .rs-content > *,
+.rnx-app--operational-detail .rnx-content > *,
+.rs-app--operational-detail .rnx-content > * {
   width: 100% !important;
   max-width: none !important;
   height: 100%;
