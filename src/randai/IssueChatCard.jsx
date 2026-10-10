@@ -7,7 +7,7 @@ const normalize = (value) => String(value || '').toLocaleLowerCase('it').trim()
 export function issueMatches(issue, search, issueId) {
   if (issueId) return String(issue.id) === String(issueId)
   const words = normalize(search).replace(/[.,!?]/g, ' ').split(/\s+/)
-    .filter((word) => word.length > 2 && !['mostrami','segnalazione','segnalazioni','della','del','delle','apri','dettaglio'].includes(word))
+    .filter((word) => word.length > 1 && !['mostrami','mostra','visualizza','apri','un','una','il','la','le','lo','per','di','da','del','della','delle','dei','gli','al','alla','sul','su','questo','questa','esempio','interattivo','interattiva','dettaglio','scheda','segnalazione','segnalazioni','ticket','randapp','camera','stanza','hotel'].includes(word))
   const haystack = normalize([issue.room, issue.title, issue.category].join(' '))
   return words.length > 0 && words.every((word) => haystack.includes(word))
 }
