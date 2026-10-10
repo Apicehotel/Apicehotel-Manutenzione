@@ -1,6 +1,6 @@
 // Endpoint pubblico e in sola lettura: restituisce un sottoinsieme sicuro di una
-// singola segnalazione, dato il suo id. Non richiede login e non restituisce mai
-// dati del personale, credenziali o dettagli tecnici del backend.
+// singola segnalazione. Preferisce il token opaco `public_share_token` (link /s/<token>);
+// l'UUID legacy resta supportato ma rate-limited per IP.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -14,20 +14,51 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const BUCKET = "maintenance-photos";
 const isDataUrl = (v: unknown) => typeof v === "string" && v.startsWith("data:image/");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SHARE_TOKEN = /^[0-9a-f]{48}$/i;
+
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000;
+const rateHits = new Map<string, { count: number; resetAt: number }>();
+
+function clientIp(req: Request) {
+  const xf = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
+  const real = req.headers.get("x-real-ip")?.trim() || "";
+  return xf || real || "unknown";
+}
+
+function allowPublicRead(req: Request) {
+  const key = clientIp(req);
+  const now = Date.now();
+  const row = rateHits.get(key);
+  if (!row || now >= row.resetAt) {
+    rateHits.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (row.count >= RATE_LIMIT) return false;
+  row.count += 1;
+  return true;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "GET") return json({ ok: false, error: "Metodo non consentito" }, 405);
 
   try {
-    const id = new URL(req.url).searchParams.get("id")?.trim() || "";
-    if (!UUID.test(id)) return json({ ok: false, error: "Identificativo non valido" }, 400);
+    if (!allowPublicRead(req)) return json({ ok: false, error: "Troppe richieste. Riprova tra un minuto." }, 429);
 
-    const { data: row, error } = await admin
+    const raw = new URL(req.url).searchParams.get("id")?.trim() || "";
+    if (!raw) return json({ ok: false, error: "Identificativo non valido" }, 400);
+
+    const byToken = SHARE_TOKEN.test(raw);
+    const byUuid = UUID.test(raw);
+    if (!byToken && !byUuid) return json({ ok: false, error: "Identificativo non valido" }, 400);
+
+    let query = admin
       .from("segnalazioni")
-      .select("id,hotel_id,camera,categoria,urgenza,stato,note,foto_prima,creato_il")
-      .eq("id", id)
-      .maybeSingle();
+      .select("id,hotel_id,camera,categoria,urgenza,stato,note,foto_prima,creato_il,public_share_token");
+    query = byToken ? query.eq("public_share_token", raw) : query.eq("id", raw);
+
+    const { data: row, error } = await query.maybeSingle();
     if (error) throw error;
     if (!row) return json({ ok: false, error: "Segnalazione non trovata" }, 404);
 
