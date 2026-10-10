@@ -54,7 +54,7 @@ test('React render boundary delegates recoverable module failures to centralized
 })
 
 test('service worker refuses invalid stale dynamic assets and avoids online stale-shell fallback', () => {
-  assert.match(serviceWorker, /apicehotel-manutenzione-v20/)
+  assert.match(serviceWorker, /apicehotel-manutenzione-v21/)
   assert.match(serviceWorker, /PURGE_RUNTIME_CACHES/)
   assert.match(serviceWorker, /isValidDynamicAsset/)
   assert.match(serviceWorker, /isImmutableAsset/)

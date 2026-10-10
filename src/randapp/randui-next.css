@@ -357,13 +357,14 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 
 /* phone */
 @media(max-width:767px){
-  :root{--rnx-topbar:62px;--rnx-nav-h:64px}
+  /* +5px topbar row / padding so hotel chip sits a bit lower under the notch. */
+  :root{--rnx-topbar:67px;--rnx-nav-h:64px}
   .rnx-app{grid-template-columns:1fr;grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr);grid-template-areas:"top" "content";padding-top:0;padding-bottom:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom))}
   .rnx-sidebar{display:none}
   .rnx-topbar{
     gap:7px;
     min-height:var(--rnx-topbar-row);
-    padding:calc(7px + var(--rnx-safe-top)) max(10px, var(--rnx-safe-right)) 7px max(10px, var(--rnx-safe-left));
+    padding:calc(12px + var(--rnx-safe-top)) max(10px, var(--rnx-safe-right)) 7px max(10px, var(--rnx-safe-left));
   }
   .rnx-hotelchip{height:44px!important;grid-template-columns:31px minmax(0,1fr) 14px!important;padding:4px 5px!important}
   .rnx-hotelchip img{width:31px!important;height:31px!important}
@@ -402,12 +403,13 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-tray{padding:11px;border-radius:17px}
   .rnx-priority{grid-template-columns:28px 34px minmax(0,1fr) 16px;min-height:60px;padding:8px}
   .rnx-priority__body span{display:none}
-  /* Docked bottom bar: full width, no floating pill covering content. */
+  /* Docked bottom bar: full width, no floating pill covering content.
+     Slightly less padding above the home-indicator so icons sit a touch lower. */
   .rnx-bottomnav{
     position:fixed;z-index:50;left:0;right:0;bottom:0;
     min-height:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom));
     display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-    padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    padding:4px max(6px,env(safe-area-inset-right)) calc(2px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
     border-top:1px solid var(--rnx-line);
     background:color-mix(in srgb,var(--rnx-surface) 94%,transparent);
     backdrop-filter:blur(18px) saturate(1.1)

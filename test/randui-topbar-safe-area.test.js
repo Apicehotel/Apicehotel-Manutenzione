@@ -12,7 +12,8 @@ test('RandUI Next topbar owns the iOS notch safe-area (no double padding on shel
   assert.match(css, /\.rnx-app\{[\s\S]*padding-top:\s*0/)
   assert.match(css, /\.rnx-topbar\{[\s\S]*min-height:\s*var\(--rnx-topbar-row\)/)
   assert.match(css, /\.rnx-topbar\{[\s\S]*padding:\s*calc\(9px \+ var\(--rnx-safe-top\)\)/)
-  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-topbar\{[\s\S]*padding:\s*calc\(7px \+ var\(--rnx-safe-top\)\)/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-topbar\{[\s\S]*padding:\s*calc\(12px \+ var\(--rnx-safe-top\)\)/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-bottomnav\{[\s\S]*padding:\s*4px[\s\S]*calc\(2px \+ env\(safe-area-inset-bottom\)\)/)
   // Phone media must not wipe the safe-top with a plain padding shorthand.
   assert.doesNotMatch(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-topbar\{padding:\s*\d+px\s+\d+px/)
 })
