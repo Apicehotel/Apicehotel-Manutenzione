@@ -108,6 +108,10 @@ Le modalità Focus/Completa cambiano densità, non l'isolamento dati.
 
 Su smartphone (fino a 767px) le card KPI usano massimo due colonne e devono contenere icone, numeri ed etichette senza fuoriuscite. I titoli delle card Lavori/Presenza, il grafico e le priorità restano all'interno della rispettiva superficie senza margini negativi: nessuna intestazione deve sovrapporsi alla card precedente. La navigazione e l'area di stato iOS mantengono le rispettive safe-area; verificare su screenshot WebKit e dispositivo fisico prima di dichiarare risolto.
 
+### Topbar Material e notch iOS
+
+Con `apple-mobile-web-app-status-bar-style=black-translucent` la status bar/notch disegna sopra lo shell. Il proprietario unico del top inset è `.rnx-topbar` (`--rnx-safe-top` / `--rnx-topbar-row`): `.rnx-app` resta a `padding-top: 0` per non raddoppiare il clearance. Sui media phone/tablet gli override di padding devono preservare `calc(... + var(--rnx-safe-top))`, mai uno shorthand che lo azzera.
+
 ## 7. Autenticazione e sessione
 
 Il frontend non confronta PIN.
