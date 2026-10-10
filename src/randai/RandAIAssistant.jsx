@@ -300,7 +300,7 @@ export default function RandAIAssistant({ variant = 'overlay', user = null } = {
     const contextQuery = previousGuidance?.resolvedQuery || previousUser?.text || ''
     setMessages((current) => [...current, { role: 'user', text: clean }])
     setQuery('')
-    if (/\\b(segnalazion[ei]|ticket)\\b/i.test(clean) && /\\b(mostrami|apri|dettaglio|visualizza|scheda)\\b/i.test(clean)) {
+    if (/\b(segnalazion[ei]|ticket)\b/i.test(clean) && /\b(mostrami|apri|dettaglio|visualizza|scheda)\b/i.test(clean)) {
       setMessages((current) => [...current, { role: 'assistant', kind: 'issue-card', search: clean, issueId: issueResource?.id || null, hotelId: session.hotelId }])
       return
     }
