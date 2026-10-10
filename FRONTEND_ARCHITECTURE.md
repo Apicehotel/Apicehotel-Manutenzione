@@ -112,7 +112,7 @@ Su smartphone (fino a 767px) le card KPI usano massimo due colonne e devono cont
 
 Con `apple-mobile-web-app-status-bar-style=black-translucent` la status bar/notch disegna sopra lo shell. Il proprietario unico del top inset è `.rnx-topbar` (`--rnx-safe-top` / `--rnx-topbar-row`): `.rnx-app` resta a `padding-top: 0` per non raddoppiare il clearance. Sui media phone/tablet gli override di padding devono preservare `calc(... + var(--rnx-safe-top))`, mai uno shorthand che lo azzera.
 
-Su phone/tablet (≤1199px) lo shell Material è viewport-locked come `.rs-app`: `.rnx-app` ha altezza fissa e `overflow: hidden`, `.rnx-topbar` resta fissata nella riga griglia, e solo `.rnx-stage` scorre (`overflow-y: auto` + touch scrolling). Topbar e bottom nav usano riempimento opaco (`var(--rnx-bg)`): niente radial-gradient/trasparenza sotto il notch e niente fascia nera sotto le icone nella safe-area.
+Su phone/tablet (≤1199px) lo shell Material è viewport-locked come `.rs-app`: `.rnx-app` ha altezza fissa e `overflow: hidden`, `.rnx-topbar` resta fissata nella riga griglia, e solo `.rnx-stage` scorre (`overflow-y: auto` + touch scrolling). Topbar e bottom nav usano riempimento opaco (`var(--rnx-bg)`): niente radial-gradient/trasparenza sotto il notch e niente fascia nera sotto le icone nella safe-area. Su phone la bottom nav è una riga griglia `nav` (`--rnx-nav-row`), ancorata al fondo dello shell, non un bar `position: fixed` flottante.
 
 ## 7. Autenticazione e sessione
 

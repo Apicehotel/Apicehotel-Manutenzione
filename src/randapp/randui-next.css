@@ -33,6 +33,7 @@
   --rnx-safe-left:var(--rs-adaptive-safe-left, env(safe-area-inset-left, 0px));
   --rnx-topbar-row:calc(var(--rnx-topbar) + var(--rnx-safe-top));
   --rnx-nav-h:72px;
+  --rnx-nav-row:calc(var(--rnx-nav-h) + var(--rnx-safe-bottom));
   /* One action colour. Ink = accent pulled toward the text colour, readable as
      text in light and dark themes. Action = accent darkened, readable under the
      white label of filled buttons in both themes. */
@@ -388,9 +389,16 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 
 /* phone */
 @media(max-width:767px){
-  /* +5px topbar row / padding so hotel chip sits a bit lower under the notch. */
+  /* +5px topbar row / padding so hotel chip sits a bit lower under the notch.
+     Bottom nav is a real grid row anchored to the shell bottom (not fixed). */
   :root{--rnx-topbar:67px;--rnx-nav-h:64px}
-  .rnx-app{grid-template-columns:1fr;grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr);grid-template-areas:"top" "content";padding-top:0;padding-bottom:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom))}
+  .rnx-app{
+    grid-template-columns:1fr;
+    grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr) var(--rnx-nav-row);
+    grid-template-areas:"top" "content" "nav";
+    padding-top:0;
+    padding-bottom:0;
+  }
   .rnx-sidebar{display:none}
   .rnx-topbar{
     gap:7px;
@@ -405,7 +413,8 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-topbar__actions{gap:6px}
   /* The header presence chip duplicates the Home one on phones. */
   .rnx-topbar .rs-presence-chip{display:none}
-  .rnx-content{padding:14px 12px calc(var(--rnx-nav-h) + 30px + env(safe-area-inset-bottom))}
+  /* Stage already sits above the docked nav row; no fake bottom clearance. */
+  .rnx-content{padding:14px 12px 18px}
   .rnx-home{gap:12px}
   /* Presence sits beside the greeting as a chip, not as its own card. */
   .rnx-mobile-presence{display:flex;align-items:center;grid-column:2;grid-row:1;min-width:0}
@@ -434,12 +443,17 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-tray{padding:11px;border-radius:17px}
   .rnx-priority{grid-template-columns:28px 34px minmax(0,1fr) 16px;min-height:60px;padding:8px}
   .rnx-priority__body span{display:none}
-  /* Docked bottom bar: full width to the physical bottom. Opaque fill so the
-     home-indicator inset is not a black “distacco” under the icons on open. */
+  /* Anchored bottom row of the shell grid — always flush with the physical bottom. */
   .rnx-bottomnav{
-    position:fixed;z-index:50;left:0;right:0;bottom:0;
-    min-height:calc(var(--rnx-nav-h) + var(--rnx-safe-bottom));
-    display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
+    grid-area:nav;
+    position:relative;
+    left:auto;right:auto;bottom:auto;
+    z-index:50;
+    width:100%;
+    box-sizing:border-box;
+    height:100%;
+    min-height:var(--rnx-nav-row);
+    display:grid;grid-template-columns:repeat(5,1fr);gap:2px;align-content:center;
     padding:4px max(6px, var(--rnx-safe-right)) var(--rnx-safe-bottom) max(6px, var(--rnx-safe-left));
     border-top:1px solid var(--rnx-line);
     background:var(--rnx-bg);
@@ -456,7 +470,13 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-bottomnav__item small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.64rem;font-weight:700}
   .rnx-bottomnav__item.active small{font-weight:900}
   .rnx-bottomnav__item::before,.rnx-bottomnav__item::after{display:none!important}
-  .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-h) + 14px + env(safe-area-inset-bottom))!important;width:54px!important;height:54px!important;border-radius:17px!important}
+  .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-row) + 14px)!important;width:54px!important;height:54px!important;border-radius:17px!important}
+  /* Focus / operational detail: no chrome rows, stage fills the shell. */
+  .rnx-app--operational-detail{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"content";
+  }
 }
 
 /* very small phones */

@@ -36,3 +36,13 @@ test('Phone chrome is opaque under notch and home-indicator (no gradient/gap fla
   assert.match(css, /--rnx-safe-bottom:\s*var\(--rs-adaptive-safe-bottom,\s*env\(safe-area-inset-bottom,\s*0px\)\)/)
   assert.match(material, /@media\s*\(min-width:\s*1200px\)\s*\{[\s\S]*\.rnx-topbar\{background:transparent!important/)
 })
+
+test('Phone bottom nav is a docked shell grid row, not a floating fixed bar', async () => {
+  const css = await read('src/randapp/randui-next.css')
+  assert.match(css, /--rnx-nav-row:\s*calc\(var\(--rnx-nav-h\) \+ var\(--rnx-safe-bottom\)\)/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*grid-template-areas:\s*"top"\s*"content"\s*"nav"/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*grid-template-rows:\s*var\(--rnx-topbar-row\)\s*minmax\(0,1fr\)\s*var\(--rnx-nav-row\)/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-bottomnav\{[\s\S]*grid-area:\s*nav/)
+  assert.match(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-bottomnav\{[\s\S]*position:\s*relative/)
+  assert.doesNotMatch(css, /@media\(max-width:767px\)\{[\s\S]*\.rnx-bottomnav\{[\s\S]*position:\s*fixed/)
+})
