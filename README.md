@@ -1,5 +1,14 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Laboratorio RandUI + RandAI — ottobre 2026 (branch in revisione)
+
+- **Home:** KPI mobili più compatti e grafico settimanale con opzione Completo/Compatto/Nascosto salvata sul dispositivo.
+- **Operatività e Planning:** superfici, righe e spazi ridotti; restano le TOP 3, i percorsi e i permessi attuali.
+- **RandAI:** le richieste esplicite di dettaglio segnalazione aprono una scheda inline nella chat esistente. Lettura scoped all'hotel; aggiornamento di descrizione/priorità e completamento esclusivamente se autorizzati, online, con conferma esplicita e rilettura dopo il salvataggio. La gestione dei tecnici rimane nel workflow operativo già presente.
+- **Vincoli:** header e navbar non modificati, nessun backend aggiuntivo, nessun merge/deploy automatico.
+- **Test:** `node --test test/randai-interactive-issue-home-density.test.js`. Necessarie compilazione, test CI e revisione visuale iOS/Android prima di approvare questa branch.
+
+
 ## Ownership RandAILive
 
 Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIlive](https://github.com/Apicehotel/RandAIlive). Questo repository contiene RandApp/RandAI operativo e non deve ricevere modifiche al runtime, alla mappa o alla grafica del gioco.
