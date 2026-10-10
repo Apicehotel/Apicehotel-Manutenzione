@@ -22,7 +22,7 @@ test('configurazione PWA completa e installabile', async () => {
   assert.match(serviceWorker, /self\.addEventListener\('fetch'/)
   assert.match(serviceWorker, /request\.mode === 'navigate'/)
   assert.match(serviceWorker, /shellHtml\.matchAll/)
-  assert.match(serviceWorker, /apicehotel-manutenzione-v20/)
+  assert.match(serviceWorker, /apicehotel-manutenzione-v21/)
   assert.match(serviceWorker, /keys\.filter\(\(key\) => key !== CACHE_NAME/)
 })
 
