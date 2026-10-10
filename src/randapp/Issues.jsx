@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { supabase } from '../supabase.js'
 import { HOTEL_LOCATIONS } from '../locations.js'
 import { hotelGioClient } from '../hotelgio-data.js'
 import { fetchIssues, insertIssue, peekCachedIssues, updateIssueRow, deleteIssueRow, subscribeIssues } from '../issues-data.js'
@@ -275,8 +276,16 @@ function IssueDetail({ issue, user, users, onClose, onUpdate, onDelete }) {
       category: editDraft.category,
     }))
   }
-  const openWhatsApp = () => {
-    const pageUrl = `${window.location.origin}/s/${issue.id}`
+  const openWhatsApp = async () => {
+    let shareId = issue.id
+    try {
+      const { data: token, error } = await supabase.rpc('ensure_issue_public_share_token', {
+        p_issue_id: issue.id,
+        p_hotel_id: issue.hotelId,
+      })
+      if (!error && token) shareId = token
+    } catch { /* fall back to UUID for offline / pre-migration */ }
+    const pageUrl = `${window.location.origin}/s/${shareId}`
     window.open(technicianWaLink(issue, techNote.trim(), pageUrl), '_blank')
   }
 

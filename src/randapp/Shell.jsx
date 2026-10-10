@@ -520,7 +520,11 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
   const handleBottom = (item) => {
     if (item.href) {
-      window.location.assign(item.href)
+      try {
+        const target = new URL(item.href, window.location.origin)
+        if (target.origin !== window.location.origin) return
+        window.location.assign(target.href)
+      } catch { /* ignore malformed href */ }
       return
     }
     if (item.id === 'structure') { setHotelSheet(true); return }
