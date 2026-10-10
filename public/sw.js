@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v24'
+const CACHE_NAME = 'apicehotel-manutenzione-v25'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -30,7 +30,18 @@ const getValidCachedDynamicAsset = async (request) => {
 
 const isImmutableAsset = (request) => {
   const pathname = new URL(request.url).pathname
-  return pathname.startsWith('/assets/') && /-[a-z0-9_-]{8,}\\.(?:js|css|woff2?)$/i.test(pathname)
+  // Hashed Vite assets: /assets/index-<hash>.js|css|woff2
+  return pathname.startsWith('/assets/') && /-[a-z0-9_-]{8,}\.(?:js|css|woff2?)$/i.test(pathname)
+}
+
+const safeNotificationUrl = (raw) => {
+  try {
+    const url = new URL(raw || '/', self.location.origin)
+    if (url.origin !== self.location.origin) return `${self.location.origin}/`
+    return url.href
+  } catch {
+    return `${self.location.origin}/`
+  }
 }
 
 const refreshCachedDynamicAsset = (request) => fetch(request, { cache: 'no-store' })
@@ -166,7 +177,7 @@ self.addEventListener('push', (event) => {
   }
   const urgent = Boolean(payload.urgent)
   const icon = urgent ? '/icons/icon-urgent-192.png?v=9' : '/icons/icon-192.png?v=9'
-  const targetUrl = payload.url || '/'
+  const targetUrl = safeNotificationUrl(payload.url || '/')
   event.waitUntil((async () => {
     await self.registration.showNotification(payload.title, {
       body: payload.body,
@@ -207,7 +218,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href
+  const targetUrl = safeNotificationUrl(event.notification.data?.url || '/')
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const existing = clientsList.find((item) => item.url.startsWith(self.location.origin))

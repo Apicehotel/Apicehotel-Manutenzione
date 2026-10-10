@@ -9,6 +9,18 @@ const json = (body:unknown,status=200)=>new Response(JSON.stringify(body),{statu
 const URGENT_ROLES = new Set(["admin","manutentore","Direzione","Direttore Centro Congressi","Reception","Portiere Notturno"]);
 const HOUSEKEEPING_SEND_ROLES = new Set(["admin","Direzione","Reception"]);
 const HOTEL_NAMES:Record<string,string>={hotelgio:"Hotel Giò",chocohotel:"Chocohotel",brigantino:"Hotel Il Brigantino"};
+const APP_ORIGIN="https://apicehotel.vercel.app";
+const ALLOWED_CLICK_HOSTS=new Set(["apicehotel.vercel.app"]);
+/** Client-supplied click URLs must stay on the RandApp origin (no open redirects / phishing). */
+function safeClickUrl(raw:unknown):string|null{
+  if(raw==null||raw==="")return null;
+  try{
+    const parsed=new URL(String(raw).slice(0,1000),APP_ORIGIN);
+    if(parsed.protocol!=="https:")return null;
+    if(!ALLOWED_CLICK_HOSTS.has(parsed.hostname))return null;
+    return parsed.toString().slice(0,1000);
+  }catch{return null}
+}
 async function personalTopic(hotelId:string,userId:string){const bytes=new TextEncoder().encode(`randapp-assignment:${hotelId}:${userId}:${service}`);const digest=await crypto.subtle.digest("SHA-256",bytes);const token=Array.from(new Uint8Array(digest)).slice(0,18).map(x=>x.toString(16).padStart(2,"0")).join("");return `randapp-job-${hotelId}-${token}`;}
 
 Deno.serve(async(req:Request)=>{
@@ -33,7 +45,7 @@ Deno.serve(async(req:Request)=>{
     const message=test?(assignments?"Canale personale degli interventi configurato correttamente.":reminders?`Canale Promemoria ${role} configurato correttamente.`:housekeeping?"Canale ntfy Housekeeping configurato correttamente.":"Canale ntfy Avvisi Urgenti configurato correttamente."):String(body?.message||(housekeeping?"Modifica Housekeeping in RandApp":"Nuovo avviso urgente in RandApp")).slice(0,500);
     // Priority 5 is intentionally reserved for genuine urgent alerts. Test messages never trigger it.
     const priority=test?3:assignments?4:reminders?3:housekeeping?3:5;
-    const publishBody:Record<string,unknown>={topic,title,message,priority,tags:assignments?["wrench","bell"]:reminders?["bell","memo"]:housekeeping?["broom","hotel"]:(test?["white_check_mark","bell"]:["rotating_light","warning"])};if(body?.url)publishBody.click=String(body.url).slice(0,1000);
+    const publishBody:Record<string,unknown>={topic,title,message,priority,tags:assignments?["wrench","bell"]:reminders?["bell","memo"]:housekeeping?["broom","hotel"]:(test?["white_check_mark","bell"]:["rotating_light","warning"])};const click=safeClickUrl(body?.url);if(click)publishBody.click=click;
     const res=await fetch(server,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(publishBody)});if(!res.ok){const text=await res.text().catch(()=>"");console.error("ntfy-alert delivery",res.status,text.slice(0,500));return json({ok:false,error:"delivery_failed",status:res.status,detail:text.slice(0,160)},502)}const delivered=await res.json().catch(()=>({}));return json({ok:true,status:"sent",id:delivered?.id||null,time:delivered?.time||null,test,channel,priority});
   }catch(error){console.error("ntfy-alert",error instanceof Error?error.message:"unknown");return json({ok:false,error:"send_failed"},500)}
 });

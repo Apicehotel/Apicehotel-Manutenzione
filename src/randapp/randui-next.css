@@ -471,12 +471,6 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-bottomnav__item.active small{font-weight:900}
   .rnx-bottomnav__item::before,.rnx-bottomnav__item::after{display:none!important}
   .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-row) + 14px)!important;width:54px!important;height:54px!important;border-radius:17px!important}
-  /* Focus / operational detail: no chrome rows, stage fills the shell. */
-  .rnx-app--operational-detail{
-    grid-template-columns:1fr;
-    grid-template-rows:minmax(0,1fr);
-    grid-template-areas:"content";
-  }
 }
 
 /* very small phones */
@@ -533,8 +527,30 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-row__body small{color:var(--rnx-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.7rem}
 .rnx-panel-actions{display:flex;gap:7px;flex-wrap:wrap}
 .rnx-panel-actions button{min-height:34px;padding:0 10px;border:1px solid var(--rnx-line);border-radius:10px;background:var(--rnx-surface);color:var(--rnx-text-2);font-size:.7rem;font-weight:800}
-.rnx-app--operational-detail{grid-template-columns:1fr}
-.rnx-app--operational-detail .rnx-stage{grid-column:1/-1}
+/* Focus Mode: all breakpoints — chrome unmounted in Shell; stage fills the grid. */
+.rnx-app.rnx-app--operational-detail{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(0,1fr);
+  grid-template-areas:"content";
+  padding-top:0;
+  padding-bottom:0;
+  overflow:hidden;
+  height:var(--rs-app-viewport-height, 100dvh);
+  max-height:var(--rs-app-viewport-height, 100dvh);
+  min-height:0;
+}
+.rnx-app--operational-detail .rnx-stage{
+  grid-area:content;
+  grid-column:1/-1;
+  min-height:0;
+  overflow:hidden;
+}
+.rnx-app--operational-detail .rnx-content{
+  padding:0;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
 
 
 /* Contract hooks kept explicit for operational tests and density modes. */

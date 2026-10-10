@@ -64,9 +64,14 @@ test('ntfy exposes and tests one private assignment channel per user',()=>{
 test('ntfy priority 5 is reserved for genuine urgent alerts',()=>{
   assert.match(ntfyAlert,/const priority=test\?3:assignments\?4:reminders\?3:housekeeping\?3:5/)
   assert.match(ntfyAlert,/status:"sent".*test,channel,priority/)
+  assert.match(ntfyAlert,/function safeClickUrl/)
+  assert.match(ntfyAlert,/ALLOWED_CLICK_HOSTS/)
   assert.match(urgentWorker,/priority:5/)
   assert.match(urgentWorker,/tags:\["rotating_light","warning"\]/)
   assert.match(dispatcher,/priority:4/)
+  const reminderWorker=fs.readFileSync(new URL('../supabase/functions/reminder-worker/index.ts',import.meta.url),'utf8')
+  assert.doesNotMatch(reminderWorker,/priority:5/)
+  assert.match(reminderWorker,/priority:3,tags:\['bell','memo'\]/)
 })
 
 test('notification failure never rolls back the saved intervention',()=>{

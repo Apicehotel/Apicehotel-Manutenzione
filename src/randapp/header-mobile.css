@@ -291,3 +291,15 @@
 }
 
 .rs-notification-center__reserved strong { color: var(--rs-text); }
+
+/* Phone Material chrome: short hotel labels (Giò / Choco / …) to free topbar space. */
+@media (max-width: 767px) {
+  .rnx-hotelchip .rs-hotelchip__name-mobile,
+  .rs-hotelchip__name-mobile {
+    display: inline !important;
+  }
+  .rnx-hotelchip .rs-hotelchip__name-desktop,
+  .rs-hotelchip__name-desktop {
+    display: none !important;
+  }
+}

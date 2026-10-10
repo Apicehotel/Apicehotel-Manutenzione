@@ -55,8 +55,13 @@ function dispatchItem(ctx: any) {
 
 async function resolveLegacy(token: string) {
   const value = clean(token, 200);
-  if (!value) return null;
-  const { data: row } = await admin.from("technician_access_tokens").select("auth_user_id,revoked_at").eq("token", value).maybeSingle();
+  // Never accept stored hash/revoked markers as bearer credentials.
+  if (!value || value.startsWith("revoked:") || value.startsWith("hash:")) return null;
+  const digest = await sha256(value);
+  const { data: row } = await admin.from("technician_access_tokens")
+    .select("auth_user_id,revoked_at")
+    .eq("token", `hash:${digest}`)
+    .maybeSingle();
   if (!row || row.revoked_at) return null;
   const { data: profile } = await admin.from("profiles").select("auth_user_id,display_name,active").eq("auth_user_id", row.auth_user_id).maybeSingle();
   if (!profile?.active) return null;

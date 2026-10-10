@@ -67,4 +67,10 @@ test('Focus Mode propagates viewport height through RandUI wrappers so the Dock 
   assert.match(css, /\.rs-app--operational-detail \.rs-randui-page__body[\s\S]*overflow:\s*hidden/)
   assert.match(css, /\.rs-app--operational-detail \.rs-randui-page__content > \.rs-operational-detail[\s\S]*min-height:\s*0/)
   assert.match(css, /\.rs-app--operational-detail \.rs-operational-detail__head[\s\S]*padding-right:/)
+  // Material shell (.rnx-app) must own Focus Mode grid/content zeroing at all breakpoints.
+  assert.match(css, /\.rnx-app\.rnx-app--operational-detail/)
+  assert.match(css, /\.rnx-app--operational-detail \.rnx-content/)
+  const next = read('src/randapp/randui-next.css')
+  assert.match(next, /\.rnx-app\.rnx-app--operational-detail\{[\s\S]*grid-template-areas:"content"/)
+  assert.match(next, /\.rnx-app--operational-detail \.rnx-content\{[\s\S]*padding:0/)
 })
