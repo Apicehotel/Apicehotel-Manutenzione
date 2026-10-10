@@ -60,6 +60,10 @@ export default function IssueChatCard({ hotelId, user, search, issueId }) {
       await updateIssueRow(issue.id, { ...changes, hotelId })
       const verified = await fetchIssues(hotelId)
       if (!verified.ok) throw Error('La modifica è stata inviata, ma non è stato possibile verificare il risultato online.')
+      const currentServer = verified.issues.find((fresh) => String(fresh.id) === String(issue.id) && fresh.hotelId === hotelId)
+      if (!currentServer || Object.entries(changes).some(([key, value]) => !['completedAt'].includes(key) && (currentServer[key] ?? null) !== (value ?? null))) {
+        throw Error('La modifica non risulta ancora confermata sul server: controlla lo stato prima di riprovare.')
+      }
       setIssues((current) => current.map((item) => verified.issues.find((fresh) => String(fresh.id) === String(item.id)) || item))
       setDraft(null)
       setNotice('Aggiornamento salvato e verificato in RandApp.')
