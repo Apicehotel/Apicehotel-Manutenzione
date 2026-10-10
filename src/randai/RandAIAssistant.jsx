@@ -7,6 +7,7 @@ import { buildProjectIntelligence } from './project-intelligence.js'
 import { createBrowserRandAudio, createTranscriptArtifact } from './audio/index.js'
 import { readRandAIChatMemory, writeRandAIChatMemory } from './randai-chat-memory.js'
 import RepositoryRegistryPanel from './software/RepositoryRegistryPanel.jsx'
+import IssueChatCard from './IssueChatCard.jsx'
 import './randai.css'
 
 const EVENT = 'apice-session-changed'
@@ -173,7 +174,7 @@ function useRandAIPageViewport(enabled) {
   return ref
 }
 
-export default function RandAIAssistant({ variant = 'overlay' } = {}) {
+export default function RandAIAssistant({ variant = 'overlay', user = null } = {}) {
   const isPage = variant === 'page'
   const [session, setSession] = useState(loadSession())
   const [open, setOpen] = useState(isPage)
@@ -299,6 +300,10 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
     const contextQuery = previousGuidance?.resolvedQuery || previousUser?.text || ''
     setMessages((current) => [...current, { role: 'user', text: clean }])
     setQuery('')
+    if (/\\b(segnalazion[ei]|ticket)\\b/i.test(clean) && /\\b(mostrami|apri|dettaglio|visualizza|scheda)\\b/i.test(clean)) {
+      setMessages((current) => [...current, { role: 'assistant', kind: 'issue-card', search: clean, issueId: issueResource?.id || null, hotelId: session.hotelId }])
+      return
+    }
     setBusy(true)
 
     try {
@@ -351,6 +356,11 @@ export default function RandAIAssistant({ variant = 'overlay' } = {}) {
 
             {messages.map((message, index) => message.role === 'user' ? (
               <div className="randai__bubble randai__bubble--user" key={`${index}-${message.text}`}>{message.text}</div>
+            ) : message.kind === 'issue-card' ? (
+              <article className="randai__bubble randai__bubble--assistant" key={`issue-card-${index}`}>
+                <p>Puoi controllare la segnalazione qui. Le modifiche richiedono conferma esplicita.</p>
+                <IssueChatCard hotelId={session.hotelId} user={user} search={message.search} issueId={message.issueId} />
+              </article>
             ) : message.kind === 'guidance' ? (
               <article className="randai__bubble randai__bubble--assistant" key={`guidance-${index}`}>
                 {audio.current?.capabilities.tts && <button type="button" className="randai__audio-action" onClick={() => readMessage(message)} aria-label="Leggi la risposta RandAI">🔊 Leggi</button>}
