@@ -21,10 +21,15 @@ export function sanitizeQrSvg(svg) {
     .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
     .replace(/javascript:/gi, '')
 }
-export async function getInventoryQrSvg(text) {
+export async function getInventoryQrSvg(text, hotelId) {
   if (!supabase) return ''
-  const { data, error } = await supabase.functions.invoke('inventory-qr-label', { body: { text: clean(text) } })
+  const resolvedHotel = String(hotelId || '').trim()
+  if (!resolvedHotel) throw new Error('Hotel obbligatorio per etichetta QR')
+  const { data, error } = await supabase.functions.invoke('inventory-qr-label', {
+    body: { text: clean(text), hotel_id: resolvedHotel },
+  })
   if (error) throw error
+  if (data?.error) throw new Error(data.error)
   return sanitizeQrSvg(data?.svg || '')
 }
 export async function fetchSerialUnits(itemId) { if (!supabase || !itemId) return []; const { data, error } = await supabase.from('inventory_serial_units').select('*').eq('item_id', itemId).eq('active', true).order('created_at'); if (error) throw error; return (data || []).map(normalizeSerial) }

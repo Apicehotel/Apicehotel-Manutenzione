@@ -90,7 +90,7 @@ function LabelSheet({ open, hotel, items, onClose }) {
   useEffect(() => { if (!open) { setSvg(''); setError('') } }, [open])
   const generate = async () => {
     if (!item?.scanCode) return setError('Codice QR non ancora disponibile per questo articolo.')
-    try { setError(''); setSvg(await getInventoryQrSvg(inventoryDeepLink(hotel.id, item.scanCode))) } catch (err) { setError(err?.message || 'QR non generato') }
+    try { setError(''); setSvg(await getInventoryQrSvg(inventoryDeepLink(hotel.id, item.scanCode), hotel.id)) } catch (err) { setError(err?.message || 'QR non generato') }
   }
   return <Sheet open={open} onClose={onClose} title="Etichetta QR" className="rs-inventory-sheet"><div className="rs-actions-stack">
     <Field label="Articolo"><select className="rs-select" value={itemId} onChange={(e) => { setItemId(e.target.value); setSvg('') }}><option value="">Seleziona…</option>{items.map((i) => <option key={i.id} value={i.id}>{i.name}{i.variantLabel ? ` · ${i.variantLabel}` : ''}</option>)}</select></Field>

@@ -4,6 +4,7 @@ import QRCode from "npm:qrcode@1.5.4"
 
 const url = Deno.env.get("SUPABASE_URL")!
 const anon = Deno.env.get("SUPABASE_ANON_KEY")!
+const KNOWN_HOTELS = new Set(["hotelgio", "chocohotel", "brigantino"])
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -26,9 +27,25 @@ Deno.serve(async (req) => {
     const { data: userData, error: userError } = await client.auth.getUser()
     if (userError || !userData.user) return json({ error: "unauthorized" }, 401)
 
-    const { text } = await req.json().catch(() => ({}))
-    const value = String(text || "").trim()
+    const body = await req.json().catch(() => ({}))
+    const hotelId = String(body?.hotel_id || "").trim()
+    const value = String(body?.text || "").trim()
+    if (!KNOWN_HOTELS.has(hotelId)) return json({ error: "hotel_id non valido" }, 400)
     if (!value || value.length > 1024) return json({ error: "Codice non valido" }, 400)
+
+    const { data: membership, error: membershipError } = await client
+      .from("hotel_memberships")
+      .select("active")
+      .eq("auth_user_id", userData.user.id)
+      .eq("hotel_id", hotelId)
+      .eq("active", true)
+      .maybeSingle()
+    if (membershipError || !membership) return json({ error: "forbidden" }, 403)
+
+    // Deep links must stay hotel-scoped when present (item:<hotelId>:…).
+    const deep = value.match(/^item:([^:]+):(.+)$/i)
+    if (deep && deep[1] !== hotelId) return json({ error: "hotel_mismatch" }, 403)
+
     const svg = await QRCode.toString(value, { type: "svg", margin: 1, width: 256, errorCorrectionLevel: "M" })
     return json({ svg })
   } catch (error) {

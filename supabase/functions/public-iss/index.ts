@@ -1,6 +1,6 @@
 // Endpoint pubblico e in sola lettura: restituisce un sottoinsieme sicuro di una
-// singola segnalazione. Preferisce il token opaco `public_share_token` (link /s/<token>);
-// l'UUID legacy resta supportato ma rate-limited per IP.
+// singola segnalazione. Solo token opaco `public_share_token` (link /s/<48-hex>).
+// UUID legacy disabilitato (410): rigenerare il link WhatsApp dall'app.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -49,14 +49,15 @@ Deno.serve(async (req: Request) => {
     const raw = new URL(req.url).searchParams.get("id")?.trim() || "";
     if (!raw) return json({ ok: false, error: "Identificativo non valido" }, 400);
 
-    const byToken = SHARE_TOKEN.test(raw);
-    const byUuid = UUID.test(raw);
-    if (!byToken && !byUuid) return json({ ok: false, error: "Identificativo non valido" }, 400);
+    if (UUID.test(raw)) {
+      return json({ ok: false, error: "legacy_uuid_disabled", detail: "Link UUID non più valido. Apri la segnalazione in RandApp e condividi di nuovo." }, 410);
+    }
+    if (!SHARE_TOKEN.test(raw)) return json({ ok: false, error: "Identificativo non valido" }, 400);
 
-    let query = admin
+    const query = admin
       .from("segnalazioni")
-      .select("id,hotel_id,camera,categoria,urgenza,stato,note,foto_prima,creato_il,public_share_token");
-    query = byToken ? query.eq("public_share_token", raw) : query.eq("id", raw);
+      .select("id,hotel_id,camera,categoria,urgenza,stato,note,foto_prima,creato_il,public_share_token")
+      .eq("public_share_token", raw);
 
     const { data: row, error } = await query.maybeSingle();
     if (error) throw error;

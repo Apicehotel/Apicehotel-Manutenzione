@@ -14,6 +14,7 @@ test('public-iss prefers opaque share tokens and rate-limits anonymous reads', (
   assert.match(edge, /public_share_token/)
   assert.match(edge, /allowPublicRead/)
   assert.match(edge, /RATE_LIMIT\s*=\s*30/)
+  assert.match(edge, /legacy_uuid_disabled/)
   assert.match(issuesUi, /ensure_issue_public_share_token/)
   assert.match(issuesUi, /\/s\/\$\{shareId\}/)
 })
@@ -38,4 +39,5 @@ test('inventory QR SVG is sanitized and QR edge requires auth', () => {
   assert.match(data, /return sanitizeQrSvg\(data\?\.svg/)
   assert.match(edge, /auth\.getUser\(\)/)
   assert.match(edge, /unauthorized/)
+  assert.match(edge, /hotel_memberships/)
 })

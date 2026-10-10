@@ -384,7 +384,7 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   }
   .rnx-content{padding:20px 22px 40px}
   .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(240px,.8fr)}
-  .rnx-fab{right:22px!important;bottom:calc(22px + env(safe-area-inset-bottom))!important;width:56px!important;height:56px!important;border-radius:18px!important}
+  .rnx-fab{right:22px!important;bottom:calc(22px + var(--rnx-safe-bottom))!important;width:56px!important;height:56px!important;border-radius:18px!important}
 }
 
 /* phone */
