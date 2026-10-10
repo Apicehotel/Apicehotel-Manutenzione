@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v21'
+const CACHE_NAME = 'apicehotel-manutenzione-v22'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',

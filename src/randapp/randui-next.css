@@ -185,6 +185,30 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   overflow:visible
 }
 
+/* Phone + tablet: pin the Material topbar; only .rnx-stage scrolls.
+   Mirrors the .rs-app / .rs-header viewport-lock contract. */
+@media (max-width:1199px){
+  .rs-root:has(.rnx-app),
+  .rnx-app{
+    height:var(--rs-app-viewport-height, 100dvh);
+    max-height:var(--rs-app-viewport-height, 100dvh);
+    min-height:0;
+    overflow:hidden;
+  }
+  .rnx-topbar{
+    position:relative;
+    top:auto;
+    z-index:30;
+  }
+  .rnx-stage{
+    min-height:0;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+}
+
 /* Home: Bento, operational and compact */
 .rnx-home{display:grid;gap:14px}
 .rnx-mobile-presence{display:none}
