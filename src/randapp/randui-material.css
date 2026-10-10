@@ -378,14 +378,15 @@ html:not([data-theme='dark']) .rnx-bottomnav__item.active .rnx-bottomnav__icon{b
   .rnx-content .rv2-operations .rv2-row__body {
     display: grid;
     min-width: 0;
-    gap: 4px;
-    overflow-wrap: anywhere;
+    gap: 3px;
+    overflow-wrap: break-word;
   }
   .rnx-content .rv2-operations .rv2-row__body > :is(strong,small) {
     display: block;
     max-width: 100%;
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    word-break: normal;
     text-align: left;
   }
   .rnx-content .rv2-operations .rv2-row__title {
