@@ -29,6 +29,7 @@
      black-translucent status bar draws under the chrome, so the row must grow. */
   --rnx-safe-top:var(--rs-adaptive-safe-top, env(safe-area-inset-top, 0px));
   --rnx-safe-right:var(--rs-adaptive-safe-right, env(safe-area-inset-right, 0px));
+  --rnx-safe-bottom:var(--rs-adaptive-safe-bottom, env(safe-area-inset-bottom, 0px));
   --rnx-safe-left:var(--rs-adaptive-safe-left, env(safe-area-inset-left, 0px));
   --rnx-topbar-row:calc(var(--rnx-topbar) + var(--rnx-safe-top));
   --rnx-nav-h:72px;
@@ -186,7 +187,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 }
 
 /* Phone + tablet: pin the Material topbar; only .rnx-stage scrolls.
-   Mirrors the .rs-app / .rs-header viewport-lock contract. */
+   Mirrors the .rs-app / .rs-header viewport-lock contract.
+   Solid chrome (no radial/transparent blur) so notch and home-indicator
+   do not show a gradient band or black gap on open. */
 @media (max-width:1199px){
   .rs-root:has(.rnx-app),
   .rnx-app{
@@ -194,11 +197,15 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
     max-height:var(--rs-app-viewport-height, 100dvh);
     min-height:0;
     overflow:hidden;
+    background:var(--rnx-bg);
   }
   .rnx-topbar{
     position:relative;
     top:auto;
     z-index:30;
+    background:var(--rnx-bg)!important;
+    border-bottom:1px solid var(--rnx-line)!important;
+    backdrop-filter:none!important;
   }
   .rnx-stage{
     min-height:0;
@@ -427,16 +434,17 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-tray{padding:11px;border-radius:17px}
   .rnx-priority{grid-template-columns:28px 34px minmax(0,1fr) 16px;min-height:60px;padding:8px}
   .rnx-priority__body span{display:none}
-  /* Docked bottom bar: full width, no floating pill covering content.
-     Slightly less padding above the home-indicator so icons sit a touch lower. */
+  /* Docked bottom bar: full width to the physical bottom. Opaque fill so the
+     home-indicator inset is not a black “distacco” under the icons on open. */
   .rnx-bottomnav{
     position:fixed;z-index:50;left:0;right:0;bottom:0;
-    min-height:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom));
+    min-height:calc(var(--rnx-nav-h) + var(--rnx-safe-bottom));
     display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-    padding:4px max(6px,env(safe-area-inset-right)) calc(2px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    padding:4px max(6px, var(--rnx-safe-right)) var(--rnx-safe-bottom) max(6px, var(--rnx-safe-left));
     border-top:1px solid var(--rnx-line);
-    background:color-mix(in srgb,var(--rnx-surface) 94%,transparent);
-    backdrop-filter:blur(18px) saturate(1.1)
+    background:var(--rnx-bg);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
   }
   .rnx-bottomnav__item{
     min-width:0;min-height:54px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;
