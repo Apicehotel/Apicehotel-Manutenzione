@@ -7,6 +7,7 @@ import {
   JWT_CLOCK_USER_MESSAGE,
   readJwtIat,
   settleFreshAccessToken,
+  isJwtLoginGraceActive,
   waitUntilRestAcceptsAccessToken,
 } from '../src/reliability/jwt-errors.js'
 
@@ -48,4 +49,22 @@ test('waitUntilRestAcceptsAccessToken retries until PostgREST stops rejecting fu
   })
   assert.equal(ok, true)
   assert.equal(calls, 3)
+})
+
+test('login grace helper covers the two-minute post-PIN window', () => {
+  const previous = globalThis.sessionStorage
+  const store = new Map()
+  globalThis.sessionStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => { store.set(key, String(value)) },
+    removeItem: (key) => { store.delete(key) },
+  }
+  try {
+    assert.equal(isJwtLoginGraceActive(), false)
+    sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
+    assert.equal(isJwtLoginGraceActive(), true)
+  } finally {
+    if (previous === undefined) delete globalThis.sessionStorage
+    else globalThis.sessionStorage = previous
+  }
 })

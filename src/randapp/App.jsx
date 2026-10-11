@@ -326,12 +326,11 @@ export default function App() {
       try {
         const { supabase } = await import('../supabase.js')
         const { signOutSupabase } = await import('../auth-data.js')
-        const { JWT_CLOCK_USER_MESSAGE } = await import('../reliability/jwt-errors.js')
+        const { JWT_CLOCK_USER_MESSAGE, isJwtLoginGraceActive } = await import('../reliability/jwt-errors.js')
         const { operationFailed } = await import('../operation-feedback.js')
+        const { ensureRestAcceptsCurrentSession } = await import('../auth-data.js')
         const key = 'apice-jwt-recovery-at'
         const previous = Number(sessionStorage.getItem(key) || 0)
-        const loggedInAt = Number(sessionStorage.getItem('apice-jwt-login-at') || 0)
-        const recentLogin = loggedInAt > 0 && Date.now() - loggedInAt < 120000
         const { data: current } = await supabase?.auth.getSession() || { data: { session: null } }
         // PostgREST clock skew must not eject a still-valid Auth session right after PIN login.
         if (!current?.session?.refresh_token) {
@@ -340,8 +339,9 @@ export default function App() {
           clearSession()
           return
         }
-        if (Date.now() - previous < 90000 || recentLogin) {
-          operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Sincronizzazione sessione')
+        if (Date.now() - previous < 90000 || isJwtLoginGraceActive()) {
+          // Silent settle: the alarming "esci e accedi" toast made operators think login failed.
+          await ensureRestAcceptsCurrentSession(8)
           return
         }
         sessionStorage.setItem(key, String(Date.now()))
@@ -354,6 +354,7 @@ export default function App() {
           operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
           return
         }
+        await ensureRestAcceptsCurrentSession(12)
         window.location.reload()
       } catch {
         // Transport failures must not wipe a PIN session the operator just opened.
@@ -406,12 +407,15 @@ export default function App() {
         return
       }
       try {
-        const { validateSupabaseSession, signOutSupabase } = await import('../auth-data.js')
+        const { validateSupabaseSession, signOutSupabase, ensureRestAcceptsCurrentSession } = await import('../auth-data.js')
         const result = await withTimeout(validateSupabaseSession(), SESSION_CHECK_TIMEOUT_MS, 'Controllo sessione timeout')
         if (active && !result.valid) {
           await resetSession(signOutSupabase)
           return
         }
+        if (!active) return
+        // Prefer waiting for PostgREST acceptance before Home fires parallel REST reads.
+        await withTimeout(ensureRestAcceptsCurrentSession(20), 25000, 'Allineamento sessione timeout').catch(() => false)
         if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
         const directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
@@ -473,7 +477,7 @@ export default function App() {
 
   if (recoveryToken && !recoveryDone) return <PinRecoveryComplete token={recoveryToken} onDone={() => { setRecoveryDone(true); try { window.history.replaceState({}, '', window.location.pathname) } catch { /* noop */ } }} />
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
-  if (session && !sessionReady) return <Spinner label="Verifico accesso…" />
+  if (session && !sessionReady) return <Spinner label="Allineo la sessione…" />
   if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} initialDirectory={validatedDirectory} onLogout={onLogout} onSwitchHotel={(id) => { setValidatedDirectory(null); saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
   if (pending) return <HotelSelector pending={pending} onPick={pickHotel} />
   return <Login onAuthenticated={onAuthenticated} onOpenSettings={() => setSettingsFromLogin(true)} />

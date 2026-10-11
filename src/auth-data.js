@@ -14,16 +14,31 @@ async function setReturnedSession(data) {
   if (!tokens) throw new Error('La funzione non ha restituito una sessione valida')
   const { data: result, error } = await supabase.auth.setSession(tokens)
   if (error || !result?.session) throw error || new Error('Impossibile impostare la sessione Supabase')
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
+  }
   // Keep the operator signed in even if REST is briefly skewed: settle first, never throw here.
   await waitUntilRestAcceptsAccessToken({
     accessToken: result.session.access_token,
     restUrl: supabaseUrl,
     anonKey: supabaseAnonKey,
+    maxAttempts: 20,
   }).catch(() => false)
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
-  }
   return result.session
+}
+
+/** Wait until the current access token is accepted by PostgREST (best effort). */
+export async function ensureRestAcceptsCurrentSession(maxAttempts = 20) {
+  if (!supabase) return false
+  const { data, error } = await supabase.auth.getSession()
+  const accessToken = data?.session?.access_token
+  if (error || !accessToken) return false
+  return waitUntilRestAcceptsAccessToken({
+    accessToken,
+    restUrl: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    maxAttempts,
+  }).catch(() => false)
 }
 export async function loginWithPin({ hotelId, userId, pin }) {
   if (!supabase) throw new Error('Supabase non configurato')

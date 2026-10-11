@@ -8,8 +8,11 @@ export const FUTURE_JWT_RE = /jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|pgrst30
 export const isFutureJwtError = (error) =>
   FUTURE_JWT_RE.test(String(error?.message || error?.code || error || ''))
 
+/** Shown only when Auth itself is dead and a new PIN login is required. */
 export const JWT_CLOCK_USER_MESSAGE =
   'Sessione non allineata con il server. Controlla che data e ora del telefono siano automatiche, poi esci e accedi di nuovo con il PIN.'
+
+export const JWT_LOGIN_GRACE_MS = 120000
 
 export function humanizeJwtClockError(error) {
   const text = String(error?.message || error?.code || error || '')
@@ -42,6 +45,12 @@ export async function settleFreshAccessToken(accessToken, sleep = (ms) => new Pr
   return waitMs
 }
 
+export function isJwtLoginGraceActive(now = Date.now()) {
+  if (typeof sessionStorage === 'undefined') return false
+  const loggedInAt = Number(sessionStorage.getItem('apice-jwt-login-at') || 0)
+  return loggedInAt > 0 && now - loggedInAt < JWT_LOGIN_GRACE_MS
+}
+
 /**
  * Probe PostgREST until a freshly minted access token is accepted, or attempts run out.
  * Used after PIN login so the Shell does not boot on a token that REST still rejects.
@@ -52,12 +61,13 @@ export async function waitUntilRestAcceptsAccessToken({
   anonKey,
   fetchImpl = fetch,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  maxAttempts = 6,
+  maxAttempts = 20,
 } = {}) {
   if (!accessToken || !restUrl || !anonKey) return false
   const endpoint = `${String(restUrl).replace(/\/$/, '')}/rest/v1/hotels?select=id&limit=1`
+  // Wait for local iat skew once; then poll PostgREST until Auth/API skew clears.
+  await settleFreshAccessToken(accessToken, sleep)
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    await settleFreshAccessToken(accessToken, sleep)
     try {
       const response = await fetchImpl(endpoint, {
         headers: {
