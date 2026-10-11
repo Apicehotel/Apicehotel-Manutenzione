@@ -101,8 +101,12 @@ test('hotel test WhatsApp flow creates one issue and sends from each configured 
   assert.doesNotMatch(flow, /\+393341196935/)
 })
 
-test('Supabase session refreshes before protected writes', () => {
+test('Supabase validates the current session and refreshes only after a recoverable JWT rejection', () => {
   const auth = read('src/auth-data.js')
-  assert.match(auth, /supabase\.auth\.refreshSession\(\)/)
-  assert.match(auth, /JWT issued at future/)
+  const validate = auth.slice(auth.indexOf('export async function validateSupabaseSession()'), auth.indexOf('export async function signOutSupabase()'))
+  assert.match(validate, /supabase\.auth\.getUser\(\)/)
+  assert.match(validate, /supabase\.auth\.refreshSession\(\)/)
+  assert.ok(validate.indexOf('auth.getUser()') < validate.indexOf('auth.refreshSession()'))
+  assert.match(validate, /if \(!recoverable \|\| !session\.refresh_token\)/)
+  assert.match(validate, /const verified = await supabase\.auth\.getUser\(\)/)
 })

@@ -59,20 +59,25 @@ export async function setOwnPresence(present, hotelId = null) {
 }
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }
-  const { data: sessionData } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   const session = sessionData?.session
-  if (!session) return { valid: false, user: null }
+  if (sessionError || !session) return { valid: false, user: null }
   if (typeof navigator !== 'undefined' && !navigator.onLine) return { valid: true, user: session.user, offline: true }
   try {
-    // A session restored from storage can carry an access token whose iat is
-    // ahead of the API clock. Refresh first so writes do not fail later with
-    // the opaque "JWT issued at future" error.
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-    if (!refreshError && refreshed?.session) return { valid: true, user: refreshed.session.user, refreshed: true }
+    // Do not rotate refresh tokens on every navigation or page reload:
+    // the Supabase SDK already auto-refreshes expiring sessions.
     const { data, error } = await supabase.auth.getUser()
-    if (error || !data?.user) return { valid: false, user: null }
-    return { valid: true, user: data.user }
+    if (!error && data?.user) return { valid: true, user: data.user }
+    const recoverable = /jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|jwt\s+expired|invalid\s+jwt|token\s+expired/i
+      .test(String(error?.message || ''))
+    if (!recoverable || !session.refresh_token) return { valid: false, user: null }
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+    if (refreshError || !refreshed?.session) return { valid: false, user: null }
+    const verified = await supabase.auth.getUser()
+    if (verified.error || !verified.data?.user) return { valid: false, user: null }
+    return { valid: true, user: verified.data.user, refreshed: true }
   } catch {
+    // Network outages must never cause an uncontrolled logout.
     return { valid: true, user: session.user, offline: true }
   }
 }
