@@ -41,3 +41,37 @@ export async function settleFreshAccessToken(accessToken, sleep = (ms) => new Pr
   if (waitMs > 0) await sleep(waitMs)
   return waitMs
 }
+
+/**
+ * Probe PostgREST until a freshly minted access token is accepted, or attempts run out.
+ * Used after PIN login so the Shell does not boot on a token that REST still rejects.
+ */
+export async function waitUntilRestAcceptsAccessToken({
+  accessToken,
+  restUrl,
+  anonKey,
+  fetchImpl = fetch,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  maxAttempts = 6,
+} = {}) {
+  if (!accessToken || !restUrl || !anonKey) return false
+  const endpoint = `${String(restUrl).replace(/\/$/, '')}/rest/v1/hotels?select=id&limit=1`
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    await settleFreshAccessToken(accessToken, sleep)
+    try {
+      const response = await fetchImpl(endpoint, {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      })
+      const body = await response.text()
+      if (!FUTURE_JWT_RE.test(body)) return true
+    } catch {
+      /* best-effort probe */
+    }
+    if (attempt < maxAttempts - 1) await sleep(1000)
+  }
+  return false
+}

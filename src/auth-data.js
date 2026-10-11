@@ -1,6 +1,6 @@
-import { supabase } from './supabase.js'
+import { supabase, supabaseAnonKey, supabaseUrl } from './supabase.js'
 import { assertSensitiveActionOnline } from './session-policy.js'
-import { isFutureJwtError } from './reliability/jwt-errors.js'
+import { isFutureJwtError, waitUntilRestAcceptsAccessToken } from './reliability/jwt-errors.js'
 
 function sessionTokens(data) {
   const session = data?.session || data
@@ -14,6 +14,15 @@ async function setReturnedSession(data) {
   if (!tokens) throw new Error('La funzione non ha restituito una sessione valida')
   const { data: result, error } = await supabase.auth.setSession(tokens)
   if (error || !result?.session) throw error || new Error('Impossibile impostare la sessione Supabase')
+  // Keep the operator signed in even if REST is briefly skewed: settle first, never throw here.
+  await waitUntilRestAcceptsAccessToken({
+    accessToken: result.session.access_token,
+    restUrl: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  }).catch(() => false)
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
+  }
   return result.session
 }
 export async function loginWithPin({ hotelId, userId, pin }) {

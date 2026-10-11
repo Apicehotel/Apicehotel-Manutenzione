@@ -330,27 +330,33 @@ export default function App() {
         const { operationFailed } = await import('../operation-feedback.js')
         const key = 'apice-jwt-recovery-at'
         const previous = Number(sessionStorage.getItem(key) || 0)
-        const requirePinLogin = async () => {
+        const loggedInAt = Number(sessionStorage.getItem('apice-jwt-login-at') || 0)
+        const recentLogin = loggedInAt > 0 && Date.now() - loggedInAt < 120000
+        const { data: current } = await supabase?.auth.getSession() || { data: { session: null } }
+        // PostgREST clock skew must not eject a still-valid Auth session right after PIN login.
+        if (!current?.session?.refresh_token) {
+          sessionStorage.removeItem(key)
+          await signOutSupabase()
+          clearSession()
+          return
+        }
+        if (Date.now() - previous < 90000 || recentLogin) {
+          operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Sincronizzazione sessione')
+          return
+        }
+        sessionStorage.setItem(key, String(Date.now()))
+        const refreshed = await supabase.auth.refreshSession()
+        const verified = refreshed?.error ? null : await supabase.auth.getUser()
+        if (refreshed?.error || !refreshed?.data?.session || verified?.error || !verified?.data?.user) {
           sessionStorage.removeItem(key)
           await signOutSupabase()
           clearSession()
           operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
-        }
-        // A repeated rejection following one refresh must request a clean PIN login.
-        if (Date.now() - previous < 90000) {
-          await requirePinLogin()
-          return
-        }
-        sessionStorage.setItem(key, String(Date.now()))
-        const refreshed = await supabase?.auth.refreshSession()
-        const verified = refreshed?.error ? null : await supabase?.auth.getUser()
-        if (refreshed?.error || !refreshed?.data?.session || verified?.error || !verified?.data?.user) {
-          await requirePinLogin()
           return
         }
         window.location.reload()
       } catch {
-        clearSession()
+        // Transport failures must not wipe a PIN session the operator just opened.
       } finally {
         recovering = false
       }

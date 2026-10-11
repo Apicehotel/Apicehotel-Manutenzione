@@ -33,3 +33,8 @@ test('pin-auth waits for PostgREST to accept a freshly minted access token', () 
   assert.match(pinAuth, /jwt\\s\+issued/)
   assert.match(pinAuth, /await waitUntilPostgrestAccepts\(signed\.access_token\)/)
 })
+
+test('pin-auth gateway JWT verification is disabled; function owns PIN/membership auth', () => {
+  const config = fs.readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8')
+  assert.match(config, /\[functions\.pin-auth\][\s\S]*verify_jwt\s*=\s*false/)
+})
