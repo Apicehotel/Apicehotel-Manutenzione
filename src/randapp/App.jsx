@@ -318,6 +318,43 @@ function HotelSelector({ pending, onPick }) {
 
 export default function App() {
   const [session, setSession] = useState(loadSession())
+  useEffect(() => {
+    let recovering = false
+    const onJwtRejected = async () => {
+      if (recovering || !loadSession()) return
+      recovering = true
+      try {
+        const { supabase } = await import('../supabase.js')
+        const { signOutSupabase } = await import('../auth-data.js')
+        const key = 'apice-jwt-recovery-at'
+        const previous = Number(sessionStorage.getItem(key) || 0)
+        // A repeated rejection following one refresh must request a clean PIN login.
+        if (Date.now() - previous < 90000) {
+          sessionStorage.removeItem(key)
+          await signOutSupabase()
+          clearSession()
+          return
+        }
+        sessionStorage.setItem(key, String(Date.now()))
+        const refreshed = await supabase?.auth.refreshSession()
+        const verified = refreshed?.error ? null : await supabase?.auth.getUser()
+        if (refreshed?.error || !refreshed?.data?.session || verified?.error || !verified?.data?.user) {
+          sessionStorage.removeItem(key)
+          await signOutSupabase()
+          clearSession()
+          return
+        }
+        window.location.reload()
+      } catch {
+        clearSession()
+      } finally {
+        recovering = false
+      }
+    }
+    window.addEventListener('apice-jwt-clock-rejected', onJwtRejected)
+    return () => window.removeEventListener('apice-jwt-clock-rejected', onJwtRejected)
+  }, [])
+
   const [sessionReady, setSessionReady] = useState(() => !loadSession())
   const [validatedDirectory, setValidatedDirectory] = useState(null)
   const [pending, setPending] = useState(null)
