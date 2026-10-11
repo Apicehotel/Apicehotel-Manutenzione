@@ -13,8 +13,9 @@ test('PIN login preserves the authoritative identity returned by pin-auth', () =
 
 test('a stale app session is verified against the selected hotel before Shell mounts', () => {
   assert.match(app, /const \[sessionReady, setSessionReady\]/)
+  assert.match(app, /ensureRestAcceptsCurrentSession/)
   assert.match(app, /withTimeout\(fetchDirectory\(session\.hotelId\)/)
   assert.match(app, /u\.auth_user_id === session\.userId \|\| u\.id === session\.userId \|\| u\.legacy_id === session\.userId/)
   assert.match(app, /await resetSession\(signOutSupabase\)/)
-  assert.match(app, /if \(session && !sessionReady\) return <Spinner label="Verifico accesso…" \/>/)
+  assert.match(app, /if \(session && !sessionReady\) return <Spinner label="Allineo la sessione…" \/>/)
 })
