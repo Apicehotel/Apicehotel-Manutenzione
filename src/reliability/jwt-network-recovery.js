@@ -24,7 +24,9 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
     let body = ''
     try { body = await response.clone().text() } catch { return response }
     if (!isFutureBody(body)) return response
-    if (!['GET', 'HEAD'].includes(method) || /\/functions\/v1\//.test(url)) { warn(); return response }
+    // Edge Functions authenticate themselves; do not escalate their JWT skew into a Shell logout.
+    if (/\/functions\/v1\//.test(url)) return response
+    if (!['GET', 'HEAD'].includes(method)) { warn(); return response }
     const client = getClient?.()
     if (!client?.auth) { warn(); return response }
     try {

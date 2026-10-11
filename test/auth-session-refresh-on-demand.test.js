@@ -12,3 +12,7 @@ test('failure of refresh fails closed and successful refresh is verified',()=>{
   assert.match(verify,/if \(refreshError \|\| !refreshed\?\.session\) return \{ valid: false/)
   assert.match(verify,/const verified = await supabase\.auth\.getUser\(\)/)
 })
+test('PIN/session install settles REST acceptance and marks a login grace window',()=>{
+  assert.match(source,/waitUntilRestAcceptsAccessToken/)
+  assert.match(source,/apice-jwt-login-at/)
+})

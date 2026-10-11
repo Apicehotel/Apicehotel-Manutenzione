@@ -51,10 +51,19 @@ test('writes are never replayed, even for a future JWT', async () => {
 
 test('unrelated errors, auth endpoints and functions are not retried', async () => {
   let attempts = 0
-  const fetch = createJwtRecoveringFetch(async () => { attempts++; return failed() }, () => { throw Error('should not inspect auth') }, { sleep })
-  await fetch('https://example.test/auth/v1/user')
-  await fetch('https://example.test/functions/v1/pin-auth')
-  assert.equal(attempts, 2)
+  let warned = 0
+  const previousWindow = globalThis.window
+  globalThis.window = { dispatchEvent: () => { warned++ } }
+  try {
+    const fetch = createJwtRecoveringFetch(async () => { attempts++; return failed() }, () => { throw Error('should not inspect auth') }, { sleep })
+    await fetch('https://example.test/auth/v1/user')
+    await fetch('https://example.test/functions/v1/pin-auth', { method: 'POST' })
+    assert.equal(attempts, 2)
+    assert.equal(warned, 0)
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window
+    else globalThis.window = previousWindow
+  }
 })
 
 test('invalid refresh fails closed and preserves the original error', async () => {

@@ -7,6 +7,7 @@ import {
   JWT_CLOCK_USER_MESSAGE,
   readJwtIat,
   settleFreshAccessToken,
+  waitUntilRestAcceptsAccessToken,
 } from '../src/reliability/jwt-errors.js'
 
 test('detects PostgREST future JWT and PGRST303 codes', () => {
@@ -30,4 +31,21 @@ test('settleFreshAccessToken waits only for a capped local iat skew', async () =
   assert.ok(waitMs > 0)
   assert.ok(waited <= 8000)
   assert.equal(await settleFreshAccessToken('not-a-jwt', async () => { throw new Error('no wait') }), 0)
+})
+
+test('waitUntilRestAcceptsAccessToken retries until PostgREST stops rejecting future JWT', async () => {
+  let calls = 0
+  const ok = await waitUntilRestAcceptsAccessToken({
+    accessToken: `a.${Buffer.from(JSON.stringify({ iat: Math.floor(Date.now() / 1000) - 10 })).toString('base64url')}.b`,
+    restUrl: 'https://example.test',
+    anonKey: 'anon',
+    sleep: async () => {},
+    fetchImpl: async () => {
+      calls += 1
+      if (calls < 3) return new Response(JSON.stringify({ message: 'JWT issued at future' }), { status: 401 })
+      return new Response('[]', { status: 200 })
+    },
+  })
+  assert.equal(ok, true)
+  assert.equal(calls, 3)
 })
