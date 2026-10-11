@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createTimedFetch } from './async-timeout.js'
+import { createJwtRecoveringFetch } from './reliability/jwt-network-recovery.js'
 
 // Database unico dell'app unificata "Apice MultiHotel" (ooqlfldcrnkudhgjnied).
 // I tre hotel condividono questo DB, separati dalla colonna hotel_id.
@@ -22,7 +23,7 @@ if (typeof window !== 'undefined' && (!url || !anonKey)) {
 export const supabase = typeof window !== 'undefined' && url && anonKey
   ? createClient(url, anonKey, {
       auth: { persistSession: true, autoRefreshToken: true },
-      global: { fetch: createTimedFetch(SUPABASE_FETCH_TIMEOUT_MS) },
+      global: { fetch: createJwtRecoveringFetch(createTimedFetch(SUPABASE_FETCH_TIMEOUT_MS), () => supabase) },
     })
   : null
 
