@@ -68,7 +68,7 @@ export async function validateSupabaseSession() {
     // the Supabase SDK already auto-refreshes expiring sessions.
     const { data, error } = await supabase.auth.getUser()
     if (!error && data?.user) return { valid: true, user: data.user }
-    const recoverable = /jwt\\s+issued\\s+(?:at\\s+)?(?:the\\s+)?future|jwt\\s+expired|invalid\\s+jwt|token\\s+expired/i
+    const recoverable = /jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|jwt\s+expired|invalid\s+jwt|token\s+expired/i
       .test(String(error?.message || ''))
     if (!recoverable || !session.refresh_token) return { valid: false, user: null }
     const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
