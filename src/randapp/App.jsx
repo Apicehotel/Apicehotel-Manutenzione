@@ -326,22 +326,26 @@ export default function App() {
       try {
         const { supabase } = await import('../supabase.js')
         const { signOutSupabase } = await import('../auth-data.js')
+        const { JWT_CLOCK_USER_MESSAGE } = await import('../reliability/jwt-errors.js')
+        const { operationFailed } = await import('../operation-feedback.js')
         const key = 'apice-jwt-recovery-at'
         const previous = Number(sessionStorage.getItem(key) || 0)
-        // A repeated rejection following one refresh must request a clean PIN login.
-        if (Date.now() - previous < 90000) {
+        const requirePinLogin = async () => {
           sessionStorage.removeItem(key)
           await signOutSupabase()
           clearSession()
+          operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
+        }
+        // A repeated rejection following one refresh must request a clean PIN login.
+        if (Date.now() - previous < 90000) {
+          await requirePinLogin()
           return
         }
         sessionStorage.setItem(key, String(Date.now()))
         const refreshed = await supabase?.auth.refreshSession()
         const verified = refreshed?.error ? null : await supabase?.auth.getUser()
         if (refreshed?.error || !refreshed?.data?.session || verified?.error || !verified?.data?.user) {
-          sessionStorage.removeItem(key)
-          await signOutSupabase()
-          clearSession()
+          await requirePinLogin()
           return
         }
         window.location.reload()

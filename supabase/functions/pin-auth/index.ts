@@ -74,6 +74,21 @@ function hotelList(value:any):string[]{
 }
 const hasHotel=(value:any,hotelId:string)=>hotelList(value).includes(hotelId);
 
+/** Bounded wait so Auth/PostgREST clock skew does not return an unusable session. */
+async function waitUntilPostgrestAccepts(accessToken:string,maxAttempts=6){
+  if(!PUBLIC||!accessToken)return;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    try{
+      const res=await fetch(`${API_URL}/rest/v1/hotels?select=id&limit=1`,{
+        headers:{apikey:PUBLIC,Authorization:`Bearer ${accessToken}`,Accept:"application/json"},
+      });
+      const body=await res.text();
+      if(!/jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|pgrst303/i.test(body))return;
+    }catch{ /* probe best-effort; login still returns the Auth session */ }
+    await new Promise((resolve)=>setTimeout(resolve,1000));
+  }
+}
+
 async function authJson(path:string,method="GET",body?:unknown,key=SECRET,token?:string){
   const headers:Record<string,string>={apikey:key,Accept:"application/json"};
   if(body!==undefined) headers["Content-Type"]="application/json";
@@ -250,6 +265,7 @@ Deno.serve(async(req:Request)=>{
     await authJson(`/admin/users/${authUserId}`,"PUT",{password});
     const signed=await authJson("/token?grant_type=password","POST",{email:internalEmail,password},PUBLIC);
     if(!signed?.access_token||!signed?.refresh_token)throw new Error("Sessione non disponibile");
+    await waitUntilPostgrestAccepts(signed.access_token);
 
     const since=legacy.in_struttura_dal?new Date(legacy.in_struttura_dal).getTime():null;
     const presenceExpired=since!==null&&Date.now()-since>PRESENCE_MAX_MS;

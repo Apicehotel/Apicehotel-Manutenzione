@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js'
 import { assertSensitiveActionOnline } from './session-policy.js'
+import { isFutureJwtError } from './reliability/jwt-errors.js'
 
 function sessionTokens(data) {
   const session = data?.session || data
@@ -68,8 +69,8 @@ export async function validateSupabaseSession() {
     // the Supabase SDK already auto-refreshes expiring sessions.
     const { data, error } = await supabase.auth.getUser()
     if (!error && data?.user) return { valid: true, user: data.user }
-    const recoverable = /jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|jwt\s+expired|invalid\s+jwt|token\s+expired/i
-      .test(String(error?.message || ''))
+    const recoverable = isFutureJwtError(error)
+      || /jwt\s+expired|invalid\s+jwt|token\s+expired/i.test(String(error?.message || ''))
     if (!recoverable || !session.refresh_token) return { valid: false, user: null }
     const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
     if (refreshError || !refreshed?.session) return { valid: false, user: null }
