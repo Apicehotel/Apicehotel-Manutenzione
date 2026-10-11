@@ -1,4 +1,4 @@
-import { FUTURE_JWT_RE, settleFreshAccessToken } from './jwt-errors.js'
+import { FUTURE_JWT_RE, isJwtLoginGraceActive, settleFreshAccessToken } from './jwt-errors.js'
 
 /**
  * Network-wide recovery for a confirmed server-side future-issued JWT rejection.
@@ -10,7 +10,8 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
   let lastWarning = 0
   const sleep = options.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   const warn = () => {
-    if (typeof window === 'undefined' || Date.now() - lastWarning < 10000) return
+    // Right after PIN login the Shell is already settling REST; do not spam toasts.
+    if (typeof window === 'undefined' || isJwtLoginGraceActive() || Date.now() - lastWarning < 10000) return
     lastWarning = Date.now()
     window.dispatchEvent(new Event('apice-jwt-clock-rejected'))
   }

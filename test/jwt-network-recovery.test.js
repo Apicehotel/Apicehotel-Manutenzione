@@ -78,3 +78,26 @@ test('successful GET does not refresh', async () => {
   const fetch = createJwtRecoveringFetch(async () => ok(), () => { throw Error('no refresh expected') }, { sleep })
   assert.equal((await fetch('https://example.test/rest/v1/segnalazioni')).status, 200)
 })
+
+test('login grace suppresses JWT rejection toasts', async () => {
+  let warned = 0
+  const previousWindow = globalThis.window
+  const previousStorage = globalThis.sessionStorage
+  const store = new Map([['apice-jwt-login-at', String(Date.now())]])
+  globalThis.sessionStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => { store.set(key, String(value)) },
+    removeItem: (key) => { store.delete(key) },
+  }
+  globalThis.window = { dispatchEvent: () => { warned++ } }
+  try {
+    const fetch = createJwtRecoveringFetch(async () => failed(), () => client(async () => ({ data: { session: { access_token: pastToken } } })), { sleep })
+    await fetch('https://example.test/rest/v1/segnalazioni', { method: 'POST' })
+    assert.equal(warned, 0)
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window
+    else globalThis.window = previousWindow
+    if (previousStorage === undefined) delete globalThis.sessionStorage
+    else globalThis.sessionStorage = previousStorage
+  }
+})

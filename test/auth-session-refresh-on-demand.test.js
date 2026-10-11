@@ -15,4 +15,6 @@ test('failure of refresh fails closed and successful refresh is verified',()=>{
 test('PIN/session install settles REST acceptance and marks a login grace window',()=>{
   assert.match(source,/waitUntilRestAcceptsAccessToken/)
   assert.match(source,/apice-jwt-login-at/)
+  assert.match(source,/export async function ensureRestAcceptsCurrentSession/)
+  assert.match(source,/maxAttempts: 20/)
 })
