@@ -26,3 +26,10 @@ test('pin-auth issues sessions through Auth while direct Postgres owns identity 
   assert.match(pinAuth, /public\.profiles/)
   assert.match(pinAuth, /public\.utenti/)
 })
+
+test('pin-auth waits for PostgREST to accept a freshly minted access token', () => {
+  assert.match(pinAuth, /waitUntilPostgrestAccepts/)
+  assert.match(pinAuth, /rest\/v1\/hotels\?select=id&limit=1/)
+  assert.match(pinAuth, /jwt\\s\+issued/)
+  assert.match(pinAuth, /await waitUntilPostgrestAccepts\(signed\.access_token\)/)
+})

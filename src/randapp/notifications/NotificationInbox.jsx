@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Icon, Spinner } from '../ui.jsx'
+import { humanizeJwtClockError } from '../../reliability/jwt-errors.js'
 import { fetchNotificationInbox, markAllNotificationsRead, markNotificationRead, subscribeNotificationInbox } from './notification-data.js'
 import './notification-inbox.css'
 
@@ -26,7 +27,7 @@ export default function NotificationInbox({ hotel, user, onUnreadChange, canOpen
       setItems(result.items)
       onUnreadChange?.(result.unread)
     } catch (e) {
-      setError(e?.message || 'Notifiche non disponibili')
+      setError(humanizeJwtClockError(e) || e?.message || 'Notifiche non disponibili')
     } finally {
       setLoading(false)
     }

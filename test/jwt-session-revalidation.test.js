@@ -17,4 +17,6 @@ test('central RandApp session recovers once, then requests a new PIN login',()=>
  assert.match(app,/clearSession\(\)/)
  assert.match(app,/window\.location\.reload\(\)/)
  assert.match(app,/90000/)
+ assert.match(app,/JWT_CLOCK_USER_MESSAGE/)
+ assert.match(app,/Accesso richiesto di nuovo/)
 })

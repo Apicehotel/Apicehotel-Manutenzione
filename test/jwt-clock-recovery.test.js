@@ -9,10 +9,11 @@ const sale=read('../src/sale-data.js')
 const shell=read('../src/randapp/Shell.jsx')
 
 test('recover only future-issued JWT read failures',()=>{
-  assert.match(auth,/export const isFutureJwtError/)
+  assert.match(auth,/export \{ isFutureJwtError/)
   assert.match(auth,/refreshSession\(\)/)
   assert.match(auth,/!session\?\.refresh_token/)
   assert.match(auth,/return read\(\)/)
+  assert.match(auth,/JWT_CLOCK_USER_MESSAGE/)
   assert.doesNotMatch(auth,/setSession\(|signOut\(|localStorage\.clear\(/)
 })
 
