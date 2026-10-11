@@ -1,0 +1,19 @@
+/* RandUI Home density: scope to KPI / chart only; header and navigation untouched. */
+.rnx-chart-preferences{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.rnx-chart-preferences button{border:1px solid var(--rnx-line);border-radius:9px;padding:7px 10px;color:var(--rnx-text);background:var(--rnx-surface-2);font-size:.75rem}
+.rnx-chart-preferences button[aria-pressed="true"]{border-color:var(--rnx-accent);background:var(--rnx-accent-soft);font-weight:750}
+.rnx-chartcard--compact .rnx-chartcard__plot{height:88px;min-height:0}
+.rnx-chartcard--compact{padding-block:12px}
+@media(max-width:767px){
+  .rnx-kpi-grid,.rnx-kpi-grid[data-count="4"]{gap:8px!important}
+  .rnx-kpi-grid .rs-stat-card,.rnx-kpi-grid .rs-workhome__stat,.rnx-kpi-grid .rs-randui-statcard{min-height:72px!important;padding:9px!important;border-radius:14px!important}
+  .rnx-kpi-grid .rs-randui-statcard__icon{width:31px;height:31px;border-radius:9px}
+  .rnx-kpi-grid .rs-randui-statcard__icon .rs-icon{width:17px;height:17px}
+  .rnx-kpi-grid strong{font-size:1.48rem;line-height:1.08}
+  .rnx-kpi-grid .rs-randui-statcard__label{font-size:.73rem;overflow-wrap:normal;word-break:normal}
+  .rnx-chartcard--compact .rnx-chartcard__plot{height:74px}
+}
+
+.rnx-chart-mode-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;color:var(--rnx-text-2)}
+.rnx-chart-mode-row label{font-size:.76rem;font-weight:650}
+.rnx-chart-mode-row select{width:auto;min-width:126px;min-height:36px;padding:5px 8px;border:1px solid var(--rnx-line);border-radius:9px;color:var(--rnx-text);background:var(--rnx-surface);font-size:.78rem}
