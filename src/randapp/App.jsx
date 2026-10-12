@@ -341,7 +341,7 @@ export default function App() {
         }
         if (Date.now() - previous < 90000 || isJwtLoginGraceActive()) {
           // Silent settle: the alarming "esci e accedi" toast made operators think login failed.
-          await ensureRestAcceptsCurrentSession(8)
+          await ensureRestAcceptsCurrentSession(4)
           return
         }
         sessionStorage.setItem(key, String(Date.now()))
@@ -354,7 +354,7 @@ export default function App() {
           operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
           return
         }
-        await ensureRestAcceptsCurrentSession(12)
+        await ensureRestAcceptsCurrentSession(4)
         window.location.reload()
       } catch {
         // Transport failures must not wipe a PIN session the operator just opened.
@@ -415,7 +415,8 @@ export default function App() {
         }
         if (!active) return
         // Prefer waiting for PostgREST acceptance before Home fires parallel REST reads.
-        await withTimeout(ensureRestAcceptsCurrentSession(20), 25000, 'Allineamento sessione timeout').catch(() => false)
+        // Budget stays short: login already settled once and skips when rest-ready.
+        await withTimeout(ensureRestAcceptsCurrentSession(4), 8000, 'Allineamento sessione timeout').catch(() => false)
         if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
         const directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')

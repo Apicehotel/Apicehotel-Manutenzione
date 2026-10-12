@@ -1,6 +1,6 @@
 import { supabase, supabaseAnonKey, supabaseUrl } from './supabase.js'
 import { assertSensitiveActionOnline } from './session-policy.js'
-import { isFutureJwtError, waitUntilRestAcceptsAccessToken } from './reliability/jwt-errors.js'
+import { isFutureJwtError, isJwtRestReady, JWT_REST_SETTLE_ATTEMPTS, waitUntilRestAcceptsAccessToken } from './reliability/jwt-errors.js'
 
 function sessionTokens(data) {
   const session = data?.session || data
@@ -22,14 +22,16 @@ async function setReturnedSession(data) {
     accessToken: result.session.access_token,
     restUrl: supabaseUrl,
     anonKey: supabaseAnonKey,
-    maxAttempts: 20,
+    maxAttempts: JWT_REST_SETTLE_ATTEMPTS,
   }).catch(() => false)
   return result.session
 }
 
 /** Wait until the current access token is accepted by PostgREST (best effort). */
-export async function ensureRestAcceptsCurrentSession(maxAttempts = 20) {
+export async function ensureRestAcceptsCurrentSession(maxAttempts = JWT_REST_SETTLE_ATTEMPTS) {
   if (!supabase) return false
+  // Login already probed REST: do not pay the settle cost twice before Home.
+  if (isJwtRestReady()) return true
   const { data, error } = await supabase.auth.getSession()
   const accessToken = data?.session?.access_token
   if (error || !accessToken) return false

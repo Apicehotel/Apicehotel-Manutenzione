@@ -13,6 +13,10 @@ export const JWT_CLOCK_USER_MESSAGE =
   'Sessione non allineata con il server. Controlla che data e ora del telefono siano automatiche, poi esci e accedi di nuovo con il PIN.'
 
 export const JWT_LOGIN_GRACE_MS = 120000
+export const JWT_REST_READY_KEY = 'apice-jwt-rest-ready'
+/** Default probe budget after PIN: keep login snappy (~4s) while still covering small Auth/API skew. */
+export const JWT_REST_SETTLE_ATTEMPTS = 8
+export const JWT_REST_SETTLE_GAP_MS = 500
 
 export function humanizeJwtClockError(error) {
   const text = String(error?.message || error?.code || error || '')
@@ -40,7 +44,8 @@ export function readJwtIat(accessToken) {
 export async function settleFreshAccessToken(accessToken, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))) {
   const iat = readJwtIat(accessToken)
   if (!iat) return 0
-  const waitMs = Math.min(Math.max(iat * 1000 - Date.now() + 400, 0), 8000)
+  // Cap hard: a multi-second local wait made PIN login feel broken on Ocean.
+  const waitMs = Math.min(Math.max(iat * 1000 - Date.now() + 250, 0), 2500)
   if (waitMs > 0) await sleep(waitMs)
   return waitMs
 }
@@ -49,6 +54,17 @@ export function isJwtLoginGraceActive(now = Date.now()) {
   if (typeof sessionStorage === 'undefined') return false
   const loggedInAt = Number(sessionStorage.getItem('apice-jwt-login-at') || 0)
   return loggedInAt > 0 && now - loggedInAt < JWT_LOGIN_GRACE_MS
+}
+
+export function markJwtRestReady(now = Date.now()) {
+  if (typeof sessionStorage === 'undefined') return
+  sessionStorage.setItem(JWT_REST_READY_KEY, String(now))
+}
+
+export function isJwtRestReady(now = Date.now()) {
+  if (typeof sessionStorage === 'undefined') return false
+  const at = Number(sessionStorage.getItem(JWT_REST_READY_KEY) || 0)
+  return at > 0 && now - at < JWT_LOGIN_GRACE_MS
 }
 
 /**
@@ -61,7 +77,8 @@ export async function waitUntilRestAcceptsAccessToken({
   anonKey,
   fetchImpl = fetch,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  maxAttempts = 20,
+  maxAttempts = JWT_REST_SETTLE_ATTEMPTS,
+  gapMs = JWT_REST_SETTLE_GAP_MS,
 } = {}) {
   if (!accessToken || !restUrl || !anonKey) return false
   const endpoint = `${String(restUrl).replace(/\/$/, '')}/rest/v1/hotels?select=id&limit=1`
@@ -77,11 +94,14 @@ export async function waitUntilRestAcceptsAccessToken({
         },
       })
       const body = await response.text()
-      if (!FUTURE_JWT_RE.test(body)) return true
+      if (!FUTURE_JWT_RE.test(body)) {
+        markJwtRestReady()
+        return true
+      }
     } catch {
       /* best-effort probe */
     }
-    if (attempt < maxAttempts - 1) await sleep(1000)
+    if (attempt < maxAttempts - 1) await sleep(gapMs)
   }
   return false
 }
