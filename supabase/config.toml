@@ -22,3 +22,62 @@ verify_jwt = false
 # firma X-Twilio-Signature e, passando dal proxy Vercel, shared secret + URL.
 [functions.randai-whatsapp-inbound]
 verify_jwt = false
+
+# --- Allineamento allo stato deployato (verify_jwt=false su Supabase) ---------
+# Senza queste voci un `supabase functions deploy` riporta verify_jwt a true e
+# rompe i chiamanti senza JWT utente. Ogni funzione qui sotto autentica da sé.
+
+# Segreto condiviso x-sync-secret (edge_function_secrets.sensor_sync_secret).
+[functions.sync-sensori-temperatura]
+verify_jwt = false
+
+# Recupero PIN: rate limit proprio, nessuna sessione disponibile per definizione.
+[functions.pin-recovery]
+verify_jwt = false
+
+# Portale tecnico esterno: token di dispatch verificato per hash.
+[functions.tech-portal]
+verify_jwt = false
+
+# Worker pg_cron/pg_net: x-cron-secret confrontato con edge_function_secrets.
+[functions.urgent-reminder-worker]
+verify_jwt = false
+
+[functions.weather-alert-worker]
+verify_jwt = false
+
+[functions.reminder-worker]
+verify_jwt = false
+
+[functions.randcore-webhook-worker]
+verify_jwt = false
+
+# Verifica il chiamante con auth.getUser() dentro la funzione.
+[functions.randai-auth]
+verify_jwt = false
+
+# Identità GitHub OIDC verificata dalla funzione.
+[functions.randcore-agent-heartbeat]
+verify_jwt = false
+
+# Webhook legacy ritirato: risponde con uno stub "retired".
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+# Login Admin con PIN a 6 cifre (bcrypt, lockout 5 tentativi/10 min);
+# `change_pin` richiede comunque un JWT di admin protetto.
+[functions.admin-gate]
+verify_jwt = false
+
+# Verifica il bearer su /auth/v1/user + membership eye_supremo.
+[functions.eye-supremo-sync]
+verify_jwt = false
+
+# Login username + PIN (bcrypt) su eye_central_users.
+# TODO: manca lockout/rate limit sui tentativi di PIN.
+[functions.eye-central-gateway]
+verify_jwt = false
+
+# NON dichiarate di proposito (da eliminare su Supabase, vedi README):
+# import-hotelgio-history, sync-hotelgio-photos, sync-hotelgio-completed,
+# telegram-config-diag, pin-auth-probe.

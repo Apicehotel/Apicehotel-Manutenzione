@@ -45,6 +45,12 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 
 **README:** ogni PR sostanziale aggiorna questo file allo stato operativo corrente (niente documentazione zombie; la cronologia resta nei docs dedicati).
 
+## Edge Function e `verify_jwt` (12 ottobre 2026)
+
+`supabase/config.toml` è ora allineato alle funzioni deployate con `verify_jwt=false`: ogni voce indica come la funzione si autentica da sola (cron secret, segreto condiviso, OIDC, PIN con lockout, token hash). Le funzioni `admin-gate`, `eye-supremo-sync` e `eye-central-gateway` sono state riportate nel repo dal deploy. `randcore-webhook-worker` nel repo usa il segreto dedicato `randcore_webhook_cron_secret`, mentre quella deployata usa ancora `reminder_cron_secret`: serve un redeploy dopo aver creato il segreto.
+
+Da eliminare su Supabase (senza autenticazione e fuori dal repo; violano il contratto "ogni Edge Function privilegiata autentica il chiamante"): `import-hotelgio-history`, `sync-hotelgio-photos`, `sync-hotelgio-completed` (scrivono con service role), `telegram-config-diag`, `pin-auth-probe`. Aperto: `eye-central-gateway` non ha lockout sul PIN.
+
 ## Separazione spazi Supabase (transizione verso PC)
 
 Il progetto Supabase condiviso resta temporaneo: non vengono creati tre progetti a pagamento. I confini applicativi sono **HotelGio | MultiHotel | Eye Supremo**. HotelGio è fuori scope e non viene modificato; MultiHotel mantiene l'operatività corrente in `public`; Eye Supremo usa lo spazio dedicato `eye_supremo` e il bucket privato `eye-invoices`. La migration `20261002060000_eye_supremo_space_facade.sql` crea una facade non distruttiva: nessuna tabella Eye esistente viene spostata o cancellata. Dettagli e cutover futuro in `docs/architecture/SUPABASE_SPACE_SEPARATION.md`.
