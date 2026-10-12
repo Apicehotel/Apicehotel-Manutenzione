@@ -8,6 +8,9 @@ import {
   readJwtIat,
   settleFreshAccessToken,
   isJwtLoginGraceActive,
+  isJwtRestReady,
+  JWT_REST_SETTLE_ATTEMPTS,
+  markJwtRestReady,
   waitUntilRestAcceptsAccessToken,
 } from '../src/reliability/jwt-errors.js'
 
@@ -30,7 +33,7 @@ test('settleFreshAccessToken waits only for a capped local iat skew', async () =
   let waited = 0
   const waitMs = await settleFreshAccessToken(token, async (ms) => { waited = ms })
   assert.ok(waitMs > 0)
-  assert.ok(waited <= 8000)
+  assert.ok(waited <= 2500)
   assert.equal(await settleFreshAccessToken('not-a-jwt', async () => { throw new Error('no wait') }), 0)
 })
 
@@ -63,6 +66,10 @@ test('login grace helper covers the two-minute post-PIN window', () => {
     assert.equal(isJwtLoginGraceActive(), false)
     sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
     assert.equal(isJwtLoginGraceActive(), true)
+    assert.equal(isJwtRestReady(), false)
+    markJwtRestReady()
+    assert.equal(isJwtRestReady(), true)
+    assert.equal(JWT_REST_SETTLE_ATTEMPTS, 8)
   } finally {
     if (previous === undefined) delete globalThis.sessionStorage
     else globalThis.sessionStorage = previous

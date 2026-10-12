@@ -341,7 +341,7 @@ export default function App() {
         }
         if (Date.now() - previous < 90000 || isJwtLoginGraceActive()) {
           // Silent settle: the alarming "esci e accedi" toast made operators think login failed.
-          await ensureRestAcceptsCurrentSession(8)
+          await ensureRestAcceptsCurrentSession(4)
           return
         }
         sessionStorage.setItem(key, String(Date.now()))
@@ -354,7 +354,7 @@ export default function App() {
           operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
           return
         }
-        await ensureRestAcceptsCurrentSession(12)
+        await ensureRestAcceptsCurrentSession(4)
         window.location.reload()
       } catch {
         // Transport failures must not wipe a PIN session the operator just opened.
@@ -414,11 +414,26 @@ export default function App() {
           return
         }
         if (!active) return
-        // Prefer waiting for PostgREST acceptance before Home fires parallel REST reads.
-        await withTimeout(ensureRestAcceptsCurrentSession(20), 25000, 'Allineamento sessione timeout').catch(() => false)
+        // Never strand the operator on the full-app gate for PostgREST skew:
+        // PIN login already settled (or is settling); cold restore gets a tiny probe.
+        // Network recovery retries REST GETs once Shell is up.
+        const { isFutureJwtError, isJwtLoginGraceActive, isJwtRestReady } = await import('../reliability/jwt-errors.js')
+        if (!isJwtRestReady() && !isJwtLoginGraceActive()) {
+          await withTimeout(ensureRestAcceptsCurrentSession(2), 2000, 'Allineamento sessione timeout').catch(() => false)
+        }
         if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
-        const directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+        let directory
+        try {
+          directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+        } catch (directoryError) {
+          if (isFutureJwtError(directoryError)) {
+            await withTimeout(ensureRestAcceptsCurrentSession(2), 2000, 'Allineamento sessione timeout').catch(() => false)
+            directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+          } else {
+            throw directoryError
+          }
+        }
         if (!active) return
         const rows = directory?.users || []
         const authorized = rows.some((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId)
@@ -435,6 +450,8 @@ export default function App() {
         }
       } catch (error) {
         console.warn('Controllo sessione rimandato', error)
+        // Auth already validated above: prefer opening Shell over trapping operators
+        // behind the full-app session gate when only PostgREST is skewed.
         if (isOfflineSessionFresh(session)) {
           if (active) setSessionReady(true)
         } else {
@@ -477,7 +494,7 @@ export default function App() {
 
   if (recoveryToken && !recoveryDone) return <PinRecoveryComplete token={recoveryToken} onDone={() => { setRecoveryDone(true); try { window.history.replaceState({}, '', window.location.pathname) } catch { /* noop */ } }} />
   if (settingsFromLogin) return <AdminGate onBack={() => setSettingsFromLogin(false)} onExit={() => setSettingsFromLogin(false)} />
-  if (session && !sessionReady) return <Spinner label="Allineo la sessione…" />
+  if (session && !sessionReady) return <Spinner label="Verifico accesso…" />
   if (session) return <Suspense fallback={<Spinner label="Avvio RandApp…" />}><Shell session={session} initialDirectory={validatedDirectory} onLogout={onLogout} onSwitchHotel={(id) => { setValidatedDirectory(null); saveSession({ ...session, hotelId: id }); setSession(loadSession()); setSessionReady(false) }} /></Suspense>
   if (pending) return <HotelSelector pending={pending} onPick={pickHotel} />
   return <Login onAuthenticated={onAuthenticated} onOpenSettings={() => setSettingsFromLogin(true)} />
