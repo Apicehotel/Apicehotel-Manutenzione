@@ -17,5 +17,7 @@ test('a stale app session is verified against the selected hotel before Shell mo
   assert.match(app, /withTimeout\(fetchDirectory\(session\.hotelId\)/)
   assert.match(app, /u\.auth_user_id === session\.userId \|\| u\.id === session\.userId \|\| u\.legacy_id === session\.userId/)
   assert.match(app, /await resetSession\(signOutSupabase\)/)
-  assert.match(app, /if \(session && !sessionReady\) return <Spinner label="Allineo la sessione…" \/>/)
+  assert.match(app, /if \(session && !sessionReady\) return <Spinner label="Verifico accesso…" \/>/)
+  assert.match(app, /isJwtRestReady\(\)/)
+  assert.match(app, /isJwtLoginGraceActive\(\)/)
 })
