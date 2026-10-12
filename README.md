@@ -47,7 +47,7 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 
 ## Sensori temperatura (12 ottobre 2026)
 
-`sync-sensori-temperatura` (cron ogni 30 minuti) legge segreti e scrive `sensori_temperatura` con Postgres diretto (`SUPABASE_DB_URL`), come `pin-auth`. Dal 1 ottobre 2026 PostgREST risponde 401 alla chiave `service_role` iniettata nelle Edge Function: il sync falliva con 500 e i sensori erano fermi. Restano da migrare allo stesso modo le funzioni che leggono `edge_function_secrets` via REST (`randchat-media-cleanup`, `weather-alert-worker`, `urgent-reminder-worker`, `reminder-worker`, `randcore-webhook-worker`) e da verificare la chiave legacy `service_role` su Supabase (API Keys).
+`sync-sensori-temperatura` (cron ogni 30 minuti) legge segreti e scrive `sensori_temperatura` con Postgres diretto (`SUPABASE_DB_URL`), come `pin-auth`. Dal 1 ottobre 2026 PostgREST risponde 401 alla chiave `service_role` iniettata nelle Edge Function: il sync falliva con 500 e i sensori erano fermi. Migrate allo stesso modo (Postgres diretto, `SUPABASE_DB_URL`): `urgent-reminder-worker`, `weather-alert-worker`, `randchat-media-cleanup` (deployate il 12 ottobre 2026) e `reminder-worker` (solo nel repo: nessun cron lo chiama, da deployare quando si riattiva). `reminder-worker` e `randchat-media-cleanup` usano ancora l'API Storage con la chiave `service_role` (URL firmati / cancellazione file): se anche quella viene rifiutata, i promemoria partono senza allegato e i file restano in `chat_media_gc_queue` con `last_error=storage_401`. Resta da migrare `randcore-webhook-worker` (usa anche `rpc`) e da verificare la chiave legacy `service_role` su Supabase (API Keys).
 
 ## Separazione spazi Supabase (transizione verso PC)
 
