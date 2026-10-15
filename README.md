@@ -1,5 +1,12 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Correzioni di affidabilità
+
+- Gli errori temporanei di Auth (rete/HTTP 5xx) rimandano la verifica alla policy offline esistente, limitata a 24 ore dall'ultima validazione, senza forzare il logout o rinnovare la validazione. Le credenziali rifiutate continuano a invalidare la sessione.
+- Nell'inventario fisico un campo vuoto non equivale a zero; salvare una riga conserva le bozze delle altre. La riconciliazione richiede che tutti i valori visualizzati siano salvati.
+- Lo scanner rilascia la fotocamera anche quando chiusura, cambio struttura o smontaggio precedono la risposta al permesso, oppure l'avvio del video fallisce.
+
+
 ## Laboratorio RandUI + RandAI — ottobre 2026 (branch in revisione)
 
 - **Home:** KPI mobili più compatti e grafico settimanale con opzione Completo/Compatto/Nascosto salvata sul dispositivo.
