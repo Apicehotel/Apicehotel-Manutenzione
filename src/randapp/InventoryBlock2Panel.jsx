@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addCompatibility,
   cancelInventoryTransfer,
@@ -33,7 +33,13 @@ function ScannerSheet({ open, hotel, onClose, onFound }) {
   const [camera, setCamera] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
-  const stoppedRef = useRef(false)
+  const cameraRunRef = useRef(0)
+  const stopCamera = useCallback(() => {
+    cameraRunRef.current += 1
+    streamRef.current?.getTracks?.().forEach((track) => track.stop())
+    streamRef.current = null
+    setCamera(false)
+  }, [])
   const resolve = async (raw) => {
     const value = String(raw || '').trim()
     if (!value) return
@@ -52,26 +58,48 @@ function ScannerSheet({ open, hotel, onClose, onFound }) {
     if (incoming) resolve(incoming)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, hotel.id])
-  useEffect(() => () => { stoppedRef.current = true; streamRef.current?.getTracks?.().forEach((t) => t.stop()) }, [])
+  useEffect(() => {
+    if (!open) stopCamera()
+    return stopCamera
+  }, [open, hotel.id, stopCamera])
   const startCamera = async () => {
     if (!('BarcodeDetector' in window)) return setMessage('Scanner fotocamera non disponibile qui: usa Fotocamera iPhone sul QR, un lettore USB/Bluetooth o inserisci il codice.')
+    stopCamera()
+    const run = cameraRunRef.current
+    let stream
     try {
-      stoppedRef.current = false
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-      streamRef.current = stream; setCamera(true)
-      await new Promise((r) => setTimeout(r, 50))
-      if (!videoRef.current) return
-      videoRef.current.srcObject = stream; await videoRef.current.play()
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      if (run !== cameraRunRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+      streamRef.current = stream
+      setCamera(true)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      if (run !== cameraRunRef.current) return
+      if (!videoRef.current) { stopCamera(); return }
+      videoRef.current.srcObject = stream
+      await videoRef.current.play()
+      if (run !== cameraRunRef.current) return
       const detector = new window.BarcodeDetector({ formats: ['qr_code','code_128','ean_13','ean_8','upc_a','upc_e','data_matrix'] })
       const loop = async () => {
-        if (stoppedRef.current || !videoRef.current) return
-        try { const hits = await detector.detect(videoRef.current); if (hits?.[0]?.rawValue) { stream.getTracks().forEach((t) => t.stop()); stoppedRef.current = true; return resolve(hits[0].rawValue) } } catch {}
-        requestAnimationFrame(loop)
+        if (run !== cameraRunRef.current || !videoRef.current) return
+        try {
+          const hits = await detector.detect(videoRef.current)
+          if (run !== cameraRunRef.current) return
+          if (hits?.[0]?.rawValue) { stopCamera(); return resolve(hits[0].rawValue) }
+        } catch { /* The next frame can recover from a transient detection error. */ }
+        if (run === cameraRunRef.current) requestAnimationFrame(loop)
       }
       loop()
-    } catch (err) { setMessage(err?.message || 'Fotocamera non disponibile') }
+    } catch (err) {
+      stream?.getTracks().forEach((track) => track.stop())
+      if (run !== cameraRunRef.current) return
+      stopCamera()
+      setMessage(err?.message || 'Fotocamera non disponibile')
+    }
   }
-  const close = () => { stoppedRef.current = true; streamRef.current?.getTracks?.().forEach((t) => t.stop()); setCamera(false); onClose() }
+  const close = () => { stopCamera(); onClose() }
   return <Sheet open={open} onClose={close} title="Scansiona Magazzino" className="rs-inventory-sheet"><div className="rs-actions-stack">
     {camera && <video ref={videoRef} className="rs-inventory-scanner-video" muted playsInline />}
     <Button variant="primary" icon="camera" onClick={startCamera}>Apri scanner</Button>
@@ -112,14 +140,28 @@ function StocktakeSheet({ open, hotel, items, locations, onClose, onReload }) {
   const load = async () => { const current = await fetchOpenStocktake(hotel.id); setTake(current); const next = current ? await fetchStocktakeLines(current.id) : []; setLines(next); setDrafts(Object.fromEntries(next.map((l) => [l.id, l.countedQuantity ?? '']))) }
   useEffect(() => { if (open) load().catch((e) => setError(e.message)) }, [open, hotel.id])
   const start = async () => { setBusy(true); setError(''); try { await openStocktake(hotel.id, locationId || null); await load() } catch (e) { setError(e.message) } finally { setBusy(false) } }
-  const saveLine = async (line) => { const value = Number(drafts[line.id]); if (!Number.isFinite(value) || value < 0) return; setBusy(true); try { await countStocktakeLine(line.id, value); await load() } catch (e) { setError(e.message) } finally { setBusy(false) } }
+  const saveLine = async (line) => {
+    const raw = String(drafts[line.id] ?? '').trim()
+    const value = Number(raw)
+    if (!raw || !Number.isFinite(value) || value < 0) {
+      setError('Inserisci un conteggio valido. Usa 0 solo se la giacenza è zero.')
+      return
+    }
+    setBusy(true); setError('')
+    try {
+      const saved = await countStocktakeLine(line.id, value)
+      setLines((current) => current.map((row) => row.id === saved.id ? saved : row))
+      // Keep every other row's unsaved count, including edits made while saving.
+      setDrafts((current) => ({ ...current, [saved.id]: saved.countedQuantity }))
+    } catch (e) { setError(e.message) } finally { setBusy(false) }
+  }
   const finish = async () => { setBusy(true); try { await finalizeStocktake(take.id); await load(); await onReload() } catch (e) { setError(e.message) } finally { setBusy(false) } }
   const cancel = async () => { setBusy(true); try { await cancelStocktake(take.id); await load() } catch (e) { setError(e.message) } finally { setBusy(false) } }
-  const complete = lines.length > 0 && lines.every((l) => l.countedQuantity != null)
+  const complete = lines.length > 0 && lines.every((line) => line.countedQuantity != null && String(drafts[line.id] ?? '').trim() !== '' && Number(drafts[line.id]) === line.countedQuantity)
   return <Sheet open={open} onClose={onClose} title="Inventario fisico" className="rs-inventory-sheet"><div className="rs-actions-stack">
     {!take ? <><Field label="Ambito"><select className="rs-select" value={locationId} onChange={(e) => setLocationId(e.target.value)}><option value="">Intera struttura</option>{locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></Field><Button variant="primary" disabled={busy} onClick={start}>Apri inventario</Button><p className="rs-field__hint">All'apertura viene congelata la giacenza attesa. La chiusura applica tutte le differenze in una sola transazione.</p></> : <>
       <Card><small>INVENTARIO APERTO</small><strong>{lines.filter((l) => l.countedQuantity != null).length}/{lines.length}</strong></Card>
-      <div className="rs-inventory-count-list">{lines.map((line) => { const item = items.find((i) => i.id === line.itemId); const diff = line.countedQuantity == null ? null : line.countedQuantity - line.expectedQuantity; return <div className="rs-inventory-count-row" key={line.id}><div><strong>{item?.name || line.itemId}</strong><small>Atteso {fmt(line.expectedQuantity)}{diff != null ? ` · differenza ${diff > 0 ? '+' : ''}${fmt(diff)}` : ''}</small></div><TextInput type="number" min="0" step="0.001" value={drafts[line.id] ?? ''} onChange={(e) => setDrafts({ ...drafts, [line.id]: e.target.value })} /><Button variant="ghost" disabled={busy} onClick={() => saveLine(line)}>Salva</Button></div> })}</div>
+      <div className="rs-inventory-count-list">{lines.map((line) => { const item = items.find((i) => i.id === line.itemId); const diff = line.countedQuantity == null ? null : line.countedQuantity - line.expectedQuantity; return <div className="rs-inventory-count-row" key={line.id}><div><strong>{item?.name || line.itemId}</strong><small>Atteso {fmt(line.expectedQuantity)}{diff != null ? ` · differenza ${diff > 0 ? '+' : ''}${fmt(diff)}` : ''}</small></div><TextInput type="number" min="0" step="0.001" value={drafts[line.id] ?? ''} disabled={busy} aria-label={`Conteggio ${item?.name || line.itemId}`} onChange={(e) => { const value = e.target.value; setDrafts((current) => ({ ...current, [line.id]: value })) }} /><Button variant="ghost" disabled={busy} onClick={() => saveLine(line)}>Salva</Button></div> })}</div>
       <div className="rs-form-actions"><Button variant="ghost" disabled={busy} onClick={cancel}>Annulla inventario</Button><Button variant="primary" disabled={!complete || busy} onClick={finish}>Chiudi e riconcilia</Button></div>
     </>}
     {error && <p className="rs-error">{error}</p>}
