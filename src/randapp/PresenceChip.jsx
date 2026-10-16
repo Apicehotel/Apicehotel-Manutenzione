@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { setOwnPresence } from '../auth-data.js'
 import { loadSession } from '../session.js'
-import { supabase } from '../supabase.js'
+import { requestPresence } from '../presence-request.js'
 import { hotelById } from './helpers.js'
 
 const ELIGIBLE_ROLES = new Set(['manutentore', 'Portiere Notturno', 'admin'])
@@ -9,14 +9,6 @@ const HOTEL_SHORT_LABELS = {
   hotelgio: 'GIO',
   chocohotel: 'CHO',
   brigantino: 'BRI',
-}
-
-async function fetchPresence() {
-  if (!supabase) throw new Error('Presenza non disponibile')
-  const { data, error } = await supabase.functions.invoke('presence-status', { body: {} })
-  if (error) throw error
-  if (!data?.ok) throw new Error(data?.error || 'Presenza non disponibile')
-  return data
 }
 
 function compactHotelName(hotelId) {
@@ -44,7 +36,7 @@ export default function PresenceChip({ user, hotel }) {
       return
     }
     try {
-      const state = await fetchPresence()
+      const state = await requestPresence()
       if (version !== request.current) return
       setEligible(Boolean(state?.eligible) && ELIGIBLE_ROLES.has(state?.role || user.role))
       setPresent(Boolean(state?.present))

@@ -22,7 +22,7 @@ function loadModule(path, dependencies, globals = {}, append = '') {
 const session = { access_token: 'access', refresh_token: 'refresh', user: { id: 'operator' } }
 function validator(auth) {
   return loadModule('src/auth-data.js', {
-    './supabase.js': { supabase: { auth: { getSession: async () => ({ data: { session } }), ...auth } } },
+    './presence-request.js': {}, './supabase.js': { supabase: { auth: { getSession: async () => ({ data: { session } }), ...auth } } },
     './session-policy.js': {},
     './reliability/jwt-errors.js': { isFutureJwtError },
     '@supabase/supabase-js': { isAuthRetryableFetchError },

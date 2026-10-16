@@ -1,5 +1,11 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Presenza: lettura e salvataggio autenticati
+
+`presence-status` gestisce lettura e `set_presence` tramite Postgres diretto, come il login PIN. Supabase Auth verifica il Bearer; profilo e utente devono essere attivi. L'ingresso richiede anche membership attiva e ruolo abilitato nell'hotel scelto. Le operazioni sulla riga personale sono serializzate in transazione; scadenza e cambio hotel non si sovrascrivono. Gli errori infrastrutturali restituiscono 503, non falsi account mancanti/disattivati. Il client traduce gli errori HTTP in messaggi leggibili.
+
+Pubblicare prima `presence-status` (entrypoint `index.ts` e `handler.js`, JWT gateway attivo; `SUPABASE_DB_URL` e chiavi Auth già usati da `pin-auth`), poi il frontend. Il POST `{}` delle versioni installate resta compatibile per la lettura. Il vecchio `user-pin` non viene modificato; il nuovo client usa `presence-status` anche per il salvataggio.
+
 ## Presenza e usabilità condivisa
 
 Il comando **Sono in struttura** è nella topbar di tutte le destinazioni: su telefono ha una seconda riga dedicata, senza comprimere hotel, tema, notifiche e profilo. Quando risulti presente nello stesso hotel diventa **Sono fuori struttura**. Un errore iniziale non nasconde più il comando ai ruoli abilitati: lo stato resta esplicitamente non verificato; gli errori di salvataggio sono visibili e non cambiano la presenza. Le risposte di lettura obsolete non sovrascrivono un aggiornamento; la scadenza resta 7 ore e 20 minuti. Permessi e aggiornamenti rimangono verificati dal backend esistente.

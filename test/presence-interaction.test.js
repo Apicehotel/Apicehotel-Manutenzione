@@ -16,7 +16,7 @@ function harness({ read, write = async () => ({ in_struttura: true, in_struttura
   const h = (type, props, ...children) => ({ type, props, children })
   const source = fs.readFileSync(new URL('../src/randapp/PresenceChip.jsx', import.meta.url), 'utf8')
   const { code } = transformSync(source, { loader: 'jsx', format: 'cjs', jsxFactory: 'h' })
-  const dependencies = { react: hooks, '../auth-data.js': { setOwnPresence: write }, '../session.js': { loadSession: () => ({ hotelId: 'hotelgio' }) }, '../supabase.js': { supabase: { functions: { invoke: read } } }, './helpers.js': { hotelById: id => ({ id, name: id }) } }
+  const dependencies = { react: hooks, '../auth-data.js': { setOwnPresence: write }, '../session.js': { loadSession: () => ({ hotelId: 'hotelgio' }) }, '../presence-request.js': { requestPresence: async () => { const result = await read(); if(result.error) throw result.error; return result.data } }, './helpers.js': { hotelById: id => ({ id, name: id }) } }
   vm.runInNewContext(code, { module, exports: module.exports, require: key => { assert.ok(key in dependencies); return dependencies[key] }, h, navigator: { onLine: online }, window: { addEventListener: (key, fn) => listeners.set(key, fn), removeEventListener: key => listeners.delete(key), dispatchEvent: event => listeners.get(event.type)?.() }, CustomEvent: class { constructor(type) { this.type = type } }, setTimeout: (fn, ms) => { timers.set(ms, fn); return ms }, clearTimeout: ms => timers.delete(ms) })
   return {
     render(role = 'admin', hotelId = 'hotelgio') { cursor = 0; effects.length = 0; return module.exports.default({ user: { id: 'operator', role }, hotel: { id: hotelId, name: hotelId } }) },
