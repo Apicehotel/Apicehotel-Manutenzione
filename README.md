@@ -2,6 +2,10 @@
 
 ## Correzioni di affidabilità
 
+- Magazzino distingue errori di caricamento da un elenco vuoto, conserva i dati già letti e offre Riprova. Un errore dello storico dopo un carico/scarico riuscito non viene presentato come fallimento del movimento; il form viene azzerato e mostra l'esito confermato.
+- La creazione articolo attende la giacenza iniziale prima di concludersi. In caso di errore verifica la compensazione; se RLS/rete impedisce di confermare la rimozione, chiude il form e segnala l'articolo da verificare, evitando un nuovo inserimento inconsapevole.
+- Le notifiche cambiano stato e contatore solo dopo il salvataggio della lettura. Errori di rete/Auth restano visibili e non diventano falsi successi.
+
 - Gli errori temporanei di Auth (rete/HTTP 5xx) rimandano la verifica alla policy offline esistente, limitata a 24 ore dall'ultima validazione, senza forzare il logout o rinnovare la validazione. Le credenziali rifiutate continuano a invalidare la sessione.
 - Nell'inventario fisico un campo vuoto non equivale a zero; salvare una riga conserva le bozze delle altre. La riconciliazione richiede che tutti i valori visualizzati siano salvati.
 - Lo scanner rilascia la fotocamera anche quando chiusura, cambio struttura o smontaggio precedono la risposta al permesso, oppure l'avvio del video fallisce.

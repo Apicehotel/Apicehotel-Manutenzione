@@ -95,10 +95,11 @@ export async function fetchNotificationInbox(hotelId, user) {
 }
 
 export async function markNotificationRead(hotelId, item) {
-  if (!supabase || !hotelId || !item?.sourceId) return
-  const { data: auth } = await supabase.auth.getUser()
+  if (!supabase || !hotelId || !item?.sourceId) throw new Error('Impossibile salvare la lettura della notifica')
+  const { data: auth, error: authError } = await supabase.auth.getUser()
+  if (authError) throw authError
   const userId = auth?.user?.id
-  if (!userId) return
+  if (!userId) throw new Error('Sessione non valida: lettura non salvata')
   const { error } = await supabase.from('notification_reads').upsert({
     hotel_id: hotelId,
     source_type: item.type,
@@ -110,10 +111,12 @@ export async function markNotificationRead(hotelId, item) {
 }
 
 export async function markAllNotificationsRead(hotelId, items) {
-  if (!supabase || !hotelId || !items?.length) return
-  const { data: auth } = await supabase.auth.getUser()
+  if (!supabase || !hotelId) throw new Error('Impossibile salvare le letture delle notifiche')
+  if (!items?.length) return
+  const { data: auth, error: authError } = await supabase.auth.getUser()
+  if (authError) throw authError
   const userId = auth?.user?.id
-  if (!userId) return
+  if (!userId) throw new Error('Sessione non valida: lettura non salvata')
   const now = new Date().toISOString()
   const rows = items.filter((x) => !x.read).map((item) => ({
     hotel_id: hotelId,
