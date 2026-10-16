@@ -50,7 +50,7 @@ const entry = `import React from 'react';import {createRoot} from 'react-dom/cli
   setThemeChoice(params.get('theme')||'light');
   window.presenceFixture={present:false,hotelId:null,writes:[],role:params.get('role')||'admin',failRead:params.get('read')==='fail',failWrite:false};
   const initialHotel={id:'hotelgio',name:'Hotel Giò'};const user={id:'fixture',name:'Randagio',role:window.presenceFixture.role};
-  const nav=[['home','home','Home'],['operations','wrench','Operatività'],['issues','issues','Segnalazioni'],['my-work','check','Task'],['planning-work','calendar','Planning']].map(([id,icon,label],slot)=>({id,icon,label,slot}));
+  const nav=[['operations','wrench','Operatività'],['issues','issues','Segnalazioni'],['home','home','Home'],['my-work','check','Task'],['planning-work','calendar','Planning']].map(([id,icon,label],slot)=>({id,icon,label,slot:slot+1}));
   function Fixture(){const [view,setView]=React.useState('home');const [hotel,setHotel]=React.useState(initialHotel);return <div className="rs-root"><div className="rnx-app">
     <RandDesktopSidebar brand={<><img src="/logos/randapp-hotelgio.webp" alt=""/><div className="rnx-brandcopy"><b>RandApp</b><small>Hotel Giò</small></div></>} navigation={<nav>{nav.map(n=><button className="rs-sidebar__item" key={n.id} onClick={()=>setView(n.id)}><Icon name={n.icon}/><span>{n.label}</span></button>)}</nav>} onLogout={()=>{}}/>
     <RandTopbar hotel={<button className="rnx-hotelchip" aria-label="Cambia struttura" onClick={()=>setHotel(hotel.id==='hotelgio'?{id:'chocohotel',name:'Chocohotel'}:initialHotel)}><img src="/logos/randapp-hotelgio.webp" alt="Hotel Giò"/><span><small>Struttura</small><b>Hotel Giò</b></span><Icon name="chevronDown"/></button>} presence={<PresenceChip user={user} hotel={hotel}/>} themeSwitch={<ThemeSwitch/>} notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche"/></span>} randai={<button aria-label="Apri RandAI"/>} profile={<button className="rnx-profile" aria-label="Apri menu"><span className="rnx-profile__avatar">R</span><span className="rnx-profile__copy"><b>Randagio</b><small>admin</small></span></button>}/>
@@ -121,6 +121,8 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
         await page.getByLabel('Visualizzazione grafico Home').selectOption('compact')
         await page.getByTestId('home-week-chart').waitFor()
         await page.screenshot({ path: path.join(artifacts, `home-layout-${engineName}-${width}-${theme}${size==='normal'?'':'-'+size}-compact.png`), fullPage: true })
+        const navBoxes=await page.locator('.rnx-bottomnav__item').evaluateAll(els=>els.map(el=>({top:el.getBoundingClientRect().top,bottom:el.getBoundingClientRect().bottom})))
+        if(width<768) assert.ok(navBoxes.every(box=>Math.abs(box.top-navBoxes[0].top)<=1 && Math.abs(box.bottom-navBoxes[0].bottom)<=1),'bottom nav stays on one row')
         const chipBox=await presence.boundingBox()
         assert.ok(chipBox.height>=40 && chipBox.width>=44, 'presence touch target')
         const field=page.getByLabel('Categoria')
@@ -136,7 +138,7 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
           el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',isPrimary:true,pointerId:1,clientX:250,clientY:50}));
           el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch',isPrimary:true,pointerId:1,clientX:50,clientY:50}));
         })
-        assert.equal(await page.getByTestId('fixture-navigation').innerText(),'operations')
+        assert.equal(await page.getByTestId('fixture-navigation').innerText(),'my-work')
         assert.equal(await presence.isVisible(),true,'presence persists away from Home')
         if(width===390 && theme==='light' && size==='normal') {
           await page.evaluate(()=>{window.presenceFixture.failWrite=true})
