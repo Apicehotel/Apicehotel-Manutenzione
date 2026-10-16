@@ -418,7 +418,7 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-profile{width:44px;min-width:44px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
   .rnx-topbar__actions{gap:6px}
   /* A second row keeps the personal presence action reachable on every page. */
-  .rnx-app:has(.rnx-topbar__presence .rs-presence-chip){--rnx-topbar:116px}
+  .rnx-app:has(.rnx-topbar__presence .rs-presence-chip){--rnx-topbar:116px;--rnx-topbar-row:calc(116px + var(--rnx-safe-top))}
   .rnx-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 6px}
   .rnx-topbar__hotel{grid-column:1;grid-row:1}
   .rnx-topbar__actions{grid-column:2;grid-row:1}
