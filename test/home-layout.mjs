@@ -154,7 +154,7 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
           await page.waitForFunction(()=>window.presenceFixture.hotelId==='chocohotel')
           await page.goto(`${base}/__home_layout/index.html?theme=light&read=fail`)
           await page.getByTestId('presence-chip').waitFor()
-          await page.getByRole('status').filter({hasText:'Lettura presenza non disponibile'}).waitFor()
+          await page.getByRole('status').filter({hasText:'Servizio presenza temporaneamente non disponibile. Riprova.'}).waitFor()
           assert.equal(await page.getByTestId('presence-chip').getAttribute('data-presence'),'unknown')
           await page.getByTestId('presence-chip').click()
           await page.waitForFunction(()=>window.presenceFixture.present===true)
