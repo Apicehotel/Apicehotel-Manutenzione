@@ -587,7 +587,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
               {allowedHotels.length > 1 && placement('structure') !== 'off' && <Icon name="chevronDown" />}
             </button>}
             profile={<button type="button" className="rnx-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rnx-profile__avatar">{userInitials}</span><span className="rnx-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
-            presence={<PresenceChip user={user} />}
+            presence={<PresenceChip user={user} hotel={hotel} />}
             themeSwitch={<ThemeSwitch />}
             notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rnx-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
           />
