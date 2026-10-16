@@ -98,6 +98,7 @@ test('server expiry invalidates the displayed state and rereads presence', async
   const expire = [...app.timers.values()][0]
   expire()
   assert.equal(app.render().props['data-presence'], 'unknown')
+  assert.match(app.render().props['aria-label'], /Tocca per segnarti in hotelgio/)
   await settle()
   assert.equal(app.render().props['data-presence'], 'out')
   assert.equal(reads, 2)

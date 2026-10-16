@@ -124,9 +124,9 @@ export default function PresenceChip({ user, hotel }) {
     : present
       ? `In struttura · ${hotelById(presenceHotelId)?.name || currentLabel}`
       : 'Fuori struttura'
-  const actionLabel = presentHere
+  const actionLabel = known && presentHere
     ? 'Tocca per segnarti fuori struttura'
-    : present
+    : known && present
       ? `Tocca per spostare la presenza a ${activeHotel.name}`
       : `Tocca per segnarti in ${activeHotel.name}`
 
