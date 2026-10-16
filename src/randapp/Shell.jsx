@@ -17,7 +17,6 @@ import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
-import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
@@ -591,7 +590,6 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
             presence={<PresenceChip user={user} />}
             themeSwitch={<ThemeSwitch />}
             notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rnx-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
-            randai={viewAllowed('randai') ? <button type="button" className="rnx-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
           />
         )}
 

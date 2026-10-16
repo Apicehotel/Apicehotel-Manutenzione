@@ -1,5 +1,9 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Header e Home
+
+Il pulsante RandAI nella topbar è stato rimosso. Hotel, tema, notifiche e profilo usano un gruppo compatto con nomi troncati quando lo spazio è limitato. Nella Home icone KPI, intestazioni e grafico restano dentro le card anche su desktop; il selettore del grafico appartiene alla sua colonna. Le safe-area e i touch target restano invariati.
+
 ## Correzioni di affidabilità
 
 - Magazzino distingue errori di caricamento da un elenco vuoto, conserva i dati già letti e offre Riprova. Un errore dello storico dopo un carico/scarico riuscito non viene presentato come fallimento del movimento; il form viene azzerato e mostra l'esito confermato.

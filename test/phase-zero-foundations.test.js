@@ -34,7 +34,7 @@ test('Phase 0 keeps Control Center at /randai while RandAI remains accessible ou
   assert.doesNotMatch(navigation, /href:\s*'\/randai'/)
   assert.match(shell, /variant="page"/)
   assert.match(shell, /openRandAIPage/)
-  assert.match(shell, /data-testid="header-randai"/)
+  assert.doesNotMatch(shell, /data-testid="header-randai"/)
   assert.match(shell, /item\.id === 'more'.*setDrawer\(true\)/s)
 })
 
