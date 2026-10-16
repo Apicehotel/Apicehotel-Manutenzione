@@ -72,6 +72,10 @@ Principio permanente: **un solo proprietario canonico per capacità**. Se una so
 
 **README:** ogni PR sostanziale aggiorna questo file allo stato operativo corrente (niente documentazione zombie; la cronologia resta nei docs dedicati).
 
+## Sensori temperatura (12 ottobre 2026)
+
+`sync-sensori-temperatura` (cron ogni 30 minuti) legge segreti e scrive `sensori_temperatura` con Postgres diretto (`SUPABASE_DB_URL`), come `pin-auth`. Dal 1 ottobre 2026 PostgREST risponde 401 alla chiave `service_role` iniettata nelle Edge Function: il sync falliva con 500 e i sensori erano fermi. Migrate allo stesso modo (Postgres diretto, `SUPABASE_DB_URL`): `urgent-reminder-worker`, `weather-alert-worker`, `randchat-media-cleanup` (deployate il 12 ottobre 2026) e `reminder-worker` (solo nel repo: nessun cron lo chiama, da deployare quando si riattiva). `reminder-worker` e `randchat-media-cleanup` usano ancora l'API Storage con la chiave `service_role` (URL firmati / cancellazione file): se anche quella viene rifiutata, i promemoria partono senza allegato e i file restano in `chat_media_gc_queue` con `last_error=storage_401`. Resta da migrare `randcore-webhook-worker` (usa anche `rpc`) e da verificare la chiave legacy `service_role` su Supabase (API Keys).
+
 ## Separazione spazi Supabase (transizione verso PC)
 
 Il progetto Supabase condiviso resta temporaneo: non vengono creati tre progetti a pagamento. I confini applicativi sono **HotelGio | MultiHotel | Eye Supremo**. HotelGio è fuori scope e non viene modificato; MultiHotel mantiene l'operatività corrente in `public`; Eye Supremo usa lo spazio dedicato `eye_supremo` e il bucket privato `eye-invoices`. La migration `20261002060000_eye_supremo_space_facade.sql` crea una facade non distruttiva: nessuna tabella Eye esistente viene spostata o cancellata. Dettagli e cutover futuro in `docs/architecture/SUPABASE_SPACE_SEPARATION.md`.
