@@ -54,7 +54,7 @@ const bundled = await build({ stdin: { contents: entry, resolveDir: root, loader
   })
   builder.onLoad({ filter: /.*/, namespace: 'layout-data' }, args => ({ contents: mocks[args.path], loader: 'jsx', resolveDir: root }))
 } } ] })
-const files = new Map(bundled.outputFiles.map(file => [path.relative(output, file.path).split(path.sep).join('/'), file.contents]))
+const files = new Map(bundled.outputFiles.map(file => [path.relative(output, file.path).split(path.sep).join('/'), Buffer.from(file.contents)]))
 files.set('index.html', Buffer.from('<!doctype html><html lang="it"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="stylesheet" href="fixture.css"></head><body><div id="root"></div><script type="module" src="fixture.js"></script></body></html>'))
 if (process.env.HOME_LAYOUT_BUILD_ONLY === '1') { console.log('Home layout fixture built'); process.exit(0) }
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
@@ -75,8 +75,10 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
         })
         // Any accidental operational request fails the fixture instead of using live data.
         await page.route('**/*.supabase.co/**', route => route.abort())
-        await page.goto(`${base}/__home_layout/index.html?theme=${theme}&size=normal`)
+        await page.goto(`${base}/__home_layout/index.html?theme=${theme}&size=normal`, { waitUntil: 'domcontentloaded' })
         await page.getByTestId('home-stats').waitFor()
+        await page.evaluate(() => document.fonts.ready.then(() => undefined))
+        await page.screenshot({ path: path.join(artifacts, `home-layout-${engineName}-${width}-${theme}.png`), fullPage: true })
         assert.equal(await page.getByLabel('Apri RandAI', { exact: true }).count(), 0)
         assert.equal(errors.length, 0, errors.join('\n'))
         const geometry = await page.evaluate(() => {
@@ -94,7 +96,7 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
         assert.equal(await page.getByTestId('home-week-chart').count(), 0)
         await page.getByLabel('Visualizzazione grafico Home').selectOption('compact')
         await page.getByTestId('home-week-chart').waitFor()
-        await page.screenshot({ path: path.join(artifacts, `home-layout-${engineName}-${width}-${theme}.png`), fullPage: true })
+        await page.screenshot({ path: path.join(artifacts, `home-layout-${engineName}-${width}-${theme}-compact.png`), fullPage: true })
         await context.close()
       }
     }
