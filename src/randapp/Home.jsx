@@ -19,7 +19,6 @@ import { firstName, isToday, URGENCY_META } from './helpers.js'
 import { Button, EmptyState, Icon, Spinner } from './ui.jsx'
 import { CommandSurface, StatCard, StatusChip } from './randui/advanced-primitives.jsx'
 import RandAIPriorityCard from './RandAIPriorityCard.jsx'
-import PresenceChip from './PresenceChip.jsx'
 
 const HOME_QUERY_TIMEOUT_MS = 15000
 const timed = (promise, label) => withTimeout(promise, HOME_QUERY_TIMEOUT_MS, label)
@@ -172,10 +171,6 @@ function HomeData({ user, hotel, onNavigate, personalizeSignal }) {
         <span className="rnx-eyebrow">{roleLabel(user)} · {deskDayLabel()}</span>
         <h1>Ciao, {firstName(user?.name)}</h1>
         <p>{hotel.name} · Scrivania operativa</p>
-      </div>
-      <div className="rnx-mobile-presence" data-testid="mobile-presence">
-        <span className="rnx-mobile-presence__label">Presenza</span>
-        <PresenceChip user={user} hotel={hotel} />
       </div>
       <div className="rnx-homehead__actions">
         <Button variant="ghost" size="sm" icon="sliders" className="rnx-homehead__view" onClick={()=>setPreferencesOpen((v)=>!v)} aria-expanded={preferencesOpen} aria-label="Configura vista Home">Vista</Button>

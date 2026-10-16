@@ -10,7 +10,7 @@ const sync = fs.readFileSync(new URL('../src/presence-status.js', import.meta.ur
 test('presence is a direct labeled hotel-scoped pill without sheet UI', () => {
   assert.match(presence, /className="rs-presence-chip"/)
   assert.match(presence, /data-testid="presence-chip"/)
-  assert.match(presence, /data-presence=\{present \? 'in' : 'out'\}/)
+  assert.match(presence, /data-presence=\{known \? \(present \? 'in' : 'out'\) : 'unknown'\}/)
   assert.match(presence, /data-here=\{presentHere \? 'true' : 'false'\}/)
   assert.match(presence, /setOwnPresence\(next, next \? activeHotel\.id : null\)/)
   assert.match(presence, /visibleLabel/)
@@ -39,11 +39,12 @@ test('presence timeout remains 7h20', () => {
 })
 
 
-test('mobile home exposes presence even when the topbar is not visible', () => {
-  const home = fs.readFileSync(new URL('../src/randapp/Home.jsx', import.meta.url), 'utf8')
+test('presence lives in the global header on every phone destination', () => {
+  const chrome = fs.readFileSync(new URL('../src/randapp/v2/RandChrome.jsx', import.meta.url), 'utf8')
+  const shell = fs.readFileSync(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8')
   const nextCss = fs.readFileSync(new URL('../src/randapp/randui-next.css', import.meta.url), 'utf8')
-  assert.match(home, /data-testid="mobile-presence"/)
-  assert.match(home, /<PresenceChip user=\{user\} hotel=\{hotel\} \/>/)
-  assert.match(nextCss, /.rnx-mobile-presence\{display:none\}/)
-  assert.match(nextCss, /@media\(max-width:767px\)[\s\S]*?.rnx-mobile-presence\{[\s\S]*?display:flex/)
+  assert.match(chrome, /rnx-topbar__presence/)
+  assert.match(shell, /presence=\{<PresenceChip user=\{user\} hotel=\{hotel\} \/>\}/)
+  assert.match(nextCss, /rnx-topbar__presence\{grid-column:1\/-1;grid-row:2\}/)
+  assert.doesNotMatch(nextCss, /\.rnx-topbar \.rs-presence-chip\{display:none/)
 })

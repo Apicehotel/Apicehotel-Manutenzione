@@ -144,6 +144,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   backdrop-filter:blur(20px)
 }
 .rnx-topbar__hotel{flex:1;min-width:0}
+.rnx-topbar__presence{order:1;min-width:0}
+.rnx-topbar__presence:not(:has(.rs-presence-chip)){display:none}
+.rnx-topbar__actions{order:2}
 .rnx-hotelchip{
   min-width:0;max-width:min(330px,100%);height:48px;
   display:grid!important;grid-template-columns:34px minmax(0,1fr) 18px!important;align-items:center!important;gap:9px!important;
@@ -217,7 +220,6 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 
 /* Home: Bento, operational and compact */
 .rnx-home{display:grid;gap:14px}
-.rnx-mobile-presence{display:none}
 .rnx-homehead{
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px 16px;
   padding:0 2px 6px
@@ -315,8 +317,8 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-priority__body strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rnx-priority__body span{color:var(--rnx-text-3);font-size:.71rem}
 
 /* Liquid presence reuses existing functional PresenceChip but gets a clean home-friendly slot. */
-.rnx-mobile-presence .rs-presence-chip,
 .rnx-topbar .rs-presence-chip{
+  min-height:max(44px,calc(40px * var(--rs-scale)));
   border-color:var(--rnx-line);background:var(--rnx-surface-2);color:var(--rnx-text)
 }
 
@@ -415,15 +417,17 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-hotelchip small{display:none}
   .rnx-profile{width:44px;min-width:44px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
   .rnx-topbar__actions{gap:6px}
-  /* The header presence chip duplicates the Home one on phones. */
-  .rnx-topbar .rs-presence-chip{display:none}
+  /* A second row keeps the personal presence action reachable on every page. */
+  .rnx-app:has(.rnx-topbar__presence .rs-presence-chip){--rnx-topbar:116px;--rnx-topbar-row:calc(116px + var(--rnx-safe-top))}
+  .rnx-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 6px}
+  .rnx-topbar__hotel{grid-column:1;grid-row:1}
+  .rnx-topbar__actions{grid-column:2;grid-row:1}
+  .rnx-topbar__presence{grid-column:1/-1;grid-row:2}
+  .rnx-topbar .rs-presence-chip{display:flex;width:100%;max-width:100%;min-height:44px;justify-content:flex-start}
   /* Stage already sits above the docked nav row; no fake bottom clearance. */
   .rnx-content{padding:14px 12px 18px}
   .rnx-home{gap:12px}
   /* Presence sits beside the greeting as a chip, not as its own card. */
-  .rnx-mobile-presence{display:flex;align-items:center;grid-column:2;grid-row:1;min-width:0}
-  .rnx-mobile-presence__label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  .rnx-mobile-presence .rs-presence-chip{max-width:150px;min-height:36px}
   .rnx-homehead{padding-bottom:2px}
   .rnx-homehead h1{font-size:1.65rem}.rnx-homehead p{display:none}
   /* No create button on the Home (it only took space); "Vista" lives in the menu. */
@@ -584,9 +588,6 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   .rnx-bottomnav__item small{font-size:.6rem}
 }
 
-/* A presence slot without a chip (role not tracked, offline) must not render
-   as an empty card on top of the Home. */
-.rnx-mobile-presence:not(:has(.rs-presence-chip)){display:none!important}
 
 /* Wide screens: the Home uses the width. Desk (next commitment, my work, team)
    on the left, the priority tray on the right; dense flow pulls the tray up
@@ -597,4 +598,12 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   .rnx-home>.rnx-desk,.rnx-home>.rnx-tools{grid-column:1}
   .rnx-home>.rnx-tray{grid-column:2;grid-row:span 2}
   .rnx-home .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+
+/* Shared forms and operational headings must shrink inside phone grid columns. */
+.rnx-content .rs-field,.rnx-content .rs-input{min-width:0}
+.rnx-content .rs-pagehead,.rnx-content .rs-section__head{flex-wrap:wrap;gap:10px}
+.rnx-content .rs-pagehead>div,.rnx-content .rs-section__head>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:767px){
+  .rnx-content .rs-select,.rs-fullpage .rs-select{font-size:max(16px,1rem);padding-right:36px}
 }

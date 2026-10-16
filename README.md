@@ -1,5 +1,11 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Presenza e usabilità condivisa
+
+Il comando **Sono in struttura** è nella topbar di tutte le destinazioni: su telefono ha una seconda riga dedicata, senza comprimere hotel, tema, notifiche e profilo. Quando risulti presente nello stesso hotel diventa **Sono fuori struttura**. Un errore iniziale non nasconde più il comando ai ruoli abilitati: lo stato resta esplicitamente non verificato; gli errori di salvataggio sono visibili e non cambiano la presenza. Le risposte di lettura obsolete non sovrascrivono un aggiornamento; la scadenza resta 7 ore e 20 minuti. Permessi e aggiornamenti rimangono verificati dal backend esistente.
+
+Lo swipe tra destinazioni ignora campi, pulsanti e contenitori con scorrimento orizzontale, evitando cambi pagina mentre si lavora. Intestazioni e campi condivisi possono adattarsi alle colonne strette; i select mobili mantengono testo leggibile e spazio per la freccia.
+
 ## Header e Home
 
 Il pulsante RandAI nella topbar è stato rimosso. Hotel, tema, notifiche e profilo usano un gruppo compatto con nomi troncati quando lo spazio è limitato. Nella Home icone KPI, intestazioni e grafico restano dentro le card anche su desktop; il selettore del grafico appartiene alla sua colonna. Le safe-area e i touch target restano invariati.
