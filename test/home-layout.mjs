@@ -87,11 +87,12 @@ for (const [engineName, engine] of Object.entries({ chromium, webkit })) {
             icons: [...document.querySelectorAll('.rs-randui-statcard__icon')].every(el=>inside(el,el.closest('.rs-randui-statcard'))),
             heads: [...document.querySelectorAll('.rnx-panel__head,.rnx-tray>.rnx-desk__head')].every(el=>inside(el,el.parentElement)),
             chart: inside(document.querySelector('.rnx-chartcard__plot'),document.querySelector('.rnx-chartcard')),
+            deskGap: innerWidth < 1000 || document.querySelector('.rnx-tools').getBoundingClientRect().top - document.querySelector('.rnx-desk').getBoundingClientRect().bottom <= 24,
             header: [...document.querySelectorAll('.rnx-topbar__actions>*,.rnx-topbar__hotel')].every(el=>inside(el,document.querySelector('.rnx-topbar'))),
           }
         })
         assert.ok(geometry.overflow <= 1, `${engineName}/${width}/${theme}: overflow ${geometry.overflow}`)
-        for (const key of ['icons','heads','chart','header']) assert.equal(geometry[key], true, `${engineName}/${width}/${theme}: ${key} out of bounds`)
+        for (const key of ['icons','heads','chart','header','deskGap']) assert.equal(geometry[key], true, `${engineName}/${width}/${theme}: ${key} out of bounds`)
         await page.getByLabel('Visualizzazione grafico Home').selectOption('hidden')
         assert.equal(await page.getByTestId('home-week-chart').count(), 0)
         await page.getByLabel('Visualizzazione grafico Home').selectOption('compact')

@@ -137,7 +137,7 @@ html:not([data-theme='dark']) body{background:var(--md-bg)!important}
 /* Wide screens: the chart sits beside the KPI-following desk, tray below it. */
 @media(min-width:1000px){
   .rnx-home>.rnx-chart-section{grid-column:2;min-width:0;display:grid;gap:12px}
-  .rnx-home>.rnx-desk{grid-row:span 2}
+  .rnx-home>.rnx-desk{grid-row:auto}
   .rnx-home>.rnx-tray{grid-row:auto}
 }
 
