@@ -143,9 +143,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   background:color-mix(in srgb,var(--rnx-bg) 82%,transparent);
   backdrop-filter:blur(20px)
 }
-.rnx-topbar__hotel{min-width:0}
+.rnx-topbar__hotel{flex:1;min-width:0}
 .rnx-hotelchip{
-  min-width:0;max-width:330px;height:48px;
+  min-width:0;max-width:min(330px,100%);height:48px;
   display:grid!important;grid-template-columns:34px minmax(0,1fr) 18px!important;align-items:center!important;gap:9px!important;
   padding:5px 8px!important;border:1px solid transparent!important;border-radius:13px!important;
   background:transparent!important;color:var(--rnx-text)!important
@@ -155,7 +155,7 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-hotelchip>span{display:grid;min-width:0;line-height:1.05}
 .rnx-hotelchip small{color:var(--rnx-text-3);font-size:.61rem;text-transform:uppercase;letter-spacing:.08em}
 .rnx-hotelchip b{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rnx-topbar__actions{display:flex;align-items:center;gap:7px}
+.rnx-topbar__actions{display:flex;flex:none;align-items:center;gap:8px}
 .rnx-profile{
   min-height:44px;display:flex;align-items:center;gap:8px;
   padding:4px 8px 4px 5px;border:1px solid var(--rnx-line);border-radius:13px;
@@ -166,17 +166,15 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   background:linear-gradient(135deg,color-mix(in srgb,var(--rnx-accent) 14%,var(--rnx-surface-3)),color-mix(in srgb,var(--rnx-accent-2) 14%,var(--rnx-surface-3)));
   color:var(--rnx-text);font-size:.75rem;font-weight:900
 }
-.rnx-profile__copy{display:grid;line-height:1.08;text-align:left}
+.rnx-profile__copy{display:grid;min-width:0;max-width:9rem;line-height:1.08;text-align:left}
+.rnx-profile__copy b,.rnx-profile__copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rnx-profile__copy b{font-size:.78rem}.rnx-profile__copy small{color:var(--rnx-text-3);font-size:.61rem}
 .rnx-notify{position:relative;display:grid;place-items:center}
 .rnx-notify__badge{
   position:absolute;right:-4px;top:-4px;min-width:18px;height:18px;padding:0 4px;
   display:grid;place-items:center;border-radius:999px;background:var(--rnx-danger);color:#fff;font-size:.58rem;font-weight:900
 }
-.rnx-randai{
-  width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--rnx-line);border-radius:13px;
-  background:var(--rnx-surface);color:var(--rnx-text)
-}
+
 
 /* Content */
 .rnx-stage{grid-area:content;min-width:0;min-height:0;overflow:auto;overscroll-behavior-x:contain}
@@ -416,7 +414,6 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-hotelchip img{width:31px!important;height:31px!important}
   .rnx-hotelchip small{display:none}
   .rnx-profile{width:44px;min-width:44px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
-  .rnx-randai{display:none}
   .rnx-topbar__actions{gap:6px}
   /* The header presence chip duplicates the Home one on phones. */
   .rnx-topbar .rs-presence-chip{display:none}

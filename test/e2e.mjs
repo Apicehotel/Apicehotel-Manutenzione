@@ -187,3 +187,6 @@ if (failures.length) {
 } else {
   console.log('E2E OK: RandUI Guard 320/375/390/430/768/1024/1440, Chromium/Android/iPhone WebKit, Dark/Light/System, Small/Normal/Large, touch target, offline transition, assenza overflow e nessun errore runtime fatale')
 }
+
+// Verify authenticated Home geometry with operational I/O isolated.
+if (!failures.length) await import('./home-layout.mjs')
