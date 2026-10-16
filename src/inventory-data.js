@@ -73,7 +73,31 @@ export async function createInventoryItem(hotelId, draft = {}) {
   const initialQuantity = Number(draft.quantity || 0)
   const payload = { hotel_id: hotelId, name: clean(draft.name), category: clean(draft.category) || 'Da classificare', category_id: draft.categoryId || null, item_type: clean(draft.itemType) || 'consumabile', parent_item_id: draft.parentItemId || null, variant_label: clean(draft.variantLabel) || null, unit: clean(draft.unit) || 'pz', location: clean(draft.location) || null, default_location_id: draft.defaultLocationId || null, sku: clean(draft.sku) || null, barcode: clean(draft.barcode) || null, manufacturer: clean(draft.manufacturer) || null, model: clean(draft.model) || null, attributes: draft.attributes && typeof draft.attributes === 'object' ? draft.attributes : {}, tags: cleanList(draft.tags), synonyms: cleanList(draft.synonyms), min_quantity: Number(draft.minQuantity || 0), ideal_quantity: Number(draft.idealQuantity || 0), reorder_quantity: Number(draft.reorderQuantity || 0), notes: clean(draft.notes) || null }
   const { data, error } = await supabase.from('inventory_items').insert(payload).select('*').single(); if (error) throw error
-  try { if (draft.photo) { const photoPath = await uploadInventoryPhoto(hotelId, data.id, draft.photo); const { data: updated, error: updateError } = await supabase.from('inventory_items').update({ photo_path: photoPath }).eq('id', data.id).eq('hotel_id', hotelId).select('*').single(); if (updateError) throw updateError; Object.assign(data, updated) } if (initialQuantity > 0) return adjustInventoryStock(data.id, initialQuantity, 'Giacenza iniziale', { movementType: 'inventario', reasonCode: 'initial_stock' }); return normalizeItem(data) } catch (err) { await supabase.from('inventory_items').delete().eq('id', data.id).eq('hotel_id', hotelId); throw err }
+  try {
+    if (draft.photo) {
+      const photoPath = await uploadInventoryPhoto(hotelId, data.id, draft.photo)
+      const { data: updated, error: updateError } = await supabase.from('inventory_items').update({ photo_path: photoPath }).eq('id', data.id).eq('hotel_id', hotelId).select('*').single()
+      if (updateError) throw updateError
+      Object.assign(data, updated)
+    }
+    // Await inside the try so a rejected adjustment reaches compensation.
+    if (initialQuantity > 0) return await adjustInventoryStock(data.id, initialQuantity, 'Giacenza iniziale', { movementType: 'inventario', reasonCode: 'initial_stock' })
+    return normalizeItem(data)
+  } catch (cause) {
+    // RLS may deny deletion without an error (zero affected rows). Never
+    // pretend rollback succeeded or invite another create in that case.
+    let removed = false
+    try {
+      const { data: deleted, error } = await supabase.from('inventory_items').delete().eq('id', data.id).eq('hotel_id', hotelId).select('id')
+      removed = !error && deleted?.some((row) => row.id === data.id)
+    } catch { /* Report the retained item below, preserving the original cause. */ }
+    if (!removed) {
+      const error = new Error(`L'articolo «${data.name}» è stato creato, ma il completamento non è confermato. Non ricrearlo: verifica foto e giacenza prima di procedere.`, { cause })
+      error.createdItemId = data.id
+      throw error
+    }
+    throw cause
+  }
 }
 
 export async function updateInventoryItem(id, hotelId, changes = {}) {

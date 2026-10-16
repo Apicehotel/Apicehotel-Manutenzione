@@ -100,17 +100,44 @@ function NewItemSheet({ open, categories, locations, onClose, onSave, onNewCateg
 
 function StockSheet({ item, open, onClose, onAdjusted }) {
   const [mode, setMode] = useState('out'); const [qty, setQty] = useState('1'); const [note, setNote] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [movements, setMovements] = useState([])
-  useEffect(() => { if (!open || !item) return; setMode('out'); setQty('1'); setNote(''); setError(''); fetchInventoryMovements(item.id).then(setMovements).catch(() => setMovements([])) }, [open, item?.id])
+  const [historyError, setHistoryError] = useState('')
+  const [success, setSuccess] = useState('')
+  useEffect(() => {
+    if (!open || !item) return
+    let active = true
+    setMode('out'); setQty('1'); setNote(''); setError(''); setSuccess(''); setHistoryError(''); setMovements([])
+    fetchInventoryMovements(item.id).then((rows) => { if (active) setMovements(rows) }).catch(() => { if (active) setHistoryError('Storico non disponibile. Riapri il dettaglio per riprovare.') })
+    return () => { active = false }
+  }, [open, item?.id])
   if (!item) return null
-  const submit = async () => { const amount = Number(qty); if (!Number.isFinite(amount) || amount <= 0 || busy) return; const delta = mode === 'in' ? amount : -amount; setBusy(true); setError(''); try { await onAdjusted(item.id, delta, note, mode === 'in' ? 'carico' : 'scarico'); setMovements(await fetchInventoryMovements(item.id)); setQty('1'); setNote('') } catch (err) { setError(err?.message || 'Movimento non registrato') } finally { setBusy(false) } }
+  const submit = async () => {
+    const amount = Number(qty)
+    if (!Number.isFinite(amount) || amount <= 0 || busy) return
+    const delta = mode === 'in' ? amount : -amount
+    setBusy(true); setError(''); setSuccess('')
+    try {
+      await onAdjusted(item.id, delta, note, mode === 'in' ? 'carico' : 'scarico')
+    } catch (err) {
+      setError(err?.message || 'Movimento non registrato')
+      setBusy(false)
+      return
+    }
+    // The write succeeded. A history read must never turn it into a failed write.
+    setQty(''); setNote(''); setSuccess('Movimento registrato correttamente.'); setHistoryError('')
+    try { setMovements(await fetchInventoryMovements(item.id)) }
+    catch { setHistoryError('Storico non aggiornato. Il movimento è già registrato: non ripeterlo.') }
+    finally { setBusy(false) }
+  }
   const reorder = suggestedInventoryReorder(item)
-  return <Sheet open={open} onClose={onClose} title={item.name} className="rs-inventory-sheet">{item.photoPath && <InventoryPhoto path={item.photoPath} className="rs-inventory-photo-large" />}<div className="rs-inventory-balance"><small>Giacenza</small><strong>{fmt(item.quantity)} <span>{item.unit}</span></strong>{item.scanCode && <em>QR {item.scanCode}</em>}{item.minQuantity > 0 && <em>Minimo {fmt(item.minQuantity)} {item.unit}{reorder > 0 ? ` · riordino suggerito ${fmt(reorder)}` : ''}</em>}</div><div className="rs-segmented rs-inventory-movement-tabs"><button type="button" className={mode === 'out' ? 'active' : ''} onClick={() => setMode('out')}>Scarico</button><button type="button" className={mode === 'in' ? 'active' : ''} onClick={() => setMode('in')}>Carico</button></div><div className="rs-actions-stack"><Field label={`Quantità (${item.unit})`}><TextInput type="number" min="0.001" step="0.001" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} /></Field><Field label="Nota (facoltativa)"><TextInput value={note} placeholder={mode === 'out' ? 'Es. prelievo tecnico' : 'Es. consegna fornitore'} onChange={(e) => setNote(e.target.value)} /></Field>{error && <p className="rs-error" role="alert">{error}</p>}<Button variant="primary" disabled={busy || Number(qty) <= 0} onClick={submit}>{busy ? 'Registro…' : mode === 'out' ? 'Registra prelievo' : 'Registra carico'}</Button></div><div className="rs-inventory-history"><h3>Ultimi movimenti</h3>{movements.length === 0 ? <p className="rs-field__hint">Nessun movimento registrato.</p> : movements.map((m) => <div className="rs-inventory-movement" key={m.id}><span className={m.delta > 0 ? 'in' : 'out'}>{m.delta > 0 ? '+' : ''}{fmt(m.delta)} {item.unit}</span><div><strong>{fmt(m.before)} → {fmt(m.after)}</strong><small>{m.movementType}{m.note ? ` · ${m.note}` : ''}</small></div><time>{new Date(m.createdAt).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</time></div>)}</div></Sheet>
+  return <Sheet open={open} onClose={onClose} title={item.name} className="rs-inventory-sheet">{item.photoPath && <InventoryPhoto path={item.photoPath} className="rs-inventory-photo-large" />}<div className="rs-inventory-balance"><small>Giacenza</small><strong>{fmt(item.quantity)} <span>{item.unit}</span></strong>{item.scanCode && <em>QR {item.scanCode}</em>}{item.minQuantity > 0 && <em>Minimo {fmt(item.minQuantity)} {item.unit}{reorder > 0 ? ` · riordino suggerito ${fmt(reorder)}` : ''}</em>}</div><div className="rs-segmented rs-inventory-movement-tabs"><button type="button" className={mode === 'out' ? 'active' : ''} onClick={() => setMode('out')}>Scarico</button><button type="button" className={mode === 'in' ? 'active' : ''} onClick={() => setMode('in')}>Carico</button></div><div className="rs-actions-stack"><Field label={`Quantità (${item.unit})`}><TextInput type="number" min="0.001" step="0.001" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} /></Field><Field label="Nota (facoltativa)"><TextInput value={note} placeholder={mode === 'out' ? 'Es. prelievo tecnico' : 'Es. consegna fornitore'} onChange={(e) => setNote(e.target.value)} /></Field>{error && <p className="rs-error" role="alert">{error}</p>}<Button variant="primary" disabled={busy || !Number.isFinite(Number(qty)) || Number(qty) <= 0} onClick={submit}>{busy ? 'Registro…' : mode === 'out' ? 'Registra prelievo' : 'Registra carico'}</Button>{success && <p className="rs-success" role="status">{success}</p>}</div><div className="rs-inventory-history"><h3>Ultimi movimenti</h3>{historyError && <p className="rs-error" role="alert">{historyError}</p>}{historyError && movements.length === 0 ? null : movements.length === 0 ? <p className="rs-field__hint">Nessun movimento registrato.</p> : movements.map((m) => <div className="rs-inventory-movement" key={m.id}><span className={m.delta > 0 ? 'in' : 'out'}>{m.delta > 0 ? '+' : ''}{fmt(m.delta)} {item.unit}</span><div><strong>{fmt(m.before)} → {fmt(m.after)}</strong><small>{m.movementType}{m.note ? ` · ${m.note}` : ''}</small></div><time>{new Date(m.createdAt).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</time></div>)}</div></Sheet>
 }
 
 export default function InventoryView({ user, hotel }) {
   const [items, setItems] = useState([]); const [categories, setCategories] = useState([]); const [locations, setLocations] = useState([]); const [loading, setLoading] = useState(true); const [search, setSearch] = useState(''); const [category, setCategory] = useState('all'); const [lowOnly, setLowOnly] = useState(false); const [newOpen, setNewOpen] = useState(false); const [categoryOpen, setCategoryOpen] = useState(false); const [locationOpen, setLocationOpen] = useState(false); const [selectedId, setSelectedId] = useState(null)
+  const [loadError, setLoadError] = useState('')
+  const [creationWarning, setCreationWarning] = useState('')
   const canCreate = canUser(user, 'inventory', 'create'); const canEdit = canUser(user, 'inventory', 'edit')
-  const reload = async () => { try { const [nextItems, nextCategories, nextLocations] = await withTimeout(Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)]), 20000, 'Magazzino timeout'); setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations) } catch (error) { console.warn('Caricamento magazzino fallito', error) } finally { setLoading(false) } }
+  const reload = async () => { try { const [nextItems, nextCategories, nextLocations] = await withTimeout(Promise.all([fetchInventoryItems(hotel.id), fetchInventoryCategories(hotel.id), fetchInventoryLocations(hotel.id)]), 20000, 'Magazzino timeout'); setItems(nextItems); setCategories(nextCategories); setLocations(nextLocations); setLoadError('') } catch (error) { setLoadError('Magazzino non aggiornato. Controlla la connessione e riprova.'); console.warn('Caricamento magazzino fallito', error) } finally { setLoading(false) } }
   useEffect(() => { setLoading(true); reload(); const unsubscribe = subscribeInventory(hotel.id, reload); return () => unsubscribe?.(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [hotel.id])
   const categoryOptions = useMemo(() => flattenInventoryTree(categories), [categories]); const lowCount = useMemo(() => items.filter((i) => inventoryStockStatus(i) !== 'ok').length, [items])
   const filtered = useMemo(() => {
@@ -126,7 +153,16 @@ export default function InventoryView({ user, hotel }) {
       .sort((a, b) => rank(a) - rank(b) || String(a.name || '').localeCompare(String(b.name || ''), 'it'))
   }, [items, search, category, lowOnly])
   const selected = items.find((i) => i.id === selectedId) || null
-  const create = async (draft) => { await createInventoryItem(hotel.id, draft); await reload() }
+  const create = async (draft) => {
+    setCreationWarning('')
+    try { await createInventoryItem(hotel.id, draft) }
+    catch (error) {
+      if (!error.createdItemId) throw error
+      // Close the create form instead of offering a duplicate insertion.
+      setCreationWarning(error.message)
+    }
+    await reload()
+  }
   const createCategory = async (draft) => { await createInventoryCategory(hotel.id, draft); await reload() }
   const createLocation = async (draft) => { await createInventoryLocation(hotel.id, draft); await reload() }
   const adjust = async (id, delta, note, movementType) => { await adjustInventoryStock(id, delta, note, { movementType }); await reload() }
@@ -143,6 +179,8 @@ export default function InventoryView({ user, hotel }) {
         <Card><small>CATEGORIE</small><strong>{categories.length}</strong></Card>
         <Card className={lowCount ? 'is-low' : ''}><small>DA RIORDINARE</small><strong>{lowCount}</strong></Card>
       </div>
+      {loadError && <div role="alert"><p className="rs-error">{loadError}</p><Button variant="ghost" onClick={reload}>Riprova caricamento</Button></div>}
+      {creationWarning && <p className="rs-error" role="alert">{creationWarning}</p>}
       <InventoryBlock2Panel user={user} hotel={hotel} items={items} locations={locations} onSelectItem={setSelectedId} onReload={reload} />
       <div className="rs-toolbar rs-inventory-toolbar">
         <TextInput icon="search" value={search} placeholder="Nome, codice, barcode, tag, modello…" onChange={(e) => setSearch(e.target.value)} />
@@ -165,7 +203,7 @@ export default function InventoryView({ user, hotel }) {
       </div>
       {loading ? (
         <Spinner label="Carico il magazzino…" />
-      ) : filtered.length === 0 ? (
+      ) : loadError && items.length === 0 ? null : filtered.length === 0 ? (
         <EmptyState icon="package" title="Magazzino vuoto">
           {items.length ? 'Nessun articolo corrisponde ai filtri.' : 'Aggiungi il primo articolo del magazzino.'}
         </EmptyState>
