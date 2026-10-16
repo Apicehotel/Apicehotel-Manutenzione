@@ -1,3 +1,4 @@
+import { requestPresence } from './presence-request.js'
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { supabase, supabaseAnonKey, supabaseUrl } from './supabase.js'
 import { assertSensitiveActionOnline } from './session-policy.js'
@@ -80,10 +81,7 @@ export async function setOwnPresence(present, hotelId = null) {
   assertSensitiveActionOnline('L’aggiornamento della presenza')
   if (!supabase) throw new Error('Supabase non configurato')
   if (present && !hotelId) throw new Error('Seleziona la struttura in cui ti trovi')
-  const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'set_presence', present: Boolean(present), hotel_id: present ? hotelId : null } })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
-  return data
+  return requestPresence({ action: 'set_presence', present: Boolean(present), hotel_id: present ? hotelId : null })
 }
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }
