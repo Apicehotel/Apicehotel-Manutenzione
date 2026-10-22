@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/taste-skill-randui-20261022
   pull_request:
     branches:
       - main
@@ -45,6 +46,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Security audit (high severity)
+        run: npm audit --audit-level=high
+
       - name: Quality matrix
         run: npm run test:matrix
 
@@ -65,13 +69,13 @@ jobs:
 
   deploy:
     name: Deploy main/intentional ref to Ocean
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/taste-skill-randui-20261022')) || github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
     environment: preview
     env:
       SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
-      OCEAN_GITHUB_BRANCH: ${{ github.event_name == 'push' && 'main' || inputs.ref || 'main' }}
+      OCEAN_GITHUB_BRANCH: ${{ github.event_name == 'push' && github.ref_name || inputs.ref || 'main' }}
     steps:
       - name: Checkout deploy ref
         uses: actions/checkout@v4
@@ -107,7 +111,7 @@ jobs:
 
   browser-visual-gate:
     name: Browser visual gate on Ocean
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/taste-skill-randui-20261022')) || github.event_name == 'workflow_dispatch'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 35
