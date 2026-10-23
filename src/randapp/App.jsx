@@ -12,6 +12,10 @@ import PinRecoveryComplete, { PinRecoveryRequest } from './PinRecovery.jsx'
 const Shell = lazyWithRetry(() => import('./Shell.jsx'))
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const SESSION_CHECK_TIMEOUT_MS = 12000
+// PostgREST can reject a freshly issued JWT while its edge clock catches up.
+// Keep the session gate open for the bounded network recovery window instead
+// of turning a transient clock skew into an access error after 12 seconds.
+const SESSION_DIRECTORY_TIMEOUT_MS = 120000
 
 const EVENT = 'apice-session-changed'
 
@@ -408,7 +412,7 @@ export default function App() {
       }
       try {
         const { validateSupabaseSession, signOutSupabase, ensureRestAcceptsCurrentSession } = await import('../auth-data.js')
-        const result = await withTimeout(validateSupabaseSession(), SESSION_CHECK_TIMEOUT_MS, 'Controllo sessione timeout')
+        const result = await withTimeout(validateSupabaseSession(), SESSION_DIRECTORY_TIMEOUT_MS, 'Controllo sessione timeout')
         if (active && !result.valid) {
           await resetSession(signOutSupabase)
           return
@@ -425,11 +429,11 @@ export default function App() {
         const { fetchDirectory } = await import('../users-data.js')
         let directory
         try {
-          directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+          directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_DIRECTORY_TIMEOUT_MS, 'Directory sessione timeout')
         } catch (directoryError) {
           if (isFutureJwtError(directoryError)) {
             await withTimeout(ensureRestAcceptsCurrentSession(2), 2000, 'Allineamento sessione timeout').catch(() => false)
-            directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+            directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_DIRECTORY_TIMEOUT_MS, 'Directory sessione timeout')
           } else {
             throw directoryError
           }
