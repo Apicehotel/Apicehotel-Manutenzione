@@ -94,7 +94,9 @@ export async function waitUntilRestAcceptsAccessToken({
         },
       })
       const body = await response.text()
-      if (!FUTURE_JWT_RE.test(body)) {
+      // A successful probe must really be accepted by PostgREST. Previously
+      // any non-future-JWT response (including 401) was treated as ready.
+      if (response.ok) {
         markJwtRestReady()
         return true
       }

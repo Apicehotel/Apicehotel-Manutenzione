@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createJwtRecoveringFetch } from '../src/reliability/jwt-network-recovery.js'
 
 const failed = () => new Response(JSON.stringify({ message: 'JWT issued at future', code: 'PGRST303' }), { status: 401 })
+const plain401 = () => new Response(JSON.stringify({ message: 'JWT rejected' }), { status: 401 })
 const ok = () => new Response('[]', { status: 200 })
 const sleep = async () => {}
 const client = (refresh) => ({ auth: {
@@ -21,6 +22,20 @@ test('future JWT GET refreshes and replaces stale Authorization only once', asyn
     return ok()
   }, () => client(async () => { refreshes++; return { data: { session: { access_token: pastToken } } } }), { sleep })
   const response = await fetch('https://example.test/rest/v1/segnalazioni', { headers: { Authorization: 'Bearer old.jwt' } })
+  assert.equal(response.status, 200)
+  assert.equal(attempts, 2)
+  assert.equal(refreshes, 1)
+})
+
+test('plain 401 GET refreshes and retries the current session', async () => {
+  let attempts = 0, refreshes = 0
+  const fetch = createJwtRecoveringFetch(async (_url, init) => {
+    attempts++
+    if (attempts === 1) return plain401()
+    assert.equal(new Headers(init.headers).get('authorization'), `Bearer ${pastToken}`)
+    return ok()
+  }, () => client(async () => { refreshes++; return { data: { session: { access_token: pastToken } } } }), { sleep })
+  const response = await fetch('https://example.test/rest/v1/interventi', { headers: { Authorization: 'Bearer old.jwt' } })
   assert.equal(response.status, 200)
   assert.equal(attempts, 2)
   assert.equal(refreshes, 1)

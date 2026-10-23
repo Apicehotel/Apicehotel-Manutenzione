@@ -54,6 +54,20 @@ test('waitUntilRestAcceptsAccessToken retries until PostgREST stops rejecting fu
   assert.equal(calls, 3)
 })
 
+test('waitUntilRestAcceptsAccessToken does not treat a plain 401 as ready', async () => {
+  let calls = 0
+  const ok = await waitUntilRestAcceptsAccessToken({
+    accessToken: 'a.b.c',
+    restUrl: 'https://example.test',
+    anonKey: 'anon',
+    maxAttempts: 2,
+    sleep: async () => {},
+    fetchImpl: async () => { calls += 1; return new Response('JWT rejected', { status: 401 }) },
+  })
+  assert.equal(ok, false)
+  assert.equal(calls, 2)
+})
+
 test('login grace helper covers the two-minute post-PIN window', () => {
   const previous = globalThis.sessionStorage
   const store = new Map()
