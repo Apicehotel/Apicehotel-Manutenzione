@@ -1,6 +1,8 @@
 import { FUTURE_JWT_RE, isJwtLoginGraceActive, settleFreshAccessToken } from './jwt-errors.js'
 
-const FUTURE_JWT_RETRY_ATTEMPTS = 20
+// Ocean's PostgREST edge can lag Auth by more than 40 seconds. Keep the
+// recovery bounded, but long enough to cover the observed clock skew.
+const FUTURE_JWT_RETRY_ATTEMPTS = 45
 const FUTURE_JWT_RETRY_GAP_MS = 2000
 
 /**
@@ -34,8 +36,17 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
     if (response.status !== 401 && !isFutureBody(body)) return response
     if (!['GET', 'HEAD'].includes(method)) { warn(); return response }
     const client = getClient?.()
-    if (!client?.auth) { warn(); return response }
+    const headers = new Headers(input instanceof Request ? input.headers : undefined)
+    new Headers(init?.headers || {}).forEach((value, key) => headers.set(key, value))
+    const originalAuthorization = headers.get('authorization')
+    const futureJwt = isFutureBody(body)
+    let accessToken = originalAuthorization?.replace(/^Bearer\s+/i, '') || ''
     try {
+    // For PGRST303, keep the already-issued token stable while PostgREST's
+    // clock catches up. Refreshing here would mint an even newer token and
+    // move the rejection window forward on every retry.
+    if (!futureJwt || !accessToken) {
+      if (!client?.auth) { warn(); return response }
       const { data: current, error: sessionError } = await client.auth.getSession()
       if (sessionError || !current?.session?.refresh_token) { warn(); return response }
       if (!refreshInFlight) {
@@ -43,11 +54,10 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
       }
       const { data, error } = await refreshInFlight
       if (error || !data?.session?.access_token) { warn(); return response }
-      await settleFreshAccessToken(data.session.access_token, sleep)
-      // The HTTP headers from the failed call may contain the stale Bearer token.
-      const headers = new Headers(input instanceof Request ? input.headers : undefined)
-      new Headers(init?.headers || {}).forEach((value, key) => headers.set(key, value))
-      headers.set('authorization', `Bearer ${data.session.access_token}`)
+      accessToken = data.session.access_token
+      headers.set('authorization', `Bearer ${accessToken}`)
+    }
+      await settleFreshAccessToken(accessToken, sleep)
       // Rebuild the safe read from the URL. Passing a Request object together
       // with init headers is browser-dependent and can drop Authorization.
       const retryInput = url
