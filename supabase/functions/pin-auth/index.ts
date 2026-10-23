@@ -27,9 +27,42 @@ const cors={
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 
 const ROLE_VALUES=new Set(["admin","Supremo","Direzione","Direttore Centro Congressi","Portiere Notturno","Responsabile","manutentore","Tecnico esterno","Governante","Capo Governante","Reception","Isola dei Golosi","Ristorante Wine/Jazz","Colazione Jazz"]);
+const KNOWN_HOTELS=new Set(["hotelgio","chocohotel","brigantino"]);
 const canonicalRole=(v:unknown)=>{const r=String(v||"Reception").trim();return ROLE_VALUES.has(r)?r:"Reception"};
 const PRESENCE_MAX_MS=(7*60+20)*60*1000;
 const randomAuthPassword=()=>crypto.randomUUID()+crypto.randomUUID();
+/** Unauthenticated login-directory: rate-limited + query-gated (no full dump). PIN remains 4 digits + lockout. */
+const DIRECTORY_RATE_LIMIT=20;
+const DIRECTORY_RATE_WINDOW_MS=60_000;
+const LOGIN_DIRECTORY_MIN_QUERY=2;
+const LOGIN_DIRECTORY_MAX_RESULTS=12;
+const directoryRate=new Map<string,{count:number;resetAt:number}>();
+function clientIp(req:Request){
+  const xf=req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()||"";
+  const real=req.headers.get("x-real-ip")?.trim()||"";
+  return xf||real||"unknown";
+}
+function allowLoginDirectory(req:Request,hotelId:string){
+  const key=`${clientIp(req)}:${hotelId}`;
+  const now=Date.now();
+  const row=directoryRate.get(key);
+  if(!row||now>=row.resetAt){directoryRate.set(key,{count:1,resetAt:now+DIRECTORY_RATE_WINDOW_MS});return true}
+  if(row.count>=DIRECTORY_RATE_LIMIT)return false;
+  row.count+=1;
+  return true;
+}
+function normalizeLoginQuery(value:unknown){
+  return String(value||"").trim().toLocaleLowerCase("it");
+}
+function shuffleInPlace<T>(rows:T[]){
+  for(let i=rows.length-1;i>0;i-=1){
+    const j=Math.floor(Math.random()*(i+1));
+    const tmp=rows[i];
+    rows[i]=rows[j];
+    rows[j]=tmp;
+  }
+  return rows;
+}
 
 function hotelList(value:any):string[]{
   if(Array.isArray(value)) return value.map(String);
@@ -40,6 +73,21 @@ function hotelList(value:any):string[]{
   return [];
 }
 const hasHotel=(value:any,hotelId:string)=>hotelList(value).includes(hotelId);
+
+/** Bounded wait so Auth/PostgREST clock skew does not return an unusable session. */
+async function waitUntilPostgrestAccepts(accessToken:string,maxAttempts=6){
+  if(!PUBLIC||!accessToken)return;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    try{
+      const res=await fetch(`${API_URL}/rest/v1/hotels?select=id&limit=1`,{
+        headers:{apikey:PUBLIC,Authorization:`Bearer ${accessToken}`,Accept:"application/json"},
+      });
+      const body=await res.text();
+      if(!/jwt\s+issued\s+(?:at\s+)?(?:the\s+)?future|pgrst303/i.test(body))return;
+    }catch{ /* probe best-effort; login still returns the Auth session */ }
+    await new Promise((resolve)=>setTimeout(resolve,1000));
+  }
+}
 
 async function authJson(path:string,method="GET",body?:unknown,key=SECRET,token?:string){
   const headers:Record<string,string>={apikey:key,Accept:"application/json"};
@@ -69,11 +117,15 @@ async function activeMember(req:Request,hotelId:string){
   return rows[0]?.active?String(user.id):null;
 }
 
-async function listLoginDirectory(hotelId:string){
+async function listLoginDirectory(hotelId:string,query:string){
+  const q=normalizeLoginQuery(query);
+  if(q.length<LOGIN_DIRECTORY_MIN_QUERY)return [];
   const rows=await sql`select id,nome,active,is_system_protected,hotels from public.utenti where active=true and ruolo <> 'RandAI' order by nome`;
-  return rows
+  const matched=rows
     .filter((u:any)=>(u.is_system_protected===false||u.nome==="Randagio")&&hasHotel(u.hotels,hotelId))
+    .filter((u:any)=>normalizeLoginQuery(u.nome).startsWith(q))
     .map((u:any)=>({id:String(u.id),legacy_id:String(u.id),name:u.nome,hotel_id:hotelId,active:true}));
+  return shuffleInPlace(matched).slice(0,LOGIN_DIRECTORY_MAX_RESULTS);
 }
 
 async function listOperationalDirectory(hotelId:string){
@@ -92,10 +144,6 @@ async function listOperationalDirectory(hotelId:string){
     const role=canonicalRole(m?.role||u.ruolo);
     return {id:authId||String(u.id),legacy_id:String(u.id),auth_user_id:authId,name:u.nome,role,department:u.department||null,hotels:hotelList(u.hotels).length?hotelList(u.hotels):[hotelId],hotel_id:hotelId,active:m?Boolean(m.active):true,can_admin:Boolean(m?.can_access_admin)||role==="admin",in_struttura:Boolean(u.in_struttura)&&!expired,in_struttura_dal:u.in_struttura_dal||null,email:p?.email||null,phone:u.telefono||null,phone_country_code:u.phone_country_code||"+39"};
   });
-}
-
-async function listDirectory(req:Request,hotelId:string){
-  return await activeMember(req,hotelId)?listOperationalDirectory(hotelId):listLoginDirectory(hotelId);
 }
 
 async function resolveLegacyUserId(userId:string){
@@ -145,22 +193,39 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   try{
     if(req.method==="GET"){
-      const hotelId=new URL(req.url).searchParams.get("hotel_id")?.trim();
+      const params=new URL(req.url).searchParams;
+      const hotelId=params.get("hotel_id")?.trim();
+      const query=params.get("q")||params.get("query")||"";
       if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);
-      return json({ok:true,users:await listDirectory(req,hotelId)});
+      if(!KNOWN_HOTELS.has(hotelId))return json({ok:false,error:"hotel_id non valido"},400);
+      const member=await activeMember(req,hotelId);
+      if(member)return json({ok:true,users:await listOperationalDirectory(hotelId)});
+      if(!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
+      if(normalizeLoginQuery(query).length<LOGIN_DIRECTORY_MIN_QUERY){
+        return json({ok:true,users:[],query_required:true,min_query:LOGIN_DIRECTORY_MIN_QUERY});
+      }
+      return json({ok:true,users:await listLoginDirectory(hotelId,query)});
     }
     if(req.method!=="POST")return json({ok:false,error:"Metodo non consentito"},405);
     const body=await req.json().catch(()=>null);
     const action=String(body?.action||"login");
     const hotelId=String(body?.hotel_id||"").trim();
     if(action==="directory"){
+      const query=String(body?.q||body?.query||"");
       if(!hotelId)return json({ok:false,error:"hotel_id mancante"},400);
-      return json({ok:true,users:await listDirectory(req,hotelId)});
+      if(!KNOWN_HOTELS.has(hotelId))return json({ok:false,error:"hotel_id non valido"},400);
+      const member=await activeMember(req,hotelId);
+      if(member)return json({ok:true,users:await listOperationalDirectory(hotelId)});
+      if(!allowLoginDirectory(req,hotelId))return json({ok:false,error:"Troppe richieste. Riprova tra un minuto."},429);
+      if(normalizeLoginQuery(query).length<LOGIN_DIRECTORY_MIN_QUERY){
+        return json({ok:true,users:[],query_required:true,min_query:LOGIN_DIRECTORY_MIN_QUERY});
+      }
+      return json({ok:true,users:await listLoginDirectory(hotelId,query)});
     }
 
     const userId=String(body?.user_id||"").trim();
     const pin=String(body?.pin||"").trim();
-    if(!hotelId||!userId||!/^\d{4}$/.test(pin))return json({ok:false,error:"Dati login non validi"},400);
+    if(!hotelId||!KNOWN_HOTELS.has(hotelId)||!userId||!/^\d{4}$/.test(pin))return json({ok:false,error:"Dati login non validi"},400);
 
     const legacyUserId=await resolveLegacyUserId(userId);
     const legacyRows=await sql`select id,nome,ruolo,hotels,puo_admin,department,telefono,email,phone_country_code,phone_verified,email_verified,deve_cambiare_pin,active,is_system_protected,in_struttura,in_struttura_dal from public.utenti where id=${legacyUserId}::uuid and active=true limit 1`;
@@ -200,6 +265,7 @@ Deno.serve(async(req:Request)=>{
     await authJson(`/admin/users/${authUserId}`,"PUT",{password});
     const signed=await authJson("/token?grant_type=password","POST",{email:internalEmail,password},PUBLIC);
     if(!signed?.access_token||!signed?.refresh_token)throw new Error("Sessione non disponibile");
+    await waitUntilPostgrestAccepts(signed.access_token);
 
     const since=legacy.in_struttura_dal?new Date(legacy.in_struttura_dal).getTime():null;
     const presenceExpired=since!==null&&Date.now()-since>PRESENCE_MAX_MS;

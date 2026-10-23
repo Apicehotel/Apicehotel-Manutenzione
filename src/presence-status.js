@@ -1,3 +1,4 @@
+import { requestPresence } from './presence-request.js'
 import { supabase } from './supabase.js'
 import { loadSession } from './session.js'
 import { setOwnPresence } from './auth-data.js'
@@ -50,11 +51,7 @@ function scheduleLocalExpiry(state) {
 }
 
 async function fetchCurrentPresence() {
-  if (!supabase) return null
-  const { data, error } = await supabase.functions.invoke('presence-status', { body: {} })
-  if (error) throw error
-  if (!data?.ok) throw new Error(data?.error || 'Presenza non disponibile')
-  return data
+  return requestPresence()
 }
 
 function notExpired(person) {

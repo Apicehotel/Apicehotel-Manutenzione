@@ -93,7 +93,10 @@ export default async function handler(req, res) {
     return
   }
   const authorization = String(req.headers.authorization || '')
-  if (!authorization.startsWith('Bearer ') || authorization.length < 32) {
+  const bearer = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
+  // Shape-check only — RandGateway remains the authz authority for membership/scopes.
+  const jwtShape = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+  if (!bearer || bearer.length < 40 || !jwtShape.test(bearer)) {
     res.setHeader('WWW-Authenticate', 'Bearer realm="RandMCP"')
     res.status(401).json({ error: 'unauthorized' })
     return

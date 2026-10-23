@@ -25,7 +25,15 @@
   --rnx-sidebar:264px;
   --rnx-rail:84px;
   --rnx-topbar:72px;
+  /* Top safe-area is owned by .rnx-topbar only (same contract as .rs-header).
+     black-translucent status bar draws under the chrome, so the row must grow. */
+  --rnx-safe-top:var(--rs-adaptive-safe-top, env(safe-area-inset-top, 0px));
+  --rnx-safe-right:var(--rs-adaptive-safe-right, env(safe-area-inset-right, 0px));
+  --rnx-safe-bottom:var(--rs-adaptive-safe-bottom, env(safe-area-inset-bottom, 0px));
+  --rnx-safe-left:var(--rs-adaptive-safe-left, env(safe-area-inset-left, 0px));
+  --rnx-topbar-row:calc(var(--rnx-topbar) + var(--rnx-safe-top));
   --rnx-nav-h:72px;
+  --rnx-nav-row:calc(var(--rnx-nav-h) + var(--rnx-safe-bottom));
   /* One action colour. Ink = accent pulled toward the text colour, readable as
      text in light and dark themes. Action = accent darkened, readable under the
      white label of filled buttons in both themes. */
@@ -42,8 +50,9 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   min-height:100dvh;
   display:grid;
   grid-template-columns:var(--rnx-sidebar) minmax(0,1fr);
-  grid-template-rows:var(--rnx-topbar) minmax(0,1fr);
+  grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr);
   grid-template-areas:"side top" "side content";
+  padding-top:0;
   background:
     radial-gradient(60% 45% at 100% 0,color-mix(in srgb,var(--rnx-accent-2) 5%,transparent),transparent 70%),
     var(--rnx-bg);
@@ -126,16 +135,20 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 /* Header */
 .rnx-topbar{
   grid-area:top;position:sticky;top:0;z-index:30;
-  min-height:var(--rnx-topbar);
+  min-height:var(--rnx-topbar-row);
+  box-sizing:border-box;
   display:flex;align-items:center;justify-content:space-between;gap:14px;
-  padding:9px 20px;
+  padding:calc(9px + var(--rnx-safe-top)) max(20px, var(--rnx-safe-right)) 9px max(20px, var(--rnx-safe-left));
   border-bottom:1px solid var(--rnx-line);
   background:color-mix(in srgb,var(--rnx-bg) 82%,transparent);
   backdrop-filter:blur(20px)
 }
-.rnx-topbar__hotel{min-width:0}
+.rnx-topbar__hotel{flex:1;min-width:0}
+.rnx-topbar__presence{order:1;min-width:0}
+.rnx-topbar__presence:not(:has(.rs-presence-chip)){display:none}
+.rnx-topbar__actions{order:2}
 .rnx-hotelchip{
-  min-width:0;max-width:330px;height:48px;
+  min-width:0;max-width:min(330px,100%);height:48px;
   display:grid!important;grid-template-columns:34px minmax(0,1fr) 18px!important;align-items:center!important;gap:9px!important;
   padding:5px 8px!important;border:1px solid transparent!important;border-radius:13px!important;
   background:transparent!important;color:var(--rnx-text)!important
@@ -145,7 +158,7 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-hotelchip>span{display:grid;min-width:0;line-height:1.05}
 .rnx-hotelchip small{color:var(--rnx-text-3);font-size:.61rem;text-transform:uppercase;letter-spacing:.08em}
 .rnx-hotelchip b{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rnx-topbar__actions{display:flex;align-items:center;gap:7px}
+.rnx-topbar__actions{display:flex;flex:none;align-items:center;gap:8px}
 .rnx-profile{
   min-height:44px;display:flex;align-items:center;gap:8px;
   padding:4px 8px 4px 5px;border:1px solid var(--rnx-line);border-radius:13px;
@@ -156,17 +169,15 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   background:linear-gradient(135deg,color-mix(in srgb,var(--rnx-accent) 14%,var(--rnx-surface-3)),color-mix(in srgb,var(--rnx-accent-2) 14%,var(--rnx-surface-3)));
   color:var(--rnx-text);font-size:.75rem;font-weight:900
 }
-.rnx-profile__copy{display:grid;line-height:1.08;text-align:left}
+.rnx-profile__copy{display:grid;min-width:0;max-width:9rem;line-height:1.08;text-align:left}
+.rnx-profile__copy b,.rnx-profile__copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rnx-profile__copy b{font-size:.78rem}.rnx-profile__copy small{color:var(--rnx-text-3);font-size:.61rem}
 .rnx-notify{position:relative;display:grid;place-items:center}
 .rnx-notify__badge{
   position:absolute;right:-4px;top:-4px;min-width:18px;height:18px;padding:0 4px;
   display:grid;place-items:center;border-radius:999px;background:var(--rnx-danger);color:#fff;font-size:.58rem;font-weight:900
 }
-.rnx-randai{
-  width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--rnx-line);border-radius:13px;
-  background:var(--rnx-surface);color:var(--rnx-text)
-}
+
 
 /* Content */
 .rnx-stage{grid-area:content;min-width:0;min-height:0;overflow:auto;overscroll-behavior-x:contain}
@@ -177,9 +188,38 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   overflow:visible
 }
 
+/* Phone + tablet: pin the Material topbar; only .rnx-stage scrolls.
+   Mirrors the .rs-app / .rs-header viewport-lock contract.
+   Solid chrome (no radial/transparent blur) so notch and home-indicator
+   do not show a gradient band or black gap on open. */
+@media (max-width:1199px){
+  .rs-root:has(.rnx-app),
+  .rnx-app{
+    height:var(--rs-app-viewport-height, 100dvh);
+    max-height:var(--rs-app-viewport-height, 100dvh);
+    min-height:0;
+    overflow:hidden;
+    background:var(--rnx-bg);
+  }
+  .rnx-topbar{
+    position:relative;
+    top:auto;
+    z-index:30;
+    background:var(--rnx-bg)!important;
+    border-bottom:1px solid var(--rnx-line)!important;
+    backdrop-filter:none!important;
+  }
+  .rnx-stage{
+    min-height:0;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+}
+
 /* Home: Bento, operational and compact */
 .rnx-home{display:grid;gap:14px}
-.rnx-mobile-presence{display:none}
 .rnx-homehead{
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px 16px;
   padding:0 2px 6px
@@ -277,8 +317,8 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-priority__body strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rnx-priority__body span{color:var(--rnx-text-3);font-size:.71rem}
 
 /* Liquid presence reuses existing functional PresenceChip but gets a clean home-friendly slot. */
-.rnx-mobile-presence .rs-presence-chip,
 .rnx-topbar .rs-presence-chip{
+  min-height:max(44px,calc(40px * var(--rs-scale)));
   border-color:var(--rnx-line);background:var(--rnx-surface-2);color:var(--rnx-text)
 }
 
@@ -339,32 +379,55 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-structure-switch span,
   .rnx-sidebar .rs-sidebar__item span,
   .rnx-sidebar__logout span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  .rnx-topbar{padding:9px 18px}
+  .rnx-topbar{
+    padding:calc(9px + var(--rnx-safe-top)) max(18px, var(--rnx-safe-right)) 9px max(18px, var(--rnx-safe-left));
+  }
   .rnx-content{padding:20px 22px 40px}
   .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(240px,.8fr)}
-  .rnx-fab{right:22px!important;bottom:calc(22px + env(safe-area-inset-bottom))!important;width:56px!important;height:56px!important;border-radius:18px!important}
+  .rnx-fab{right:22px!important;bottom:calc(22px + var(--rnx-safe-bottom))!important;width:56px!important;height:56px!important;border-radius:18px!important}
 }
 
 /* phone */
 @media(max-width:767px){
-  :root{--rnx-topbar:62px;--rnx-nav-h:64px}
-  .rnx-app{grid-template-columns:1fr;grid-template-rows:var(--rnx-topbar) minmax(0,1fr);grid-template-areas:"top" "content";padding-bottom:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom))}
+  /* +5px topbar row / padding so hotel chip sits a bit lower under the notch.
+     Bottom nav is a real grid row anchored to the shell bottom (not fixed). */
+  :root{--rnx-topbar:67px;--rnx-nav-h:64px}
+  /* iOS startup: anchor the shell to the measured visual viewport from first paint.
+     The header styling and its safe-area ownership are unchanged. */
+  .rs-root:has(.rnx-app),
+  .rnx-app{
+    height:var(--rs-visual-viewport-height, 100dvh);
+    max-height:var(--rs-visual-viewport-height, 100dvh);
+  }
+  .rnx-app{
+    grid-template-columns:1fr;
+    grid-template-rows:var(--rnx-topbar-row) minmax(0,1fr) var(--rnx-nav-row);
+    grid-template-areas:"top" "content" "nav";
+    padding-top:0;
+    padding-bottom:0;
+  }
   .rnx-sidebar{display:none}
-  .rnx-topbar{padding:7px 10px;gap:7px}
+  .rnx-topbar{
+    gap:7px;
+    min-height:var(--rnx-topbar-row);
+    padding:calc(12px + var(--rnx-safe-top)) max(10px, var(--rnx-safe-right)) 7px max(10px, var(--rnx-safe-left));
+  }
   .rnx-hotelchip{height:44px!important;grid-template-columns:31px minmax(0,1fr) 14px!important;padding:4px 5px!important}
   .rnx-hotelchip img{width:31px!important;height:31px!important}
   .rnx-hotelchip small{display:none}
   .rnx-profile{width:44px;min-width:44px;padding:4px;justify-content:center}.rnx-profile__copy{display:none}
-  .rnx-randai{display:none}
   .rnx-topbar__actions{gap:6px}
-  /* The header presence chip duplicates the Home one on phones. */
-  .rnx-topbar .rs-presence-chip{display:none}
-  .rnx-content{padding:14px 12px calc(var(--rnx-nav-h) + 30px + env(safe-area-inset-bottom))}
+  /* A second row keeps the personal presence action reachable on every page. */
+  .rnx-app:has(.rnx-topbar__presence .rs-presence-chip){--rnx-topbar:116px;--rnx-topbar-row:calc(116px + var(--rnx-safe-top))}
+  .rnx-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 6px}
+  .rnx-topbar__hotel{grid-column:1;grid-row:1}
+  .rnx-topbar__actions{grid-column:2;grid-row:1}
+  .rnx-topbar__presence{grid-column:1/-1;grid-row:2}
+  .rnx-topbar .rs-presence-chip{display:flex;width:100%;max-width:100%;min-height:44px;justify-content:flex-start}
+  /* Stage already sits above the docked nav row; no fake bottom clearance. */
+  .rnx-content{padding:14px 12px 18px}
   .rnx-home{gap:12px}
   /* Presence sits beside the greeting as a chip, not as its own card. */
-  .rnx-mobile-presence{display:flex;align-items:center;grid-column:2;grid-row:1;min-width:0}
-  .rnx-mobile-presence__label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  .rnx-mobile-presence .rs-presence-chip{max-width:150px;min-height:36px}
   .rnx-homehead{padding-bottom:2px}
   .rnx-homehead h1{font-size:1.65rem}.rnx-homehead p{display:none}
   /* No create button on the Home (it only took space); "Vista" lives in the menu. */
@@ -388,15 +451,22 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-tray{padding:11px;border-radius:17px}
   .rnx-priority{grid-template-columns:28px 34px minmax(0,1fr) 16px;min-height:60px;padding:8px}
   .rnx-priority__body span{display:none}
-  /* Docked bottom bar: full width, no floating pill covering content. */
+  /* Anchored bottom row of the shell grid — always flush with the physical bottom. */
   .rnx-bottomnav{
-    position:fixed;z-index:50;left:0;right:0;bottom:0;
-    min-height:calc(var(--rnx-nav-h) + env(safe-area-inset-bottom));
-    display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-    padding:5px max(6px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    grid-area:nav;
+    position:relative;
+    left:auto;right:auto;bottom:auto;
+    z-index:50;
+    width:100%;
+    box-sizing:border-box;
+    height:100%;
+    min-height:var(--rnx-nav-row);
+    display:grid;grid-template-columns:repeat(5,1fr);gap:2px;align-content:center;
+    padding:4px max(6px, var(--rnx-safe-right)) var(--rnx-safe-bottom) max(6px, var(--rnx-safe-left));
     border-top:1px solid var(--rnx-line);
-    background:color-mix(in srgb,var(--rnx-surface) 94%,transparent);
-    backdrop-filter:blur(18px) saturate(1.1)
+    background:var(--rnx-bg);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
   }
   .rnx-bottomnav__item{
     min-width:0;min-height:54px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -408,7 +478,7 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
   .rnx-bottomnav__item small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.64rem;font-weight:700}
   .rnx-bottomnav__item.active small{font-weight:900}
   .rnx-bottomnav__item::before,.rnx-bottomnav__item::after{display:none!important}
-  .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-h) + 14px + env(safe-area-inset-bottom))!important;width:54px!important;height:54px!important;border-radius:17px!important}
+  .rnx-fab{right:16px!important;bottom:calc(var(--rnx-nav-row) + 14px)!important;width:54px!important;height:54px!important;border-radius:17px!important}
 }
 
 /* very small phones */
@@ -465,8 +535,30 @@ body{margin:0;background:var(--rnx-bg)!important;color:var(--rnx-text)}
 .rnx-row__body small{color:var(--rnx-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.7rem}
 .rnx-panel-actions{display:flex;gap:7px;flex-wrap:wrap}
 .rnx-panel-actions button{min-height:34px;padding:0 10px;border:1px solid var(--rnx-line);border-radius:10px;background:var(--rnx-surface);color:var(--rnx-text-2);font-size:.7rem;font-weight:800}
-.rnx-app--operational-detail{grid-template-columns:1fr}
-.rnx-app--operational-detail .rnx-stage{grid-column:1/-1}
+/* Focus Mode: all breakpoints — chrome unmounted in Shell; stage fills the grid. */
+.rnx-app.rnx-app--operational-detail{
+  grid-template-columns:1fr;
+  grid-template-rows:minmax(0,1fr);
+  grid-template-areas:"content";
+  padding-top:0;
+  padding-bottom:0;
+  overflow:hidden;
+  height:var(--rs-app-viewport-height, 100dvh);
+  max-height:var(--rs-app-viewport-height, 100dvh);
+  min-height:0;
+}
+.rnx-app--operational-detail .rnx-stage{
+  grid-area:content;
+  grid-column:1/-1;
+  min-height:0;
+  overflow:hidden;
+}
+.rnx-app--operational-detail .rnx-content{
+  padding:0;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
 
 
 /* Contract hooks kept explicit for operational tests and density modes. */
@@ -496,9 +588,6 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   .rnx-bottomnav__item small{font-size:.6rem}
 }
 
-/* A presence slot without a chip (role not tracked, offline) must not render
-   as an empty card on top of the Home. */
-.rnx-mobile-presence:not(:has(.rs-presence-chip)){display:none!important}
 
 /* Wide screens: the Home uses the width. Desk (next commitment, my work, team)
    on the left, the priority tray on the right; dense flow pulls the tray up
@@ -509,4 +598,12 @@ html[data-ui-size='small'] .rnx-kpi-grid .rs-workhome__stat{min-height:86px}
   .rnx-home>.rnx-desk,.rnx-home>.rnx-tools{grid-column:1}
   .rnx-home>.rnx-tray{grid-column:2;grid-row:span 2}
   .rnx-home .rnx-deskgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+
+/* Shared forms and operational headings must shrink inside phone grid columns. */
+.rnx-content .rs-field,.rnx-content .rs-input{min-width:0}
+.rnx-content .rs-pagehead,.rnx-content .rs-section__head{flex-wrap:wrap;gap:10px}
+.rnx-content .rs-pagehead>div,.rnx-content .rs-section__head>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:767px){
+  .rnx-content .rs-select,.rs-fullpage .rs-select{font-size:max(16px,1rem);padding-right:36px}
 }

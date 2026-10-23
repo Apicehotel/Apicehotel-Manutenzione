@@ -55,6 +55,9 @@ jobs:
         run: npm run test:randui
 
       - name: Build
+        env:
+          VITE_SUPABASE_URL: https://ooqlfldcrnkudhgjnied.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX
         run: npm run build
 
       - name: Bundle budget

@@ -20,17 +20,16 @@ export function RandDesktopSidebar({ brand, switcher, navigation, preferences, o
   )
 }
 
-export function RandTopbar({ hotel, profile, presence, themeSwitch, notifications, randai }) {
+export function RandTopbar({ hotel, profile, presence, themeSwitch, notifications }) {
   return (
     <header className="rnx-topbar">
       <div className="rnx-topbar__hotel">{hotel}</div>
       <div className="rnx-topbar__actions">
-        {presence}
         {themeSwitch}
         {notifications}
-        {randai}
         {profile}
       </div>
+      <div className="rnx-topbar__presence">{presence}</div>
     </header>
   )
 }
@@ -64,13 +63,18 @@ export function RandMobileNav({ items, isActive, onPick, onWarm }) {
 export function RandSwipeStage({ children, items, isActive, onPick }) {
   const start = useRef(null)
   const onPointerDown = (event) => {
-    if (event.pointerType === 'mouse') return
-    start.current = { x: event.clientX, y: event.clientY }
+    start.current = null
+    if (event.pointerType === 'mouse' || event.isPrimary === false) return
+    if (event.target.closest('input,textarea,select,button,a,[role="slider"],[role="tablist"],[contenteditable="true"],[data-no-swipe]')) return
+    for (let node = event.target; node && node !== event.currentTarget; node = node.parentElement) {
+      if (node.scrollWidth > node.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(node).overflowX)) return
+    }
+    start.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
   }
   const onPointerUp = (event) => {
     const origin = start.current
     start.current = null
-    if (!origin || items.length < 2) return
+    if (!origin || origin.pointerId !== event.pointerId || items.length < 2) return
     const dx = event.clientX - origin.x
     const dy = event.clientY - origin.y
     if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.25) return

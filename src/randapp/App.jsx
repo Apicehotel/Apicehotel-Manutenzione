@@ -15,11 +15,16 @@ const SESSION_CHECK_TIMEOUT_MS = 12000
 
 const EVENT = 'apice-session-changed'
 
-async function loadDirectoryAll() {
+const LOGIN_DIRECTORY_MIN_QUERY = 2
+const LOGIN_DIRECTORY_DEBOUNCE_MS = 220
+
+async function searchLoginDirectory(query) {
+  const q = String(query || '').trim()
+  if (q.length < LOGIN_DIRECTORY_MIN_QUERY) return []
   const { fetchLoginDirectory } = await import('../users-data.js')
   const rows = await Promise.all(HOTELS.map(async (hotel) => {
     try {
-      const result = await fetchLoginDirectory(hotel.id)
+      const result = await fetchLoginDirectory(hotel.id, q)
       return { hotelId: hotel.id, users: result?.users || [] }
     } catch { return { hotelId: hotel.id, users: [] } }
   }))
@@ -90,33 +95,50 @@ function AdminGate({ onBack, onExit }) {
 
 function Login({ onAuthenticated, onOpenSettings }) {
   const [directory, setDirectory] = useState([])
-  const [directoryReady, setDirectoryReady] = useState(false)
+  const [directoryReady, setDirectoryReady] = useState(true)
   const [directoryFailed, setDirectoryFailed] = useState(false)
   const [query, setQuery] = useState('')
   const [matched, setMatched] = useState(null)
   const [pin, setPin] = useState('')
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
+  const searchSeq = useRef(0)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
   const [recovering, setRecovering] = useState(false)
   useEffect(() => {
-    let active = true
-    withTimeout(loadDirectoryAll(), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
-      .then((rows) => {
-        if (!active) return
-        setDirectory(rows)
-        setDirectoryFailed(!rows.length)
-        setDirectoryReady(true)
-      })
-      .catch(() => {
-        if (!active) return
+    const q = String(query || '').trim()
+    if (matched || q.length < LOGIN_DIRECTORY_MIN_QUERY) {
+      if (!matched && q.length < LOGIN_DIRECTORY_MIN_QUERY) {
         setDirectory([])
-        setDirectoryFailed(true)
+        setDirectoryFailed(false)
         setDirectoryReady(true)
-      })
-    return () => { active = false }
-  }, [])
+      }
+      return undefined
+    }
+    let active = true
+    const seq = ++searchSeq.current
+    setDirectoryReady(false)
+    const timer = setTimeout(() => {
+      withTimeout(searchLoginDirectory(q), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
+        .then((rows) => {
+          if (!active || seq !== searchSeq.current) return
+          setDirectory(rows)
+          setDirectoryFailed(!rows.length)
+          setDirectoryReady(true)
+        })
+        .catch(() => {
+          if (!active || seq !== searchSeq.current) return
+          setDirectory([])
+          setDirectoryFailed(true)
+          setDirectoryReady(true)
+        })
+    }, LOGIN_DIRECTORY_DEBOUNCE_MS)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [query, matched])
   const q = normalize(query)
   const selectedUser = resolveLoginUser(directory, query, matched)
   const suggestions = useMemo(() => (
@@ -128,6 +150,12 @@ function Login({ onAuthenticated, onOpenSettings }) {
   const pickUser = (u) => {
     setMatched(u)
     setQuery(u.name)
+    setDirectory((prev) => {
+      const key = u.legacy_id || u.id
+      if (!key) return prev
+      if (prev.some((row) => (row.legacy_id || row.id) === key)) return prev
+      return [...prev, u]
+    })
     setOpen(false)
     setError('')
   }
@@ -136,9 +164,22 @@ function Login({ onAuthenticated, onOpenSettings }) {
     e?.preventDefault?.()
     if (busyRef.current) return
     setError('')
-    const user = resolveLoginUser(directory, query, matched)
+    let user = resolveLoginUser(directory, query, matched)
+    if (!user && String(query || '').trim().length >= LOGIN_DIRECTORY_MIN_QUERY) {
+      try {
+        const rows = await withTimeout(searchLoginDirectory(query), SESSION_CHECK_TIMEOUT_MS, 'Elenco utenti timeout')
+        setDirectory(rows)
+        setDirectoryFailed(!rows.length)
+        setDirectoryReady(true)
+        user = resolveLoginUser(rows, query, null)
+      } catch {
+        setDirectoryFailed(true)
+        setDirectoryReady(true)
+      }
+    }
     if (!user) {
       if (!directoryReady) return setError('Elenco utenti in caricamento… riprova tra un momento')
+      if (String(query || '').trim().length < LOGIN_DIRECTORY_MIN_QUERY) return setError('Scrivi almeno 2 lettere del nome')
       if (directoryFailed || !directory.length) return setError('Elenco utenti non disponibile. Controlla la connessione e riprova.')
       return setError('Seleziona un utente valido dalla lista')
     }
@@ -277,6 +318,54 @@ function HotelSelector({ pending, onPick }) {
 
 export default function App() {
   const [session, setSession] = useState(loadSession())
+  useEffect(() => {
+    let recovering = false
+    const onJwtRejected = async () => {
+      if (recovering || !loadSession()) return
+      recovering = true
+      try {
+        const { supabase } = await import('../supabase.js')
+        const { signOutSupabase } = await import('../auth-data.js')
+        const { JWT_CLOCK_USER_MESSAGE, isJwtLoginGraceActive } = await import('../reliability/jwt-errors.js')
+        const { operationFailed } = await import('../operation-feedback.js')
+        const { ensureRestAcceptsCurrentSession } = await import('../auth-data.js')
+        const key = 'apice-jwt-recovery-at'
+        const previous = Number(sessionStorage.getItem(key) || 0)
+        const { data: current } = await supabase?.auth.getSession() || { data: { session: null } }
+        // PostgREST clock skew must not eject a still-valid Auth session right after PIN login.
+        if (!current?.session?.refresh_token) {
+          sessionStorage.removeItem(key)
+          await signOutSupabase()
+          clearSession()
+          return
+        }
+        if (Date.now() - previous < 90000 || isJwtLoginGraceActive()) {
+          // Silent settle: the alarming "esci e accedi" toast made operators think login failed.
+          await ensureRestAcceptsCurrentSession(4)
+          return
+        }
+        sessionStorage.setItem(key, String(Date.now()))
+        const refreshed = await supabase.auth.refreshSession()
+        const verified = refreshed?.error ? null : await supabase.auth.getUser()
+        if (refreshed?.error || !refreshed?.data?.session || verified?.error || !verified?.data?.user) {
+          sessionStorage.removeItem(key)
+          await signOutSupabase()
+          clearSession()
+          operationFailed(new Error(JWT_CLOCK_USER_MESSAGE), 'Accesso richiesto di nuovo')
+          return
+        }
+        await ensureRestAcceptsCurrentSession(4)
+        window.location.reload()
+      } catch {
+        // Transport failures must not wipe a PIN session the operator just opened.
+      } finally {
+        recovering = false
+      }
+    }
+    window.addEventListener('apice-jwt-clock-rejected', onJwtRejected)
+    return () => window.removeEventListener('apice-jwt-clock-rejected', onJwtRejected)
+  }, [])
+
   const [sessionReady, setSessionReady] = useState(() => !loadSession())
   const [validatedDirectory, setValidatedDirectory] = useState(null)
   const [pending, setPending] = useState(null)
@@ -318,15 +407,33 @@ export default function App() {
         return
       }
       try {
-        const { validateSupabaseSession, signOutSupabase } = await import('../auth-data.js')
+        const { validateSupabaseSession, signOutSupabase, ensureRestAcceptsCurrentSession } = await import('../auth-data.js')
         const result = await withTimeout(validateSupabaseSession(), SESSION_CHECK_TIMEOUT_MS, 'Controllo sessione timeout')
         if (active && !result.valid) {
           await resetSession(signOutSupabase)
           return
         }
         if (!active) return
+        // Never strand the operator on the full-app gate for PostgREST skew:
+        // PIN login already settled (or is settling); cold restore gets a tiny probe.
+        // Network recovery retries REST GETs once Shell is up.
+        const { isFutureJwtError, isJwtLoginGraceActive, isJwtRestReady } = await import('../reliability/jwt-errors.js')
+        if (!isJwtRestReady() && !isJwtLoginGraceActive()) {
+          await withTimeout(ensureRestAcceptsCurrentSession(2), 2000, 'Allineamento sessione timeout').catch(() => false)
+        }
+        if (!active) return
         const { fetchDirectory } = await import('../users-data.js')
-        const directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+        let directory
+        try {
+          directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+        } catch (directoryError) {
+          if (isFutureJwtError(directoryError)) {
+            await withTimeout(ensureRestAcceptsCurrentSession(2), 2000, 'Allineamento sessione timeout').catch(() => false)
+            directory = await withTimeout(fetchDirectory(session.hotelId), SESSION_CHECK_TIMEOUT_MS, 'Directory sessione timeout')
+          } else {
+            throw directoryError
+          }
+        }
         if (!active) return
         const rows = directory?.users || []
         const authorized = rows.some((u) => u.auth_user_id === session.userId || u.id === session.userId || u.legacy_id === session.userId)
@@ -343,6 +450,8 @@ export default function App() {
         }
       } catch (error) {
         console.warn('Controllo sessione rimandato', error)
+        // Auth already validated above: prefer opening Shell over trapping operators
+        // behind the full-app session gate when only PostgREST is skewed.
         if (isOfflineSessionFresh(session)) {
           if (active) setSessionReady(true)
         } else {

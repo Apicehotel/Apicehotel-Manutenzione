@@ -85,6 +85,11 @@ Una schermata non deve costruire una navbar propria.
 
 La navigazione viene filtrata per permesso ma **nascondere un pulsante non equivale ad autorizzare**: la sicurezza definitiva resta nelle policy/RPC Supabase.
 
+
+### Densità dettagli operativi su smartphone
+
+Nei dettagli Segnalazione la gerarchia deve restare leggibile ma compatta: evitare intestazioni ripetute, mantenere le coppie brevi etichetta/valore sulla stessa riga dove possibile, ridurre i margini superflui e preservare foto, timeline, input e pulsanti accessibili. Il Dock con azione primaria resta fisso e i suoi touch target non devono essere ridotti. Le modifiche sono localizzate in `src/randapp/operational-detail.css` sotto `.rs-issue-detail`; verificare iOS/WebKit, tema chiaro/scuro e viewport stretti prima del merge.
+
 ## 6. Home operativa
 
 `src/randapp/Home.jsx` non è più una dashboard widget trascinabile. È una coda di lavoro ordinata per priorità e ruolo.
@@ -98,6 +103,16 @@ Sorgenti principali, sempre scoped per `hotel.id`:
 - meteo operativo.
 
 Le modalità Focus/Completa cambiano densità, non l'isolamento dati.
+
+### Home Material mobile: nessuna sovrapposizione
+
+Su smartphone (fino a 767px) le card KPI usano massimo due colonne e devono contenere icone, numeri ed etichette senza fuoriuscite. I titoli delle card Lavori/Presenza, il grafico e le priorità restano all'interno della rispettiva superficie senza margini negativi: nessuna intestazione deve sovrapporsi alla card precedente. La navigazione e l'area di stato iOS mantengono le rispettive safe-area; verificare su screenshot WebKit e dispositivo fisico prima di dichiarare risolto.
+
+### Topbar Material e notch iOS
+
+Con `apple-mobile-web-app-status-bar-style=black-translucent` la status bar/notch disegna sopra lo shell. Il proprietario unico del top inset è `.rnx-topbar` (`--rnx-safe-top` / `--rnx-topbar-row`): `.rnx-app` resta a `padding-top: 0` per non raddoppiare il clearance. Sui media phone/tablet gli override di padding devono preservare `calc(... + var(--rnx-safe-top))`, mai uno shorthand che lo azzera.
+
+Su phone/tablet (≤1199px) lo shell Material è viewport-locked come `.rs-app`: `.rnx-app` ha altezza fissa e `overflow: hidden`, `.rnx-topbar` resta fissata nella riga griglia, e solo `.rnx-stage` scorre (`overflow-y: auto` + touch scrolling). Topbar e bottom nav usano riempimento opaco (`var(--rnx-bg)`): niente radial-gradient/trasparenza sotto il notch e niente fascia nera sotto le icone nella safe-area. Su phone la bottom nav è una riga griglia `nav` (`--rnx-nav-row`), ancorata al fondo dello shell, non un bar `position: fixed` flottante.
 
 ## 7. Autenticazione e sessione
 

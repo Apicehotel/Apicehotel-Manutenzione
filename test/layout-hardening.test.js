@@ -2,14 +2,25 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [shellCss, hkCss, insertCss, home, shell, main] = await Promise.all([
+const [shellCss, fontsCss, hkCss, insertCss, home, shell, main] = await Promise.all([
   readFile(new URL('../src/randapp/shell.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/randapp/fonts.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/randapp/housekeeping-alert.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/randapp/insert-form.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/randapp/Home.jsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/randapp/Shell.jsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/main.jsx', import.meta.url), 'utf8'),
 ])
+
+test('Manrope/Sora load from same-origin assets (CSP font-src self)', () => {
+  assert.match(shellCss, /@import\s+['"]\.\/fonts\.css['"]/)
+  assert.doesNotMatch(shellCss, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
+  assert.doesNotMatch(fontsCss, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
+  assert.match(fontsCss, /url\('\.\.\/assets\/fonts\/manrope-latin\.woff2'\)/)
+  assert.match(fontsCss, /url\('\.\.\/assets\/fonts\/sora-latin\.woff2'\)/)
+  assert.match(fontsCss, /font-family:\s*'Manrope'/)
+  assert.match(fontsCss, /font-family:\s*'Sora'/)
+})
 
 test('all RandApp pages reserve bottom space for nav, safe-area and global FAB', () => {
   assert.match(shellCss, /--rs-content-bottom-clearance:[^;]*var\(--rs-nav-h\)[^;]*var\(--rs-safe-bottom\)[^;]*var\(--rs-fab-h\)/)

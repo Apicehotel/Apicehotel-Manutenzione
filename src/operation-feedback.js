@@ -1,6 +1,12 @@
+import { humanizeJwtClockError } from './reliability/jwt-errors.js'
+
 const EVENT='apice-operation-feedback'
 const TOAST_DEDUPE_MS=5000
 const MAX_VISIBLE_TOASTS=3
+
+function publicErrorDetail(error){
+  return humanizeJwtClockError(error) || error?.message || String(error||'Errore imprevisto')
+}
 
 function sharedState(){
   if(typeof window==='undefined')return{recent:new Map(),installed:false,previousPending:0}
@@ -17,8 +23,7 @@ export function emitOperationFeedback(type,message,detail=''){
 
 export const operationSaved=(message='Salvato')=>emitOperationFeedback('success',message)
 export const operationFailed=(error,message='Operazione non riuscita')=>{
-  const detail=error?.message||String(error||'Errore imprevisto')
-  emitOperationFeedback('error',message,detail)
+  emitOperationFeedback('error',message,publicErrorDetail(error))
 }
 
 function ensureHost(){
@@ -96,17 +101,17 @@ function installListeners(){
   })
   window.addEventListener('unhandledrejection',(event)=>{
     const error=event.reason
-    const message=error?.message||String(error||'Errore imprevisto')
-    if(/network|failed to fetch|load failed|timeout|connection/i.test(message))return
+    const detail=publicErrorDetail(error)
+    if(/network|failed to fetch|load failed|timeout|connection/i.test(detail))return
     // Gli errori applicativi già notificati tramite operationFailed non devono
     // generare un secondo toast tramite il listener globale.
     const recent=[...state.recent.keys()]
-    if(recent.some((key)=>key.includes(normalized(message))))return
-    showToast({type:'error',message:'Operazione non riuscita',detail:message})
+    if(recent.some((key)=>key.includes(normalized(detail))))return
+    showToast({type:'error',message:'Operazione non riuscita',detail})
   })
   window.addEventListener('error',(event)=>{
     if(!event?.message)return
-    showToast({type:'error',message:'Si è verificato un errore',detail:event.message})
+    showToast({type:'error',message:'Si è verificato un errore',detail:humanizeJwtClockError(event.message)||event.message})
   })
 }
 

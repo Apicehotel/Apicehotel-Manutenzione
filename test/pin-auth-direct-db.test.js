@@ -26,3 +26,15 @@ test('pin-auth issues sessions through Auth while direct Postgres owns identity 
   assert.match(pinAuth, /public\.profiles/)
   assert.match(pinAuth, /public\.utenti/)
 })
+
+test('pin-auth waits for PostgREST to accept a freshly minted access token', () => {
+  assert.match(pinAuth, /waitUntilPostgrestAccepts/)
+  assert.match(pinAuth, /rest\/v1\/hotels\?select=id&limit=1/)
+  assert.match(pinAuth, /jwt\\s\+issued/)
+  assert.match(pinAuth, /await waitUntilPostgrestAccepts\(signed\.access_token\)/)
+})
+
+test('pin-auth gateway JWT verification is disabled; function owns PIN/membership auth', () => {
+  const config = fs.readFileSync(new URL('../supabase/config.toml', import.meta.url), 'utf8')
+  assert.match(config, /\[functions\.pin-auth\][\s\S]*verify_jwt\s*=\s*false/)
+})

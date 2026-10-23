@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { readWithJwtRecovery } from './reliability/jwt-clock-recovery.js'
 import { assertValid } from './reliability/validation-engine.js'
 import { validatePlanningWorkCreate, validatePlanningWorkStatus } from './reliability/domain-validation.js'
 import { createMutationId, safeWrite, safeWriteConflict } from './reliability/safe-write-engine.js'
@@ -52,6 +53,7 @@ async function readPlanningDay(id, hotelId) {
 }
 
 export async function fetchPlanningWork(hotelId) {
+  return readWithJwtRecovery(async () => {
   if (!supabase) return []
   const { data: jobs, error: jobsError } = await supabase
     .from('planning_lavori')
@@ -68,8 +70,8 @@ export async function fetchPlanningWork(hotelId) {
     .order('data', { ascending: true })
   if (daysError) throw daysError
   return (days || []).map((row) => mapDay(row, byId.get(row.lavoro_id)))
+  })
 }
-
 export async function createPlanningWork({ hotelId, description, dates, createdBy, mutationId = null }) {
   if (!supabase) throw new Error('Supabase non disponibile')
   const normalizedDescription = String(description ?? '').trim()

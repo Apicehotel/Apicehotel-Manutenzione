@@ -32,6 +32,10 @@ Deno.serve(async (req: Request) => {
       const { data: callerProfile } = await admin.from("profiles").select("department").eq("auth_user_id", userData.user.id).maybeSingle();
       const authorized = URGENT_SENDER_ROLES.has(callerMembership.role) || callerProfile?.department === "Reception";
       if (!authorized) return json({ ok: false, error: "forbidden" }, 403);
+    } else {
+      // issue_created: membership alone is not enough — require issues.create for the caller role.
+      const { data: perm } = await admin.from("role_permissions").select("allowed").eq("role", callerMembership.role).eq("module", "issues").eq("action", "create").maybeSingle();
+      if (!perm?.allowed) return json({ ok: false, error: "forbidden" }, 403);
     }
     const hotelName = HOTEL_NAMES[hotel] || hotel;
     let issueId = String(body?.issue_id || "").trim();
