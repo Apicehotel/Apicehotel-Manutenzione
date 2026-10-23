@@ -46,7 +46,7 @@ const TaskView = lazyWithRetry(() => import('./operations/TaskView.jsx'))
 const RandAIAssistant = lazyWithRetry(() => import('../randai/RandAIAssistant.jsx'))
 const TemperatureView = lazyWithRetry(() => import('../temperature.jsx').then((module) => {
   if (!module?.TemperatureSensors) throw new Error("Cannot destructure property 'TemperatureSensors' from null or undefined value")
-  return { default: ({ hotel }) => <div data-testid="temperature-view"><module.TemperatureSensors hotel={hotel} /></div> }
+    return { default: ({ hotel, user }) => <div data-testid="temperature-view"><module.TemperatureSensors hotel={hotel} user={user} /></div> }
 }))
 const PlantView = lazyWithRetry(() => import('../temperature.jsx').then((module) => {
   if (!module?.PlantStatus) throw new Error("Cannot destructure property 'PlantStatus' from null or undefined value")
@@ -489,7 +489,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
     if (view === 'planning-work' || view === 'planning-sale') content = <PlanningHub key={planningCreateRequest?.kind==='sale'?`sale-create-${planningCreateRequest.nonce}`:'planning-default'} user={user} hotel={hotel} createRequest={planningCreateRequest} allowSale={viewAllowed('planning-sale')} onSectionChange={handlePlanningSectionChange} onCreateRequestConsumed={handlePlanningCreateConsumed} />
     if (view === 'urgent') content = <UrgentView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
     if (view === 'reminders') content = <RemindersView user={user} hotel={hotel} onDetailChange={handleOperationalDetailChange} />
-    if (view === 'temperature') content = <TemperatureView hotel={hotel} />
+      if (view === 'temperature') content = <TemperatureView hotel={hotel} user={user} />
     if (view === 'plants') content = <PlantView hotel={hotel} />
     if (view === 'housekeeping') content = <HousekeepingView user={user} hotel={hotel} />
     if (view === 'technicians') content = <TechnicianDirectoryView user={user} hotel={hotel} createSignal={technicianCreateSignal} />
