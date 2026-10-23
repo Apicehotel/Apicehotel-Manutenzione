@@ -108,6 +108,63 @@
   gap: 14px;
 }
 
+.temperature-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.temperature-season {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border, #d9dce6);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.temperature-season .temperature-season__option {
+  min-height: 44px;
+  min-width: 96px;
+  border-radius: 12px;
+}
+
+.temperature-season__option[aria-pressed="true"] {
+  background: var(--accent, #7353bf);
+  color: #fff;
+}
+
+.temperature-toolbar .temperature-refresh {
+  min-height: 44px;
+  width: auto;
+  margin-left: auto;
+}
+
+.temperature-season-note {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted, #687080);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.temperature-season-note strong {
+  color: var(--text, inherit);
+}
+
+.temperature-season-note small {
+  font-size: .76rem;
+}
+
+@media (max-width: 380px) {
+  .temperature-toolbar { gap: 8px; }
+  .temperature-season { flex: 1 1 100%; }
+  .temperature-season .temperature-season__option { flex: 1; min-width: 0; }
+  .temperature-toolbar .temperature-refresh { flex: 1; }
+}
+
 .temperature-section {
   display: grid;
   gap: 10px;

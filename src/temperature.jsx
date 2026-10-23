@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { hotelGioClient as sensorsClient } from './hotelgio-data.js'
 import { displaySensorName, groupSwitches, switchStatus, temperatureSensors } from './sensor-display.js'
 import { partitionTemperatureSensors, readSensorCache, writeSensorCache } from './sensor-cache.js'
 import ListFetchNotice from './randapp/ListFetchNotice.jsx'
 import { PageTitle, Stack } from './randapp/randui/visual-primitives.jsx'
 import { Button } from './randapp/ui.jsx'
+import { saveSensorSeason } from './sensor-settings-data.js'
+import { evaluateSensorAlert } from '../supabase/functions/_shared/sensor-alert-rules.js'
 import './sensor-switches.css'
 
 const formatUpdatedAt = (value) => value
@@ -19,6 +21,7 @@ function useSensorData(hotel) {
   const [ok, setOk] = useState(true)
   const [offline, setOffline] = useState(false)
   const [settings, setSettings] = useState(null)
+  const [settingsError, setSettingsError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -34,7 +37,7 @@ function useSensorData(hotel) {
 
     const flagColumn = `mostra_${hotel.id}`
     try {
-      const [{ data, error: requestError }, { data: settingsData }] = await Promise.all([
+      const [{ data, error: requestError }, { data: settingsData, error: settingsRequestError }] = await Promise.all([
         sensorsClient.from('sensori_temperatura').select('*').eq(flagColumn, true),
         sensorsClient.from('sensori_impostazioni').select('id,stagione,soglia_inverno_min,soglia_estate_max,soglia_frigo_max').eq('id', 1).maybeSingle(),
       ])
@@ -42,6 +45,7 @@ function useSensorData(hotel) {
       const rows = data || []
       setSensors(rows)
       setSettings(settingsData || null)
+      setSettingsError(settingsRequestError || !settingsData ? 'Regola stagionale non disponibile. Ricarica per riprovare.' : '')
       writeSensorCache(hotel.id, rows)
       setOk(true)
       setOffline(false)
@@ -64,7 +68,7 @@ function useSensorData(hotel) {
     return () => { sensorsClient.removeChannel(channel) }
   }, [load, hotel.id])
 
-  return { sensors, settings, loading, ok, offline, load }
+  return { sensors, settings, setSettings, settingsError, loading, ok, offline, load }
 }
 
 function SensorCard({ sensor }) {
@@ -118,20 +122,30 @@ function SensorSection({ title, tone, sensors }) {
 }
 
 export function TemperatureSensors({ hotel, user }) {
-  const { sensors, settings, loading, ok, offline, load } = useSensorData(hotel)
+  const { sensors, settings, setSettings, settingsError, loading, ok, offline, load } = useSensorData(hotel)
   const [savingSeason, setSavingSeason] = useState(false)
   const [seasonNotice, setSeasonNotice] = useState('')
+  const seasonInFlight = useRef(false)
   const canManageSeason = Boolean(user?.can_access_admin || user?.canAdmin || user?.can_admin)
   const updateSeason = async (season) => {
-    if (!canManageSeason || savingSeason || settings?.stagione === season) return
+    if (!canManageSeason || seasonInFlight.current || loading || !settings || offline || settings.stagione === season) return
+    seasonInFlight.current = true
     setSavingSeason(true)
     setSeasonNotice('')
-    const { error } = await sensorsClient.from('sensori_impostazioni').update({ stagione: season, aggiornato_il: new Date().toISOString() }).eq('id', 1)
-    if (error) setSeasonNotice('Modifica non autorizzata o non salvata.')
-    else { setSeasonNotice('Stagione aggiornata. Gli alert verranno ricalcolati al prossimo sync.'); await load() }
-    setSavingSeason(false)
+    try {
+      const saved = await saveSensorSeason(sensorsClient, season)
+      setSettings(saved)
+      setSeasonNotice(`Stagione ${saved.stagione} salvata. Regole applicate alle ultime letture disponibili.`)
+    } catch (error) {
+      setSeasonNotice(error?.message || 'Stagione non salvata. Riprova.')
+    } finally {
+      seasonInFlight.current = false
+      setSavingSeason(false)
+    }
   }
-  const temperatures = useMemo(() => temperatureSensors(sensors), [sensors])
+  const temperatures = useMemo(() => temperatureSensors(sensors).map((sensor) => settings
+    ? { ...sensor, ...evaluateSensorAlert(sensor.ruolo, sensor.temperatura, sensor.online, settings) }
+    : sensor), [sensors, settings])
   const partitioned = useMemo(() => partitionTemperatureSensors(temperatures), [temperatures])
   const summary = useMemo(() => ({
     total: temperatures.length,
@@ -145,17 +159,19 @@ export function TemperatureSensors({ hotel, user }) {
       <PageTitle
         title="Sensori"
         subtitle={`${hotel.name} · temperature e misure`}
-        action={(
-          <div className="temperature-page__actions">
-            <Button variant="outline" size="sm" onClick={load} disabled={loading} data-testid="temperature-refresh">{loading ? 'Aggiorno…' : 'Ricarica'}</Button>
-            {canManageSeason && <div role="group" aria-label="Stagione sensori">
-              <Button variant={settings?.stagione === 'inverno' ? 'primary' : 'outline'} size="sm" onClick={() => updateSeason('inverno')} disabled={savingSeason}>Inverno</Button>
-              <Button variant={settings?.stagione === 'estate' ? 'primary' : 'outline'} size="sm" onClick={() => updateSeason('estate')} disabled={savingSeason}>Estate</Button>
-            </div>}
-          </div>
-        )}
       />
-      {settings && <div className="temperature-season-note" role="status">Regola attiva: <strong>{settings.stagione}</strong> · motori {settings.stagione === 'inverno' ? `sotto ${settings.soglia_inverno_min} °C` : `sopra ${settings.soglia_estate_max} °C`} · frigo sopra {settings.soglia_frigo_max} °C{seasonNotice ? ` · ${seasonNotice}` : ''}</div>}
+      <div className="temperature-toolbar">
+        {canManageSeason && <div className="temperature-season" role="group" aria-label="Stagione sensori" aria-busy={savingSeason}>
+          {['inverno', 'estate'].map((season) => <Button key={season} type="button" variant="ghost" className="temperature-season__option" aria-pressed={settings?.stagione === season} onClick={() => updateSeason(season)} disabled={savingSeason || loading || !settings || offline}>{season === 'inverno' ? 'Inverno' : 'Estate'}</Button>)}
+        </div>}
+        <Button type="button" variant="outline" icon="refresh" className="temperature-refresh" onClick={load} disabled={loading || savingSeason} aria-busy={loading} data-testid="temperature-refresh">{loading ? 'Ricarico…' : 'Ricarica'}</Button>
+      </div>
+      <div className="temperature-season-note" role="status" aria-live="polite">
+        {settings && <span>Regola attiva: <strong>{settings.stagione}</strong> · motori {settings.stagione === 'inverno' ? `sotto ${settings.soglia_inverno_min} °C` : `sopra ${settings.soglia_estate_max} °C`} · frigo sopra {settings.soglia_frigo_max} °C</span>}
+        {savingSeason ? <span>Salvo la stagione…</span> : seasonNotice && <span>{seasonNotice}</span>}
+        {settingsError && <span>{settingsError}</span>}
+        <small>Ricarica legge gli ultimi dati sincronizzati; non comanda i dispositivi.</small>
+      </div>
       <ListFetchNotice
         ok={ok}
         offline={offline}
