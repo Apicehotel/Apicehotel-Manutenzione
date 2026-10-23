@@ -7,11 +7,11 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8')
 test('presence is stored with one physical hotel id', async () => {
   const [migration, status] = await Promise.all([
     read('../supabase/migrations/20260831141500_scope_user_presence_to_single_hotel.sql'),
-    read('../supabase/functions/presence-status/index.ts'),
+    read('../supabase/functions/presence-status/handler.js'),
   ])
   assert.match(migration, /in_struttura_hotel_id/)
   assert.match(migration, /idx_utenti_active_presence_hotel/)
-  assert.match(status, /hotel_id: present \? hotelId : null/)
+  assert.match(status, /hotel_id: present \? presenceHotelId : null/)
   assert.match(status, /in_struttura_hotel_id/)
 })
 

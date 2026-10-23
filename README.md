@@ -1,5 +1,32 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Presenza: lettura e salvataggio autenticati
+
+`presence-status` gestisce lettura e `set_presence` tramite Postgres diretto, come il login PIN. Supabase Auth verifica il Bearer; profilo e utente devono essere attivi. L'ingresso richiede anche membership attiva e ruolo abilitato nell'hotel scelto. Le operazioni sulla riga personale sono serializzate in transazione; scadenza e cambio hotel non si sovrascrivono. Gli errori infrastrutturali restituiscono 503, non falsi account mancanti/disattivati. Il client traduce gli errori HTTP in messaggi leggibili.
+
+Pubblicare prima `presence-status` (entrypoint `index.ts` e `handler.js`, JWT gateway attivo; `SUPABASE_DB_URL` e chiavi Auth già usati da `pin-auth`), poi il frontend. Il POST `{}` delle versioni installate resta compatibile per la lettura. Il vecchio `user-pin` non viene modificato; il nuovo client usa `presence-status` anche per il salvataggio.
+
+## Presenza e usabilità condivisa
+
+Il comando **Sono in struttura** è nella topbar di tutte le destinazioni: su telefono ha una seconda riga dedicata, senza comprimere hotel, tema, notifiche e profilo. Quando risulti presente nello stesso hotel diventa **Sono fuori struttura**. Un errore iniziale non nasconde più il comando ai ruoli abilitati: lo stato resta esplicitamente non verificato; gli errori di salvataggio sono visibili e non cambiano la presenza. Le risposte di lettura obsolete non sovrascrivono un aggiornamento; la scadenza resta 7 ore e 20 minuti. Permessi e aggiornamenti rimangono verificati dal backend esistente.
+
+Lo swipe tra destinazioni ignora campi, pulsanti e contenitori con scorrimento orizzontale, evitando cambi pagina mentre si lavora. Intestazioni e campi condivisi possono adattarsi alle colonne strette; i select mobili mantengono testo leggibile e spazio per la freccia.
+
+## Header e Home
+
+Il pulsante RandAI nella topbar è stato rimosso. Hotel, tema, notifiche e profilo usano un gruppo compatto con nomi troncati quando lo spazio è limitato. Nella Home icone KPI, intestazioni e grafico restano dentro le card anche su desktop; il selettore del grafico appartiene alla sua colonna. Le safe-area e i touch target restano invariati.
+
+## Correzioni di affidabilità
+
+- Magazzino distingue errori di caricamento da un elenco vuoto, conserva i dati già letti e offre Riprova. Un errore dello storico dopo un carico/scarico riuscito non viene presentato come fallimento del movimento; il form viene azzerato e mostra l'esito confermato.
+- La creazione articolo attende la giacenza iniziale prima di concludersi. In caso di errore verifica la compensazione; se RLS/rete impedisce di confermare la rimozione, chiude il form e segnala l'articolo da verificare, evitando un nuovo inserimento inconsapevole.
+- Le notifiche cambiano stato e contatore solo dopo il salvataggio della lettura. Errori di rete/Auth restano visibili e non diventano falsi successi.
+
+- Gli errori temporanei di Auth (rete/HTTP 5xx) rimandano la verifica alla policy offline esistente, limitata a 24 ore dall'ultima validazione, senza forzare il logout o rinnovare la validazione. Le credenziali rifiutate continuano a invalidare la sessione.
+- Nell'inventario fisico un campo vuoto non equivale a zero; salvare una riga conserva le bozze delle altre. La riconciliazione richiede che tutti i valori visualizzati siano salvati.
+- Lo scanner rilascia la fotocamera anche quando chiusura, cambio struttura o smontaggio precedono la risposta al permesso, oppure l'avvio del video fallisce.
+
+
 ## Laboratorio RandUI + RandAI — ottobre 2026 (branch in revisione)
 
 - **Home:** KPI mobili più compatti e grafico settimanale con opzione Completo/Compatto/Nascosto salvata sul dispositivo.
