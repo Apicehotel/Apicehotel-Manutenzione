@@ -25,7 +25,6 @@ export default function NotificationInbox({ hotel, user, onUnreadChange, canOpen
       setError('')
       const result = await fetchNotificationInbox(hotel.id, user)
       setItems(result.items)
-      onUnreadChange?.(result.unread)
     } catch (e) {
       setError(humanizeJwtClockError(e) || e?.message || 'Notifiche non disponibili')
     } finally {
@@ -42,19 +41,28 @@ export default function NotificationInbox({ hotel, user, onUnreadChange, canOpen
 
   const shown = useMemo(() => items.filter((item) => filter === 'all' || item.type === filter), [items, filter])
   const unread = items.filter((x) => !x.read).length
+  useEffect(() => { onUnreadChange?.(unread) }, [unread, onUnreadChange])
 
   const openItem = async (item) => {
-    if (!item.read) {
-      try { await markNotificationRead(hotel.id, item) } catch {}
+    if (item.read) return
+    try {
+      await markNotificationRead(hotel.id, item)
       setItems((list) => list.map((x) => x.key === item.key ? { ...x, read: true } : x))
-      onUnreadChange?.(Math.max(0, unread - 1))
+      setError('')
+    } catch (e) {
+      setError(e?.message || 'Lettura non salvata. Riprova quando la connessione è disponibile.')
     }
   }
 
   const readAll = async () => {
-    try { await markAllNotificationsRead(hotel.id, items) } catch {}
-    setItems((list) => list.map((x) => ({ ...x, read: true })))
-    onUnreadChange?.(0)
+    try {
+      await markAllNotificationsRead(hotel.id, items)
+      const savedKeys = new Set(items.map((item) => item.key))
+      setItems((list) => list.map((item) => savedKeys.has(item.key) ? { ...item, read: true } : item))
+      setError('')
+    } catch (e) {
+      setError(e?.message || 'Letture non salvate. Riprova quando la connessione è disponibile.')
+    }
   }
 
   const iconFor = (type) => type === 'urgent' ? 'warning' : type === 'assignment' ? 'wrench' : 'bell'
@@ -71,7 +79,7 @@ export default function NotificationInbox({ hotel, user, onUnreadChange, canOpen
       </div>
       {unread > 0 && <Button type="button" size="sm" variant="ghost" onClick={readAll}>Segna lette</Button>}
     </div>
-    {error && <p className="rs-error">{error}</p>}
+    {error && <p className="rs-error" role="alert">{error}</p>}
     {!shown.length ? <div className="rs-inbox__empty"><Icon name="bell" /><strong>Nessuna notifica</strong><small>Qui compariranno interventi assegnati, avvisi e promemoria destinati a te.</small></div> : <div className="rs-inbox__list">{shown.map((item) => <article key={item.key} className={`rs-inbox__item ${item.read ? '' : 'unread'}`} onClick={() => openItem(item)}>
       <div className={`rs-inbox__icon rs-inbox__icon--${item.type}`}><Icon name={iconFor(item.type)} /></div>
       <div className="rs-inbox__body">

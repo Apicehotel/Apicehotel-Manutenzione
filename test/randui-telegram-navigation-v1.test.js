@@ -51,7 +51,7 @@ test('profile opens the complete menu while RandAI stays one tap away in the bot
   assert.match(shell, /openRandAIPage/)
   assert.match(shell, /variant="page"/)
   assert.match(shell, /view === 'randai'/)
-  assert.match(shell, /data-testid="header-randai"/)
+  assert.doesNotMatch(shell, /data-testid="header-randai"/)
   assert.match(main, /randaiConsoleMatch/)
   assert.match(main, /<RandAIProtectedRoute \/>/)
   assert.match(css, /rs-header__randai--desktop/)
