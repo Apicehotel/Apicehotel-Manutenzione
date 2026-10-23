@@ -1,6 +1,8 @@
 import { FUTURE_JWT_RE, isJwtLoginGraceActive, settleFreshAccessToken } from './jwt-errors.js'
 
-const FUTURE_JWT_RETRY_ATTEMPTS = 20
+// Ocean's PostgREST edge can lag Auth by more than 40 seconds. Keep the
+// recovery bounded, but long enough to cover the observed clock skew.
+const FUTURE_JWT_RETRY_ATTEMPTS = 45
 const FUTURE_JWT_RETRY_GAP_MS = 2000
 
 /**
