@@ -1,7 +1,7 @@
 const U = Deno.env.get("SUPABASE_URL")!
 const S = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 const REGION = "eu"
-const SOGLIA = 20
+const DEFAULT_RULES = { stagione: "inverno", soglia_inverno_min: 20, soglia_estate_max: 18, soglia_frigo_max: 0 } as const
 
 async function db(path: string, init: RequestInit = {}) {
   return fetch(`${U}/rest/v1/${path}`, {
@@ -46,6 +46,25 @@ function relayState(params: Record<string, unknown> | undefined): "on" | "off" |
   return states.every((state) => state === states[0]) ? states[0] : "mixed"
 }
 
+type SensorRole = "motore" | "frigo" | "ambiente"
+type Rules = typeof DEFAULT_RULES
+
+function evaluateAlert(role: SensorRole, temperature: number | null, online: boolean, rules: Rules) {
+  if (!online || temperature == null || !Number.isFinite(temperature)) {
+    return { in_allerta: false, soglia: null, allerta_tipo: null }
+  }
+  if (role === "motore" && rules.stagione === "inverno") {
+    return { in_allerta: temperature < rules.soglia_inverno_min, soglia: rules.soglia_inverno_min, allerta_tipo: "sotto" }
+  }
+  if (role === "motore" && rules.stagione === "estate") {
+    return { in_allerta: temperature > rules.soglia_estate_max, soglia: rules.soglia_estate_max, allerta_tipo: "sopra" }
+  }
+  if (role === "frigo") {
+    return { in_allerta: temperature > rules.soglia_frigo_max, soglia: rules.soglia_frigo_max, allerta_tipo: "sopra" }
+  }
+  return { in_allerta: false, soglia: null, allerta_tipo: null }
+}
+
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), {
   status: s,
   headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -76,6 +95,20 @@ Deno.serve(async (req) => {
     const lj = await lr.json()
     if (lj.error !== 0) return json({ ok: false, step: "login" }, 502)
 
+    const [settingsResponse, knownSensorsResponse] = await Promise.all([
+      db("sensori_impostazioni?id=eq.1&select=stagione,soglia_inverno_min,soglia_estate_max,soglia_frigo_max"),
+      db("sensori_temperatura?select=device_id,ruolo"),
+    ])
+    const settings = settingsResponse.ok ? (await settingsResponse.json())[0] : null
+    const rules: Rules = {
+      stagione: settings?.stagione === "estate" ? "estate" : DEFAULT_RULES.stagione,
+      soglia_inverno_min: Number.isFinite(Number(settings?.soglia_inverno_min)) ? Number(settings.soglia_inverno_min) : DEFAULT_RULES.soglia_inverno_min,
+      soglia_estate_max: Number.isFinite(Number(settings?.soglia_estate_max)) ? Number(settings.soglia_estate_max) : DEFAULT_RULES.soglia_estate_max,
+      soglia_frigo_max: Number.isFinite(Number(settings?.soglia_frigo_max)) ? Number(settings.soglia_frigo_max) : DEFAULT_RULES.soglia_frigo_max,
+    }
+    const knownSensors: Array<{ device_id: string; ruolo: SensorRole }> = knownSensorsResponse.ok ? await knownSensorsResponse.json() : []
+    const roles = new Map(knownSensors.map((sensor) => [sensor.device_id, sensor.ruolo]))
+
     const dr = await fetch(`https://${REGION}-apia.coolkit.cc/v2/device/thing`, {
       headers: { Authorization: `Bearer ${lj.data.at}`, "X-CK-Appid": appId },
     })
@@ -90,6 +123,8 @@ Deno.serve(async (req) => {
       const online = !!item?.online
       const raw = params.currentTemperature
       const temp = raw == null ? null : parseFloat(String(raw))
+      const ruolo: SensorRole = roles.get(id) || "ambiente"
+      const alert = evaluateAlert(ruolo, Number.isFinite(temp) ? temp : null, online, rules)
       rows.push({
         device_id: id,
         nome: item?.name,
@@ -97,7 +132,10 @@ Deno.serve(async (req) => {
         umidita: params.currentHumidity ?? null,
         switch_state: relayState(params),
         online,
-        in_allerta: online && Number.isFinite(temp) && temp > SOGLIA,
+        ruolo,
+        soglia: alert.soglia,
+        allerta_tipo: alert.allerta_tipo,
+        in_allerta: alert.in_allerta,
         aggiornato_il: new Date().toISOString(),
       })
     }
@@ -112,7 +150,7 @@ Deno.serve(async (req) => {
     }
 
     const withSwitchState = rows.filter((row) => row.switch_state === "on" || row.switch_state === "off" || row.switch_state === "mixed").length
-    return json({ ok: true, sensori: rows.length, switch_states: withSwitchState })
+    return json({ ok: true, sensori: rows.length, switch_states: withSwitchState, stagione: rules.stagione })
   } catch (e) {
     console.error("sync sensors failed", e instanceof Error ? e.message : "unknown")
     return json({ ok: false, error: "temporary_error" }, 500)
