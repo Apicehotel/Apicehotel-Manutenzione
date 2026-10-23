@@ -72,7 +72,8 @@ const ManualView = lazyWithRetry(() => import('./operations/UtilityLightViews.js
   if (!module?.ManualView) throw new Error('Failed to fetch dynamically imported module')
   return { default: module.ManualView }
 }))
-const DIRECTORY_TIMEOUT_MS = 12000
+// Match the bounded JWT/PostgREST recovery window used by the global fetch.
+const DIRECTORY_TIMEOUT_MS = 120000
 
 const ViewFallback = () => <Spinner label="Carico sezione…" />
 const HEADER_HOTEL_LABEL = { hotelgio: 'Giò', chocohotel: 'Choco', brigantino: 'Brigantino' }
