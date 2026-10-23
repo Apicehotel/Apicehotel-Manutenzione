@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
           const topic = String(ntfySetting?.config?.topics?.[job.hotel_id] || "");
           if (!ntfySetting?.enabled || !topic) { await mark(job, "blocked", "ntfy_not_configured"); blocked++; continue; }
           const click = `${APP_URL}/?notification=urgent&hotel_id=${encodeURIComponent(job.hotel_id)}&urgent_id=${encodeURIComponent(job.urgent_id)}`;
-          const res = await fetch(server, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic, title, message, priority: 5, tags: ["rotating_light", "warning"], click }) });
+          const res = await fetch(server, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic, title, message, priority:5, tags:["rotating_light","warning"], click }) });
           if (!res.ok) {
             if (res.status === 429) {
               const delivered = await pushFallback(job, urgent, title, message);
@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
             }
             throw new Error(`ntfy_${res.status}`);
           }
-          await mark(job, "sent"); await logEvent(job, "reminder_ntfy", { priority: 5, click }); sent++; continue;
+          await mark(job, "sent"); await logEvent(job, "reminder_ntfy", { priority:5, click }); sent++; continue;
         }
         if (job.channel === "whatsapp") {
           const recipients = waSetting?.config?.recipients?.[job.hotel_id];
