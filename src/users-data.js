@@ -77,10 +77,11 @@ export async function fetchDirectory(hotelId) {
   if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return { users: operationalUsers(await getCachedCollection('directory', hotelId)), offline: true }
   try {
     const baseUsers = operationalUsers(await invokeDirectory(hotelId))
-    const settings = await ownChatSettings().catch(() => null)
-    const users = mergeOwnChatSettings(baseUsers, settings)
-    await setCachedCollection('directory', hotelId, users)
-    return { users }
+    // Directory authorization comes from the Edge Function. Do not block the
+    // initial app gate on the optional profiles/chat read: PostgREST can be
+    // temporarily ahead/behind Auth while the directory itself is available.
+    await setCachedCollection('directory', hotelId, baseUsers)
+    return { users: baseUsers }
   } catch (error) {
     const cached = operationalUsers(await getCachedCollection('directory', hotelId))
     if (cached.length) return { users: cached, offline: true }
