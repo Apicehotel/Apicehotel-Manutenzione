@@ -24,9 +24,11 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
     if (![400, 401, 403].includes(response.status) || /\/auth\/v1\//.test(url)) return response
     let body = ''
     try { body = await response.clone().text() } catch { return response }
-    if (!isFutureBody(body)) return response
     // Edge Functions authenticate themselves; do not escalate their JWT skew into a Shell logout.
     if (/\/functions\/v1\//.test(url)) return response
+    // PostgREST can reject a stale access token with a plain 401 instead of
+    // the PGRST303 body. Safe GETs can be retried after refreshing Auth.
+    if (response.status !== 401 && !isFutureBody(body)) return response
     if (!['GET', 'HEAD'].includes(method)) { warn(); return response }
     const client = getClient?.()
     if (!client?.auth) { warn(); return response }
