@@ -1,5 +1,7 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+Il recupero delle letture GET/HEAD conserva il Bearer durante un rifiuto JWT futuro e usa la finestra limitata di recupero già prevista. Il limite breve dei normali 401 non interrompe questa finestra. Le scritture non vengono ripetute. Questo recupero non sostituisce il ripristino del servizio PostgREST quando il suo orologio resta bloccato.
+
 ## Presenza: lettura e salvataggio autenticati
 
 `presence-status` gestisce lettura e `set_presence` tramite Postgres diretto, come il login PIN. Supabase Auth verifica il Bearer; profilo e utente devono essere attivi. L'ingresso richiede anche membership attiva e ruolo abilitato nell'hotel scelto. Le operazioni sulla riga personale sono serializzate in transazione; scadenza e cambio hotel non si sovrascrivono. Gli errori infrastrutturali restituiscono 503, non falsi account mancanti/disattivati. Il client traduce gli errori HTTP in messaggi leggibili.
