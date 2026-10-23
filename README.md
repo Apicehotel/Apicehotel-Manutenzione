@@ -1,5 +1,41 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+## Presenza: lettura e salvataggio autenticati
+
+`presence-status` gestisce lettura e `set_presence` tramite Postgres diretto, come il login PIN. Supabase Auth verifica il Bearer; profilo e utente devono essere attivi. L'ingresso richiede anche membership attiva e ruolo abilitato nell'hotel scelto. Le operazioni sulla riga personale sono serializzate in transazione; scadenza e cambio hotel non si sovrascrivono. Gli errori infrastrutturali restituiscono 503, non falsi account mancanti/disattivati. Il client traduce gli errori HTTP in messaggi leggibili.
+
+Pubblicare prima `presence-status` (entrypoint `index.ts` e `handler.js`, JWT gateway attivo; `SUPABASE_DB_URL` e chiavi Auth già usati da `pin-auth`), poi il frontend. Il POST `{}` delle versioni installate resta compatibile per la lettura. Il vecchio `user-pin` non viene modificato; il nuovo client usa `presence-status` anche per il salvataggio.
+
+## Presenza e usabilità condivisa
+
+Il comando **Sono in struttura** è nella topbar di tutte le destinazioni: su telefono ha una seconda riga dedicata, senza comprimere hotel, tema, notifiche e profilo. Quando risulti presente nello stesso hotel diventa **Sono fuori struttura**. Un errore iniziale non nasconde più il comando ai ruoli abilitati: lo stato resta esplicitamente non verificato; gli errori di salvataggio sono visibili e non cambiano la presenza. Le risposte di lettura obsolete non sovrascrivono un aggiornamento; la scadenza resta 7 ore e 20 minuti. Permessi e aggiornamenti rimangono verificati dal backend esistente.
+
+Lo swipe tra destinazioni ignora campi, pulsanti e contenitori con scorrimento orizzontale, evitando cambi pagina mentre si lavora. Intestazioni e campi condivisi possono adattarsi alle colonne strette; i select mobili mantengono testo leggibile e spazio per la freccia.
+
+## Header e Home
+
+Il pulsante RandAI nella topbar è stato rimosso. Hotel, tema, notifiche e profilo usano un gruppo compatto con nomi troncati quando lo spazio è limitato. Nella Home icone KPI, intestazioni e grafico restano dentro le card anche su desktop; il selettore del grafico appartiene alla sua colonna. Le safe-area e i touch target restano invariati.
+
+## Correzioni di affidabilità
+
+- Magazzino distingue errori di caricamento da un elenco vuoto, conserva i dati già letti e offre Riprova. Un errore dello storico dopo un carico/scarico riuscito non viene presentato come fallimento del movimento; il form viene azzerato e mostra l'esito confermato.
+- La creazione articolo attende la giacenza iniziale prima di concludersi. In caso di errore verifica la compensazione; se RLS/rete impedisce di confermare la rimozione, chiude il form e segnala l'articolo da verificare, evitando un nuovo inserimento inconsapevole.
+- Le notifiche cambiano stato e contatore solo dopo il salvataggio della lettura. Errori di rete/Auth restano visibili e non diventano falsi successi.
+
+- Gli errori temporanei di Auth (rete/HTTP 5xx) rimandano la verifica alla policy offline esistente, limitata a 24 ore dall'ultima validazione, senza forzare il logout o rinnovare la validazione. Le credenziali rifiutate continuano a invalidare la sessione.
+- Nell'inventario fisico un campo vuoto non equivale a zero; salvare una riga conserva le bozze delle altre. La riconciliazione richiede che tutti i valori visualizzati siano salvati.
+- Lo scanner rilascia la fotocamera anche quando chiusura, cambio struttura o smontaggio precedono la risposta al permesso, oppure l'avvio del video fallisce.
+
+
+## Laboratorio RandUI + RandAI — ottobre 2026 (branch in revisione)
+
+- **Home:** KPI mobili più compatti e grafico settimanale con opzione Completo/Compatto/Nascosto salvata sul dispositivo.
+- **Operatività e Planning:** superfici, righe e spazi ridotti; restano le TOP 3, i percorsi e i permessi attuali.
+- **RandAI:** le richieste esplicite di dettaglio segnalazione aprono una scheda inline nella chat esistente. Lettura scoped all'hotel; aggiornamento di descrizione/priorità e completamento esclusivamente se autorizzati, online, con conferma esplicita e rilettura dopo il salvataggio. La gestione dei tecnici rimane nel workflow operativo già presente.
+- **Vincoli:** header e navbar non modificati, nessun backend aggiuntivo, nessun merge/deploy automatico.
+- **Test:** `node --test test/randai-interactive-issue-home-density.test.js`. Necessarie compilazione, test CI e revisione visuale iOS/Android prima di approvare questa branch.
+
+
 ## Ownership RandAILive
 
 Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIlive](https://github.com/Apicehotel/RandAIlive). Questo repository contiene RandApp/RandAI operativo e non deve ricevere modifiche al runtime, alla mappa o alla grafica del gioco.
@@ -19,18 +55,18 @@ Dopo il merge codice serve anche il **deploy edge** su Supabase (`ntfy-admin` + 
 
 Le liste operative Segnalazioni / Interventi / Urgenze usano `ListFetchNotice` + `SystemState`: un fetch fallito non diventa più un falso “vuoto”. Con cache locale resta la lista più un banner stale/offline e Riprova; senza cache compare offline/error onesto.
 
-Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v17 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy).
-La PWA verifica inoltre la freschezza della build in modo **event-driven** (avvio, ritorno in primo piano e riconnessione): se l'HTML Ocean punta a un bundle diverso da quello già caricato, pulisce le cache runtime, aggiorna il service worker e ricarica una sola volta. Nessun polling periodico.
+Il caricamento pagine è hardened contro i fallimenti intermittenti tipici della PWA: `lazyWithRetry` sui chunk, timeout 12s su sessione/directory/login, `ViewErrorBoundary` per sezione e overlay, timeout 15–45s sulle liste operative, `createTimedFetch(20s)` sul client Supabase, e service worker v26 che in online non ripiega su uno shell HTML stale (causa tipica di “pagina che non carica” post-deploy). Il bump a v26 MIME-valida anche il precache in `install` (oltre a `isImmutableAsset`, same-origin push click e refresh OCR host: HITL Gateway, Priority 5 reminder, Focus Mode `.rnx-app`, token tecnici hash-only, ntfy click allowlist).
+La PWA verifica inoltre la freschezza della build in modo **event-driven** (avvio, ritorno in primo piano e riconnessione): se l'HTML Ocean punta a un bundle diverso da quello già caricato, pulisce le cache runtime, aggiorna il service worker e ricarica una sola volta. Nessun polling periodico. Preview attiva: `https://randui-preview-67ena.ondigitalocean.app`.
 
 La Shell autenticata è inoltre resiliente ai fallimenti temporanei della directory: se utente e hotel corrente erano già stati verificati, un errore transitorio Supabase/Auth non azzera più identità, header, menu laterale o navigazione. Il fallback è limitato allo stesso hotel già verificato e non riusa permessi tra strutture diverse. Dopo il login, `App.jsx` passa alla Shell la directory già validata: la Shell non dipende più da una seconda chiamata di rete per mostrare menu e navigazione, mentre il refresh successivo resta non distruttivo.
 Il menu laterale mobile usa un unico drawer runtime: gli stili specifici dell'header mobile sono caricati esplicitamente dall'entrypoint e l'overlay del drawer possiede l'intero viewport (`position: fixed; inset: 0`). Il trigger profilo e quello Focus Mode aprono lo stesso stato `drawer`.
 Rifornimenti mantiene lo stato della richiesta selezionata nel componente `SupplyRequestsPortal`, che possiede anche il callback `onDetailChange`; il gestore prodotti resta indipendente e non può causare crash della sezione per riferimenti fuori scope.
 
-Il login PIN non usa più PostgREST per le operazioni privilegiate: `pin-auth` legge e aggiorna `utenti`, `profiles`, `auth_pin_credentials` e `hotel_memberships` tramite connessione Postgres diretta (`SUPABASE_DB_URL`), mentre Supabase Auth resta responsabile dell'identità e della sessione. Questo evita il percorso `PGRST303 / JWT issued at future` osservato sul gateway con le nuove API key. Anche `randcore-agent-heartbeat` mantiene GitHub OIDC come verifica d'identità ma legge/scrive `randcore_agent_runtime` via PostgreSQL diretto, così un disallineamento JWT/PostgREST non può più trasformare gli heartbeat degli agenti in `PGRST303`.
+Il login PIN non usa più PostgREST per le operazioni privilegiate: `pin-auth` legge e aggiorna `utenti`, `profiles`, `auth_pin_credentials` e `hotel_memberships` tramite connessione Postgres diretta (`SUPABASE_DB_URL`), mentre Supabase Auth resta responsabile dell'identità e della sessione. Questo evita il percorso `PGRST303 / JWT issued at future` osservato sul gateway con le nuove API key. `pin-auth` ha `verify_jwt=false` (auth propria PIN/membership/rate-limit) così uno skew sul gateway non blocca directory/login subito dopo `setSession`; dopo il mint fa anche una probe REST a breve attesa. Sul client, dopo il PIN si attende l’accettazione REST in budget corto (~4s, poll 500ms). Prima della Home non si ripete l’attesa se il probe è già ok o se è attiva la grace post-PIN; un cold restore fa al massimo una probe breve (~2s) così lo spinner “Verifico accesso” non resta bloccato su ogni cambio hotel/ricarica. Durante la grace 2 min non si mostrano toast “esci e accedi”. Lo Shell **non espelle** una sessione Auth ancora valida per soli errori PostgREST futuri. Il logout PIN resta solo se Auth refresh/`getUser` falliscono. `createJwtRecoveringFetch` rinnova al massimo una volta le sole GET/HEAD REST rifiutate per JWT futuro. Anche `randcore-agent-heartbeat` mantiene GitHub OIDC come verifica d'identità ma legge/scrive `randcore_agent_runtime` via PostgreSQL diretto, così un disallineamento JWT/PostgREST non può più trasformare gli heartbeat degli agenti in `PGRST303`.
 
 Su phone/tablet lo shell è viewport-locked: header (e fascia urgenti) restano fissi; scorre solo `.rs-content`.
 
-La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati.
+La Home è una **mini-scrivania**: KPI a striscia, banco personale (prossimo + tuoi + team), attrezzi a portata, poi vassoio “Da smaltire”. Su desktop/Windows (≥1200px) banco e vassoio stanno affiancati. Su smartphone (≤767px) la skin Material mantiene KPI a due colonne e intestazioni di card/grafico nel flusso (senza margini negativi), così le superfici non si sovrappongono.
 
 Principio permanente: **un solo proprietario canonico per capacità**. Se una soluzione è realmente migliore, più semplice e più sicura, sostituisce quella debole; non accumuliamo framework, patch o sistemi duplicati.
 
@@ -49,7 +85,7 @@ Il progetto Supabase condiviso resta temporaneo: non vengono creati tre progetti
 - RandGateway come unico ingresso governato per Web/RandApp, RandChat, MCP e WhatsApp/Twilio.
 - RandCore per health, audit, release gate, workers, sicurezza, costi, governance e integrazioni.
 - RandMind come memoria governata canonica; RandResearch come owner della ricerca evidence-first.
-- DigitalOcean/Ocean è il canale attivo per preview/test e workload esterni/pesanti. I Git deploy automatici Vercel restano sospesi (`vercel.json → git.deploymentEnabled=false`) finché non vengono riattivati con decisione esplicita.
+- DigitalOcean/Ocean è il canale attivo per preview/test e workload esterni/pesanti. I Git deploy automatici Vercel restano sospesi (`vercel.json → git.deploymentEnabled=false`) finché non vengono riattivati con decisione esplicita. Ocean preview non usa più `catchall_document: index.html`: `Dockerfile.ocean` + nginx servono `dist` e rispondono **404 reale** su `/assets/*` (e icone/loghi/SW) mancanti, con fallback SPA solo sulla navigazione documento. CSP di produzione (Vercel + Ocean) include `default-src`/`script-src 'self'`, `font-src 'self'` e `connect-src` verso Supabase/ntfy/Sentry. Manrope/Sora sono self-hosted (`src/assets/fonts` → bundle `/assets/*`), senza Google Fonts. La directory login PIN anon è query-gated (≥2 lettere, max 12 match, ordine rimescolato) oltre al rate-limit per IP+hotel (20/min) e agli hotel noti. OTEL resta fail-closed: endpoint same-origin oppure `VITE_OTEL_CONNECT_ORIGINS` allineato al CSP. I link pubblici segnalazione (`/s/…`) usano solo token opachi `public_share_token` (UUID legacy → 410). Client Supabase fail-closed senza `VITE_SUPABASE_*` (dev: `.env.development`; CI/Ocean espliciti). Link legacy tecnico con `expires_at` (90 giorni). QR inventario richiede membership hotel. `send-push` `issue_created` richiede `issues.create`. Step 4: secret cron dedicato per `randcore-webhook-worker`, proxy WhatsApp via env, test WhatsApp senza recipient di default, MCP con shape-check JWT, drain offline con `validateOutboxOperation`.
 - Node: `.nvmrc` fissa `24.20.0`; `package.json` usa `24.x` per compatibilità buildpack Ocean.
 
 ## Confini invariabili

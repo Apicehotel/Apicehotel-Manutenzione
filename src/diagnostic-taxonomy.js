@@ -2,7 +2,7 @@ const normalize = (value) => String(value ?? '').trim()
 const lower = (value) => normalize(value).toLowerCase()
 
 const RULES = [
-  { category: 'auth', label: 'Autenticazione', test: /jwt|session|auth|token expired|refresh token|user not authenticated|unauthorized|401/i, guidance: 'Verifica la sessione. Se il problema continua, esci e accedi di nuovo.' },
+  { category: 'auth', label: 'Autenticazione', test: /jwt|session|auth|token expired|refresh token|user not authenticated|unauthorized|401|pgrst303|orologio automatico|sessione non allineata/i, guidance: 'Verifica che data e ora del telefono siano automatiche, poi esci e accedi di nuovo con il PIN.' },
   { category: 'permissions', label: 'Permessi', test: /row level security|permission denied|forbidden|not allowed|42501|403/i, guidance: 'L’operazione non è autorizzata per questo ruolo o questa struttura. Verifica i permessi prima di riprovare.' },
   { category: 'offline-sync', label: 'Sincronizzazione offline', test: /offline sync|offline queue|conflict|offline_conflict|coda offline|sincronizz/i, guidance: 'I dati locali restano protetti. Torna online e usa “Riprova sincronizzazione”; i conflitti bloccati richiedono revisione.' },
   { category: 'notifications', label: 'Notifiche', test: /ntfy|push|subscription|notification|webpush|vapid/i, guidance: 'Controlla connessione e configurazione notifiche della struttura, poi usa il recupero sicuro disponibile.' },

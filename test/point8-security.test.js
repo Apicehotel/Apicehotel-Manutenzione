@@ -39,6 +39,7 @@ test('point 8: diagnostics redact secrets before local or remote persistence', (
 
 test('point 8: public issue endpoint minimizes token lifetime and backend disclosure', () => {
   assert.match(publicIssue, /const UUID =/)
+  assert.match(publicIssue, /SHARE_TOKEN|public_share_token/)
   assert.match(publicIssue, /createSignedUrl\(row\.foto_prima, 60 \* 15\)/)
   assert.match(publicIssue, /Servizio temporaneamente non disponibile/)
   assert.doesNotMatch(publicIssue, /return json\(\{ ok: false, error: message \}/)

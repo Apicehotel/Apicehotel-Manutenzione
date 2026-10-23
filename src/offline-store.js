@@ -1,5 +1,5 @@
 import Dexie from 'dexie'
-import { canClaimOfflineOperation, clearOfflineLeasePatch, createOfflineLeaseOwner, createOfflineOperationId, retryDelay, withOfflineLease } from './reliability/offline-concurrency.js'
+import { canClaimOfflineOperation, clearOfflineLeasePatch, createOfflineLeaseOwner, createOfflineOperationId, retryDelay, validateOutboxOperation, withOfflineLease } from './reliability/offline-concurrency.js'
 
 const db = new Dexie('apiceOffline')
 db.version(1).stores({ cache:'&key,entity,hotelId,updatedAt', outbox:'++id,entity,hotelId,action,tempId,targetId,createdAt', idmap:'&tempId,realId' })
@@ -163,7 +163,7 @@ export async function enqueueMutation({ entity, hotelId, action, payload = null,
   const nextPayload = action === 'create' ? { ...(payload || {}), clientMutationId:payload?.clientMutationId || makeClientMutationId() } : payload
   let next
   await db.transaction('rw', [db.outbox, db.cache, db.blobs], async () => {
-    const op = { operationId:stableOperationId, entity, hotelId, action, payload:nextPayload, cachePayload, targetId, tempId, createdAt:now(), attempts:0, nextAttemptAt:0, lastError:null, leaseOwner:null, leaseUntil:0 }
+    const op = { operationId:stableOperationId, idempotencyKey:stableOperationId, entity, hotelId, action, payload:nextPayload, cachePayload, targetId, tempId, createdAt:now(), attempts:0, nextAttemptAt:0, lastError:null, leaseOwner:null, leaseUntil:0 }
     const compacted = await compactMutation(op)
     const current = await getCachedCollection(entity, hotelId)
     const visualPayload = cachePayload || nextPayload
@@ -224,6 +224,18 @@ export async function drainOfflineQueue() {
       if (wait > 0) { nextWake = nextWake == null ? wait : Math.min(nextWake, wait); continue }
       const op = await claimOperation(snapshot.id)
       if (!op) continue
+      try {
+        // Structural hotel-scope guard (op vs itself). Never rewrite hotelId after enqueue.
+        validateOutboxOperation(
+          { ...op, idempotencyKey: op.idempotencyKey || op.operationId },
+          { hotelId: op.hotelId },
+        )
+      } catch (error) {
+        console.error('offline sync blocked permanently', op.entity, op.action, error)
+        await moveToFailures(op, error)
+        dispatchDataChange(op.entity, op.hotelId)
+        continue
+      }
       let targetId = op.targetId
       if (targetId && String(targetId).startsWith('offline-')) {
         const mapped = await db.idmap.get(targetId)

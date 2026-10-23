@@ -26,7 +26,7 @@ test('login reference keeps authentication behavior unchanged', async () => {
   const app = await source('src/randapp/App.jsx')
   assert.match(app, /loginWithPin\(\{ hotelId, userId: user\.legacy_id \|\| user\.id, pin: loginPin \}\)/)
   assert.match(app, /if \(loginPin\.length !== 4\)/)
-  assert.match(app, /loadDirectoryAll\(\)/)
+  assert.match(app, /searchLoginDirectory\(/)
   assert.match(app, /resolveLoginUser\(/)
   assert.match(app, /type="submit"/)
   assert.doesNotMatch(app, /onClick=\{\(e\) => \{ e\.preventDefault\(\); void submit\(e\) \}\}/)

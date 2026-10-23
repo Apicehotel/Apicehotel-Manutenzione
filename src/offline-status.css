@@ -1,7 +1,7 @@
 #apice-offline-status {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--nav-h, 72px) + env(safe-area-inset-bottom, 0px) + 10px);
+  bottom: calc(var(--rnx-nav-row, calc(var(--nav-h, 72px) + var(--rnx-safe-bottom, env(safe-area-inset-bottom, 0px)))) + 10px);
   z-index: 1200;
   transform: translateX(-50%);
   max-width: min(calc(100vw - 28px), 560px);

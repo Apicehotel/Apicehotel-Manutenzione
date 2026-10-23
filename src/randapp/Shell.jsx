@@ -17,13 +17,14 @@ import { canManageTechnicianDirectory } from './technician-directory-policy.js'
 import RandUiPageBoundary from './randui/PageBoundary.jsx'
 import Home from './Home.jsx'
 import PresenceChip from './PresenceChip.jsx'
-import CyberCatOrb from './CyberCatOrb.jsx'
 import GlobalUrgentAlert from './GlobalUrgentAlert.jsx'
 import HousekeepingCompletionAlerts from './HousekeepingCompletionAlerts.jsx'
 import { RandDesktopSidebar, RandTopbar, RandMobileNav, RandSwipeStage } from './v2/RandChrome.jsx'
 import './new-issue-compact.css'
 import './randui-next.css'
 import './randui-material.css'
+import './randui-hubs.css'
+import './home-density.css'
 
 const Settings = lazyWithRetry(() => import('./Settings.jsx'))
 const Issues = lazyWithRetry(() => import('./Issues.jsx'))
@@ -496,7 +497,7 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
     if (view === 'feedback') content = <FeedbackView user={user} hotel={hotel} />
     if (view === 'pin') content = <PinView user={user} />
     if (view === 'manual') content = <ManualView user={user} hotel={hotel} />
-    if (view === 'randai') content = <RandAIAssistant variant="page" />
+    if (view === 'randai') content = <RandAIAssistant variant="page" user={user} />
 
     if (!content) return <EmptyState icon="sparkles" title="Sezione non disponibile">Questa destinazione non è configurata.</EmptyState>
     return <RandUiPageBoundary pageId={view}>{content}</RandUiPageBoundary>
@@ -519,7 +520,11 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
 
   const handleBottom = (item) => {
     if (item.href) {
-      window.location.assign(item.href)
+      try {
+        const target = new URL(item.href, window.location.origin)
+        if (target.origin !== window.location.origin) return
+        window.location.assign(target.href)
+      } catch { /* ignore malformed href */ }
       return
     }
     if (item.id === 'structure') { setHotelSheet(true); return }
@@ -582,10 +587,9 @@ export default function Shell({ session, initialDirectory = null, onLogout, onSw
               {allowedHotels.length > 1 && placement('structure') !== 'off' && <Icon name="chevronDown" />}
             </button>}
             profile={<button type="button" className="rnx-profile" onClick={() => setDrawer(true)} aria-label={`Apri menu di ${user?.name || 'utente'}`} data-testid="header-profile-menu"><span className="rnx-profile__avatar">{userInitials}</span><span className="rnx-profile__copy"><b>{user?.name?.split(' ')[0] || 'Profilo'}</b><small>{user?.role || 'Utente'}</small></span></button>}
-            presence={<PresenceChip user={user} />}
+            presence={<PresenceChip user={user} hotel={hotel} />}
             themeSwitch={<ThemeSwitch />}
             notifications={<span className="rnx-notify"><IconButton icon="bell" label="Notifiche" onClick={() => setNotificationsOpen(true)} data-testid="header-notifications" />{notificationUnread>0&&<span className="rnx-notify__badge">{notificationUnread>99?'99+':notificationUnread}</span>}</span>}
-            randai={viewAllowed('randai') ? <button type="button" className="rnx-randai" onClick={openRandAIPage} aria-label="Apri RandAI" data-testid="header-randai"><CyberCatOrb className="rs-cyber-cat-orb" /></button> : null}
           />
         )}
 

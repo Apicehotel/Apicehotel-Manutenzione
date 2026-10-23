@@ -80,7 +80,7 @@ test('Home bounds operational queries and surfaces hard fetch failures', () => {
   assert.match(home, /timed\(fetchIssues/)
   assert.match(home, /homeHardFail/)
   assert.match(home, /data-testid="home-retry"/)
-  assert.match(app, /withTimeout\(loadDirectoryAll\(\)/)
+  assert.match(app, /withTimeout\(searchLoginDirectory\(/)
 })
 
 test('Supabase client and list views abort hung network calls', () => {

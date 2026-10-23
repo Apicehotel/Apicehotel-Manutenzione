@@ -1,4 +1,4 @@
-import { supabase, supabaseUrl } from '../../supabase.js'
+import { supabase, supabaseUrl, supabaseAnonKey } from '../../supabase.js'
 
 export const ENABLE_PREFIX = 'apicehotel.ntfy.setup.v2.'
 export const VERIFIED_PREFIX = 'apicehotel.ntfy.verified.v2.'
@@ -30,7 +30,7 @@ async function authHeaders(){
   if (!token) throw new Error('Sessione scaduta: esci e rientra in RandApp')
   return {
     Authorization: `Bearer ${token}`,
-    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Oiu7IOhuUd6YPEDmmSa7zA_ngNuiSlX',
+    apikey: supabaseAnonKey,
     'Content-Type': 'application/json',
     'X-RandApp-Request': `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   }

@@ -17,4 +17,6 @@ test('send-push: distingue avvisi urgenti e nuove segnalazioni', async () => {
   assert.match(edge, /Nuova segnalazione/)
   assert.match(edge, /RECIPIENT_ROLES = new Set\(\["manutentore"\]\)/)
   assert.match(edge, /urgent \|\| id !== userData\.user\.id/)
+  assert.match(edge, /module", "issues"\)/)
+  assert.match(edge, /action", "create"\)/)
 })

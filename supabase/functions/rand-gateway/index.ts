@@ -114,9 +114,10 @@ Deno.serve(async (req: Request) => {
         })).plan
         return { ...plan, id: plan?.approval_id || null }
       },
-      async verify({ approvalId, actor }: any) {
+      async verify({ approvalId, actor, envelope }: any) {
         const id = clean(approvalId, 180)
-        if (!id || !actor?.userId || !actor?.hotelId) return { approved: false }
+        const toolRequest = envelope?.payload?.toolRequest
+        if (!id || !actor?.userId || !actor?.hotelId || !toolRequest) return { approved: false }
         const { data: approval, error } = await admin.from('randai_action_approvals')
           .select('status,expires_at,hotel_id,requested_by_auth_user_id,action_type,tool_id,resource_id,payload')
           .eq('id', id).maybeSingle()
@@ -128,7 +129,7 @@ Deno.serve(async (req: Request) => {
           approved: Boolean(approval && (pending || replay) && alive
             && approval.hotel_id === actor.hotelId
             && approval.requested_by_auth_user_id === actor.userId
-            && approvalMatchesToolRequest(approval, envelope.payload.toolRequest)),
+            && approvalMatchesToolRequest(approval, toolRequest)),
         }
       },
     }

@@ -4,7 +4,7 @@
    No legacy CSS is imported alongside this file.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+@import './fonts.css';
 
 :root {
   --rs-bg: #060a13;

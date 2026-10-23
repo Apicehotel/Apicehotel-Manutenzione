@@ -1,5 +1,8 @@
-import { supabase } from './supabase.js'
+import { requestPresence } from './presence-request.js'
+import { isAuthRetryableFetchError } from '@supabase/supabase-js'
+import { supabase, supabaseAnonKey, supabaseUrl } from './supabase.js'
 import { assertSensitiveActionOnline } from './session-policy.js'
+import { isFutureJwtError, isJwtRestReady, JWT_REST_SETTLE_ATTEMPTS, waitUntilRestAcceptsAccessToken } from './reliability/jwt-errors.js'
 
 function sessionTokens(data) {
   const session = data?.session || data
@@ -13,7 +16,33 @@ async function setReturnedSession(data) {
   if (!tokens) throw new Error('La funzione non ha restituito una sessione valida')
   const { data: result, error } = await supabase.auth.setSession(tokens)
   if (error || !result?.session) throw error || new Error('Impossibile impostare la sessione Supabase')
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('apice-jwt-login-at', String(Date.now()))
+  }
+  // Keep the operator signed in even if REST is briefly skewed: settle first, never throw here.
+  await waitUntilRestAcceptsAccessToken({
+    accessToken: result.session.access_token,
+    restUrl: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    maxAttempts: JWT_REST_SETTLE_ATTEMPTS,
+  }).catch(() => false)
   return result.session
+}
+
+/** Wait until the current access token is accepted by PostgREST (best effort). */
+export async function ensureRestAcceptsCurrentSession(maxAttempts = JWT_REST_SETTLE_ATTEMPTS) {
+  if (!supabase) return false
+  // Login already probed REST: do not pay the settle cost twice before Home.
+  if (isJwtRestReady()) return true
+  const { data, error } = await supabase.auth.getSession()
+  const accessToken = data?.session?.access_token
+  if (error || !accessToken) return false
+  return waitUntilRestAcceptsAccessToken({
+    accessToken,
+    restUrl: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    maxAttempts,
+  }).catch(() => false)
 }
 export async function loginWithPin({ hotelId, userId, pin }) {
   if (!supabase) throw new Error('Supabase non configurato')
@@ -52,28 +81,31 @@ export async function setOwnPresence(present, hotelId = null) {
   assertSensitiveActionOnline('L’aggiornamento della presenza')
   if (!supabase) throw new Error('Supabase non configurato')
   if (present && !hotelId) throw new Error('Seleziona la struttura in cui ti trovi')
-  const { data, error } = await supabase.functions.invoke('user-pin', { body: { action: 'set_presence', present: Boolean(present), hotel_id: present ? hotelId : null } })
-  if (error) throw error
-  if (data?.error) throw new Error(data.error)
-  return data
+  return requestPresence({ action: 'set_presence', present: Boolean(present), hotel_id: present ? hotelId : null })
 }
 export async function validateSupabaseSession() {
   if (!supabase) return { valid: false, user: null }
-  const { data: sessionData } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   const session = sessionData?.session
-  if (!session) return { valid: false, user: null }
+  if (isAuthRetryableFetchError(sessionError)) throw sessionError
+  if (sessionError || !session) return { valid: false, user: null }
   if (typeof navigator !== 'undefined' && !navigator.onLine) return { valid: true, user: session.user, offline: true }
-  try {
-    // A session restored from storage can carry an access token whose iat is
-    // ahead of the API clock. Refresh first so writes do not fail later with
-    // the opaque "JWT issued at future" error.
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-    if (!refreshError && refreshed?.session) return { valid: true, user: refreshed.session.user, refreshed: true }
-    const { data, error } = await supabase.auth.getUser()
-    if (error || !data?.user) return { valid: false, user: null }
-    return { valid: true, user: data.user }
-  } catch {
-    return { valid: true, user: session.user, offline: true }
-  }
+  // Transport failures reach App's bounded offline fallback; they never
+  // prove revocation or renew lastValidatedAt.
+  // Do not rotate refresh tokens on every navigation or page reload:
+  // the Supabase SDK already auto-refreshes expiring sessions.
+  const { data, error } = await supabase.auth.getUser()
+  if (!error && data?.user) return { valid: true, user: data.user }
+  if (isAuthRetryableFetchError(error)) throw error
+  const recoverable = isFutureJwtError(error)
+    || /jwt\s+expired|invalid\s+jwt|token\s+expired/i.test(String(error?.message || ''))
+  if (!recoverable || !session.refresh_token) return { valid: false, user: null }
+  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+  if (isAuthRetryableFetchError(refreshError)) throw refreshError
+  if (refreshError || !refreshed?.session) return { valid: false, user: null }
+  const verified = await supabase.auth.getUser()
+  if (isAuthRetryableFetchError(verified.error)) throw verified.error
+  if (verified.error || !verified.data?.user) return { valid: false, user: null }
+  return { valid: true, user: verified.data.user, refreshed: true }
 }
 export async function signOutSupabase() { if (!supabase) return; try { await supabase.auth.signOut() } catch { /* La sessione applicativa viene comunque rimossa. */ } }

@@ -3,7 +3,7 @@
    presence semantics and hotel scoping remain unchanged. */
 .rs-presence-chip {
   min-height: calc(40px * var(--rs-scale));
-  max-width: calc(132px * var(--rs-scale));
+  max-width: calc(240px * var(--rs-scale));
   padding: 0 calc(12px * var(--rs-scale)) 0 calc(8px * var(--rs-scale));
   border: 1px solid color-mix(in srgb, var(--rs-border, #cbd5e1) 82%, transparent);
   border-radius: 999px;
@@ -130,7 +130,7 @@
 @media (max-width: 430px) {
   .rs-presence-chip {
     min-height: calc(38px * var(--rs-scale));
-    max-width: calc(96px * var(--rs-scale));
+    max-width: 100%;
     padding: 0 calc(8px * var(--rs-scale)) 0 calc(6px * var(--rs-scale));
     gap: calc(5px * var(--rs-scale));
     font-size: .76rem;
@@ -151,7 +151,7 @@
 
 @media (max-width: 360px) {
   .rs-presence-chip {
-    max-width: calc(82px * var(--rs-scale));
+    max-width: 100%;
     padding-inline: calc(6px * var(--rs-scale));
   }
 }
@@ -162,3 +162,7 @@
   .rs-presence-chip__dot { transition: none; }
   .rs-presence-chip[aria-busy='true'] .rs-presence-chip__wave { animation: none; }
 }
+
+.rs-presence-chip__copy { display: grid; min-width: 0; gap: 3px; text-align: left; line-height: 1.2; }
+.rs-presence-chip__copy small { font-size: .68rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.rs-presence-chip[data-presence='unknown'] { border-style: dashed; }

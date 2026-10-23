@@ -1,16 +1,22 @@
 name: randui-preview
 region: fra
-static_sites:
+# nginx service (not static_sites catchall): missing /assets/* must 404, not index.html.
+services:
   - name: randui
     github:
       repo: Apicehotel/Apicehotel-Manutenzione
       branch: ${OCEAN_GITHUB_BRANCH}
       deploy_on_push: false
-    source_dir: /
-    environment_slug: node-js
-    build_command: npm ci && npm run build
-    output_dir: dist
-    index_document: index.html
-    catchall_document: index.html
+    dockerfile_path: Dockerfile.ocean
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
     routes:
       - path: /
+    health_check:
+      http_path: /manifest.webmanifest
+      initial_delay_seconds: 20
+      period_seconds: 15
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 5

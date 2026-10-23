@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apicehotel-manutenzione-v19'
+const CACHE_NAME = 'apicehotel-manutenzione-v26'
 const APP_CACHE_PREFIX = 'apicehotel-manutenzione-'
 const APP_SHELL = [
   '/',
@@ -30,7 +30,18 @@ const getValidCachedDynamicAsset = async (request) => {
 
 const isImmutableAsset = (request) => {
   const pathname = new URL(request.url).pathname
-  return pathname.startsWith('/assets/') && /-[a-z0-9_-]{8,}\\.(?:js|css|woff2?)$/i.test(pathname)
+  // Hashed Vite assets: /assets/index-<hash>.js|css|woff2
+  return pathname.startsWith('/assets/') && /-[a-z0-9_-]{8,}\.(?:js|css|woff2?)$/i.test(pathname)
+}
+
+const safeNotificationUrl = (raw) => {
+  try {
+    const url = new URL(raw || '/', self.location.origin)
+    if (url.origin !== self.location.origin) return `${self.location.origin}/`
+    return url.href
+  } catch {
+    return `${self.location.origin}/`
+  }
 }
 
 const refreshCachedDynamicAsset = (request) => fetch(request, { cache: 'no-store' })
@@ -49,18 +60,32 @@ const missingDynamicAssetResponse = () => new Response('Deployment asset no long
   },
 })
 
+const precacheAsset = async (cache, path) => {
+  try {
+    const request = new Request(path, { cache: 'no-store' })
+    const response = await fetch(request)
+    if (!response?.ok) return
+    const destination = /\.css(?:$|\?)/i.test(path) ? 'style'
+      : /\.js(?:$|\?)/i.test(path) ? 'script'
+        : ''
+    if (destination && !isValidDynamicAsset({ destination }, response)) return
+    await cache.put(request, response.clone())
+  } catch {}
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME)
-    await cache.addAll(APP_SHELL)
+    for (const path of APP_SHELL) await precacheAsset(cache, path)
 
     const shellResponse = await fetch('/', { cache: 'no-store' })
+    if (!shellResponse?.ok) return
     const shellHtml = await shellResponse.clone().text()
     const assetPaths = [...shellHtml.matchAll(/(?:src|href)="([^"#]+)"/g)]
       .map((match) => new URL(match[1], self.location.origin))
       .filter((url) => url.origin === self.location.origin && !url.pathname.startsWith('/api/'))
       .map((url) => `${url.pathname}${url.search}`)
-    await cache.addAll([...new Set(assetPaths)])
+    for (const path of [...new Set(assetPaths)]) await precacheAsset(cache, path)
     await cache.put('/', shellResponse)
   })())
   self.skipWaiting()
@@ -166,7 +191,7 @@ self.addEventListener('push', (event) => {
   }
   const urgent = Boolean(payload.urgent)
   const icon = urgent ? '/icons/icon-urgent-192.png?v=9' : '/icons/icon-192.png?v=9'
-  const targetUrl = payload.url || '/'
+  const targetUrl = safeNotificationUrl(payload.url || '/')
   event.waitUntil((async () => {
     await self.registration.showNotification(payload.title, {
       body: payload.body,
@@ -207,7 +232,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href
+  const targetUrl = safeNotificationUrl(event.notification.data?.url || '/')
   event.waitUntil((async () => {
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const existing = clientsList.find((item) => item.url.startsWith(self.location.origin))

@@ -9,9 +9,9 @@
 */
 
 :root {
-  /* Typography: local/system stack, no font download required by RandUI. */
-  --rand-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --rand-font-display: var(--rand-font-sans);
+  /* Typography: self-hosted Manrope/Sora (see fonts.css), system fallback. */
+  --rand-font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --rand-font-display: 'Sora', var(--rand-font-sans);
 
   /* Geometry */
   --rand-radius-control: 12px;

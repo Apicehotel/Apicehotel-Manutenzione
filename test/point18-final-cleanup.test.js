@@ -67,7 +67,7 @@ test('point 18 documentation describes the consolidated app rather than obsolete
 
 test('point 18 environment template documents optional telemetry without secrets', () => {
   const env = read('.env.example')
-  for (const key of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','VITE_SENTRY_ENABLED','VITE_SENTRY_DSN','VITE_OTEL_ENABLED','VITE_OTEL_EXPORTER_OTLP_ENDPOINT']) {
+  for (const key of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','VITE_SENTRY_ENABLED','VITE_SENTRY_DSN','VITE_OTEL_ENABLED','VITE_OTEL_EXPORTER_OTLP_ENDPOINT','VITE_OTEL_CONNECT_ORIGINS']) {
     assert.match(env, new RegExp(`^${key}=`, 'm'))
   }
   assert.doesNotMatch(env, /service_role|SUPABASE_SERVICE_ROLE_KEY/i)
