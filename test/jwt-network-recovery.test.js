@@ -13,18 +13,18 @@ const client = (refresh) => ({ auth: {
 // Token with iat already in the past so settleFreshAccessToken does not wait.
 const pastToken = `hdr.${Buffer.from(JSON.stringify({ iat: Math.floor(Date.now() / 1000) - 30 })).toString('base64url')}.sig`
 
-test('future JWT GET refreshes and replaces stale Authorization only once', async () => {
+test('future JWT GET keeps the original Authorization stable while the server catches up', async () => {
   let attempts = 0, refreshes = 0
   const fetch = createJwtRecoveringFetch(async (_url, init) => {
     attempts++
     if (attempts === 1) return failed()
-    assert.equal(new Headers(init.headers).get('authorization'), `Bearer ${pastToken}`)
+    assert.equal(new Headers(init.headers).get('authorization'), 'Bearer old.jwt')
     return ok()
   }, () => client(async () => { refreshes++; return { data: { session: { access_token: pastToken } } } }), { sleep })
   const response = await fetch('https://example.test/rest/v1/segnalazioni', { headers: { Authorization: 'Bearer old.jwt' } })
   assert.equal(response.status, 200)
   assert.equal(attempts, 2)
-  assert.equal(refreshes, 1)
+  assert.equal(refreshes, 0)
 })
 
 test('plain 401 GET refreshes and retries the current session', async () => {
