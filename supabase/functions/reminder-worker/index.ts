@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
       const signed = r.photo_path ? await signedPhotoUrl(String(r.photo_path)) : null;
       let ok = 0;
       for (const topic of targets) {
-        const payload: any = { topic, title: `PROMEMORIA · ${HOTEL_NAMES[r.hotel_id] || r.hotel_id}`, message: String(r.message || "Promemoria RandApp").slice(0, 500), priority: 3, tags: ["bell", "memo"], click: `${APP_URL}/?notification=reminder&hotel_id=${encodeURIComponent(r.hotel_id)}&reminder_id=${encodeURIComponent(r.id)}` };
+        const payload: any = { topic, title: `PROMEMORIA · ${HOTEL_NAMES[r.hotel_id] || r.hotel_id}`, message: String(r.message || "Promemoria RandApp").slice(0, 500), priority:3,tags:['bell','memo'], click: `${APP_URL}/?notification=reminder&hotel_id=${encodeURIComponent(r.hotel_id)}&reminder_id=${encodeURIComponent(r.id)}` };
         if (signed) payload.attach = signed;
         const res = await fetch(server, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         if (res.ok) ok++;
