@@ -50,6 +50,7 @@ export function RandMobileNav({ items, isActive, onPick, onWarm }) {
             onClick={() => onPick(item)}
             data-testid={`nav-${item.id}`}
             aria-current={active ? 'page' : undefined}
+            aria-label={item.ariaLabel || item.label}
           >
             <span className="rnx-bottomnav__icon"><Icon name={item.icon} /></span>
             <small>{item.label}</small>

@@ -80,7 +80,7 @@ export function buildPrimaryBottomNav({ placement, viewAllowed, interests = [], 
   // it in the bottom bar. Keep RandAI one tap away; if role navigation disables
   // RandAI, retain Altro as a safe fallback so the five-slot geometry is stable.
   if (viewAllowed('randai')) {
-    items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'randai', key: 'randai', icon: 'sparkles', label: 'RandAI' })
+    items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'randai', key: 'randai', icon: 'message', label: 'RandAI', ariaLabel: 'Chat con RandAI' })
   } else {
     items.push({ slot: TELEGRAM_PRIMARY_SLOTS.more, id: 'more', key: 'more', icon: 'menu', label: 'Altro' })
   }
