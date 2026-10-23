@@ -48,7 +48,10 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
       const headers = new Headers(input instanceof Request ? input.headers : undefined)
       new Headers(init?.headers || {}).forEach((value, key) => headers.set(key, value))
       headers.set('authorization', `Bearer ${data.session.access_token}`)
-      let retry = await baseFetch(input, { ...init, headers })
+      // Rebuild the safe read from the URL. Passing a Request object together
+      // with init headers is browser-dependent and can drop Authorization.
+      const retryInput = url
+      let retry = await baseFetch(retryInput, { ...init, headers })
       // Auth and PostgREST can have a wider clock skew than the browser can
       // observe from the token itself. Keep retrying safe reads while the
       // server explicitly reports PGRST303; do not retry ordinary 401/403s.
@@ -57,7 +60,7 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
         const payload = await retry.clone().text().catch(() => '')
         if (!isFutureBody(payload)) break
         await sleep(FUTURE_JWT_RETRY_GAP_MS)
-        retry = await baseFetch(input, { ...init, headers })
+        retry = await baseFetch(retryInput, { ...init, headers })
       }
       if ([400, 401, 403].includes(retry.status)) {
         const payload = await retry.clone().text().catch(() => '')
