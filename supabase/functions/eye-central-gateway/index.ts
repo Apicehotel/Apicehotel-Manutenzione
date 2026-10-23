@@ -12,20 +12,45 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
 const cleanText = (v: unknown, max = 1000) => String(v ?? "").trim().slice(0, max);
+const MAX_FAILURES = 5;
+const LOCK_MS = 10 * 60 * 1000;
 
 async function actor(body: any) {
   const username = cleanText(body?.username, 120).toLowerCase();
   const pin = cleanText(body?.pin, 20);
   if (!username || !/^\d{6,12}$/.test(pin)) return null;
-  const rows = await sql`
-    select username,pin_hash,role,active
-    from eye_supremo.eye_central_users
-    where username=${username}
-    limit 1
-  `;
-  const row = rows[0];
-  if (!row?.active || !(await bcrypt.compare(pin, row.pin_hash))) return null;
-  return row;
+  return await sql.begin(async (tx) => {
+    const attempts = (await tx`
+      select failed_attempts,locked_until
+      from eye_supremo.eye_central_auth_attempts
+      where username=${username}
+      for update
+    `)[0];
+    if (attempts?.locked_until && new Date(attempts.locked_until).getTime() > Date.now()) return null;
+
+    const row = (await tx`
+      select username,pin_hash,role,active
+      from eye_supremo.eye_central_users
+      where username=${username}
+      limit 1
+    `)[0];
+    const valid = Boolean(row?.active && await bcrypt.compare(pin, row.pin_hash));
+    if (!valid) {
+      const failures = Number(attempts?.failed_attempts || 0) + 1;
+      const locked = failures >= MAX_FAILURES;
+      await tx`
+        insert into eye_supremo.eye_central_auth_attempts(username,failed_attempts,locked_until,updated_at)
+        values(${username},${locked ? 0 : failures},${locked ? new Date(Date.now() + LOCK_MS).toISOString() : null}::timestamptz,now())
+        on conflict(username) do update set
+          failed_attempts=excluded.failed_attempts,
+          locked_until=excluded.locked_until,
+          updated_at=now()
+      `;
+      return null;
+    }
+    await tx`delete from eye_supremo.eye_central_auth_attempts where username=${username}`;
+    return row;
+  });
 }
 
 async function invoicePage(body: any) {
