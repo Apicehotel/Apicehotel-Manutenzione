@@ -43,9 +43,9 @@ Il gioco RandAILive appartiene esclusivamente al repository [Apicehotel/RandAIli
 
 PWA interna React 19 + Vite 7 + Supabase/Postgres per operatività multi-hotel. Target verificati dalla Quality Matrix: **iOS/iPadOS, Android, tablet e Windows/desktop**.
 
-## Stato consolidato — 1 ottobre 2026
+## Stato operativo e riferimenti storici
 
-RandUI rebuild v1 è chiuso e integrato. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
+La ricostruzione RandUI v1 è integrata; la UI Material introdotta dalle PR #400–402 (8 ottobre 2026) è la base grafica più recente verificata nel codice. La shell, la navigazione adattiva, i contratti responsive e le 24 destinazioni RandUI hanno un proprietario unico. RandApp è l'app operativa; RandAI è l'assistente e control layer integrato. RandMind, RandResearch, RandBrain, RandUI, RandDesignBridge, RandCore, RandControl, RandGuide, RandSkills, RandChat, RandDesktop, Repo Radar e Warehouse sono moduli dello stesso ecosistema, non applicazioni parallele.
 
 Il cambio tab della bottom nav non aspetta più uno spinner a ogni tap: i chunk delle destinazioni principali vengono precaricati in idle / al tocco, e le liste operative (Segnalazioni, Interventi, Urgenti, Task, Planning) ridipingono subito da cache di sessione/IndexedDB con refresh soft in background.
 
@@ -309,3 +309,7 @@ Dettagli, profili e configurazione client: `config/mcp/README.md`. Gate dedicato
 
 
 Rifornimenti non usa più PostgREST/RPC dal browser per prodotti, richieste, risoluzioni o contesto piano: il modulo passa da `supply-api` (Edge Function con validazione Supabase Auth e autorizzazione hotel/ruolo) e poi da Postgres diretto. Questo evita il percorso `PGRST303 / JWT issued at future` senza rendere pubblici i dati; il realtime resta solo un aggiornamento opzionale e non blocca il caricamento iniziale.
+
+## RandUI Taste Skill (profilo di progettazione)
+
+Il profilo `.agents/skills/randui-taste/SKILL.md` definisce come applicare il workflow **app screen** di [Taste Skill v2](https://github.com/Leonxlnx/taste-skill) a RandUI. Intensità progettuali richieste: DESIGN_VARIANCE 10/10, VISUAL_DENSITY 9/10 e MOTION_INTENSITY 8/10 (direttive, non parametri nativi della v2). Preservare tre layout distinti Piccolo/Normale/Grande, Home in terza posizione e, per i ruoli autorizzati, RandAI come quinta destinazione mobile, collegata alla chat IA già esistente. La navigazione del profilo mantiene il menu completo. Nessuna modifica a ruoli, autorizzazioni, API o dati. I tool upstream di Taste Skill vanno installati e verificati separatamente: questa PR non equivale a una prova visuale completata.

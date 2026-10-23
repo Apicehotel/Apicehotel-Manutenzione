@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-
 const css = () => readFile(new URL('../src/randapp/randui-material.css', import.meta.url), 'utf8')
 
 test('Material mobile Home keeps KPI to two columns and card headers in flow', async () => {

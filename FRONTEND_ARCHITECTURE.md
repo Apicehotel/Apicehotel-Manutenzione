@@ -1,6 +1,6 @@
 # RandApp — Frontend Architecture
 
-Questo documento descrive lo stato consolidato di RandApp dopo i punti 1–18 della roadmap. Il codice reale prevale sempre su documentazione storica.
+Questo documento descrive l'architettura mantenuta di RandApp. Il codice reale e i contratti verificati prevalgono sulla cronologia delle roadmap.
 
 ## 1. Stack e avvio
 
@@ -56,7 +56,7 @@ Le icone principali della shell sono SVG inline in `src/randapp/ui.jsx`.
 
 ## 4. CSS e design system
 
-Il design system base è in `src/randapp/shell.css`; il layer finale di coerenza è `src/randapp/ui-coherence.css` e viene importato per ultimo.
+Il design system di base usa `src/randapp/shell.css`. La shell autenticata importa `src/randapp/randui-next.css` e successivamente `src/randapp/randui-material.css` (PR #400); gli accessi pre-shell caricano `src/randapp/randui-material-auth.css` da `src/main.jsx` (PR #401–402). `ui-coherence.css` può ancora servire componenti precedenti: non considerarlo automaticamente il foglio finale senza verificare gli import e l'ordine effettivo di bundling. Evitare nuovi override trasversali e rimuovere gli `!important` solo dopo verifica di specificità e regressioni visive.
 
 Esistono ancora fogli funzionali mirati per sezioni che hanno geometrie specifiche, tra cui Planning Sale, Housekeeping, form segnalazioni, offline feedback e navigazione mobile. Non vanno duplicati ulteriormente: nuove regole trasversali devono preferire token/componenti condivisi.
 
