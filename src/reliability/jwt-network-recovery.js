@@ -51,7 +51,12 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
       // Rebuild the safe read from the URL. Passing a Request object together
       // with init headers is browser-dependent and can drop Authorization.
       const retryInput = url
-      let retry = await baseFetch(retryInput, { ...init, headers })
+      // Supabase may pass the original 20s abort signal. Do not let that
+      // signal cancel the recovery window before PostgREST's clock catches up;
+      // createTimedFetch still bounds every retry independently.
+      const retryInit = { ...init, headers }
+      delete retryInit.signal
+      let retry = await baseFetch(retryInput, retryInit)
       // Auth and PostgREST can have a wider clock skew than the browser can
       // observe from the token itself. Keep retrying safe reads while the
       // server explicitly reports PGRST303; do not retry ordinary 401/403s.
@@ -60,7 +65,7 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
         const payload = await retry.clone().text().catch(() => '')
         if (!isFutureBody(payload)) break
         await sleep(FUTURE_JWT_RETRY_GAP_MS)
-        retry = await baseFetch(retryInput, { ...init, headers })
+        retry = await baseFetch(retryInput, retryInit)
       }
       if ([400, 401, 403].includes(retry.status)) {
         const payload = await retry.clone().text().catch(() => '')
