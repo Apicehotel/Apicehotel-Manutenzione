@@ -1,28 +1,17 @@
-const U = Deno.env.get("SUPABASE_URL")!
-const S = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+import postgres from "npm:postgres@3.4.7"
+
+// Connessione Postgres diretta (come pin-auth): non dipende dalla chiave JWT
+// service_role su PostgREST, che dal 1 ottobre 2026 risponde 401 alle Edge Function.
+const DB_URL = Deno.env.get("SUPABASE_DB_URL")!
+const sql = postgres(DB_URL, { prepare: false, max: 2, connect_timeout: 5, idle_timeout: 10 })
 const REGION = "eu"
 const DEFAULT_RULES = { stagione: "inverno", soglia_inverno_min: 20, soglia_estate_max: 18, soglia_frigo_max: 0 } as const
 
-async function db(path: string, init: RequestInit = {}) {
-  return fetch(`${U}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: S,
-      Authorization: `Bearer ${S}`,
-      ...(init.headers || {}),
-    },
-  })
-}
-
-async function secret(key: string) {
-  const r = await fetch(`${U}/rest/v1/rpc/get_edge_secret`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: S, Authorization: `Bearer ${S}` },
-    body: JSON.stringify({ p_key: key }),
-  })
-  if (!r.ok) throw new Error(`secret:${key}`)
-  return await r.json()
+async function secret(key: string): Promise<string> {
+  const rows = await sql`select value from public.edge_function_secrets where key = ${key} limit 1`
+  const value = rows[0]?.value
+  if (!value) throw new Error(`secret:${key}`)
+  return String(value)
 }
 
 async function hmac(secretValue: string, message: string) {
@@ -129,7 +118,7 @@ Deno.serve(async (req) => {
         device_id: id,
         nome: item?.name,
         temperatura: Number.isFinite(temp) ? temp : null,
-        umidita: params.currentHumidity ?? null,
+        umidita: params.currentHumidity == null ? null : String(params.currentHumidity),
         switch_state: relayState(params),
         online,
         ruolo,
@@ -141,12 +130,24 @@ Deno.serve(async (req) => {
     }
 
     if (rows.length) {
-      const r = await db("sensori_temperatura?on_conflict=device_id", {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify(rows),
-      })
-      if (!r.ok) return json({ ok: false, step: "save" }, 500)
+      // Aggiorna solo i campi del sensore: ordine e mostra_* (visibilita per hotel) restano invariati.
+      await sql`
+        insert into public.sensori_temperatura
+          (device_id, nome, temperatura, umidita, switch_state, online, in_allerta, aggiornato_il)
+        select device_id, nome, temperatura, umidita, switch_state, online, in_allerta, aggiornato_il
+        from jsonb_to_recordset(${sql.json(rows as any)}::jsonb) as r(
+          device_id text, nome text, temperatura numeric, umidita text,
+          switch_state text, online boolean, in_allerta boolean, aggiornato_il timestamptz
+        )
+        on conflict (device_id) do update set
+          nome = excluded.nome,
+          temperatura = excluded.temperatura,
+          umidita = excluded.umidita,
+          switch_state = excluded.switch_state,
+          online = excluded.online,
+          in_allerta = excluded.in_allerta,
+          aggiornato_il = excluded.aggiornato_il
+      `
     }
 
     const withSwitchState = rows.filter((row) => row.switch_state === "on" || row.switch_state === "off" || row.switch_state === "mixed").length
