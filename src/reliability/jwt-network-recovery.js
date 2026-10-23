@@ -51,16 +51,24 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
       // Rebuild the safe read from the URL. Passing a Request object together
       // with init headers is browser-dependent and can drop Authorization.
       const retryInput = url
-      let retry = await baseFetch(retryInput, { ...init, headers })
+      // A query-specific AbortSignal belongs to the failed attempt. Reusing it
+      // would cancel the recovery request before PostgREST can accept the new
+      // session token (especially when React Query timed out the first read).
+      const { signal: _originalSignal, ...retryInit } = init || {}
+      let retry = await baseFetch(retryInput, { ...retryInit, headers })
       // Auth and PostgREST can have a wider clock skew than the browser can
       // observe from the token itself. Keep retrying safe reads while the
       // server explicitly reports PGRST303; do not retry ordinary 401/403s.
       for (let attempt = 0; attempt < FUTURE_JWT_RETRY_ATTEMPTS; attempt += 1) {
         if (![400, 401, 403].includes(retry.status)) break
         const payload = await retry.clone().text().catch(() => '')
-        if (!isFutureBody(payload)) break
+        // A plain 401 is also common during Auth/PostgREST propagation. Keep
+        // the refreshed bearer for a short bounded window; never replay 403s
+        // unless the body explicitly identifies the future-JWT condition.
+        if (!isFutureBody(payload) && retry.status !== 401) break
+        if (retry.status === 401 && attempt >= 2) break
         await sleep(FUTURE_JWT_RETRY_GAP_MS)
-        retry = await baseFetch(retryInput, { ...init, headers })
+        retry = await baseFetch(retryInput, { ...retryInit, headers })
       }
       if ([400, 401, 403].includes(retry.status)) {
         const payload = await retry.clone().text().catch(() => '')
