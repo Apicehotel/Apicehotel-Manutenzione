@@ -26,7 +26,8 @@ test('Material cascade prevents duplicate sidebar search selectors and global ov
   const css = await read('src/randapp/randui-material.css')
   const selector = "html:not([data-theme='dark']) .rnx-sidebar__search{"
   assert.equal(css.split(selector).length - 1, 1)
-  // Scoped mobile overrides may grow; guard the failure mode, not a magic !important count.
+  // Additional scoped mobile overrides may be required to preserve the Material design.
+  // Guard the actual failure mode instead of a global magic number of !important rules.
   const marker = '/* Mobile Home: card headers remain inside'
   const start = css.indexOf(marker)
   assert.ok(start >= 0, 'Mobile Home fix must remain present')
