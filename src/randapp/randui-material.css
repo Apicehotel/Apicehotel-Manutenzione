@@ -276,6 +276,8 @@ html:not([data-theme='dark']) .rnx-chartcard__bar i{background:linear-gradient(1
 html:not([data-theme='dark']){--rnx-action:#8e24aa}
 html:not([data-theme='dark']) .rnx-bottomnav__item.active .rnx-bottomnav__icon{background:#f3e5f5;color:#8e24aa}
 
+/* Mobile Home: card headers remain inside their own cards; no overlap with
+   preceding sections. Desktop floating Material headers are unchanged. */
 
 /* Mobile Ops / Planning repair (2026-10-09).
    Keep the existing data, roles and actions; repair only page geometry. */
