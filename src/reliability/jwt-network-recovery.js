@@ -76,7 +76,7 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
         // the refreshed bearer for a short bounded window; never replay 403s
         // unless the body explicitly identifies the future-JWT condition.
         if (!isFutureBody(payload) && retry.status !== 401) break
-        if (retry.status === 401 && attempt >= 2) break
+        if (!isFutureBody(payload) && retry.status === 401 && attempt >= 2) break
         await sleep(FUTURE_JWT_RETRY_GAP_MS)
         retry = await baseFetch(retryInput, { ...retryInit, headers })
       }

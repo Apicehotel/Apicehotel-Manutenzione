@@ -89,6 +89,27 @@ test('invalid refresh fails closed and preserves the original error', async () =
   assert.equal(attempts, 1)
 })
 
+test('confirmed future JWT recovery survives more than three rejected reads without refreshing', async () => {
+  let attempts = 0
+  const fetch = createJwtRecoveringFetch(async (_url, init) => {
+    attempts++
+    assert.equal(new Headers(init.headers).get('authorization'), 'Bearer stable.jwt')
+    return attempts < 7 ? failed() : ok()
+  }, () => client(async () => { throw new Error('future JWT must not refresh') }), { sleep })
+  const response = await fetch('https://example.test/rest/v1/segnalazioni', { headers: { Authorization: 'Bearer stable.jwt' } })
+  assert.equal(response.status, 200)
+  assert.equal(attempts, 7)
+})
+
+test('ordinary 401 recovery remains bounded after refreshing once', async () => {
+  let attempts = 0, refreshes = 0
+  const fetch = createJwtRecoveringFetch(async () => { attempts++; return plain401() },
+    () => client(async () => { refreshes++; return { data: { session: { access_token: pastToken } } } }), { sleep })
+  assert.equal((await fetch('https://example.test/rest/v1/segnalazioni')).status, 401)
+  assert.equal(attempts, 4)
+  assert.equal(refreshes, 1)
+})
+
 test('successful GET does not refresh', async () => {
   const fetch = createJwtRecoveringFetch(async () => ok(), () => { throw Error('no refresh expected') }, { sleep })
   assert.equal((await fetch('https://example.test/rest/v1/segnalazioni')).status, 200)
