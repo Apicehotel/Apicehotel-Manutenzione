@@ -1,5 +1,8 @@
 import { FUTURE_JWT_RE, isJwtLoginGraceActive, settleFreshAccessToken } from './jwt-errors.js'
 
+const FUTURE_JWT_RETRY_ATTEMPTS = 20
+const FUTURE_JWT_RETRY_GAP_MS = 2000
+
 /**
  * Network-wide recovery for a confirmed server-side future-issued JWT rejection.
  * This only retries safe GET/HEAD requests, never writes; no JWT validation bypass.
@@ -46,17 +49,19 @@ export function createJwtRecoveringFetch(baseFetch, getClient, options = {}) {
       new Headers(init?.headers || {}).forEach((value, key) => headers.set(key, value))
       headers.set('authorization', `Bearer ${data.session.access_token}`)
       let retry = await baseFetch(input, { ...init, headers })
+      // Auth and PostgREST can have a wider clock skew than the browser can
+      // observe from the token itself. Keep retrying safe reads while the
+      // server explicitly reports PGRST303; do not retry ordinary 401/403s.
+      for (let attempt = 0; attempt < FUTURE_JWT_RETRY_ATTEMPTS; attempt += 1) {
+        if (![400, 401, 403].includes(retry.status)) break
+        const payload = await retry.clone().text().catch(() => '')
+        if (!isFutureBody(payload)) break
+        await sleep(FUTURE_JWT_RETRY_GAP_MS)
+        retry = await baseFetch(input, { ...init, headers })
+      }
       if ([400, 401, 403].includes(retry.status)) {
         const payload = await retry.clone().text().catch(() => '')
-        if (isFutureBody(payload)) {
-          // Small Auth/PostgREST skew can clear within a couple of seconds.
-          await sleep(2000)
-          retry = await baseFetch(input, { ...init, headers })
-          if ([400, 401, 403].includes(retry.status)) {
-            const again = await retry.clone().text().catch(() => '')
-            if (isFutureBody(again)) warn()
-          }
-        }
+        if (isFutureBody(payload)) warn()
       }
       return retry
     } catch {
