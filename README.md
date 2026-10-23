@@ -1,5 +1,11 @@
 # RandApp - Manutenzione / RandAI — Hotel Operations Platform
 
+### Sensori: stagione e ricarica
+
+Inverno/Estate selezionano la regola stagionale condivisa dei sensori, riservata agli amministratori. Il salvataggio viene confermato dalla riga restituita dal database; nessuna riga modificata o errore di rete non diventano un falso successo. La selezione attiva è evidenziata e gli alert sulle ultime letture si aggiornano subito con la stessa regola del worker. Ricarica legge gli ultimi dati sincronizzati e la configurazione; non invia comandi ai dispositivi e non avvia il worker eWeLink dal browser.
+
+Prerequisito backend: applicare `20261023143000_sensor_season_rules.sql` e pubblicare `sync-sensori-temperatura/index.ts` insieme a `_shared/sensor-alert-rules.js`. Il worker conserva la connessione Postgres diretta già in uso, l'autenticazione `x-sync-secret` e i flag di visibilità dei dispositivi. Le soglie esistenti restano invariate.
+
 Il recupero delle letture GET/HEAD conserva il Bearer durante un rifiuto JWT futuro e usa la finestra limitata di recupero già prevista. Il limite breve dei normali 401 non interrompe questa finestra. Le scritture non vengono ripetute. Questo recupero non sostituisce il ripristino del servizio PostgREST quando il suo orologio resta bloccato.
 
 ## Presenza: lettura e salvataggio autenticati
