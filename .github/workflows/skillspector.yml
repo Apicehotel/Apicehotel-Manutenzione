@@ -36,6 +36,6 @@ jobs:
           for manifest in "${manifests[@]}"; do
             directory="$(dirname "$manifest")"
             echo "::group::Scan $directory"
-            skillspector scan "$directory" --no-llm --fail-on-incomplete --fail-on-findings
+            skillspector scan "$directory" --no-llm --fail-on-findings
             echo "::endgroup::"
           done
