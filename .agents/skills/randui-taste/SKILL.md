@@ -12,7 +12,7 @@ metadata:
 Use Taste Skill **app screen** workflow, never the marketing-page workflow. Before designing, read:
 - `AGENTS.md`, `.impeccable/PRODUCT.md`, `.impeccable/DESIGN.md`
 - `src/randapp/shell-navigation.js`, `src/randapp/Shell.jsx`
-- Upstream `skills/taste-skill/SKILL.md` and **entire** `skills/taste-skill/references/app-screens.md`.
+- Consult separately reviewed upstream Taste Skill app-screen documentation only in a trusted workspace. Do not automatically enumerate, read, or execute other installed skills.
 
 The upstream tool's scripts are NOT vendored here. Install/run them separately in a trusted workspace after review. Use `node <taste-skill>/scripts/draw.mjs --app` for an app-screen direction and `node <taste-skill>/scripts/inspect.mjs --app` for inspection, following the upstream instructions and Node/Chromium prerequisites. Do not pretend browser inspection passed without running it.
 

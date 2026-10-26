@@ -1,0 +1,42 @@
+name: Repair vulnerable npm lockfile
+
+on:
+  push:
+    branches:
+      - security/add-nvidia-skillspector
+    paths:
+      - .github/workflows/repair-npm-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: security/add-nvidia-skillspector
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Resolve patch-level security updates
+        run: npm audit fix --package-lock-only --ignore-scripts
+      - name: Validate lockfile and security
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+      - name: Commit repaired lockfile (no merge)
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo 'No lockfile changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m 'fix: update vulnerable npm transitive dependencies'
+          git push origin HEAD:security/add-nvidia-skillspector
