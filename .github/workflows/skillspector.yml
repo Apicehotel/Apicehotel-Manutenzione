@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -d '' manifests < <(find . -type f \\( -name SKILL.md -o -name skill.md \\) -not -path './.git/*' -print0)
+          mapfile -d '' manifests < <(find . -type f \( -name SKILL.md -o -name skill.md \) -not -path './.git/*' -print0)
           if (( ${#manifests[@]} == 0 )); then
             echo "No agent skills found. SkillSpector scan not applicable."
             exit 0
